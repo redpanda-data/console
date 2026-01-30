@@ -10,7 +10,6 @@
  */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: necessary complexity */
 
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -18,6 +17,13 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { FacetedFilter } from 'components/redpanda-ui/components/faceted-filter';
 import { Input } from 'components/redpanda-ui/components/input';
+import {
+  ListView,
+  ListViewEnd,
+  ListViewGroup,
+  ListViewIntermediary,
+  ListViewStart,
+} from 'components/redpanda-ui/components/list-view';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -30,17 +36,10 @@ import { DEFAULT_SCOPE_OPTIONS } from './constants';
 import { LogRowsSkeleton } from './log-explorer-skeleton';
 import { LogLevelBadge } from './log-level-badge';
 import { LogPayload } from './log-payload';
-import { LogRow } from './log-row';
 import { DEFAULT_LEVEL_OPTIONS, type LogLevel, type ParsedLogEntry, type ScopeOption } from './types';
 
 /** Duration in ms for the "new row" highlight animation */
 const NEW_ROW_HIGHLIGHT_DURATION = 3000;
-
-/** Fixed row height for virtualization */
-const ROW_HEIGHT = 40;
-
-/** Number of rows to render outside the visible area (overscan) */
-const OVERSCAN_COUNT = 10;
 
 type LogExplorerProps<T extends ParsedLogEntry = ParsedLogEntry> = {
   /** Parsed log entries to display */
@@ -98,9 +97,6 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
   // Track known log keys to identify new logs
   const knownLogsRef = useRef<Set<string>>(new Set());
   const [newLogKeys, setNewLogKeys] = useState<Set<string>>(new Set());
-
-  // Scroll container ref for virtualization
-  const parentRef = useRef<HTMLDivElement>(null);
 
   // Default search filter
   const defaultSearchFilter = useCallback((log: T, query: string) => {
@@ -181,13 +177,6 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
     knownLogsRef.current = currentKeys;
   }, [logs]);
 
-  // Virtualizer for the log list - using fixed row height
-  const virtualizer = useVirtualizer({
-    count: filteredLogs.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: OVERSCAN_COUNT,
-  });
 
   // Toggle a level filter
   const toggleLevel = useCallback((level: LogLevel) => {
@@ -208,7 +197,25 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
   const hasFilters = searchQuery.trim() || selectedLevels.length > 0 || selectedScopes.length > 0;
 
-  const virtualItems = virtualizer.getVirtualItems();
+  // Format path as tree structure
+  const formatPath = useCallback((path: string | null): string => {
+    if (!path) return 'root';
+    // Remove 'root.' prefix and convert to tree format
+    const cleanPath = path.replace(/^root\./, '');
+    return cleanPath.split('.').join(' › ');
+  }, []);
+
+  // Format timestamp for display
+  const formatTimestampShort = useCallback((timestamp: bigint): string => {
+    const date = new Date(Number(timestamp));
+    return date.toLocaleString(undefined, {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }, []);
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
@@ -277,54 +284,58 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
         </div>
       ) : null}
 
-      {/* Virtualized logs list */}
+      {/* Logs list with ListView components */}
       {logs.length > 0 ? (
-        <div className="overflow-auto rounded-md" ref={parentRef} style={{ maxHeight }}>
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualItems.map((virtualRow) => {
-              const log = filteredLogs[virtualRow.index];
-              const logKey = getLogKey(log);
-              const isNew = newLogKeys.has(logKey);
-              const isSelected = selectedLog ? getLogKey(selectedLog) === logKey : false;
+        <div className="overflow-auto" style={{ maxHeight }}>
+          <ListViewGroup>
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log) => {
+                const logKey = getLogKey(log);
+                const isNew = newLogKeys.has(logKey);
+                const isSelected = selectedLog ? getLogKey(selectedLog) === logKey : false;
+                const rawMessage = log.content?.message ?? log.content?.msg;
+                const stringifiedMessage = rawMessage ? JSON.stringify(rawMessage) : '';
+                const message = typeof rawMessage === 'string' ? rawMessage : stringifiedMessage;
 
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <LogRow
-                    className={cn(isNew && 'animate-log-highlight')}
-                    isSelected={isSelected}
-                    log={log}
+                return (
+                  <ListView
+                    key={logKey}
+                    className={cn(
+                      isNew && 'animate-log-highlight',
+                      isSelected && 'bg-muted',
+                      log.level === 'ERROR' && 'bg-red-50/30 dark:bg-red-950/10',
+                      log.level === 'WARN' && 'bg-yellow-50/30 dark:bg-yellow-950/10'
+                    )}
                     onClick={() => setSelectedLog(log)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Empty filtered state */}
-          {filteredLogs.length === 0 && hasFilters ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <p className="text-sm">No logs match the current filters</p>
-              <Button className="mt-2" onClick={clearFilters} size="sm" variant="ghost">
-                Clear filters
-              </Button>
-            </div>
-          ) : null}
+                  >
+                    <ListViewStart>
+                      <div className="flex items-center gap-2">
+                        <Text className="text-muted-foreground" variant="small">
+                          {formatTimestampShort(log.timestamp)}
+                        </Text>
+                        <LogLevelBadge level={log.level} />
+                      </div>
+                    </ListViewStart>
+                    <ListViewIntermediary>
+                      <Text className="truncate text-muted-foreground" variant="small">
+                        {formatPath(log.path)}
+                      </Text>
+                    </ListViewIntermediary>
+                    <ListViewEnd>
+                      <Text className="truncate font-mono">{message || '[No message]'}</Text>
+                    </ListViewEnd>
+                  </ListView>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <p className="text-sm">No logs match the current filters</p>
+                <Button className="mt-2" onClick={clearFilters} size="sm" variant="ghost">
+                  Clear filters
+                </Button>
+              </div>
+            )}
+          </ListViewGroup>
         </div>
       ) : null}
 
