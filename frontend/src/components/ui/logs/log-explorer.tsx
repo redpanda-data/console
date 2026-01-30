@@ -19,6 +19,7 @@ import { FacetedFilter } from 'components/redpanda-ui/components/faceted-filter'
 import { Input } from 'components/redpanda-ui/components/input';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertCircle, Loader2, RefreshCw, X } from 'lucide-react';
@@ -245,9 +246,8 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
         {/* Refresh button */}
         {onRefresh ? (
-          <Button className="h-8" disabled={isLoading} onClick={onRefresh} size="sm" variant="outline">
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Refresh
+          <Button className="h-8" disabled={isLoading} onClick={onRefresh} size="icon-sm" variant="outline">
+            {isLoading ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
         ) : null}
 

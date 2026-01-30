@@ -86,22 +86,11 @@ const decodeMessageKey = (keyPayload: Uint8Array | undefined): string | null => 
 /**
  * Build JavaScript filter code that matches pipeline IDs.
  * Level filtering (WARN/ERROR) is done client-side in aggregateMessages.
- *
- * Uses loose equality (==) to match the working use-pipeline-logs pattern.
  */
 const buildFilterCode = (pipelineIds: string[]): string => {
-  if (pipelineIds.length === 1) {
-    return encodeBase64(sanitizeString(`return key == "${pipelineIds[0]}";`));
-  }
-
-  const idsArray = pipelineIds.map((id) => `"${id}"`).join(', ');
-  const filterCode = `
-    var ids = [${idsArray}];
-    for (var i = 0; i < ids.length; i++) {
-      if (key == ids[i]) return true;
-    }
-    return false;
-  `.trim();
+  // Use simple indexOf check - works for both single and multiple IDs
+  const idsArray = pipelineIds.map((id) => `"${id}"`).join(',');
+  const filterCode = `return [${idsArray}].indexOf(key) >= 0;`;
 
   return encodeBase64(sanitizeString(filterCode));
 };
@@ -113,12 +102,16 @@ const buildFilterCode = (pipelineIds: string[]): string => {
 const aggregateMessages = (
   messages: ListMessagesResponse_DataMessage[],
   validPipelineIds: Set<string>
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 27, refactor later
 ): Map<string, PipelineLogCounts> => {
   const results = new Map<string, PipelineLogCounts>();
 
   for (const id of validPipelineIds) {
     results.set(id, createEmptyCounts());
   }
+
+  const pipelineIdsSeen = new Set<string>();
+  const sampleMessages: Array<{ pipelineId: string; level: string; path: string | null; scope: string }> = [];
 
   for (const msg of messages) {
     const pipelineId = decodeMessageKey(msg.key?.normalizedPayload);
@@ -139,6 +132,12 @@ const aggregateMessages = (
     const path = content.path ?? null;
     const scope = getLogScope(path);
     const counts = results.get(pipelineId) ?? createEmptyCounts();
+
+    // Collect sample for debugging
+    pipelineIdsSeen.add(pipelineId);
+    if (sampleMessages.length < 10) {
+      sampleMessages.push({ pipelineId, level: level ?? 'unknown', path, scope });
+    }
 
     if (level === 'WARN') {
       counts[scope].warnings += 1;
@@ -171,16 +170,6 @@ export type StreamingPipelineLogCountsResult = {
  *
  * @param pipelineIds - Array of pipeline IDs to filter for
  * @param enabled - Whether to enable the stream (default: true)
- *
- * @example
- * ```tsx
- * const { counts, isStreaming, error, reset } = useStreamingPipelineLogCounts(
- *   ['pipeline-1', 'pipeline-2']
- * );
- *
- * const pipeline1Counts = counts.get('pipeline-1');
- * console.log(pipeline1Counts?.input.errors); // number of input errors
- * ```
  */
 export const useStreamingPipelineLogCounts = (
   pipelineIds: string[],
@@ -200,12 +189,17 @@ export const useStreamingPipelineLogCounts = (
 
   const validPipelineIds = useMemo(() => new Set(pipelineIds), [pipelineIds]);
 
+  // Use a higher limit to ensure we get messages from all pipelines
+  // Messages come in order, so a low limit might only return messages from one pipeline
+  const maxResults = pipelineIds.length * 500;
+
   const stream = useListMessagesStream({
     topic: REDPANDA_CONNECT_LOGS_TOPIC,
     startOffset: StartOffset.TIMESTAMP,
     startTimestamp,
     partitionId: -1,
     filterInterpreterCode,
+    maxResults,
     enabled: enabled && pipelineIds.length > 0,
   });
 

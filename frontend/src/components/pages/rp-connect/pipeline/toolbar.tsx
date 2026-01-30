@@ -20,7 +20,8 @@ import {
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Group } from 'components/redpanda-ui/components/group';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw, Trash } from 'lucide-react';
 import {
@@ -65,7 +66,7 @@ type ButtonConfigFactoryParams = {
 
 function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
+    icon: isStartPending ? <Spinner size="sm" /> : <Play className="h-4 w-4" />,
     text: isStartPending ? 'Starting' : 'Start',
     action: handleStart,
   };
@@ -73,7 +74,7 @@ function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactor
 
 function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
+    icon: isStopPending ? <Spinner size="sm" /> : <Pause className="h-4 w-4" />,
     text: isStopPending ? 'Stopping' : 'Stop',
     action: handleStop,
   };
@@ -92,7 +93,7 @@ function createStartingConfig({ handleStart, handleStop }: ButtonConfigFactoryPa
 
 function createStoppingConfig({ handleStop, handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    icon: <Spinner size="sm" />,
     text: 'Stopping',
     dropdown: [
       { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStop },
@@ -237,9 +238,9 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="min-w-[110px]">
-              {buttonConfig.icon}
+            <Button className="w-[90px] justify-between">
               {buttonConfig.text}
+              {buttonConfig.icon}
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -256,7 +257,12 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     }
 
     return (
-      <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
+      <Button
+        className="w-[90px] justify-between"
+        disabled={isStartPending || isStopPending}
+        icon={buttonConfig.icon}
+        onClick={buttonConfig.action}
+      >
         {buttonConfig.text}
       </Button>
     );
@@ -264,13 +270,16 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
 
   return (
     <div className="mt-5 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Heading level={1}>Pipeline: {pipelineName ?? pipelineId}</Heading>
+          <Text variant="muted">Manage your pipeline, view logs and more.</Text>
+        </div>
+        {renderActionButton()}
       </div>
 
       <div>
         <Group className="items-center">
-          {renderActionButton()}
           <Button icon={<Pencil />} onClick={handleEdit} size="icon" variant="outline" />
           <DeleteResourceAlertDialog
             buttonIcon={<Trash />}
