@@ -676,7 +676,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         <Text variant="muted">
           Trace and debug AI requests across your agentic dataplane — view LLM calls, tool invocations, and spans from
           agents, gateways, and services.{' '}
-          <Link href="https://docs.redpanda.com/redpanda-cloud/develop/ai/transcripts/" target="_blank">
+          <Link href="https://docs.redpanda.com/redpanda-cloud/ai-agents/observability" target="_blank">
             Learn more
           </Link>
         </Text>
