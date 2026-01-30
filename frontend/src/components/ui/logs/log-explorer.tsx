@@ -223,6 +223,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
       <div className="flex flex-wrap items-center gap-2">
         {/* Search input */}
         <Input
+          aria-label="Search logs"
           className="h-8 w-[200px]"
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search logs..."
@@ -244,8 +245,8 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
         {/* Clear filters */}
         {hasFilters ? (
-          <Button className="h-8 px-2 lg:px-3" onClick={clearFilters} variant="ghost">
-            <X className="ml-2 h-4 w-4" />
+          <Button aria-label="Clear filters" className="h-8 px-2 lg:px-3" onClick={clearFilters} variant="ghost">
+            <X className="h-4 w-4" />
           </Button>
         ) : null}
 
@@ -260,7 +261,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
         {/* Refresh button */}
         {onRefresh ? (
-          <Button disabled={isLoading} onClick={onRefresh} size="icon" variant="ghost">
+          <Button aria-label="Refresh logs" disabled={isLoading} onClick={onRefresh} size="icon" variant="ghost">
             {isLoading ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
         ) : null}
