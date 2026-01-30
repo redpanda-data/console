@@ -68,33 +68,47 @@ const getLogScope = (path: string | null): 'input' | 'output' | 'root' => {
 
 /**
  * Decode message key from Uint8Array to string.
+ * Removes surrounding quotes if present (JSON string encoding).
  */
 const decodeMessageKey = (keyPayload: Uint8Array | undefined): string | null => {
   if (!keyPayload || keyPayload.length === 0) {
     return null;
   }
   try {
-    return new TextDecoder().decode(keyPayload);
+    const decoded = new TextDecoder().decode(keyPayload);
+    // Remove quotes if present (same as use-pipeline-logs.ts:86-87)
+    return decoded.replace(/^"|"$/g, '');
   } catch {
     return null;
   }
 };
 
 /**
- * Build JavaScript filter code that:
- * 1. Matches any of the given pipeline IDs (key)
- * 2. Filters for WARN/ERROR log levels only (in content JSON)
+ * Build JavaScript filter code that matches pipeline IDs.
+ * Level filtering (WARN/ERROR) is done client-side in aggregateMessages.
  *
- * This server-side filtering reduces data transfer significantly.
+ * Uses loose equality (==) to match the working use-pipeline-logs pattern.
  */
 const buildFilterCode = (pipelineIds: string[]): string => {
-  const idsJson = JSON.stringify(pipelineIds);
-  const filterCode = `if (!${idsJson}.includes(key)) return false; try { var v = JSON.parse(content); var l = (v.level || '').toUpperCase(); return l === 'WARN' || l === 'ERROR'; } catch (e) { return false; }`;
+  if (pipelineIds.length === 1) {
+    return encodeBase64(sanitizeString(`return key == "${pipelineIds[0]}";`));
+  }
+
+  const idsArray = pipelineIds.map((id) => `"${id}"`).join(', ');
+  const filterCode = `
+    var ids = [${idsArray}];
+    for (var i = 0; i < ids.length; i++) {
+      if (key == ids[i]) return true;
+    }
+    return false;
+  `.trim();
+
   return encodeBase64(sanitizeString(filterCode));
 };
 
 /**
  * Aggregate messages into pipeline log counts.
+ * Filters for WARN/ERROR levels and categorizes by scope (input/output/root).
  */
 const aggregateMessages = (
   messages: ListMessagesResponse_DataMessage[],
@@ -102,12 +116,10 @@ const aggregateMessages = (
 ): Map<string, PipelineLogCounts> => {
   const results = new Map<string, PipelineLogCounts>();
 
-  // Initialize counts for all pipeline IDs
   for (const id of validPipelineIds) {
     results.set(id, createEmptyCounts());
   }
 
-  // Process each message
   for (const msg of messages) {
     const pipelineId = decodeMessageKey(msg.key?.normalizedPayload);
     if (!(pipelineId && validPipelineIds.has(pipelineId))) {
@@ -174,13 +186,11 @@ export const useStreamingPipelineLogCounts = (
   pipelineIds: string[],
   enabled = true
 ): StreamingPipelineLogCountsResult => {
-  // Calculate start timestamp for the time window
   const startTimestamp = useMemo(
     () => BigInt(Date.now() - REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS * 60 * 60 * 1000),
     []
   );
 
-  // Build filter code - changes when pipelineIds change
   const filterInterpreterCode = useMemo(() => {
     if (pipelineIds.length === 0) {
       return '';
@@ -188,10 +198,8 @@ export const useStreamingPipelineLogCounts = (
     return buildFilterCode(pipelineIds);
   }, [pipelineIds]);
 
-  // Create stable set of pipeline IDs for aggregation
   const validPipelineIds = useMemo(() => new Set(pipelineIds), [pipelineIds]);
 
-  // Use the streaming hook - it auto-restarts when options change (via optionsKey)
   const stream = useListMessagesStream({
     topic: REDPANDA_CONNECT_LOGS_TOPIC,
     startOffset: StartOffset.TIMESTAMP,
@@ -201,19 +209,15 @@ export const useStreamingPipelineLogCounts = (
     enabled: enabled && pipelineIds.length > 0,
   });
 
-  // Aggregate messages as they stream in
   const counts = useMemo(
     () => aggregateMessages(stream.messages, validPipelineIds),
     [stream.messages, validPipelineIds]
   );
 
-  // Extract error message if present
-  const error = stream.error?.message ?? null;
-
   return {
     counts,
     isStreaming: stream.isStreaming,
-    error,
+    error: stream.error?.message ?? null,
     reset: stream.reset,
   };
 };

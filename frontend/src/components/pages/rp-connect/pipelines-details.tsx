@@ -264,19 +264,6 @@ const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
   );
 });
 
-/**
- * @deprecated Use `LogExplorer` from `components/ui/logs/log-explorer` with `usePipelineLogs` hook instead.
- * This MobX-based log viewer will be removed in a future version.
- *
- * @example
- * ```tsx
- * import { LogExplorer } from 'components/ui/logs/log-explorer';
- * import { usePipelineLogs } from 'components/ui/pipeline/use-pipeline-logs';
- *
- * const { logs, isStreaming, error, reset } = usePipelineLogs({ pipelineId });
- * <LogExplorer logs={logs} isLoading={isStreaming} error={error?.message} onRefresh={reset} />
- * ```
- */
 export const LogsTab = observer((p: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);

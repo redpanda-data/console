@@ -63,6 +63,7 @@ import { PipelineDetailsSidebar } from './details-sidebar';
 import { Toolbar } from './toolbar';
 import { extractLintHintsFromError } from '../errors';
 import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
+import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { parseSchema } from '../utils/schema';
 import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
@@ -200,6 +201,8 @@ export default function PipelinePage() {
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
   const setPersistedYamlContent = useOnboardingYamlContentStore((state) => state.setYamlContent);
   const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
+  // const isNewPipelineLogsEnabled = isFeatureFlagEnabled('enableNewPipelineLogs');
+  const isNewPipelineLogsEnabled = true;
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
@@ -542,7 +545,11 @@ export default function PipelinePage() {
     if (mode === 'view' && pipeline) {
       return (
         <Card size="full">
-          <PipelineLogsExplorer pipelineId={pipeline.id} />
+          {isNewPipelineLogsEnabled ? (
+            <PipelineLogsExplorer pipelineId={pipeline.id} />
+          ) : (
+            <LogsTab pipeline={pipeline} />
+          )}
         </Card>
       );
     }

@@ -20,6 +20,7 @@ export const FEATURE_FLAGS = {
   enableTranscriptsInConsole: false,
   shadowlinkCloudUi: false,
   enableNewTheme: false,
+  enableNewPipelineLogs: false,
 };
 
 // Cloud-managed tag keys for service account integration

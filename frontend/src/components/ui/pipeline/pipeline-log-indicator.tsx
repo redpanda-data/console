@@ -14,8 +14,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertCircle, AlertTriangle } from 'lucide-react';
 import { memo } from 'react';
-
-import type { ScopedIssueCounts } from './use-pipeline-log-counts';
+import type { ScopedIssueCounts } from 'react-query/api/pipeline-messages';
 
 type BadgeWithDotProps = {
   count: number;

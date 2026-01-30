@@ -12,7 +12,20 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  type Table as TanStackTable,
+  useReactTable,
+} from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
+import { DataTableFacetedFilter } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,21 +33,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { FacetedFilter } from 'components/redpanda-ui/components/faceted-filter';
 import { Input } from 'components/redpanda-ui/components/input';
-import {
-  ListView,
-  ListViewEnd,
-  ListViewGroup,
-  ListViewIntermediary,
-  ListViewStart,
-} from 'components/redpanda-ui/components/list-view';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, MoreHorizontal, X } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal, X } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -49,7 +55,7 @@ import {
   useStartPipelineMutation,
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
-import { useStreamingPipelineLogCounts } from 'react-query/api/pipeline-messages';
+import { type PipelineLogCounts, useStreamingPipelineLogCounts } from 'react-query/api/pipeline-messages';
 import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -60,7 +66,11 @@ import { PipelineLogIndicator } from '../../../ui/pipeline/pipeline-log-indicato
 import { PipelineStatusBadge } from '../../../ui/pipeline/status-badge';
 import { TabKafkaConnect } from '../../connect/overview';
 
-type Pipeline = {
+// ============================================================================
+// Types
+// ============================================================================
+
+type BasePipeline = {
   id: string;
   name: string;
   description: string;
@@ -68,6 +78,14 @@ type Pipeline = {
   configYaml: string;
   input?: string;
   output?: string;
+};
+
+/**
+ * Pipeline data enriched with streaming log counts.
+ * This is the row data type used by TanStack Table.
+ */
+type Pipeline = BasePipeline & {
+  logCounts?: PipelineLogCounts;
 };
 
 type ParsedYamlConfig = {
@@ -97,7 +115,7 @@ const parseInputOutput = (configYaml: string): { input?: string; output?: string
   }
 };
 
-const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
+const transformAPIPipeline = (apiPipeline: APIPipeline): BasePipeline => {
   const { input, output } = parseInputOutput(apiPipeline.configYaml);
   return {
     id: apiPipeline.id,
@@ -117,56 +135,6 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
 const PAGE_SIZE = 20;
 
 // ============================================================================
-// Filter Helpers
-// ============================================================================
-
-type FilterOptions = {
-  nameSearch: string;
-  inputFilter: string[];
-  outputFilter: string[];
-  stateFilter: string[];
-};
-
-const matchesNameSearch = (pipeline: Pipeline, search: string): boolean => {
-  if (!search) {
-    return true;
-  }
-  const searchLower = search.toLowerCase();
-  return (
-    pipeline.name.toLowerCase().includes(searchLower) ||
-    pipeline.id.toLowerCase().includes(searchLower) ||
-    pipeline.description.toLowerCase().includes(searchLower)
-  );
-};
-
-const matchesInputFilter = (pipeline: Pipeline, filter: string[]): boolean => {
-  if (filter.length === 0) {
-    return true;
-  }
-  return Boolean(pipeline.input && filter.includes(pipeline.input));
-};
-
-const matchesOutputFilter = (pipeline: Pipeline, filter: string[]): boolean => {
-  if (filter.length === 0) {
-    return true;
-  }
-  return Boolean(pipeline.output && filter.includes(pipeline.output));
-};
-
-const matchesStateFilter = (pipeline: Pipeline, filter: string[]): boolean => {
-  if (filter.length === 0) {
-    return true;
-  }
-  return filter.includes(String(pipeline.state));
-};
-
-const filterPipeline = (pipeline: Pipeline, options: FilterOptions): boolean =>
-  matchesNameSearch(pipeline, options.nameSearch) &&
-  matchesInputFilter(pipeline, options.inputFilter) &&
-  matchesOutputFilter(pipeline, options.outputFilter) &&
-  matchesStateFilter(pipeline, options.stateFilter);
-
-// ============================================================================
 // Skeleton Component
 // ============================================================================
 
@@ -176,26 +144,117 @@ const PipelineListSkeleton = () => (
       <Skeleton className="h-8 w-[200px]" />
       <Skeleton className="h-8 w-20" />
     </div>
-    <ListViewGroup>
-      {Array.from({ length: 5 }).map(() => (
-        <ListView key={crypto.randomUUID()} variant="grouped">
-          <ListViewStart>
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-60" />
-          </ListViewStart>
-          <ListViewIntermediary>
-            <Skeleton className="h-6 w-16" />
-            <Skeleton className="h-6 w-16" />
-            <Skeleton className="h-6 w-20" />
-          </ListViewIntermediary>
-          <ListViewEnd>
-            <Skeleton className="h-8 w-8" />
-          </ListViewEnd>
-        </ListView>
-      ))}
-    </ListViewGroup>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <Skeleton className="h-4 w-24" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-8" />
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: 5 }).map(() => (
+          <TableRow key={crypto.randomUUID()}>
+            <TableCell>
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-60" />
+              </div>
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-20" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-20" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-16" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-8 w-8" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   </div>
 );
+
+// ============================================================================
+// Simple Pagination Component (no page size selector)
+// ============================================================================
+
+type SimplePaginationProps<TData> = {
+  table: TanStackTable<TData>;
+};
+
+function SimplePagination<TData>({ table }: SimplePaginationProps<TData>) {
+  return (
+    <div className="flex items-center justify-end px-2">
+      <div className="flex items-center space-x-6 lg:space-x-8">
+        {table.getPageCount() > 0 && (
+          <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          </div>
+        )}
+        <div className="flex items-center space-x-2">
+          <Button
+            className="hidden size-8 lg:flex"
+            disabled={!table.getCanPreviousPage()}
+            onClick={() => table.setPageIndex(0)}
+            size="icon"
+            variant="outline"
+          >
+            <span className="sr-only">Go to first page</span>
+            <ChevronsLeft />
+          </Button>
+          <Button
+            className="size-8"
+            disabled={!table.getCanPreviousPage()}
+            onClick={() => table.previousPage()}
+            size="icon"
+            variant="outline"
+          >
+            <span className="sr-only">Go to previous page</span>
+            <ChevronLeft />
+          </Button>
+          <Button
+            className="size-8"
+            disabled={!table.getCanNextPage()}
+            onClick={() => table.nextPage()}
+            size="icon"
+            variant="outline"
+          >
+            <span className="sr-only">Go to next page</span>
+            <ChevronRight />
+          </Button>
+          <Button
+            className="hidden size-8 lg:flex"
+            disabled={!table.getCanNextPage()}
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            size="icon"
+            variant="outline"
+          >
+            <span className="sr-only">Go to last page</span>
+            <ChevronsRight />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // Actions Cell - Pipeline row actions dropdown
@@ -324,82 +383,165 @@ ActionsCell.displayName = 'ActionsCell';
 // ============================================================================
 
 type PipelineListToolbarProps = {
-  nameSearch: string;
-  onNameSearchChange: (value: string) => void;
-  inputFilter: string[];
-  onInputFilterToggle: (value: string) => void;
-  onInputFilterClear: () => void;
-  outputFilter: string[];
-  onOutputFilterToggle: (value: string) => void;
-  onOutputFilterClear: () => void;
-  stateFilter: string[];
-  onStateFilterToggle: (value: string) => void;
-  onStateFilterClear: () => void;
+  table: TanStackTable<Pipeline>;
   inputOptions: { label: string; value: string }[];
   outputOptions: { label: string; value: string }[];
-  isFiltered: boolean;
-  onClearAllFilters: () => void;
 };
 
-const PipelineListToolbar = ({
-  nameSearch,
-  onNameSearchChange,
-  inputFilter,
-  onInputFilterToggle,
-  onInputFilterClear,
-  outputFilter,
-  onOutputFilterToggle,
-  onOutputFilterClear,
-  stateFilter,
-  onStateFilterToggle,
-  onStateFilterClear,
-  inputOptions,
-  outputOptions,
-  isFiltered,
-  onClearAllFilters,
-}: PipelineListToolbarProps) => (
-  <div className="flex items-center justify-between">
-    <div className="flex flex-1 items-center gap-1">
-      <Input
-        className="h-8 w-[200px]"
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => onNameSearchChange(event.target.value)}
-        placeholder="Filter pipelines..."
-        value={nameSearch}
-      />
-      {inputOptions.length > 0 ? (
-        <FacetedFilter
-          onClear={onInputFilterClear}
-          onToggle={onInputFilterToggle}
-          options={inputOptions}
-          selectedValues={inputFilter}
-          title="Input"
+const PipelineListToolbar = ({ table, inputOptions, outputOptions }: PipelineListToolbarProps) => {
+  const isFiltered = table.getState().columnFilters.length > 0;
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex flex-1 items-center gap-1">
+        <Input
+          className="h-8 w-[200px]"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            table.getColumn('name')?.setFilterValue(event.target.value)
+          }
+          placeholder="Filter pipelines..."
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
         />
-      ) : null}
-      {outputOptions.length > 0 ? (
-        <FacetedFilter
-          onClear={onOutputFilterClear}
-          onToggle={onOutputFilterToggle}
-          options={outputOptions}
-          selectedValues={outputFilter}
-          title="Output"
-        />
-      ) : null}
-      <FacetedFilter
-        onClear={onStateFilterClear}
-        onToggle={onStateFilterToggle}
-        options={[...PIPELINE_STATE_OPTIONS]}
-        selectedValues={stateFilter}
-        title="State"
-      />
-      {isFiltered ? (
-        <Button onClick={onClearAllFilters} size="sm" variant="ghost">
-          Clear
-          <X className="ml-2 h-4 w-4" />
-        </Button>
-      ) : null}
+        {inputOptions.length > 0 && table.getColumn('input') && (
+          <DataTableFacetedFilter column={table.getColumn('input')} options={inputOptions} title="Input" />
+        )}
+        {outputOptions.length > 0 && table.getColumn('output') && (
+          <DataTableFacetedFilter column={table.getColumn('output')} options={outputOptions} title="Output" />
+        )}
+        {table.getColumn('state') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('state')}
+            options={[...PIPELINE_STATE_OPTIONS]}
+            title="State"
+          />
+        )}
+        {isFiltered ? (
+          <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
+            Clear
+            <X className="ml-2 h-4 w-4" />
+          </Button>
+        ) : null}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+// ============================================================================
+// Table Columns
+// ============================================================================
+
+type CreateColumnsOptions = {
+  navigate: ReturnType<typeof useNavigate>;
+  deleteMutation: ReturnType<typeof useDeletePipelineMutation>['mutate'];
+  startMutation: ReturnType<typeof useStartPipelineMutation>['mutate'];
+  stopMutation: ReturnType<typeof useStopPipelineMutation>['mutate'];
+  isDeletingPipeline: boolean;
+  isNewPipelineLogsEnabled: boolean;
+};
+
+const createColumns = ({
+  navigate,
+  deleteMutation,
+  startMutation,
+  stopMutation,
+  isDeletingPipeline,
+  isNewPipelineLogsEnabled,
+}: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
+  {
+    accessorKey: 'name',
+    header: 'Pipeline Name',
+    cell: ({ row }) => (
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <TanStackRouterLink
+            className="text-foreground underline decoration-dotted underline-offset-[3px]"
+            params={{ pipelineId: encodeURIComponent(row.original.id) }}
+            to="/rp-connect/$pipelineId"
+          >
+            {row.getValue('name')}
+          </TanStackRouterLink>
+          {isNewPipelineLogsEnabled ? <PipelineLogIndicator counts={row.original.logCounts?.root} /> : null}
+        </div>
+        {row.original.description ? (
+          <Text className="truncate" variant="muted">
+            {row.original.description}
+          </Text>
+        ) : null}
+      </div>
+    ),
+    filterFn: (row, _id, filterValue: string) => {
+      const searchLower = filterValue.toLowerCase();
+      return (
+        row.original.name.toLowerCase().includes(searchLower) ||
+        row.original.id.toLowerCase().includes(searchLower) ||
+        row.original.description.toLowerCase().includes(searchLower)
+      );
+    },
+  },
+  {
+    accessorKey: 'input',
+    header: 'Input',
+    cell: ({ row }) => {
+      const input = row.getValue('input') as string | undefined;
+      return (
+        <div className="flex items-center gap-2">
+          {input ? <Text>{input}</Text> : <Text variant="muted">-</Text>}
+          {isNewPipelineLogsEnabled ? <PipelineLogIndicator counts={row.original.logCounts?.input} /> : null}
+        </div>
+      );
+    },
+    filterFn: (row, _id, filterValue: string[]) => {
+      if (filterValue.length === 0) {
+        return true;
+      }
+      return Boolean(row.original.input && filterValue.includes(row.original.input));
+    },
+  },
+  {
+    accessorKey: 'output',
+    header: 'Output',
+    cell: ({ row }) => {
+      const output = row.getValue('output') as string | undefined;
+      return (
+        <div className="flex items-center gap-2">
+          {output ? <Text>{output}</Text> : <Text variant="muted">-</Text>}
+          {isNewPipelineLogsEnabled ? <PipelineLogIndicator counts={row.original.logCounts?.output} /> : null}
+        </div>
+      );
+    },
+    filterFn: (row, _id, filterValue: string[]) => {
+      if (filterValue.length === 0) {
+        return true;
+      }
+      return Boolean(row.original.output && filterValue.includes(row.original.output));
+    },
+  },
+  {
+    accessorKey: 'state',
+    header: 'State',
+    cell: ({ row }) => <PipelineStatusBadge state={row.original.state} />,
+    filterFn: (row, _id, filterValue: string[]) => {
+      if (filterValue.length === 0) {
+        return true;
+      }
+      return filterValue.includes(String(row.original.state));
+    },
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: ({ row }) => (
+      <ActionsCell
+        deleteMutation={deleteMutation}
+        isDeletingPipeline={isDeletingPipeline}
+        navigate={navigate}
+        pipeline={row.original}
+        startMutation={startMutation}
+        stopMutation={stopMutation}
+      />
+    ),
+  },
+];
 
 // ============================================================================
 // Main Pipeline List Component
@@ -409,21 +551,18 @@ const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetOnboardingWizardStore = useResetOnboardingWizardStore();
 
-  // Filter state
-  const [nameSearch, setNameSearch] = useState('');
-  const [inputFilter, setInputFilter] = useState<string[]>([]);
-  const [outputFilter, setOutputFilter] = useState<string[]>([]);
-  const [stateFilter, setStateFilter] = useState<string[]>([]);
-
-  // Pagination state
-  const [pageIndex, setPageIndex] = useState(0);
+  // Table state
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const { data: pipelinesData, isLoading, error } = useListPipelinesQuery();
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
   const { mutate: startMutation } = useStartPipelineMutation();
   const { mutate: stopMutation } = useStopPipelineMutation();
+  // const isNewPipelineLogsEnabled = isFeatureFlagEnabled('enableNewPipelineLogs');
+  const isNewPipelineLogsEnabled = true;
 
-  const pipelines = useMemo(
+  // Transform API data to base pipeline objects
+  const basePipelines = useMemo(
     () =>
       (pipelinesData?.pipelines || [])
         .filter(
@@ -433,47 +572,48 @@ const PipelineListPageContent = () => {
     [pipelinesData]
   );
 
-  // Filter pipelines client-side
-  const filteredPipelines = useMemo(
-    () => pipelines.filter((p) => filterPipeline(p, { nameSearch, inputFilter, outputFilter, stateFilter })),
-    [pipelines, nameSearch, inputFilter, outputFilter, stateFilter]
+  // Get all pipeline IDs for streaming log counts
+  const allPipelineIds = useMemo(() => basePipelines.map((p) => p.id), [basePipelines]);
+  const { counts } = useStreamingPipelineLogCounts(allPipelineIds);
+
+  // Enrich pipelines with log counts - this is the table's data source
+  const pipelines: Pipeline[] = useMemo(
+    () => basePipelines.map((p) => ({ ...p, logCounts: counts.get(p.id) })),
+    [basePipelines, counts]
   );
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredPipelines.length / PAGE_SIZE));
-  const paginatedPipelines = useMemo(
-    () => filteredPipelines.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE),
-    [filteredPipelines, pageIndex]
+  // Memoize columns to avoid re-renders
+  const columns = useMemo(
+    () =>
+      createColumns({
+        navigate,
+        deleteMutation,
+        startMutation,
+        stopMutation,
+        isDeletingPipeline,
+        isNewPipelineLogsEnabled,
+      }),
+    [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline]
   );
 
-  // Reset page index when filters change
-  const handleNameSearchChange = useCallback((value: string) => {
-    setNameSearch(value);
-    setPageIndex(0);
-  }, []);
-
-  const handleInputFilterToggle = useCallback((value: string) => {
-    setInputFilter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
-    setPageIndex(0);
-  }, []);
-
-  const handleOutputFilterToggle = useCallback((value: string) => {
-    setOutputFilter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
-    setPageIndex(0);
-  }, []);
-
-  const handleStateFilterToggle = useCallback((value: string) => {
-    setStateFilter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
-    setPageIndex(0);
-  }, []);
-
-  const handleClearAllFilters = useCallback(() => {
-    setNameSearch('');
-    setInputFilter([]);
-    setOutputFilter([]);
-    setStateFilter([]);
-    setPageIndex(0);
-  }, []);
+  const table = useReactTable({
+    data: pipelines,
+    columns,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    initialState: {
+      pagination: {
+        pageSize: PAGE_SIZE,
+      },
+    },
+    state: {
+      columnFilters,
+    },
+  });
 
   const handleCreateClick = useCallback(() => {
     resetOnboardingWizardStore();
@@ -508,12 +648,6 @@ const PipelineListPageContent = () => {
       .map((output) => ({ label: output, value: output }));
   }, [pipelines]);
 
-  const isFiltered = nameSearch !== '' || inputFilter.length > 0 || outputFilter.length > 0 || stateFilter.length > 0;
-
-  // Get visible pipeline IDs from current page for streaming log counts
-  const visiblePipelineIds = useMemo(() => paginatedPipelines.map((p) => p.id), [paginatedPipelines]);
-  const { counts } = useStreamingPipelineLogCounts(visiblePipelineIds);
-
   if (isLoading) {
     return <PipelineListSkeleton />;
   }
@@ -532,101 +666,44 @@ const PipelineListPageContent = () => {
       <div className="mb-4">
         <Button onClick={handleCreateClick}>Create a pipeline</Button>
       </div>
-      <PipelineListToolbar
-        inputFilter={inputFilter}
-        inputOptions={inputOptions}
-        isFiltered={isFiltered}
-        nameSearch={nameSearch}
-        onClearAllFilters={handleClearAllFilters}
-        onInputFilterClear={() => {
-          setInputFilter([]);
-          setPageIndex(0);
-        }}
-        onInputFilterToggle={handleInputFilterToggle}
-        onNameSearchChange={handleNameSearchChange}
-        onOutputFilterClear={() => {
-          setOutputFilter([]);
-          setPageIndex(0);
-        }}
-        onOutputFilterToggle={handleOutputFilterToggle}
-        onStateFilterClear={() => {
-          setStateFilter([]);
-          setPageIndex(0);
-        }}
-        onStateFilterToggle={handleStateFilterToggle}
-        outputFilter={outputFilter}
-        outputOptions={outputOptions}
-        stateFilter={stateFilter}
-      />
-      {filteredPipelines.length === 0 ? (
-        <div className="flex h-24 items-center justify-center text-muted-foreground">
-          {pipelines.length === 0 ? 'You have no Redpanda Connect pipelines' : 'No pipelines match your filters'}
-        </div>
-      ) : (
-        <>
-          <ListViewGroup>
-            {paginatedPipelines.map((pipeline) => {
-              const pipelineCounts = counts.get(pipeline.id);
+      <PipelineListToolbar inputOptions={inputOptions} outputOptions={outputOptions} table={table} />
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {(() => {
+            const rows = table.getRowModel().rows;
+            if (rows.length === 0) {
               return (
-                <ListView key={pipeline.id} variant="grouped">
-                  <ListViewStart>
-                    <TanStackRouterLink
-                      className="text-[1rem] text-foreground underline decoration-dotted underline-offset-[3px]"
-                      params={{ pipelineId: encodeURIComponent(pipeline.id) }}
-                      to="/rp-connect/$pipelineId"
-                    >
-                      {pipeline.name}
-                    </TanStackRouterLink>
-                    {pipeline.description ? (
-                      <Text className="truncate" variant="muted">
-                        {pipeline.description}
-                      </Text>
-                    ) : null}
-                  </ListViewStart>
-                  <ListViewIntermediary gap="md">
-                    <div className="flex min-w-[100px] items-center gap-2">
-                      {pipeline.input ? <Text>{pipeline.input}</Text> : null}
-                      <PipelineLogIndicator counts={pipelineCounts?.input} />
-                    </div>
-                    <div className="flex min-w-[100px] items-center gap-2">
-                      {pipeline.output ? <Text>{pipeline.output}</Text> : null}
-                      <PipelineLogIndicator counts={pipelineCounts?.output} />
-                    </div>
-                    <PipelineStatusBadge state={pipeline.state} />
-                  </ListViewIntermediary>
-                  <ListViewEnd>
-                    <ActionsCell
-                      deleteMutation={deleteMutation}
-                      isDeletingPipeline={isDeletingPipeline}
-                      navigate={navigate}
-                      pipeline={pipeline}
-                      startMutation={startMutation}
-                      stopMutation={stopMutation}
-                    />
-                  </ListViewEnd>
-                </ListView>
+                <TableRow>
+                  <TableCell className="h-24 text-center" colSpan={columns.length}>
+                    {basePipelines.length === 0
+                      ? 'You have no Redpanda Connect pipelines'
+                      : 'No pipelines match your filters'}
+                  </TableCell>
+                </TableRow>
               );
-            })}
-          </ListViewGroup>
-          {/* Pagination */}
-          <div className="flex items-center justify-end gap-2">
-            <Text variant="muted">
-              Page {pageIndex + 1} of {totalPages}
-            </Text>
-            <Button disabled={pageIndex === 0} onClick={() => setPageIndex((p) => p - 1)} size="sm" variant="outline">
-              Previous
-            </Button>
-            <Button
-              disabled={pageIndex >= totalPages - 1}
-              onClick={() => setPageIndex((p) => p + 1)}
-              size="sm"
-              variant="outline"
-            >
-              Next
-            </Button>
-          </div>
-        </>
-      )}
+            }
+            return rows.map((row) => (
+              <TableRow data-state={row.getIsSelected() && 'selected'} key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                ))}
+              </TableRow>
+            ));
+          })()}
+        </TableBody>
+      </Table>
+      <SimplePagination table={table} />
     </div>
   );
 };
