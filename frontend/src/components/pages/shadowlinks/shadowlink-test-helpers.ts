@@ -9,9 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { waitFor } from '@testing-library/react';
+import { fireEvent, waitFor } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+
+/**
+ * Fast input helper - uses fireEvent.change instead of slow user.type()
+ * This is ~10x faster as it doesn't simulate individual keystrokes
+ */
+const fastType = (input: HTMLElement, value: string) => {
+  fireEvent.change(input, { target: { value } });
+};
 
 /**
  * Regex patterns for test IDs
@@ -53,7 +61,7 @@ export const addBootstrapServer = async (
   if (!newInput) {
     throw new Error('No bootstrap server input found after clicking add button');
   }
-  await user.type(newInput, value);
+  fastType(newInput, value);
 };
 
 /**
@@ -111,7 +119,7 @@ export const uploadCACertificate = async (
 
   // Type the file path
   const filePathInput = scr.getByTestId('ca-file-path-input');
-  await user.type(filePathInput, filePath);
+  fastType(filePathInput, filePath);
 
   // Save the certificate
   const saveButton = scr.getByTestId('save-certificate-button');
@@ -141,7 +149,7 @@ export const uploadClientCertificates = async (
   });
 
   const certInput = scr.getByTestId('clientCert-pem-input');
-  await user.type(certInput, certPem);
+  fastType(certInput, certPem);
 
   // Upload client key
   const addClientKeyButton = scr.getByTestId('add-clientKey-button');
@@ -152,7 +160,7 @@ export const uploadClientCertificates = async (
   });
 
   const keyInput = scr.getByTestId('clientKey-pem-input');
-  await user.type(keyInput, keyPem);
+  fastType(keyInput, keyPem);
 };
 
 /**
@@ -171,8 +179,7 @@ export const updateMetadataMaxAge = async (
   });
 
   const metadataMaxAgeInput = scr.getByTestId('metadata-max-age-field');
-  await user.clear(metadataMaxAgeInput);
-  await user.type(metadataMaxAgeInput, value.toString());
+  fastType(metadataMaxAgeInput, value.toString());
 };
 
 /**
@@ -201,8 +208,7 @@ export const updateAdvancedOption = async (
   if (!fieldInput) {
     throw new Error(`No input found in field container: ${field}`);
   }
-  await user.clear(fieldInput);
-  await user.type(fieldInput, value.toString());
+  fastType(fieldInput, value.toString());
 };
 
 /**
@@ -243,7 +249,7 @@ export const addTopicFilter = async (
   });
 
   const topicFilterInput = scr.getByTestId('topic-filter-0-name');
-  await user.type(topicFilterInput, name);
+  fastType(topicFilterInput, name);
 };
 
 /**
@@ -289,7 +295,7 @@ export const addConsumerFilter = async (
   });
 
   const consumerFilterInput = scr.getByTestId('consumer-filter-0-name');
-  await user.type(consumerFilterInput, name);
+  fastType(consumerFilterInput, name);
 };
 
 /**
@@ -335,7 +341,7 @@ export const addACLFilter = async (
   });
 
   const aclPrincipalInput = scr.getByTestId('acl-filter-0-principal');
-  await user.type(aclPrincipalInput, principal);
+  fastType(aclPrincipalInput, principal);
 };
 
 /**
@@ -434,7 +440,7 @@ export const addTopicFilterCreate = async (
 
   // Fill in name
   const nameInput = scr.getByTestId(`topic-filter-${filterIndex}-name`);
-  await user.type(nameInput, name);
+  fastType(nameInput, name);
 
   // Set pattern and filter type if not default
   if (patternType !== PatternType.LITERAL || filterType !== FilterType.INCLUDE) {
@@ -493,7 +499,7 @@ export const addConsumerFilterCreate = async (
   });
 
   const consumerFilterInput = scr.getByTestId('consumer-filter-0-name');
-  await user.type(consumerFilterInput, name);
+  fastType(consumerFilterInput, name);
 };
 
 /**
@@ -533,7 +539,7 @@ export const addACLFilterCreate = async (
   });
 
   const aclPrincipalInput = scr.getByTestId('acl-filter-0-principal');
-  await user.type(aclPrincipalInput, principal);
+  fastType(aclPrincipalInput, principal);
 };
 
 /**
@@ -599,7 +605,7 @@ export const addTopicFilterWithPattern = async (
 
   // Fill in name
   const nameInput = scr.getByTestId(`topic-filter-${filterIndex}-name`);
-  await user.type(nameInput, name);
+  fastType(nameInput, name);
 
   // Set pattern and filter type
   let tabTestId = `topic-filter-${filterIndex}-`;

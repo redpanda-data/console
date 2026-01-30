@@ -44,17 +44,8 @@ vi.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock config
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
-  return {
-    ...actual,
-    config: {
-      jwt: 'test-jwt-token',
-    },
-    isFeatureFlagEnabled: vi.fn(() => false),
-  };
-});
+// Note: config is already mocked globally in vitest.setup.integration.ts
+// If specific config values are needed, mock them in beforeEach
 
 // Mock toast notifications
 vi.mock('sonner', () => ({
@@ -77,6 +68,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 import { useEditShadowLink } from 'react-query/api/shadowlink';
 import { renderWithFileRoutes } from 'test-utils';
 
+import { buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 import {
   type Action,
@@ -506,9 +498,7 @@ describe('ShadowLinkEditPage', () => {
 
     const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
 
-    // The test verifies form values, but the hook now builds the request internally
-    // We need to build the request from form values to verify the update request structure
-    const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
+    // Build the request from form values to verify the update request structure
     const updateRequest = buildDataplaneUpdateRequest('test-shadow-link', formValuesArg, mockShadowLink);
 
     // Verify field mask includes all expected paths

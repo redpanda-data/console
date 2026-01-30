@@ -31,6 +31,17 @@ vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
 window.scrollTo = vi.fn();
 
+// Mock localStorage - jsdom's localStorage can be incomplete
+const localStorageMock = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn(() => null),
+};
+vi.stubGlobal('localStorage', localStorageMock);
+
 // Mock lottie-react - lottie-web tries to access canvas APIs not available in jsdom
 vi.mock('lottie-react', () => ({
   useLottie: () => ({
