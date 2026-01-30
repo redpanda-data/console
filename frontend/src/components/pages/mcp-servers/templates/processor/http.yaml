@@ -1,37 +1,37 @@
-label: http_processor
+label: weather-by-coords
 processors:
-- label: prepare_parameters
-  mutation: |
-    meta city_name = this.city_name
-- label: fetch_weather
-  http:
-    url: 'https://wttr.in/${! @city_name }?format=j1'
-    verb: GET
-    headers:
-      Accept: "application/json"
-      User-Agent: "redpanda-mcp-server/1.0"
-- label: format_response
-  mutation: |
-    root = {
-      "city": @city_name,
-      "temperature": this.current_condition.0.temp_C.number(),
-      "feels_like": this.current_condition.0.FeelsLikeC.number(),
-      "humidity": this.current_condition.0.humidity.number(),
-      "pressure": this.current_condition.0.pressure.number(),
-      "description": this.current_condition.0.weatherDesc.0.value,
-      "wind_speed": this.current_condition.0.windspeedKmph.number(),
-      "metadata": {
-        "source": "wttr.in",
-        "fetched_at": now().ts_format("2006-01-02T15:04:05.000Z")
+  - label: prepare_parameters
+    mutation: |
+      meta lat = this.lat
+      meta long = this.long
+  - label: fetch_weather
+    http:
+      url: https://api.open-meteo.com/v1/forecast?latitude=${! @lat }&longitude=${! long }&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1
+      verb: GET
+      headers:
+        Accept: application/json
+        User-Agent: redpanda-mcp-server/1.0
+  - label: format_response
+    mutation: |
+      root = {
+        "forecast": this.current,
+        "forecast_units": this.current_units,
+        "metadata": {
+          "source": "open-meteo.com",
+          "fetched_at": now().ts_format("2006-01-02T15:04:05.000Z")
+        }
       }
-    }
 
 meta:
   mcp:
     enabled: true
-    description: "Fetch current weather information for a specified city"
+    description: Fetch current weather information for a specified location coords
     properties:
-      - name: city_name
+      - name: lat
         type: string
-        description: "Name of the city to get weather information for"
+        description: latitude of place
+        required: true
+      - name: long
+        type: string
+        description: latitude of place
         required: true
