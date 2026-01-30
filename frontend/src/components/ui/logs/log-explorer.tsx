@@ -11,6 +11,7 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: necessary complexity */
 
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -22,7 +23,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpand
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, Loader2, RefreshCw, X } from 'lucide-react';
+import { Loader2, RefreshCw, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { DEFAULT_SCOPE_OPTIONS } from './constants';
@@ -244,26 +245,26 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Log count */}
+        <Text className="min-w-[100px] text-right" variant="muted">
+          {filteredLogs.length} {filteredLogs.length === 1 ? 'log' : 'logs'}
+          {hasFilters && logs.length !== filteredLogs.length ? ` (${logs.length} total)` : ''}
+        </Text>
+
         {/* Refresh button */}
         {onRefresh ? (
-          <Button className="h-8" disabled={isLoading} onClick={onRefresh} size="icon-sm" variant="outline">
+          <Button disabled={isLoading} onClick={onRefresh} size="icon" variant="ghost">
             {isLoading ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
         ) : null}
-
-        {/* Log count */}
-        <span className="text-muted-foreground text-xs">
-          {filteredLogs.length} {filteredLogs.length === 1 ? 'log' : 'logs'}
-          {hasFilters && logs.length !== filteredLogs.length ? ` (${logs.length} total)` : ''}
-        </span>
       </div>
 
       {/* Error state */}
       {error ? (
-        <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/50">
-          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-          <span className="text-red-700 text-sm dark:text-red-300">{error}</span>
-        </div>
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       {/* Loading state */}
@@ -278,7 +279,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
       {/* Virtualized logs list */}
       {logs.length > 0 ? (
-        <div className="overflow-auto rounded-md border" ref={parentRef} style={{ maxHeight }}>
+        <div className="overflow-auto rounded-md" ref={parentRef} style={{ maxHeight }}>
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
