@@ -597,7 +597,7 @@ export const AIAgentCardTab = () => {
                 <LinkIcon className="h-4 w-4" />
                 <Text className="font-semibold">Connect</Text>
               </CardTitle>
-              <Text className="text-muted-foreground text-sm">Use client SDKs to connect to the agent</Text>
+              <Text className="text-muted-foreground text-sm">Use client SDKs to connect to the agent.</Text>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 px-4 pb-4">

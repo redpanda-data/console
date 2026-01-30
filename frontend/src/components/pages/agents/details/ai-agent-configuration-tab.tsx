@@ -11,12 +11,11 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, Link } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id');
 
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
-import { isFeatureFlagEnabled } from 'config';
 import {
   Accordion,
   AccordionContent,
@@ -46,6 +45,7 @@ import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
+import { isFeatureFlagEnabled } from 'config';
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -69,7 +69,7 @@ import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai
 import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
 import { useListModelProvidersQuery } from 'react-query/api/ai-gateway/model-providers';
 import { useListModelsQuery } from 'react-query/api/ai-gateway/models';
-import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { type MCPServer, MCPServer_State, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -282,16 +282,19 @@ const MCPServersSection = ({
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <MCPIcon className="h-4 w-4" />
-          <Text className="font-semibold">MCP Servers</Text>
+          <Link className="font-semibold hover:underline" to="/mcp-servers">
+            MCP Servers
+          </Link>
         </CardTitle>
+        <Text variant="muted">MCP Servers provide tools to the agent.</Text>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <div className="space-y-4">
-          {Boolean(isEditing) && <Text variant="muted">Select MCP servers to enable tools for this agent</Text>}
+          {Boolean(isEditing) && <Text variant="muted">Select MCP servers to enable tools for this agent.</Text>}
           {hasNoServers ? (
             <MCPEmpty>
               <Text className="mb-4 text-center" variant="muted">
-                Create MCP servers first to enable additional tools for your AI agent
+                Create MCP servers first to enable additional tools for your AI agent.
               </Text>
             </MCPEmpty>
           ) : (
@@ -457,13 +460,32 @@ export const AIAgentConfigurationTab = () => {
     return providerData?.models || [];
   }, [isUsingGateway, modelsData, selectedProvider]);
 
-  // Get available MCP servers
+  // Get available MCP servers (includes placeholders for missing servers that agent references)
   const availableMcpServers = useMemo(() => {
-    if (!mcpServersData?.mcpServers || mcpServersData.mcpServers.length === 0) {
-      return [];
-    }
-    return mcpServersData.mcpServers;
-  }, [mcpServersData]);
+    const existingServers = mcpServersData?.mcpServers ?? [];
+    const existingIds = new Set(existingServers.map((s) => s.id));
+
+    // Find missing server IDs referenced by the agent
+    const connectedServerIds = Object.values(aiAgentData?.aiAgent?.mcpServers ?? {}).map((s) => s.id);
+    const missingServerIds = connectedServerIds.filter((id) => !existingIds.has(id));
+
+    // Create placeholders for missing servers
+    // Note: Cast required because MCPServer is a protobuf Message type with internal properties
+    const missingServers = missingServerIds.map(
+      (id) =>
+        ({
+          id,
+          displayName: `${id} (deleted)`,
+          description: 'This MCP server no longer exists',
+          tools: {},
+          tags: {},
+          state: MCPServer_State.UNSPECIFIED,
+          url: '',
+        }) as MCPServer
+    );
+
+    return [...existingServers, ...missingServers];
+  }, [mcpServersData, aiAgentData]);
 
   // Get available secrets for API key dropdown
   const availableSecrets = useMemo(() => {
@@ -480,7 +502,7 @@ export const AIAgentConfigurationTab = () => {
 
   // Get gateway display name
   const gatewayDisplayName = useMemo(() => {
-    if (!aiAgentData?.aiAgent?.gateway?.virtualGatewayId || !gatewaysData?.gateways) {
+    if (!(aiAgentData?.aiAgent?.gateway?.virtualGatewayId && gatewaysData?.gateways)) {
       return null;
     }
     const gateway = gatewaysData.gateways.find(
@@ -835,15 +857,33 @@ export const AIAgentConfigurationTab = () => {
   };
 
   // Get connected MCP servers (full server objects from mcpServersData)
+  // Includes placeholder objects for servers that no longer exist (deleted)
   const connectedMcpServers = useMemo(() => {
-    if (!(aiAgentData?.aiAgent?.mcpServers && mcpServersData?.mcpServers)) {
+    if (!aiAgentData?.aiAgent?.mcpServers) {
       return [];
     }
     const connectedServerIds = Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id);
-    return mcpServersData.mcpServers.filter((server) => connectedServerIds.includes(server.id));
+    const existingServersMap = new Map((mcpServersData?.mcpServers ?? []).map((s) => [s.id, s]));
+
+    return connectedServerIds.map((id) => {
+      const existing = existingServersMap.get(id);
+      if (existing) {
+        return existing;
+      }
+      // Create placeholder for missing/deleted server
+      return {
+        id,
+        displayName: `${id} (deleted)`,
+        description: 'This MCP server no longer exists',
+        tools: {},
+        tags: {},
+        state: MCPServer_State.UNSPECIFIED,
+        url: '',
+      } as MCPServer;
+    });
   }, [aiAgentData, mcpServersData]);
 
-  if (!aiAgentData?.aiAgent || !displayData) {
+  if (!(aiAgentData?.aiAgent && displayData)) {
     return null;
   }
 
