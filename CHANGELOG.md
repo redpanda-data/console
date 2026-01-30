@@ -2,6 +2,14 @@
 
 ## Master / Unreleased
 
+## v3.5.1 / 2026-01-30
+- [IMPROVEMENT] Add schema metadata UI improvements with properties table display.
+- [BUGFIX] Fix Kafka Connect connector creation when using default values.
+- [BUGFIX] Fix connector name validation in JSON mode.
+- [BUGFIX] Fix connector task error modal not closing.
+- [BUGFIX] Fix security page redirect when Users tab unavailable.
+- [BUGFIX] Fix consumer offsets topic consumption failure.
+
 ## v3.5.0 / 2026-01-12
 - [IMPROVEMENT] Add defensive checks for Kafka Connect secrets and connector creation.
 - [BUGFIX] Fix JWT token handling for schema registry.
