@@ -593,12 +593,8 @@ const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | u
 }) => {
   if (isIncomplete) {
     return (
-      <Badge
-        className="flex h-4 shrink-0 items-center border-warning/25 bg-muted/50 px-1.5 py-0 font-normal text-warning/90"
-        variant="outline"
-      >
-        <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
-        <Small className="truncate">awaiting root</Small>
+      <Badge icon={<AlertCircle />} size="sm" variant="warning-inverted">
+        awaiting root
       </Badge>
     );
   }
@@ -693,7 +689,7 @@ const RootTraceRow: FC<{
         selectableRowSelected,
         selectableRowFocus,
         'h-9 [grid-template-columns:72px_minmax(0,1fr)_260px]',
-        'data-[incomplete=true]:border-l-2 data-[incomplete=true]:border-l-warning'
+        'data-[incomplete=true]:shadow-[inset_2px_0_0_0_var(--color-warning)]'
       )}
       data-incomplete={isIncomplete}
       data-selected={isSelected}
