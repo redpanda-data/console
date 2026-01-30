@@ -76,8 +76,9 @@ const getLogScope = (path: string | null): PipelineLogScope => {
 
 /**
  * Parse a message into a structured pipeline log.
+ * Exported for use by streaming hook.
  */
-const parsePipelineLog = (message: ListMessagesResponse_DataMessage): ParsedPipelineLog => {
+export const parsePipelineLog = (message: ListMessagesResponse_DataMessage): ParsedPipelineLog => {
   // Extract pipeline ID from key
   const keyPayload = message.key?.normalizedPayload;
   let pipelineId = '';

@@ -22,7 +22,7 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { LogExplorer } from 'components/ui/logs/log-explorer';
 import { LogExplorerSkeleton } from 'components/ui/logs/log-explorer-skeleton';
-import { usePipelineLogs } from 'components/ui/pipeline/use-pipeline-logs';
+import { usePipelineLogsStream } from 'components/ui/pipeline/use-pipeline-logs-stream';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { useDebounce } from 'hooks/use-debounce';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
@@ -108,11 +108,11 @@ type PipelineLogsExplorerProps = {
 };
 
 /**
- * Pipeline logs explorer component that wraps LogExplorer with usePipelineLogs.
- * This component handles the data fetching and passes the correct props to LogExplorer.
+ * Pipeline logs explorer component that wraps LogExplorer with usePipelineLogsStream.
+ * This component handles the polling-based streaming and passes the correct props to LogExplorer.
  */
 const PipelineLogsExplorer = memo(({ pipelineId }: PipelineLogsExplorerProps) => {
-  const { logs, isStreaming, error, reset } = usePipelineLogs({
+  const { logs, newLogs, isStreaming, error, reset } = usePipelineLogsStream({
     pipelineId,
     enabled: Boolean(pipelineId),
   });
@@ -125,6 +125,7 @@ const PipelineLogsExplorer = memo(({ pipelineId }: PipelineLogsExplorerProps) =>
       isLoading={isStreaming}
       logs={logs}
       maxHeight="500px"
+      newLogs={newLogs}
       onRefresh={reset}
     />
   );

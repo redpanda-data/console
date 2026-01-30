@@ -54,6 +54,8 @@ const ROOT_PREFIX_REGEX = /^root\./;
 type LogExplorerProps<T extends ParsedLogEntry = ParsedLogEntry> = {
   /** Parsed log entries to display */
   logs: T[];
+  /** New logs for highlight animation (optional - tracked internally if not provided) */
+  newLogs?: T[];
   /** Whether the logs are currently loading/streaming */
   isLoading?: boolean;
   /** Error message if loading failed */
@@ -86,6 +88,7 @@ const getLogKey = (log: ParsedLogEntry): string => `${log.partitionId}-${log.off
  */
 export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLogEntry>({
   logs,
+  newLogs: externalNewLogs,
   isLoading = false,
   error = null,
   onRefresh,
@@ -104,9 +107,17 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
   // Selected log for the detail sheet
   const [selectedLog, setSelectedLog] = useState<T | null>(null);
 
-  // Track known log keys to identify new logs
+  // Track known log keys to identify new logs (only used if newLogs prop not provided)
   const knownLogsRef = useRef<Set<string>>(new Set());
-  const [newLogKeys, setNewLogKeys] = useState<Set<string>>(new Set());
+  const [internalNewLogKeys, setInternalNewLogKeys] = useState<Set<string>>(new Set());
+
+  // Use external newLogs if provided, otherwise use internal tracking
+  const newLogKeys = useMemo(() => {
+    if (externalNewLogs) {
+      return new Set(externalNewLogs.map(getLogKey));
+    }
+    return internalNewLogKeys;
+  }, [externalNewLogs, internalNewLogKeys]);
 
   // Ref for virtualization scroll container
   const parentRef = useRef<HTMLDivElement>(null);
@@ -157,8 +168,13 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
   const virtualItems = virtualizer.getVirtualItems();
 
-  // Track new logs and manage highlight animation
+  // Track new logs and manage highlight animation (only if externalNewLogs not provided)
   useEffect(() => {
+    // Skip internal tracking if using external newLogs
+    if (externalNewLogs) {
+      return;
+    }
+
     const currentKeys = new Set(logs.map(getLogKey));
     const newKeys = new Set<string>();
 
@@ -171,7 +187,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
     // If we have new logs, update state and schedule removal
     if (newKeys.size > 0) {
-      setNewLogKeys((prev) => {
+      setInternalNewLogKeys((prev) => {
         const updated = new Set(prev);
         for (const key of newKeys) {
           updated.add(key);
@@ -181,7 +197,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
       // Remove highlight after duration
       const timer = setTimeout(() => {
-        setNewLogKeys((prev) => {
+        setInternalNewLogKeys((prev) => {
           const updated = new Set(prev);
           for (const key of newKeys) {
             updated.delete(key);
@@ -198,7 +214,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
     // Update known logs even if no new keys
     knownLogsRef.current = currentKeys;
-  }, [logs]);
+  }, [logs, externalNewLogs]);
 
   // Toggle a level filter
   const toggleLevel = useCallback((level: LogLevel) => {
@@ -387,7 +403,7 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
       {isLoading && logs.length > 0 ? (
         <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <Loader2 className="h-3 w-3 animate-spin" />
-          <span>Loading more logs...</span>
+          <span>Loading more logs…</span>
         </div>
       ) : null}
 
