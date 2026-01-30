@@ -10,6 +10,7 @@
  */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: necessary complexity */
 
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -40,6 +41,15 @@ import { DEFAULT_LEVEL_OPTIONS, type LogLevel, type ParsedLogEntry, type ScopeOp
 
 /** Duration in ms for the "new row" highlight animation */
 const NEW_ROW_HIGHLIGHT_DURATION = 3000;
+
+/** Row height for virtualization - matches ListView md size */
+const ROW_HEIGHT = 56;
+
+/** Number of rows to render outside visible area for smooth scrolling */
+const OVERSCAN = 10;
+
+/** Regex for cleaning 'root.' prefix from log paths */
+const ROOT_PREFIX_REGEX = /^root\./;
 
 type LogExplorerProps<T extends ParsedLogEntry = ParsedLogEntry> = {
   /** Parsed log entries to display */
@@ -98,6 +108,9 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
   const knownLogsRef = useRef<Set<string>>(new Set());
   const [newLogKeys, setNewLogKeys] = useState<Set<string>>(new Set());
 
+  // Ref for virtualization scroll container
+  const parentRef = useRef<HTMLDivElement>(null);
+
   // Default search filter
   const defaultSearchFilter = useCallback((log: T, query: string) => {
     const lowerQuery = query.toLowerCase();
@@ -133,6 +146,16 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
     return result;
   }, [logs, searchQuery, selectedLevels, selectedScopes, searchFilter, defaultSearchFilter]);
+
+  // Setup virtualizer for efficient rendering
+  const virtualizer = useVirtualizer({
+    count: filteredLogs.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: OVERSCAN,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
 
   // Track new logs and manage highlight animation
   useEffect(() => {
@@ -177,7 +200,6 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
     knownLogsRef.current = currentKeys;
   }, [logs]);
 
-
   // Toggle a level filter
   const toggleLevel = useCallback((level: LogLevel) => {
     setSelectedLevels((prev) => (prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]));
@@ -199,9 +221,11 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
 
   // Format path as tree structure
   const formatPath = useCallback((path: string | null): string => {
-    if (!path) return 'root';
+    if (!path) {
+      return 'root';
+    }
     // Remove 'root.' prefix and convert to tree format
-    const cleanPath = path.replace(/^root\./, '');
+    const cleanPath = path.replace(ROOT_PREFIX_REGEX, '');
     return cleanPath.split('.').join(' › ');
   }, []);
 
@@ -285,58 +309,77 @@ export const LogExplorer = memo(function LogExplorerComponent<T extends ParsedLo
         </div>
       ) : null}
 
-      {/* Logs list with ListView components */}
+      {/* Logs list with virtualized ListView components */}
       {logs.length > 0 ? (
-        <div className="overflow-auto" style={{ maxHeight }}>
-          <ListViewGroup>
-            {filteredLogs.length > 0 ? (
-              filteredLogs.map((log) => {
-                const logKey = getLogKey(log);
-                const isNew = newLogKeys.has(logKey);
-                const isSelected = selectedLog ? getLogKey(selectedLog) === logKey : false;
-                const rawMessage = log.content?.message ?? log.content?.msg;
-                const stringifiedMessage = rawMessage ? JSON.stringify(rawMessage) : '';
-                const message = typeof rawMessage === 'string' ? rawMessage : stringifiedMessage;
+        <div className="overflow-auto rounded-lg border" ref={parentRef} style={{ maxHeight }}>
+          {filteredLogs.length > 0 ? (
+            <div
+              style={{
+                height: virtualizer.getTotalSize(),
+                position: 'relative',
+              }}
+            >
+              <ListViewGroup>
+                {virtualItems.map((virtualRow) => {
+                  const log = filteredLogs[virtualRow.index];
+                  const logKey = getLogKey(log);
+                  const isNew = newLogKeys.has(logKey);
+                  const isSelected = selectedLog ? getLogKey(selectedLog) === logKey : false;
+                  const rawMessage = log.content?.message ?? log.content?.msg;
+                  const stringifiedMessage = rawMessage ? JSON.stringify(rawMessage) : '';
+                  const message = typeof rawMessage === 'string' ? rawMessage : stringifiedMessage;
 
-                return (
-                  <ListView
-                    key={logKey}
-                    className={cn(
-                      isNew && 'animate-log-highlight',
-                      isSelected && 'bg-muted',
-                      log.level === 'ERROR' && 'bg-red-50/30 dark:bg-red-950/10',
-                      log.level === 'WARN' && 'bg-yellow-50/30 dark:bg-yellow-950/10'
-                    )}
-                    onClick={() => setSelectedLog(log)}
-                  >
-                    <ListViewStart>
-                      <div className="flex items-center gap-2">
-                        <Text className="text-muted-foreground" variant="small">
-                          {formatTimestampShort(log.timestamp)}
-                        </Text>
-                        <LogLevelBadge level={log.level} />
-                      </div>
-                    </ListViewStart>
-                    <ListViewIntermediary>
-                      <Text className="truncate text-muted-foreground" variant="small">
-                        {formatPath(log.path)}
-                      </Text>
-                    </ListViewIntermediary>
-                    <ListViewEnd>
-                      <Text className="truncate font-mono">{message || '[No message]'}</Text>
-                    </ListViewEnd>
-                  </ListView>
-                );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <p className="text-sm">No logs match the current filters</p>
-                <Button className="mt-2" onClick={clearFilters} size="sm" variant="ghost">
-                  Clear filters
-                </Button>
-              </div>
-            )}
-          </ListViewGroup>
+                  return (
+                    <div
+                      key={logKey}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: virtualRow.size,
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <ListView
+                        className={cn(
+                          isNew && 'animate-log-highlight',
+                          isSelected && 'bg-muted',
+                          log.level === 'ERROR' && 'bg-red-50/30 dark:bg-red-950/10',
+                          log.level === 'WARN' && 'bg-yellow-50/30 dark:bg-yellow-950/10'
+                        )}
+                        onClick={() => setSelectedLog(log)}
+                      >
+                        <ListViewStart>
+                          <div className="flex items-center gap-2">
+                            <Text className="text-muted-foreground" variant="small">
+                              {formatTimestampShort(log.timestamp)}
+                            </Text>
+                            <LogLevelBadge level={log.level} />
+                          </div>
+                        </ListViewStart>
+                        <ListViewIntermediary>
+                          <Text className="truncate text-muted-foreground" variant="small">
+                            {formatPath(log.path)}
+                          </Text>
+                        </ListViewIntermediary>
+                        <ListViewEnd>
+                          <Text className="truncate font-mono">{message || '[No message]'}</Text>
+                        </ListViewEnd>
+                      </ListView>
+                    </div>
+                  );
+                })}
+              </ListViewGroup>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <p className="text-sm">No logs match the current filters</p>
+              <Button className="mt-2" onClick={clearFilters} size="sm" variant="ghost">
+                Clear filters
+              </Button>
+            </div>
+          )}
         </div>
       ) : null}
 
