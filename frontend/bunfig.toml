@@ -2,6 +2,3 @@
 save = true
 saveTextLockfile = true
 print = "yarn"
-
-[test]
-preload = ["./buntest.plugin.ts", "./buntest.setup.tsx"]

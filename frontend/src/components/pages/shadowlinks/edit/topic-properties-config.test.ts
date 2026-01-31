@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect } from 'vitest';
-
 import {
   getDefaultProperties,
   getPropertiesByCategory,
@@ -18,6 +16,7 @@ import {
   isPropertyDisabled,
   isPropertyEditable,
 } from './topic-properties-config';
+import { describe, expect, test } from 'bun:test';
 
 describe('topic-properties-config', () => {
   describe('getPropertiesByCategory', () => {

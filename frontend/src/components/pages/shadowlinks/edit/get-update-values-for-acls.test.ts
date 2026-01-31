@@ -11,9 +11,9 @@
 
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
-import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForACLs } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
 

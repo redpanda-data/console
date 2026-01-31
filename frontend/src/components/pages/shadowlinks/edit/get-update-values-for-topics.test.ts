@@ -19,9 +19,9 @@ import {
   ShadowLinkConfigurationsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { TLS_MODE } from '../create/model';
 import { buildDefaultTopicsValues } from '../mappers/dataplane';

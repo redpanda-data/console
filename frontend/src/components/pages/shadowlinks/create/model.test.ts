@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
-
 import { FormSchema, initialValues, TLS_MODE } from './model';
+import { describe, expect, test } from 'bun:test';
 
 // Helper to create valid base form values
 const createValidFormValues = () => ({

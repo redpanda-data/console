@@ -11,9 +11,9 @@
 
 import { create } from '@bufbuild/protobuf';
 import { AnyValueSchema, ArrayValueSchema, KeyValueListSchema } from 'protogen/redpanda/otel/v1/common_pb';
-import { describe, expect, it } from 'vitest';
 
 import { extractProtoValue, getAttributeValue } from './attributes-tab';
+import { describe, expect, it } from 'bun:test';
 
 describe('extractProtoValue', () => {
   it('returns undefined for undefined input', () => {

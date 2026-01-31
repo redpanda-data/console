@@ -9,12 +9,28 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, type Mock, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 
-// Module mocks must be called before importing the modules
-const mockUseEditShadowLink = mock(() => ({}));
-mock.module('react-query/api/shadowlink', () => ({
-  useEditShadowLink: mockUseEditShadowLink,
+// Set up module mocks BEFORE importing anything that uses them
+mock.module('config', () => ({
+  config: {
+    jwt: 'test-jwt-token',
+    controlplaneUrl: 'http://localhost:9090',
+  },
+  isFeatureFlagEnabled: mock(() => false),
+  addBearerTokenInterceptor: mock(
+    (next: (request: unknown) => Promise<unknown>) => async (request: unknown) => next(request)
+  ),
+  checkExpiredLicenseInterceptor: mock(
+    (next: (request: unknown) => Promise<unknown>) => async (request: unknown) => next(request)
+  ),
+  isEmbedded: () => false,
+  isServerless: () => false,
+  getGrpcBasePath: (overrideUrl?: string) => overrideUrl ?? '',
+  getControlplaneBasePath: (overrideUrl?: string) => overrideUrl ?? '',
+  setMonacoTheme: () => {},
+  embeddedAvailableRoutesObservable: { value: [] },
+  setup: () => {},
 }));
 
 mock.module('state/ui-state', () => ({
@@ -24,6 +40,7 @@ mock.module('state/ui-state', () => ({
   },
 }));
 
+// Mock toast notifications
 mock.module('sonner', () => ({
   toast: {
     success: mock(() => {}),
@@ -31,21 +48,53 @@ mock.module('sonner', () => ({
   },
 }));
 
-const SHADOW_LINK_NAME = 'test-shadow-link';
-
-// Pre-load the actual module BEFORE setting up the mock to avoid interception loop
-const tanstackRouter = require('../../../../../node_modules/@tanstack/react-router/dist/cjs/index.cjs');
-
-// Now mock with the pre-loaded module
-mock.module('@tanstack/react-router', () => ({
-  ...tanstackRouter,
-  useParams: () => ({ name: SHADOW_LINK_NAME }),
+// Create mock for useEditShadowLink - define before mock.module
+const mockUpdateShadowLink = mock(() => Promise.resolve({}));
+const mockUseEditShadowLink = mock(() => ({
+  formValues: null,
+  isLoading: false,
+  error: null,
+  isUpdating: false,
+  hasData: false,
+  updateShadowLink: mockUpdateShadowLink,
+  dataplaneUpdate: {
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    error: null,
+    reset: mock(() => {}),
+  },
+  controlplaneUpdate: {
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    error: null,
+    reset: mock(() => {}),
+  },
 }));
 
-// Now import dependencies after mocks are set up
+mock.module('react-query/api/shadowlink', () => ({
+  useEditShadowLink: mockUseEditShadowLink,
+}));
+
+const SHADOW_LINK_NAME = 'test-shadow-link';
+
+mock.module('@tanstack/react-router', () => ({
+  useParams: () => ({ name: SHADOW_LINK_NAME }),
+  useNavigate: () => mock(() => {}),
+  useRouter: () => ({ navigate: mock(() => {}) }),
+  useRouterState: () => ({ location: { pathname: '/' } }),
+  useMatch: () => ({}),
+  useMatches: () => [],
+  Link: ({ children }: { children: React.ReactNode }) => children,
+  Outlet: () => null,
+  RouterContextProvider: ({ children }: { children: React.ReactNode }) => children,
+  createMemoryHistory: () => ({ initialEntries: ['/'] }),
+  createRouter: () => ({}),
+}));
+
+// Now import everything else
 import { create } from '@bufbuild/protobuf';
-import { screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
@@ -62,7 +111,7 @@ import {
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
-import { renderWithFileRoutes } from 'test-utils';
+import { cleanup, renderWithFileRoutes, waitFor } from 'test-utils';
 
 import { ShadowLinkEditPage } from './shadowlink-edit-page';
 import { buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
@@ -83,6 +132,15 @@ import {
   uploadCACertificate,
   uploadClientCertificates,
 } from '../shadowlink-test-helpers';
+
+// DOM mocks
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+Element.prototype.scrollIntoView = mock(() => {});
 
 /**
  * Create a mock shadow link with minimal configuration
@@ -133,12 +191,9 @@ const createMockShadowLink = (): ShadowLink =>
   }) as ShadowLink;
 
 /**
- * Render the edit page with all necessary providers
+ * Render the edit page with test-utils providers
  */
-const renderEditPage = (_shadowLink: ShadowLink) =>
-  renderWithFileRoutes(<ShadowLinkEditPage />, {
-    initialLocation: `/shadowlinks/${SHADOW_LINK_NAME}/edit`,
-  });
+const renderEditPage = (_shadowLink: ShadowLink) => renderWithFileRoutes(<ShadowLinkEditPage />);
 
 /**
  * Action dispatcher - routes actions to appropriate helpers
@@ -436,12 +491,13 @@ const testCases: TestCase[] = [
 ];
 
 describe('ShadowLinkEditPage', () => {
-  const mockUpdateShadowLink = mock(() => Promise.resolve({}));
-
   beforeEach(() => {
+    cleanup();
     mockUpdateShadowLink.mockClear();
+    mockUseEditShadowLink.mockClear();
   });
 
+  // Run tests individually (Bun doesn't support test.each well)
   for (const testCase of testCases) {
     test(testCase.description, async () => {
       const { actions, expectedFieldMaskPaths, verify } = testCase;
@@ -449,8 +505,8 @@ describe('ShadowLinkEditPage', () => {
       const mockShadowLink = createMockShadowLink();
       const formValues = buildDefaultFormValues(mockShadowLink);
 
-      // Mock useEditShadowLink hook
-      (mockUseEditShadowLink as Mock<any>).mockReturnValue({
+      // Configure mock for this test
+      mockUseEditShadowLink.mockReturnValue({
         formValues,
         isLoading: false,
         error: null,
@@ -463,33 +519,36 @@ describe('ShadowLinkEditPage', () => {
           isError: false,
           error: null,
           reset: mock(() => {}),
-        } as any,
+        },
         controlplaneUpdate: {
           isPending: false,
           isSuccess: false,
           isError: false,
           error: null,
           reset: mock(() => {}),
-        } as any,
+        },
       });
 
-      renderEditPage(mockShadowLink);
+      // Use render result as screen-like object
+      const renderResult = renderEditPage(mockShadowLink);
+      const scr = renderResult as unknown as typeof import('@testing-library/react').screen;
+      const { getByText, findByTestId } = renderResult;
 
       // Wait for the form to load
       await waitFor(() => {
-        expect(screen.getByText('Edit shadow link')).toBeInTheDocument();
+        expect(getByText('Edit shadow link')).toBeInTheDocument();
       });
 
       // Wait for the source tab content to be visible
-      await screen.findByTestId('bootstrap-server-input-0', {}, { timeout: 5000 });
+      await findByTestId('bootstrap-server-input-0', {}, { timeout: 5000 });
 
       // Execute all actions in sequence
       for (const action of actions) {
-        await performAction(user, screen, action);
+        await performAction(user, scr, action);
       }
 
       // Submit the form
-      const saveButton = screen.getByText('Save');
+      const saveButton = getByText('Save');
       await user.click(saveButton);
 
       // Verify updateShadowLink was called

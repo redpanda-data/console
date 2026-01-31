@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
-
 import {
   formatFieldLabel,
   getTextPreview,
@@ -19,6 +17,7 @@ import {
   pluralizeWithNumber,
   truncateWithEllipsis,
 } from './string';
+import { describe, expect, test } from 'bun:test';
 
 describe('formatFieldLabel', () => {
   test('should convert camelCase to Title Case with spaces', () => {

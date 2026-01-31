@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from 'vitest';
-
 import { formatDuration, formatTime, formatTranscriptId, getPreview } from './transcript-formatters';
+import { describe, expect, it } from 'bun:test';
 
 describe('formatDuration', () => {
   it('formats sub-millisecond durations as microseconds', () => {

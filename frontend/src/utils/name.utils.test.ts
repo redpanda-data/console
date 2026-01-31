@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
-
 import { getRandomAnimalName } from './name.utils';
+import { describe, expect, test } from 'bun:test';
 
 const NAME_PATTERN = /^[a-z]+-[a-z]+-[a-z]+$/;
 const TABLE_NAME_PATTERN = /^[a-z][a-z0-9_]*$/;

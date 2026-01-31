@@ -3,15 +3,21 @@
  * Must be preloaded before tests run
  */
 
+// IMPORTANT: Register happy-dom FIRST before any imports that need DOM globals
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
-import * as matchers from '@testing-library/jest-dom/matchers';
 
-import { afterEach, beforeEach, expect, mock } from 'bun:test';
+GlobalRegistrator.register();
+
+// Now we can import testing-library (it needs document.body to exist)
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { cleanup } from '@testing-library/react';
+
+import { beforeEach, expect, mock } from 'bun:test';
 
 expect.extend(matchers);
 
-// Register happy-dom globals (window, document, etc.)
-GlobalRegistrator.register();
+// Store cleanup reference
+const cleanupFn = cleanup;
 
 // Import array extensions
 import './src/utils/array-extensions';
@@ -66,12 +72,8 @@ beforeEach(() => {
   });
 });
 
-// Cleanup after each test
-afterEach(async () => {
-  // Clean up DOM
-  const { cleanup } = await import('@testing-library/react');
-  cleanup();
-});
+// Note: Cleanup is handled by individual test files that import cleanup from @testing-library/react
+// Don't add global cleanup here as it can cause double-cleanup issues
 
 // ============================================
 // Module mocks - must be called before imports

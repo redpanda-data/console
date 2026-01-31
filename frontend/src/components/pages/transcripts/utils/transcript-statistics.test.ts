@@ -10,7 +10,6 @@
  */
 
 import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
-import { describe, expect, it } from 'vitest';
 
 import {
   calculateVisibleWindow,
@@ -18,6 +17,7 @@ import {
   isIncompleteTranscript,
   isRootSpan,
 } from './transcript-statistics';
+import { describe, expect, it } from 'bun:test';
 
 // Helper to create mock TraceSummary objects for testing
 const createMockTranscript = (data: { transcriptId: string; startTimeMs?: number }): TraceSummary =>

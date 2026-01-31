@@ -9,20 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { ConnectorProperty, ConnectorValidationResult } from '../rest-interfaces';
 import { DataType, PropertyImportance, PropertyWidth } from '../rest-interfaces';
 
+// Create mock function
+const mockValidateConnectorConfig = mock(() => Promise.resolve({} as ConnectorValidationResult));
+
 // Mock the backend-api module before importing the store
-vi.mock('../backend-api', () => ({
+mock.module('../backend-api', () => ({
   api: {
-    validateConnectorConfig: vi.fn(),
+    validateConnectorConfig: mockValidateConnectorConfig,
   },
 }));
 
 import { ConnectorPropertiesStore } from './state';
-import { api } from '../backend-api';
 
 function createMockProperty(overrides: {
   name: string;
@@ -76,11 +77,20 @@ function createMockValidationResult(properties: ConnectorProperty[]): ConnectorV
   };
 }
 
-describe('ConnectorPropertiesStore', () => {
-  const mockValidateConnectorConfig = vi.mocked(api.validateConnectorConfig);
+// Helper to wait for a condition
+async function waitFor(condition: () => boolean, timeout = 5000): Promise<void> {
+  const start = Date.now();
+  while (!condition()) {
+    if (Date.now() - start > timeout) {
+      throw new Error('waitFor timeout');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
 
+describe('ConnectorPropertiesStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockValidateConnectorConfig.mockClear();
   });
 
   describe('custom_default_value handling', () => {
@@ -107,7 +117,7 @@ describe('ConnectorPropertiesStore', () => {
       );
 
       // Wait for async initialization
-      await vi.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => store.initPending === false);
 
       // Assert: custom_default_value should be applied
       const prop = store.propsByName.get('flush.lsn.source');
@@ -138,7 +148,7 @@ describe('ConnectorPropertiesStore', () => {
       );
 
       // Wait for async initialization
-      await vi.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => store.initPending === false);
 
       // Assert: user's value should be preserved, not overwritten by custom_default_value
       const prop = store.propsByName.get('flush.lsn.source');
@@ -178,7 +188,7 @@ describe('ConnectorPropertiesStore', () => {
       const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', undefined);
 
       // Wait for async initialization
-      await vi.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => store.initPending === false);
 
       // Assert: Only prop with custom_default_value gets the custom default
       expect(store.propsByName.get('prop.with.custom.default')?.value).toBe('custom-default');
@@ -211,7 +221,7 @@ describe('ConnectorPropertiesStore', () => {
       const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', undefined);
 
       // Wait for async initialization
-      await vi.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => store.initPending === false);
 
       // Assert: custom_default_value strings should be applied
       expect(store.propsByName.get('bool.custom.true')?.value).toBe('true');

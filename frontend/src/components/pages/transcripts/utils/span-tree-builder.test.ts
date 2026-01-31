@@ -10,9 +10,9 @@
  */
 
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
-import { describe, expect, it } from 'vitest';
 
 import { buildSpanTree, calculateOffset, calculateTimeline } from './span-tree-builder';
+import { describe, expect, it } from 'bun:test';
 
 const createMockSpan = (overrides: Partial<Span> = {}): Span =>
   ({
