@@ -4,8 +4,11 @@
  */
 
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
+import * as matchers from '@testing-library/jest-dom/matchers';
 
-import { afterEach, beforeEach, mock } from 'bun:test';
+import { afterEach, beforeEach, expect, mock } from 'bun:test';
+
+expect.extend(matchers);
 
 // Register happy-dom globals (window, document, etc.)
 GlobalRegistrator.register();

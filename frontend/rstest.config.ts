@@ -6,8 +6,8 @@ import { defineConfig } from '@rstest/core';
 import path from 'node:path';
 
 export default defineConfig({
-  include: ['src/components/pages/shadowlinks/edit/shadowlink-edit-page.rstest.tsx'],
-  testEnvironment: 'jsdom',
+  include: ['src/**/*.rstest.{ts,tsx}'],
+  testEnvironment: 'happy-dom',
   setupFiles: ['./rstest.setup.tsx'],
   testTimeout: 30_000,
   globals: true,
