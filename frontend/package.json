@@ -29,6 +29,7 @@
     "test:file:unit": "TZ=GMT vitest run --config=vitest.config.unit.mts",
     "test:file:integration": "NODE_OPTIONS='--max_old_space_size=4096 --loader=./tests/css-loader.mjs' TZ=GMT vitest run --config=vitest.config.integration.mts",
     "test:rstest": "TZ=GMT rstest",
+    "test:buntest": "TZ=GMT bun test ./src/components/pages/shadowlinks/edit/shadowlink-edit-page.bun_test_.tsx",
     "type:check": "tsgo --noEmit --incremental --p tsconfig.base.json",
     "type:check:file": "tsgo --noEmit -p tsconfig.base.json",
     "lint": "ultracite fix",
@@ -138,6 +139,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",
+    "@happy-dom/global-registrator": "^20.4.0",
     "@module-federation/enhanced": "^0.22.0",
     "@module-federation/rsbuild-plugin": "^0.22.0",
     "@module-federation/runtime": "^0.22.0",
