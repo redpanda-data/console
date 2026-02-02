@@ -1,6 +1,8 @@
 version: v2
+clean: true
 inputs:
   - directory: proto
+  - module: buf.build/redpandadata/common
 managed:
   enabled: true
   disable:
@@ -38,16 +40,6 @@ plugins:
     opt:
       - paths=source_relative
       - generate_unbound_methods=true
-  - remote: buf.build/bufbuild/es:v2.2.5
-    out: frontend/src/protogen
-    opt: target=ts
-    include_imports: true
   - local: protoc-gen-connect-gateway
     out: backend/pkg/protogen
     opt: paths=source_relative
-  - remote: buf.build/connectrpc/query-es:v2.0.1
-    out: frontend/src/protogen
-    opt:
-      - target=ts
-      - js_import_style=legacy_commonjs
-    include_imports: true

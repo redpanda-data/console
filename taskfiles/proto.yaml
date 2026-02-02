@@ -43,23 +43,22 @@ tasks:
       - install-connect-gateway
       - install-protoc-gen-connectrpc-go
     vars:
-      BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/console/testdata/proto {{.BACKEND_ROOT}}/pkg/console/testdata/proto_update {{.BACKEND_ROOT}}/pkg/serde/testdata/proto {{.BACKEND_ROOT}}/pkg/testutil/testdata/proto
+      # Test proto directories use their own local buf.gen.yaml files
+      TEST_PROTO_DIRS: >-
+        {{.BACKEND_ROOT}}/pkg/console/testdata/proto
+        {{.BACKEND_ROOT}}/pkg/console/testdata/proto_update
+        {{.BACKEND_ROOT}}/pkg/serde/testdata/proto
+        {{.BACKEND_ROOT}}/pkg/testutil/testdata/proto
     cmds:
-      # Delete previously generated files
-      - rm -rf {{.BACKEND_ROOT}}/pkg/protogen
-      - rm -rf {{.BACKEND_ROOT}}/pkg/protogen-remote
-      - rm -rf {{.BACKEND_ROOT}}/pkg/console/testdata/proto/gen
-      - rm -rf {{.BACKEND_ROOT}}/pkg/console/testdata/proto_update/gen
-      - rm -rf {{.FRONTEND_ROOT}}/src/protogen
-      - rm -rf {{.FRONTEND_ROOT}}/src/protogen-remote
       - task: lint
       - task: format
-      - |
-        {{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml
-      - for: { var: BUF_INPUTS }
-        cmd: "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml {{ .ITEM }}"
-      - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml buf.build/redpandadata/common"
-      - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml buf.build/redpandadata/ai-gateway"
+      # Generate backend (Go) - inputs defined in buf.gen.backend.yaml (uses clean: true)
+      - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.backend.yaml"
+      # Generate frontend (TypeScript) - inputs defined in buf.gen.frontend.yaml (uses clean: true)
+      - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.frontend.yaml"
+      # Generate test protos using their local buf.gen.yaml files
+      - for: { var: TEST_PROTO_DIRS }
+        cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
       - task: :backend:fmt
       - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
