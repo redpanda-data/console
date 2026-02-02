@@ -109,7 +109,62 @@ message ListTracesRequest {
       (google.api.field_behavior) = OPTIONAL,
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided."}
     ];
+
+    // Span attribute filters - key is auto-prefixed with "span_attributes." by backend.
+    // Example: key="gen_ai.operation.name" queries span_attributes.gen_ai.operation.name
+    // All attribute filters use AND logic.
+    repeated AttributeFilter attribute_filters = 3 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Span attribute filters. Key is auto-prefixed with 'span_attributes.' by backend. All filters use AND logic."}
+    ];
+
+    // Filter for spans with error status (status_code = STATUS_CODE_ERROR).
+    optional bool has_errors = 4 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "When true, filter for spans with error status."}
+    ];
+
+    // Filter for spans with duration greater than this value (in nanoseconds).
+    optional int64 min_duration_ns = 5 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter for spans with duration greater than this value in nanoseconds."}
+    ];
+
+    // Field 6 was removed (return_full_traces). Partial trace filtering is now done client-side.
+    reserved 6;
   }
+}
+
+// AttributeOperator defines comparison operators for attribute filters.
+enum AttributeOperator {
+  // Unspecified operator - defaults to EQUALS.
+  ATTRIBUTE_OPERATOR_UNSPECIFIED = 0;
+  // Exact match: key = value.
+  ATTRIBUTE_OPERATOR_EQUALS = 1;
+  // Negation: key != value.
+  ATTRIBUTE_OPERATOR_NOT_EQUALS = 2;
+  // Set membership: key IN [value1, value2, ...].
+  ATTRIBUTE_OPERATOR_IN = 3;
+}
+
+// AttributeFilter defines a filter condition for span attributes.
+message AttributeFilter {
+  // Span attribute key (without "span_attributes." prefix).
+  // Backend auto-prefixes with "span_attributes." when querying.
+  // Example: "gen_ai.operation.name" queries span_attributes.gen_ai.operation.name
+  string key = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Span attribute key without prefix. Backend adds 'span_attributes.' prefix."}
+  ];
+
+  // Comparison operator for the filter.
+  AttributeOperator operator = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Comparison operator: EQUALS, NOT_EQUALS, or IN."}];
+
+  // Single value for EQUALS and NOT_EQUALS operators.
+  string value = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Value for EQUALS or NOT_EQUALS comparison."}];
+
+  // Multiple values for IN operator.
+  repeated string values = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Values for IN comparison (key matches any of these values)."}];
 }
 
 // ListTracesResponse is the response message for listing traces.
@@ -140,6 +195,20 @@ message ListTracesResponse {
 
   // Field 6 was removed (histogram). Use GetTraceHistogram RPC instead.
   reserved 6;
+
+  // Span IDs that matched the attribute filters, grouped by trace ID.
+  // Only populated when attribute_filters are active in the request.
+  // Use this to highlight matching spans in the UI or filter to partial traces client-side.
+  map<string, MatchedSpanIds> matched_spans = 7 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of trace_id to span IDs that matched the filters. Only populated when attribute filters are active."}
+  ];
+}
+
+// MatchedSpanIds contains the list of span IDs within a trace that matched the filters.
+message MatchedSpanIds {
+  // List of span IDs that matched the filter criteria.
+  repeated string span_ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Span IDs that matched the attribute filters within this trace."}];
 }
 
 // GetTraceHistogramRequest is the request message for getting the trace histogram.
