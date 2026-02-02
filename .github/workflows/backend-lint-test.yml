@@ -37,3 +37,4 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Unit & Integration Tests
         run: task backend:test-integration
+				
