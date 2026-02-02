@@ -29,7 +29,7 @@ const createMockSpan = (spanId: string, parentSpanId: string, name: string) => (
   name,
   traceId: hexToBytes('00000000000000000000000000000001'),
   startTimeUnixNano: BigInt(0),
-  endTimeUnixNano: BigInt(1000000),
+  endTimeUnixNano: BigInt(1_000_000),
   resource: undefined,
   resourceSchemaUrl: '',
   scope: undefined,
@@ -107,10 +107,7 @@ describe('filterToMatchedAndAncestors', () => {
     ];
 
     // Match both grandchildren - should include both branches + root
-    const result = filterToMatchedAndAncestors(
-      spans,
-      new Set(['0000000000000004', '0000000000000005'])
-    );
+    const result = filterToMatchedAndAncestors(spans, new Set(['0000000000000004', '0000000000000005']));
     expect(result).toHaveLength(5);
   });
 

@@ -22,7 +22,9 @@ import { bytesToHex } from './hex-utils';
  * @returns Filtered spans including matched spans and their ancestors
  */
 export function filterToMatchedAndAncestors(spans: Span[], matchedSpanIds: Set<string>): Span[] {
-  if (matchedSpanIds.size === 0) return spans;
+  if (matchedSpanIds.size === 0) {
+    return spans;
+  }
 
   // Build parentId lookup using hex-encoded span IDs
   const parentMap = new Map<string, string>();
