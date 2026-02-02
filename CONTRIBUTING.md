@@ -1,5 +1,5 @@
 # Contributing to Redpanda Console
-
+ 
 Welcome! This guide is intended to help developers that are new to the community
 navigate the process of making contributions to Redpanda Console. Please be
 sure to also checkout our [code of conduct](https://github.com/redpanda-data/redpanda/blob/dev/CODE_OF_CONDUCT.md).
