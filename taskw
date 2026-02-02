@@ -22,3 +22,4 @@ if ! command -v realpath &>/dev/null; then
 fi
 
 $TASK -d "$SCRIPT_DIR" "$@"
+
