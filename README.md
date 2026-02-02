@@ -1,5 +1,5 @@
 # Redpanda Console – A UI for Data Streaming
-
+ 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/redpanda-data/console?sort=semver)
 [![Docker Repository](https://img.shields.io/badge/docker%20image-ready-green "Docker Repository")](https://hub.docker.com/r/redpandadata/console/tags)
 
