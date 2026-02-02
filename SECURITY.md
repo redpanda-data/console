@@ -1,5 +1,5 @@
 # Redpanda Console Security and Disclosure Information
-
+ 
 As with any complex system, it is certain that bugs will be found, some of them security-relevant.
 If you find a _security bug_ please report it privately via email to security@redpanda.com. We will fix the issue as soon
 as possible and coordinate a release date with you. You will be able to choose if you want public acknowledgement of
