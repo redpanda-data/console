@@ -29,3 +29,4 @@ plugins:
       - proto3_optional_nullable=true
       - openapi_naming_strategy=simple
       - disable_default_responses=true
+
