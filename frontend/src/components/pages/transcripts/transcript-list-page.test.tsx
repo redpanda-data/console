@@ -29,11 +29,8 @@ import {
   createMockTranscript,
   createMockTranscriptSummary,
   REGEX_COMPLETED_TRANSCRIPT,
-  REGEX_ERROR,
   REGEX_NO_TRANSCRIPTS_FOUND,
   REGEX_NO_TRANSCRIPTS_RECORDED,
-  REGEX_SERVICE,
-  REGEX_STATUS,
   renderTranscriptListPage,
   setupTransport,
 } from './transcript-list-page.test-helpers';
@@ -122,129 +119,57 @@ describe('TranscriptListPage', () => {
     });
   });
 
-  describe('Filtering and Search', () => {
-    test('should filter transcripts by text search', async () => {
-      const user = userEvent.setup();
-
-      const transcript1 = createMockTranscriptSummary({
-        traceId: 'a1b2c3d4e5f6g7h8',
-        rootSpanName: 'ai-agent-operation',
-        rootServiceName: 'ai-agent',
-      });
-
-      const transcript2 = createMockTranscriptSummary({
-        traceId: 'b2c3d4e5f6g7h8i9',
-        rootSpanName: 'data-operation',
-        rootServiceName: 'data-service',
-      });
-
-      const { transport } = setupTransport({
-        listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [transcript1, transcript2],
-          nextPageToken: '',
-        }),
-      });
-
-      renderTranscriptListPage(transport);
-
-      expect(await screen.findByText('ai-agent-operation')).toBeVisible();
-      expect(await screen.findByText('data-operation')).toBeVisible();
-
-      // Type in search input
-      const searchInput = screen.getByPlaceholderText('Search transcripts...');
-      await user.type(searchInput, 'ai-agent');
-
-      // Only ai-agent transcript should be visible
-      expect(await screen.findByText('ai-agent-operation')).toBeVisible();
-      expect(screen.queryByText('data-operation')).not.toBeInTheDocument();
-    });
-
-    test('should render service filter when multiple services exist', async () => {
+  describe('Filter Bar', () => {
+    test('should render preset filter buttons', async () => {
       const transcript1 = createMockTranscriptSummary({
         traceId: 'transcript1',
         rootSpanName: 'operation-1',
         rootServiceName: 'ai-agent',
       });
 
-      const transcript2 = createMockTranscriptSummary({
-        traceId: 'transcript2',
-        rootSpanName: 'operation-2',
-        rootServiceName: 'data-service',
-      });
-
-      const listTracesResponse = create(ListTracesResponseSchema, {
-        traces: [transcript1, transcript2],
-        nextPageToken: '',
-      });
-
-      const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
-      const getTraceMock = vi.fn();
-
-      const getTraceHistogramMock = vi
-        .fn()
-        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
-
-      const transport = createRouterTransport(({ rpc }) => {
-        rpc(listTraces, listTracesMock);
-        rpc(getTrace, getTraceMock);
-        rpc(getTraceHistogram, getTraceHistogramMock);
+      const { transport } = setupTransport({
+        listTracesResponse: create(ListTracesResponseSchema, {
+          traces: [transcript1],
+          nextPageToken: '',
+        }),
       });
 
       renderTranscriptListPage(transport);
 
       await waitFor(() => {
         expect(screen.getByText('operation-1')).toBeVisible();
-        expect(screen.getByText('operation-2')).toBeVisible();
       });
 
-      // Verify service filter appears (look for the Filter button specifically)
-      const filterButtons = screen.getAllByRole('button', { name: REGEX_SERVICE });
-      expect(filterButtons.length).toBeGreaterThan(0);
+      // Verify preset filter buttons are present
+      expect(screen.getByRole('button', { name: /LLM Calls/i })).toBeVisible();
+      expect(screen.getByRole('button', { name: /Tool Calls/i })).toBeVisible();
+      expect(screen.getByRole('button', { name: /Agent Spans/i })).toBeVisible();
+      expect(screen.getByRole('button', { name: /Errors Only/i })).toBeVisible();
+      expect(screen.getByRole('button', { name: /Slow/i })).toBeVisible();
     });
 
-    test('should render status filter', async () => {
-      const completedTranscript = createMockTranscriptSummary({
+    test('should render attribute filter button', async () => {
+      const transcript1 = createMockTranscriptSummary({
         traceId: 'transcript1',
-        rootSpanName: 'completed-operation',
-        errorCount: 0,
-        spanCount: 5,
+        rootSpanName: 'operation-1',
+        rootServiceName: 'ai-agent',
       });
 
-      const errorTranscript = createMockTranscriptSummary({
-        traceId: 'transcript2',
-        rootSpanName: 'error-operation',
-        errorCount: 2,
-        spanCount: 5,
-      });
-
-      const listTracesResponse = create(ListTracesResponseSchema, {
-        traces: [completedTranscript, errorTranscript],
-        nextPageToken: '',
-      });
-
-      const listTracesMock = vi.fn().mockReturnValue(listTracesResponse);
-      const getTraceMock = vi.fn();
-
-      const getTraceHistogramMock = vi
-        .fn()
-        .mockReturnValue(create(GetTraceHistogramResponseSchema, { histogram: undefined, totalCount: 0 }));
-
-      const transport = createRouterTransport(({ rpc }) => {
-        rpc(listTraces, listTracesMock);
-        rpc(getTrace, getTraceMock);
-        rpc(getTraceHistogram, getTraceHistogramMock);
+      const { transport } = setupTransport({
+        listTracesResponse: create(ListTracesResponseSchema, {
+          traces: [transcript1],
+          nextPageToken: '',
+        }),
       });
 
       renderTranscriptListPage(transport);
 
       await waitFor(() => {
-        expect(screen.getByText('completed-operation')).toBeVisible();
-        expect(screen.getByText('error-operation')).toBeVisible();
+        expect(screen.getByText('operation-1')).toBeVisible();
       });
 
-      // Verify status filter appears
-      const statusButtons = screen.getAllByRole('button', { name: REGEX_STATUS });
-      expect(statusButtons.length).toBeGreaterThan(0);
+      // Verify attribute filter button is present
+      expect(screen.getByRole('button', { name: /Attribute/i })).toBeVisible();
     });
   });
 
@@ -437,8 +362,8 @@ describe('TranscriptListPage', () => {
         expect(listTracesMock).toHaveBeenCalled();
       });
 
-      // The component should display an error message
-      expect(await screen.findByText(REGEX_ERROR)).toBeVisible();
+      // The component should display an error message (specific to loading failure, not the "Errors Only" button)
+      expect(await screen.findByText(/Error loading transcripts/i)).toBeVisible();
     });
   });
 });

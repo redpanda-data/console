@@ -10,41 +10,31 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import type { ColumnDef, ColumnFiltersState } from '@tanstack/react-table';
-import {
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTableFacetedFilter } from 'components/redpanda-ui/components/data-table';
-import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading, Link, Small, Text } from 'components/redpanda-ui/components/typography';
-import { ArrowLeft, Database, RefreshCw, X } from 'lucide-react';
+import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { runInAction } from 'mobx';
-import { parseAsString, useQueryStates } from 'nuqs';
-import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
-import type { ChangeEvent, FC } from 'react';
+import { parseAsArrayOf, parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
+import {
+  type AttributeFilter,
+  AttributeOperator,
+  type ListTracesRequest_Filter,
+  type TraceSummary,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceHistogramQuery, useGetTraceQuery, useListTracesQuery } from 'react-query/api/tracing';
 import { ONE_MINUTE } from 'react-query/react-query.utils';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
 import { pluralize } from 'utils/string';
+import { z } from 'zod';
 
 import { LinkedTraceBanner } from './components/linked-trace-banner';
 import { TranscriptActivityChart, TranscriptActivityChartSkeleton } from './components/transcript-activity-chart';
-import { type EnhancedTranscriptSummary, statusOptions, TranscriptsTable } from './components/transcripts-table';
+import { type SpanFilter, type SpanFilterPreset, TranscriptFilterBar } from './components/transcript-filter-bar';
+import { TranscriptsTable } from './components/transcripts-table';
 import { calculateVisibleWindow } from './utils/transcript-statistics';
 
 const TIME_RANGES = [
@@ -157,29 +147,6 @@ const LoadMoreButton: FC<LoadMoreButtonProps> = ({ hasMore, isLoading, isLoading
   );
 };
 
-/** Props for trace list toolbar */
-type TraceListToolbarProps = {
-  jumpedTo: JumpedState;
-  onBackToNewest: () => void;
-  searchValue: string;
-  onSearchChange: (value: string) => void;
-  serviceColumn: ReturnType<typeof useReactTable<EnhancedTranscriptSummary>>['getColumn'] extends (
-    id: string
-  ) => infer R
-    ? R
-    : never;
-  statusColumn: ReturnType<typeof useReactTable<EnhancedTranscriptSummary>>['getColumn'] extends (id: string) => infer R
-    ? R
-    : never;
-  serviceOptions: { value: string; label: string; icon: typeof Database }[];
-  isFiltered: boolean;
-  onResetFilters: () => void;
-  timeRange: string;
-  onTimeRangeChange: (value: string) => void;
-  isLoading: boolean;
-  onRefresh: () => void;
-};
-
 /** State for tracking jumped-to time range */
 type JumpedState = {
   startMs: number;
@@ -187,69 +154,122 @@ type JumpedState = {
   label: string;
 } | null;
 
-/** Toolbar component for trace list page */
-const TraceListToolbar: FC<TraceListToolbarProps> = ({
-  jumpedTo,
-  onBackToNewest,
-  searchValue,
-  onSearchChange,
-  serviceColumn,
-  statusColumn,
-  serviceOptions,
-  isFiltered,
-  onResetFilters,
-  timeRange,
-  onTimeRangeChange,
-  isLoading,
-  onRefresh,
-}) => (
-  <div className="flex items-center justify-between gap-2">
-    <div className="flex flex-1 items-center gap-2">
-      {jumpedTo !== null ? (
-        <Button className="h-8 gap-1.5" onClick={onBackToNewest} size="sm" variant="outline">
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to newest
-        </Button>
-      ) : null}
-      <Input
-        className="h-8 w-[300px]"
-        onChange={(e: ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value)}
-        placeholder="Search transcripts..."
-        value={searchValue}
-      />
-      {serviceColumn && serviceOptions.length > 0 ? (
-        <DataTableFacetedFilter column={serviceColumn} options={serviceOptions} title="Service" />
-      ) : null}
-      {statusColumn ? <DataTableFacetedFilter column={statusColumn} options={statusOptions} title="Status" /> : null}
-      {isFiltered ? (
-        <Button onClick={onResetFilters} size="sm" variant="ghost">
-          Reset
-          <X className="ml-2 h-4 w-4" />
-        </Button>
-      ) : null}
-    </div>
-    <div className="flex items-center gap-2">
-      {jumpedTo !== null ? (
-        <Small className="rounded bg-muted px-2 py-1 text-muted-foreground">Viewing: {jumpedTo.label}</Small>
-      ) : null}
-      <Select disabled={jumpedTo !== null} onValueChange={onTimeRangeChange} value={timeRange}>
-        <SelectTrigger className="h-8 w-[140px] text-xs">
-          <SelectValue placeholder="Time range" />
-        </SelectTrigger>
-        <SelectContent>
-          {TIME_RANGES.map((range) => (
-            <SelectItem key={range.value} value={range.value}>
-              {range.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button className="h-8 w-8" disabled={isLoading} onClick={onRefresh} size="icon" variant="outline">
-        <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-      </Button>
-    </div>
-  </div>
-);
+/** Zod schema for URL attribute filters - provides validation and type safety */
+const UrlAttributeFilterSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  op: z.enum(['equals', 'not_equals']),
+  value: z.string(),
+});
+
+const UrlAttributeFiltersSchema = z.array(UrlAttributeFilterSchema);
+
+/** URL-serializable attribute filter type (inferred from schema) */
+type UrlAttributeFilter = z.infer<typeof UrlAttributeFilterSchema>;
+
+// Slow threshold: 5 seconds in nanoseconds
+const SLOW_THRESHOLD_NS = BigInt(5_000_000_000);
+
+/**
+ * Encode filters to base64 string for URL storage.
+ * Base64 encoding prevents TanStack Router from pre-parsing JSON-like strings.
+ */
+const encodeAttrFilters = (filters: UrlAttributeFilter[]): string | null => {
+  if (filters.length === 0) return null;
+  // Use btoa with encodeURIComponent for unicode safety
+  return btoa(unescape(encodeURIComponent(JSON.stringify(filters))));
+};
+
+/**
+ * Decode base64 string to attribute filters with Zod validation.
+ * Returns empty array on invalid input.
+ */
+const decodeAttrFilters = (encoded: string | null): UrlAttributeFilter[] => {
+  if (!encoded) return [];
+  try {
+    // Decode base64, then parse JSON
+    const json = decodeURIComponent(escape(atob(encoded)));
+    const data = JSON.parse(json);
+    const result = UrlAttributeFiltersSchema.safeParse(data);
+    return result.success ? result.data : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Build API filter from UI state.
+ * Converts quick filters (LLM, Tool, Agent, Error, Slow) to API filter fields.
+ */
+type BuildApiFilterParams = {
+  startTimestamp: ReturnType<typeof timestampFromMs>;
+  endTimestamp: ReturnType<typeof timestampFromMs>;
+  activePresets: SpanFilterPreset[];
+  urlAttrFilters: UrlAttributeFilter[];
+};
+
+const buildApiFilter = ({
+  startTimestamp,
+  endTimestamp,
+  activePresets,
+  urlAttrFilters,
+}: BuildApiFilterParams): ListTracesRequest_Filter => {
+  const attributeFilters: AttributeFilter[] = [];
+
+  // LLM filter → attribute filter with IN operator
+  if (activePresets.includes('llm')) {
+    attributeFilters.push({
+      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
+      key: 'gen_ai.operation.name',
+      operator: AttributeOperator.IN,
+      value: '',
+      values: ['chat', 'text_completion'],
+    });
+  }
+
+  // Tool filter → attribute filter
+  if (activePresets.includes('tool')) {
+    attributeFilters.push({
+      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
+      key: 'gen_ai.operation.name',
+      operator: AttributeOperator.EQUALS,
+      value: 'execute_tool',
+      values: [],
+    });
+  }
+
+  // Agent filter → attribute filter
+  if (activePresets.includes('agent')) {
+    attributeFilters.push({
+      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
+      key: 'gen_ai.operation.name',
+      operator: AttributeOperator.EQUALS,
+      value: 'invoke_agent',
+      values: [],
+    });
+  }
+
+  // Add user-defined attribute filters
+  for (const f of urlAttrFilters) {
+    attributeFilters.push({
+      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
+      key: f.key,
+      operator: f.op === 'equals' ? AttributeOperator.EQUALS : AttributeOperator.NOT_EQUALS,
+      value: f.value,
+      values: [],
+    });
+  }
+
+  return {
+    $typeName: 'redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter',
+    startTime: startTimestamp,
+    endTime: endTimestamp,
+    attributeFilters,
+    // Error and Slow use dedicated fields (not attribute filters)
+    hasErrors: activePresets.includes('error') ? true : undefined,
+    minDurationNs: activePresets.includes('slow') ? SLOW_THRESHOLD_NS : undefined,
+  };
+};
 
 type TranscriptListPageProps = {
   /**
@@ -263,17 +283,80 @@ type TranscriptListPageProps = {
 
 export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFaceting = false }) => {
   // URL state - batched for efficient updates
+  // Note: attrFilters is stored as a JSON string to avoid nuqs/TanStack Router adapter issues
   const [urlState, setUrlState] = useQueryStates({
     traceId: parseAsString,
     spanId: parseAsString,
     tab: parseAsString,
     timeRange: parseAsString.withDefault('1h'),
+    // Filter state
+    presets: parseAsArrayOf(parseAsString).withDefault([]),
+    attrFilters: parseAsString, // JSON string, parsed manually
+    fullTraces: parseAsBoolean.withDefault(true),
   });
-  const { traceId: selectedTraceId, spanId: selectedSpanId, timeRange } = urlState;
+  const {
+    traceId: selectedTraceId,
+    spanId: selectedSpanId,
+    timeRange,
+    presets: activePresets,
+    attrFilters: attrFiltersJson,
+    fullTraces: showFullTraces,
+  } = urlState;
+
+  // Decode the base64-encoded filters from URL
+  const urlAttrFilters = useMemo(() => decodeAttrFilters(attrFiltersJson), [attrFiltersJson]);
 
   // Wrapper setters for components that need individual setters
   const setSelectedTraceId = useCallback((value: string | null) => setUrlState({ traceId: value }), [setUrlState]);
   const setSelectedSpanId = useCallback((value: string | null) => setUrlState({ spanId: value }), [setUrlState]);
+
+  // Filter state callbacks
+  const handlePresetsChange = useCallback(
+    (presets: string[]) => setUrlState({ presets: presets as SpanFilterPreset[] }),
+    [setUrlState]
+  );
+  const handleShowFullTracesChange = useCallback((show: boolean) => setUrlState({ fullTraces: show }), [setUrlState]);
+
+  // Convert URL attribute filters to SpanFilter format for the filter bar
+  const attributeFilters: SpanFilter[] = useMemo(() => {
+    const getOpLabel = (op: 'equals' | 'not_equals'): string => {
+      const labels: Record<'equals' | 'not_equals', string> = {
+        equals: '=',
+        not_equals: '!=',
+      };
+      return labels[op];
+    };
+
+    return urlAttrFilters.map((f) => ({
+      id: f.id,
+      type: 'attribute' as const,
+      label: `${f.key} ${getOpLabel(f.op)} ${f.value}`,
+      attributeKey: f.key,
+      operator: f.op,
+      value: f.value,
+    }));
+  }, [urlAttrFilters]);
+
+  const handleAttributeFiltersChange = useCallback(
+    (filters: SpanFilter[]) => {
+      const urlFilters: UrlAttributeFilter[] = filters
+        .filter(
+          (
+            f
+          ): f is SpanFilter & { attributeKey: string; operator: NonNullable<SpanFilter['operator']>; value: string } =>
+            f.type === 'attribute' && !!f.attributeKey && !!f.operator && !!f.value
+        )
+        .map((f) => ({
+          id: f.id,
+          key: f.attributeKey,
+          op: f.operator,
+          value: f.value,
+        }));
+      // Encode to base64 to prevent TanStack Router from pre-parsing JSON
+      setUrlState({ attrFilters: encodeAttrFilters(urlFilters) });
+    },
+    [setUrlState]
+  );
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -342,6 +425,18 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     };
   }, [nowMs, selectedRange.ms, jumpedTo]);
 
+  // Build API filter from UI state - used for both list and histogram queries
+  const apiFilter = useMemo(
+    () =>
+      buildApiFilter({
+        startTimestamp: timestamps.startTimestamp,
+        endTimestamp: timestamps.endTimestamp,
+        activePresets: (activePresets || []) as SpanFilterPreset[],
+        urlAttrFilters,
+      }),
+    [timestamps.startTimestamp, timestamps.endTimestamp, activePresets, urlAttrFilters]
+  );
+
   // Query for the main time range (or jumped range)
   // In linked trace mode, skip this query - we use useGetTraceQuery instead
   const {
@@ -352,10 +447,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     {
       pageSize: TRANSCRIPTS_PAGE_SIZE,
       pageToken: currentPageToken,
-      filter: {
-        startTime: timestamps.startTimestamp,
-        endTime: timestamps.endTimestamp,
-      },
+      filter: apiFilter,
     },
     { enabled: !isLinkedTraceMode }
   );
@@ -403,12 +495,21 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     };
   }, [isLinkedTraceMode, activeTraceTimeMs, timestamps.startTimestamp, timestamps.endTimestamp]);
 
-  // Separate histogram query
+  // Build histogram filter (same filters but potentially different time range for linked mode)
+  const histogramFilter = useMemo(
+    () =>
+      buildApiFilter({
+        startTimestamp: histogramTimestamps.startTimestamp,
+        endTimestamp: histogramTimestamps.endTimestamp,
+        activePresets: (activePresets || []) as SpanFilterPreset[],
+        urlAttrFilters,
+      }),
+    [histogramTimestamps.startTimestamp, histogramTimestamps.endTimestamp, activePresets, urlAttrFilters]
+  );
+
+  // Separate histogram query - uses same filters as list query for consistency
   const { data: histogramData, isLoading: isHistogramLoading } = useGetTraceHistogramQuery({
-    filter: {
-      startTime: histogramTimestamps.startTimestamp,
-      endTime: histogramTimestamps.endTimestamp,
-    },
+    filter: histogramFilter,
   });
 
   // Accumulate traces when data changes
@@ -478,97 +579,6 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     const withErrors = traces.filter((t) => t.errorCount > 0).length;
     return { completed, inProgress, withErrors, total: traces.length };
   }, [displayTraces]);
-
-  // Enhance traces with searchable field and status for filtering
-  const enhancedTraces = useMemo(
-    () =>
-      displayTraces.map((trace): EnhancedTranscriptSummary => {
-        let status: EnhancedTranscriptSummary['status'];
-        if (trace.errorCount > 0) {
-          status = 'with-errors';
-        } else if (trace.spanCount === 0) {
-          status = 'in-progress';
-        } else {
-          status = 'completed';
-        }
-
-        return {
-          ...trace,
-          searchable: `${trace.traceId} ${trace.rootSpanName} ${trace.rootServiceName}`,
-          status,
-        };
-      }),
-    [displayTraces]
-  );
-
-  // Stable filter functions to prevent table model rebuilds
-  const serviceNameFilterFn = useCallback(
-    (row: { getValue: (id: string) => string }, id: string, value: string[]) => value.includes(row.getValue(id)),
-    []
-  );
-
-  const statusFilterFn = useCallback(
-    (row: { getValue: (id: string) => string }, id: string, value: string[]) => value.includes(row.getValue(id)),
-    []
-  );
-
-  // Memoize columns array to prevent recreation on every render
-  const columns = useMemo<ColumnDef<EnhancedTranscriptSummary>[]>(
-    () => [
-      {
-        accessorKey: 'searchable',
-        filterFn: 'includesString',
-      },
-      {
-        accessorKey: 'rootServiceName',
-        filterFn: serviceNameFilterFn,
-      },
-      {
-        accessorKey: 'status',
-        filterFn: statusFilterFn,
-      },
-    ],
-    [serviceNameFilterFn, statusFilterFn]
-  );
-
-  // Memoize table state to prevent recreation on every render
-  const tableState = useMemo(
-    () => ({
-      columnFilters,
-    }),
-    [columnFilters]
-  );
-
-  // Create table instance for toolbar filters
-  const table = useReactTable<EnhancedTranscriptSummary>({
-    data: enhancedTraces,
-    columns,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    state: tableState,
-  });
-
-  // Generate service name options from ALL traces (not filtered)
-  const serviceOptions = useMemo(() => {
-    const uniqueServices = new Set<string>();
-    for (const trace of displayTraces) {
-      if (trace.rootServiceName) {
-        uniqueServices.add(trace.rootServiceName);
-      }
-    }
-    return Array.from(uniqueServices)
-      .sort()
-      .map((serviceName) => ({
-        value: serviceName,
-        label: serviceName,
-        icon: Database,
-      }));
-  }, [displayTraces]);
-
-  const isFiltered = columnFilters.length > 0;
 
   const handleRefresh = () => {
     // Update the time window to "now" and reset state
@@ -682,20 +692,19 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         </Text>
       </header>
 
-      {/* Toolbar with Search Controls and Time Range */}
-      <TraceListToolbar
-        isFiltered={isFiltered}
+      {/* Toolbar with Span Filters, Time Range, and Controls */}
+      <TranscriptFilterBar
+        activePresets={(activePresets || []) as SpanFilterPreset[]}
+        attributeFilters={attributeFilters}
         isLoading={isLoading}
         jumpedTo={jumpedTo}
+        onAttributeFiltersChange={handleAttributeFiltersChange}
         onBackToNewest={handleBackToNewest}
+        onPresetsChange={handlePresetsChange}
         onRefresh={handleRefresh}
-        onResetFilters={() => table.resetColumnFilters()}
-        onSearchChange={(value) => table.getColumn('searchable')?.setFilterValue(value)}
+        onShowFullTracesChange={handleShowFullTracesChange}
         onTimeRangeChange={handleTimeRangeChange}
-        searchValue={(table.getColumn('searchable')?.getFilterValue() as string) ?? ''}
-        serviceColumn={table.getColumn('rootServiceName')}
-        serviceOptions={serviceOptions}
-        statusColumn={table.getColumn('status')}
+        showFullTraces={showFullTraces ?? true}
         timeRange={timeRange}
       />
 
@@ -760,12 +769,14 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
           hideToolbar
           isLoading={isLoading && currentPageToken === ''}
           linkedTraceData={isLinkedTraceMode ? linkedTraceData?.trace : undefined}
+          matchedSpans={data?.matchedSpans}
           onSpanClick={handleSpanClick}
           selectedSpanId={selectedSpanId}
           selectedTraceId={selectedTraceId}
           setColumnFilters={setColumnFilters}
           setSelectedSpanId={setSelectedSpanId}
           setSelectedTraceId={setSelectedTraceId}
+          showFullTraces={showFullTraces ?? true}
           timeRange={jumpedTo ? jumpedTo.label : selectedRange.label}
           traces={displayTraces}
         />
