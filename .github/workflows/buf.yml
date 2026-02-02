@@ -117,3 +117,4 @@ jobs:
           token: ${{ env.BUF_TOKEN }}
         # Don't fail the workflow if label doesn't exist
         continue-on-error: true
+
