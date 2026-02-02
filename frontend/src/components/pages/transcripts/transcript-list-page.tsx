@@ -175,7 +175,9 @@ const SLOW_THRESHOLD_NS = BigInt(5_000_000_000);
  * Base64 encoding prevents TanStack Router from pre-parsing JSON-like strings.
  */
 const encodeAttrFilters = (filters: UrlAttributeFilter[]): string | null => {
-  if (filters.length === 0) return null;
+  if (filters.length === 0) {
+    return null;
+  }
   // Use btoa with encodeURIComponent for unicode safety
   return btoa(unescape(encodeURIComponent(JSON.stringify(filters))));
 };
@@ -185,7 +187,9 @@ const encodeAttrFilters = (filters: UrlAttributeFilter[]): string | null => {
  * Returns empty array on invalid input.
  */
 const decodeAttrFilters = (encoded: string | null): UrlAttributeFilter[] => {
-  if (!encoded) return [];
+  if (!encoded) {
+    return [];
+  }
   try {
     // Decode base64, then parse JSON
     const json = decodeURIComponent(escape(atob(encoded)));
@@ -679,6 +683,16 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   const displayHistogram = histogramData?.histogram;
   const displayTotalCount = histogramData?.totalCount ?? 0;
 
+  // Pre-compute chart query times to avoid nested ternaries in JSX
+  const chartQueryEndMs =
+    isLinkedTraceMode && activeTraceTimeMs
+      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, Date.now())
+      : (jumpedTo?.endMs ?? timestamps.endMs);
+  const chartQueryStartMs =
+    isLinkedTraceMode && activeTraceTimeMs
+      ? activeTraceTimeMs - 60 * 60 * 1000
+      : (jumpedTo?.startMs ?? timestamps.startMs);
+
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-2">
@@ -709,7 +723,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
       />
 
       {/* Activity Chart - Show skeleton while loading, then chart if data exists */}
-      {isHistogramLoading && <TranscriptActivityChartSkeleton />}
+      {isHistogramLoading ? <TranscriptActivityChartSkeleton /> : null}
       {!isHistogramLoading && displayHistogram && displayHistogram.buckets.length > 0 && (
         <TranscriptActivityChart
           highlightedTraceTimeMs={activeTraceTimeMs}
@@ -717,20 +731,8 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
           isViewingLatest={isViewingLiveHead}
           loadedCount={accumulatedTraces.length}
           onBucketClick={jumpedTo || isLinkedTraceMode ? undefined : handleBucketClick}
-          queryEndMs={
-            isLinkedTraceMode && activeTraceTimeMs
-              ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, Date.now())
-              : jumpedTo
-                ? jumpedTo.endMs
-                : timestamps.endMs
-          }
-          queryStartMs={
-            isLinkedTraceMode && activeTraceTimeMs
-              ? activeTraceTimeMs - 60 * 60 * 1000
-              : jumpedTo
-                ? jumpedTo.startMs
-                : timestamps.startMs
-          }
+          queryEndMs={chartQueryEndMs}
+          queryStartMs={chartQueryStartMs}
           returnedEndTime={visibleWindow.endMs > 0 ? timestampFromMs(visibleWindow.endMs) : undefined}
           returnedStartTime={visibleWindow.startMs > 0 ? timestampFromMs(visibleWindow.startMs) : undefined}
           totalCount={displayTotalCount}
@@ -750,13 +752,13 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         )}
 
         {/* Linked Trace Banner - shown when viewing a linked trace */}
-        {isLinkedTraceMode && selectedTraceId && (
+        {isLinkedTraceMode && selectedTraceId ? (
           <LinkedTraceBanner
             onDismiss={handleDismissLinkedTrace}
             onViewSurrounding={handleViewSurrounding}
             traceId={selectedTraceId}
           />
-        )}
+        ) : null}
 
         {/* Traces Table with external toolbar */}
         <TranscriptsTable

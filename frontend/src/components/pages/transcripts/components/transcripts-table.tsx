@@ -1013,9 +1013,13 @@ export const TranscriptsTable: FC<Props> = ({
   // Convert matchedSpans from API response to a lookup function
   const getMatchedSpanIds = useCallback(
     (traceId: string): Set<string> | undefined => {
-      if (!matchedSpans) return;
+      if (!matchedSpans) {
+        return;
+      }
       const matched = matchedSpans[traceId];
-      if (!matched?.spanIds?.length) return;
+      if (!matched?.spanIds?.length) {
+        return;
+      }
       return new Set(matched.spanIds);
     },
     [matchedSpans]
