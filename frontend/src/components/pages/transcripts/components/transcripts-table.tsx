@@ -41,7 +41,7 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { MatchedSpanIds, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -55,6 +55,7 @@ import {
 } from './selectable-row-styles';
 import { TranscriptDetailsSheet } from './transcript-details-sheet';
 import { getIconForServiceName, getServiceName } from '../utils/span-classifier';
+import { filterToMatchedAndAncestors } from '../utils/span-filter';
 import {
   buildSpanTree,
   calculateOffset,
@@ -165,6 +166,10 @@ type Props = {
   autoExpandTraceId?: string | null;
   /** Optional: Pre-fetched trace data for linked mode (to avoid re-fetching) */
   linkedTraceData?: { traceId: string; spans: Span[]; summary?: TraceSummary } | null;
+  /** Optional: Matched spans from API response (for filter highlighting) */
+  matchedSpans?: { [key: string]: MatchedSpanIds };
+  /** Whether to show full traces or only matched spans with ancestors */
+  showFullTraces?: boolean;
 };
 
 // Helper: Calculate next parent depths for child spans
@@ -267,7 +272,7 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
         );
       })}
 
-      {/* Chevron button as final tree column */}
+      {/* Chevron toggle as final tree column - using div to avoid nested button warning */}
       <div
         className="relative flex h-8 w-5 shrink-0 items-center"
         style={{ '--tree-x': '11px' } as React.CSSProperties}
@@ -275,25 +280,24 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
         {!!(isExpanded && hasChildren) && (
           <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
         )}
-        <Button
-          aria-expanded={hasChildren ? isExpanded : undefined}
-          aria-label={hasChildren ? `${isExpanded ? 'Collapse' : 'Expand'} child spans` : undefined}
-          className={cn('absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2', !hasChildren && 'invisible')}
+        <div
+          aria-hidden="true"
+          className={cn(
+            'absolute z-10 flex h-4 w-4 shrink-0 -translate-x-1/2 items-center justify-center rounded-sm hover:bg-accent',
+            !hasChildren && 'invisible'
+          )}
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
-          size="icon"
           style={{ left: 'var(--tree-x)' }}
-          tabIndex={hasChildren ? 0 : -1}
-          variant="ghost"
         >
           {isExpanded ? (
             <ChevronDown aria-hidden="true" className="h-3 w-3" />
           ) : (
             <ChevronRight aria-hidden="true" className="h-3 w-3" />
           )}
-        </Button>
+        </div>
       </div>
     </div>
   );
@@ -315,6 +319,10 @@ type SpanRowProps = {
   expandedSpans?: Set<string>;
   toggleSpan?: (spanId: string) => void;
   selectedSpanId: string | null | undefined;
+  /** Whether this span matched the active filters (for highlighting) */
+  isMatchedByFilter?: boolean;
+  /** Set of matched span IDs for propagating to children */
+  matchedSpanIds?: Set<string>;
 };
 
 const SpanRow: FC<SpanRowProps> = ({
@@ -332,6 +340,8 @@ const SpanRow: FC<SpanRowProps> = ({
   expandedSpans,
   toggleSpan,
   selectedSpanId,
+  isMatchedByFilter,
+  matchedSpanIds,
 }) => {
   // Calculate relative position within trace using helper functions
   const barStart = calculateOffset(span.startTime, timeline);
@@ -347,18 +357,27 @@ const SpanRow: FC<SpanRowProps> = ({
   // Check if this span is selected
   const isSelected = selectedSpanId === span.spanId;
 
+  // Determine if this is an unmatched parent span (dimmed when filters active but not matching)
+  const hasActiveFilters = matchedSpanIds && matchedSpanIds.size > 0;
+  const isUnmatchedParent = hasActiveFilters && !isMatchedByFilter;
+
   return (
     <>
       <button
         aria-current={isSelected ? 'true' : undefined}
-        aria-label={`View span ${span.name}${span.hasError ? ', has error' : ''}`}
+        aria-label={`View span ${span.name}${span.hasError ? ', has error' : ''}${isMatchedByFilter ? ', matches filter' : ''}`}
         className={cn(
           selectableRowBase,
           selectableRowHover,
           selectableRowSelected,
           selectableRowFocus,
-          'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]'
+          'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]',
+          // Highlight matched spans with a subtle muted background (distinct from blue selection color)
+          isMatchedByFilter && 'border-l-2 border-l-muted-foreground/40 bg-muted/25 dark:bg-muted/20',
+          // Dim unmatched parent spans
+          isUnmatchedParent && 'opacity-50'
         )}
+        data-matched={isMatchedByFilter}
         data-selected={isSelected}
         data-testid={`span-row-${span.spanId}`}
         onClick={() => onClick(traceId, span.spanId)}
@@ -456,6 +475,7 @@ const SpanRow: FC<SpanRowProps> = ({
               isExpanded={expandedSpans.has(child.spanId)}
               isLastChild={index === span.children.length - 1}
               key={child.spanId}
+              matchedSpanIds={matchedSpanIds}
               onClick={onClick}
               onToggle={() => toggleSpan(child.spanId)}
               parentDepths={nextParentDepths}
@@ -549,6 +569,7 @@ const SpanRowWrapper: FC<{
   expandedSpans: Set<string>;
   toggleSpan: (spanId: string) => void;
   selectedSpanId: string | null | undefined;
+  matchedSpanIds?: Set<string>;
 }> = ({
   span,
   depth,
@@ -563,8 +584,10 @@ const SpanRowWrapper: FC<{
   expandedSpans,
   toggleSpan,
   selectedSpanId,
+  matchedSpanIds,
 }) => {
   const hasChildren = span.children && span.children.length > 0;
+  const isMatchedByFilter = matchedSpanIds?.has(span.spanId);
 
   return (
     <SpanRow
@@ -574,6 +597,8 @@ const SpanRowWrapper: FC<{
       hasChildren={hasChildren}
       isExpanded={isExpanded}
       isLastChild={isLastChild}
+      isMatchedByFilter={isMatchedByFilter}
+      matchedSpanIds={matchedSpanIds}
       onClick={onClick}
       onToggle={onToggle}
       parentDepths={parentDepths}
@@ -721,24 +746,22 @@ const RootTraceRow: FC<{
           {isExpanded && spanTreeLength > 0 && (
             <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
           )}
-          <Button
+          {/* Using div instead of Button to avoid nested button warning - parent button handles interaction */}
+          <div
             aria-hidden="true"
-            className="absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2"
+            className="absolute z-10 flex h-4 w-4 shrink-0 -translate-x-1/2 items-center justify-center rounded-sm hover:bg-accent"
             onClick={(e) => {
               e.stopPropagation();
               onToggle();
             }}
-            size="icon"
             style={{ left: 'var(--tree-x)' }}
-            tabIndex={-1}
-            variant="ghost"
           >
             {isExpanded ? (
               <ChevronDown aria-hidden="true" className="h-3 w-3" />
             ) : (
               <ChevronRight aria-hidden="true" className="h-3 w-3" />
             )}
-          </Button>
+          </div>
         </div>
 
         {/* Service badge or incomplete badge */}
@@ -798,6 +821,7 @@ const ExpandedSpansContent: FC<{
   onSpanClick: (traceId: string, spanId: string) => void;
   traceId: string;
   selectedSpanId: string | null | undefined;
+  matchedSpanIds?: Set<string>;
 }> = ({
   isLoading,
   error,
@@ -809,6 +833,7 @@ const ExpandedSpansContent: FC<{
   onSpanClick,
   traceId,
   selectedSpanId,
+  matchedSpanIds,
 }) => {
   if (isLoading) {
     return (
@@ -842,6 +867,7 @@ const ExpandedSpansContent: FC<{
           isExpanded={expandedSpans.has(span.spanId)}
           isLastChild={index === spanTree.length - 1}
           key={span.spanId}
+          matchedSpanIds={matchedSpanIds}
           onClick={onSpanClick}
           onToggle={() => toggleSpan(span.spanId)}
           parentDepths={[0]}
@@ -864,17 +890,40 @@ const TraceGroup: FC<{
   onSpanClick: (traceId: string, spanId: string) => void;
   collapseAllTrigger: number;
   selectedSpanId: string | null | undefined;
-}> = ({ traceSummary, isExpanded, onToggle, onSpanClick, collapseAllTrigger, selectedSpanId }) => {
+  matchedSpanIds?: Set<string>;
+  showFullTraces: boolean;
+}> = ({
+  traceSummary,
+  isExpanded,
+  onToggle,
+  onSpanClick,
+  collapseAllTrigger,
+  selectedSpanId,
+  matchedSpanIds,
+  showFullTraces,
+}) => {
   const { data: traceData, isLoading, error } = useGetTraceQuery(traceSummary.traceId, { enabled: isExpanded });
 
   const trace = traceData?.trace;
 
-  const spanTree = useMemo(() => {
+  // Filter spans when showFullTraces is false and we have matched spans
+  const filteredSpans = useMemo(() => {
     if (!trace?.spans || trace.spans.length === 0) {
       return [];
     }
-    return buildSpanTree(trace.spans as Span[]);
-  }, [trace?.spans]);
+    const spans = trace.spans as Span[];
+    if (showFullTraces || !matchedSpanIds || matchedSpanIds.size === 0) {
+      return spans;
+    }
+    return filterToMatchedAndAncestors(spans, matchedSpanIds);
+  }, [trace?.spans, showFullTraces, matchedSpanIds]);
+
+  const spanTree = useMemo(() => {
+    if (filteredSpans.length === 0) {
+      return [];
+    }
+    return buildSpanTree(filteredSpans);
+  }, [filteredSpans]);
 
   const timeline = useMemo(() => {
     if (spanTree.length === 0) {
@@ -917,6 +966,7 @@ const TraceGroup: FC<{
           error={error}
           expandedSpans={expandedSpans}
           isLoading={isLoading}
+          matchedSpanIds={matchedSpanIds}
           onSpanClick={onSpanClick}
           selectedSpanId={selectedSpanId}
           spanTree={spanTree}
@@ -947,6 +997,8 @@ export const TranscriptsTable: FC<Props> = ({
   disableFaceting = false,
   autoExpandTraceId,
   linkedTraceData: _linkedTraceData,
+  matchedSpans,
+  showFullTraces = true,
 }) => {
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
 
@@ -957,6 +1009,17 @@ export const TranscriptsTable: FC<Props> = ({
     }
   }, [autoExpandTraceId, expandedTraces]);
   const [sortOrder, setSortOrder] = useState<'newest-first' | 'oldest-first'>('newest-first');
+
+  // Convert matchedSpans from API response to a lookup function
+  const getMatchedSpanIds = useCallback(
+    (traceId: string): Set<string> | undefined => {
+      if (!matchedSpans) return;
+      const matched = matchedSpans[traceId];
+      if (!matched?.spanIds?.length) return;
+      return new Set(matched.spanIds);
+    },
+    [matchedSpans]
+  );
 
   // Enhance traces with searchable field and status
   const enhancedTraces = useMemo(
@@ -1199,9 +1262,11 @@ export const TranscriptsTable: FC<Props> = ({
                             collapseAllTrigger={collapseAllTrigger}
                             isExpanded={expandedTraces.has(traceSummary.traceId)}
                             key={traceSummary.traceId}
+                            matchedSpanIds={getMatchedSpanIds(traceSummary.traceId)}
                             onSpanClick={onSpanClick}
                             onToggle={() => toggleTrace(traceSummary.traceId)}
                             selectedSpanId={selectedSpanId}
+                            showFullTraces={showFullTraces}
                             traceSummary={traceSummary}
                           />
                         ))}
