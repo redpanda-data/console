@@ -1,0 +1,17 @@
+version: v2
+clean: true
+inputs:
+  - directory: proto
+  - module: buf.build/redpandadata/common
+  - module: buf.build/redpandadata/ai-gateway
+plugins:
+  - remote: buf.build/bufbuild/es:v2.2.5
+    out: frontend/src/protogen
+    opt: target=ts
+    include_imports: true
+  - remote: buf.build/connectrpc/query-es:v2.0.1
+    out: frontend/src/protogen
+    opt:
+      - target=ts
+      - js_import_style=legacy_commonjs
+    include_imports: true
