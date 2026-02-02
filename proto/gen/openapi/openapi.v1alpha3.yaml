@@ -290,6 +290,39 @@ components:
             $ref: '#/components/schemas/AnyValue'
           type: array
       type: object
+    AttributeFilter:
+      description: AttributeFilter defines a filter condition for span attributes.
+      properties:
+        key:
+          description: Span attribute key without prefix. Backend adds 'span_attributes.' prefix.
+          title: |-
+            Span attribute key (without "span_attributes." prefix).
+            Backend auto-prefixes with "span_attributes." when querying.
+            Example: "gen_ai.operation.name" queries span_attributes.gen_ai.operation.name
+          type: string
+        operator:
+          $ref: '#/components/schemas/AttributeOperator'
+        value:
+          description: Value for EQUALS or NOT_EQUALS comparison.
+          type: string
+        values:
+          description: Values for IN comparison (key matches any of these values).
+          items:
+            type: string
+          type: array
+      type: object
+    AttributeOperator:
+      description: |-
+        AttributeOperator defines comparison operators for attribute filters.
+
+         - ATTRIBUTE_OPERATOR_EQUALS: Exact match: key = value.
+         - ATTRIBUTE_OPERATOR_NOT_EQUALS: Negation: key != value.
+         - ATTRIBUTE_OPERATOR_IN: Set membership: key IN [value1, value2, ...].
+      enum:
+        - ATTRIBUTE_OPERATOR_EQUALS
+        - ATTRIBUTE_OPERATOR_NOT_EQUALS
+        - ATTRIBUTE_OPERATOR_IN
+      type: string
     ComponentType:
       description: Component type for this tool.
       enum:
@@ -1183,9 +1216,23 @@ components:
       type: object
     ListTracesRequest.Filter:
       properties:
+        attribute_filters:
+          description: Span attribute filters. Key is auto-prefixed with 'span_attributes.' by backend. All filters use AND logic.
+          items:
+            $ref: '#/components/schemas/AttributeFilter'
+          type: array
         end_time:
           description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
           format: date-time
+          type: string
+        has_errors:
+          description: When true, filter for spans with error status.
+          nullable: true
+          type: boolean
+        min_duration_ns:
+          description: Filter for spans with duration greater than this value in nanoseconds.
+          format: int64
+          nullable: true
           type: string
         start_time:
           description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
@@ -1200,6 +1247,12 @@ components:
     ListTracesResponse:
       description: ListTracesResponse is the response message for listing traces.
       properties:
+        matched_spans:
+          additionalProperties:
+            $ref: '#/components/schemas/MatchedSpanIds'
+          description: Map of trace_id to span IDs that matched the filters. Only populated when attribute filters are active.
+          readOnly: true
+          type: object
         next_page_token:
           description: Opaque token to retrieve the next page of results. Empty if this is the last page.
           type: string
@@ -1294,6 +1347,15 @@ components:
             $ref: '#/components/schemas/Tool'
           description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
+      type: object
+    MatchedSpanIds:
+      description: MatchedSpanIds contains the list of span IDs within a trace that matched the filters.
+      properties:
+        span_ids:
+          description: Span IDs that matched the attribute filters within this trace.
+          items:
+            type: string
+          type: array
       type: object
     OpenAICompatible:
       properties:
@@ -2654,6 +2716,17 @@ paths:
           schema:
             format: date-time
             type: string
+        - description: When true, filter for spans with error status.
+          in: query
+          name: filter.has_errors
+          schema:
+            type: boolean
+        - description: Filter for spans with duration greater than this value in nanoseconds.
+          in: query
+          name: filter.min_duration_ns
+          schema:
+            format: int64
+            type: string
       responses:
         default:
           content:
@@ -2701,6 +2774,17 @@ paths:
           name: filter.end_time
           schema:
             format: date-time
+            type: string
+        - description: When true, filter for spans with error status.
+          in: query
+          name: filter.has_errors
+          schema:
+            type: boolean
+        - description: Filter for spans with duration greater than this value in nanoseconds.
+          in: query
+          name: filter.min_duration_ns
+          schema:
+            format: int64
             type: string
       responses:
         default:
