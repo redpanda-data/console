@@ -56,3 +56,4 @@ jobs:
           repository: redpanda-data/console-enterprise
           event-type: push
           client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}"}'
+					
