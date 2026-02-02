@@ -1,12 +1,23 @@
-label: weather-by-coords
+label: weather-by-city
 processors:
-  - label: prepare_parameters
+  - label: fetch_coords
+    http:
+      url: 'https://nominatim.openstreetmap.org/search?city=${! this.city_name }&format=json'
+      verb: GET
+      headers:
+        Accept: application/json
+        User-Agent: redpanda-mcp-server/1.0
+  - label: prepare_coordinates
     mutation: |
-      meta lat = this.lat
-      meta long = this.long
+      if this.length() < 1 {
+        root = throw("could not find location of requested city")
+      } else {
+        meta lat = this.0.lat
+        meta long = this.0.lon
+      }
   - label: fetch_weather
     http:
-      url: https://api.open-meteo.com/v1/forecast?latitude=${! @lat }&longitude=${! long }&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1
+      url: https://api.open-meteo.com/v1/forecast?latitude=${! @lat }&longitude=${! @long }&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1
       verb: GET
       headers:
         Accept: application/json
@@ -27,11 +38,7 @@ meta:
     enabled: true
     description: Fetch current weather information for a specified location coords
     properties:
-      - name: lat
+      - name: city_name
         type: string
-        description: latitude of place
-        required: true
-      - name: long
-        type: string
-        description: latitude of place
+        description: City Name
         required: true
