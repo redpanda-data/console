@@ -195,10 +195,12 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/observability',
     title: 'Metrics',
     icon: ActivityIcon,
-    visibilityCheck: routeVisibility(() =>
-      isEmbedded() && isServerless()
-        ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
-        : isFeatureFlagEnabled('enableDataplaneObservability')
+    visibilityCheck: routeVisibility(
+      () =>
+        isEmbedded() &&
+        (isServerless()
+          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+          : isFeatureFlagEnabled('enableDataplaneObservability'))
     ),
   },
   {
