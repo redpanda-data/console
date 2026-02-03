@@ -93,6 +93,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
           return (
             <TaskStatusUpdateBlock
               inputTokens={block.usage?.input_tokens}
+              isLastBlock={index === message.contentBlocks.length - 1}
               key={`${message.id}-status-${index}`}
               messageId={block.messageId}
               outputTokens={block.usage?.output_tokens}

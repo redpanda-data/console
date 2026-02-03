@@ -104,9 +104,10 @@ export type TaskStateProps = {
 		| "rejected"
 		| "auth-required"
 		| "unknown";
+	animate?: boolean;
 };
 
-export const TaskState = ({ state }: TaskStateProps) => {
+export const TaskState = ({ state, animate = true }: TaskStateProps) => {
 	switch (state) {
 		case "completed":
 			return (
@@ -122,7 +123,7 @@ export const TaskState = ({ state }: TaskStateProps) => {
 			return (
 				<Badge variant="info-inverted" className="rounded-full">
 					<Text variant="small" className="flex items-center gap-2">
-						<LoaderIcon className="size-4 animate-spin" />
+						<LoaderIcon className={cn("size-4", animate && "animate-spin")} />
 						Working
 					</Text>
 				</Badge>
