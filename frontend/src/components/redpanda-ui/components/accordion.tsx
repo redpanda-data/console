@@ -126,6 +126,8 @@ type AccordionTriggerProps = React.ComponentProps<typeof AccordionPrimitive.Trig
     chevron?: boolean;
     start?: React.ReactNode;
     end?: React.ReactNode;
+    /** When true, disables chevron animation */
+    noAnimation?: boolean;
   };
 
 const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerProps>(
@@ -138,6 +140,7 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
       start,
       end,
       testId,
+      noAnimation,
       ...props
     },
     ref
@@ -198,14 +201,24 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
           ) : null}
 
           {chevron ? (
-            <motion.div
-              animate={{ rotate: isOpen ? 180 : 0 }}
-              className="shrink-0"
-              data-slot="accordion-trigger-chevron"
-              transition={transition}
-            >
-              <ChevronDown className="size-5" />
-            </motion.div>
+            noAnimation ? (
+              <div
+                className="shrink-0"
+                data-slot="accordion-trigger-chevron"
+                style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <ChevronDown className="size-5" />
+              </div>
+            ) : (
+              <motion.div
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                className="shrink-0"
+                data-slot="accordion-trigger-chevron"
+                transition={transition}
+              >
+                <ChevronDown className="size-5" />
+              </motion.div>
+            )
           ) : null}
         </AccordionPrimitive.Trigger>
       </AccordionPrimitive.Header>
@@ -233,6 +246,8 @@ type AccordionContentProps = React.ComponentProps<typeof AccordionPrimitive.Cont
   HTMLMotionProps<'div'> &
   SharedProps & {
     transition?: Transition;
+    /** When true, disables all animations and renders content instantly */
+    noAnimation?: boolean;
   };
 
 function AccordionContent({
@@ -240,9 +255,25 @@ function AccordionContent({
   children,
   transition = { type: 'spring', stiffness: 150, damping: 22 },
   testId,
+  noAnimation,
   ...props
 }: AccordionContentProps) {
   const { isOpen, variant } = useAccordionItem();
+
+  // No animation mode - simple show/hide without framer-motion
+  if (noAnimation) {
+    return isOpen ? (
+      <AccordionPrimitive.Content forceMount {...props}>
+        <div
+          data-slot="accordion-content"
+          data-testid={testId}
+          data-variant={variant}
+        >
+          <div className={cn(accordionContentVariants({ variant }), className)}>{children}</div>
+        </div>
+      </AccordionPrimitive.Content>
+    ) : null;
+  }
 
   return (
     <AnimatePresence>
