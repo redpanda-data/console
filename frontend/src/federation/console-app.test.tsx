@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 
 // Mock TanStack Router before any imports
 vi.mock('@tanstack/react-router', async () => {
@@ -99,10 +99,11 @@ describe('ConsoleApp', () => {
     config.jwt = undefined;
   });
 
-  test('shows loading state initially', () => {
-    render(<ConsoleApp {...defaultProps} />);
+  test('shows nothing while loading', () => {
+    const { container } = render(<ConsoleApp {...defaultProps} />);
 
-    expect(screen.getByText('Loading Console...')).toBeVisible();
+    // Component returns null while initializing
+    expect(container.firstChild).toBeNull();
   });
 
   test('calls getAccessToken on mount', async () => {
