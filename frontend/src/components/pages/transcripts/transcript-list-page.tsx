@@ -32,6 +32,7 @@ import { pluralize } from 'utils/string';
 import { z } from 'zod';
 
 import { LinkedTraceBanner } from './components/linked-trace-banner';
+import type { ServiceInfo } from './components/service-filter';
 import { TranscriptActivityChart, TranscriptActivityChartSkeleton } from './components/transcript-activity-chart';
 import { type SpanFilter, type SpanFilterPreset, TranscriptFilterBar } from './components/transcript-filter-bar';
 import { TranscriptsTable } from './components/transcripts-table';
@@ -210,6 +211,7 @@ type BuildApiFilterParams = {
   endTimestamp: ReturnType<typeof timestampFromMs>;
   activePresets: SpanFilterPreset[];
   urlAttrFilters: UrlAttributeFilter[];
+  serviceNames: string[];
 };
 
 const buildApiFilter = ({
@@ -217,6 +219,7 @@ const buildApiFilter = ({
   endTimestamp,
   activePresets,
   urlAttrFilters,
+  serviceNames,
 }: BuildApiFilterParams): ListTracesRequest_Filter => {
   const attributeFilters: AttributeFilter[] = [];
 
@@ -272,6 +275,10 @@ const buildApiFilter = ({
     // Error and Slow use dedicated fields (not attribute filters)
     hasErrors: activePresets.includes('error') ? true : undefined,
     minDurationNs: activePresets.includes('slow') ? SLOW_THRESHOLD_NS : undefined,
+    // Service name filter - uses dedicated field for OR logic
+    serviceNames: serviceNames.length > 0 ? serviceNames : [],
+    // Span ID filter - not exposed in UI yet, but required by proto
+    spanIds: [],
   };
 };
 
@@ -297,6 +304,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     presets: parseAsArrayOf(parseAsString).withDefault([]),
     attrFilters: parseAsString, // JSON string, parsed manually
     fullTraces: parseAsBoolean.withDefault(true),
+    services: parseAsArrayOf(parseAsString).withDefault([]), // Service name filter
   });
   const {
     traceId: selectedTraceId,
@@ -305,6 +313,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     presets: activePresets,
     attrFilters: attrFiltersJson,
     fullTraces: showFullTraces,
+    services: selectedServices,
   } = urlState;
 
   // Decode the base64-encoded filters from URL
@@ -320,6 +329,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     [setUrlState]
   );
   const handleShowFullTracesChange = useCallback((show: boolean) => setUrlState({ fullTraces: show }), [setUrlState]);
+  const handleSelectedServicesChange = useCallback((services: string[]) => setUrlState({ services }), [setUrlState]);
 
   // Convert URL attribute filters to SpanFilter format for the filter bar
   const attributeFilters: SpanFilter[] = useMemo(() => {
@@ -437,8 +447,9 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         endTimestamp: timestamps.endTimestamp,
         activePresets: (activePresets || []) as SpanFilterPreset[],
         urlAttrFilters,
+        serviceNames: selectedServices || [],
       }),
-    [timestamps.startTimestamp, timestamps.endTimestamp, activePresets, urlAttrFilters]
+    [timestamps.startTimestamp, timestamps.endTimestamp, activePresets, urlAttrFilters, selectedServices]
   );
 
   // Query for the main time range (or jumped range)
@@ -507,8 +518,15 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         endTimestamp: histogramTimestamps.endTimestamp,
         activePresets: (activePresets || []) as SpanFilterPreset[],
         urlAttrFilters,
+        serviceNames: selectedServices || [],
       }),
-    [histogramTimestamps.startTimestamp, histogramTimestamps.endTimestamp, activePresets, urlAttrFilters]
+    [
+      histogramTimestamps.startTimestamp,
+      histogramTimestamps.endTimestamp,
+      activePresets,
+      urlAttrFilters,
+      selectedServices,
+    ]
   );
 
   // Separate histogram query - uses same filters as list query for consistency
@@ -538,9 +556,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   }, [data, isLinkedTraceMode, linkedTraceData?.trace?.summary]);
 
   // Track previous filter state to detect changes
-  const prevFiltersRef = useRef<{ presets: string; attrs: string }>({
+  const prevFiltersRef = useRef<{ presets: string; attrs: string; services: string }>({
     presets: JSON.stringify(activePresets || []),
     attrs: JSON.stringify(urlAttrFilters),
+    services: JSON.stringify(selectedServices || []),
   });
 
   // Clear span selection when filters change
@@ -549,18 +568,20 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   useEffect(() => {
     const currentPresets = JSON.stringify(activePresets || []);
     const currentAttrs = JSON.stringify(urlAttrFilters);
+    const currentServices = JSON.stringify(selectedServices || []);
     const prev = prevFiltersRef.current;
 
-    const filtersChanged = prev.presets !== currentPresets || prev.attrs !== currentAttrs;
+    const filtersChanged =
+      prev.presets !== currentPresets || prev.attrs !== currentAttrs || prev.services !== currentServices;
 
     // Update ref for next comparison
-    prevFiltersRef.current = { presets: currentPresets, attrs: currentAttrs };
+    prevFiltersRef.current = { presets: currentPresets, attrs: currentAttrs, services: currentServices };
 
     // Clear selection when filters change - the selected span may no longer match
     if (selectedSpanId && filtersChanged) {
       setUrlState({ traceId: null, spanId: null, tab: null });
     }
-  }, [activePresets, urlAttrFilters, setUrlState]);
+  }, [activePresets, urlAttrFilters, selectedServices, setUrlState]);
 
   // Detect when URL has a traceId on initial page load - enter linked mode
   // This only runs once on mount. After that, clicking traces does NOT enter linked mode.
@@ -607,6 +628,27 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     const inProgress = traces.filter((t) => t.spanCount === 0).length;
     const withErrors = traces.filter((t) => t.errorCount > 0).length;
     return { completed, inProgress, withErrors, total: traces.length };
+  }, [displayTraces]);
+
+  // Extract distinct services from loaded traces for the service filter dropdown
+  // Only includes traces with actual service names (skips unknown/empty)
+  const distinctServices: ServiceInfo[] = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const trace of displayTraces) {
+      // Skip traces without a service name (orphan traces awaiting root span)
+      const serviceName = trace.rootServiceName;
+      if (!serviceName) {
+        continue;
+      }
+      counts.set(serviceName, (counts.get(serviceName) || 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({
+        name, // Display name
+        value: name, // Actual value to send to API (same as name)
+        count,
+      }))
+      .sort((a, b) => b.count - a.count); // Sort by count descending
   }, [displayTraces]);
 
   const handleRefresh = () => {
@@ -741,8 +783,11 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         onBackToNewest={handleBackToNewest}
         onPresetsChange={handlePresetsChange}
         onRefresh={handleRefresh}
+        onSelectedServicesChange={handleSelectedServicesChange}
         onShowFullTracesChange={handleShowFullTracesChange}
         onTimeRangeChange={handleTimeRangeChange}
+        selectedServices={selectedServices || []}
+        services={distinctServices}
         showFullTraces={showFullTraces ?? true}
         timeRange={timeRange}
       />
