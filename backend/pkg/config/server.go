@@ -27,6 +27,14 @@ type Server struct {
 	// CSRF-attacks.
 	AllowedOrigins []string `yaml:"allowedOrigins"`
 
+	// AllowPrivateNetwork enables Chrome's Private Network Access preflight handling.
+	// When enabled, the server responds with Access-Control-Allow-Private-Network: true
+	// for CORS preflight requests that include Access-Control-Request-Private-Network.
+	// This is required for BYOC deployments where browsers access a public origin
+	// (e.g., cloud.redpanda.com) but traffic routes to private IP addresses via VPN.
+	// See: https://developer.chrome.com/blog/private-network-access-preflight
+	AllowPrivateNetwork bool `yaml:"allowPrivateNetwork"`
+
 	// Debug allows to configure the pprof debug handler options.
 	Debug DebugConfig `yaml:"debug"`
 }
