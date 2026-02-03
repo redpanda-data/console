@@ -2,7 +2,7 @@ label: weather-by-city
 processors:
   - label: fetch_coords
     http:
-      url: 'https://nominatim.openstreetmap.org/search?city=${! this.city_name }&format=json'
+      url: 'https://nominatim.openstreetmap.org/search?city=${! this.city_name.escape_url_query() }&format=json'
       verb: GET
       headers:
         Accept: application/json
