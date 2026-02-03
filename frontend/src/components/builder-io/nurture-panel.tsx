@@ -7,6 +7,7 @@ import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@buil
 import { Box, Skeleton, Text } from '@redpanda-data/ui';
 import { builderCustomComponents } from 'components/builder-io/builder-custom-components';
 import { BUILDER_API_KEY } from 'components/constants';
+import { isEmbedded } from 'config';
 import { useEffect, useState } from 'react';
 import { api } from 'state/backend-api';
 
@@ -19,7 +20,14 @@ export default function NurturePanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
+  const embedded = isEmbedded();
+
   useEffect(() => {
+    if (embedded) {
+      setIsLoading(false);
+      return;
+    }
+
     fetchOneEntry({
       model: MODEL_NAME,
       apiKey: BUILDER_API_KEY,
@@ -40,7 +48,11 @@ export default function NurturePanel() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [platform, MODEL_NAME]);
+  }, [platform, MODEL_NAME, embedded]);
+
+  if (embedded) {
+    return null;
+  }
 
   const shouldRenderBuilderContent = content || isPreviewing();
 
@@ -94,6 +106,7 @@ export default function NurturePanel() {
           apiKey={BUILDER_API_KEY}
           content={content}
           customComponents={builderCustomComponents}
+          enrich={false}
           model={MODEL_NAME}
         />
       ) : null}
