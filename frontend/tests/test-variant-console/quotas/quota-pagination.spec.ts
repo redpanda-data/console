@@ -3,12 +3,12 @@ import { expect, test } from '@playwright/test';
 import { createClientIdQuota, deleteClientIdQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
+const DEFAULT_PAGE_SIZE = 50;
+
 test.describe('Quotas - Pagination', () => {
   test('should not show pagination controls when quotas count is less than page size', async ({ page }) => {
-    const quotaPage = new QuotaPage(page);
-
     await test.step('Navigate to quotas page', async () => {
-      await quotaPage.goToQuotasList();
+      await page.goto('/quotas');
     });
 
     await test.step('Verify pagination is not visible for small datasets', async () => {
