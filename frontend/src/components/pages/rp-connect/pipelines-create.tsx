@@ -262,7 +262,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
           <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={openAddSecret} variant="secondary">
+          <Button onClick={openAddSecret} variant="outline">
             <PlusIcon className="size-4" color="white" />
             Add secrets
           </Button>

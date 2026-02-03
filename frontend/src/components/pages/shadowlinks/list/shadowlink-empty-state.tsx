@@ -100,7 +100,7 @@ export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorS
       <Text>An error occurred while loading shadow links:</Text>
       <Text className="text-destructive">{errorMessage}</Text>
       <div>
-        <Button data-testid="shadowlink-retry-button" onClick={onRetry} variant="secondary">
+        <Button data-testid="shadowlink-retry-button" onClick={onRetry} variant="primary">
           Retry
         </Button>
       </div>
@@ -119,7 +119,7 @@ export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoun
       <SearchX className="h-12 w-12 text-muted-foreground" />
       <Text variant="large">Shadow link "{name}" not found</Text>
       <Text className="text-muted-foreground">The shadow link may have been deleted or the name is incorrect.</Text>
-      <Button data-testid="shadowlink-back-button" onClick={onBackClick} variant="secondary">
+      <Button data-testid="shadowlink-back-button" onClick={onBackClick} variant="outline">
         Back to Shadow Links
       </Button>
     </div>
