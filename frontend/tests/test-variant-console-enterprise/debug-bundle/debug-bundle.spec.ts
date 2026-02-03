@@ -235,7 +235,7 @@ test.describe('Debug Bundle - Bundle Expiration', () => {
   });
 });
 
-// biome-ignore lint/suspicious/noSkippedTests: <explanation>
+// biome-ignore lint/suspicious/noSkippedTests: test disabled pending implementation
 test.skip('Debug Bundle - Confirmation Dialogs', () => {
   test('should show confirmation dialog when generating bundle if one exists', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);

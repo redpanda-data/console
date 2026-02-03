@@ -19,9 +19,15 @@ export const useLegacyListConsumerGroupsQuery = (options?: { enabled?: boolean }
   const legacyListConsumerGroupsResult = useTanstackQuery<GetConsumerGroupsResponse>({
     queryKey: ['consumer-groups'],
     queryFn: async () => {
+      // Add JWT Bearer token if available (same as REST and gRPC calls)
+      const headers: HeadersInit = {};
+      if (config.jwt) {
+        headers.Authorization = `Bearer ${config.jwt}`;
+      }
+
       const response = await config.fetch(`${config.restBasePath}/consumer-groups`, {
         method: 'GET',
-        headers: {},
+        headers,
       });
 
       const data = await response.json();

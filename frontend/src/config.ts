@@ -399,7 +399,11 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
       }
     );
   } else {
-    api.refreshSupportedEndpoints();
-    api.listLicenses();
+    // Only make API calls if JWT is available (embedded mode)
+    // Without JWT, these calls will fail with 401 and trigger unwanted redirects
+    if (config.jwt) {
+      api.refreshSupportedEndpoints();
+      api.listLicenses();
+    }
   }
 });

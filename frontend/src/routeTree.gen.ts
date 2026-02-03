@@ -436,21 +436,21 @@ export interface FileRoutesByFullPath {
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
-  '/agents': typeof AgentsIndexRoute;
-  '/connect-clusters': typeof ConnectClustersIndexRoute;
-  '/debug-bundle': typeof DebugBundleIndexRoute;
-  '/groups': typeof GroupsIndexRoute;
-  '/knowledgebases': typeof KnowledgebasesIndexRoute;
-  '/login': typeof LoginIndexRoute;
-  '/mcp-servers': typeof McpServersIndexRoute;
-  '/overview': typeof OverviewIndexRoute;
-  '/schema-registry': typeof SchemaRegistryIndexRoute;
-  '/secrets': typeof SecretsIndexRoute;
-  '/security': typeof SecurityIndexRoute;
-  '/shadowlinks': typeof ShadowlinksIndexRoute;
-  '/topics': typeof TopicsIndexRoute;
-  '/transcripts': typeof TranscriptsIndexRoute;
-  '/transforms': typeof TransformsIndexRoute;
+  '/agents/': typeof AgentsIndexRoute;
+  '/connect-clusters/': typeof ConnectClustersIndexRoute;
+  '/debug-bundle/': typeof DebugBundleIndexRoute;
+  '/groups/': typeof GroupsIndexRoute;
+  '/knowledgebases/': typeof KnowledgebasesIndexRoute;
+  '/login/': typeof LoginIndexRoute;
+  '/mcp-servers/': typeof McpServersIndexRoute;
+  '/overview/': typeof OverviewIndexRoute;
+  '/schema-registry/': typeof SchemaRegistryIndexRoute;
+  '/secrets/': typeof SecretsIndexRoute;
+  '/security/': typeof SecurityIndexRoute;
+  '/shadowlinks/': typeof ShadowlinksIndexRoute;
+  '/topics/': typeof TopicsIndexRoute;
+  '/transcripts/': typeof TranscriptsIndexRoute;
+  '/transforms/': typeof TransformsIndexRoute;
   '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
   '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
   '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute;
@@ -463,11 +463,11 @@ export interface FileRoutesByFullPath {
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
   '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
-  '/connect-clusters/$clusterName': typeof ConnectClustersClusterNameIndexRoute;
-  '/knowledgebases/$knowledgebaseId': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
-  '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
-  '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute;
-  '/topics/$topicName': typeof TopicsTopicNameIndexRoute;
+  '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
+  '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
+  '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
+  '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
@@ -477,7 +477,7 @@ export interface FileRoutesByFullPath {
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/security/users/$userName/details': typeof SecurityUsersUserNameDetailsRoute;
-  '/schema-registry/subjects/$subjectName': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
+  '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -637,21 +637,21 @@ export interface FileRouteTypes {
     | '/security/$tab'
     | '/shadowlinks/create'
     | '/transforms/$transformName'
-    | '/agents'
-    | '/connect-clusters'
-    | '/debug-bundle'
-    | '/groups'
-    | '/knowledgebases'
-    | '/login'
-    | '/mcp-servers'
-    | '/overview'
-    | '/schema-registry'
-    | '/secrets'
-    | '/security'
-    | '/shadowlinks'
-    | '/topics'
-    | '/transcripts'
-    | '/transforms'
+    | '/agents/'
+    | '/connect-clusters/'
+    | '/debug-bundle/'
+    | '/groups/'
+    | '/knowledgebases/'
+    | '/login/'
+    | '/mcp-servers/'
+    | '/overview/'
+    | '/schema-registry/'
+    | '/secrets/'
+    | '/security/'
+    | '/shadowlinks/'
+    | '/topics/'
+    | '/transcripts/'
+    | '/transforms/'
     | '/connect-clusters/$clusterName/$connector'
     | '/connect-clusters/$clusterName/create-connector'
     | '/debug-bundle/progress/$jobId'
@@ -664,11 +664,11 @@ export interface FileRouteTypes {
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
     | '/topics/$topicName/produce-record'
-    | '/connect-clusters/$clusterName'
-    | '/knowledgebases/$knowledgebaseId'
-    | '/rp-connect/$pipelineId'
-    | '/shadowlinks/$name'
-    | '/topics/$topicName'
+    | '/connect-clusters/$clusterName/'
+    | '/knowledgebases/$knowledgebaseId/'
+    | '/rp-connect/$pipelineId/'
+    | '/shadowlinks/$name/'
+    | '/topics/$topicName/'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
@@ -678,7 +678,7 @@ export interface FileRouteTypes {
     | '/security/roles/$roleName/details'
     | '/security/roles/$roleName/update'
     | '/security/users/$userName/details'
-    | '/schema-registry/subjects/$subjectName';
+    | '/schema-registry/subjects/$subjectName/';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -927,105 +927,105 @@ declare module '@tanstack/react-router' {
     '/transforms/': {
       id: '/transforms/';
       path: '/transforms';
-      fullPath: '/transforms';
+      fullPath: '/transforms/';
       preLoaderRoute: typeof TransformsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/transcripts/': {
       id: '/transcripts/';
       path: '/transcripts';
-      fullPath: '/transcripts';
+      fullPath: '/transcripts/';
       preLoaderRoute: typeof TranscriptsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/topics/': {
       id: '/topics/';
       path: '/topics';
-      fullPath: '/topics';
+      fullPath: '/topics/';
       preLoaderRoute: typeof TopicsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/shadowlinks/': {
       id: '/shadowlinks/';
       path: '/shadowlinks';
-      fullPath: '/shadowlinks';
+      fullPath: '/shadowlinks/';
       preLoaderRoute: typeof ShadowlinksIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/security/': {
       id: '/security/';
       path: '/security';
-      fullPath: '/security';
+      fullPath: '/security/';
       preLoaderRoute: typeof SecurityIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/secrets/': {
       id: '/secrets/';
       path: '/secrets';
-      fullPath: '/secrets';
+      fullPath: '/secrets/';
       preLoaderRoute: typeof SecretsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/schema-registry/': {
       id: '/schema-registry/';
       path: '/schema-registry';
-      fullPath: '/schema-registry';
+      fullPath: '/schema-registry/';
       preLoaderRoute: typeof SchemaRegistryIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/overview/': {
       id: '/overview/';
       path: '/overview';
-      fullPath: '/overview';
+      fullPath: '/overview/';
       preLoaderRoute: typeof OverviewIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/mcp-servers/': {
       id: '/mcp-servers/';
       path: '/mcp-servers';
-      fullPath: '/mcp-servers';
+      fullPath: '/mcp-servers/';
       preLoaderRoute: typeof McpServersIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/login/': {
       id: '/login/';
       path: '/login';
-      fullPath: '/login';
+      fullPath: '/login/';
       preLoaderRoute: typeof LoginIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/knowledgebases/': {
       id: '/knowledgebases/';
       path: '/knowledgebases';
-      fullPath: '/knowledgebases';
+      fullPath: '/knowledgebases/';
       preLoaderRoute: typeof KnowledgebasesIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/groups/': {
       id: '/groups/';
       path: '/groups';
-      fullPath: '/groups';
+      fullPath: '/groups/';
       preLoaderRoute: typeof GroupsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/debug-bundle/': {
       id: '/debug-bundle/';
       path: '/debug-bundle';
-      fullPath: '/debug-bundle';
+      fullPath: '/debug-bundle/';
       preLoaderRoute: typeof DebugBundleIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/connect-clusters/': {
       id: '/connect-clusters/';
       path: '/connect-clusters';
-      fullPath: '/connect-clusters';
+      fullPath: '/connect-clusters/';
       preLoaderRoute: typeof ConnectClustersIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/agents/': {
       id: '/agents/';
       path: '/agents';
-      fullPath: '/agents';
+      fullPath: '/agents/';
       preLoaderRoute: typeof AgentsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
@@ -1144,35 +1144,35 @@ declare module '@tanstack/react-router' {
     '/topics/$topicName/': {
       id: '/topics/$topicName/';
       path: '/topics/$topicName';
-      fullPath: '/topics/$topicName';
+      fullPath: '/topics/$topicName/';
       preLoaderRoute: typeof TopicsTopicNameIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/shadowlinks/$name/': {
       id: '/shadowlinks/$name/';
       path: '/shadowlinks/$name';
-      fullPath: '/shadowlinks/$name';
+      fullPath: '/shadowlinks/$name/';
       preLoaderRoute: typeof ShadowlinksNameIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/rp-connect/$pipelineId/': {
       id: '/rp-connect/$pipelineId/';
       path: '/rp-connect/$pipelineId';
-      fullPath: '/rp-connect/$pipelineId';
+      fullPath: '/rp-connect/$pipelineId/';
       preLoaderRoute: typeof RpConnectPipelineIdIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/knowledgebases/$knowledgebaseId/': {
       id: '/knowledgebases/$knowledgebaseId/';
       path: '/knowledgebases/$knowledgebaseId';
-      fullPath: '/knowledgebases/$knowledgebaseId';
+      fullPath: '/knowledgebases/$knowledgebaseId/';
       preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/connect-clusters/$clusterName/': {
       id: '/connect-clusters/$clusterName/';
       path: '/connect-clusters/$clusterName';
-      fullPath: '/connect-clusters/$clusterName';
+      fullPath: '/connect-clusters/$clusterName/';
       preLoaderRoute: typeof ConnectClustersClusterNameIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
@@ -1263,7 +1263,7 @@ declare module '@tanstack/react-router' {
     '/schema-registry/subjects/$subjectName/': {
       id: '/schema-registry/subjects/$subjectName/';
       path: '/schema-registry/subjects/$subjectName';
-      fullPath: '/schema-registry/subjects/$subjectName';
+      fullPath: '/schema-registry/subjects/$subjectName/';
       preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };

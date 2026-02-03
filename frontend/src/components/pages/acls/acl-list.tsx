@@ -108,6 +108,7 @@ const getCreateUserButtonProps = (isAdminApiConfigured: boolean) => {
   };
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ACL list has complex conditional rendering
 const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
   // Check if Redpanda Admin API is configured using React Query
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
@@ -228,6 +229,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 export default AclList;
 
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: permissions list has complex conditional rendering
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
