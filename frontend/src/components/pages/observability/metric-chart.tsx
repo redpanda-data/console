@@ -17,6 +17,7 @@ import { useExecuteRangeQuery } from 'react-query/api/observability';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
+import { prettyNumber } from 'utils/utils';
 import {
   ChartContainer,
   ChartLegend,
@@ -194,15 +195,9 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
                 : undefined
             }
             tickFormatter={(value) => {
-              // Format large numbers with K, M, B suffixes
-              if (value >= 1_000_000_000) {
-                return `${(value / 1_000_000_000).toFixed(1)}B`;
-              }
-              if (value >= 1_000_000) {
-                return `${(value / 1_000_000).toFixed(1)}M`;
-              }
+              // Use prettyNumber for large values (handles K, M, B formatting)
               if (value >= 1000) {
-                return `${(value / 1000).toFixed(1)}K`;
+                return prettyNumber(value).toUpperCase();
               }
               // Show decimals for small values
               if (value < 10) {
