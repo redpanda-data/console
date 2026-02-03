@@ -29,14 +29,19 @@ const AI_GATEWAY_DEFAULT_PAGE_SIZE = 50;
  * Hook to list AI Gateways using the AI Gateway v1 API
  *
  * @note This hook uses AI Gateway transport - requires /.redpanda/api/ proxy configuration
+ * @note By default, system-managed gateways are excluded from results (only user-created gateways shown)
  *
  * @example
- * // List all gateways
+ * // List all user-created gateways (default - excludes system gateway)
  * useListGatewaysQuery()
  *
  * @example
  * // List gateways with custom page size
  * useListGatewaysQuery({ pageSize: 100 })
+ *
+ * @example
+ * // List ALL gateways including system gateway (pass empty filter)
+ * useListGatewaysQuery({ filter: '' })
  */
 export const useListGatewaysQuery = (
   input?: MessageInit<ListGatewaysRequest>,
@@ -44,10 +49,16 @@ export const useListGatewaysQuery = (
 ): UseQueryResult<ListGatewaysResponse, ConnectError> => {
   const transport = useAIGatewayTransport();
 
+  // Default filter: exclude system-managed gateways
+  // Users can override by passing an explicit filter (including empty string for no filter)
+  const defaultFilter = 'metadata.system_managed != "true"';
+  const filter = input?.filter !== undefined ? input.filter : defaultFilter;
+
   const listGatewaysRequest = create(ListGatewaysRequestSchema, {
     parent: input?.parent ?? '',
     pageToken: input?.pageToken ?? '',
     pageSize: input?.pageSize ?? AI_GATEWAY_DEFAULT_PAGE_SIZE,
+    ...(filter && { filter }),
   });
 
   return useQuery(listGateways, listGatewaysRequest, {
