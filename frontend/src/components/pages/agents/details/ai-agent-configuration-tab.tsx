@@ -41,6 +41,12 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
+import {
+  MarkdownEditor,
+  type MarkdownEditorMode,
+  MarkdownEditorTabs,
+  MarkdownPreview,
+} from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
@@ -324,6 +330,8 @@ export const AIAgentConfigurationTab = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
+  const [systemPromptMode, setSystemPromptMode] = useState<MarkdownEditorMode>('editor');
+  const [subagentPromptModes, setSubagentPromptModes] = useState<Record<number, MarkdownEditorMode>>({});
 
   // Feature flag: when true, use legacy API key mode (hardcoded providers, no gateway API calls)
   const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
@@ -1016,23 +1024,24 @@ export const AIAgentConfigurationTab = () => {
           {/* System Prompt Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex w-full items-center gap-2">
                 <Settings className="h-4 w-4" />
                 <Text className="font-semibold">System Prompt</Text>
+                {isEditing && (
+                  <MarkdownEditorTabs className="ml-auto" mode={systemPromptMode} onModeChange={setSystemPromptMode} />
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <div className="space-y-2">
-                <Label htmlFor="systemPrompt">System Prompt</Label>
                 {isEditing ? (
-                  <Textarea
-                    id="systemPrompt"
-                    onChange={(e) => updateField({ systemPrompt: e.target.value })}
-                    rows={8}
+                  <MarkdownEditor
+                    mode={systemPromptMode}
+                    onChange={(value) => updateField({ systemPrompt: value })}
                     value={displayData.systemPrompt}
                   />
                 ) : (
-                  <DynamicCodeBlock code={displayData.systemPrompt} lang="text" />
+                  <MarkdownPreview disabled source={displayData.systemPrompt} />
                 )}
               </div>
             </CardContent>
@@ -1108,17 +1117,25 @@ export const AIAgentConfigurationTab = () => {
 
                               {/* System Prompt */}
                               <div className="space-y-2">
-                                <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
+                                  {isEditing && (
+                                    <MarkdownEditorTabs
+                                      mode={subagentPromptModes[index] || 'editor'}
+                                      onModeChange={(mode) =>
+                                        setSubagentPromptModes((prev) => ({ ...prev, [index]: mode }))
+                                      }
+                                    />
+                                  )}
+                                </div>
                                 {isEditing ? (
-                                  <Textarea
-                                    id={`subagent-prompt-${index}`}
-                                    onChange={(e) => handleUpdateSubagent(index, 'systemPrompt', e.target.value)}
-                                    placeholder="Define the specialized behavior for this subagent..."
-                                    rows={6}
+                                  <MarkdownEditor
+                                    mode={subagentPromptModes[index] || 'editor'}
+                                    onChange={(value) => handleUpdateSubagent(index, 'systemPrompt', value)}
                                     value={subagent.systemPrompt}
                                   />
                                 ) : (
-                                  <DynamicCodeBlock code={subagent.systemPrompt} lang="text" />
+                                  <MarkdownPreview disabled source={subagent.systemPrompt} />
                                 )}
                               </div>
 

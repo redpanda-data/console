@@ -25,6 +25,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 import { SubagentConfigSection } from 'components/ui/ai-agent/subagent-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
+import { MarkdownEditor } from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import {
@@ -541,13 +542,12 @@ export const AIAgentCreatePage = () => {
                   <FieldLabel htmlFor="systemPrompt" required>
                     System Prompt
                   </FieldLabel>
-                  <Textarea
-                    id="systemPrompt"
-                    placeholder="You are a helpful AI agent that..."
-                    rows={8}
-                    {...form.register('systemPrompt')}
-                    aria-describedby={form.formState.errors.systemPrompt ? 'systemPrompt-error' : undefined}
-                    aria-invalid={!!form.formState.errors.systemPrompt}
+                  <Controller
+                    control={form.control}
+                    name="systemPrompt"
+                    render={({ field }) => (
+                      <MarkdownEditor onChange={(value) => field.onChange(value)} value={field.value} />
+                    )}
                   />
                   {!!form.formState.errors.systemPrompt && (
                     <FieldError id="systemPrompt-error">{form.formState.errors.systemPrompt.message}</FieldError>
