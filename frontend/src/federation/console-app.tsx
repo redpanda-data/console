@@ -338,13 +338,9 @@ function ConsoleAppInner({
     }
   }, [navigateTo, isInitialized]);
 
-  // Don't render until initialized
+  // Don't render until initialized, don't show anything until then
   if (!isInitialized) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500 text-sm">Loading Console...</div>
-      </div>
-    );
+    return null;
   }
 
   return (
