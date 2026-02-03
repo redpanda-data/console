@@ -12,6 +12,7 @@
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda-data/ui';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { SkipIcon } from 'components/icons';
 import { config } from 'config';
 import { useMemo } from 'react';
@@ -96,6 +97,8 @@ const useQuotasQuery = () => {
 };
 
 const QuotasList = () => {
+  const navigate = useNavigate({ from: '/quotas' });
+  const search = useSearch({ from: '/quotas' });
   const { data, error, isLoading } = useQuotasQuery();
 
   const quotasData = useMemo(() => {
@@ -264,6 +267,26 @@ const QuotasList = () => {
             },
           ]}
           data={quotasData}
+          defaultPageSize={50}
+          onPaginationChange={(updater) => {
+            const newPagination =
+              typeof updater === 'function'
+                ? updater({ pageIndex: search.page ?? 0, pageSize: search.pageSize ?? 50 })
+                : updater;
+
+            navigate({
+              search: (prev) => ({
+                ...prev,
+                page: newPagination.pageIndex,
+                pageSize: newPagination.pageSize,
+              }),
+              replace: true,
+            });
+          }}
+          pagination={{
+            pageIndex: search.page ?? 0,
+            pageSize: search.pageSize ?? 50,
+          }}
         />
       </Section>
     </PageContent>

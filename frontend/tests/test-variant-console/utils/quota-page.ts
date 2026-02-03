@@ -63,4 +63,23 @@ export class QuotaPage {
     await this.page.goto(`${baseURL}/quotas`);
     await expect(this.page.getByRole('heading', { name: 'Quotas' })).toBeVisible();
   }
+
+  /**
+   * Pagination methods
+   */
+  getNextPageButton() {
+    return this.page.locator('button[aria-label="Next Page"]');
+  }
+
+  getPreviousPageButton() {
+    return this.page.locator('button[aria-label="Previous Page"]');
+  }
+
+  async clickNextPage() {
+    await this.getNextPageButton().click();
+  }
+
+  async clickPreviousPage() {
+    await this.getPreviousPageButton().click();
+  }
 }

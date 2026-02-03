@@ -3,8 +3,6 @@ import { expect, test } from '@playwright/test';
 import { createClientIdQuota, deleteClientIdQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
-const DEFAULT_PAGE_SIZE = 50;
-
 test.describe('Quotas - Pagination', () => {
   test('should not show pagination controls when quotas count is less than page size', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
@@ -33,6 +31,7 @@ test.describe('Quotas - Pagination', () => {
     const timestamp = Date.now();
     const quotaIds: string[] = [];
     const QUOTA_COUNT = 55; // More than one page
+    const PAGE_SIZE = 20;
 
     await test.step(`Create ${QUOTA_COUNT} quotas`, async () => {
       for (let i = 1; i <= QUOTA_COUNT; i++) {
@@ -46,11 +45,13 @@ test.describe('Quotas - Pagination', () => {
       }
     });
 
-    await test.step('Navigate to quotas page', async () => {
-      await quotaPage.goToQuotasList();
+    const page1Quotas: string[] = [];
+
+    await test.step('Navigate to quotas page with explicit page size', async () => {
+      await page.goto(`/quotas?page=0&pageSize=${PAGE_SIZE}`);
     });
 
-    await test.step('Wait for quotas to load', async () => {
+    await test.step('Wait for quotas to load and capture page 1 quotas', async () => {
       await expect(async () => {
         const visibleQuotaCount = await page
           .locator('tr')
@@ -58,24 +59,37 @@ test.describe('Quotas - Pagination', () => {
           .count();
         expect(visibleQuotaCount).toBeGreaterThan(0);
       }).toPass({ timeout: 15_000, intervals: [500, 1000, 5000] });
+
+      // Capture which quotas are visible on page 1
+      const rows = page.locator('tr').filter({ hasText: `page-nav-test-${timestamp}` });
+      const rowCount = await rows.count();
+      for (let i = 0; i < rowCount; i++) {
+        const text = await rows.nth(i).textContent();
+        const match = text?.match(/page-nav-test-\d+-\d+/);
+        if (match) {
+          page1Quotas.push(match[0]);
+        }
+      }
+      expect(page1Quotas.length).toBeGreaterThan(0);
     });
 
     await test.step('Click next page button', async () => {
-      const nextButton = page.getByRole('button', { name: /next/i }).or(page.locator('[aria-label*="next"]'));
-      await nextButton.click();
+      await quotaPage.clickNextPage();
 
       // Wait for page navigation to complete
       await page.waitForURL(/page=1/, { timeout: 5000 });
     });
 
-    await test.step('Verify second page quotas are visible', async () => {
-      // First quota (from page 1) should not be visible anymore
-      await quotaPage.verifyQuotaNotExists(quotaIds[0]);
+    await test.step('Verify page 1 quotas are no longer visible on page 2', async () => {
+      // At least one quota from page 1 should not be visible on page 2
+      await quotaPage.verifyQuotaNotExists(page1Quotas[0]);
 
-      // Last quota should now be visible on page 2
-      await expect(async () => {
-        await quotaPage.verifyQuotaExists(quotaIds[QUOTA_COUNT - 1]);
-      }).toPass({ timeout: 10_000 });
+      // Verify we have different quotas on page 2
+      const page2Rows = await page
+        .locator('tr')
+        .filter({ hasText: `page-nav-test-${timestamp}` })
+        .count();
+      expect(page2Rows).toBeGreaterThan(0);
     });
 
     await test.step('Cleanup: Delete all test quotas', async () => {
@@ -90,6 +104,7 @@ test.describe('Quotas - Pagination', () => {
     const timestamp = Date.now();
     const quotaIds: string[] = [];
     const QUOTA_COUNT = 55;
+    const PAGE_SIZE = 20;
 
     await test.step(`Create ${QUOTA_COUNT} quotas`, async () => {
       for (let i = 1; i <= QUOTA_COUNT; i++) {
@@ -103,11 +118,14 @@ test.describe('Quotas - Pagination', () => {
       }
     });
 
-    await test.step('Navigate to quotas page', async () => {
-      await quotaPage.goToQuotasList();
+    const page1Quotas: string[] = [];
+    const page2Quotas: string[] = [];
+
+    await test.step('Navigate to quotas page with explicit page size', async () => {
+      await page.goto(`/quotas?page=0&pageSize=${PAGE_SIZE}`);
     });
 
-    await test.step('Wait for quotas to load', async () => {
+    await test.step('Wait for quotas to load and capture page 1 quotas', async () => {
       await expect(async () => {
         const visibleQuotaCount = await page
           .locator('tr')
@@ -115,29 +133,54 @@ test.describe('Quotas - Pagination', () => {
           .count();
         expect(visibleQuotaCount).toBeGreaterThan(0);
       }).toPass({ timeout: 15_000, intervals: [500, 1000, 5000] });
+
+      // Capture which quotas are visible on page 1
+      const rows = page.locator('tr').filter({ hasText: `prev-page-test-${timestamp}` });
+      const rowCount = await rows.count();
+      for (let i = 0; i < rowCount; i++) {
+        const text = await rows.nth(i).textContent();
+        const match = text?.match(/prev-page-test-\d+-\d+/);
+        if (match) {
+          page1Quotas.push(match[0]);
+        }
+      }
+      expect(page1Quotas.length).toBeGreaterThan(0);
     });
 
     await test.step('Navigate to page 2', async () => {
-      const nextButton = page.getByRole('button', { name: /next/i }).or(page.locator('[aria-label*="next"]'));
-      await nextButton.click();
+      await quotaPage.clickNextPage();
       await page.waitForURL(/page=1/, { timeout: 5000 });
     });
 
+    await test.step('Capture page 2 quotas', async () => {
+      // Capture which quotas are visible on page 2
+      const rows = page.locator('tr').filter({ hasText: `prev-page-test-${timestamp}` });
+      const rowCount = await rows.count();
+      for (let i = 0; i < rowCount; i++) {
+        const text = await rows.nth(i).textContent();
+        const match = text?.match(/prev-page-test-\d+-\d+/);
+        if (match) {
+          page2Quotas.push(match[0]);
+        }
+      }
+      expect(page2Quotas.length).toBeGreaterThan(0);
+
+      // Verify page 1 quota is not on page 2
+      await quotaPage.verifyQuotaNotExists(page1Quotas[0]);
+    });
+
     await test.step('Navigate back to page 1', async () => {
-      const previousButton = page
-        .getByRole('button', { name: /previous/i })
-        .or(page.locator('[aria-label*="previous"]'));
-      await previousButton.click();
+      await quotaPage.clickPreviousPage();
       await page.waitForURL(/page=0/, { timeout: 5000 });
     });
 
-    await test.step('Verify first page quotas are visible again', async () => {
+    await test.step('Verify page 1 quotas are visible again', async () => {
       await expect(async () => {
-        await quotaPage.verifyQuotaExists(quotaIds[0]);
+        await quotaPage.verifyQuotaExists(page1Quotas[0]);
       }).toPass({ timeout: 10_000 });
 
-      // Last quota should not be visible on page 1
-      await quotaPage.verifyQuotaNotExists(quotaIds[QUOTA_COUNT - 1]);
+      // Page 2 quota should not be visible on page 1
+      await quotaPage.verifyQuotaNotExists(page2Quotas[0]);
     });
 
     await test.step('Cleanup: Delete all test quotas', async () => {
@@ -152,6 +195,7 @@ test.describe('Quotas - Pagination', () => {
     const timestamp = Date.now();
     const quotaIds: string[] = [];
     const QUOTA_COUNT = 60;
+    const PAGE_SIZE = 20;
 
     await test.step(`Create ${QUOTA_COUNT} quotas`, async () => {
       for (let i = 1; i <= QUOTA_COUNT; i++) {
@@ -165,11 +209,13 @@ test.describe('Quotas - Pagination', () => {
       }
     });
 
-    await test.step('Navigate to quotas page', async () => {
-      await quotaPage.goToQuotasList();
+    const page1Quotas: string[] = [];
+
+    await test.step('Navigate to quotas page with explicit page size', async () => {
+      await page.goto(`/quotas?page=0&pageSize=${PAGE_SIZE}`);
     });
 
-    await test.step('Wait for quotas to load', async () => {
+    await test.step('Wait for quotas to load and capture page 1 quotas', async () => {
       await expect(async () => {
         const visibleQuotaCount = await page
           .locator('tr')
@@ -177,17 +223,29 @@ test.describe('Quotas - Pagination', () => {
           .count();
         expect(visibleQuotaCount).toBeGreaterThan(0);
       }).toPass({ timeout: 15_000, intervals: [500, 1000, 5000] });
+
+      // Capture which quotas are visible on page 1
+      const rows = page.locator('tr').filter({ hasText: `url-state-test-${timestamp}` });
+      const rowCount = await rows.count();
+      for (let i = 0; i < rowCount; i++) {
+        const text = await rows.nth(i).textContent();
+        const match = text?.match(/url-state-test-\d+-\d+/);
+        if (match) {
+          page1Quotas.push(match[0]);
+        }
+      }
+      expect(page1Quotas.length).toBeGreaterThan(0);
     });
 
     await test.step('Navigate to page 2', async () => {
-      const nextButton = page.getByRole('button', { name: /next/i }).or(page.locator('[aria-label*="next"]'));
-      await nextButton.click();
+      await quotaPage.clickNextPage();
       await page.waitForURL(/page=1/, { timeout: 5000 });
     });
 
     await test.step('Verify URL contains pagination state', async () => {
       const url = page.url();
       expect(url).toContain('page=1');
+      expect(url).toContain(`pageSize=${PAGE_SIZE}`);
     });
 
     await test.step('Reload page and verify pagination state persists', async () => {
@@ -196,8 +254,8 @@ test.describe('Quotas - Pagination', () => {
       // Should still be on page 2
       expect(page.url()).toContain('page=1');
 
-      // First quota should not be visible (it's on page 1)
-      await quotaPage.verifyQuotaNotExists(quotaIds[0]);
+      // Page 1 quota should not be visible (we're on page 2)
+      await quotaPage.verifyQuotaNotExists(page1Quotas[0]);
     });
 
     await test.step('Cleanup: Delete all test quotas', async () => {
@@ -212,6 +270,7 @@ test.describe('Quotas - Pagination', () => {
     const timestamp = Date.now();
     const quotaIds: string[] = [];
     const QUOTA_COUNT = 55;
+    const PAGE_SIZE = 20;
 
     await test.step(`Create ${QUOTA_COUNT} quotas`, async () => {
       for (let i = 1; i <= QUOTA_COUNT; i++) {
@@ -225,8 +284,8 @@ test.describe('Quotas - Pagination', () => {
       }
     });
 
-    await test.step('Navigate to quotas page', async () => {
-      await quotaPage.goToQuotasList();
+    await test.step('Navigate to quotas page with explicit page size', async () => {
+      await page.goto(`/quotas?page=0&pageSize=${PAGE_SIZE}`);
     });
 
     await test.step('Wait for quotas to load', async () => {
@@ -240,8 +299,8 @@ test.describe('Quotas - Pagination', () => {
     });
 
     await test.step('Verify page info text is displayed', async () => {
-      // Look for text like "1-50 of 55" or similar pagination info
-      const pageInfo = page.locator('text=/\\d+-\\d+ of \\d+/').or(page.locator('text=/Page \\d+ of \\d+/'));
+      // Look for text like "Page 1 of 3" or similar pagination info
+      const pageInfo = page.locator('text=/Page \\d+ of \\d+/');
 
       const isVisible = await pageInfo.isVisible({ timeout: 2000 }).catch(() => false);
 
