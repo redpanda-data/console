@@ -10,6 +10,7 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
+import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { ScaleIcon } from 'components/icons';
 import { useLayoutEffect } from 'react';
 import { z } from 'zod';
@@ -18,8 +19,8 @@ import QuotasList from '../components/pages/quotas/quotas-list';
 import { uiState } from '../state/ui-state';
 
 const quotasSearchSchema = z.object({
-  page: z.number().int().min(0).catch(0).optional(),
-  pageSize: z.number().int().min(10).max(100).catch(50).optional(),
+  page: fallback(z.number().int().min(0).optional(), 0),
+  pageSize: fallback(z.number().int().min(10).max(100).optional(), 50),
 });
 
 export const Route = createFileRoute('/quotas')({
@@ -27,7 +28,7 @@ export const Route = createFileRoute('/quotas')({
     title: 'Quotas',
     icon: ScaleIcon,
   },
-  validateSearch: quotasSearchSchema,
+  validateSearch: zodValidator(quotasSearchSchema),
   component: QuotasWrapper,
 });
 

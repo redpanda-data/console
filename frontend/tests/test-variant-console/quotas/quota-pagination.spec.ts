@@ -5,6 +5,11 @@ import { QuotaPage } from '../utils/quota-page';
 
 const DEFAULT_PAGE_SIZE = 50;
 
+// Regex patterns for pagination tests
+const ENTITY_TYPE_REGEX = /client-id|user|ip/;
+const PAGE_0_REGEX = /page=0/;
+const PAGE_1_REGEX = /page=1/;
+
 test.describe('Quotas - Pagination', () => {
   test('should not show pagination controls when quotas count is less than page size', async ({ page }) => {
     await test.step('Navigate to quotas page', async () => {
@@ -13,10 +18,7 @@ test.describe('Quotas - Pagination', () => {
 
     await test.step('Verify pagination is not visible for small datasets', async () => {
       // Check if table has rows but pagination is not present
-      const rowCount = await page
-        .locator('tr')
-        .filter({ hasText: /client-id|user|ip/ })
-        .count();
+      const rowCount = await page.locator('tr').filter({ hasText: ENTITY_TYPE_REGEX }).count();
 
       // If there are less than 50 items, pagination should not be visible
       if (rowCount < DEFAULT_PAGE_SIZE) {
@@ -77,7 +79,7 @@ test.describe('Quotas - Pagination', () => {
       await quotaPage.clickNextPage();
 
       // Wait for page navigation to complete
-      await page.waitForURL(/page=1/, { timeout: 5000 });
+      await page.waitForURL(PAGE_1_REGEX, { timeout: 5000 });
     });
 
     await test.step('Verify page 1 quotas are no longer visible on page 2', async () => {
@@ -149,7 +151,7 @@ test.describe('Quotas - Pagination', () => {
 
     await test.step('Navigate to page 2', async () => {
       await quotaPage.clickNextPage();
-      await page.waitForURL(/page=1/, { timeout: 5000 });
+      await page.waitForURL(PAGE_1_REGEX, { timeout: 5000 });
     });
 
     await test.step('Capture page 2 quotas', async () => {
@@ -171,7 +173,7 @@ test.describe('Quotas - Pagination', () => {
 
     await test.step('Navigate back to page 1', async () => {
       await quotaPage.clickPreviousPage();
-      await page.waitForURL(/page=0/, { timeout: 5000 });
+      await page.waitForURL(PAGE_0_REGEX, { timeout: 5000 });
     });
 
     await test.step('Verify page 1 quotas are visible again', async () => {
@@ -239,10 +241,10 @@ test.describe('Quotas - Pagination', () => {
 
     await test.step('Navigate to page 2', async () => {
       await quotaPage.clickNextPage();
-      await page.waitForURL(/page=1/, { timeout: 5000 });
+      await page.waitForURL(PAGE_1_REGEX, { timeout: 5000 });
     });
 
-    await test.step('Verify URL contains pagination state', async () => {
+    await test.step('Verify URL contains pagination state', () => {
       const url = page.url();
       expect(url).toContain('page=1');
       expect(url).toContain(`pageSize=${PAGE_SIZE}`);

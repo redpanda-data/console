@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda-data/ui';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { SkipIcon } from 'components/icons';
-import { config } from 'config';
+import { Link } from 'components/redpanda-ui/components/typography';
+import { useQuotasQuery } from 'hooks/use-quotas-query';
 import { useMemo } from 'react';
 
 import {
@@ -22,8 +21,7 @@ import {
   type Quota_Value,
   Quota_ValueType,
 } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
-import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
-import type { QuotaResponse, QuotaResponseSetting } from '../../../state/rest-interfaces';
+import type { QuotaResponseSetting } from '../../../state/rest-interfaces';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -61,39 +59,6 @@ const mapEntityTypeToProto = (entityType: string): Quota_EntityType => {
     default:
       return Quota_EntityType.UNSPECIFIED;
   }
-};
-
-/**
- * Custom hook to fetch quotas from REST API until protobuf endpoint is available
- */
-const useQuotasQuery = () => {
-  // Create a query key compatible with Connect Query for future migration
-  const queryKey = createConnectQueryKey({
-    schema: listQuotas,
-    input: {},
-    cardinality: 'finite',
-  });
-
-  return useQuery<QuotaResponse | null>({
-    queryKey,
-    queryFn: async () => {
-      const response = await config.fetch(`${config.restBasePath}/quotas`, {
-        method: 'GET',
-        headers: {},
-      });
-
-      if (!response.ok) {
-        if (response.status === 403 || response.status === 401) {
-          throw new Error('You do not have permission to view quotas');
-        }
-        throw new Error(`Failed to fetch quotas: ${response.statusText}`);
-      }
-
-      const data: QuotaResponse = await response.json();
-      return data;
-    },
-    refetchOnMount: 'always',
-  });
 };
 
 const QuotasList = () => {
@@ -179,9 +144,9 @@ const QuotasList = () => {
           <Section>
             <Result
               extra={
-                <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+                <Link href="https://docs.redpanda.com/docs/manage/console/" target="_blank">
                   <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
-                </a>
+                </Link>
               }
               status={403}
               title="Forbidden"
