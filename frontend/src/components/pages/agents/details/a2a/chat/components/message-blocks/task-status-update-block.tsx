@@ -121,11 +121,11 @@ export const TaskStatusUpdateBlock = ({
     <div className="flex items-center gap-2">
       {Boolean(hasPreviousState) && (
         <>
-          <TaskState state={previousState as typeof validState} animate={false} />
+          <TaskState animate={false} state={previousState as typeof validState} />
           <MoveRightIcon className="size-4 text-muted-foreground" />
         </>
       )}
-      <TaskState state={validState} animate={isLastBlock && validState === 'working'} />
+      <TaskState animate={isLastBlock && validState === 'working'} state={validState} />
     </div>
   );
 
