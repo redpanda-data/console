@@ -36,9 +36,9 @@ processors:
 meta:
   mcp:
     enabled: true
-    description: "Fetch current weather information for a specified city"
+    description: Fetch current weather information for a specified city. Do not pass anything beside city name.
     properties:
       - name: city_name
         type: string
-        description: "Name of the city to get weather information for"
+        description: Only city name.
         required: true
