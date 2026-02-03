@@ -29,6 +29,8 @@ import { AlertCircle, ArrowLeft, Bot, Plus, RefreshCw, Sparkles, Wrench, X, Zap 
 import type { FC } from 'react';
 import { useState } from 'react';
 
+import { ServiceFilter, type ServiceInfo } from './service-filter';
+
 // Filter types
 export type SpanFilterPreset = 'llm' | 'tool' | 'agent' | 'error' | 'slow';
 export type AttributeOperator = 'equals' | 'not_equals';
@@ -144,6 +146,11 @@ export type TranscriptFilterBarProps = {
   onAttributeFiltersChange: (filters: SpanFilter[]) => void;
   showFullTraces: boolean;
   onShowFullTracesChange: (show: boolean) => void;
+
+  // Service filter
+  services: ServiceInfo[];
+  selectedServices: string[];
+  onSelectedServicesChange: (services: string[]) => void;
 
   // Time range
   timeRange: string;
@@ -304,6 +311,9 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
   onAttributeFiltersChange,
   showFullTraces,
   onShowFullTracesChange,
+  services,
+  selectedServices,
+  onSelectedServicesChange,
   timeRange,
   onTimeRangeChange,
   jumpedTo,
@@ -311,7 +321,7 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
   isLoading,
   onRefresh,
 }) => {
-  const hasActiveFilters = activePresets.length > 0 || attributeFilters.length > 0;
+  const hasActiveFilters = activePresets.length > 0 || attributeFilters.length > 0 || selectedServices.length > 0;
 
   const togglePreset = (presetId: SpanFilterPreset) => {
     if (activePresets.includes(presetId)) {
@@ -328,6 +338,7 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
   const handleClearAll = () => {
     onPresetsChange([]);
     onAttributeFiltersChange([]);
+    onSelectedServicesChange([]);
   };
 
   // Build active filter pills from presets
@@ -341,7 +352,19 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
     };
   });
 
-  const allActiveFilters = [...presetPills, ...attributeFilters];
+  // Build service filter pills - look up display name from services list
+  const servicePills: SpanFilter[] = selectedServices.map((serviceValue) => {
+    // Find the display name for this service value
+    const serviceInfo = services.find((s) => s.value === serviceValue);
+    const displayName = serviceInfo?.name || serviceValue || 'unknown';
+    return {
+      id: `service-${serviceValue}`,
+      type: 'attribute' as const, // Using 'attribute' type for pill rendering compatibility
+      label: `Service: ${displayName}`,
+    };
+  });
+
+  const allActiveFilters = [...servicePills, ...presetPills, ...attributeFilters];
 
   return (
     <div className="flex flex-col gap-2">
@@ -354,6 +377,9 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
             Back to newest
           </Button>
         )}
+
+        {/* Service filter dropdown */}
+        <ServiceFilter onChange={onSelectedServicesChange} selected={selectedServices} services={services} />
 
         {/* Preset filter buttons */}
         {PRESET_FILTERS.map((preset) => {
@@ -428,7 +454,11 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
               filter={filter}
               key={filter.id}
               onRemove={() => {
-                if (filter.type === 'preset' && filter.preset) {
+                if (filter.id.startsWith('service-')) {
+                  // Remove service filter - extract value from ID (can be empty string)
+                  const serviceValue = filter.id.replace('service-', '');
+                  onSelectedServicesChange(selectedServices.filter((s) => s !== serviceValue));
+                } else if (filter.type === 'preset' && filter.preset) {
                   onPresetsChange(activePresets.filter((p) => p !== filter.preset));
                 } else {
                   removeAttributeFilter(filter.id);
