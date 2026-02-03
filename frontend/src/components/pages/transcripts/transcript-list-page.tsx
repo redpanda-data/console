@@ -537,6 +537,31 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     setIsLoadingMore(false);
   }, [data, isLinkedTraceMode, linkedTraceData?.trace?.summary]);
 
+  // Track previous filter state to detect changes
+  const prevFiltersRef = useRef<{ presets: string; attrs: string }>({
+    presets: JSON.stringify(activePresets || []),
+    attrs: JSON.stringify(urlAttrFilters),
+  });
+
+  // Clear span selection when filters change
+  // This prevents the details panel from showing an orphaned span that doesn't match current filters
+  // biome-ignore lint/correctness/useExhaustiveDependencies: selectedSpanId intentionally excluded - we only want to react to filter changes, not selection changes
+  useEffect(() => {
+    const currentPresets = JSON.stringify(activePresets || []);
+    const currentAttrs = JSON.stringify(urlAttrFilters);
+    const prev = prevFiltersRef.current;
+
+    const filtersChanged = prev.presets !== currentPresets || prev.attrs !== currentAttrs;
+
+    // Update ref for next comparison
+    prevFiltersRef.current = { presets: currentPresets, attrs: currentAttrs };
+
+    // Clear selection when filters change - the selected span may no longer match
+    if (selectedSpanId && filtersChanged) {
+      setUrlState({ traceId: null, spanId: null, tab: null });
+    }
+  }, [activePresets, urlAttrFilters, setUrlState]);
+
   // Detect when URL has a traceId on initial page load - enter linked mode
   // This only runs once on mount. After that, clicking traces does NOT enter linked mode.
   useEffect(() => {

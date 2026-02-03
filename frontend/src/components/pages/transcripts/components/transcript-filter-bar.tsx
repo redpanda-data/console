@@ -11,6 +11,7 @@
 
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
@@ -57,17 +58,54 @@ const PRESET_FILTERS: PresetFilterConfig[] = [
   { id: 'slow', label: 'Slow (>5s)', icon: Zap },
 ];
 
-const COMMON_ATTRIBUTES = [
-  'trace.id',
-  'span.id',
-  'span.name',
-  'service.name',
-  'gen_ai.request.model',
+// Valid OTel GenAI semantic convention attributes for span filtering
+// Note: trace.id, span.id, span.name, service.name are NOT span attributes (they're top-level fields or resource attributes)
+const ATTRIBUTE_SUGGESTIONS = [
+  // GenAI - Agent (from OTel gen-ai-agent-spans)
+  'gen_ai.agent.id',
   'gen_ai.agent.name',
+  'gen_ai.agent.description',
+  'gen_ai.conversation.id',
+  'gen_ai.data_source.id',
+
+  // GenAI - Operation & Provider
+  'gen_ai.operation.name',
   'gen_ai.provider.name',
-  'tool.name',
-  'error.message',
+
+  // GenAI - Request
+  'gen_ai.request.model',
+  'gen_ai.request.temperature',
+  'gen_ai.request.max_tokens',
+  'gen_ai.request.top_p',
+  'gen_ai.request.frequency_penalty',
+  'gen_ai.request.presence_penalty',
+
+  // GenAI - Response
+  'gen_ai.response.id',
+  'gen_ai.response.model',
+  'gen_ai.response.finish_reasons',
+
+  // GenAI - Tool
+  'gen_ai.tool.name',
+  'gen_ai.tool.call.id',
+  'gen_ai.tool.description',
+  'gen_ai.tool.type',
+
+  // GenAI - Usage
+  'gen_ai.usage.input_tokens',
+  'gen_ai.usage.output_tokens',
+
+  // HTTP (for external tool calls)
+  'http.request.method',
+  'http.response.status_code',
+  'url.full',
 ];
+
+// Convert to Combobox options format
+const ATTRIBUTE_OPTIONS = ATTRIBUTE_SUGGESTIONS.map((attr) => ({
+  value: attr,
+  label: attr,
+}));
 
 const OPERATOR_OPTIONS: { value: AttributeOperator; label: string }[] = [
   { value: 'equals', label: 'equals' },
@@ -182,18 +220,13 @@ const AttributeFilterPopover: FC<{
           {/* Attribute Key */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="attr-key">Attribute</Label>
-            <Select onValueChange={setAttributeKey} value={attributeKey}>
-              <SelectTrigger className="h-8" id="attr-key">
-                <SelectValue placeholder="Select attribute..." />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_ATTRIBUTES.map((attr) => (
-                  <SelectItem key={attr} value={attr}>
-                    {attr}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              creatable={true}
+              onChange={setAttributeKey}
+              options={ATTRIBUTE_OPTIONS}
+              placeholder="Select or type attribute..."
+              value={attributeKey}
+            />
           </div>
 
           {/* Operator */}
