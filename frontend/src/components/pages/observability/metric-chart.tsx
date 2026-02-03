@@ -10,13 +10,13 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { Alert, AlertIcon, Box, Heading, Skeleton, Text } from '@redpanda-data/ui';
 import type { ExecuteRangeQueryResponse } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 import { useExecuteRangeQuery } from 'react-query/api/observability';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
+import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import {
   ChartContainer,
   ChartLegend,
@@ -24,6 +24,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '../../redpanda-ui/components/chart';
+import { Skeleton } from '../../redpanda-ui/components/skeleton';
+import { Heading } from '../../redpanda-ui/components/typography';
 
 type MetricChartProps = {
   queryName: string;
@@ -123,48 +125,46 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
 
   if (isLoading) {
     return (
-      <Box borderColor="gray.200" borderRadius="md" borderWidth="1px" p={4}>
-        <Skeleton height="200px" mt={2} />
-      </Box>
+      <div className="rounded-md border border-gray-200 p-4">
+        <Skeleton className="h-[200px] mt-2" />
+      </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <Box borderColor="gray.200" borderRadius="md" borderWidth="1px" p={4}>
-        <Alert mt={2} status="warning">
-          <AlertIcon />
-          <Text fontSize="sm">Failed to load data for this metric</Text>
+      <div className="rounded-md border border-gray-200 p-4">
+        <Alert variant="warning" className="mt-2">
+          <AlertDescription>Failed to load data for this metric</AlertDescription>
         </Alert>
-      </Box>
+      </div>
     );
   }
 
   if (chartData.length === 0) {
     return (
-      <Box borderColor="gray.200" borderRadius="md" borderWidth="1px" p={4}>
+      <div className="rounded-md border border-gray-200 p-4">
         {data.metadata?.description ? (
-          <Heading mb={2} size="sm">
+          <Heading level={4} className="mb-4">
             {data.metadata.description}
           </Heading>
         ) : null}
-        <Alert mt={2} status="info">
-          <AlertIcon />
-          <Text fontSize="sm">No data available for this time range</Text>
+        <Alert variant="info" className="mt-2">
+          <AlertDescription>No data available for this time range</AlertDescription>
         </Alert>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box borderColor="gray.200" borderRadius="md" borderWidth="1px" p={4}>
+    <div className="rounded-md border border-gray-200 p-4">
       {data.metadata?.description ? (
-        <Heading mb={4} size="sm">
+        <Heading level={3} className="mb-4">
           {data.metadata.description}
         </Heading>
       ) : null}
 
-      <ChartContainer className="h-[250px] w-full" config={chartConfig}>
+      <ChartContainer className="mt-4 h-[250px] w-full" config={chartConfig}>
         <LineChart accessibilityLayer data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
@@ -272,6 +272,6 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
           <ChartLegend content={<ChartLegendContent />} />
         </LineChart>
       </ChartContainer>
-    </Box>
+    </div>
   );
 };

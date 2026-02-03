@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Flex, Text } from '@redpanda-data/ui';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 
@@ -71,10 +70,10 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
   }, [timeRange]);
 
   return (
-    <Box borderColor="gray.200" borderRadius="md" borderWidth="1px" boxShadow="sm" p={4}>
-      <Flex gap={6}>
-        <Box>
-          <Text className="mb-1 text-gray-600 text-xs">TIME RANGE</Text>
+    <div className="rounded-md border border-gray-200 p-4 shadow-sm">
+      <div className="flex gap-6">
+        <div>
+          <div className="mb-1 text-gray-600 text-xs">TIME RANGE</div>
           <Select onValueChange={(value) => onTimeRangeChange(value as TimeRange)} value={selectedTimeRange}>
             <SelectTrigger className="h-8 w-[110px] text-sm">
               <SelectValue />
@@ -88,24 +87,24 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
               <SelectItem value="6h">Last 6h</SelectItem>
             </SelectContent>
           </Select>
-        </Box>
-        <Box className="w-px bg-gray-300" />
-        <Box>
-          <Text className="mb-1 text-gray-600 text-xs">FROM</Text>
-          <Text className="font-medium text-sm">{timeRangeDisplay.start}</Text>
-        </Box>
-        <Box className="w-px bg-gray-300" />
-        <Box>
-          <Text className="mb-1 text-gray-600 text-xs">TO</Text>
-          <Text className="font-medium text-sm">{timeRangeDisplay.end}</Text>
-        </Box>
-        <Box className="w-px bg-gray-300" />
-        <Box>
-          <Text className="mb-1 text-gray-600 text-xs">TIMEZONE</Text>
-          <Text className="font-medium text-sm">UTC</Text>
-        </Box>
-      </Flex>
-    </Box>
+        </div>
+        <div className="w-px bg-gray-300" />
+        <div>
+          <div className="mb-1 text-gray-600 text-xs">FROM</div>
+          <div className="font-medium text-sm">{timeRangeDisplay.start}</div>
+        </div>
+        <div className="w-px bg-gray-300" />
+        <div>
+          <div className="mb-1 text-gray-600 text-xs">TO</div>
+          <div className="font-medium text-sm">{timeRangeDisplay.end}</div>
+        </div>
+        <div className="w-px bg-gray-300" />
+        <div>
+          <div className="mb-1 text-gray-600 text-xs">TIMEZONE</div>
+          <div className="font-medium text-sm">UTC</div>
+        </div>
+      </div>
+    </div>
   );
 };
 
