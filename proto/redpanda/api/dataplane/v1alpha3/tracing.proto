@@ -132,6 +132,20 @@ message ListTracesRequest {
 
     // Field 6 was removed (return_full_traces). Partial trace filtering is now done client-side.
     reserved 6;
+
+    // Filter by service name (from resource.service.name attribute).
+    // Uses OR logic - trace matches if its root service matches any of these values.
+    repeated string service_names = 7 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by service name (from resource attributes). OR logic - matches if root service is any of these."}
+    ];
+
+    // Filter by specific span IDs.
+    // Uses OR logic - returns traces containing any of these spans.
+    repeated string span_ids = 8 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by span ID. Returns traces containing any of these spans."}
+    ];
   }
 }
 

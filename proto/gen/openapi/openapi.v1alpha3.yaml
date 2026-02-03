@@ -1234,6 +1234,16 @@ components:
           format: int64
           nullable: true
           type: string
+        service_names:
+          description: Filter by service name (from resource attributes). OR logic - matches if root service is any of these.
+          items:
+            type: string
+          type: array
+        span_ids:
+          description: Filter by span ID. Returns traces containing any of these spans.
+          items:
+            type: string
+          type: array
         start_time:
           description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
           format: date-time
@@ -2727,6 +2737,20 @@ paths:
           schema:
             format: int64
             type: string
+        - description: Filter by service name (from resource attributes). OR logic - matches if root service is any of these.
+          in: query
+          name: filter.service_names
+          schema:
+            items:
+              type: string
+            type: array
+        - description: Filter by span ID. Returns traces containing any of these spans.
+          in: query
+          name: filter.span_ids
+          schema:
+            items:
+              type: string
+            type: array
       responses:
         default:
           content:
@@ -2786,6 +2810,20 @@ paths:
           schema:
             format: int64
             type: string
+        - description: Filter by service name (from resource attributes). OR logic - matches if root service is any of these.
+          in: query
+          name: filter.service_names
+          schema:
+            items:
+              type: string
+            type: array
+        - description: Filter by span ID. Returns traces containing any of these spans.
+          in: query
+          name: filter.span_ids
+          schema:
+            items:
+              type: string
+            type: array
       responses:
         default:
           content:
