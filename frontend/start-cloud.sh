@@ -28,8 +28,10 @@ fi
 
 # Extract cluster ID from backend URL
 # Example: https://console-2fd2fedf.d5mst2vnnfekmiescdb0.fmc.ign.cloud.redpanda.com
-# Extracts: d5mst2vnnfekmiescdb0
-CLUSTER_ID=$(echo "$BACKEND_URL" | sed -E 's/.*\.([a-z0-9]+)\.(fmc\.ign|rpd)\.cloud\.redpanda\.com.*/\1/')
+# Example: https://console-2498fb74.d5tp5kntujt599ksadgg.byoc.ign.cloud.redpanda.com
+# Example: https://console-xxx.d5xxx.ppd.ign.cloud.redpanda.com (preprod)
+# Extracts: d5mst2vnnfekmiescdb0 or d5tp5kntujt599ksadgg
+CLUSTER_ID=$(echo "$BACKEND_URL" | sed -E 's/.*\.([a-z0-9]+)\.(fmc\.ign|byoc\.ign|ppd\.ign|rpd)\.cloud\.redpanda\.com.*/\1/')
 
 export PROXY_TARGET="$BACKEND_URL"
 export AI_GATEWAY_URL="https://ai-gateway.${CLUSTER_ID}.clusters.ign.rdpa.co"
