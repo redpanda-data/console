@@ -69,6 +69,20 @@ vi.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: () => <div>Not Found</div>,
 }));
 
+vi.mock('./token-manager', () => ({
+  TokenManager: class MockTokenManager {
+    private getToken: () => Promise<string>;
+    refresh = vi.fn();
+    abort = vi.fn();
+    isRefreshing = false;
+
+    constructor(getToken: () => Promise<string>) {
+      this.getToken = getToken;
+      this.refresh.mockImplementation(() => this.getToken());
+    }
+  },
+}));
+
 import { ConsoleApp } from './console-app';
 import type { ConsoleAppProps } from './types';
 import { config, setup } from '../config';
@@ -241,5 +255,92 @@ describe('ConsoleApp', () => {
 
     // Should not throw on unmount (unsubscribe should be called)
     unmount();
+  });
+
+  describe('Feature Flags', () => {
+    test('passes feature flags to setup()', async () => {
+      const flags = { schemaRegistry: true, enableKnowledgeBaseInConsoleUi: false };
+      render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: flags }));
+      });
+    });
+
+    test('handles missing feature flags gracefully', async () => {
+      const propsWithoutFlags = {
+        ...defaultProps,
+        featureFlags: undefined,
+      };
+
+      // Should not throw
+      render(<ConsoleApp {...propsWithoutFlags} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // setup should still be called
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalled();
+      });
+    });
+
+    test('handles empty feature flags object', async () => {
+      render(<ConsoleApp {...defaultProps} featureFlags={{}} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: {} }));
+      });
+    });
+  });
+
+  describe('Config Overrides', () => {
+    test('applies URL overrides from config', async () => {
+      const customConfig = {
+        urlOverride: { grpc: 'https://custom.api.com' },
+      };
+      render(<ConsoleApp {...defaultProps} config={customConfig} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            urlOverride: { grpc: 'https://custom.api.com' },
+          })
+        );
+      });
+    });
+
+    test('handles config with multiple URL overrides', async () => {
+      const customConfig = {
+        urlOverride: {
+          grpc: 'https://grpc.example.com',
+          rest: 'https://rest.example.com',
+        },
+      };
+      render(<ConsoleApp {...defaultProps} config={customConfig} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            urlOverride: customConfig.urlOverride,
+          })
+        );
+      });
+    });
+
+    test('handles undefined config gracefully', async () => {
+      const propsWithoutConfig = {
+        ...defaultProps,
+        config: undefined,
+      };
+
+      // Should not throw
+      render(<ConsoleApp {...propsWithoutConfig} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+    });
   });
 });
