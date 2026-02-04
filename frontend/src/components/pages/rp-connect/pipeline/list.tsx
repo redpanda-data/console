@@ -410,7 +410,6 @@ const createColumns = ({
         <Link
           as={TanStackRouterLink}
           className="max-w-[200px] text-base text-primary text-truncate"
-          // @ts-expect-error - still figuring this out
           params={{ pipelineId: encodeURIComponent(row.original.id) }}
           to="/rp-connect/$pipelineId"
         >
