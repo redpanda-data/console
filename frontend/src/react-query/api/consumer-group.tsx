@@ -65,7 +65,7 @@ export const useLegacyConsumerGroupDetailsQuery = (groupId: string, options?: { 
       const response = await fetch(`${config.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
         },
       });
 
