@@ -1,7 +1,10 @@
 /**
- * https://www.builder.io/c/docs/integrate-section-building
- * https://www.builder.io/c/blueprints/announcement-bar
- * src/components/AnnouncementBar.tsx
+ * Builder.io nurture panel component.
+ * Displays resources and updates for the overview page.
+ * Only used in standalone mode - not imported in federated/embedded routes.
+ *
+ * @see https://www.builder.io/c/docs/integrate-section-building
+ * @see https://www.builder.io/c/blueprints/announcement-bar
  */
 import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-react';
 import { Box, Skeleton, Text } from '@redpanda-data/ui';
@@ -11,6 +14,11 @@ import { isEmbedded } from 'config';
 import { useEffect, useState } from 'react';
 import { api } from 'state/backend-api';
 
+/**
+ * NurturePanel displays Builder.io content for resources and updates.
+ * Returns null in embedded mode - use conditional rendering at the route level
+ * to avoid loading Builder.io dependencies in federated bundles.
+ */
 export default function NurturePanel() {
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
 
@@ -50,6 +58,7 @@ export default function NurturePanel() {
       });
   }, [platform, MODEL_NAME, embedded]);
 
+  // Early return for embedded mode - Builder.io content not needed
   if (embedded) {
     return null;
   }
