@@ -278,7 +278,10 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
         style={{ '--tree-x': '11px' } as React.CSSProperties}
       >
         {!!(isExpanded && hasChildren) && (
-          <div className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border" style={{ left: 'var(--tree-x)' }} />
+          <div
+            className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border"
+            style={{ left: 'var(--tree-x)' }}
+          />
         )}
         <div
           aria-hidden="true"
@@ -374,7 +377,7 @@ const SpanRow: FC<SpanRowProps> = ({
           'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]',
           // Highlight matched spans with a subtle muted background (distinct from blue selection color)
           isMatchedByFilter &&
-            'shadow-[inset_2px_0_0_0_color-mix(in_srgb,var(--color-muted-foreground)_40%,transparent)] bg-muted/25 dark:bg-muted/20',
+            'bg-muted/25 shadow-[inset_2px_0_0_0_color-mix(in_srgb,var(--color-muted-foreground)_40%,transparent)] dark:bg-muted/20',
           // Dim unmatched parent spans
           isUnmatchedParent && 'opacity-50'
         )}
@@ -514,7 +517,7 @@ const computeInitialExpandedSpans = (spanTree: SpanNode[]): Set<string> => {
 // Custom hook: Manage span expansion state
 const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   const [expandedSpans, setExpandedSpans] = useState<Set<string>>(() => computeInitialExpandedSpans(spanTree));
-  const prevSpanTreeLength = useRef(0);
+  const hasInitializedRef = useRef(spanTree.length > 0);
 
   // Reset to initial state when collapse all is triggered
   useEffect(() => {
@@ -525,19 +528,14 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
 
   // Sync expansion state when spanTree loads (handles async data loading)
   useEffect(() => {
-    const currentLength = spanTree.length;
-
-    // Only run if transitioning from empty (0) to populated (N)
-    // AND we currently have no expanded spans
-    if (prevSpanTreeLength.current === 0 && currentLength > 0 && expandedSpans.size === 0) {
+    // Only initialize once when spanTree first becomes populated
+    if (!hasInitializedRef.current && spanTree.length > 0) {
+      hasInitializedRef.current = true;
       const initialSpans = computeInitialExpandedSpans(spanTree);
       if (initialSpans.size > 0) {
         setExpandedSpans(initialSpans);
       }
     }
-
-    // Update ref for next render
-    prevSpanTreeLength.current = currentLength;
   }, [spanTree]);
 
   const toggleSpan = (spanId: string) => {
@@ -745,7 +743,10 @@ const RootTraceRow: FC<{
         >
           {/* Vertical line when expanded - extends to bottom-0 to connect with child's -top-1 line */}
           {isExpanded && spanTreeLength > 0 && (
-            <div className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border" style={{ left: 'var(--tree-x)' }} />
+            <div
+              className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border"
+              style={{ left: 'var(--tree-x)' }}
+            />
           )}
           {/* Using div instead of Button to avoid nested button warning - parent button handles interaction */}
           <div
