@@ -246,7 +246,6 @@ export type ListGatewaysRequest = Message<"redpanda.api.aigateway.v1.ListGateway
   /**
    * Filter expression (CEL syntax)
    * Examples:
-   *   enabled = true
    *   display_name = "production-gateway"
    *   create_time > timestamp("2024-01-01T00:00:00Z")
    *
@@ -318,7 +317,7 @@ export type UpdateGatewayRequest = Message<"redpanda.api.aigateway.v1.UpdateGate
   /**
    * The fields to update.
    * If omitted, all mutable fields are updated.
-   * Allowed fields: display_name, description, enabled, metadata
+   * Allowed fields: display_name, description, metadata
    *
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */

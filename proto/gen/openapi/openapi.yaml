@@ -116,6 +116,214 @@ components:
           $ref: '#/components/schemas/ACLResource'
       title: A filter to match ACLs for resources
       type: object
+    AIAgent:
+      description: Defines the AI Agent resource.
+      properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
+        description:
+          description: Optional AI agent description.
+          type: string
+        display_name:
+          description: User-friendly AI agent name.
+          type: string
+        gateway:
+          $ref: '#/components/schemas/GatewayConfig'
+        id:
+          description: AI Agent ID.
+          readOnly: true
+          type: string
+        max_iterations:
+          format: int32
+          type: integer
+        mcp_servers:
+          additionalProperties:
+            $ref: '#/components/schemas/AIAgent.MCPServer'
+          description: Map of MCP servers that this AI agent can use.
+          type: object
+        model:
+          type: string
+        provider:
+          $ref: '#/components/schemas/AIAgent.Provider'
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
+        state:
+          $ref: '#/components/schemas/AIAgent.State'
+        subagents:
+          additionalProperties:
+            $ref: '#/components/schemas/Subagent'
+          description: |-
+            Map of subagents for delegating specialized tasks.
+            Key is the subagent name (used for routing/invocation).
+          type: object
+        system_prompt:
+          description: System instructions that define how the AI agent should behave and respond.
+          type: string
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Tags are key-value pairs that can be assigned to an AI agent resource.
+            They help organize AI agents and enable filtering when listing them.
+          type: object
+        url:
+          description: URL to connect to the AI agent endpoint.
+          readOnly: true
+          type: string
+      required:
+        - display_name
+        - system_prompt
+        - provider
+        - model
+        - service_account
+      type: object
+    AIAgent.MCPServer:
+      description: MCP server configuration.
+      properties:
+        id:
+          description: ID of the Redpanda MCP server.
+          type: string
+        tool_filter_regex:
+          description: |-
+            Optional regex pattern to filter which tools from the MCP server should be available.
+            If not specified, all tools from the MCP server are available.
+            The pattern is matched against tool names.
+          type: string
+      type: object
+    AIAgent.Provider:
+      properties:
+        anthropic:
+          $ref: '#/components/schemas/Anthropic'
+        google:
+          $ref: '#/components/schemas/Google'
+        openai:
+          $ref: '#/components/schemas/OpenAI'
+        openai_compatible:
+          $ref: '#/components/schemas/OpenAICompatible'
+      type: object
+    AIAgent.ServiceAccount:
+      properties:
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required:
+        - client_id
+        - client_secret
+      type: object
+    AIAgent.State:
+      description: |-
+        State of the AI agent.
+
+         - STATE_STARTING: The AI agent is starting.
+         - STATE_RUNNING: The AI agent is running and ready to handle requests.
+         - STATE_STOPPING: The AI agent is in the process of stopping.
+         - STATE_STOPPED: The AI agent is stopped and in paused state.
+         - STATE_ERROR: The AI agent encountered an error.
+      enum:
+        - STATE_STARTING
+        - STATE_RUNNING
+        - STATE_STOPPING
+        - STATE_STOPPED
+        - STATE_ERROR
+      type: string
+    AIAgentCreate:
+      description: AIAgentCreate contains the details for the AI agent creation request.
+      properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
+        description:
+          description: AI agent description.
+          type: string
+        display_name:
+          description: User-friendly AI agent name.
+          type: string
+        gateway:
+          $ref: '#/components/schemas/GatewayConfig'
+        max_iterations:
+          format: int32
+          type: integer
+        mcp_servers:
+          additionalProperties:
+            $ref: '#/components/schemas/AIAgent.MCPServer'
+          description: Map of MCP servers that this AI agent can use.
+          type: object
+        model:
+          type: string
+        provider:
+          $ref: '#/components/schemas/AIAgent.Provider'
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
+        subagents:
+          additionalProperties:
+            $ref: '#/components/schemas/Subagent'
+          description: Map of subagents for delegating specialized tasks.
+          type: object
+        system_prompt:
+          description: System instructions that define how the AI agent should behave and respond.
+          type: string
+        tags:
+          additionalProperties:
+            type: string
+          description: Optional list of tags to attach to an AI agent.
+          type: object
+      required:
+        - display_name
+        - system_prompt
+        - provider
+        - model
+        - service_account
+      type: object
+    AIAgentUpdate:
+      properties:
+        agent_card:
+          $ref: '#/components/schemas/AgentCard'
+        description:
+          description: AI agent description.
+          type: string
+        display_name:
+          description: User-friendly AI agent name.
+          type: string
+        gateway:
+          $ref: '#/components/schemas/GatewayConfig'
+        max_iterations:
+          format: int32
+          type: integer
+        mcp_servers:
+          additionalProperties:
+            $ref: '#/components/schemas/AIAgent.MCPServer'
+          description: Map of MCP servers that this AI agent can use.
+          type: object
+        model:
+          type: string
+        provider:
+          $ref: '#/components/schemas/AIAgent.Provider'
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/AIAgent.ServiceAccount'
+        subagents:
+          additionalProperties:
+            $ref: '#/components/schemas/Subagent'
+          description: |-
+            Map of subagents to add, update, or delete.
+            If a subagent's value is empty/null, the server interprets that as deletion.
+          type: object
+        system_prompt:
+          description: System instructions that define how the AI agent should behave and respond.
+          type: string
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            A map of tags to add, update or delete.
+            If a tag's value is empty, the server interprets that as a deletion.
+          type: object
+      type: object
     Action:
       enum:
         - ACTION_PREPARE
@@ -158,6 +366,33 @@ components:
       type: object
     AddTopicPartitionsResponse:
       type: object
+    AgentCard:
+      description: A2A agent card configuration for customizing agent discovery metadata.
+      properties:
+        documentation_url:
+          description: URL to documentation for the agent.
+          type: string
+        icon_url:
+          description: URL to an icon image for the agent.
+          type: string
+        provider:
+          $ref: '#/components/schemas/AgentCard.Provider'
+        skills:
+          description: Skills that this agent can perform.
+          items:
+            $ref: '#/components/schemas/Skill'
+          type: array
+      type: object
+    AgentCard.Provider:
+      description: Agent provider metadata.
+      properties:
+        organization:
+          description: 'Organization name (default: "Redpanda").'
+          type: string
+        url:
+          description: 'Organization URL (default: "https://redpanda.com").'
+          type: string
+      type: object
     AlterTopicPartitionStatus:
       properties:
         error:
@@ -177,6 +412,13 @@ components:
         value:
           type: string
       title: AnnotatedOption represents an annotated option
+      type: object
+    Anthropic:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
       type: object
     AuthenticationConfiguration:
       properties:
@@ -710,6 +952,11 @@ components:
       type: object
     CreateACLResponse:
       type: object
+    CreateAIAgentResponse:
+      properties:
+        ai_agent:
+          $ref: '#/components/schemas/AIAgent'
+      type: object
     CreateConnectorResponse:
       properties:
         connector:
@@ -743,7 +990,7 @@ components:
     CreateMCPServerResponse:
       properties:
         mcp_server:
-          $ref: '#/components/schemas/MCPServer'
+          $ref: '#/components/schemas/v1.MCPServer'
       type: object
     CreatePipelineResponse:
       properties:
@@ -905,6 +1152,8 @@ components:
           items:
             $ref: '#/components/schemas/MatchingACL'
           type: array
+      type: object
+    DeleteAIAgentResponse:
       type: object
     DeleteKafkaConnectSecretResponse:
       description: DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
@@ -1187,6 +1436,20 @@ components:
         - FILTER_TYPE_EXCLUDE
       title: What type of filter this is, include or exclude
       type: string
+    GatewayConfig:
+      description: Gateway configuration for routing requests through an AI Gateway.
+      properties:
+        virtual_gateway_id:
+          description: Virtual gateway ID (20-character XID format).
+          type: string
+      required:
+        - virtual_gateway_id
+      type: object
+    GetAIAgentResponse:
+      properties:
+        ai_agent:
+          $ref: '#/components/schemas/AIAgent'
+      type: object
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -1218,7 +1481,7 @@ components:
     GetMCPServerResponse:
       properties:
         mcp_server:
-          $ref: '#/components/schemas/MCPServer'
+          $ref: '#/components/schemas/v1.MCPServer'
       type: object
     GetMCPServerServiceConfigSchemaResponse:
       properties:
@@ -1296,6 +1559,13 @@ components:
       properties:
         transform:
           $ref: '#/components/schemas/TransformMetadata'
+      type: object
+    Google:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
       type: object
     Help:
       description: |-
@@ -1564,6 +1834,30 @@ components:
         resource_type:
           $ref: '#/components/schemas/ResourceType'
       type: object
+    ListAIAgentsRequest.Filter:
+      properties:
+        mcp_server_id:
+          type: string
+        name_contains:
+          description: Any AI agents that partially match this name will be returned.
+          type: string
+        secret_id:
+          type: string
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: AI agents that match all the provided tags will be returned.
+          type: object
+      type: object
+    ListAIAgentsResponse:
+      properties:
+        ai_agents:
+          items:
+            $ref: '#/components/schemas/AIAgent'
+          type: array
+        next_page_token:
+          type: string
+      type: object
     ListComponentsResponse:
       properties:
         components:
@@ -1652,7 +1946,7 @@ components:
       properties:
         mcp_servers:
           items:
-            $ref: '#/components/schemas/MCPServer'
+            $ref: '#/components/schemas/v1.MCPServer'
           type: array
         next_page_token:
           description: Token to retrieve the next page of results. Empty if there are no more results.
@@ -1940,48 +2234,6 @@ components:
           description: The localized error message in the above locale.
           type: string
       type: object
-    MCPServer:
-      description: Defines the MCP server resource.
-      properties:
-        description:
-          description: Optional MCP server description.
-          type: string
-        display_name:
-          description: User-friendly MCP server name.
-          type: string
-        id:
-          description: Unique identifier for the MCP server.
-          type: string
-        resources:
-          $ref: '#/components/schemas/Resources'
-        service_account:
-          $ref: '#/components/schemas/MCPServer.ServiceAccount'
-        state:
-          $ref: '#/components/schemas/MCPServer.State'
-        status:
-          $ref: '#/components/schemas/MCPServer.Status'
-        tags:
-          additionalProperties:
-            type: string
-          description: |-
-            Tags are key-value pairs that can be assigned to an MCP server resource.
-            They help organize MCP servers and enable filtering when listing them.
-          type: object
-        tools:
-          additionalProperties:
-            $ref: '#/components/schemas/Tool'
-          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
-          type: object
-        url:
-          description: URL to connect to the MCP server.
-          readOnly: true
-          type: string
-      required:
-        - id
-        - display_name
-        - tools
-        - service_account
-      type: object
     MCPServer.ServiceAccount:
       properties:
         client_id:
@@ -2169,6 +2421,22 @@ components:
         pattern_type:
           $ref: '#/components/schemas/PatternType'
       title: A filter based on the name of a resource
+      type: object
+    OpenAI:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      type: object
+    OpenAICompatible:
+      properties:
+        api_key:
+          type: string
+        base_url:
+          type: string
+      required:
+        - base_url
       type: object
     Options:
       properties:
@@ -3034,6 +3302,43 @@ components:
         - SHADOW_TOPIC_STATE_PROMOTED
       title: State of a shadow topic
       type: string
+    Skill:
+      description: A skill that the agent can perform.
+      properties:
+        description:
+          description: Description of what the skill does.
+          type: string
+        examples:
+          description: Example prompts that demonstrate the skill.
+          items:
+            type: string
+          type: array
+        id:
+          description: Unique identifier for the skill.
+          type: string
+        input_modes:
+          description: Supported input modes (e.g., "text", "file").
+          items:
+            type: string
+          type: array
+        name:
+          description: Human-readable name for the skill.
+          type: string
+        output_modes:
+          description: Supported output modes (e.g., "text", "file").
+          items:
+            type: string
+          type: array
+        tags:
+          description: Tags for categorizing the skill.
+          items:
+            type: string
+          type: array
+      required:
+        - id
+        - name
+        - description
+      type: object
     Source:
       properties:
         ip_address:
@@ -3042,25 +3347,54 @@ components:
           format: int64
           type: integer
       type: object
+    StartAIAgentResponse:
+      properties:
+        ai_agent:
+          $ref: '#/components/schemas/AIAgent'
+      type: object
     StartMCPServerResponse:
       properties:
         mcp_server:
-          $ref: '#/components/schemas/MCPServer'
+          $ref: '#/components/schemas/v1.MCPServer'
       type: object
     StartPipelineResponse:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
       type: object
+    StopAIAgentResponse:
+      properties:
+        ai_agent:
+          $ref: '#/components/schemas/AIAgent'
+      type: object
     StopMCPServerResponse:
       properties:
         mcp_server:
-          $ref: '#/components/schemas/MCPServer'
+          $ref: '#/components/schemas/v1.MCPServer'
       type: object
     StopPipelineResponse:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
+      type: object
+    Subagent:
+      description: Subagent configuration for delegating specialized tasks.
+      properties:
+        description:
+          description: Optional subagent description.
+          type: string
+        mcp_servers:
+          additionalProperties:
+            $ref: '#/components/schemas/AIAgent.MCPServer'
+          description: |-
+            Map of MCP servers that this subagent can use.
+            References Redpanda MCP servers by ID.
+          type: object
+        system_prompt:
+          description: System instructions that define how this subagent should behave. The subagent inherits the provider and model from its parent agent.
+          type: string
+      required:
+        - system_prompt
       type: object
     SuccessfulEntity:
       properties:
@@ -3345,6 +3679,11 @@ components:
           title: ID of unmount
           type: integer
       type: object
+    UpdateAIAgentResponse:
+      properties:
+        ai_agent:
+          $ref: '#/components/schemas/AIAgent'
+      type: object
     UpdateConfiguration:
       properties:
         name:
@@ -3381,7 +3720,7 @@ components:
     UpdateMCPServerResponse:
       properties:
         mcp_server:
-          $ref: '#/components/schemas/MCPServer'
+          $ref: '#/components/schemas/v1.MCPServer'
       type: object
     UpdateMountTaskBody:
       properties:
@@ -3606,6 +3945,48 @@ components:
       properties:
         shadow_topic:
           $ref: '#/components/schemas/v1.ShadowTopic'
+      type: object
+    v1.MCPServer:
+      description: Defines the MCP server resource.
+      properties:
+        description:
+          description: Optional MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP server name.
+          type: string
+        id:
+          description: Unique identifier for the MCP server.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        service_account:
+          $ref: '#/components/schemas/MCPServer.ServiceAccount'
+        state:
+          $ref: '#/components/schemas/MCPServer.State'
+        status:
+          $ref: '#/components/schemas/MCPServer.Status'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Tags are key-value pairs that can be assigned to an MCP server resource.
+            They help organize MCP servers and enable filtering when listing them.
+          type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
+          type: object
+        url:
+          description: URL to connect to the MCP server.
+          readOnly: true
+          type: string
+      required:
+        - id
+        - display_name
+        - tools
+        - service_account
       type: object
     v1.ShadowLink:
       properties:
@@ -3921,6 +4302,338 @@ paths:
       summary: Create ACL
       tags:
         - Redpanda ACLs
+  /v1/ai-agents:
+    get:
+      description: 'List AI agents. Optional: filter based on AI agent name.'
+      operationId: AIAgentService_ListAIAgents
+      parameters:
+        - description: Any AI agents that partially match this name will be returned.
+          in: query
+          name: filter.name_contains
+          schema:
+            type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.tags[string]
+          schema:
+            type: string
+        - in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - in: query
+          name: filter.mcp_server_id
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAIAgentsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List AI Agents
+      tags:
+        - AI Agents
+    post:
+      description: Create a new AI agent.
+      operationId: AIAgentService_CreateAIAgent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIAgentCreate'
+        required: true
+        x-originalParamName: ai_agent
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAgent'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create AI Agent
+      tags:
+        - AI Agents
+  /v1/ai-agents/{id}:
+    delete:
+      description: Delete an AI agent.
+      operationId: AIAgentService_DeleteAIAgent
+      parameters:
+        - description: AI Agent ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete AI Agent
+      tags:
+        - AI Agents
+    get:
+      description: Get a specific AI agent.
+      operationId: AIAgentService_GetAIAgent
+      parameters:
+        - description: AI Agent ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAgent'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get AI Agent
+      tags:
+        - AI Agents
+    put:
+      description: Update the configuration of an AI agent.
+      operationId: AIAgentService_UpdateAIAgent
+      parameters:
+        - description: AI Agent ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: |-
+            Specifies which fields should be updated. If not provided,
+            all fields will be updated.
+          in: query
+          name: update_mask
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIAgentUpdate'
+        required: true
+        x-originalParamName: ai_agent
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAgent'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update AI Agent
+      tags:
+        - AI Agents
+  /v1/ai-agents/{id}:start:
+    post:
+      description: Start a stopped AI agent.
+      operationId: AIAgentService_StartAIAgent
+      parameters:
+        - description: AI Agent ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAgent'
+          description: Started
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Start AI Agent
+      tags:
+        - AI Agents
+  /v1/ai-agents/{id}:stop:
+    post:
+      description: Stop a running AI agent.
+      operationId: AIAgentService_StopAIAgent
+      parameters:
+        - description: AI Agent ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAgent'
+          description: Stopped
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Stop AI Agent
+      tags:
+        - AI Agents
   /v1/cloud-storage/mount-tasks:
     get:
       description: This operation retrieves the status of a task responsible for mounting or unmounting topics. It provides details on the task’s type (mount or unmount), its current state, and the topics involved.
@@ -5655,7 +6368,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MCPServer'
+                $ref: '#/components/schemas/v1.MCPServer'
           description: OK
         "401":
           content:
@@ -5737,7 +6450,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MCPServer'
+                $ref: '#/components/schemas/v1.MCPServer'
           description: OK
         "401":
           content:
@@ -5793,7 +6506,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MCPServer'
+                $ref: '#/components/schemas/v1.MCPServer'
           description: OK
         "401":
           content:
@@ -5832,7 +6545,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MCPServer'
+                $ref: '#/components/schemas/v1.MCPServer'
           description: Started
         "401":
           content:
@@ -5877,7 +6590,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MCPServer'
+                $ref: '#/components/schemas/v1.MCPServer'
           description: Stopped
         "401":
           content:
@@ -7833,7 +8546,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -8243,14 +8956,16 @@ servers:
 tags:
   - description: Manage Redpanda access control lists (ACLs). See [Redpanda Cloud Authorization](https://docs.redpanda.com/redpanda-cloud/security/authorization/cloud-authorization/) for more information.
     name: Redpanda ACLs
+  - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
+    name: Redpanda Connect Pipelines
+  - description: Create and manage AI agents and their configurations.
+    name: AI Agents
   - description: 'Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)'
     name: Cloud Storage
   - description: Manage Wasm transforms in Redpanda.
     name: Wasm Transforms
   - description: Manage [connectors](https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/) and interact with the Kafka Connect API.
     name: Kafka Connect
-  - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
-    name: Redpanda Connect Pipelines
   - description: Create and manage MCP servers and their configurations.
     name: Remote MCP
   - description: Monitoring operations for Redpanda.
