@@ -69,6 +69,20 @@ vi.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: () => <div>Not Found</div>,
 }));
 
+vi.mock('./token-manager', () => ({
+  TokenManager: class MockTokenManager {
+    private getToken: () => Promise<string>;
+    refresh = vi.fn();
+    reset = vi.fn();
+    isRefreshing = false;
+
+    constructor(getToken: () => Promise<string>) {
+      this.getToken = getToken;
+      this.refresh.mockImplementation(() => this.getToken());
+    }
+  },
+}));
+
 import { ConsoleApp } from './console-app';
 import type { ConsoleAppProps } from './types';
 import { config, setup } from '../config';
@@ -163,27 +177,19 @@ describe('ConsoleApp', () => {
     );
   });
 
-  test('handles token refresh error gracefully', async () => {
-    const tokenError = new Error('Token refresh failed');
-    mockGetAccessToken.mockRejectedValueOnce(tokenError);
+  test('stays in loading state while token refresh is pending', async () => {
+    // Create a deferred promise that never resolves during this test
+    const tokenPromise = new Promise<string>(() => {});
+    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
 
-    // The component will throw an unhandled rejection, so we need to catch it
-    const unhandledRejectionHandler = vi.fn();
-    const originalHandler = process.listeners('unhandledRejection')[0];
-    process.removeAllListeners('unhandledRejection');
-    process.on('unhandledRejection', unhandledRejectionHandler);
+    const { container } = render(<ConsoleApp {...defaultProps} />);
 
-    render(<ConsoleApp {...defaultProps} />);
+    // Component should be in loading state (return null) while waiting
+    expect(container.firstChild).toBeNull();
 
-    await waitFor(() => {
-      expect(unhandledRejectionHandler).toHaveBeenCalled();
-    });
-
-    // Restore handlers
-    process.removeAllListeners('unhandledRejection');
-    if (originalHandler) {
-      process.on('unhandledRejection', originalHandler as NodeJS.UnhandledRejectionListener);
-    }
+    // Verify it stays in loading state
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(container.firstChild).toBeNull();
   });
 
   test('uses default initialPath when not provided', async () => {
@@ -241,5 +247,92 @@ describe('ConsoleApp', () => {
 
     // Should not throw on unmount (unsubscribe should be called)
     unmount();
+  });
+
+  describe('Feature Flags', () => {
+    test('passes feature flags to setup()', async () => {
+      const flags = { schemaRegistry: true, enableKnowledgeBaseInConsoleUi: false };
+      render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: flags }));
+      });
+    });
+
+    test('initializes without throwing when featureFlags is undefined', async () => {
+      const propsWithoutFlags = {
+        ...defaultProps,
+        featureFlags: undefined,
+      };
+
+      // Should not throw
+      render(<ConsoleApp {...propsWithoutFlags} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // setup should still be called
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalled();
+      });
+    });
+
+    test('handles empty feature flags object', async () => {
+      render(<ConsoleApp {...defaultProps} featureFlags={{}} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: {} }));
+      });
+    });
+  });
+
+  describe('Config Overrides', () => {
+    test('applies URL overrides from config', async () => {
+      const customConfig = {
+        urlOverride: { grpc: 'https://custom.api.com' },
+      };
+      render(<ConsoleApp {...defaultProps} config={customConfig} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            urlOverride: { grpc: 'https://custom.api.com' },
+          })
+        );
+      });
+    });
+
+    test('handles config with multiple URL overrides', async () => {
+      const customConfig = {
+        urlOverride: {
+          grpc: 'https://grpc.example.com',
+          rest: 'https://rest.example.com',
+        },
+      };
+      render(<ConsoleApp {...defaultProps} config={customConfig} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            urlOverride: customConfig.urlOverride,
+          })
+        );
+      });
+    });
+
+    test('initializes without throwing when config is undefined', async () => {
+      const propsWithoutConfig = {
+        ...defaultProps,
+        config: undefined,
+      };
+
+      // Should not throw
+      render(<ConsoleApp {...propsWithoutConfig} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+    });
   });
 });

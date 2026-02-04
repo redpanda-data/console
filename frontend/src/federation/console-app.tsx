@@ -12,7 +12,7 @@
 // Array prototype extensions (must be imported early)
 import '../utils/array-extensions';
 
-import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
@@ -38,6 +38,7 @@ import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 
 import { FederatedProviders } from './federated-providers';
+import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import {
@@ -54,12 +55,9 @@ import { uiState } from '../state/ui-state';
 
 /**
  * Creates an interceptor that refreshes the token on 401 and retries the request.
+ * Uses TokenManager for deduplication and abort support.
  */
-function createTokenRefreshInterceptor(refreshToken: () => Promise<string>): Interceptor {
-  let isRefreshing = false;
-  let refreshPromise: Promise<string> | null = null;
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: token refresh logic requires multiple conditions
+function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor {
   return (next) => async (request) => {
     try {
       return await next(request);
@@ -69,25 +67,19 @@ function createTokenRefreshInterceptor(refreshToken: () => Promise<string>): Int
         throw error;
       }
 
-      // Prevent multiple simultaneous refresh attempts
-      if (!isRefreshing) {
-        isRefreshing = true;
-        refreshPromise = refreshToken().finally(() => {
-          isRefreshing = false;
-          refreshPromise = null;
-        });
-      }
-
-      // Wait for refresh to complete
+      // Use TokenManager for deduplicated refresh
       try {
-        await refreshPromise;
+        await tokenManager.refresh();
       } catch {
         throw error; // Throw original error if refresh fails
       }
 
-      // Retry the request with new token
-      // Token is already set in config.jwt by refreshToken()
-      request.header.set('Authorization', `Bearer ${config.jwt}`);
+      // Retry the request with refreshed token.
+      // Header mutation is necessary because the original request was created
+      // with the old token by addBearerTokenInterceptor on the first attempt.
+      if (config.jwt) {
+        request.header.set('Authorization', `Bearer ${config.jwt}`);
+      }
       return await next(request);
     }
   };
@@ -180,34 +172,35 @@ function ConsoleAppInner({
   featureFlags,
 }: ConsoleAppProps) {
   const [isInitialized, setIsInitialized] = useState(false);
-  const queryClientRef = useRef<QueryClient | null>(null);
   const routerRef = useRef<ReturnType<typeof createRouter<typeof routeTree>> | null>(null);
   // Track last notified path to prevent navigation loops between host and remote
   const lastNotifiedPathRef = useRef<string>(initialPath);
 
-  // Create QueryClient once
-  if (!queryClientRef.current) {
-    queryClientRef.current = createFederatedQueryClient();
-  }
+  // Create stable QueryClient instance
+  const queryClient = useMemo(() => createFederatedQueryClient(), []);
 
-  // Token refresh callback - updates config.jwt when called
-  const refreshToken = useCallback(async () => {
-    try {
-      const token = await getAccessToken();
-      config.jwt = token;
-      return token;
-    } catch (error) {
-      throw error;
-    }
-  }, [getAccessToken]);
+  // Store getAccessToken in ref so TokenManager always uses latest callback
+  const getAccessTokenRef = useRef(getAccessToken);
+  getAccessTokenRef.current = getAccessToken;
 
-  // Create token refresh interceptor
-  const tokenRefreshInterceptor = useMemo(() => createTokenRefreshInterceptor(refreshToken), [refreshToken]);
+  // Create stable TokenManager instance (uses ref to access latest getAccessToken)
+  const tokenManager = useMemo(
+    () =>
+      new TokenManager(async () => {
+        const token = await getAccessTokenRef.current();
+        config.jwt = token;
+        return token;
+      }),
+    []
+  );
+
+  // Create token refresh interceptor using TokenManager
+  const tokenRefreshInterceptor = useMemo(() => createTokenRefreshInterceptor(tokenManager), [tokenManager]);
 
   // Initialize Console on mount and cleanup on unmount
   useEffect(() => {
     const initialize = async () => {
-      await refreshToken();
+      await tokenManager.refresh();
 
       // Setup Console config with overrides
       setup({
@@ -226,9 +219,10 @@ function ConsoleAppInner({
 
     // Cleanup on unmount
     return () => {
-      queryClientRef.current?.clear();
+      tokenManager.reset();
+      queryClient.clear();
     };
-  }, [refreshToken, clusterId, onSidebarItemsChange, onBreadcrumbsChange, featureFlags, configOverrides]);
+  }, [tokenManager, queryClient, clusterId, onSidebarItemsChange, onBreadcrumbsChange, featureFlags, configOverrides]);
 
   // Sync sidebar items when routes change
   useEffect(() => {
@@ -290,8 +284,7 @@ function ConsoleAppInner({
       history: memoryHistory,
       context: {
         basePath: '',
-        // biome-ignore lint/style/noNonNullAssertion: queryClientRef.current is initialized before this runs
-        queryClient: queryClientRef.current!,
+        queryClient,
         dataplaneTransport,
       },
       defaultNotFoundComponent: NotFoundPage,
@@ -299,7 +292,7 @@ function ConsoleAppInner({
 
     routerRef.current = r;
     return r;
-  }, [initialPath, dataplaneTransport]);
+  }, [initialPath, queryClient, dataplaneTransport]);
 
   // Subscribe to route changes and notify host (with loop prevention)
   useEffect(() => {
@@ -345,12 +338,7 @@ function ConsoleAppInner({
 
   return (
     <ConsoleErrorBoundary onError={onError}>
-      <FederatedProviders
-        featureFlags={featureFlags}
-        // biome-ignore lint/style/noNonNullAssertion: queryClientRef.current is initialized before render
-        queryClient={queryClientRef.current!}
-        transport={dataplaneTransport}
-      >
+      <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
         <RouterProvider router={router} />
       </FederatedProviders>
     </ConsoleErrorBoundary>

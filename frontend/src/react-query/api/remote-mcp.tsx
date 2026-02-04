@@ -475,7 +475,7 @@ export const createMCPClientWithSession = async (
         headers: {
           ...init?.headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           'Mcp-Session-Id': client?.transport?.sessionId ?? '',
         },
       });

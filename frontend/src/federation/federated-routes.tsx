@@ -24,6 +24,19 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { ModalContainer } from '../utils/modal-container';
 
 /**
+ * Builder.io components are excluded from federated routes.
+ * In embedded/federated mode, we don't load Builder.io content to:
+ * 1. Reduce bundle size for the federated module
+ * 2. Avoid unnecessary network requests to Builder.io
+ * 3. Keep the embedded experience focused on core functionality
+ *
+ * These null components are used as drop-in replacements when
+ * Builder.io components would otherwise be imported.
+ */
+export const NurturePanel = () => null;
+export const AnnouncementBar = () => null;
+
+/**
  * Router context for federated routes.
  * Matches the context type from __root.tsx for compatibility.
  */
