@@ -537,7 +537,7 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
 
     // Update ref for next render
     prevSpanTreeLength.current = currentLength;
-  }, [spanTree, expandedSpans.size]);
+  }, [spanTree]);
 
   const toggleSpan = (spanId: string) => {
     setExpandedSpans((prev) => {
