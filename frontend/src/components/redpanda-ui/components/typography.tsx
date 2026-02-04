@@ -1,7 +1,6 @@
+import { Link as TanStackRouterLink } from '@tanstack/react-router';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React, { forwardRef } from 'react';
-import { Link as ReactRouterLink, type To } from 'react-router-dom';
-
 import { cn, type SharedProps } from '../lib/utils';
 
 // Heading variants using cva
@@ -229,31 +228,36 @@ type BaseLinkProps = SharedProps & {
   className?: string;
 };
 
-// Discriminated union for link types
-type LinkProps =
-  | (BaseLinkProps &
-      React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-        as?: never; // Default to anchor - don't allow 'as' when using anchor
-        href: string;
-      })
-  | (BaseLinkProps &
-      React.ComponentProps<typeof ReactRouterLink> & {
-        as: typeof ReactRouterLink;
-        to: To;
-      });
+// Anchor link props
+type AnchorLinkProps = BaseLinkProps &
+  React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    as?: never;
+    href: string;
+  };
+
+// TanStack Router link props - use a flexible record type for route params
+type TanStackRouterLinkProps = BaseLinkProps & {
+  as: typeof TanStackRouterLink;
+  to: string;
+  params?: Record<string, string>;
+  search?: Record<string, unknown>;
+  hash?: string;
+};
+
+type LinkProps = AnchorLinkProps | TanStackRouterLinkProps;
 
 // Link styles matching Figma: primary color, dotted underline with offset
 const linkStyles =
   'font-medium text-primary decoration-dotted underline underline-offset-[3px] hover:text-primary/80 transition-colors';
 
 export function Link({ className, children, testId, ...props }: LinkProps) {
-  if ('as' in props && props.as === ReactRouterLink) {
-    // Render as React Router Link when explicitly specified
+  if ('as' in props && props.as === TanStackRouterLink) {
+    // Render as TanStack Router Link when explicitly specified
     const { as: _, ...routerProps } = props;
     return (
-      <ReactRouterLink className={cn(linkStyles, className)} data-testid={testId} {...routerProps}>
+      <TanStackRouterLink className={cn(linkStyles, className)} data-testid={testId} {...routerProps}>
         {children}
-      </ReactRouterLink>
+      </TanStackRouterLink>
     );
   }
   // Render as anchor tag (default)
@@ -265,30 +269,15 @@ export function Link({ className, children, testId, ...props }: LinkProps) {
   );
 }
 
-const preVariants = cva('bg-muted rounded-md text-sm overflow-y-auto', {
-  variants: {
-    variant: {
-      standard: 'p-4 my-6',
-      dense: 'p-2',
-    },
-  },
-  defaultVariants: {
-    variant: 'standard',
-  },
-});
-
-export type PreVariants = VariantProps<typeof preVariants>['variant'];
-
 // Preformatted Code Block Component
 interface PreProps extends React.HTMLAttributes<HTMLPreElement>, SharedProps {
   children: React.ReactNode;
-  variant?: PreVariants;
 }
 
-export function Pre({ className, children, testId, variant = 'standard', ...props }: PreProps) {
+export function Pre({ className, children, testId, ...props }: PreProps) {
   return (
     <pre
-      className={cn(preVariants({ variant }), className)}
+      className={cn('my-6 overflow-y-auto rounded-md bg-muted p-4 text-sm', className)}
       data-testid={testId}
       {...props}
     >
