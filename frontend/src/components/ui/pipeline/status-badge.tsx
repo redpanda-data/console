@@ -20,9 +20,9 @@ type PulsingStatusIconProps = VariantProps<typeof pulsingIconVariants>;
 
 const PulsingStatusIcon = ({ variant }: PulsingStatusIconProps) => {
   return (
-    <div className="relative flex items-center justify-center size-2.5">
-      <div className={cn(pulsingIconVariants({ variant }), 'size-2 opacity-75', variant !== 'disabled' && 'animate-ping')} />
-      <div className={cn(pulsingIconVariants({ variant }), 'absolute inset-0 size-2.5')} />
+    <div className="relative flex items-center justify-center size-3">
+      {variant === 'disabled' ? null : <div className={cn(pulsingIconVariants({ variant }), 'size-3 opacity-75 animate-ping')} />}
+      <div className={cn(pulsingIconVariants({ variant }), 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 size-2.5')} />
     </div>
   );
 };
@@ -69,7 +69,7 @@ export const PipelineStatusBadge = ({ state }: { state?: Pipeline_State }) => {
   }, [state]);
 
   return (
-    <Badge icon={statusConfig.icon} variant="secondary-inverted" className="gap-2">
+    <Badge icon={statusConfig.icon} variant="neutral-inverted" className="gap-2 rounded-full px-3">
       {statusConfig.text}
     </Badge>
   );

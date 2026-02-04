@@ -48,3 +48,8 @@ export const STARTABLE_STATES = [Pipeline_State.STOPPED, Pipeline_State.ERROR, P
  * States where a pipeline can be stopped.
  */
 export const STOPPABLE_STATES = [Pipeline_State.RUNNING, Pipeline_State.STARTING] as const;
+
+/**
+ * Transitional states where retry actions are available.
+ */
+export const TRANSITIONAL_STATES = [Pipeline_State.STARTING, Pipeline_State.STOPPING] as const;

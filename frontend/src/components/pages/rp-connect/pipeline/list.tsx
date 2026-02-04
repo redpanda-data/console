@@ -34,7 +34,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { Input } from 'components/redpanda-ui/components/input';
+import { Input, InputEnd } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
@@ -42,13 +43,13 @@ import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'componen
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { isFeatureFlagEnabled } from 'config';
-import { AlertCircle, MoreHorizontal, X } from 'lucide-react';
+import { AlertCircle, MoreHorizontal, SearchIcon } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import type { Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
@@ -211,6 +212,8 @@ const ActionsCell = memo(
   ({ pipeline, navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline }: ActionsCellProps) => {
     const canStart = (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
     const canStop = (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+    const isStarting = pipeline.state === Pipeline_State.STARTING;
+    const isStopping = pipeline.state === Pipeline_State.STOPPING;
 
     const handleStart = () => {
       const startRequest = create(StartPipelineRequestSchema, {
@@ -293,7 +296,10 @@ const ActionsCell = memo(
             >
               Edit
             </DropdownMenuItem>
+            {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
+            {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
             {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
+            {isStopping ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
             {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
             <DropdownMenuSeparator />
             <DeleteResourceAlertDialog
@@ -331,34 +337,45 @@ const PipelineListToolbar = ({ table, inputOptions, outputOptions }: PipelineLis
 
   return (
     <div className="flex items-center justify-between">
-      <div className="flex flex-1 items-center gap-1">
-        <Input
-          className="h-8 w-[200px]"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
-          placeholder="Filter pipelines..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-        />
-        {inputOptions.length > 0 && table.getColumn('input') && (
-          <DataTableFacetedFilter column={table.getColumn('input')} options={inputOptions} title="Input" />
-        )}
-        {outputOptions.length > 0 && table.getColumn('output') && (
-          <DataTableFacetedFilter column={table.getColumn('output')} options={outputOptions} title="Output" />
-        )}
-        {table.getColumn('state') && (
-          <DataTableFacetedFilter
-            column={table.getColumn('state')}
-            options={[...PIPELINE_STATE_OPTIONS]}
-            title="State"
-          />
-        )}
-        {isFiltered ? (
-          <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
-            Clear
-            <X className="ml-2 h-4 w-4" />
-          </Button>
-        ) : null}
+      <div className="flex flex-1 items-end gap-8">
+        <div className="flex flex-col gap-1.5">
+          <Label>Search</Label>
+          <Input
+            className="w-[200px]"
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              table.getColumn('name')?.setFilterValue(event.target.value)
+            }
+            size="sm"
+            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+          >
+            <InputEnd>
+              <SearchIcon className="-mt-0.5 size-4 text-muted-foreground" />
+            </InputEnd>
+          </Input>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Filters</Label>
+          <div className="flex gap-2">
+            {inputOptions.length > 0 && table.getColumn('input') && (
+              <DataTableFacetedFilter column={table.getColumn('input')} options={inputOptions} title="Input" />
+            )}
+            {outputOptions.length > 0 && table.getColumn('output') && (
+              <DataTableFacetedFilter column={table.getColumn('output')} options={outputOptions} title="Output" />
+            )}
+            {table.getColumn('state') && (
+              <DataTableFacetedFilter
+                column={table.getColumn('state')}
+                options={[...PIPELINE_STATE_OPTIONS]}
+                title="State"
+              />
+            )}
+            {isFiltered ? (
+              <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
+                Clear
+              </Button>
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -392,7 +409,7 @@ const createColumns = ({
       <div className="flex min-w-[324px] items-center gap-4">
         <Link
           as={TanStackRouterLink}
-          className="max-w-[200px]"
+          className="max-w-[200px] text-base text-primary text-truncate"
           // @ts-expect-error - still figuring this out
           params={{ pipelineId: encodeURIComponent(row.original.id) }}
           to="/rp-connect/$pipelineId"
@@ -418,11 +435,7 @@ const createColumns = ({
       const input = row.getValue('input') as string | undefined;
       return (
         <div className="flex min-w-[184px] items-center gap-4">
-          {input ? (
-            <Badge size="sm" variant="secondary-outline">
-              {input}
-            </Badge>
-          ) : null}
+          {input ? <Badge variant="neutral-inverted">{input}</Badge> : null}
           {isNewPipelineLogsEnabled ? <PipelineLogIndicator counts={row.original.logCounts?.input} /> : null}
         </div>
       );
@@ -441,11 +454,7 @@ const createColumns = ({
       const output = row.getValue('output') as string | undefined;
       return (
         <div className="flex min-w-[176px] items-center gap-2">
-          {output ? (
-            <Badge size="sm" variant="secondary-outline">
-              {output}
-            </Badge>
-          ) : null}
+          {output ? <Badge variant="neutral-inverted">{output}</Badge> : null}
           {isNewPipelineLogsEnabled ? <PipelineLogIndicator counts={row.original.logCounts?.output} /> : null}
         </div>
       );
@@ -459,7 +468,7 @@ const createColumns = ({
   },
   {
     accessorKey: 'state',
-    header: 'State',
+    header: 'Status',
     cell: ({ row }) => <PipelineStatusBadge state={row.original.state} />,
     filterFn: (row, _id, filterValue: string[]) => {
       if (filterValue.length === 0) {
@@ -495,7 +504,13 @@ const PipelineListPageContent = () => {
   // Table state
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const { data: pipelinesData, isLoading, error } = useListPipelinesQuery();
+  const {
+    data: pipelinesData,
+    isLoading,
+    error,
+  } = useListPipelinesQuery(undefined, {
+    enableSmartPolling: true,
+  });
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
   const { mutate: startMutation } = useStartPipelineMutation();
   const { mutate: stopMutation } = useStopPipelineMutation();
@@ -585,7 +600,10 @@ const PipelineListPageContent = () => {
     }
     return Array.from(uniqueOutputs)
       .sort()
-      .map((output) => ({ label: output, value: output }));
+      .map((output) => ({
+        label: output,
+        value: output,
+      }));
   }, [pipelines]);
 
   if (isLoading) {
@@ -643,13 +661,15 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      <DataTablePagination hidePageSizeSelector table={table} />
-      {isNewPipelineLogsEnabled ? (
-        <Text className="text-muted-foreground text-xs">
-          † Log counts are derived from a sample of recent pipeline logs and may not reflect the complete historical
-          data.
-        </Text>
-      ) : null}
+      <div className="flex items-center justify-between gap-2">
+        {isNewPipelineLogsEnabled ? (
+          <Text variant="muted">
+            † Log counts are derived from a sample of recent pipeline logs and may not reflect the complete historical
+            data.
+          </Text>
+        ) : null}
+        <DataTablePagination hidePageSizeSelector table={table} />
+      </div>
     </div>
   );
 };

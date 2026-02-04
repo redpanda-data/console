@@ -75,7 +75,10 @@ export const useGetPipelineQuery = (
 
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>
+  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
+    /** Enable smart polling when pipelines are in transitional states (STARTING/STOPPING) */
+    enableSmartPolling?: boolean;
+  }
 ) => {
   // Stabilize request objects to prevent unnecessary re-renders
   const listPipelinesRequestDataPlane = useMemo(
@@ -104,15 +107,18 @@ export const useListPipelinesQuery = (
     [listPipelinesRequestDataPlane]
   );
 
-  // Stabilize options object to prevent unnecessary re-renders
-  const queryOptions = useMemo(
-    () => ({
-      enabled: options?.enabled,
-    }),
-    [options?.enabled]
-  );
-
-  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, queryOptions);
+  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, {
+    enabled: options?.enabled,
+    refetchInterval: options?.enableSmartPolling
+      ? (query) => {
+          const pipelines = query?.state?.data?.response?.pipelines;
+          const hasTransitional = pipelines?.some(
+            (p) => p?.state === Pipeline_State.STARTING || p?.state === Pipeline_State.STOPPING
+          );
+          return hasTransitional ? SHORT_POLLING_INTERVAL : false;
+        }
+      : false,
+  });
 
   // Stabilize the pipelines reference
   const pipelines = listPipelinesResult?.data?.response?.pipelines;

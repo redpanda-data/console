@@ -10,6 +10,7 @@
  */
 
 import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertCircle, AlertTriangle } from 'lucide-react';
@@ -24,8 +25,8 @@ type BadgeWithDotProps = {
 };
 
 const formatCount = (count: number): string => {
-  if (count >= 1000) {
-    return `${Math.floor(count / 1000)}k+`;
+  if (count >= 100) {
+    return `100+`;
   }
   return count.toString();
 };
@@ -37,17 +38,17 @@ const BadgeWithDot = memo(({ count, variant, icon, label }: BadgeWithDotProps) =
 
   return (
     <div className="relative inline-flex">
-      <Badge icon={icon} variant={variant}>
+      <Badge icon={icon} variant={variant} size="lg">
         {label}
       </Badge>
       <span
         className={cn(
-          'absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-medium text-[10px] text-white',
-          variant === 'destructive-inverted' && 'bg-red-600',
-          variant === 'warning-inverted' && 'bg-yellow-600'
+          'absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1',
+          variant === 'destructive-inverted' && 'bg-background-error-strong',
+          variant === 'warning-inverted' && 'bg-background-warning-strong'
         )}
       >
-        {formatCount(count)}
+        <Text className="text-inverse" variant="captionStrongMedium">{formatCount(count)}</Text>
       </span>
     </div>
   );

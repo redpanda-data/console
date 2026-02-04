@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUp,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -14,7 +15,6 @@ import {
   Circle,
   CircleOff,
   EyeOff,
-  FilterIcon,
   HelpCircle,
   MoreHorizontal,
   Settings2,
@@ -282,7 +282,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover testId={testId}>
       <PopoverTrigger asChild>
-        <Button variant="secondary-outline" size="sm" icon={<FilterIcon />}>
+        <Button variant="outline" size="sm" icon={<ChevronDown size={12} className="text-muted-foreground" />}>
           {title}
           {selectedValues?.size > 0 && (
             <>
@@ -309,7 +309,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent className="max-w-[200px] p-0" align="start">
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
