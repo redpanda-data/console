@@ -227,7 +227,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
           <div className="flex gap-2">
             {isQueryLoading ? (
               <>
-                <Button disabled variant="secondary">
+                <Button disabled variant="primary">
                   <Clock className="h-4 w-4 animate-spin" />
                   Retrieving...
                 </Button>
@@ -240,7 +240,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
               <Button
                 disabled={!(knowledgeBase.retrievalApiUrl && query.trim())}
                 onClick={callRetrievalAPI}
-                variant="secondary"
+                variant="primary"
               >
                 <Send className="h-4 w-4" />
                 Submit Query

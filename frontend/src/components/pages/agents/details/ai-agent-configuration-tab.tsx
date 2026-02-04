@@ -913,7 +913,7 @@ export const AIAgentConfigurationTab = () => {
                 <div className="flex gap-2">
                   {isEditing ? (
                     <>
-                      <Button disabled={isUpdateAIAgentPending} onClick={handleSave} variant="secondary">
+                      <Button disabled={isUpdateAIAgentPending} onClick={handleSave} variant="primary">
                         <Save className="h-4 w-4" />
                         {isUpdateAIAgentPending ? 'Saving...' : 'Save Changes'}
                       </Button>
@@ -928,7 +928,7 @@ export const AIAgentConfigurationTab = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => setIsEditing(true)} variant="secondary">
+                    <Button onClick={() => setIsEditing(true)} variant="primary">
                       <Edit className="h-4 w-4" />
                       Edit Configuration
                     </Button>

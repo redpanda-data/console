@@ -203,7 +203,7 @@ export const ShadowLinkListPage = () => {
                   disabled={hasShadowLink}
                   onClick={() => navigate({ to: '/shadowlinks/create' })}
                   size="sm"
-                  variant="secondary"
+                  variant="primary"
                 >
                   <Plus className="h-4 w-4" />
                   Create shadow link
