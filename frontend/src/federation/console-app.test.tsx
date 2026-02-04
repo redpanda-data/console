@@ -73,7 +73,7 @@ vi.mock('./token-manager', () => ({
   TokenManager: class MockTokenManager {
     private getToken: () => Promise<string>;
     refresh = vi.fn();
-    abort = vi.fn();
+    reset = vi.fn();
     isRefreshing = false;
 
     constructor(getToken: () => Promise<string>) {
@@ -177,27 +177,19 @@ describe('ConsoleApp', () => {
     );
   });
 
-  test('handles token refresh error gracefully', async () => {
-    const tokenError = new Error('Token refresh failed');
-    mockGetAccessToken.mockRejectedValueOnce(tokenError);
+  test('stays in loading state while token refresh is pending', async () => {
+    // Create a deferred promise that never resolves during this test
+    const tokenPromise = new Promise<string>(() => {});
+    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
 
-    // The component will throw an unhandled rejection, so we need to catch it
-    const unhandledRejectionHandler = vi.fn();
-    const originalHandler = process.listeners('unhandledRejection')[0];
-    process.removeAllListeners('unhandledRejection');
-    process.on('unhandledRejection', unhandledRejectionHandler);
+    const { container } = render(<ConsoleApp {...defaultProps} />);
 
-    render(<ConsoleApp {...defaultProps} />);
+    // Component should be in loading state (return null) while waiting
+    expect(container.firstChild).toBeNull();
 
-    await waitFor(() => {
-      expect(unhandledRejectionHandler).toHaveBeenCalled();
-    });
-
-    // Restore handlers
-    process.removeAllListeners('unhandledRejection');
-    if (originalHandler) {
-      process.on('unhandledRejection', originalHandler as NodeJS.UnhandledRejectionListener);
-    }
+    // Verify it stays in loading state
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(container.firstChild).toBeNull();
   });
 
   test('uses default initialPath when not provided', async () => {
@@ -267,7 +259,7 @@ describe('ConsoleApp', () => {
       });
     });
 
-    test('handles missing feature flags gracefully', async () => {
+    test('initializes without throwing when featureFlags is undefined', async () => {
       const propsWithoutFlags = {
         ...defaultProps,
         featureFlags: undefined,
@@ -329,7 +321,7 @@ describe('ConsoleApp', () => {
       });
     });
 
-    test('handles undefined config gracefully', async () => {
+    test('initializes without throwing when config is undefined', async () => {
       const propsWithoutConfig = {
         ...defaultProps,
         config: undefined,

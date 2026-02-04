@@ -74,8 +74,9 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
         throw error; // Throw original error if refresh fails
       }
 
-      // Retry the request with new token
-      // Token is already set in config.jwt by TokenManager
+      // Retry the request with refreshed token.
+      // Header mutation is necessary because the original request was created
+      // with the old token by addBearerTokenInterceptor on the first attempt.
       request.header.set('Authorization', `Bearer ${config.jwt}`);
       return await next(request);
     }
@@ -216,7 +217,7 @@ function ConsoleAppInner({
 
     // Cleanup on unmount
     return () => {
-      tokenManager.abort();
+      tokenManager.reset();
       queryClient.clear();
     };
   }, [tokenManager, queryClient, clusterId, onSidebarItemsChange, onBreadcrumbsChange, featureFlags, configOverrides]);

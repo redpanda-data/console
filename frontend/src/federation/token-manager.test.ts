@@ -86,7 +86,7 @@ describe('TokenManager', () => {
     });
   });
 
-  describe('abort', () => {
+  describe('reset', () => {
     test('clears refresh state when called', async () => {
       let resolveToken: (value: string) => void;
       const tokenPromise = new Promise<string>((resolve) => {
@@ -99,8 +99,8 @@ describe('TokenManager', () => {
       tokenManager.refresh();
       expect(tokenManager.isRefreshing).toBe(true);
 
-      // Abort
-      tokenManager.abort();
+      // Reset
+      tokenManager.reset();
       expect(tokenManager.isRefreshing).toBe(false);
 
       // Resolve the original promise (cleanup)
@@ -112,7 +112,7 @@ describe('TokenManager', () => {
       const tokenManager = new TokenManager(mockGetToken);
 
       // Should not throw
-      expect(() => tokenManager.abort()).not.toThrow();
+      expect(() => tokenManager.reset()).not.toThrow();
     });
 
     test('is safe to call multiple times', () => {
@@ -121,9 +121,9 @@ describe('TokenManager', () => {
 
       // Should not throw
       expect(() => {
-        tokenManager.abort();
-        tokenManager.abort();
-        tokenManager.abort();
+        tokenManager.reset();
+        tokenManager.reset();
+        tokenManager.reset();
       }).not.toThrow();
     });
   });

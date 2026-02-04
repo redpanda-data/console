@@ -20,19 +20,16 @@ import { api } from 'state/backend-api';
  * to avoid loading Builder.io dependencies in federated bundles.
  */
 export default function NurturePanel() {
+  const embedded = isEmbedded();
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
-
   const MODEL_NAME = `console-nurture-panel-${platform}`;
 
   const [content, setContent] = useState<BuilderContent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!embedded);
   const [hasError, setHasError] = useState(false);
-
-  const embedded = isEmbedded();
 
   useEffect(() => {
     if (embedded) {
-      setIsLoading(false);
       return;
     }
 

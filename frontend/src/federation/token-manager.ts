@@ -10,11 +10,10 @@
  */
 
 /**
- * TokenManager handles JWT token refresh with deduplication and abort support.
+ * TokenManager handles JWT token refresh with deduplication.
  *
  * Features:
  * - Deduplicates concurrent refresh requests (only one active refresh at a time)
- * - Supports abort via AbortController for cleanup on unmount
  * - Type-safe callback pattern for token storage
  *
  * @example
@@ -29,16 +28,18 @@
  * const token = await tokenManager.refresh();
  *
  * // Cleanup on component unmount
- * tokenManager.abort();
+ * useEffect(() => {
+ *   return () => tokenManager.reset();
+ * }, []);
  * ```
  */
 export class TokenManager {
   private refreshPromise: Promise<string> | null = null;
-  private abortController: AbortController | null = null;
 
   /**
    * Creates a TokenManager instance.
-   * @param getAccessToken - Async function that fetches and stores a new access token
+   * @param getAccessToken - Async function that fetches a new access token and
+   *   stores it (e.g., in config.jwt). Must return the token string.
    */
   constructor(private getAccessToken: () => Promise<string>) {}
 
@@ -48,7 +49,7 @@ export class TokenManager {
    * This ensures only one token refresh happens at a time.
    *
    * @returns Promise resolving to the new access token
-   * @throws Error if token refresh fails or is aborted
+   * @throws Error if token refresh fails
    */
   async refresh(): Promise<string> {
     // Return existing promise if refresh is in progress
@@ -56,24 +57,20 @@ export class TokenManager {
       return this.refreshPromise;
     }
 
-    this.abortController = new AbortController();
-
     this.refreshPromise = this.getAccessToken().finally(() => {
       this.refreshPromise = null;
-      this.abortController = null;
     });
 
     return this.refreshPromise;
   }
 
   /**
-   * Aborts any in-progress token refresh and cleans up state.
+   * Resets internal state, clearing any pending refresh promise.
+   * Use this for cleanup on component unmount.
    * Safe to call multiple times or when no refresh is in progress.
    */
-  abort(): void {
-    this.abortController?.abort();
+  reset(): void {
     this.refreshPromise = null;
-    this.abortController = null;
   }
 
   /**
