@@ -17,6 +17,7 @@ import type { FC } from 'react';
 import { useMemo } from 'react';
 
 import { ContentPanel } from './content-panel';
+import { convertBytesFieldsToHex } from '../utils/hex-utils';
 
 type Props = {
   span: Span;
@@ -30,7 +31,9 @@ export const RawJSONTab: FC<Props> = ({ span }) => {
       if (jsonObj === null || jsonObj === undefined) {
         return 'null';
       }
-      return JSON.stringify(jsonObj, null, 2);
+      // Convert base64 bytes fields (traceId, spanId, parentSpanId) to hex format
+      const converted = convertBytesFieldsToHex(jsonObj);
+      return JSON.stringify(converted, null, 2);
     } catch {
       return JSON.stringify({ error: 'Failed to serialize span data' }, null, 2);
     }

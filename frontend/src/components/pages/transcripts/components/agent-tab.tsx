@@ -10,6 +10,7 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
@@ -191,10 +192,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
           <Text as="div" className="uppercase tracking-wide" variant="label">
             CONVERSATION ID
           </Text>
-          <ContentPanel>
+          <ContentPanel className="flex items-center justify-between">
             <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.conversationId}
             </Text>
+            <CopyButton content={agentData.conversationId} size="sm" variant="ghost" />
           </ContentPanel>
         </div>
       )}
