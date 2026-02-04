@@ -10,7 +10,7 @@ const pulsingIconVariants = cva('rounded-full', {
       success: 'bg-background-success-strong',
       informative: 'bg-background-informative-strong',
       warning: 'bg-background-warning-strong',
-      destructive: 'bg-background-destructive-strong',
+      error: 'bg-background-error-strong',
       disabled: 'bg-background-informative-strong',
     },
   },
@@ -57,7 +57,7 @@ export const PipelineStatusBadge = ({ state }: { state?: Pipeline_State }) => {
         };
       case Pipeline_State.ERROR:
         return {
-          icon: <PulsingStatusIcon variant="destructive" />,
+          icon: <PulsingStatusIcon variant="error" />,
           text: 'Error',
         };
       default:
