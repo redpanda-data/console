@@ -77,7 +77,9 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
       // Retry the request with refreshed token.
       // Header mutation is necessary because the original request was created
       // with the old token by addBearerTokenInterceptor on the first attempt.
-      request.header.set('Authorization', `Bearer ${config.jwt}`);
+      if (config.jwt) {
+        request.header.set('Authorization', `Bearer ${config.jwt}`);
+      }
       return await next(request);
     }
   };

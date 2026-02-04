@@ -142,7 +142,7 @@ export const streamMessage = async ({
         },
       },
       headers: {
-        Authorization: `Bearer ${config.jwt}`,
+        ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
       },
       includeRawChunks: true, // Enable raw events to capture taskId from task/status-update/artifact-update events
     });
