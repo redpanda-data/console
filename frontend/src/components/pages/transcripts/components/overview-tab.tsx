@@ -10,6 +10,7 @@
  */
 
 import { durationMs } from '@bufbuild/protobuf/wkt';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
@@ -137,14 +138,28 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         </div>
       )}
 
+      {/* Trace ID */}
+      {!!trace?.traceId && (
+        <div className="space-y-2">
+          <SectionHeader>Trace ID</SectionHeader>
+          <ContentPanel className="flex items-center justify-between">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+              {trace.traceId}
+            </Text>
+            <CopyButton content={trace.traceId} size="sm" variant="ghost" />
+          </ContentPanel>
+        </div>
+      )}
+
       {/* Conversation ID */}
       {!!conversationId && (
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
-          <ContentPanel>
+          <ContentPanel className="flex items-center justify-between">
             <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {conversationId}
             </Text>
+            <CopyButton content={conversationId} size="sm" variant="ghost" />
           </ContentPanel>
         </div>
       )}
