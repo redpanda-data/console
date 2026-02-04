@@ -188,7 +188,7 @@ const getNextParentDepths = (parentDepths: number[], depth: number, isLastChild:
 // Helper: Calculate tree line connector flags for a span row
 const getSpanRowLineFlags = (depth: number, isLastChild: boolean, parentDepths: number[]) => {
   const drawCol0Vertical = parentDepths.includes(0) || depth === 1;
-  const col0VerticalHeight = isLastChild && depth === 1 ? 'calc(50% + 4px)' : 'calc(100% + 8px)';
+  const col0VerticalHeight = isLastChild && depth === 1 ? 'calc(50% + 4px)' : '100%';
 
   return {
     drawCol0Vertical,
@@ -214,13 +214,13 @@ const GutterColumn: FC<GutterColumnProps> = ({ colIndex, depth, isLastChild, par
       style={{ '--tree-x': '11px' } as React.CSSProperties}
     >
       {!!drawAncestorContinuation && (
-        <div className="absolute -top-1 -bottom-1 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+        <div className="absolute -top-1 bottom-1 w-px -translate-x-1/2 bg-border" style={{ left: 'var(--tree-x)' }} />
       )}
       {!!isCurrentColumn && (
         <>
           <div
-            className="absolute -top-1 w-px bg-border"
-            style={{ left: 'var(--tree-x)', height: isLastChild ? 'calc(50% + 4px)' : 'calc(100% + 8px)' }}
+            className="absolute -top-1 w-px -translate-x-1/2 bg-border"
+            style={{ left: 'var(--tree-x)', height: isLastChild ? 'calc(50% + 4px)' : '100%' }}
           />
           <div className="absolute top-1/2 h-px w-[13px] bg-border" style={{ left: 'var(--tree-x)' }} />
         </>
@@ -251,7 +251,7 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
       >
         {!!lineFlags.drawCol0Vertical && (
           <div
-            className="absolute -top-1 w-px bg-border"
+            className="absolute -top-1 w-px -translate-x-1/2 bg-border"
             style={{ left: 'var(--tree-x)', height: lineFlags.col0VerticalHeight }}
           />
         )}
@@ -278,7 +278,7 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
         style={{ '--tree-x': '11px' } as React.CSSProperties}
       >
         {!!(isExpanded && hasChildren) && (
-          <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+          <div className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border" style={{ left: 'var(--tree-x)' }} />
         )}
         <div
           aria-hidden="true"
@@ -373,7 +373,8 @@ const SpanRow: FC<SpanRowProps> = ({
           selectableRowFocus,
           'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]',
           // Highlight matched spans with a subtle muted background (distinct from blue selection color)
-          isMatchedByFilter && 'border-l-2 border-l-muted-foreground/40 bg-muted/25 dark:bg-muted/20',
+          isMatchedByFilter &&
+            'shadow-[inset_2px_0_0_0_color-mix(in_srgb,var(--color-muted-foreground)_40%,transparent)] bg-muted/25 dark:bg-muted/20',
           // Dim unmatched parent spans
           isUnmatchedParent && 'opacity-50'
         )}
@@ -742,9 +743,9 @@ const RootTraceRow: FC<{
           className="relative flex h-8 w-5 shrink-0 items-center"
           style={{ '--tree-x': '9px' } as React.CSSProperties}
         >
-          {/* Vertical line when expanded */}
+          {/* Vertical line when expanded - extends to bottom-0 to connect with child's -top-1 line */}
           {isExpanded && spanTreeLength > 0 && (
-            <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+            <div className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border" style={{ left: 'var(--tree-x)' }} />
           )}
           {/* Using div instead of Button to avoid nested button warning - parent button handles interaction */}
           <div
