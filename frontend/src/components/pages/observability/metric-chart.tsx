@@ -16,8 +16,8 @@ import { useMemo } from 'react';
 import { useExecuteRangeQuery } from 'react-query/api/observability';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
+import { prettyNumber } from '../../../utils/utils';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
-import { prettyNumber } from 'utils/utils';
 import {
   ChartContainer,
   ChartLegend,
@@ -27,6 +27,14 @@ import {
 } from '../../redpanda-ui/components/chart';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Heading } from '../../redpanda-ui/components/typography';
+
+const CHART_COLORS = [
+  'var(--color-chart-1)',
+  'var(--color-chart-2)',
+  'var(--color-chart-3)',
+  'var(--color-chart-4)',
+  'var(--color-chart-5)',
+] as const;
 
 type MetricChartProps = {
   queryName: string;
@@ -106,18 +114,11 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
   // Chart configuration
   const chartConfig = useMemo(() => {
     const config: Record<string, { label: string; color: string }> = {};
-    const colors = [
-      'var(--color-chart-1)',
-      'var(--color-chart-2)',
-      'var(--color-chart-3)',
-      'var(--color-chart-4)',
-      'var(--color-chart-5)',
-    ];
 
     for (let i = 0; i < seriesNames.length; i++) {
       config[seriesNames[i]] = {
         label: seriesNames[i],
-        color: colors[i % colors.length],
+        color: CHART_COLORS[i % CHART_COLORS.length],
       };
     }
 
@@ -127,7 +128,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
   if (isLoading) {
     return (
       <div className="rounded-md border border-gray-200 p-4">
-        <Skeleton className="h-[200px] mt-2" />
+        <Skeleton className="mt-2 h-[200px]" />
       </div>
     );
   }
@@ -135,7 +136,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
   if (isError || !data) {
     return (
       <div className="rounded-md border border-gray-200 p-4">
-        <Alert variant="warning" className="mt-2">
+        <Alert className="mt-2" variant="warning">
           <AlertDescription>Failed to load data for this metric</AlertDescription>
         </Alert>
       </div>
@@ -146,11 +147,11 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
     return (
       <div className="rounded-md border border-gray-200 p-4">
         {data.metadata?.description ? (
-          <Heading level={4} className="mb-4">
+          <Heading className="mb-4" level={4}>
             {data.metadata.description}
           </Heading>
         ) : null}
-        <Alert variant="info" className="mt-2">
+        <Alert className="mt-2" variant="info">
           <AlertDescription>No data available for this time range</AlertDescription>
         </Alert>
       </div>
@@ -160,7 +161,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
   return (
     <div className="rounded-md border border-gray-200 p-4">
       {data.metadata?.description ? (
-        <Heading level={3} className="mb-4">
+        <Heading className="mb-4" level={3}>
           {data.metadata.description}
         </Heading>
       ) : null}
@@ -229,17 +230,12 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
                 }}
                 hideLabel={false}
                 labelFormatter={(_value, payload) => {
-                  // Get timestamp from payload data
                   const timestamp = payload?.[0]?.payload?.timestamp;
-                  if (!timestamp) {
+                  if (!timestamp || typeof timestamp !== 'number') {
                     return '';
                   }
-                  const ts = typeof timestamp === 'number' ? timestamp : Number(timestamp);
-                  if (Number.isNaN(ts)) {
-                    return '';
-                  }
-                  const date = new Date(ts);
-                  if (Number.isNaN(date.getTime())) {
+                  const date = new Date(timestamp);
+                  if (!date.getTime()) {
                     return '';
                   }
                   return date.toLocaleString('en-US', {

@@ -15,10 +15,10 @@ import { useListQueries } from 'react-query/api/observability';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
 
-import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
-import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { MetricChart } from './metric-chart';
 import { calculateTimeRange, ObservabilityToolbar, type TimeRange } from './observability-toolbar';
+import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
+import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
 const ObservabilityPage: FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
@@ -80,7 +80,7 @@ const ObservabilityPage: FC = () => {
       />
 
       {queries?.queries && queries.queries.length > 0 ? (
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {queries.queries.map((query) => (
             <MetricChart key={query.name} queryName={query.name} timeRange={timeRange} />
           ))}
