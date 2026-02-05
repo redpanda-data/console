@@ -3,6 +3,7 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient, useQuery as useTanstackQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import {
   AIAgent_State,
   AIAgentService,
@@ -31,16 +32,21 @@ export const useListAIAgentsQuery = (
   input?: MessageInit<ListAIAgentsRequest>,
   options?: QueryOptions<GenMessage<ListAIAgentsRequest>, ListAIAgentsResponse>
 ) => {
-  const listAIAgentsRequest: ListAIAgentsRequest = create(ListAIAgentsRequestSchema, {
-    pageToken: '',
-    pageSize: MAX_PAGE_SIZE,
-    filter: input?.filter
-      ? create(ListAIAgentsRequest_FilterSchema, {
-          nameContains: input.filter.nameContains,
-          tags: input.filter.tags,
-        })
-      : undefined,
-  });
+  // Memoize request to prevent infinite re-renders
+  const listAIAgentsRequest = useMemo(
+    () =>
+      create(ListAIAgentsRequestSchema, {
+        pageToken: '',
+        pageSize: MAX_PAGE_SIZE,
+        filter: input?.filter
+          ? create(ListAIAgentsRequest_FilterSchema, {
+              nameContains: input.filter.nameContains,
+              tags: input.filter.tags,
+            })
+          : undefined,
+      }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>,
+    [input?.filter?.nameContains, input?.filter?.tags]
+  );
 
   const listAIAgentsResult = useInfiniteQueryWithAllPages(listAIAgents, listAIAgentsRequest, {
     enabled: options?.enabled,
@@ -48,13 +54,16 @@ export const useListAIAgentsQuery = (
     pageParamKey: 'pageToken',
   });
 
-  const aiAgents = listAIAgentsResult?.data?.pages?.flatMap((response) => response?.aiAgents ?? []) ?? [];
+  const aiAgents = useMemo(
+    () => listAIAgentsResult?.data?.pages?.flatMap((response) => response?.aiAgents ?? []) ?? [],
+    [listAIAgentsResult.data]
+  );
+
+  const data = useMemo(() => ({ aiAgents }), [aiAgents]);
 
   return {
     ...listAIAgentsResult,
-    data: {
-      aiAgents,
-    },
+    data,
   };
 };
 
@@ -102,7 +111,7 @@ export const useCreateAIAgentMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: AIAgentService.method.listAIAgents,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -124,7 +133,7 @@ export const useUpdateAIAgentMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: AIAgentService.method.listAIAgents,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -156,7 +165,7 @@ export const useDeleteAIAgentMutation = (options?: {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: AIAgentService.method.listAIAgents,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -183,7 +192,7 @@ export const useStopAIAgentMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: AIAgentService.method.listAIAgents,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -212,7 +221,7 @@ export const useStartAIAgentMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: AIAgentService.method.listAIAgents,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });

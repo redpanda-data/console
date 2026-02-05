@@ -114,14 +114,14 @@ export const useListPipelinesQuery = (
   // Flatten pipelines from all pages
   const pipelines = useMemo(
     () => listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []) ?? [],
-    [listPipelinesResult?.data?.pages]
+    [listPipelinesResult.data]
   );
+
+  const data = useMemo(() => ({ pipelines }), [pipelines]);
 
   return {
     ...listPipelinesResult,
-    data: {
-      pipelines,
-    },
+    data,
   };
 };
 
@@ -133,7 +133,7 @@ export const useCreatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
     },
@@ -154,7 +154,7 @@ export const useUpdatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
     },
@@ -175,7 +175,7 @@ export const useStartPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -203,7 +203,7 @@ export const useStopPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -231,7 +231,7 @@ export const useDeletePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
     },

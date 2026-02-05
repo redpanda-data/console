@@ -11,7 +11,7 @@ export const LONG_LIVED_CACHE_STALE_TIME = 5 * ONE_MINUTE;
 export const MEDIUM_LIVED_CACHE_STALE_TIME = 2 * ONE_MINUTE;
 export const SHORT_LIVED_CACHE_STALE_TIME = 1 * ONE_MINUTE;
 export const NO_LIVED_CACHE_STALE_TIME = 0;
-export const MAX_PAGE_SIZE = 500;
+export const MAX_PAGE_SIZE = 3;
 export const SHORT_POLLING_INTERVAL = 2 * ONE_SECOND;
 
 /**
