@@ -9,96 +9,65 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { useQuery } from '@connectrpc/connect-query';
 import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda-data/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { SkipIcon } from 'components/icons';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { useQuotasQuery } from 'hooks/use-quotas-query';
 import { useMemo } from 'react';
 
 import {
+  ListQuotasRequestSchema,
   Quota_EntityType,
   type Quota_Value,
   Quota_ValueType,
 } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
-import type { QuotaResponseSetting } from '../../../state/rest-interfaces';
+import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
+import { MAX_PAGE_SIZE } from '../../../react-query/react-query.utils';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
 /**
- * Maps REST API quota value types to protobuf ValueType enum
+ * Maps protobuf EntityType enum to display string
  */
-const mapValueTypeToProto = (key: string): Quota_ValueType => {
-  switch (key) {
-    case 'producer_byte_rate':
-      return Quota_ValueType.PRODUCER_BYTE_RATE;
-    case 'consumer_byte_rate':
-      return Quota_ValueType.CONSUMER_BYTE_RATE;
-    case 'controller_mutation_rate':
-      return Quota_ValueType.CONTROLLER_MUTATION_RATE;
-    case 'request_percentage':
-      return Quota_ValueType.REQUEST_PERCENTAGE;
+const mapEntityTypeToDisplay = (entityType: Quota_EntityType): 'client-id' | 'user' | 'ip' | 'unknown' => {
+  switch (entityType) {
+    case Quota_EntityType.CLIENT_ID:
+    case Quota_EntityType.CLIENT_ID_PREFIX:
+      return 'client-id';
+    case Quota_EntityType.USER:
+      return 'user';
+    case Quota_EntityType.IP:
+      return 'ip';
     default:
-      return Quota_ValueType.UNSPECIFIED;
+      return 'unknown';
   }
 };
 
-/**
- * Maps REST API entity type to protobuf EntityType enum
- */
-const mapEntityTypeToProto = (entityType: string): Quota_EntityType => {
-  switch (entityType) {
-    case 'client-id':
-      return Quota_EntityType.CLIENT_ID;
-    case 'user':
-      return Quota_EntityType.USER;
-    case 'ip':
-      return Quota_EntityType.IP;
-    default:
-      return Quota_EntityType.UNSPECIFIED;
-  }
-};
+const request = create(ListQuotasRequestSchema, { pageSize: MAX_PAGE_SIZE });
 
 const QuotasList = () => {
   const navigate = useNavigate({ from: '/quotas' });
   const search = useSearch({ from: '/quotas' });
-  const { data, error, isLoading } = useQuotasQuery();
+  const { data, error, isLoading } = useQuery(listQuotas, request);
 
   const quotasData = useMemo(() => {
-    if (!data?.items) {
+    if (!data?.quotas) {
       return [];
     }
 
-    return data.items.map((item) => {
-      const entityType = mapEntityTypeToProto(item.entityType);
-      const entityName = item.entityName;
-
-      // Map entity type to display string
-      let displayType: 'client-id' | 'user' | 'ip' | 'unknown' = 'unknown';
-      if (entityType === Quota_EntityType.CLIENT_ID) {
-        displayType = 'client-id';
-      } else if (entityType === Quota_EntityType.USER) {
-        displayType = 'user';
-      } else if (entityType === Quota_EntityType.IP) {
-        displayType = 'ip';
-      }
-
-      // Transform REST API settings to protobuf Value format
-      const values: Quota_Value[] = item.settings.map(
-        (setting: QuotaResponseSetting): Quota_Value => ({
-          valueType: mapValueTypeToProto(setting.key),
-          value: setting.value,
-          $typeName: 'redpanda.api.dataplane.v1.Quota.Value',
-        })
-      );
+    return data.quotas.map((quota) => {
+      const entityType = quota.entity?.entityType ?? Quota_EntityType.UNSPECIFIED;
+      const entityName = quota.entity?.entityName;
 
       return {
         eqKey: `${entityType}-${entityName}`,
-        entityType: displayType,
+        entityType: mapEntityTypeToDisplay(entityType),
         entityName: entityName || undefined,
-        values,
+        values: quota.values,
       };
     });
   }, [data]);
@@ -169,19 +138,6 @@ const QuotasList = () => {
           <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
             <AlertIcon />
             {error.message || 'Failed to load quotas'}
-          </Alert>
-        </Section>
-      </PageContent>
-    );
-  }
-
-  if (data?.error) {
-    return (
-      <PageContent>
-        <Section>
-          <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
-            <AlertIcon />
-            {data.error}
           </Alert>
         </Section>
       </PageContent>
