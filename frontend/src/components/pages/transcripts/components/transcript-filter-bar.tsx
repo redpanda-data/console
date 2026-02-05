@@ -28,6 +28,7 @@ import type { LucideIcon } from 'lucide-react';
 import { AlertCircle, ArrowLeft, Bot, Plus, RefreshCw, Sparkles, Wrench, X, Zap } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
+import { getTimeRanges } from 'utils/time-range';
 
 import { ServiceFilter, type ServiceInfo } from './service-filter';
 
@@ -114,22 +115,7 @@ const OPERATOR_OPTIONS: { value: AttributeOperator; label: string }[] = [
   { value: 'not_equals', label: 'not equals' },
 ];
 
-// Time range configuration
-type TimeRangeConfig = {
-  value: string;
-  label: string;
-};
-
-const TIME_RANGES: TimeRangeConfig[] = [
-  { value: '5m', label: 'Last 5 minutes' },
-  { value: '15m', label: 'Last 15 minutes' },
-  { value: '30m', label: 'Last 30 minutes' },
-  { value: '1h', label: 'Last 1 hour' },
-  { value: '3h', label: 'Last 3 hours' },
-  { value: '6h', label: 'Last 6 hours' },
-  { value: '12h', label: 'Last 12 hours' },
-  { value: '24h', label: 'Last 24 hours' },
-];
+const TIME_RANGES = getTimeRanges(24 * 60 * 60 * 1000); // Up to 24 hours
 
 // Jumped state type (matching transcript-list-page)
 type JumpedState = {
