@@ -61,13 +61,11 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
       await rolesApi.refreshRoleMembers();
     };
 
-    refreshData().catch(() => {
-      // Silently ignore refresh errors
-    });
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+    refreshData().catch(console.error);
     appGlobal.onRefresh = () =>
-      refreshData().catch(() => {
-        // Silently ignore refresh errors
-      });
+      // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+      refreshData().catch(console.error);
   }, [userName]);
 
   if (isUsersLoading) {
