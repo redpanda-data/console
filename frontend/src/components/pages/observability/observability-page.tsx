@@ -16,7 +16,8 @@ import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
 
 import { MetricChart } from './metric-chart';
-import { calculateTimeRange, ObservabilityToolbar, type TimeRange } from './observability-toolbar';
+import { ObservabilityToolbar } from './observability-toolbar';
+import { calculateTimeRange, type TimeRange } from './utils/time-range';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
