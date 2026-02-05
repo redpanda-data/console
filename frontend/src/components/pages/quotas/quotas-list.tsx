@@ -52,7 +52,9 @@ const request = create(ListQuotasRequestSchema, { pageSize: MAX_PAGE_SIZE });
 const QuotasList = () => {
   const navigate = useNavigate({ from: '/quotas' });
   const search = useSearch({ from: '/quotas' });
-  const { data, error, isLoading } = useQuery(listQuotas, request);
+  const { data, error, isLoading } = useQuery(listQuotas, request, {
+    refetchOnMount: 'always',
+  });
 
   const quotasData = useMemo(() => {
     if (!data?.quotas) {
