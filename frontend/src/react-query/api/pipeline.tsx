@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import {
   GetPipelineRequestSchema,
   type GetPipelineResponse,
@@ -83,14 +84,6 @@ export const useListPipelinesQuery = (
       create(ListPipelinesRequestSchemaDataPlane, {
         pageSize: MAX_PAGE_SIZE,
         pageToken: '',
-        // TODO: Use once nameContains is not required anymore
-        // filter: new ListPipelinesRequest_Filter({
-        //   ...input?.filter,
-        //   tags: {
-        //     ...input?.filter?.tags,
-        //     __redpanda_cloud_pipeline_type: 'pipeline',
-        //   },
-        // }),
         ...input,
       }),
     [input]
@@ -100,34 +93,35 @@ export const useListPipelinesQuery = (
     () =>
       create(ListPipelinesRequestSchema, {
         request: listPipelinesRequestDataPlane,
-      }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>,
+      }) as ListPipelinesRequest & Required<Pick<ListPipelinesRequest, 'request'>>,
     [listPipelinesRequestDataPlane]
   );
 
-  // Stabilize options object to prevent unnecessary re-renders
-  const queryOptions = useMemo(
-    () => ({
-      enabled: options?.enabled,
-    }),
-    [options?.enabled]
-  );
+  const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
+    enabled: options?.enabled,
+    getNextPageParam: (lastPage) => {
+      const nextPageToken = lastPage?.response?.nextPageToken;
+      if (!nextPageToken) return undefined;
+      // Return a new request object with the updated pageToken
+      return create(ListPipelinesRequestSchemaDataPlane, {
+        ...listPipelinesRequestDataPlane,
+        pageToken: nextPageToken,
+      });
+    },
+    pageParamKey: 'request',
+  });
 
-  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, queryOptions);
-
-  // Stabilize the pipelines reference
-  const pipelines = listPipelinesResult?.data?.response?.pipelines;
-
-  // Stabilize the data object to prevent component re-renders
-  const data = useMemo(
-    () => ({
-      pipelines,
-    }),
-    [pipelines]
+  // Flatten pipelines from all pages
+  const pipelines = useMemo(
+    () => listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []) ?? [],
+    [listPipelinesResult?.data?.pages]
   );
 
   return {
     ...listPipelinesResult,
-    data,
+    data: {
+      pipelines,
+    },
   };
 };
 

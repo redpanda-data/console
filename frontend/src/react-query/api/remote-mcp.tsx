@@ -55,11 +55,9 @@ import {
   stopMCPServer as stopMCPServerV1Alpha3,
   updateMCPServer as updateMCPServerV1Alpha3,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
-import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-
-// TODO: Make this dynamic so that pagination can be used properly
-const MCP_SERVER_MAX_PAGE_SIZE = 50;
 
 // Export unified types
 export type GetMCPServerRequest = GetMCPServerRequestV1 | GetMCPServerRequestV1Alpha3;
@@ -78,9 +76,9 @@ export const useListMCPServersQuery = (
 ) => {
   const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  const listMCPServersRequestV1 = create(ListMCPServersRequestSchemaV1, {
+  const listMCPServersRequestV1: ListMCPServersRequestV1 = create(ListMCPServersRequestSchemaV1, {
     pageToken: '',
-    pageSize: MCP_SERVER_MAX_PAGE_SIZE,
+    pageSize: MAX_PAGE_SIZE,
     filter: input?.filter
       ? create(ListMCPServersRequest_FilterSchemaV1, {
           displayNameContains: input.filter.displayNameContains,
@@ -90,9 +88,9 @@ export const useListMCPServersQuery = (
       : undefined,
   });
 
-  const listMCPServersRequestV1Alpha3 = create(ListMCPServersRequestSchemaV1Alpha3, {
+  const listMCPServersRequestV1Alpha3: ListMCPServersRequestV1Alpha3 = create(ListMCPServersRequestSchemaV1Alpha3, {
     pageToken: '',
-    pageSize: MCP_SERVER_MAX_PAGE_SIZE,
+    pageSize: MAX_PAGE_SIZE,
     filter: input?.filter
       ? create(ListMCPServersRequest_FilterSchemaV1Alpha3, {
           displayNameContains: input.filter.displayNameContains,
@@ -102,15 +100,37 @@ export const useListMCPServersQuery = (
       : undefined,
   });
 
-  const resultV1 = useQuery(listMCPServersV1, listMCPServersRequestV1, {
+  const resultV1 = useInfiniteQueryWithAllPages(listMCPServersV1, listMCPServersRequestV1, {
     enabled: useMcpV1 && options?.enabled !== false,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
 
-  const resultV1Alpha3 = useQuery(listMCPServersV1Alpha3, listMCPServersRequestV1Alpha3, {
+  const resultV1Alpha3 = useInfiniteQueryWithAllPages(listMCPServersV1Alpha3, listMCPServersRequestV1Alpha3, {
     enabled: !useMcpV1 && options?.enabled !== false,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
 
-  return useMcpV1 ? resultV1 : resultV1Alpha3;
+  const mcpServersV1 = resultV1?.data?.pages?.flatMap((response) => response?.mcpServers ?? []) ?? [];
+  const mcpServersV1Alpha3 =
+    resultV1Alpha3?.data?.pages?.flatMap((response) => response?.mcpServers ?? []) ?? [];
+
+  if (useMcpV1) {
+    return {
+      ...resultV1,
+      data: {
+        mcpServers: mcpServersV1,
+      },
+    };
+  }
+
+  return {
+    ...resultV1Alpha3,
+    data: {
+      mcpServers: mcpServersV1Alpha3,
+    },
+  };
 };
 
 export const useGetMCPServerQuery = (

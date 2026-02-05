@@ -23,19 +23,17 @@ import {
   stopAIAgent,
   updateAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
-import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-
-// TODO: Make this dynamic so that pagination can be used properly
-const AI_AGENT_MAX_PAGE_SIZE = 50;
 
 export const useListAIAgentsQuery = (
   input?: MessageInit<ListAIAgentsRequest>,
   options?: QueryOptions<GenMessage<ListAIAgentsRequest>, ListAIAgentsResponse>
 ) => {
-  const listAIAgentsRequest = create(ListAIAgentsRequestSchema, {
+  const listAIAgentsRequest: ListAIAgentsRequest = create(ListAIAgentsRequestSchema, {
     pageToken: '',
-    pageSize: AI_AGENT_MAX_PAGE_SIZE,
+    pageSize: MAX_PAGE_SIZE,
     filter: input?.filter
       ? create(ListAIAgentsRequest_FilterSchema, {
           nameContains: input.filter.nameContains,
@@ -44,9 +42,20 @@ export const useListAIAgentsQuery = (
       : undefined,
   });
 
-  return useQuery(listAIAgents, listAIAgentsRequest, {
+  const listAIAgentsResult = useInfiniteQueryWithAllPages(listAIAgents, listAIAgentsRequest, {
     enabled: options?.enabled,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
+
+  const aiAgents = listAIAgentsResult?.data?.pages?.flatMap((response) => response?.aiAgents ?? []) ?? [];
+
+  return {
+    ...listAIAgentsResult,
+    data: {
+      aiAgents,
+    },
+  };
 };
 
 export const useGetAIAgentQuery = (
