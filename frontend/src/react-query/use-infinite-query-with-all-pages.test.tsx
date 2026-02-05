@@ -13,14 +13,15 @@ import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
-  ListAIAgentsResponseSchema,
   AIAgentSchema,
-  ListAIAgentsRequestSchema,
   type ListAIAgentsRequest,
+  ListAIAgentsRequestSchema,
+  ListAIAgentsResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { listAIAgents } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
 import { describe, expect, test } from 'vitest';
+
 import { useInfiniteQueryWithAllPages } from './use-infinite-query-with-all-pages';
 
 describe('useInfiniteQueryWithAllPages', () => {
@@ -28,9 +29,9 @@ describe('useInfiniteQueryWithAllPages', () => {
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, (request) => {
-        callCount++;
-        const pageToken = request.pageToken;
+      rpc(listAIAgents, (req) => {
+        callCount += 1;
+        const pageToken = req.pageToken;
 
         if (pageToken === '') {
           // First page
@@ -88,9 +89,9 @@ describe('useInfiniteQueryWithAllPages', () => {
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, (request) => {
-        callCount++;
-        const pageToken = request.pageToken;
+      rpc(listAIAgents, (req) => {
+        callCount += 1;
+        const pageToken = req.pageToken;
 
         if (pageToken === '') {
           // First page succeeds
@@ -147,7 +148,7 @@ describe('useInfiniteQueryWithAllPages', () => {
 
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listAIAgents, () => {
-        callCount++;
+        callCount += 1;
         return create(ListAIAgentsResponseSchema, {
           aiAgents: [],
           nextPageToken: '',

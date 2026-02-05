@@ -7,7 +7,6 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
-import { useMemo } from 'react';
 import { config, isFeatureFlagEnabled } from 'config';
 import {
   GetMCPServerRequestSchema as GetMCPServerRequestSchemaV1,
@@ -56,6 +55,7 @@ import {
   stopMCPServer as stopMCPServerV1Alpha3,
   updateMCPServer as updateMCPServerV1Alpha3,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
+import { useMemo } from 'react';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -91,7 +91,7 @@ export const useListMCPServersQuery = (
             })
           : undefined,
       }) as ListMCPServersRequestV1 & Required<Pick<ListMCPServersRequestV1, 'pageToken'>>,
-    [input?.filter?.displayNameContains, input?.filter?.tags, input?.filter?.secretId]
+    [input?.filter]
   );
 
   const listMCPServersRequestV1Alpha3 = useMemo(
@@ -107,7 +107,7 @@ export const useListMCPServersQuery = (
             })
           : undefined,
       }) as ListMCPServersRequestV1Alpha3 & Required<Pick<ListMCPServersRequestV1Alpha3, 'pageToken'>>,
-    [input?.filter?.displayNameContains, input?.filter?.tags, input?.filter?.secretId]
+    [input?.filter]
   );
 
   const resultV1 = useInfiniteQueryWithAllPages(listMCPServersV1, listMCPServersRequestV1, {

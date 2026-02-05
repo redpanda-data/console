@@ -3,7 +3,6 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient, useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
 import {
   AIAgent_State,
   AIAgentService,
@@ -24,7 +23,13 @@ import {
   stopAIAgent,
   updateAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
-import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
+import { useMemo } from 'react';
+import {
+  MAX_PAGE_SIZE,
+  type MessageInit,
+  type QueryOptions,
+  SHORT_POLLING_INTERVAL,
+} from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -45,7 +50,7 @@ export const useListAIAgentsQuery = (
             })
           : undefined,
       }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>,
-    [input?.filter?.nameContains, input?.filter?.tags]
+    [input?.filter]
   );
 
   const listAIAgentsResult = useInfiniteQueryWithAllPages(listAIAgents, listAIAgentsRequest, {

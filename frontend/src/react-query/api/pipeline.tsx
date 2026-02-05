@@ -2,7 +2,6 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import {
   GetPipelineRequestSchema,
   type GetPipelineResponse,
@@ -41,6 +40,7 @@ import {
   type QueryOptions,
   SHORT_POLLING_INTERVAL,
 } from 'react-query/react-query.utils';
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
@@ -101,7 +101,9 @@ export const useListPipelinesQuery = (
     enabled: options?.enabled,
     getNextPageParam: (lastPage) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
-      if (!nextPageToken) return undefined;
+      if (!nextPageToken) {
+        return;
+      }
       // Return a new request object with the updated pageToken
       return create(ListPipelinesRequestSchemaDataPlane, {
         ...listPipelinesRequestDataPlane,
