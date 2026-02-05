@@ -10,12 +10,12 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import type { ExecuteRangeQueryResponse } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 import { useExecuteRangeQuery } from 'react-query/api/observability';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
+import { CHART_COLORS, transformTimeSeriesData } from './utils/chart-data';
 import { prettyNumber } from '../../../utils/utils';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import {
@@ -28,14 +28,6 @@ import {
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Heading } from '../../redpanda-ui/components/typography';
 
-const CHART_COLORS = [
-  'var(--color-chart-1)',
-  'var(--color-chart-2)',
-  'var(--color-chart-3)',
-  'var(--color-chart-4)',
-  'var(--color-chart-5)',
-] as const;
-
 type MetricChartProps = {
   queryName: string;
   timeRange: {
@@ -43,50 +35,6 @@ type MetricChartProps = {
     end: Date;
   };
 };
-
-// Helper to add data point to timestamp map
-function addDataPoint(
-  timestampMap: Map<number, { timestamp: number; [key: string]: number }>,
-  seriesName: string,
-  point: { timestamp?: { seconds: bigint }; value?: number }
-): void {
-  if (!point.timestamp || point.value === undefined) {
-    return;
-  }
-
-  // Convert seconds to milliseconds for JavaScript Date
-  const ts = Number(point.timestamp.seconds) * 1000;
-
-  if (!timestampMap.has(ts)) {
-    timestampMap.set(ts, { timestamp: ts });
-  }
-
-  const entry = timestampMap.get(ts);
-  if (entry) {
-    entry[seriesName] = point.value;
-  }
-}
-
-// Helper function to transform time series data into chart format
-function transformTimeSeriesData(results: ExecuteRangeQueryResponse['results']): Array<{
-  timestamp: number;
-  [key: string]: number;
-}> {
-  if (!results || results.length === 0) {
-    return [];
-  }
-
-  const timestampMap = new Map<number, { timestamp: number; [key: string]: number }>();
-
-  for (const series of results) {
-    const seriesName = series.name || 'value';
-    for (const point of series.values) {
-      addDataPoint(timestampMap, seriesName, point);
-    }
-  }
-
-  return Array.from(timestampMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-}
 
 export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
   const { data, isLoading, isError } = useExecuteRangeQuery({

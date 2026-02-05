@@ -12,23 +12,9 @@
 import type { FC } from 'react';
 import { useMemo } from 'react';
 
+import type { TimeRange } from './utils/time-range';
+import { calculateTimeRange, formatTimeRangeDate, TIME_RANGE_OPTIONS } from './utils/time-range';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
-
-export type TimeRange = '5m' | '15m' | '30m' | '1h' | '3h' | '6h';
-
-const TIME_RANGE_MS: Record<TimeRange, number> = {
-  '5m': 5 * 60 * 1000,
-  '15m': 15 * 60 * 1000,
-  '30m': 30 * 60 * 1000,
-  '1h': 60 * 60 * 1000,
-  '3h': 3 * 60 * 60 * 1000,
-  '6h': 6 * 60 * 60 * 1000,
-};
-
-export type TimeRangeDates = {
-  start: Date;
-  end: Date;
-};
 
 type ObservabilityToolbarProps = {
   selectedTimeRange: TimeRange;
@@ -44,22 +30,13 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey triggers recalculation on refresh
   const timeRange = useMemo(() => calculateTimeRange(selectedTimeRange), [selectedTimeRange, refreshKey]);
 
-  const timeRangeDisplay = useMemo(() => {
-    const formatDate = (date: Date) =>
-      date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'UTC',
-      });
-
-    return {
-      start: formatDate(timeRange.start),
-      end: formatDate(timeRange.end),
-    };
-  }, [timeRange]);
+  const timeRangeDisplay = useMemo(
+    () => ({
+      start: formatTimeRangeDate(timeRange.start),
+      end: formatTimeRangeDate(timeRange.end),
+    }),
+    [timeRange]
+  );
 
   return (
     <div className="rounded-md border border-gray-200 p-4 shadow-sm">
@@ -71,12 +48,11 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="5m">Last 5m</SelectItem>
-              <SelectItem value="15m">Last 15m</SelectItem>
-              <SelectItem value="30m">Last 30m</SelectItem>
-              <SelectItem value="1h">Last 1h</SelectItem>
-              <SelectItem value="3h">Last 3h</SelectItem>
-              <SelectItem value="6h">Last 6h</SelectItem>
+              {TIME_RANGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -99,13 +75,3 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
     </div>
   );
 };
-
-export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates {
-  const now = new Date();
-  const startTime = new Date(now.getTime() - TIME_RANGE_MS[selectedTimeRange]);
-
-  return {
-    start: startTime,
-    end: now,
-  };
-}
