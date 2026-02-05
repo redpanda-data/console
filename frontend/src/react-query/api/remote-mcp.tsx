@@ -122,14 +122,14 @@ export const useListMCPServersQuery = (
     pageParamKey: 'pageToken',
   });
 
-  const mcpServersV1 = useMemo(
-    () => resultV1?.data?.pages?.flatMap((response) => response?.mcpServers ?? []) ?? [],
-    [resultV1.data]
-  );
-  const mcpServersV1Alpha3 = useMemo(
-    () => resultV1Alpha3?.data?.pages?.flatMap((response) => response?.mcpServers ?? []) ?? [],
-    [resultV1Alpha3.data]
-  );
+  const mcpServersV1 = useMemo(() => {
+    const allMcpServers = resultV1?.data?.pages?.flatMap((response) => response?.mcpServers ?? []);
+    return allMcpServers ?? [];
+  }, [resultV1.data]);
+  const mcpServersV1Alpha3 = useMemo(() => {
+    const allMcpServers = resultV1Alpha3?.data?.pages?.flatMap((response) => response?.mcpServers ?? []);
+    return allMcpServers ?? [];
+  }, [resultV1Alpha3.data]);
 
   const dataV1 = useMemo(() => ({ mcpServers: mcpServersV1 }), [mcpServersV1]);
   const dataV1Alpha3 = useMemo(() => ({ mcpServers: mcpServersV1Alpha3 }), [mcpServersV1Alpha3]);

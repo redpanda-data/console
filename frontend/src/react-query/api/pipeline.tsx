@@ -114,10 +114,10 @@ export const useListPipelinesQuery = (
   });
 
   // Flatten pipelines from all pages
-  const pipelines = useMemo(
-    () => listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []) ?? [],
-    [listPipelinesResult.data]
-  );
+  const pipelines = useMemo(() => {
+    const allPipelines = listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []);
+    return allPipelines ?? [];
+  }, [listPipelinesResult.data]);
 
   const data = useMemo(() => ({ pipelines }), [pipelines]);
 

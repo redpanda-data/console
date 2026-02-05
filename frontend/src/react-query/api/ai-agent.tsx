@@ -59,10 +59,10 @@ export const useListAIAgentsQuery = (
     pageParamKey: 'pageToken',
   });
 
-  const aiAgents = useMemo(
-    () => listAIAgentsResult?.data?.pages?.flatMap((response) => response?.aiAgents ?? []) ?? [],
-    [listAIAgentsResult.data]
-  );
+  const aiAgents = useMemo(() => {
+    const allAiAgents = listAIAgentsResult?.data?.pages?.flatMap((response) => response?.aiAgents ?? []);
+    return allAiAgents ?? [];
+  }, [listAIAgentsResult.data]);
 
   const data = useMemo(() => ({ aiAgents }), [aiAgents]);
 
