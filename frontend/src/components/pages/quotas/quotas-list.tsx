@@ -107,6 +107,7 @@ const QuotasList = () => {
   }
 
   if (error) {
+    console.error('[QuotasList] Error fetching quotas:', error.message, error);
     const isPermissionError = error.message.includes('permission') || error.message.includes('forbidden');
 
     if (isPermissionError) {
