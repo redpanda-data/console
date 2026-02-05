@@ -64,7 +64,7 @@ const { ToastContainer } = createStandaloneToast();
 
 const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
   const { subjectName: subjectNameParam } = routeApi.useParams();
-  const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName' });
+  const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const search = routeApi.useSearch();
   const toast = useToast();
 
@@ -265,7 +265,7 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const toast = useToast();
-  const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName' });
+  const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const search = routeApi.useSearch();
   const queryClient = useQueryClient();
 
