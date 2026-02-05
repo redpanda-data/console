@@ -16,7 +16,7 @@ import { useExecuteRangeQuery } from 'react-query/api/observability';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 import { CHART_COLORS, transformTimeSeriesData } from './utils/chart-data';
-import { prettyNumber } from '../../../utils/utils';
+import { formatWithUnit } from '../../../utils/unit';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import {
   ChartContainer,
@@ -133,31 +133,9 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
           />
           <YAxis
             axisLine={false}
-            label={
-              data.metadata?.unit
-                ? {
-                    value: data.metadata.unit,
-                    angle: -90,
-                    position: 'insideLeft',
-                    style: { textAnchor: 'middle' },
-                  }
-                : undefined
-            }
-            tickFormatter={(value) => {
-              // Use prettyNumber for large values (handles K, M, B formatting)
-              if (value >= 1000) {
-                return prettyNumber(value).toUpperCase();
-              }
-              // Show decimals for small values
-              if (value < 10) {
-                return value.toFixed(2);
-              }
-              if (value < 100) {
-                return value.toFixed(1);
-              }
-              return value.toFixed(0);
-            }}
+            tickFormatter={(value) => formatWithUnit(value, data.metadata?.unit)}
             tickLine={false}
+            width={80}
           />
           <ChartTooltip
             content={
@@ -165,14 +143,12 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
                 className="min-w-[200px]"
                 formatter={(value, name, item) => {
                   const indicatorColor = item.payload.fill || item.color;
+                  const formattedValue = typeof value === 'number' ? formatWithUnit(value, data.metadata?.unit) : value;
                   return (
                     <div className="flex w-full items-center gap-3">
                       <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: indicatorColor }} />
                       <span className="text-muted-foreground">{name}</span>
-                      <span className="ml-auto font-medium font-mono tabular-nums">
-                        {value?.toLocaleString()}
-                        {data.metadata?.unit ? ` ${data.metadata.unit}` : ''}
-                      </span>
+                      <span className="ml-auto font-medium font-mono tabular-nums">{formattedValue}</span>
                     </div>
                   );
                 }}
