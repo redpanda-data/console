@@ -129,6 +129,7 @@ export type SetConfigArguments = {
   setSidebarItems?: (items: SidebarItem[]) => void;
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
+  isAdpEnabled?: boolean;
   featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -173,6 +174,7 @@ type Config = {
   setSidebarItems: (items: SidebarItem[]) => void;
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
+  isAdpEnabled: boolean;
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -193,6 +195,7 @@ export const config: Config = observable({
     // no op - set by parent application
   },
   isServerless: false,
+  isAdpEnabled: false,
   featureFlags: FEATURE_FLAGS,
 });
 
@@ -201,6 +204,7 @@ const setConfig = ({
   urlOverride,
   jwt,
   isServerless: isServerlessMode,
+  isAdpEnabled: isAdpEnabledMode,
   featureFlags,
   ...args
 }: SetConfigArguments) => {
@@ -246,6 +250,7 @@ const setConfig = ({
     jwt,
     dataplaneTransport,
     isServerless: isServerlessMode,
+    isAdpEnabled: isAdpEnabledMode ?? false,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
@@ -346,6 +351,10 @@ export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
 
 export function isServerless() {
   return config.isServerless;
+}
+
+export function isAdpEnabled() {
+  return config.isAdpEnabled;
 }
 
 export const embeddedAvailableRoutesObservable = observable({

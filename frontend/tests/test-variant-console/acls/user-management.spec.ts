@@ -13,7 +13,7 @@ test.describe('ACL User Management', () => {
 
     // Wait for API initialization to complete and button to be enabled
     // This handles timing differences between local and CI environments
-    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10000 });
+    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
   });
 
   test('should create a new user with special characters in password', async ({ page }) => {
@@ -367,7 +367,7 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('6. Verify redirect to users list', async () => {
-      await page.waitForURL('/security/users', { timeout: 10000 });
+      await page.waitForURL('/security/users', { timeout: 10_000 });
     });
   });
 });
