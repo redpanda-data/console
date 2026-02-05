@@ -12,9 +12,22 @@
 import type { FC } from 'react';
 import { useMemo } from 'react';
 
-import type { TimeRange } from './utils/time-range';
-import { calculateTimeRange, formatTimeRangeDate, TIME_RANGE_OPTIONS } from './utils/time-range';
+import type { TimeRange } from '../../../utils/time-range';
+import { calculateTimeRange, getTimeRanges } from '../../../utils/time-range';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
+
+const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000); // Up to 12 hours
+
+function formatTimeRangeDate(date: Date): string {
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'UTC',
+  });
+}
 
 type ObservabilityToolbarProps = {
   selectedTimeRange: TimeRange;
@@ -44,11 +57,11 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
         <div>
           <div className="mb-1 text-gray-600 text-xs">TIME RANGE</div>
           <Select onValueChange={(value) => onTimeRangeChange(value as TimeRange)} value={selectedTimeRange}>
-            <SelectTrigger className="h-8 w-[110px] text-sm">
+            <SelectTrigger className="h-8 w-[145px] text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TIME_RANGE_OPTIONS.map((option) => (
+              {TIME_RANGES.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
