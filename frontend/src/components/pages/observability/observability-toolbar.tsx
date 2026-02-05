@@ -42,15 +42,7 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
   refreshKey,
 }) => {
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey triggers recalculation on refresh
-  const timeRange = useMemo(() => {
-    const now = new Date();
-    const startTime = new Date(now.getTime() - TIME_RANGE_MS[selectedTimeRange]);
-
-    return {
-      start: startTime,
-      end: now,
-    };
-  }, [selectedTimeRange, refreshKey]);
+  const timeRange = useMemo(() => calculateTimeRange(selectedTimeRange), [selectedTimeRange, refreshKey]);
 
   const timeRangeDisplay = useMemo(() => {
     const formatDate = (date: Date) =>
