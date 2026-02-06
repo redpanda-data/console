@@ -6,7 +6,7 @@ import { history } from "@milkdown/kit/plugin/history";
 import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Badge } from "components/redpanda-ui/components/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/redpanda-ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "components/redpanda-ui/components/tabs";
 import { Textarea } from "components/redpanda-ui/components/textarea";
 import { cn } from "components/redpanda-ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
@@ -68,7 +68,7 @@ export function MarkdownEditorTabs({
 }) {
   return (
     <Tabs value={mode} onValueChange={(v) => onModeChange(v as MarkdownEditorMode)} className={className}>
-      <TabsList>
+      <TabsList transition={{ duration: 0 }}>
         <TabsTrigger value="editor" className="gap-1.5">
           Editor
           <Badge variant="outline" className="px-1 py-0 text-[10px] font-normal">
@@ -104,9 +104,13 @@ export function MarkdownEditor({
   }, [value]);
 
   // When switching from raw to editor, remount to pick up changes
+  const prevModeRef = useRef(activeMode);
   useEffect(() => {
-    if (activeMode === "editor") {
-      setEditorKey((k) => k + 1);
+    if (prevModeRef.current !== activeMode) {
+      prevModeRef.current = activeMode;
+      if (activeMode === "editor") {
+        setEditorKey((k) => k + 1);
+      }
     }
   }, [activeMode]);
 
@@ -146,10 +150,12 @@ export function MarkdownEditor({
   }
 
   // Uncontrolled mode - render with internal tabs
+  // Content is conditionally rendered instead of using TabsContent to avoid
+  // the motion blur/slide animation that looks jarring for an inline editor.
   return (
     <div className={cn("markdown-editor-wrapper", className)}>
       <Tabs value={activeMode} onValueChange={(v) => handleModeChange(v as MarkdownEditorMode)}>
-        <TabsList className="mb-2">
+        <TabsList className="mb-2" transition={{ duration: 0 }}>
           <TabsTrigger value="editor" className="gap-1.5">
             Editor
             <Badge variant="outline" className="px-1 py-0 text-[10px] font-normal">
@@ -158,15 +164,8 @@ export function MarkdownEditor({
           </TabsTrigger>
           <TabsTrigger value="raw">Raw</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="editor" className="mt-0">
-          {editorContent}
-        </TabsContent>
-
-        <TabsContent value="raw" className="mt-0">
-          {rawContent}
-        </TabsContent>
       </Tabs>
+      {activeMode === "editor" ? editorContent : rawContent}
     </div>
   );
 }
