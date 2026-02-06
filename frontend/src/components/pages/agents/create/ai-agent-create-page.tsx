@@ -531,10 +531,10 @@ export const AIAgentCreatePage = () => {
               </Card>
             </div>
 
-            {/* Prompt */}
+            {/* System Prompt */}
             <Card size="full">
               <CardHeader>
-                <CardTitle>Prompt</CardTitle>
+                <CardTitle>System Prompt</CardTitle>
                 <Text variant="muted">Define the agent's behavior and instructions</Text>
               </CardHeader>
               <CardContent>
