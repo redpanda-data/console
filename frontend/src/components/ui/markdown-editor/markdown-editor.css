@@ -1,8 +1,15 @@
 /* Milkdown Editor Styles */
 
+.markdown-editor-wrapper {
+  min-width: 0;
+}
+
 .markdown-editor-wrapper .milkdown {
   min-height: 80px;
   padding: 0.5rem 0.75rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow: hidden;
 }
 
 .markdown-editor-wrapper .milkdown .editor {
