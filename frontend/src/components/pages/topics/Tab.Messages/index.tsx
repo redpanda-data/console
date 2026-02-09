@@ -14,9 +14,10 @@ import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'reac
 import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
 import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
 import {
+  createFilterEntry,
   type DataColumnKey,
   DEFAULT_SEARCH_PARAMS,
-  FilterEntry,
+  type FilterEntry,
   PartitionOffsetOrigin,
   type PartitionOffsetOriginType,
 } from '../../../../state/ui';
@@ -1006,7 +1007,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   icon={<CodeIcon size="1.5rem" />}
                   isDisabled={!canUseFilters}
                   onClick={() => {
-                    const filter = new FilterEntry();
+                    const filter = createFilterEntry();
                     setCurrentJSFilter(filter);
                   }}
                 >

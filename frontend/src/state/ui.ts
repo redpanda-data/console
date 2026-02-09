@@ -10,7 +10,8 @@
  */
 
 import type { SortingState } from '@redpanda-data/ui';
-import { autorun, makeObservable, observable, transaction } from 'mobx';
+import { create } from 'zustand';
+import { persist, subscribeWithSelector } from 'zustand/middleware';
 
 import { AclRequestDefault, type GetAclsRequest } from './rest-interfaces';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
@@ -53,21 +54,31 @@ export type ColumnList = {
 };
 
 export type FilterType = 'code';
-export class FilterEntry {
-  constructor() {
-    makeObservable(this);
-  }
 
-  @observable isNew = false;
-  id = randomId() + randomId(); // used as react key
-  @observable filterType: FilterType = 'code';
-
-  @observable isActive = true;
+export type FilterEntry = {
+  isNew: boolean;
+  id: string; // used as react key
+  filterType: FilterType;
+  isActive: boolean;
 
   // Code
-  @observable name = ''; // name of the filter, shown instead of the code when set
-  @observable transpiledCode = 'return true;\n';
-  @observable code = 'return true\n//allow all messages'; // js code the user entered
+  name: string; // name of the filter, shown instead of the code when set
+  transpiledCode: string;
+  code: string; // js code the user entered
+};
+
+// Factory function to create FilterEntry instances
+export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry {
+  return {
+    isNew: false,
+    id: randomId() + randomId(),
+    filterType: 'code',
+    isActive: true,
+    name: '',
+    transpiledCode: 'return true;\n',
+    code: 'return true\n//allow all messages',
+    ...overrides,
+  };
 }
 
 export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixMillis' | 'relative';
@@ -122,46 +133,255 @@ export const DEFAULT_SEARCH_PARAMS = {
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
 
 // Settings for an individual topic
-export class TopicDetailsSettings {
-  constructor() {
-    makeObservable(this);
-  }
-
+export type TopicDetailsSettings = {
   topicName: string;
 
-  @observable searchParams = { ...DEFAULT_SEARCH_PARAMS };
+  searchParams: typeof DEFAULT_SEARCH_PARAMS;
 
-  @observable dynamicFilters: 'partition'[] = [];
+  dynamicFilters: 'partition'[];
 
-  @observable messagesPageSize = 20;
-  @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
+  messagesPageSize: number;
+  favConfigEntries: string[];
 
-  @observable previewTags = [] as PreviewTagV2[];
-  @observable previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase' = 'ignoreCase';
+  previewTags: PreviewTagV2[];
+  previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase';
 
-  @observable previewMultiResultMode = 'showAll' as 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
-  @observable previewDisplayMode = 'wrap' as 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
+  previewMultiResultMode: 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
+  previewDisplayMode: 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
 
-  // @observable previewResultLimit: 3; // todo
-  @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
-  @observable showMessageMetadata = true;
-  @observable showMessageHeaders = false;
+  // previewResultLimit: 3; // todo
+  previewShowEmptyMessages: boolean; // todo: filter out messages that don't match
+  showMessageMetadata: boolean;
+  showMessageHeaders: boolean;
 
-  @observable searchParametersLocalTimeMode = true;
-  @observable previewTimestamps = 'default' as TimestampDisplayFormat;
-  @observable previewColumnFields = [] as ColumnList[];
+  searchParametersLocalTimeMode: boolean;
+  previewTimestamps: TimestampDisplayFormat;
+  previewColumnFields: ColumnList[];
 
-  @observable consumerPageSize = 20;
-  @observable partitionPageSize = 20;
-  @observable aclPageSize = 20;
+  consumerPageSize: number;
+  partitionPageSize: number;
+  aclPageSize: number;
 
-  @observable produceRecordEncoding = PayloadEncoding.TEXT as PayloadEncoding | 'base64';
-  @observable produceRecordCompression = CompressionType.SNAPPY;
+  produceRecordEncoding: PayloadEncoding | 'base64';
+  produceRecordCompression: CompressionType;
 
-  @observable quickSearch = '';
+  quickSearch: string;
+};
+
+// Factory function to create TopicDetailsSettings instances
+export function createTopicDetailsSettings(
+  topicName: string,
+  overrides?: Partial<TopicDetailsSettings>
+): TopicDetailsSettings {
+  return {
+    topicName,
+    searchParams: { ...DEFAULT_SEARCH_PARAMS },
+    dynamicFilters: [],
+    messagesPageSize: 20,
+    favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
+    previewTags: [],
+    previewTagsCaseSensitive: 'ignoreCase',
+    previewMultiResultMode: 'showAll',
+    previewDisplayMode: 'wrap',
+    previewShowEmptyMessages: true,
+    showMessageMetadata: true,
+    showMessageHeaders: false,
+    searchParametersLocalTimeMode: true,
+    previewTimestamps: 'default',
+    previewColumnFields: [],
+    consumerPageSize: 20,
+    partitionPageSize: 20,
+    aclPageSize: 20,
+    produceRecordEncoding: PayloadEncoding.TEXT,
+    produceRecordCompression: CompressionType.SNAPPY,
+    quickSearch: '',
+    ...overrides,
+  };
 }
 
-const defaultUiSettings = {
+type UISettings = {
+  sideBarOpen: boolean;
+  selectedClusterIndex: number;
+  perTopicSettings: TopicDetailsSettings[]; // don't use directly, instead use uiState.topicDetails
+  topicDetailsActiveTabKey: TopicTabId | undefined;
+
+  topicDetailsShowStatisticsBar: boolean; // for now: global for all topic details
+  autoRefreshIntervalSecs: number;
+  jsonViewer: {
+    fontSize: string;
+    lineHeight: string;
+    maxStringLength: number;
+    collapsed: number;
+  };
+
+  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
+  brokerList: {
+    hideEmptyColumns: boolean;
+    pageSize: number;
+    quickSearch: string;
+
+    valueDisplay: 'friendly' | 'raw';
+    propsFilter: 'all' | 'onlyChanged';
+    propsOrder: 'changedFirst' | 'default' | 'alphabetical';
+
+    configTable: {
+      pageSize: number;
+      quickSearch: string;
+    };
+  };
+
+  reassignment: {
+    // partition reassignment
+    // Active
+    activeReassignments: {
+      quickSearch: string;
+      pageSize: number;
+    };
+
+    // Select
+    quickSearch: string;
+    pageSizeSelect: number;
+
+    // Brokers
+    pageSizeBrokers: number;
+
+    // Review
+    pageSizeReview: number;
+    maxReplicationTraffic: number | null; // bytes per second, or "no change"
+  };
+
+  topicList: {
+    hideInternalTopics: boolean;
+    quickSearch: string;
+    pageSize: number; // number of topics to show
+
+    // Topic Configuration
+    valueDisplay: ValueDisplay;
+    propsOrder: 'changedFirst' | 'default' | 'alphabetical';
+
+    configViewType: 'structured' | 'table';
+  };
+
+  clusterOverview: {
+    connectorsList: {
+      quickSearch: string;
+    };
+  };
+
+  connectorsList: {
+    quickSearch: string;
+  };
+
+  connectorsDetails: {
+    logsQuickSearch: string;
+    sorting: SortingState;
+  };
+
+  pipelinesList: {
+    quickSearch: string;
+  };
+
+  knowledgeBaseList: {
+    quickSearch: string;
+  };
+
+  rpcnSecretList: {
+    quickSearch: string;
+  };
+
+  pipelinesDetails: {
+    logsQuickSearch: string;
+    sorting: SortingState;
+  };
+
+  consumerGroupList: {
+    pageSize: number;
+    quickSearch: string;
+  };
+
+  consumerGroupDetails: {
+    pageSize: number;
+    showStatisticsBar: boolean;
+  };
+
+  aclList: {
+    usersTab: {
+      quickSearch: string;
+      pageSize: number;
+    };
+    rolesTab: {
+      quickSearch: string;
+      pageSize: number;
+    };
+    permissionsTab: {
+      quickSearch: string;
+      pageSize: number;
+    };
+
+    configTable: {
+      quickSearch: string;
+      pageSize: number;
+    };
+  };
+
+  aclSearchParams: GetAclsRequest;
+
+  quotasList: {
+    pageSize: number;
+    quickSearch: string;
+  };
+
+  schemaList: {
+    pageSize: number;
+    quickSearch: string;
+    showSoftDeleted: boolean;
+  };
+
+  schemaDetails: {
+    viewMode: 'json' | 'fields';
+  };
+
+  kafkaConnect: {
+    selectedTab: ConnectTabKeys;
+
+    clusters: {
+      pageSize: number;
+      quickSearch: string;
+    };
+    connectors: {
+      pageSize: number;
+      quickSearch: string;
+    };
+    tasks: {
+      pageSize: number;
+      quickSearch: string;
+    };
+
+    clusterDetails: {
+      pageSize: number;
+      quickSearch: string;
+    };
+    clusterDetailsPlugins: {
+      pageSize: number;
+      quickSearch: string;
+    };
+
+    connectorDetails: {
+      pageSize: number;
+      quickSearch: string;
+    };
+  };
+
+  transformsList: {
+    quickSearch: string;
+  };
+
+  userDefaults: {
+    paginationPosition: 'bottomRight' | 'topRight';
+  };
+};
+
+const defaultUiSettings: UISettings = {
   sideBarOpen: true,
   selectedClusterIndex: 0,
   perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
@@ -342,78 +562,155 @@ const defaultUiSettings = {
     paginationPosition: 'bottomRight' as 'bottomRight' | 'topRight',
   },
 };
-Object.freeze(defaultUiSettings);
 
-const uiSettings = observable(clone(defaultUiSettings));
-export { uiSettings };
-
-export function clearSettings() {
-  transaction(() => {
-    for (const k in uiSettings) {
-      if (Object.hasOwn(uiSettings, k)) {
-        delete (uiSettings as Record<string, unknown>)[k];
-      }
-    }
-    assignDeep(uiSettings, clone(defaultUiSettings));
-  });
-}
-
-//
-// Settings save/load
-
-// Load settings
-const storedSettingsJson = localStorage.getItem(settingsName);
-if (storedSettingsJson) {
-  const loadedSettings = JSON.parse(storedSettingsJson);
-  assignDeep(uiSettings, loadedSettings); // overwrite defaults with loaded values
-
-  // Upgrade: new props in 'TopicDetailsSettings'
-  for (const ts of uiSettings.perTopicSettings) {
-    // when loading a previous version, we'll have "undefined" for all the new properties,
-    // which is ok for 'number', but not for any other type.
-    ts.previewColumnFields = ts.previewColumnFields ?? [];
-    ts.previewTimestamps = ts.previewTimestamps ?? 'default';
-
-    if (!ts.dynamicFilters) {
-      ts.dynamicFilters = [];
-    }
-  }
-
-  // Upgrade: PreviewTag to PreviewTagV2
-  for (const ts of uiSettings.perTopicSettings) {
-    for (let i = 0; i < ts.previewTags.length; i++) {
-      const tag = ts.previewTags[i];
-      if (isPreviewTagV1(tag)) {
-        // upgrade by constructing a new tag from the old data
-        const newTag: PreviewTagV2 = {
-          id: tag.id,
-          isActive: tag.isActive,
-          pattern: `**.${tag.text}`,
-          customName: tag.customName,
-          searchInMessageHeaders: false,
-          searchInMessageKey: false,
-          searchInMessageValue: true,
-        };
-
-        // replace old tag
-        ts.previewTags[i] = newTag;
-      }
-    }
-  }
-}
+type UISettingsStore = UISettings & {
+  // Actions
+  updateSettings: (settings: Partial<UISettings>) => void;
+  clearSettings: () => void;
+};
 
 function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
   return (tag as PreviewTag).text !== undefined;
 }
 
-// Auto save (timed)
-autorun(
-  () => {
-    const json = JSON.stringify(uiSettings);
+// Upgrade function for loading old data
+function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISettings> {
+  // Upgrade: new props in 'TopicDetailsSettings'
+  if (loadedSettings.perTopicSettings) {
+    for (const ts of loadedSettings.perTopicSettings) {
+      // when loading a previous version, we'll have "undefined" for all the new properties,
+      // which is ok for 'number', but not for any other type.
+      ts.previewColumnFields = ts.previewColumnFields ?? [];
+      ts.previewTimestamps = ts.previewTimestamps ?? 'default';
+
+      if (!ts.dynamicFilters) {
+        ts.dynamicFilters = [];
+      }
+    }
+
+    // Upgrade: PreviewTag to PreviewTagV2
+    for (const ts of loadedSettings.perTopicSettings) {
+      for (let i = 0; i < ts.previewTags.length; i++) {
+        const tag = ts.previewTags[i];
+        if (isPreviewTagV1(tag)) {
+          // upgrade by constructing a new tag from the old data
+          const newTag: PreviewTagV2 = {
+            id: tag.id,
+            isActive: tag.isActive,
+            pattern: `**.${tag.text}`,
+            customName: tag.customName,
+            searchInMessageHeaders: false,
+            searchInMessageKey: false,
+            searchInMessageValue: true,
+          };
+
+          // replace old tag
+          ts.previewTags[i] = newTag;
+        }
+      }
+    }
+  }
+
+  return loadedSettings;
+}
+
+// Debounced save function
+let saveTimeoutId: NodeJS.Timeout | null = null;
+const SAVE_DELAY = 2000;
+
+function scheduleSave(state: UISettings) {
+  if (saveTimeoutId) {
+    clearTimeout(saveTimeoutId);
+  }
+
+  saveTimeoutId = setTimeout(() => {
+    const json = JSON.stringify(state);
     localStorage.setItem(settingsName, json);
-  },
-  { delay: 2000 }
+  }, SAVE_DELAY);
+}
+
+// Immediate save function (for visibility change)
+function saveImmediately(state: UISettings) {
+  if (saveTimeoutId) {
+    clearTimeout(saveTimeoutId);
+    saveTimeoutId = null;
+  }
+  const json = JSON.stringify(state);
+  localStorage.setItem(settingsName, json);
+}
+
+// Create the store
+export const useUISettingsStore = create<UISettingsStore>()(
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
+        ...clone(defaultUiSettings),
+
+        updateSettings: (settings: Partial<UISettings>) => {
+          set((state) => {
+            const newState = { ...state };
+            assignDeep(newState as unknown as Record<string, unknown>, settings as Record<string, unknown>);
+            return newState;
+          });
+        },
+
+        clearSettings: () => {
+          set({
+            ...clone(defaultUiSettings),
+            updateSettings: get().updateSettings,
+            clearSettings: get().clearSettings,
+          });
+        },
+      }),
+      {
+        name: settingsName,
+        version: 3,
+        storage: {
+          getItem: (name) => {
+            const str = localStorage.getItem(name);
+            if (!str) {
+              return null;
+            }
+
+            try {
+              const loadedSettings = JSON.parse(str);
+              if (!loadedSettings) {
+                return null;
+              }
+
+              // Apply upgrades
+              const upgradedSettings = upgradeSettings(loadedSettings);
+
+              return {
+                state: upgradedSettings as UISettings,
+                version: 3,
+              };
+            } catch (error) {
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
+              console.error('Error loading UI settings:', error);
+              return null;
+            }
+          },
+          setItem: (name, value) => {
+            // Extract only the state, not the action functions
+            const { updateSettings: _, clearSettings: __, ...state } = value.state as UISettingsStore;
+            const json = JSON.stringify(state);
+            localStorage.setItem(name, json);
+          },
+          removeItem: (name) => {
+            localStorage.removeItem(name);
+          },
+        },
+      }
+    )
+  )
 );
+
+// Subscribe to store changes for debounced auto-save
+useUISettingsStore.subscribe((state) => {
+  const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
+  scheduleSave(settingsToSave as UISettings);
+});
 
 // Auto save (on exit)
 window.addEventListener('visibilitychange', () => {
@@ -421,14 +718,15 @@ window.addEventListener('visibilitychange', () => {
     return; // only save on close, minimize, tab-switch
   }
 
-  const json = JSON.stringify(uiSettings);
-  localStorage.setItem(settingsName, json);
+  const state = useUISettingsStore.getState();
+  const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
+  saveImmediately(settingsToSave as UISettings);
 });
 
 // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
 // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
 window.addEventListener('storage', (e) => {
-  if (e.newValue === null) {
+  if (e.key !== settingsName || e.newValue === null) {
     return;
   }
   try {
@@ -436,13 +734,26 @@ window.addEventListener('storage', (e) => {
     if (!newSettings) {
       return;
     }
-    transaction(() => {
-      // Applying changes here will of course trigger the auto-save, but that's fine.
-      // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
-      assignDeep(uiSettings, newSettings);
-    });
+    // Applying changes here will of course trigger the auto-save, but that's fine.
+    // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
+    useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
   } catch (err) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('error applying settings update from another tab', { storageEvent: e, error: err });
   }
 });
+
+// Legacy exports for backward compatibility
+export const uiSettings = new Proxy({} as UISettings, {
+  get(_target, prop: string) {
+    return useUISettingsStore.getState()[prop as keyof UISettings];
+  },
+  set(_target, prop: string, value: unknown) {
+    useUISettingsStore.getState().updateSettings({ [prop]: value } as Partial<UISettings>);
+    return true;
+  },
+});
+
+export function clearSettings() {
+  useUISettingsStore.getState().clearSettings();
+}

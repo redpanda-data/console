@@ -14,7 +14,7 @@ import { computed, makeObservable, observable } from 'mobx';
 import React from 'react';
 
 import { api } from './backend-api';
-import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
+import { createTopicDetailsSettings, type TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
 
 // Minimal route definition type for currentRoute tracking (legacy, may be removed)
 type RouteInfo = {
@@ -87,8 +87,7 @@ class UIState {
     this._currentTopicName = topicName;
     if (topicName && !uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
       // console.log('creating details for topic: ' + topicName);
-      const topicSettings = new TopicSettings();
-      topicSettings.topicName = topicName;
+      const topicSettings = createTopicDetailsSettings(topicName);
       uiSettings.perTopicSettings.push(topicSettings);
     }
   }
@@ -96,7 +95,7 @@ class UIState {
   get topicSettings(): TopicSettings {
     const n = this.currentTopicName;
     if (!n) {
-      return new TopicSettings();
+      return createTopicDetailsSettings('');
     }
 
     const topicSettings = uiSettings.perTopicSettings.find((t) => t.topicName === n);
