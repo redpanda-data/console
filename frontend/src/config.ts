@@ -23,7 +23,6 @@ import {
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
-import { autorun, configure, observable, when } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
@@ -42,7 +41,7 @@ import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/k
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { appGlobal } from './state/app-global';
 import { api } from './state/backend-api';
-import { uiState } from './state/ui-state';
+import { useUIStateStore } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 import { getEmbeddedAvailableRoutes } from './utils/route-utils';
 
@@ -174,10 +173,8 @@ type Config = {
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
-// Config object is an mobx observable, always make sure you call it from
-// inside a componenet, don't be tempted to used it as singleton you might find
-// unexpected behaviour
-export const config: Config = observable({
+// Config object - plain JavaScript object, no longer using MobX observable
+export const config: Config = {
   restBasePath: getRestBasePath(),
   grpcBasePath: getGrpcBasePath(),
   controlplaneUrl: '',
@@ -192,7 +189,7 @@ export const config: Config = observable({
   },
   isServerless: false,
   featureFlags: FEATURE_FLAGS,
-});
+};
 
 const setConfig = ({
   fetch,
@@ -287,14 +284,26 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
   monaco.editor.setTheme('kowl');
 };
 
+// Subscribe to UI state changes for breadcrumbs and sidebar items
+// Delay to ensure stores are initialized
 setTimeout(() => {
-  autorun(() => {
+  // Subscribe to breadcrumbs changes
+  let previousBreadcrumbs = useUIStateStore.getState().pageBreadcrumbs;
+
+  useUIStateStore.subscribe((state) => {
     const setBreadcrumbs = config.setBreadcrumbs;
     if (!setBreadcrumbs) {
       return;
     }
 
-    const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
+    // Only update if breadcrumbs changed
+    if (state.pageBreadcrumbs === previousBreadcrumbs) {
+      return;
+    }
+
+    previousBreadcrumbs = state.pageBreadcrumbs;
+
+    const breadcrumbs = state.pageBreadcrumbs.map((v) => ({
       title: v.title,
       to: v.linkTo,
     }));
@@ -302,13 +311,15 @@ setTimeout(() => {
     setBreadcrumbs(breadcrumbs);
   });
 
-  autorun(() => {
+  // Update sidebar items when routes change
+  // Note: This is a simple function call, no longer needs to be observable
+  const updateSidebarItems = () => {
     const setSidebarItems = config.setSidebarItems;
     if (!setSidebarItems) {
       return;
     }
 
-    const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
+    const sidebarItems = getEmbeddedAvailableRoutes().map(
       (r, i) =>
         ({
           title: r.title,
@@ -321,7 +332,13 @@ setTimeout(() => {
     );
 
     setSidebarItems(sidebarItems);
-  });
+  };
+
+  // Call once on initialization
+  updateSidebarItems();
+
+  // If routes can change dynamically, you can subscribe to relevant state changes
+  // For now, we just call it once since routes are static
 }, 50);
 
 export function isEmbedded() {
@@ -345,12 +362,6 @@ export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
 export function isServerless() {
   return config.isServerless;
 }
-
-export const embeddedAvailableRoutesObservable = observable({
-  get routes() {
-    return getEmbeddedAvailableRoutes();
-  },
-});
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   setConfig(setupArgs);
@@ -377,25 +388,20 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     };
   });
 
-  // Configure MobX
-  configure({
-    enforceActions: 'never',
-    safeDescriptors: true,
-  });
-
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is
   // protected, so we need to delay the call until the user is logged in.
   if (AppFeatures.SINGLE_SIGN_ON) {
-    when(
-      () => Boolean(api.userData),
-      () => {
-        setTimeout(() => {
-          api.refreshSupportedEndpoints();
-          api.listLicenses();
-        });
+    // Poll for user data instead of using MobX when
+    const checkUserData = () => {
+      if (api.userData) {
+        api.refreshSupportedEndpoints();
+        api.listLicenses();
+      } else {
+        setTimeout(checkUserData, 100);
       }
-    );
+    };
+    checkUserData();
   } else {
     api.refreshSupportedEndpoints();
     api.listLicenses();
