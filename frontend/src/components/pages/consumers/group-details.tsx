@@ -199,9 +199,14 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
                 <Statistic title="State" value={<GroupState group={group} />} />
                 <Statistic title="Assigned Partitions" value={totalPartitions} />
                 <ProtocolType group={group} />
-                {group.groupType !== 'consumer' && (
-                  <Statistic title="Protocol Type" value={group.protocolType} />
-                )}
+                <Statistic
+                  title="Protocol Type"
+                  value={
+                    group.groupType === 'consumer'
+                      ? `${group.protocolType} (KIP-848)`
+                      : group.protocolType
+                  }
+                />
                 <Statistic
                   title={
                     <Flex alignItems="center" gap={1}>
@@ -610,23 +615,15 @@ export const GroupState = (p: { group: GroupDescription }) => {
   );
 };
 const ProtocolType = (p: { group: GroupDescription }) => {
-  const groupType = p.group.groupType ?? 'classic';
+  const protocol = p.group.protocolType;
 
-  if (groupType === 'consumer') {
-    return (
-      <Statistic
-        title="Protocol"
-        value={
-          <span title="KIP-848 Next Generation Consumer Rebalance Protocol">
-            consumer (KIP-848)
-          </span>
-        }
-      />
-    );
+  // Only show Protocol stat for non-consumer protocols (stream, connect, etc.)
+  // Consumer protocol is already shown in "Protocol Type" stat
+  if (protocol === 'consumer') {
+    return null;
   }
 
-  // Classic groups: show "classic"; hide redundant Protocol Type stat when it's just "consumer"
-  return <Statistic title="Protocol" value="classic" />;
+  return <Statistic title="Protocol" value={protocol} />;
 };
 
 function cannotEditGroupReason(group: GroupDescription): string | undefined {
