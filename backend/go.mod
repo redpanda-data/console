@@ -24,7 +24,6 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-chi/chi/v5 v5.2.3
-	github.com/go-chi/cors v1.2.2
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/go-viper/mapstructure/v2 v2.4.0
@@ -48,6 +47,7 @@ require (
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/redpanda-data/common-go/rpadmin v0.2.0
 	github.com/redpanda-data/common-go/rpsr v0.1.2
+	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
