@@ -158,6 +158,14 @@ class GroupList extends PageComponent {
                 header: 'Protocol',
                 accessorKey: 'protocol',
                 size: 1,
+                cell: ({ row: { original } }) => {
+                  // KIP-848 consumer groups don't have a rebalance protocol
+                  if (original.groupType === 'consumer') {
+                    return 'consumer (KIP-848)';
+                  }
+                  // Classic groups show their rebalance protocol (range, sticky, etc.)
+                  return original.protocol || '';
+                },
               },
               {
                 header: 'Members',
