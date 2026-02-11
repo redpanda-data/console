@@ -1,7 +1,5 @@
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import type React from 'react';
-import { Component, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { TopicConfigEntry } from '../../../../state/rest-interfaces';
 import { Label } from '../../../../utils/tsx-utils';
@@ -70,138 +68,133 @@ type Props = {
   state: CreateTopicModalState;
 };
 
-@observer
-export class CreateTopicModalContent extends Component<Props> {
-  render() {
-    const state = this.props.state;
+export function CreateTopicModalContent({ state }: Props) {
+  let replicationFactorError = '';
+  if (api.clusterOverview && state.replicationFactor !== null && state.replicationFactor !== undefined) {
+    replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
+  }
 
-    let replicationFactorError = '';
-    if (api.clusterOverview && state.replicationFactor !== null && state.replicationFactor !== undefined) {
-      replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
-    }
+  return (
+    <div className="createTopicModal">
+      <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
+        <Label text="Topic Name">
+          <Input
+            autoFocus
+            data-testid="topic-name"
+            onChange={(e) => {
+              state.topicName = e.target.value;
+            }}
+            value={state.topicName}
+            width="100%"
+          />
+        </Label>
 
-    return (
-      <div className="createTopicModal">
-        <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
-          <Label text="Topic Name">
-            <Input
-              autoFocus
-              data-testid="topic-name"
+        <div style={{ display: 'flex', gap: '2em' }}>
+          <Label style={{ flexBasis: '160px' }} text="Partitions">
+            <NumInput
+              data-testid="topic-partitions"
+              min={1}
               onChange={(e) => {
-                state.topicName = e.target.value;
+                state.partitions = e;
               }}
-              value={state.topicName}
-              width="100%"
+              placeholder={state.defaults.partitions}
+              value={state.partitions}
             />
           </Label>
-
-          <div style={{ display: 'flex', gap: '2em' }}>
-            <Label style={{ flexBasis: '160px' }} text="Partitions">
+          <Label style={{ flexBasis: '160px' }} text="Replication Factor">
+            <Box>
               <NumInput
-                data-testid="topic-partitions"
+                data-testid="topic-replication-factor"
+                disabled={isServerless()}
                 min={1}
                 onChange={(e) => {
-                  state.partitions = e;
+                  state.replicationFactor = e;
                 }}
-                placeholder={state.defaults.partitions}
-                value={state.partitions}
+                placeholder={state.defaults.replicationFactor}
+                value={state.replicationFactor}
               />
-            </Label>
-            <Label style={{ flexBasis: '160px' }} text="Replication Factor">
-              <Box>
-                <NumInput
-                  data-testid="topic-replication-factor"
-                  disabled={isServerless()}
-                  min={1}
-                  onChange={(e) => {
-                    state.replicationFactor = e;
-                  }}
-                  placeholder={state.defaults.replicationFactor}
-                  value={state.replicationFactor}
-                />
-                <Box
-                  color="red.500"
-                  fontSize="12px"
-                  fontWeight={500}
-                  visibility={replicationFactorError ? undefined : 'hidden'}
-                >
-                  {replicationFactorError}
-                </Box>
+              <Box
+                color="red.500"
+                fontSize="12px"
+                fontWeight={500}
+                visibility={replicationFactorError ? undefined : 'hidden'}
+              >
+                {replicationFactorError}
               </Box>
-            </Label>
+            </Box>
+          </Label>
 
-            {!api.isRedpanda && (
-              <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
-                <NumInput
-                  data-testid="topic-min-insync-replicas"
-                  min={1}
-                  onChange={(e) => {
-                    state.minInSyncReplicas = e;
-                  }}
-                  placeholder={state.defaults.minInSyncReplicas}
-                  value={state.minInSyncReplicas}
-                />
-              </Label>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
-            {!isServerless() && (
-              <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
-                <SingleSelect<CleanupPolicyType>
-                  isReadOnly={isServerless()}
-                  onChange={(e) => {
-                    state.cleanupPolicy = e;
-                  }}
-                  options={[
-                    { value: 'delete', label: 'delete' },
-                    { value: 'compact', label: 'compact' },
-                    { value: 'compact,delete', label: 'compact,delete' },
-                  ]}
-                  value={state.cleanupPolicy}
-                />
-              </Label>
-            )}
-            <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
-              <RetentionTimeSelect
-                data-testid="topic-retention-time"
-                defaultConfigValue={state.defaults.retentionTime}
-                onChangeUnit={(x) => {
-                  state.retentionTimeUnit = x;
+          {!api.isRedpanda && (
+            <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
+              <NumInput
+                data-testid="topic-min-insync-replicas"
+                min={1}
+                onChange={(e) => {
+                  state.minInSyncReplicas = e;
                 }}
-                onChangeValue={(x) => {
-                  state.retentionTimeMs = x;
-                }}
-                unit={state.retentionTimeUnit}
-                value={state.retentionTimeMs}
+                placeholder={state.defaults.minInSyncReplicas}
+                value={state.minInSyncReplicas}
               />
             </Label>
-            <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
-              <RetentionSizeSelect
-                data-testid="topic-retention-size"
-                defaultConfigValue={state.defaults.retentionBytes}
-                onChangeUnit={(x) => {
-                  state.retentionSizeUnit = x;
-                }}
-                onChangeValue={(x) => {
-                  state.retentionSize = x;
-                }}
-                unit={state.retentionSizeUnit}
-                value={state.retentionSize}
-              />
-            </Label>
-          </div>
-
-          {!isServerless() && (
-            <div>
-              <h4 style={{ fontSize: '13px' }}>Additional Configuration</h4>
-              <KeyValuePairEditor entries={state.additionalConfig} />
-            </div>
           )}
         </div>
+
+        <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
+          {!isServerless() && (
+            <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
+              <SingleSelect<CleanupPolicyType>
+                isReadOnly={isServerless()}
+                onChange={(e) => {
+                  state.cleanupPolicy = e;
+                }}
+                options={[
+                  { value: 'delete', label: 'delete' },
+                  { value: 'compact', label: 'compact' },
+                  { value: 'compact,delete', label: 'compact,delete' },
+                ]}
+                value={state.cleanupPolicy}
+              />
+            </Label>
+          )}
+          <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
+            <RetentionTimeSelect
+              data-testid="topic-retention-time"
+              defaultConfigValue={state.defaults.retentionTime}
+              onChangeUnit={(x) => {
+                state.retentionTimeUnit = x;
+              }}
+              onChangeValue={(x) => {
+                state.retentionTimeMs = x;
+              }}
+              unit={state.retentionTimeUnit}
+              value={state.retentionTimeMs}
+            />
+          </Label>
+          <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
+            <RetentionSizeSelect
+              data-testid="topic-retention-size"
+              defaultConfigValue={state.defaults.retentionBytes}
+              onChangeUnit={(x) => {
+                state.retentionSizeUnit = x;
+              }}
+              onChangeValue={(x) => {
+                state.retentionSize = x;
+              }}
+              unit={state.retentionSizeUnit}
+              value={state.retentionSize}
+            />
+          </Label>
+        </div>
+
+        {!isServerless() && (
+          <div>
+            <h4 style={{ fontSize: '13px' }}>Additional Configuration</h4>
+            <KeyValuePairEditor entries={state.additionalConfig} />
+          </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export function NumInput(p: {
@@ -470,7 +463,7 @@ function RetentionSizeSelect(p: {
   );
 }
 
-const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => (
+const KeyValuePairEditor = (p: { entries: TopicConfigEntry[] }) => (
   <div className="keyValuePairEditor">
     {p.entries.map((x, i) => (
       <KeyValuePair entries={p.entries} entry={x} key={String(i)} />
@@ -488,9 +481,9 @@ const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => (
       Add Entry
     </Button>
   </div>
-));
+);
 
-const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry }) => {
+const KeyValuePair = (p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry }) => {
   const { entry } = p;
 
   return (
@@ -525,7 +518,7 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
       </Button>
     </Box>
   );
-});
+};
 
 export type { Props as CreateTopicModalProps };
 export type { CreateTopicModalState };
@@ -554,29 +547,17 @@ const durationFactors = {
   years: 1000 * 60 * 60 * 24 * 365,
 } as const;
 
-@observer
-class UnitSelect<UnitType extends string> extends Component<{
+function UnitSelect<UnitType extends string>(props: {
   baseValue: number;
   unitFactors: { [index in UnitType]: number };
   onChange: (baseValue: number) => void;
   allowInfinite: boolean;
   className?: string;
-}> {
-  @observable unit: UnitType;
-
-  constructor(p: {
-    baseValue: number;
-    unitFactors: { [index in UnitType]: number };
-    onChange: (baseValue: number) => void;
-    allowInfinite: boolean;
-    className?: string;
-  }) {
-    super(p);
-
-    const value = this.props.baseValue;
-
-    // Find best initial unit, simply by chosing the shortest text representation
-    const textPairs = Object.entries(this.props.unitFactors)
+}) {
+  // Find best initial unit, simply by choosing the shortest text representation
+  const getInitialUnit = () => {
+    const value = props.baseValue;
+    const textPairs = Object.entries(props.unitFactors)
       .map(([unit, factor]) => ({
         unit: unit as UnitType,
         factor: factor as number,
@@ -597,86 +578,83 @@ class UnitSelect<UnitType extends string> extends Component<{
       .orderBy((x) => x.text.length);
 
     const shortestPair = textPairs[0];
-    this.unit = shortestPair.unit;
+    let initialUnit = shortestPair.unit;
 
-    if (this.props.allowInfinite && value < 0) {
-      this.unit = 'infinite' as UnitType;
+    if (props.allowInfinite && value < 0) {
+      initialUnit = 'infinite' as UnitType;
     }
 
-    makeObservable(this);
+    return initialUnit;
+  };
+
+  const [unit, setUnit] = useState<UnitType>(getInitialUnit());
+
+  const unitFactors = props.unitFactors;
+  const unitValue = props.baseValue / unitFactors[unit];
+
+  const numDisabled = unit === 'infinite';
+
+  let placeholder: string | undefined;
+  if (unit === 'infinite') {
+    placeholder = 'Infinite';
   }
 
-  render() {
-    const unitFactors = this.props.unitFactors;
-    const unit = this.unit;
-    const unitValue = this.props.baseValue / unitFactors[unit];
-
-    const numDisabled = unit === 'infinite';
-
-    let placeholder: string | undefined;
-    if (unit === 'infinite') {
-      placeholder = 'Infinite';
-    }
-
-    const selectOptions = Object.entries(unitFactors).map(([name]) => {
+  const selectOptions = Object.entries(unitFactors)
+    .map(([name]) => {
       const isSpecial = name === 'infinite';
       return {
         value: name as UnitType,
         label: isSpecial ? titleCase(name) : name,
         // style: isSpecial ? { fontStyle: 'italic' } : undefined,
       };
-    });
+    })
+    .filter((x) => props.allowInfinite || x.value !== 'infinite');
 
-    if (!this.props.allowInfinite) {
-      selectOptions.removeAll((x) => x.value === 'infinite');
-    }
+  return (
+    <NumInput
+      addonAfter={
+        <Select<UnitType>
+          // style={{ minWidth: '90px' }}
+          onChange={(arg) => {
+            if (isSingleValue(arg) && arg) {
+              const u = arg.value as UnitType;
+              const changedFromInfinite = unit === 'infinite' && u !== 'infinite';
 
-    return (
-      <NumInput
-        addonAfter={
-          <Select<UnitType>
-            // style={{ minWidth: '90px' }}
-            onChange={(arg) => {
-              if (isSingleValue(arg) && arg) {
-                const u = arg.value as UnitType;
-                const changedFromInfinite = this.unit === 'infinite' && u !== 'infinite';
-
-                this.unit = u;
-                if (this.unit === 'infinite') {
-                  this.props.onChange(unitFactors[this.unit]);
-                }
-
-                if (changedFromInfinite) {
-                  // Example: if new unit is "seconds", then we'd want 1000 ms
-                  // The "1*" is redundant of course, but left in to better clarify what
-                  // value we're trying to create and why
-                  const newValue = 1 * unitFactors[u];
-                  this.props.onChange(newValue);
-                }
+              setUnit(u);
+              if (u === 'infinite') {
+                props.onChange(unitFactors[u]);
               }
-            }}
-            options={selectOptions}
-            value={{ value: unit }}
-          />
-        }
-        className={this.props.className}
-        disabled={numDisabled}
-        min={0}
-        onChange={(x) => {
-          if (x === undefined) {
-            this.props.onChange(0);
-            return;
-          }
 
-          const factor = unitFactors[this.unit];
-          const bytes = x * factor;
-          this.props.onChange(bytes);
-        }}
-        placeholder={placeholder}
-        value={numDisabled ? undefined : unitValue}
-      />
-    );
-  }
+              if (changedFromInfinite) {
+                // Example: if new unit is "seconds", then we'd want 1000 ms
+                // The "1*" is redundant of course, but left in to better clarify what
+                // value we're trying to create and why
+                const newValue = 1 * unitFactors[u];
+                props.onChange(newValue);
+              }
+            }
+          }}
+          options={selectOptions}
+          value={{ value: unit }}
+        />
+      }
+      className={props.className}
+      disabled={numDisabled}
+      min={0}
+      onChange={(x) => {
+        if (x === undefined) {
+          props.onChange(0);
+          return;
+        }
+
+        const factor = unitFactors[unit];
+        const bytes = x * factor;
+        props.onChange(bytes);
+      }}
+      placeholder={placeholder}
+      value={numDisabled ? undefined : unitValue}
+    />
+  );
 }
 
 export function DataSizeSelect(p: {
