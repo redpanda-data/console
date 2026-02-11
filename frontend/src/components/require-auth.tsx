@@ -15,7 +15,7 @@ import { Component, type ReactNode } from 'react';
 import { ConnectionErrorUI } from './misc/connection-error-ui';
 import { config as appConfig } from '../config';
 import { api } from '../state/backend-api';
-import { featureErrors } from '../state/supported-features';
+import { useSupportedFeaturesStore } from '../state/supported-features';
 import { uiState } from '../state/ui-state';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 
@@ -90,13 +90,12 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
   }
 }
 
-@observer
-class FeatureErrorCheck extends Component {
-  render() {
-    if (featureErrors.length > 0) {
-      const allErrors = featureErrors.join(' ');
-      throw new Error(allErrors);
-    }
-    return null;
+function FeatureErrorCheck() {
+  const featureErrors = useSupportedFeaturesStore((state) => state.featureErrors);
+
+  if (featureErrors.length > 0) {
+    const allErrors = featureErrors.join(' ');
+    throw new Error(allErrors);
   }
+  return null;
 }
