@@ -2,6 +2,11 @@
 
 ## Master / Unreleased
 
+## v3.5.2 / 2026-02-11
+- [BUGFIX] Fix Console sending "Authorization: Bearer undefined" header when authentication is not configured.
+- [BUGFIX] Fix pagination for lists exceeding page size causing incomplete data loading.
+- [BUGFIX] Fix memory leak in authentication boundary.
+
 ## v3.5.1 / 2026-01-30
 - [IMPROVEMENT] Add schema metadata UI improvements with properties table display.
 - [BUGFIX] Fix Kafka Connect connector creation when using default values.
