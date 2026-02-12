@@ -192,6 +192,18 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     visibilityCheck: routeVisibility(true),
   },
   {
+    path: '/observability',
+    title: 'Metrics',
+    icon: ActivityIcon,
+    visibilityCheck: routeVisibility(
+      () =>
+        isEmbedded() &&
+        (isServerless()
+          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+          : isFeatureFlagEnabled('enableDataplaneObservability'))
+    ),
+  },
+  {
     path: '/topics',
     title: 'Topics',
     icon: CollectionIcon,
