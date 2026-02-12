@@ -22,6 +22,7 @@ import {
   listRoles,
   updateRoleMembership,
 } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
+import { useMemo } from 'react';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -42,7 +43,10 @@ export const useListRolesQuery = (
     pageParamKey: 'pageToken',
   });
 
-  const roles = listRolesResult?.data?.pages?.flatMap((response) => (response ? response?.roles : [])) || [];
+  const roles = useMemo(
+    () => listRolesResult?.data?.pages?.flatMap((response) => (response ? response?.roles : [])) || [],
+    [listRolesResult?.data?.pages]
+  );
 
   return {
     ...listRolesResult,

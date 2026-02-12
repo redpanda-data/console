@@ -419,27 +419,30 @@ type SimpleAcl = {
   principalName: string;
   hasAcl: boolean;
 };
+// Stable select function to avoid TanStack Query re-running the selector on every render
+const selectPrincipalGroups = (response: ListACLsResponse) => {
+  const groupsAcl = response.resources.reduce((acc, r) => {
+    for (const a of r.acls) {
+      if (!acc.has(`${a.principal}:${a.host}`)) {
+        const [principalType, principalName] = (a.principal ?? '').split(':');
+        acc.set(`${a.principal}:${a.host}`, {
+          host: a.host,
+          principal: a.principal,
+          principalType,
+          principalName: principalName || '',
+          hasAcl: true,
+        });
+      }
+    }
+    return acc;
+  }, new Map<string, SimpleAcl>());
+  return groupsAcl.values().toArray();
+};
+
 // this method is used from AclTab frontend/src/components/pages/acls/acl-list.tsx, removed this when that page is migrated.
 export const useListACLAsPrincipalGroups = () =>
   useQuery(listACLs, {} as ListACLsRequest, {
-    select: (response) => {
-      const groupsAcl = response.resources.reduce((acc, r) => {
-        for (const a of r.acls) {
-          if (!acc.has(`${a.principal}:${a.host}`)) {
-            const [principalType, principalName] = (a.principal ?? '').split(':');
-            acc.set(`${a.principal}:${a.host}`, {
-              host: a.host,
-              principal: a.principal,
-              principalType,
-              principalName: principalName || '',
-              hasAcl: true,
-            });
-          }
-        }
-        return acc;
-      }, new Map<string, SimpleAcl>());
-      return groupsAcl.values().toArray();
-    },
+    select: selectPrincipalGroups,
   });
 
 // New ACL implementation

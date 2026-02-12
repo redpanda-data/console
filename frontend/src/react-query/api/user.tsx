@@ -14,6 +14,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers, updateUser } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import queryClient from 'query-client';
+import { useCallback, useMemo } from 'react';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetUsersResponse } from 'state/rest-interfaces';
@@ -28,16 +29,18 @@ export const useLegacyListUsersQuery = (
   _input?: MessageInit<ListUsersRequest>,
   options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>
 ) => {
-  const listUsersRequest = create(ListUsersRequestSchema, {
-    pageSize: MAX_PAGE_SIZE,
-    pageToken: '',
-  });
-
-  const infiniteQueryKey = createConnectQueryKey({
-    schema: listUsers,
-    input: listUsersRequest,
-    cardinality: 'infinite',
-  });
+  const infiniteQueryKey = useMemo(
+    () =>
+      createConnectQueryKey({
+        schema: listUsers,
+        input: create(ListUsersRequestSchema, {
+          pageSize: MAX_PAGE_SIZE,
+          pageToken: '',
+        }),
+        cardinality: 'infinite',
+      }),
+    []
+  );
 
   const legacyListUsersResult = useTanstackQuery<GetUsersResponse>({
     // We need to precisely match the query key provided by other parts of connect-query
@@ -59,16 +62,18 @@ export const useLegacyListUsersQuery = (
       return data;
     },
     enabled: options?.enabled,
-    refetchOnMount: 'always',
   });
 
-  const users: ListUsersResponse_User[] =
-    legacyListUsersResult.data?.users?.map((user) =>
-      create(ListUsersResponse_UserSchema, {
-        name: user,
-        mechanism: undefined, // Not reported by legacy API
-      })
-    ) ?? [];
+  const users: ListUsersResponse_User[] = useMemo(
+    () =>
+      legacyListUsersResult.data?.users?.map((user) =>
+        create(ListUsersResponse_UserSchema, {
+          name: user,
+          mechanism: undefined, // Not reported by legacy API
+        })
+      ) ?? [],
+    [legacyListUsersResult.data]
+  );
 
   return {
     ...legacyListUsersResult,
@@ -169,7 +174,7 @@ export const useUpdateUserMutationWithToast = () => {
 export const useInvalidateUsersCache = () => {
   const qc = useQueryClient();
 
-  return async () => {
+  return useCallback(async () => {
     await qc.invalidateQueries({
       queryKey: createConnectQueryKey({
         schema: UserService.method.listUsers,
@@ -177,7 +182,7 @@ export const useInvalidateUsersCache = () => {
       }),
       exact: false,
     });
-  };
+  }, [qc]);
 };
 
 /**

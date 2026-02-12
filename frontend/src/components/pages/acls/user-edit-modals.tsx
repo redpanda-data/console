@@ -78,7 +78,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        if (isUpdateUserPending) {
+        if (!isUpdateUserPending) {
           setIsOpen(false);
         }
       }}
@@ -181,7 +181,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
   const toast = useToast();
   const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
   const { mutateAsync: updateRoleMembership, isPending: isUpdateMembershipPending } = useUpdateRoleMembershipMutation();
-  const { data, isLoading } = useListRolesQuery({ filter: { principal: userName } });
+  const { data, isLoading } = useListRolesQuery({ filter: { principal: userName } }, { enabled: isOpen });
   const originalRoles = data.roles.map((r) => r.name);
 
   useEffect(() => {
@@ -245,7 +245,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        if (isUpdateMembershipPending) {
+        if (!isUpdateMembershipPending) {
           setIsOpen(false);
         }
       }}

@@ -10,6 +10,7 @@
  */
 
 import { Box, DataTable, Text } from '@redpanda-data/ui';
+import { useNavigate } from '@tanstack/react-router';
 import { UserAclsCard } from 'components/pages/roles/user-acls-card';
 import { UserInformationCard } from 'components/pages/roles/user-information-card';
 import { UserRolesCard } from 'components/pages/roles/user-roles-card';
@@ -38,6 +39,7 @@ type UserDetailsPageProps = {
 const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
@@ -105,7 +107,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                   Delete user
                 </Button>
               }
-              onConfirm={async () => {
+              onConfirm={async (dismiss) => {
                 await api.deleteServiceAccount(userName);
 
                 // Remove user from all its roles
@@ -118,7 +120,8 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                 await Promise.allSettled(promises);
                 await invalidateUsersCache();
                 await rolesApi.refreshRoleMembers();
-                appGlobal.historyPush('/security/users/');
+                dismiss();
+                navigate({ to: '/security/$tab', params: { tab: 'users' } });
               }}
               userName={userName}
             />

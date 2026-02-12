@@ -15,7 +15,7 @@ import type { FC } from 'react';
 export const DeleteRoleConfirmModal: FC<{
   roleName: string;
   numberOfPrincipals: number;
-  onConfirm: () => void;
+  onConfirm: (dismiss: (value?: unknown) => void, onError: (msg: string) => void) => void;
   buttonEl: React.ReactElement;
 }> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => (
   <ConfirmItemDeleteModal
