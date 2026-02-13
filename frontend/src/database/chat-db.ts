@@ -72,6 +72,13 @@ export type ContentBlock =
         cached_tokens?: number;
         reasoning_tokens?: number;
       };
+    }
+  | {
+      type: 'connection-status';
+      status: 'disconnected' | 'reconnecting' | 'reconnected' | 'gave-up';
+      attempt?: number;
+      maxAttempts?: number;
+      timestamp: string;
     };
 
 export type ChatMessage = {
