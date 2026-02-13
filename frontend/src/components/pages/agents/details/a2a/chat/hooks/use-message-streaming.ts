@@ -24,6 +24,7 @@ import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-b
 import type { ResponseMetadataEvent, StreamChunk, StreamingState, TextDeltaEvent } from './streaming-types';
 import { a2a } from '../../a2a-provider';
 import type { ChatMessage, ContentBlock } from '../types';
+import { createA2AClient } from '../utils/a2a-client';
 import { saveMessage, updateMessage } from '../utils/database-operations';
 import { createAssistantMessage } from '../utils/message-converter';
 
@@ -108,6 +109,203 @@ type StreamMessageResult = {
   success: boolean;
 };
 
+const TERMINAL_TASK_STATES = new Set(['completed', 'failed', 'canceled', 'rejected']);
+const MAX_RESUBSCRIBE_ATTEMPTS = 5;
+
+/**
+ * Check whether the current streaming state is eligible for resubscription.
+ * We can only resubscribe if we have a task ID and the task was still in-flight.
+ */
+const isResubscribable = (state: StreamingState): boolean =>
+  !!state.capturedTaskId && !!state.capturedTaskState && !TERMINAL_TASK_STATES.has(state.capturedTaskState);
+
+/**
+ * Finalize a streaming message: close active blocks, persist to DB, and return the result.
+ */
+const finalizeMessage = async (
+  state: StreamingState,
+  assistantMessage: ChatMessage,
+  finalContent: string
+): Promise<StreamMessageResult> => {
+  closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+  state.activeTextBlock = null;
+
+  const finalMessage = buildMessageWithContentBlocks({
+    baseMessage: assistantMessage,
+    contentBlocks: state.contentBlocks,
+    taskId: state.capturedTaskId,
+    taskState: state.capturedTaskState,
+    taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    usage: state.latestUsage,
+  });
+
+  const artifacts = state.contentBlocks
+    .filter((block) => block.type === 'artifact')
+    .map((block) => ({
+      artifactId: block.artifactId,
+      name: block.name,
+      description: block.description,
+      parts: block.parts,
+    }));
+
+  const toolCalls = state.contentBlocks
+    .filter((block) => block.type === 'tool')
+    .map((block) => ({
+      id: block.toolCallId,
+      name: block.toolName,
+      state: block.state,
+      input: block.input,
+      output: block.output,
+      errorText: block.errorText,
+      messageId: block.messageId || '',
+      timestamp: block.timestamp,
+    }));
+
+  await updateMessage(assistantMessage.id, {
+    content: finalContent,
+    isStreaming: false,
+    taskId: state.capturedTaskId,
+    taskState: state.capturedTaskState,
+    taskStartIndex: state.taskIdCapturedAtBlockIndex,
+    artifacts,
+    toolCalls,
+    contentBlocks: state.contentBlocks,
+    usage: state.latestUsage,
+  });
+
+  return { assistantMessage: finalMessage, success: true };
+};
+
+/**
+ * Process events from an A2A resubscribe stream using the same handlers as the initial stream.
+ */
+const processResubscribeStream = async (
+  stream: AsyncIterable<{ kind?: string }>,
+  state: StreamingState,
+  assistantMessage: ChatMessage,
+  onMessageUpdate: (message: ChatMessage) => void
+): Promise<void> => {
+  for await (const event of stream) {
+    if (!event?.kind) {
+      continue;
+    }
+    if (event.kind === 'task') {
+      handleTaskEvent(event as Task, state, assistantMessage, onMessageUpdate);
+    } else if (event.kind === 'status-update') {
+      handleStatusUpdateEvent(event as TaskStatusUpdateEvent, state, assistantMessage, onMessageUpdate);
+    } else if (event.kind === 'artifact-update') {
+      handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
+    }
+  }
+};
+
+type ConnectionStatusParams = {
+  status: 'disconnected' | 'reconnecting' | 'reconnected' | 'gave-up';
+  state: StreamingState;
+  assistantMessage: ChatMessage;
+  onMessageUpdate: (message: ChatMessage) => void;
+  attempt?: number;
+};
+
+/**
+ * Insert a connection-status content block and push a UI update.
+ */
+const pushConnectionStatus = ({
+  status,
+  state,
+  assistantMessage,
+  onMessageUpdate,
+  attempt,
+}: ConnectionStatusParams): void => {
+  const block: ContentBlock = {
+    type: 'connection-status',
+    status,
+    attempt,
+    maxAttempts: MAX_RESUBSCRIBE_ATTEMPTS,
+    timestamp: new Date(),
+  };
+
+  // For 'reconnecting' and 'reconnected', replace the last connection-status block
+  // so the UI doesn't accumulate stale status lines.
+  if (status === 'reconnecting' || status === 'reconnected') {
+    const lastIdx = state.contentBlocks.length - 1;
+    if (lastIdx >= 0 && state.contentBlocks[lastIdx].type === 'connection-status') {
+      state.contentBlocks[lastIdx] = block;
+      onMessageUpdate(
+        buildMessageWithContentBlocks({
+          baseMessage: assistantMessage,
+          contentBlocks: state.contentBlocks,
+          taskId: state.capturedTaskId,
+          taskState: state.capturedTaskState,
+          taskStartIndex: state.taskIdCapturedAtBlockIndex,
+          usage: state.latestUsage,
+        })
+      );
+      return;
+    }
+  }
+
+  state.contentBlocks.push(block);
+  onMessageUpdate(
+    buildMessageWithContentBlocks({
+      baseMessage: assistantMessage,
+      contentBlocks: state.contentBlocks,
+      taskId: state.capturedTaskId,
+      taskState: state.capturedTaskState,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
+      usage: state.latestUsage,
+    })
+  );
+};
+
+/**
+ * Attempt to resubscribe to a running task after an SSE connection drop.
+ * Returns true if resubscription succeeded and the task reached a terminal state.
+ */
+const resubscribeLoop = async (
+  state: StreamingState,
+  agentCardUrl: string,
+  assistantMessage: ChatMessage,
+  onMessageUpdate: (message: ChatMessage) => void
+): Promise<boolean> => {
+  const taskId = state.capturedTaskId;
+  if (!taskId) {
+    return false;
+  }
+
+  const ctx = { state, assistantMessage, onMessageUpdate };
+  pushConnectionStatus({ ...ctx, status: 'disconnected' });
+
+  for (let attempt = 1; attempt <= MAX_RESUBSCRIBE_ATTEMPTS; attempt++) {
+    // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+    const delay = 2 ** (attempt - 1) * 1000;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    pushConnectionStatus({ ...ctx, status: 'reconnecting', attempt });
+
+    try {
+      const client = await createA2AClient(agentCardUrl);
+      const stream = client.resubscribeTask({ id: taskId });
+
+      pushConnectionStatus({ ...ctx, status: 'reconnected' });
+      await processResubscribeStream(stream, state, assistantMessage, onMessageUpdate);
+
+      // Stream ended normally - task reached terminal state or server closed cleanly
+      return true;
+    } catch {
+      // If task reached a terminal state during this attempt, we're done
+      if (state.capturedTaskState && TERMINAL_TASK_STATES.has(state.capturedTaskState)) {
+        return true;
+      }
+      // Otherwise retry
+    }
+  }
+
+  // All retries exhausted
+  pushConnectionStatus({ ...ctx, status: 'gave-up' });
+  return false;
+};
+
 /**
  * Stream a message using the a2a provider
  */
@@ -129,6 +327,18 @@ export const streamMessage = async ({
   // Notify caller about the new message
   onMessageUpdate(assistantMessage);
 
+  // Initialize streaming state before try so it's accessible in catch for resubscription
+  const state: StreamingState = {
+    contentBlocks: [],
+    activeTextBlock: null,
+    lastEventTimestamp: new Date(),
+    capturedTaskId: undefined,
+    capturedTaskState: undefined,
+    previousTaskState: undefined,
+    taskIdCapturedAtBlockIndex: undefined,
+    latestUsage: undefined,
+  };
+
   try {
     // Stream the response using a2a provider
     const streamResult = streamText({
@@ -146,18 +356,6 @@ export const streamMessage = async ({
       },
       includeRawChunks: true, // Enable raw events to capture taskId from task/status-update/artifact-update events
     });
-
-    // Initialize streaming state with new contentBlocks approach
-    const state: StreamingState = {
-      contentBlocks: [],
-      activeTextBlock: null,
-      lastEventTimestamp: new Date(),
-      capturedTaskId: undefined,
-      capturedTaskState: undefined,
-      previousTaskState: undefined,
-      taskIdCapturedAtBlockIndex: undefined,
-      latestUsage: undefined,
-    };
 
     // Consume the full stream and process events
     for await (const chunk of streamResult.fullStream) {
@@ -209,57 +407,21 @@ export const streamMessage = async ({
       }
     }
 
-    // Build final message with all content blocks
-    const finalMessage = buildMessageWithContentBlocks({
-      baseMessage: assistantMessage,
-      contentBlocks: state.contentBlocks,
-      taskId: state.capturedTaskId,
-      taskState: state.capturedTaskState,
-      taskStartIndex: state.taskIdCapturedAtBlockIndex,
-      usage: state.latestUsage,
-    });
-
-    // Extract artifacts and toolCalls from content blocks for DB compatibility
-    const artifacts = state.contentBlocks
-      .filter((block) => block.type === 'artifact')
-      .map((block) => ({
-        artifactId: block.artifactId,
-        name: block.name,
-        description: block.description,
-        parts: block.parts,
-      }));
-
-    const toolCalls = state.contentBlocks
-      .filter((block) => block.type === 'tool')
-      .map((block) => ({
-        id: block.toolCallId,
-        name: block.toolName,
-        state: block.state,
-        input: block.input,
-        output: block.output,
-        errorText: block.errorText,
-        messageId: block.messageId || '',
-        timestamp: block.timestamp,
-      }));
-
-    // Update database with final content blocks
-    await updateMessage(assistantMessage.id, {
-      content: finalContent,
-      isStreaming: false,
-      taskId: state.capturedTaskId,
-      taskState: state.capturedTaskState,
-      taskStartIndex: state.taskIdCapturedAtBlockIndex,
-      artifacts,
-      toolCalls,
-      contentBlocks: state.contentBlocks, // Store new format
-      usage: state.latestUsage, // Store usage metadata
-    });
-
-    return {
-      assistantMessage: finalMessage,
-      success: true,
-    };
+    return await finalizeMessage(state, assistantMessage, finalContent);
   } catch (error) {
+    // If the task is still in-flight, try to resubscribe before giving up
+    if (isResubscribable(state)) {
+      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      state.activeTextBlock = null;
+
+      const recovered = await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
+      if (recovered) {
+        const result = await finalizeMessage(state, assistantMessage, '');
+        onMessageUpdate(result.assistantMessage);
+        return result;
+      }
+    }
+
     // Parse JSON-RPC error details
     const a2aError = parseA2AError(error);
 
@@ -270,21 +432,26 @@ export const streamMessage = async ({
       timestamp: new Date(),
     };
 
+    // Append error to existing blocks (preserve any content received before disconnect)
+    const errorBlocks = [...state.contentBlocks, errorBlock];
+
     // Build message with error block
     const errorMessage = buildMessageWithContentBlocks({
       baseMessage: assistantMessage,
-      contentBlocks: [errorBlock],
-      taskId: undefined,
+      contentBlocks: errorBlocks,
+      taskId: state.capturedTaskId,
       taskState: 'failed',
-      taskStartIndex: undefined,
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
     });
 
     // Update database with error
     await updateMessage(assistantMessage.id, {
       content: '',
       isStreaming: false,
+      taskId: state.capturedTaskId,
       taskState: 'failed',
-      contentBlocks: [errorBlock],
+      taskStartIndex: state.taskIdCapturedAtBlockIndex,
+      contentBlocks: errorBlocks,
     });
 
     // Notify caller about error message

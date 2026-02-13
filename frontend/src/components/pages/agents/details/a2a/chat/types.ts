@@ -60,6 +60,13 @@ export type ContentBlock =
       type: 'a2a-error';
       error: JSONRPCError;
       timestamp: Date;
+    }
+  | {
+      type: 'connection-status';
+      status: 'disconnected' | 'reconnecting' | 'reconnected' | 'gave-up';
+      attempt?: number;
+      maxAttempts?: number;
+      timestamp: Date;
     };
 
 // Message-level usage metadata (stored in database)
