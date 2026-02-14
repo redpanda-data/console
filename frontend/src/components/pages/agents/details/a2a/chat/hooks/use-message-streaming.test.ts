@@ -729,6 +729,108 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
     expect(blocks.some((b) => b.type === 'connection-status')).toBe(true);
     expect(blocks.some((b) => b.type === 'task-status-update' && b.text === 'Final answer.')).toBe(true);
   });
+
+  // -------------------------------------------------------------------
+  // Scenario 15: TypeError in resubscribe rethrown immediately, no retry
+  // -------------------------------------------------------------------
+  test('rethrows TypeError from resubscribe instead of retrying', async () => {
+    const TASK_ID = 'task-typeerror';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID), { error: new Error('dropped') }), {
+        responseId: TASK_ID,
+      });
+
+    // Resubscribe throws a TypeError (programming bug, not network)
+    createA2AClientImpl = vi.fn(async () => ({
+      resubscribeTask: () => {
+        throw new TypeError('Cannot read properties of null');
+      },
+    }));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    // Should fail and NOT retry
+    expect(result.success).toBe(false);
+    expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(1);
+
+    // The error block should contain the TypeError message
+    const errorBlock = result.assistantMessage.contentBlocks.find((b) => b.type === 'a2a-error');
+    expect(errorBlock).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 16: finalizeMessage failure after recovery falls through to error path
+  // -------------------------------------------------------------------
+  test('falls through to error path when finalizeMessage fails after recovery', async () => {
+    const TASK_ID = 'task-finalize-fail';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID), { error: new Error('dropped') }), {
+        responseId: TASK_ID,
+      });
+
+    const mockClient = buildMockClient([
+      statusUpdateEvent(TASK_ID, 'completed', {
+        text: 'Done.',
+        messageId: 'msg-done',
+        final: true,
+      }),
+    ]);
+    createA2AClientImpl = vi.fn(async () => mockClient);
+
+    // Make updateMessage reject on the finalizeMessage call (after recovery)
+    const mockedUpdate = vi.mocked(updateMessage);
+    mockedUpdate.mockRejectedValueOnce(new Error('DB write failed'));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    // Recovery succeeded but finalizeMessage failed -- falls through to error path
+    expect(result.success).toBe(false);
+
+    // Task state should be preserved from recovery, not hardcoded to 'failed'
+    expect(result.assistantMessage.taskState).toBe('completed');
+
+    // Should have an a2a-error block from the fallthrough
+    const errorBlock = result.assistantMessage.contentBlocks.find((b) => b.type === 'a2a-error');
+    expect(errorBlock).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 17: gave-up replaces stale reconnecting block (not appended)
+  // -------------------------------------------------------------------
+  test('gave-up replaces the last reconnecting block instead of stacking', async () => {
+    const TASK_ID = 'task-gaveup-replace';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(
+        buildFullStream(initialWorkingTaskEvents(TASK_ID, 'Starting...'), { error: new Error('dropped') }),
+        { responseId: TASK_ID }
+      );
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([], new Error('still down')));
+
+    vi.useRealTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+
+    const resultPromise = streamMessage({ ...baseParams, onMessageUpdate });
+
+    for (let i = 0; i < 5; i++) {
+      await vi.advanceTimersByTimeAsync(2 ** i * 1000 + 100);
+    }
+
+    const result = await resultPromise;
+    expect(result.success).toBe(false);
+
+    // There should be exactly ONE connection-status block in the final message
+    // (gave-up replaced the last reconnecting), not two stacked.
+    const connBlocks = result.assistantMessage.contentBlocks.filter((b) => b.type === 'connection-status');
+    expect(connBlocks).toHaveLength(1);
+    expect(connBlocks[0].type === 'connection-status' && connBlocks[0].status).toBe('gave-up');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -790,5 +892,12 @@ describe('parseA2AError', () => {
 
     expect(result.code).toBe(-1);
     expect(result.message).toBe('connection refused');
+  });
+
+  test('strips SSE prefix from error without code', () => {
+    const result = parseA2AError(new Error('SSE event contained an error: Connection refused'));
+
+    expect(result.code).toBe(-1);
+    expect(result.message).toBe('Connection refused');
   });
 });

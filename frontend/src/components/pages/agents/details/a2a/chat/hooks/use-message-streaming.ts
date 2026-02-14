@@ -225,9 +225,9 @@ const pushConnectionStatus = ({
     timestamp: new Date(),
   };
 
-  // For 'reconnecting' and 'reconnected', replace the last connection-status block
+  // For transient/final statuses, replace the last connection-status block
   // so the UI doesn't accumulate stale status lines.
-  if (status === 'reconnecting' || status === 'reconnected') {
+  if (status === 'reconnecting' || status === 'reconnected' || status === 'gave-up') {
     const lastIdx = state.contentBlocks.length - 1;
     if (lastIdx >= 0 && state.contentBlocks[lastIdx].type === 'connection-status') {
       state.contentBlocks[lastIdx] = block;
@@ -300,9 +300,9 @@ const resubscribeLoop = async (
         pushConnectionStatus({ ...ctx, status: 'reconnected' });
         return true;
       }
-      // Rethrow programming errors (TypeError, ReferenceError, etc.) immediately
+      // Programming errors (TypeError, ReferenceError) -- stop retrying immediately
       if (resubError instanceof TypeError || resubError instanceof ReferenceError) {
-        throw resubError;
+        break;
       }
       // Otherwise retry (network errors, SSE errors, etc.)
     }
@@ -451,7 +451,7 @@ export const streamMessage = async ({
       baseMessage: assistantMessage,
       contentBlocks: errorBlocks,
       taskId: state.capturedTaskId,
-      taskState: 'failed',
+      taskState: state.capturedTaskState ?? 'failed',
       taskStartIndex: state.taskIdCapturedAtBlockIndex,
     });
 
@@ -460,7 +460,7 @@ export const streamMessage = async ({
       content: '',
       isStreaming: false,
       taskId: state.capturedTaskId,
-      taskState: 'failed',
+      taskState: state.capturedTaskState ?? 'failed',
       taskStartIndex: state.taskIdCapturedAtBlockIndex,
       contentBlocks: errorBlocks,
     });
