@@ -12,8 +12,9 @@
 import type { TaskState, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest';
 
-import { streamMessage } from './use-message-streaming';
+import { parseA2AError, streamMessage } from './use-message-streaming';
 import type { ContentBlock } from '../types';
+import { updateMessage } from '../utils/database-operations';
 
 // ---------------------------------------------------------------------------
 // Module mocks
@@ -537,5 +538,257 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
     expect(flatStatuses).toContain('disconnected');
     expect(flatStatuses).toContain('reconnecting');
     expect(flatStatuses).toContain('reconnected');
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 9: Does not resubscribe when taskId captured but no taskState
+  // -------------------------------------------------------------------
+  test('does not resubscribe when taskId is captured but no task state was received', async () => {
+    const TASK_ID = 'task-no-state';
+    const onMessageUpdate = vi.fn();
+
+    // Only emit response-metadata (sets capturedTaskId) but crash before any
+    // status-update (so capturedTaskState remains undefined).
+    streamTextImpl = () =>
+      buildStreamTextResult(
+        buildFullStream([{ type: 'response-metadata' as const, id: TASK_ID }], {
+          error: new Error('network error'),
+        }),
+        { responseId: TASK_ID }
+      );
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([]));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(false);
+    // isResubscribable requires both capturedTaskId AND capturedTaskState
+    expect(vi.mocked(createA2AClientImpl)).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 10: Captures taskId from response.id fallback
+  // -------------------------------------------------------------------
+  test('captures taskId from response metadata when no task events were emitted', async () => {
+    const TASK_ID = 'task-fallback-123';
+    const onMessageUpdate = vi.fn();
+
+    // Stream with no raw task/status-update events, just text
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream([{ type: 'text-delta', text: 'Hello world' }]), {
+        text: 'Hello world',
+        responseId: TASK_ID,
+      });
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([]));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskId).toBe(TASK_ID);
+    expect(vi.mocked(createA2AClientImpl)).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 11: Does NOT capture taskId from response.id when it starts with "msg-"
+  // -------------------------------------------------------------------
+  test('does not capture taskId from response metadata when id starts with msg-', async () => {
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream([{ type: 'text-delta', text: 'Hello' }]), {
+        text: 'Hello',
+        responseId: 'msg-12345',
+      });
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([]));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskId).toBeUndefined();
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 12: Does not resubscribe when task state was "failed" before disconnect
+  // -------------------------------------------------------------------
+  test('does not resubscribe when task state was "failed" before disconnect', async () => {
+    const TASK_ID = 'task-failed-before-crash';
+    const onMessageUpdate = vi.fn();
+
+    const initialEvents = [
+      ...initialWorkingTaskEvents(TASK_ID),
+      {
+        type: 'raw' as const,
+        rawValue: statusUpdateEvent(TASK_ID, 'failed', {
+          text: 'Agent error',
+          messageId: 'msg-fail',
+          final: true,
+        }),
+      },
+    ];
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialEvents, { error: new Error('connection lost') }), {
+        responseId: TASK_ID,
+      });
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([]));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    // "failed" is a terminal state -- no resubscribe
+    expect(result.success).toBe(false);
+    expect(vi.mocked(createA2AClientImpl)).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 13: Resubscribe stream ends cleanly but task not terminal -- retries
+  // -------------------------------------------------------------------
+  test('retries when resubscribe stream ends cleanly but task is not terminal', async () => {
+    const TASK_ID = 'task-not-done-yet';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID), { error: new Error('dropped') }), {
+        responseId: TASK_ID,
+      });
+
+    // First resubscribe: stream ends cleanly but only has a "working" update (not terminal)
+    // Second resubscribe: delivers "completed"
+    let callCount = 0;
+    createA2AClientImpl = vi.fn(() => {
+      callCount += 1;
+      if (callCount === 1) {
+        return Promise.resolve(
+          buildMockClient([
+            statusUpdateEvent(TASK_ID, 'working', {
+              text: 'Still going...',
+              messageId: 'msg-still',
+            }),
+          ])
+        );
+      }
+      return Promise.resolve(
+        buildMockClient([
+          statusUpdateEvent(TASK_ID, 'completed', {
+            text: 'Now done.',
+            messageId: 'msg-done',
+            final: true,
+          }),
+        ])
+      );
+    });
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskState).toBe('completed');
+    // First resubscribe ended cleanly but task wasn't terminal, so it retried
+    expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(2);
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 14: updateMessage called with correct args after recovery
+  // -------------------------------------------------------------------
+  test('persists correct state to database after successful recovery', async () => {
+    const TASK_ID = 'task-db-check';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID), { error: new Error('dropped') }), {
+        responseId: TASK_ID,
+      });
+
+    const mockClient = buildMockClient([
+      statusUpdateEvent(TASK_ID, 'completed', {
+        text: 'Final answer.',
+        messageId: 'msg-final',
+        final: true,
+      }),
+    ]);
+    createA2AClientImpl = vi.fn(async () => mockClient);
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+    expect(result.success).toBe(true);
+
+    // updateMessage is called during finalizeMessage after recovery
+    const mockedUpdate = vi.mocked(updateMessage);
+    const lastCall = mockedUpdate.mock.calls.at(-1);
+    expect(lastCall).toBeDefined();
+
+    const [messageId, updates] = lastCall!; // biome-ignore lint/style/noNonNullAssertion: asserted above
+    expect(messageId).toBe(result.assistantMessage.id);
+    expect(updates.isStreaming).toBe(false);
+    expect(updates.taskId).toBe(TASK_ID);
+    expect(updates.taskState).toBe('completed');
+    expect(updates.contentBlocks).toBeDefined();
+
+    // Should contain connection-status and task-status-update blocks
+    const blocks = updates.contentBlocks ?? [];
+    expect(blocks.some((b) => b.type === 'connection-status')).toBe(true);
+    expect(blocks.some((b) => b.type === 'task-status-update' && b.text === 'Final answer.')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseA2AError unit tests
+// ---------------------------------------------------------------------------
+
+describe('parseA2AError', () => {
+  test('extracts code, message, and data from SSE error format', () => {
+    const error = new Error('SSE event contained an error: Connection reset (Code: -1) Data: {}');
+    const result = parseA2AError(error);
+
+    expect(result.code).toBe(-1);
+    expect(result.message).toBe('Connection reset');
+    expect(result.data).toEqual({});
+  });
+
+  test('extracts code and data from streaming error format', () => {
+    const error = new Error(
+      'Error during streaming for task-abc: network timeout (Code: 500) Data: {"detail":"timeout"}'
+    );
+    const result = parseA2AError(error);
+
+    expect(result.code).toBe(500);
+    expect(result.data).toEqual({ detail: 'timeout' });
+  });
+
+  test('returns code -1 and raw message for unstructured errors', () => {
+    const result = parseA2AError('something completely unexpected');
+
+    expect(result.code).toBe(-1);
+    expect(result.message).toBe('something completely unexpected');
+    expect(result.data).toBeUndefined();
+  });
+
+  test('handles invalid JSON in Data field gracefully', () => {
+    const error = new Error('SSE event contained an error: Bad (Code: -1) Data: {not-json}');
+    const result = parseA2AError(error);
+
+    expect(result.code).toBe(-1);
+    expect(result.data).toBeUndefined();
+  });
+
+  test('returns "Unknown error" for empty string input', () => {
+    const result = parseA2AError('');
+
+    expect(result.code).toBe(-1);
+    expect(result.message).toBe('Unknown error');
+  });
+
+  test('handles non-Error objects', () => {
+    const result = parseA2AError(42);
+
+    expect(result.code).toBe(-1);
+    expect(result.message).toBe('42');
+  });
+
+  test('strips streaming prefix from error without code', () => {
+    const result = parseA2AError(new Error('Error during streaming for task-xyz: connection refused'));
+
+    expect(result.code).toBe(-1);
+    expect(result.message).toBe('connection refused');
   });
 });

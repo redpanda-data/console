@@ -63,7 +63,7 @@ export const ConnectionStatusBlock = ({ status, attempt, maxAttempts, timestamp 
       <AlertTitle>Connection lost</AlertTitle>
       <AlertDescription>
         <Text className="text-destructive/90" variant="body">
-          Unable to reconnect after {maxAttempts} attempts. The agent task may still be running server-side.
+          Unable to reconnect after {maxAttempts ?? '?'} attempts. The agent task may still be running server-side.
         </Text>
       </AlertDescription>
     </Alert>
