@@ -1,6 +1,5 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Text } from '@redpanda-data/ui';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
 
 import {
@@ -173,66 +172,64 @@ const getLicenseAlertContentForFeature = (
   return null;
 };
 
-export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' | 'rbac' }> = observer(
-  ({ featureName }) => {
-    const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
+export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' | 'rbac' }> = ({ featureName }) => {
+  const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
-    useEffect(() => {
-      api.refreshClusterOverview().catch(() => {
-        // Error handling managed by API layer
-      });
-      api.listLicenses().catch(() => {
-        // Error handling managed by API layer
-      });
-    }, []);
+  useEffect(() => {
+    api.refreshClusterOverview().catch(() => {
+      // Error handling managed by API layer
+    });
+    api.listLicenses().catch(() => {
+      // Error handling managed by API layer
+    });
+  }, []);
 
-    const licenses = api.licenses
-      .filter((lic) => lic.type === License_Type.TRIAL || lic.type === License_Type.COMMUNITY)
-      .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
+  const licenses = api.licenses
+    .filter((lic) => lic.type === License_Type.TRIAL || lic.type === License_Type.COMMUNITY)
+    .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
 
-    // Choose the license with the latest expiration time
-    const license = getLatestExpiringLicense(licenses);
+  // Choose the license with the latest expiration time
+  const license = getLatestExpiringLicense(licenses);
 
-    // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
-    // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
-    // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
-    const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
+  // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
+  // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
+  // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
+  const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
-    const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
-    const alertContent = getLicenseAlertContentForFeature(
-      featureName,
-      license,
-      enterpriseFeaturesUsed,
-      bakedInTrial,
-      () => {
-        setIsRegisterModalOpen(true);
-      }
-    );
-
-    // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
-    if (api.clusterOverview === null) {
-      return null;
+  const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
+  const alertContent = getLicenseAlertContentForFeature(
+    featureName,
+    license,
+    enterpriseFeaturesUsed,
+    bakedInTrial,
+    () => {
+      setIsRegisterModalOpen(true);
     }
+  );
 
-    if (!license) {
-      return null;
-    }
-
-    if (alertContent === null) {
-      return null;
-    }
-
-    const { message, status } = alertContent;
-
-    return (
-      <Box>
-        <Alert mb={4} status={status} variant="subtle">
-          <AlertIcon />
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-
-        <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
-      </Box>
-    );
+  // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
+  if (api.clusterOverview === null) {
+    return null;
   }
-);
+
+  if (!license) {
+    return null;
+  }
+
+  if (alertContent === null) {
+    return null;
+  }
+
+  const { message, status } = alertContent;
+
+  return (
+    <Box>
+      <Alert mb={4} status={status} variant="subtle">
+        <AlertIcon />
+        <AlertDescription>{message}</AlertDescription>
+      </Alert>
+
+      <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
+    </Box>
+  );
+};
