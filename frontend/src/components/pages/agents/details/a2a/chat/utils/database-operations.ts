@@ -54,6 +54,9 @@ const serializeContentBlocks = (blocks: ContentBlock[]): import('database/chat-d
     if (block.type === 'connection-status') {
       return { ...block, timestamp: block.timestamp.toISOString() };
     }
+    if (block.type === 'a2a-error') {
+      return { ...block, timestamp: block.timestamp.toISOString() };
+    }
     return block;
   }) as import('database/chat-db').ContentBlock[];
 

@@ -55,7 +55,7 @@ const ERROR_SUFFIX_CODE_REGEX = /\s*\(Code:\s*-?\d+\).*$/i;
 /**
  * Parse A2A/JSON-RPC error details from an error message string.
  */
-const parseA2AError = (error: unknown): JSONRPCError => {
+export const parseA2AError = (error: unknown): JSONRPCError => {
   const errorMessage = error instanceof Error ? error.message : String(error);
 
   // Try to parse JSON-RPC error from the error message
@@ -286,18 +286,25 @@ const resubscribeLoop = async (
     try {
       const client = await createA2AClient(agentCardUrl);
       const stream = client.resubscribeTask({ id: taskId });
-
-      pushConnectionStatus({ ...ctx, status: 'reconnected' });
       await processResubscribeStream(stream, state, assistantMessage, onMessageUpdate);
 
-      // Stream ended normally - task reached terminal state or server closed cleanly
-      return true;
-    } catch {
-      // If task reached a terminal state during this attempt, we're done
+      // Only declare success if the task actually reached a terminal state.
+      // A clean stream close without terminal state means the server dropped us again.
       if (state.capturedTaskState && TERMINAL_TASK_STATES.has(state.capturedTaskState)) {
+        pushConnectionStatus({ ...ctx, status: 'reconnected' });
         return true;
       }
-      // Otherwise retry
+    } catch (resubError) {
+      // If task reached a terminal state during this attempt, we're done
+      if (state.capturedTaskState && TERMINAL_TASK_STATES.has(state.capturedTaskState)) {
+        pushConnectionStatus({ ...ctx, status: 'reconnected' });
+        return true;
+      }
+      // Rethrow programming errors (TypeError, ReferenceError, etc.) immediately
+      if (resubError instanceof TypeError || resubError instanceof ReferenceError) {
+        throw resubError;
+      }
+      // Otherwise retry (network errors, SSE errors, etc.)
     }
   }
 
@@ -416,9 +423,13 @@ export const streamMessage = async ({
 
       const recovered = await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
       if (recovered) {
-        const result = await finalizeMessage(state, assistantMessage, '');
-        onMessageUpdate(result.assistantMessage);
-        return result;
+        try {
+          const result = await finalizeMessage(state, assistantMessage, '');
+          onMessageUpdate(result.assistantMessage);
+          return result;
+        } catch {
+          // finalizeMessage failed (e.g. DB write) -- fall through to error path
+        }
       }
     }
 

@@ -79,6 +79,11 @@ export type ContentBlock =
       attempt?: number;
       maxAttempts?: number;
       timestamp: string;
+    }
+  | {
+      type: 'a2a-error';
+      error: { code: number; message: string; data?: Record<string, unknown> };
+      timestamp: string;
     };
 
 export type ChatMessage = {
