@@ -14,6 +14,7 @@ import { Message, MessageBody, MessageContent, MessageMetadata } from 'component
 import { ChatMessageActions } from './chat-message-actions';
 import { A2AErrorBlock } from './message-blocks/a2a-error-block';
 import { ArtifactBlock } from './message-blocks/artifact-block';
+import { ConnectionStatusBlock } from './message-blocks/connection-status-block';
 import { TaskStatusUpdateBlock } from './message-blocks/task-status-update-block';
 import { ToolBlock } from './message-blocks/tool-block';
 import { UserMessageContent } from './message-content/user-message-content';
@@ -105,6 +106,16 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
           );
         case 'a2a-error':
           return <A2AErrorBlock error={block.error} key={`${message.id}-error-${index}`} timestamp={block.timestamp} />;
+        case 'connection-status':
+          return (
+            <ConnectionStatusBlock
+              attempt={block.attempt}
+              key={`${message.id}-conn-${index}`}
+              maxAttempts={block.maxAttempts}
+              status={block.status}
+              timestamp={block.timestamp}
+            />
+          );
         default:
           return null;
       }
