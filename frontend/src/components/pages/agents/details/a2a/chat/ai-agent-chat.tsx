@@ -30,7 +30,7 @@ export const AIAgentChat = ({ agent, headerActions }: AIAgentChatProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Manage chat messages and context
-  const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id);
+  const { messages, setMessages, contextId, setContextSeed, isLoadingHistory } = useChatMessages(agent.id, agent.url);
 
   // Manage chat actions (submit, clear, cancel)
   // Pass agent.url directly so the A2A client can try multiple agent card URLs
@@ -88,9 +88,9 @@ export const AIAgentChat = ({ agent, headerActions }: AIAgentChatProps) => {
   return (
     <div className="flex h-[calc(100vh-210px)] flex-col" ref={containerRef}>
       {/* Context ID header */}
-      {Boolean(contextId) && (
-        <div className="shrink-0 border-b bg-gradient-to-r from-muted/50 to-muted/30 px-4 py-1.5">
-          <div className="flex items-center justify-between gap-4">
+      <div className="shrink-0 border-b bg-gradient-to-r from-muted/50 to-muted/30 px-4 py-1.5">
+        <div className="flex items-center justify-between gap-4">
+          {messages.length > 0 ? (
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
                 <FingerprintIcon className="h-3 w-3 text-primary" />
@@ -109,10 +109,12 @@ export const AIAgentChat = ({ agent, headerActions }: AIAgentChatProps) => {
                 />
               </div>
             </div>
-            {headerActions}
-          </div>
+          ) : (
+            <div />
+          )}
+          {headerActions}
         </div>
-      )}
+      </div>
 
       <Conversation className="min-h-0 flex-1" initial="instant" resize="instant">
         <ConversationContent>

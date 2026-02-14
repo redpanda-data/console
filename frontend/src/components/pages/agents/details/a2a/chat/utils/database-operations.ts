@@ -15,13 +15,21 @@ import { chatDb } from 'database/chat-db';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { convertDbToComponent } from './message-converter';
+import { createA2AClient } from './a2a-client';
+import { buildMessageFromStoredBlocks, reconstructContentBlocks } from './message-converter';
+import { taskToContentBlocks } from './task-to-content-blocks';
 import type { ChatMessage, ContentBlock } from '../types';
 
 /**
- * Load messages from database for a specific agent and context
+ * Load messages from database for a specific agent and context.
+ * Assistant messages with a taskId are hydrated via tasks/get from the A2A server.
+ * User messages and error-only assistant messages are reconstructed from DB.
  */
-export const loadMessages = async (agentId: string, contextId: string): Promise<ChatMessage[]> => {
+export const loadMessages = async (
+  agentId: string,
+  contextId: string,
+  agentCardUrl: string
+): Promise<ChatMessage[]> => {
   try {
     const dbMessages = await chatDb.messages
       .where('agentId')
@@ -29,12 +37,128 @@ export const loadMessages = async (agentId: string, contextId: string): Promise<
       .and((msg) => msg.contextId === contextId)
       .sortBy('timestamp');
 
-    return convertDbToComponent(dbMessages);
+    return await hydrateMessages(dbMessages, agentCardUrl);
   } catch (loadChatError) {
     const connectError = ConnectError.from(loadChatError);
     toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'load', entity: 'chat' }));
     return [];
   }
+};
+
+/**
+ * Hydrate DB message stubs into full ChatMessages.
+ * - User messages: reconstruct from DB (they store prompt text)
+ * - Assistant messages with taskId: fetch via tasks/get, convert to ContentBlocks
+ * - Assistant messages without taskId (errors): use stored contentBlocks from DB
+ */
+const hydrateMessages = async (dbMessages: ChatDbMessage[], agentCardUrl: string): Promise<ChatMessage[]> => {
+  // Collect taskIds that need fetching
+  const taskIds = dbMessages.filter((msg) => msg.sender === 'system' && msg.taskId).map((msg) => msg.taskId as string);
+
+  // Fetch all tasks in parallel
+  const taskMap = await fetchTasks(taskIds, agentCardUrl);
+
+  return dbMessages.map((dbMsg) => {
+    // User messages: reconstruct from DB
+    if (dbMsg.sender === 'user') {
+      return buildMessageFromStoredBlocks(dbMsg);
+    }
+
+    // Assistant messages with taskId: use fetched task data
+    const task = dbMsg.taskId ? taskMap.get(dbMsg.taskId) : undefined;
+    if (dbMsg.taskId && task) {
+      return {
+        id: dbMsg.id,
+        role: 'assistant' as const,
+        contentBlocks: taskToContentBlocks(task),
+        timestamp: dbMsg.timestamp,
+        contextId: dbMsg.contextId,
+        taskId: dbMsg.taskId,
+        taskState: task.status.state as ChatMessage['taskState'],
+        taskStartIndex: 0,
+        usage: dbMsg.usage,
+      };
+    }
+
+    // Assistant messages with taskId but tasks/get failed: show placeholder
+    if (dbMsg.taskId && !taskMap.has(dbMsg.taskId)) {
+      return {
+        id: dbMsg.id,
+        role: 'assistant' as const,
+        contentBlocks: [
+          {
+            type: 'task-status-update' as const,
+            taskState: dbMsg.taskState as ChatMessage['taskState'],
+            text: 'Task history unavailable (agent may be offline)',
+            final: true,
+            timestamp: dbMsg.timestamp,
+          },
+        ],
+        timestamp: dbMsg.timestamp,
+        contextId: dbMsg.contextId,
+        taskId: dbMsg.taskId,
+        taskState: dbMsg.taskState as ChatMessage['taskState'],
+        taskStartIndex: 0,
+        usage: dbMsg.usage,
+      };
+    }
+
+    // Assistant messages without taskId: old error messages with stored contentBlocks
+    if (dbMsg.contentBlocks?.length) {
+      return buildMessageFromStoredBlocks(dbMsg);
+    }
+
+    // Ancient messages: reconstruct from flat fields
+    return {
+      id: dbMsg.id,
+      role: 'assistant' as const,
+      contentBlocks: reconstructContentBlocks(dbMsg),
+      timestamp: dbMsg.timestamp,
+      contextId: dbMsg.contextId,
+      taskId: dbMsg.taskId,
+      taskState: dbMsg.taskState as ChatMessage['taskState'],
+      taskStartIndex: dbMsg.taskStartIndex,
+      usage: dbMsg.usage,
+    };
+  });
+};
+
+/**
+ * Fetch multiple tasks from the A2A server in parallel.
+ * Returns a Map of taskId -> Task for successful fetches.
+ * Failed fetches are silently omitted (caller handles missing entries).
+ */
+const fetchTasks = async (
+  taskIds: string[],
+  agentCardUrl: string
+): Promise<Map<string, import('@a2a-js/sdk').Task>> => {
+  const taskMap = new Map<string, import('@a2a-js/sdk').Task>();
+  if (taskIds.length === 0) {
+    return taskMap;
+  }
+
+  try {
+    const client = await createA2AClient(agentCardUrl);
+    const results = await Promise.allSettled(taskIds.map((id) => client.getTask({ id })));
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'fulfilled') {
+        const response = result.value;
+        // GetTaskResponse = JSONRPCErrorResponse | GetTaskSuccessResponse
+        if ('error' in response) {
+          continue;
+        }
+        if ('result' in response) {
+          taskMap.set(taskIds[i], response.result as import('@a2a-js/sdk').Task);
+        }
+      }
+    }
+  } catch {
+    // Client creation failed -- all tasks unavailable
+  }
+
+  return taskMap;
 };
 
 /**
@@ -102,28 +226,11 @@ export const saveMessage = async (
 export const updateMessage = async (
   messageId: string,
   updates: {
-    content?: string;
     isStreaming?: boolean;
     taskId?: string;
     taskState?: string;
     taskStartIndex?: number;
-    artifacts?: Array<{
-      artifactId: string;
-      name?: string;
-      description?: string;
-      parts: import('../types').ArtifactPart[];
-    }>;
-    toolCalls?: Array<{
-      id: string;
-      name: string;
-      state: string;
-      input?: unknown;
-      output?: unknown;
-      errorText?: string;
-      messageId: string;
-      timestamp: Date;
-    }>;
-    contentBlocks?: ContentBlock[]; // NEW: store content blocks
+    contentBlocks?: ContentBlock[];
     usage?: {
       input_tokens: number;
       output_tokens: number;
@@ -135,9 +242,7 @@ export const updateMessage = async (
   }
 ): Promise<void> => {
   try {
-    // Convert artifacts to database format if provided
     const dbUpdates: Parameters<typeof chatDb.updateMessage>[1] = {
-      content: updates.content,
       isStreaming: updates.isStreaming,
       taskId: updates.taskId,
       taskState: updates.taskState,
@@ -145,29 +250,7 @@ export const updateMessage = async (
       usage: updates.usage,
     };
 
-    if (updates.artifacts) {
-      dbUpdates.artifacts = updates.artifacts.map((art) => ({
-        id: art.artifactId,
-        name: art.name,
-        description: art.description,
-        parts: art.parts,
-      }));
-    }
-
-    if (updates.toolCalls) {
-      dbUpdates.toolCalls = updates.toolCalls.map((tool) => ({
-        id: tool.id,
-        name: tool.name,
-        state: tool.state as 'input-available' | 'output-available' | 'output-error',
-        input: tool.input,
-        output: tool.output,
-        errorText: tool.errorText,
-        messageId: tool.messageId,
-        timestamp: tool.timestamp,
-      }));
-    }
-
-    // NEW: Store contentBlocks if provided (serialize timestamps)
+    // Only store contentBlocks for error paths (a2a-error blocks aren't in Task)
     if (updates.contentBlocks) {
       dbUpdates.contentBlocks = serializeContentBlocks(updates.contentBlocks);
     }

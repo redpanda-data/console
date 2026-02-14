@@ -722,12 +722,9 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
     expect(updates.isStreaming).toBe(false);
     expect(updates.taskId).toBe(TASK_ID);
     expect(updates.taskState).toBe('completed');
-    expect(updates.contentBlocks).toBeDefined();
 
-    // Should contain connection-status and task-status-update blocks
-    const blocks = updates.contentBlocks ?? [];
-    expect(blocks.some((b) => b.type === 'connection-status')).toBe(true);
-    expect(blocks.some((b) => b.type === 'task-status-update' && b.text === 'Final answer.')).toBe(true);
+    // Success path no longer stores contentBlocks in DB (fetched via tasks/get on reload)
+    expect(updates.contentBlocks).toBeUndefined();
   });
 
   // -------------------------------------------------------------------

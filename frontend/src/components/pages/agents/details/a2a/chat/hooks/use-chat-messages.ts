@@ -27,7 +27,7 @@ type UseChatMessagesResult = {
 /**
  * Hook to manage chat messages and context
  */
-export const useChatMessages = (agentId: string): UseChatMessagesResult => {
+export const useChatMessages = (agentId: string, agentCardUrl: string): UseChatMessagesResult => {
   // Use a stable contextSeed - only generate once per agent, persists across reloads
   // Only changes when user explicitly clears chat via setContextSeed
   const [contextSeed, setContextSeed] = useState<string>(() => {
@@ -58,7 +58,7 @@ export const useChatMessages = (agentId: string): UseChatMessagesResult => {
     async function loadChatMessages() {
       setIsLoadingHistory(true);
       try {
-        const loadedMessages = await loadMessages(agentId, contextId);
+        const loadedMessages = await loadMessages(agentId, contextId, agentCardUrl);
         setMessages(loadedMessages);
       } catch {
         // Error loading messages - silently fail and show empty state
@@ -68,7 +68,7 @@ export const useChatMessages = (agentId: string): UseChatMessagesResult => {
     }
 
     loadChatMessages();
-  }, [agentId, contextId]);
+  }, [agentId, contextId, agentCardUrl]);
 
   return {
     messages,

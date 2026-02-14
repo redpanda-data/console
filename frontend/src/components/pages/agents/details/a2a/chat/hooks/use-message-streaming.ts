@@ -122,11 +122,7 @@ const isResubscribable = (state: StreamingState): boolean =>
 /**
  * Finalize a streaming message: close active blocks, persist to DB, and return the result.
  */
-const finalizeMessage = async (
-  state: StreamingState,
-  assistantMessage: ChatMessage,
-  finalContent: string
-): Promise<StreamMessageResult> => {
+const finalizeMessage = async (state: StreamingState, assistantMessage: ChatMessage): Promise<StreamMessageResult> => {
   closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
   state.activeTextBlock = null;
 
@@ -139,37 +135,12 @@ const finalizeMessage = async (
     usage: state.latestUsage,
   });
 
-  const artifacts = state.contentBlocks
-    .filter((block) => block.type === 'artifact')
-    .map((block) => ({
-      artifactId: block.artifactId,
-      name: block.name,
-      description: block.description,
-      parts: block.parts,
-    }));
-
-  const toolCalls = state.contentBlocks
-    .filter((block) => block.type === 'tool')
-    .map((block) => ({
-      id: block.toolCallId,
-      name: block.toolName,
-      state: block.state,
-      input: block.input,
-      output: block.output,
-      errorText: block.errorText,
-      messageId: block.messageId || '',
-      timestamp: block.timestamp,
-    }));
-
+  // Only store minimal stub in DB -- full task content fetched via tasks/get on reload
   await updateMessage(assistantMessage.id, {
-    content: finalContent,
     isStreaming: false,
     taskId: state.capturedTaskId,
     taskState: state.capturedTaskState,
     taskStartIndex: state.taskIdCapturedAtBlockIndex,
-    artifacts,
-    toolCalls,
-    contentBlocks: state.contentBlocks,
     usage: state.latestUsage,
   });
 
@@ -401,9 +372,6 @@ export const streamMessage = async ({
     closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
     state.activeTextBlock = null;
 
-    // Get final text content (for backward compatibility with DB)
-    const finalContent = await streamResult.text;
-
     // If we didn't capture taskId during streaming, try to get it from response metadata
     if (!state.capturedTaskId) {
       const responseMetadata = await streamResult.response;
@@ -414,7 +382,7 @@ export const streamMessage = async ({
       }
     }
 
-    return await finalizeMessage(state, assistantMessage, finalContent);
+    return await finalizeMessage(state, assistantMessage);
   } catch (error) {
     // If the task is still in-flight, try to resubscribe before giving up
     if (isResubscribable(state)) {
@@ -424,7 +392,7 @@ export const streamMessage = async ({
       const recovered = await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
       if (recovered) {
         try {
-          const result = await finalizeMessage(state, assistantMessage, '');
+          const result = await finalizeMessage(state, assistantMessage);
           onMessageUpdate(result.assistantMessage);
           return result;
         } catch {
@@ -457,7 +425,6 @@ export const streamMessage = async ({
 
     // Update database with error
     await updateMessage(assistantMessage.id, {
-      content: '',
       isStreaming: false,
       taskId: state.capturedTaskId,
       taskState: state.capturedTaskState ?? 'failed',
