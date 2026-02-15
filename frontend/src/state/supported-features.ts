@@ -16,7 +16,7 @@
 // That way we can easily check if (for example) "partition reassignment" should be visible/allowed.
 //
 
-import { computed, observable } from 'mobx';
+import { create } from 'zustand';
 
 import { api } from './backend-api';
 
@@ -25,7 +25,7 @@ export type FeatureEntry = {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
 };
 
-// biome-ignore lint/complexity/noStaticOnlyClass: need to use class to ensure MobX support
+// biome-ignore lint/complexity/noStaticOnlyClass: Feature class groups related constants for better organization
 export class Feature {
   static readonly ClusterConfig: FeatureEntry = { endpoint: '/api/cluster/config', method: 'GET' };
   static readonly ConsumerGroups: FeatureEntry = { endpoint: '/api/consumer-groups', method: 'GET' };
@@ -109,9 +109,11 @@ export function isSupported(f: FeatureEntry): boolean {
     return false;
   }
 
-  featureErrors.push(
-    `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`
-  );
+  useSupportedFeaturesStore
+    .getState()
+    .addFeatureError(
+      `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`
+    );
   return false;
 }
 
@@ -123,66 +125,166 @@ export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
 
-class SupportedFeatures {
-  @computed get clusterConfig(): boolean {
-    return isSupported(Feature.ClusterConfig);
-  }
-  @computed get consumerGroups(): boolean {
-    return isSupported(Feature.ConsumerGroups);
-  }
-  @computed get getReassignments(): boolean {
-    return isSupported(Feature.GetReassignments);
-  }
-  @computed get patchReassignments(): boolean {
-    return isSupported(Feature.PatchReassignments);
-  }
-  @computed get patchGroup(): boolean {
-    return isSupported(Feature.PatchGroup);
-  }
-  @computed get deleteGroup(): boolean {
-    return isSupported(Feature.DeleteGroup);
-  }
-  @computed get deleteGroupOffsets(): boolean {
-    return isSupported(Feature.DeleteGroupOffsets);
-  }
-  @computed get deleteRecords(): boolean {
-    return isSupported(Feature.DeleteRecords);
-  }
-  @computed get getQuotas(): boolean {
-    return isSupported(Feature.GetQuotas);
-  }
-  @computed get createUser(): boolean {
-    return isSupported(Feature.CreateUser);
-  }
-  @computed get deleteUser(): boolean {
-    return isSupported(Feature.DeleteUser);
-  }
-  @computed get rolesApi(): boolean {
-    return isSupported(Feature.SecurityService);
-  }
-  @computed get pipelinesApi(): boolean {
-    return isSupported(Feature.PipelineService);
-  }
-  @computed get debugBundle(): boolean {
-    return isSupported(Feature.DebugBundleService);
-  }
-  @computed get rpcnSecretsApi(): boolean {
-    return isSupported(Feature.SecretService);
-  }
-  @computed get remoteMcpApi(): boolean {
-    return isSupported(Feature.RemoteMcpService);
-  }
-  @computed get schemaRegistryACLApi(): boolean {
-    return isSupported(Feature.SchemaRegistryACLApi);
-  }
-  @computed get shadowLinkService(): boolean {
-    return isSupported(Feature.ShadowLinkService);
-  }
-  @computed get tracingService(): boolean {
-    return isSupported(Feature.TracingService);
-  }
-}
+type SupportedFeaturesStore = {
+  // State
+  featureErrors: string[];
 
-const features = new SupportedFeatures();
-const featureErrors: string[] = observable([]);
-export { features as Features, featureErrors };
+  // Computed getters (accessed as properties)
+  get clusterConfig(): boolean;
+  get consumerGroups(): boolean;
+  get getReassignments(): boolean;
+  get patchReassignments(): boolean;
+  get patchGroup(): boolean;
+  get deleteGroup(): boolean;
+  get deleteGroupOffsets(): boolean;
+  get deleteRecords(): boolean;
+  get getQuotas(): boolean;
+  get createUser(): boolean;
+  get deleteUser(): boolean;
+  get rolesApi(): boolean;
+  get pipelinesApi(): boolean;
+  get debugBundle(): boolean;
+  get rpcnSecretsApi(): boolean;
+  get remoteMcpApi(): boolean;
+  get schemaRegistryACLApi(): boolean;
+  get shadowLinkService(): boolean;
+  get tracingService(): boolean;
+
+  // Actions
+  addFeatureError: (error: string) => void;
+  clearFeatureErrors: () => void;
+};
+
+export const useSupportedFeaturesStore = create<SupportedFeaturesStore>((set) => ({
+  // Initial state
+  featureErrors: [],
+
+  // Computed getters
+  get clusterConfig() {
+    return isSupported(Feature.ClusterConfig);
+  },
+  get consumerGroups() {
+    return isSupported(Feature.ConsumerGroups);
+  },
+  get getReassignments() {
+    return isSupported(Feature.GetReassignments);
+  },
+  get patchReassignments() {
+    return isSupported(Feature.PatchReassignments);
+  },
+  get patchGroup() {
+    return isSupported(Feature.PatchGroup);
+  },
+  get deleteGroup() {
+    return isSupported(Feature.DeleteGroup);
+  },
+  get deleteGroupOffsets() {
+    return isSupported(Feature.DeleteGroupOffsets);
+  },
+  get deleteRecords() {
+    return isSupported(Feature.DeleteRecords);
+  },
+  get getQuotas() {
+    return isSupported(Feature.GetQuotas);
+  },
+  get createUser() {
+    return isSupported(Feature.CreateUser);
+  },
+  get deleteUser() {
+    return isSupported(Feature.DeleteUser);
+  },
+  get rolesApi() {
+    return isSupported(Feature.SecurityService);
+  },
+  get pipelinesApi() {
+    return isSupported(Feature.PipelineService);
+  },
+  get debugBundle() {
+    return isSupported(Feature.DebugBundleService);
+  },
+  get rpcnSecretsApi() {
+    return isSupported(Feature.SecretService);
+  },
+  get remoteMcpApi() {
+    return isSupported(Feature.RemoteMcpService);
+  },
+  get schemaRegistryACLApi() {
+    return isSupported(Feature.SchemaRegistryACLApi);
+  },
+  get shadowLinkService() {
+    return isSupported(Feature.ShadowLinkService);
+  },
+  get tracingService() {
+    return isSupported(Feature.TracingService);
+  },
+
+  // Actions
+  addFeatureError: (error: string) =>
+    set((state) => ({
+      featureErrors: [...state.featureErrors, error],
+    })),
+  clearFeatureErrors: () => set({ featureErrors: [] }),
+}));
+
+// Create singleton instance for backwards compatibility
+const Features = {
+  get clusterConfig() {
+    return useSupportedFeaturesStore.getState().clusterConfig;
+  },
+  get consumerGroups() {
+    return useSupportedFeaturesStore.getState().consumerGroups;
+  },
+  get getReassignments() {
+    return useSupportedFeaturesStore.getState().getReassignments;
+  },
+  get patchReassignments() {
+    return useSupportedFeaturesStore.getState().patchReassignments;
+  },
+  get patchGroup() {
+    return useSupportedFeaturesStore.getState().patchGroup;
+  },
+  get deleteGroup() {
+    return useSupportedFeaturesStore.getState().deleteGroup;
+  },
+  get deleteGroupOffsets() {
+    return useSupportedFeaturesStore.getState().deleteGroupOffsets;
+  },
+  get deleteRecords() {
+    return useSupportedFeaturesStore.getState().deleteRecords;
+  },
+  get getQuotas() {
+    return useSupportedFeaturesStore.getState().getQuotas;
+  },
+  get createUser() {
+    return useSupportedFeaturesStore.getState().createUser;
+  },
+  get deleteUser() {
+    return useSupportedFeaturesStore.getState().deleteUser;
+  },
+  get rolesApi() {
+    return useSupportedFeaturesStore.getState().rolesApi;
+  },
+  get pipelinesApi() {
+    return useSupportedFeaturesStore.getState().pipelinesApi;
+  },
+  get debugBundle() {
+    return useSupportedFeaturesStore.getState().debugBundle;
+  },
+  get rpcnSecretsApi() {
+    return useSupportedFeaturesStore.getState().rpcnSecretsApi;
+  },
+  get remoteMcpApi() {
+    return useSupportedFeaturesStore.getState().remoteMcpApi;
+  },
+  get schemaRegistryACLApi() {
+    return useSupportedFeaturesStore.getState().schemaRegistryACLApi;
+  },
+  get shadowLinkService() {
+    return useSupportedFeaturesStore.getState().shadowLinkService;
+  },
+  get tracingService() {
+    return useSupportedFeaturesStore.getState().tracingService;
+  },
+};
+
+export { Features };

@@ -36,7 +36,6 @@ import { Link } from '@tanstack/react-router';
 import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
-import { observable } from 'mobx';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
@@ -625,47 +624,46 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
       keyboard: false,
       maskClosable: false,
     },
-    onCreate: () =>
-      observable({
-        topicName: '',
+    onCreate: () => ({
+      topicName: '',
 
-        // todo: get 'log.retention.bytes' and 'log.retention.ms' from any broker and show it for "default"
+      // todo: get 'log.retention.bytes' and 'log.retention.ms' from any broker and show it for "default"
 
-        retentionTimeMs: 1,
-        retentionTimeUnit: 'default',
+      retentionTimeMs: 1,
+      retentionTimeUnit: 'default' as const,
 
-        retentionSize: 1,
-        retentionSizeUnit: 'default',
+      retentionSize: 1,
+      retentionSizeUnit: 'default' as const,
 
-        partitions: undefined,
-        cleanupPolicy: 'delete',
-        minInSyncReplicas: undefined,
-        replicationFactor: undefined,
+      partitions: undefined,
+      cleanupPolicy: 'delete' as const,
+      minInSyncReplicas: undefined,
+      replicationFactor: undefined,
 
-        additionalConfig: [{ name: '', value: '' }],
+      additionalConfig: [{ name: '', value: '' }],
 
-        defaults: {
-          get retentionTime() {
-            return tryGetBrokerConfig('log.retention.ms');
-          },
-          get retentionBytes() {
-            return tryGetBrokerConfig('log.retention.bytes');
-          },
-          get replicationFactor() {
-            return tryGetBrokerConfig('default.replication.factor');
-          },
-          get partitions() {
-            return tryGetBrokerConfig('num.partitions');
-          },
-          get cleanupPolicy() {
-            return tryGetBrokerConfig('log.cleanup.policy');
-          },
-          get minInSyncReplicas() {
-            return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
-          },
+      defaults: {
+        get retentionTime() {
+          return tryGetBrokerConfig('log.retention.ms');
         },
-        hasErrors: false,
-      }),
+        get retentionBytes() {
+          return tryGetBrokerConfig('log.retention.bytes');
+        },
+        get replicationFactor() {
+          return tryGetBrokerConfig('default.replication.factor');
+        },
+        get partitions() {
+          return tryGetBrokerConfig('num.partitions');
+        },
+        get cleanupPolicy() {
+          return tryGetBrokerConfig('log.cleanup.policy');
+        },
+        get minInSyncReplicas() {
+          return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
+        },
+      },
+      hasErrors: false,
+    }),
     isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     onOk: async (state) => {

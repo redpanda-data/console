@@ -10,7 +10,6 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import { observer, useLocalObservable } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 
 import { api } from '../../../state/backend-api';
@@ -37,7 +36,6 @@ import {
   Text,
 } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
-import { makeObservable, observable } from 'mobx';
 
 import {
   type CreateDebugBundleRequest,
@@ -105,14 +103,7 @@ type FieldViolationsMap = {
   [field: string]: string;
 };
 
-@observer
 export class AdminDebugBundle extends PageComponent {
-  @observable quickSearch = '';
-  @observable submitInProgress = false;
-  @observable confirmModalIsOpen = false;
-  @observable createBundleError: ErrorResponse | undefined = undefined;
-  @observable jobId: string | undefined = undefined;
-
   initPage(p: PageInitHelper): void {
     p.title = 'Debug bundle';
     p.addBreadcrumb('Debug bundle', '/debug-bundle');
@@ -127,77 +118,77 @@ export class AdminDebugBundle extends PageComponent {
     });
   }
 
-  constructor(p: Readonly<{ matchedPath: string }>) {
-    super(p);
-    makeObservable(this);
-  }
-
   render() {
-    if (api.isDebugBundleInProgress) {
-      return (
-        <Box>
-          <Header />
-          <Button as={Link} mt={4} px={0} to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`} variant="link">
-            Bundle generation in progress...
-          </Button>
-          {api.debugBundleStatus?.createdAt ? (
-            <Text>Started {timestampDate(api.debugBundleStatus.createdAt).toLocaleString()}</Text>
-          ) : null}
-        </Box>
-      );
-    }
+    return <AdminDebugBundleContent />;
+  }
+}
 
+const AdminDebugBundleContent: FC = () => {
+  const [submitInProgress, setSubmitInProgress] = useState(false);
+  const [createBundleError, setCreateBundleError] = useState<ErrorResponse | undefined>(undefined);
+
+  if (api.isDebugBundleInProgress) {
     return (
       <Box>
-        <Box mt={4}>
-          {Boolean(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
-            <Text fontWeight="bold">Latest debug bundle:</Text>
-          )}
-          {Boolean(api.isDebugBundleExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
-          {Boolean(api.isDebugBundleError) && (
-            <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>
-          )}
-          {Boolean(api.canDownloadDebugBundle) && (
-            <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />
-          )}
-
-          {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
-        </Box>
-
-        <Box>
-          {Boolean(this.submitInProgress) && <Box>Generating bundle ...</Box>}
-
-          <NewDebugBundleForm
-            debugBundleExists={api.hasDebugProcess}
-            error={this.createBundleError}
-            onSubmit={(data: CreateDebugBundleRequest) => {
-              this.submitInProgress = true;
-              this.createBundleError = undefined;
-              api
-                .createDebugBundle(data)
-                .then(async (result) => {
-                  await api.refreshDebugBundleStatuses();
-                  appGlobal.historyPush(`/debug-bundle/progress/${result.jobId}`);
-                })
-                .catch((err: ErrorResponse) => {
-                  this.createBundleError = err;
-                })
-                .finally(() => {
-                  this.submitInProgress = false;
-                });
-            }}
-          />
-        </Box>
+        <Header />
+        <Button as={Link} mt={4} px={0} to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`} variant="link">
+          Bundle generation in progress...
+        </Button>
+        {api.debugBundleStatus?.createdAt ? (
+          <Text>Started {timestampDate(api.debugBundleStatus.createdAt).toLocaleString()}</Text>
+        ) : null}
       </Box>
     );
   }
-}
+
+  return (
+    <Box>
+      <Box mt={4}>
+        {Boolean(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
+          <Text fontWeight="bold">Latest debug bundle:</Text>
+        )}
+        {Boolean(api.isDebugBundleExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
+        {Boolean(api.isDebugBundleError) && (
+          <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>
+        )}
+        {Boolean(api.canDownloadDebugBundle) && <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />}
+
+        {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
+      </Box>
+
+      <Box>
+        {Boolean(submitInProgress) && <Box>Generating bundle ...</Box>}
+
+        <NewDebugBundleForm
+          debugBundleExists={api.hasDebugProcess}
+          error={createBundleError}
+          onSubmit={(data: CreateDebugBundleRequest) => {
+            setSubmitInProgress(true);
+            setCreateBundleError(undefined);
+            api
+              .createDebugBundle(data)
+              .then(async (result) => {
+                await api.refreshDebugBundleStatuses();
+                appGlobal.historyPush(`/debug-bundle/progress/${result.jobId}`);
+              })
+              .catch((err: ErrorResponse) => {
+                setCreateBundleError(err);
+              })
+              .finally(() => {
+                setSubmitInProgress(false);
+              });
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};
 
 const NewDebugBundleForm: FC<{
   onSubmit: (data: CreateDebugBundleRequest) => void;
   error?: ErrorResponse;
   debugBundleExists: boolean;
-}> = observer(({ onSubmit, error, debugBundleExists }) => {
+}> = ({ onSubmit, error, debugBundleExists }) => {
   const [advancedForm, setAdvancedForm] = useState(false);
 
   useEffect(() => {
@@ -214,7 +205,7 @@ const NewDebugBundleForm: FC<{
       return acc;
     }, {} as FieldViolationsMap);
 
-  const formState = useLocalObservable(() => ({
+  const [formState, setFormState] = useState({
     scramUsername: undefined as string | undefined,
     scramPassword: undefined as string | undefined,
     scramMechanism: SCRAMAuth_Mechanism.SCRAM_SHA_256 as SCRAMAuth_Mechanism,
@@ -236,72 +227,7 @@ const NewDebugBundleForm: FC<{
     namespace: 'redpanda' as string, // Default "redpanda"
     partitions: [] as string[],
     labelSelectors: [] as Array<{ key: string; value: string }>,
-
-    // Setters
-    setUsername(username: string) {
-      this.scramUsername = username;
-    },
-    setPassword(password: string) {
-      this.scramPassword = password;
-    },
-    setBrokerIds(ids: number[]) {
-      this.brokerIds = ids;
-    },
-    setControllerLogsSizeLimitBytes(size: number) {
-      this.controllerLogsSizeLimitBytes = size;
-    },
-    setControllerLogsSizeLimitUnit(unit: number) {
-      this.controllerLogsSizeLimitUnit = unit;
-    },
-    setCpuProfilerWaitSeconds(seconds: number) {
-      this.cpuProfilerWaitSeconds = seconds;
-    },
-    setCpuProfilerWaitUnit(unit: number) {
-      this.cpuProfilerWaitUnit = unit;
-    },
-    setLogsSince(date: number) {
-      this.logsSince = date;
-    },
-    setLogsSizeLimitBytes(size: number) {
-      this.logsSizeLimitBytes = size;
-    },
-    setLogsSizeLimitUnit(unit: number) {
-      this.logsSizeLimitUnit = unit;
-    },
-    setLogsUntil(date: number) {
-      this.logsUntil = date;
-    },
-    setMetricsIntervalSeconds(seconds: number) {
-      this.metricsIntervalSeconds = seconds;
-    },
-    setMetricsIntervalUnit(unit: number) {
-      this.metricsIntervalUnit = unit;
-    },
-    setMetricsSamples(samples: string) {
-      this.metricsSamples = samples;
-    },
-    setNamespace(namespace: string) {
-      this.namespace = namespace;
-    },
-    setPartitions(partitions: string[]) {
-      this.partitions = partitions;
-    },
-    addLabelSelector() {
-      this.labelSelectors.push({
-        key: '',
-        value: '',
-      });
-    },
-    removeLabelSelector(idx: number) {
-      this.labelSelectors.splice(idx, 1);
-    },
-    setLabelSelectorKey(value: string, idx: number) {
-      this.labelSelectors[idx].key = value;
-    },
-    setLabelSelectorValue(value: string, idx: number) {
-      this.labelSelectors[idx].value = value;
-    },
-  }));
+  });
 
   const generateNewDebugBundle = () => {
     onSubmit(
@@ -362,14 +288,14 @@ const NewDebugBundleForm: FC<{
           >
             <Input
               data-testid="scram-user-input"
-              onChange={(e) => formState.setUsername(e.target.value)}
+              onChange={(e) => setFormState((prev) => ({ ...prev, scramUsername: e.target.value }))}
               value={formState.scramUsername}
             />
           </FormField>
           <FormField label="SASL Mechanism" showRequiredIndicator>
             <SingleSelect<SCRAMAuth_Mechanism>
               onChange={(e) => {
-                formState.scramMechanism = e;
+                setFormState((prev) => ({ ...prev, scramMechanism: e }));
               }}
               options={[
                 {
@@ -387,7 +313,7 @@ const NewDebugBundleForm: FC<{
           <Checkbox
             isChecked={formState.tlsEnabled}
             onChange={(x) => {
-              formState.tlsEnabled = x.target.checked;
+              setFormState((prev) => ({ ...prev, tlsEnabled: x.target.checked }));
             }}
           >
             TLS enabled
@@ -395,7 +321,7 @@ const NewDebugBundleForm: FC<{
           <Checkbox
             isChecked={formState.skipTlsVerification}
             onChange={(x) => {
-              formState.skipTlsVerification = x.target.checked;
+              setFormState((prev) => ({ ...prev, skipTlsVerification: x.target.checked }));
             }}
           >
             Skip TLS verification
@@ -407,7 +333,7 @@ const NewDebugBundleForm: FC<{
           >
             <PasswordInput
               data-testid="scram-user-password"
-              onChange={(e) => formState.setPassword(e.target.value)}
+              onChange={(e) => setFormState((prev) => ({ ...prev, scramPassword: e.target.value }))}
               value={formState.scramPassword}
             />
           </FormField>
@@ -416,7 +342,7 @@ const NewDebugBundleForm: FC<{
               isMulti
               onChange={(x) => {
                 if (isMultiValue(x)) {
-                  formState.setBrokerIds(x.map((item) => item.value));
+                  setFormState((prev) => ({ ...prev, brokerIds: x.map((item) => item.value) }));
                 }
               }}
               options={
@@ -436,7 +362,9 @@ const NewDebugBundleForm: FC<{
             <Flex gap={2}>
               <Input
                 data-testid="controller-log-size-input"
-                onChange={(e) => formState.setControllerLogsSizeLimitBytes(e.target.valueAsNumber)}
+                onChange={(e) =>
+                  setFormState((prev) => ({ ...prev, controllerLogsSizeLimitBytes: e.target.valueAsNumber }))
+                }
                 type="number"
                 value={formState.controllerLogsSizeLimitBytes}
               />
@@ -449,7 +377,7 @@ const NewDebugBundleForm: FC<{
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
-                    formState.setControllerLogsSizeLimitUnit(value.value);
+                    setFormState((prev) => ({ ...prev, controllerLogsSizeLimitUnit: value.value }));
                   }
                 }}
                 options={SIZE_UNITS}
@@ -469,7 +397,7 @@ const NewDebugBundleForm: FC<{
             <Flex gap={2}>
               <Input
                 data-testid="cpu-profiler-input"
-                onChange={(e) => formState.setCpuProfilerWaitSeconds(e.target.valueAsNumber)}
+                onChange={(e) => setFormState((prev) => ({ ...prev, cpuProfilerWaitSeconds: e.target.valueAsNumber }))}
                 type="number"
                 value={formState.cpuProfilerWaitSeconds}
               />
@@ -482,7 +410,7 @@ const NewDebugBundleForm: FC<{
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
-                    formState.setCpuProfilerWaitUnit(value.value);
+                    setFormState((prev) => ({ ...prev, cpuProfilerWaitUnit: value.value }));
                   }
                 }}
                 options={TIME_UNITS}
@@ -499,7 +427,10 @@ const NewDebugBundleForm: FC<{
             isInvalid={!!fieldViolationsMap?.logsSince}
             label="Logs since"
           >
-            <DateTimeInput onChange={formState.setLogsSince} value={formState.logsSince} />
+            <DateTimeInput
+              onChange={(date) => setFormState((prev) => ({ ...prev, logsSince: date }))}
+              value={formState.logsSince}
+            />
           </FormField>
           <FormField
             description="Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today')."
@@ -507,7 +438,10 @@ const NewDebugBundleForm: FC<{
             isInvalid={!!fieldViolationsMap?.logsUntil}
             label="Logs until"
           >
-            <DateTimeInput onChange={formState.setLogsUntil} value={formState.logsUntil} />
+            <DateTimeInput
+              onChange={(date) => setFormState((prev) => ({ ...prev, logsUntil: date }))}
+              value={formState.logsUntil}
+            />
           </FormField>
           <FormField
             description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB."
@@ -518,7 +452,7 @@ const NewDebugBundleForm: FC<{
             <Flex gap={2}>
               <Input
                 data-testid="log-size-limit-input"
-                onChange={(e) => formState.setLogsSizeLimitBytes(e.target.valueAsNumber)}
+                onChange={(e) => setFormState((prev) => ({ ...prev, logsSizeLimitBytes: e.target.valueAsNumber }))}
                 type="number"
                 value={formState.logsSizeLimitBytes}
               />
@@ -531,7 +465,7 @@ const NewDebugBundleForm: FC<{
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
-                    formState.setLogsSizeLimitUnit(value.value);
+                    setFormState((prev) => ({ ...prev, logsSizeLimitUnit: value.value }));
                   }
                 }}
                 options={SIZE_UNITS}
@@ -551,7 +485,7 @@ const NewDebugBundleForm: FC<{
             <Flex gap={2}>
               <Input
                 data-testid="metrics-interval-duration-input"
-                onChange={(e) => formState.setMetricsIntervalSeconds(e.target.valueAsNumber)}
+                onChange={(e) => setFormState((prev) => ({ ...prev, metricsIntervalSeconds: e.target.valueAsNumber }))}
                 type="number"
                 value={formState.metricsIntervalSeconds}
               />
@@ -564,7 +498,7 @@ const NewDebugBundleForm: FC<{
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
-                    formState.setMetricsIntervalUnit(value.value);
+                    setFormState((prev) => ({ ...prev, metricsIntervalUnit: value.value }));
                   }
                 }}
                 options={TIME_UNITS}
@@ -583,7 +517,7 @@ const NewDebugBundleForm: FC<{
           >
             <Input
               data-testid="metrics-samples-in put"
-              onChange={(e) => formState.setMetricsSamples(e.target.value)}
+              onChange={(e) => setFormState((prev) => ({ ...prev, metricsSamples: e.target.value }))}
               value={formState.metricsSamples}
             />
           </FormField>
@@ -595,7 +529,7 @@ const NewDebugBundleForm: FC<{
           >
             <Input
               data-testid="namespace-input"
-              onChange={(e) => formState.setNamespace(e.target.value)}
+              onChange={(e) => setFormState((prev) => ({ ...prev, namespace: e.target.value }))}
               value={formState.namespace}
             />
           </FormField>
@@ -609,7 +543,7 @@ const NewDebugBundleForm: FC<{
               isMulti
               onChange={(x) => {
                 if (isMultiValue(x)) {
-                  formState.setPartitions(x.map((item) => item.value));
+                  setFormState((prev) => ({ ...prev, partitions: x.map((item) => item.value) }));
                 }
               }}
               options={api.getTopicPartitionArray.map((partition) => ({
@@ -630,7 +564,12 @@ const NewDebugBundleForm: FC<{
                   <Text fontSize="sm">Key</Text>
                   <Input
                     onChange={(e) => {
-                      formState.setLabelSelectorKey(e.target.value, idx);
+                      setFormState((prev) => ({
+                        ...prev,
+                        labelSelectors: prev.labelSelectors.map((ls, i) =>
+                          i === idx ? { ...ls, key: e.target.value } : ls
+                        ),
+                      }));
                     }}
                     value={labelSelector.key}
                   />
@@ -639,7 +578,12 @@ const NewDebugBundleForm: FC<{
                   <Text fontSize="sm">Value</Text>
                   <Input
                     onChange={(e) => {
-                      formState.setLabelSelectorValue(e.target.value, idx);
+                      setFormState((prev) => ({
+                        ...prev,
+                        labelSelectors: prev.labelSelectors.map((ls, i) =>
+                          i === idx ? { ...ls, value: e.target.value } : ls
+                        ),
+                      }));
                     }}
                     value={labelSelector.value}
                   />
@@ -647,7 +591,10 @@ const NewDebugBundleForm: FC<{
                 <GridItem alignItems="flex-end" display="flex">
                   <Button
                     onClick={() => {
-                      formState.removeLabelSelector(idx);
+                      setFormState((prev) => ({
+                        ...prev,
+                        labelSelectors: prev.labelSelectors.filter((_, i) => i !== idx),
+                      }));
                     }}
                     variant="ghost"
                   >
@@ -660,7 +607,10 @@ const NewDebugBundleForm: FC<{
               <Button
                 my={2}
                 onClick={() => {
-                  formState.addLabelSelector();
+                  setFormState((prev) => ({
+                    ...prev,
+                    labelSelectors: [...prev.labelSelectors, { key: '', value: '' }],
+                  }));
                 }}
                 variant="outline"
               >
@@ -726,4 +676,4 @@ const NewDebugBundleForm: FC<{
       </Flex>
     </Box>
   );
-});
+};

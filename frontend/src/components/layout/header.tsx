@@ -13,13 +13,11 @@ import { Box, Button, ColorModeSwitch, CopyButton, Flex } from '@redpanda-data/u
 import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { computed } from 'mobx';
-import { observer } from 'mobx-react';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backend-api';
-import { type BreadcrumbEntry, uiState } from '../../state/ui-state';
+import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
 import { UserPreferencesButton } from '../misc/user-preferences';
@@ -69,16 +67,19 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
   );
 }
 
-const AppPageHeader = observer(() => {
+function AppPageHeader() {
   const showRefresh = useShouldShowRefresh();
-
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
 
-  const breadcrumbItems = computed(() => {
-    const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
+  const pageBreadcrumbs = useUIStateStore((s) => s.pageBreadcrumbs);
+  const selectedClusterName = useUIStateStore((s) => s.selectedClusterName);
+  const shouldHidePageHeader = useUIStateStore((s) => s.shouldHidePageHeader);
 
-    if (!isEmbedded() && uiState.selectedClusterName) {
+  const breadcrumbItems = useMemo(() => {
+    const items: BreadcrumbEntry[] = [...pageBreadcrumbs];
+
+    if (!isEmbedded() && selectedClusterName) {
       items.unshift({
         heading: '',
         title: 'Cluster',
@@ -87,18 +88,19 @@ const AppPageHeader = observer(() => {
     }
 
     return items;
-  }).get();
+  }, [pageBreadcrumbs, selectedClusterName]);
 
-  const lastBreadcrumb = breadcrumbItems.pop();
+  const lastBreadcrumb = breadcrumbItems.at(-1);
+  const breadcrumbsExceptLast = breadcrumbItems.slice(0, -1);
 
-  if (shouldHideHeader || uiState.shouldHidePageHeader) {
+  if (shouldHideHeader || shouldHidePageHeader) {
     return null;
   }
 
   return (
     <Box>
       {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
-      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
+      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbsExceptLast} useNewSidebar={useNewSidebar} />
 
       <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
@@ -140,7 +142,7 @@ const AppPageHeader = observer(() => {
       </Flex>
     </Box>
   );
-});
+}
 
 export default AppPageHeader;
 
