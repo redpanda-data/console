@@ -27,11 +27,6 @@ export class QuotaPage {
     await expect(this.page.getByText(entityName)).not.toBeVisible();
   }
 
-  async verifyEntityType(entityType: 'client-id' | 'user' | 'ip') {
-    const cells = await this.page.locator('td').allTextContents();
-    expect(cells).toContain(entityType);
-  }
-
   async verifyProducerRate(rateValue: string, entityName?: string) {
     if (entityName) {
       // Find the row containing the entity name and verify the rate value is in that row
@@ -43,15 +38,6 @@ export class QuotaPage {
   }
 
   async verifyConsumerRate(rateValue: string, entityName?: string) {
-    if (entityName) {
-      const row = this.page.locator('tr').filter({ hasText: entityName });
-      await expect(row.locator('td').filter({ hasText: rateValue })).toBeVisible();
-    } else {
-      await expect(this.page.getByText(rateValue)).toBeVisible();
-    }
-  }
-
-  async verifyControllerMutationRate(rateValue: string, entityName?: string) {
     if (entityName) {
       const row = this.page.locator('tr').filter({ hasText: entityName });
       await expect(row.locator('td').filter({ hasText: rateValue })).toBeVisible();
@@ -76,5 +62,24 @@ export class QuotaPage {
     const baseURL = this.page.context().baseURL || 'http://localhost:3000';
     await this.page.goto(`${baseURL}/quotas`);
     await expect(this.page.getByRole('heading', { name: 'Quotas' })).toBeVisible();
+  }
+
+  /**
+   * Pagination methods
+   */
+  getNextPageButton() {
+    return this.page.locator('button[aria-label="Next Page"]');
+  }
+
+  getPreviousPageButton() {
+    return this.page.locator('button[aria-label="Previous Page"]');
+  }
+
+  async clickNextPage() {
+    await this.getNextPageButton().click();
+  }
+
+  async clickPreviousPage() {
+    await this.getPreviousPageButton().click();
   }
 }

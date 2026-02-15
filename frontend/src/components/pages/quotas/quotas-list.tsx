@@ -9,165 +9,212 @@
  * by the Apache License, Version 2.0
  */
 
-import { Alert, AlertIcon, Button, DataTable, Result } from '@redpanda-data/ui';
+import { create } from '@bufbuild/protobuf';
+import { useQuery } from '@connectrpc/connect-query';
+import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda-data/ui';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { SkipIcon } from 'components/icons';
-import { computed, makeObservable } from 'mobx';
-import { observer } from 'mobx-react';
+import { Link } from 'components/redpanda-ui/components/typography';
+import { useMemo } from 'react';
 
-import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
-import { type QuotaResponseSetting, QuotaType } from '../../../state/rest-interfaces';
-import { toJson } from '../../../utils/json-utils';
-import { DefaultSkeleton, InfoText } from '../../../utils/tsx-utils';
+import {
+  ListQuotasRequestSchema,
+  Quota_EntityType,
+  type Quota_Value,
+  Quota_ValueType,
+} from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
+import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
+import { MAX_PAGE_SIZE } from '../../../react-query/react-query.utils';
+import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { PageComponent, type PageInitHelper } from '../page';
 
-@observer
-class QuotasList extends PageComponent {
-  constructor(p: Readonly<{ matchedPath: string }>) {
-    super(p);
-    makeObservable(this);
+/**
+ * Maps protobuf EntityType enum to display string
+ */
+const mapEntityTypeToDisplay = (entityType: Quota_EntityType): 'client-id' | 'user' | 'ip' | 'unknown' => {
+  switch (entityType) {
+    case Quota_EntityType.CLIENT_ID:
+    case Quota_EntityType.CLIENT_ID_PREFIX:
+      return 'client-id';
+    case Quota_EntityType.USER:
+      return 'user';
+    case Quota_EntityType.IP:
+      return 'ip';
+    default:
+      return 'unknown';
   }
+};
 
-  initPage(p: PageInitHelper): void {
-    p.title = 'Quotas';
-    p.addBreadcrumb('Quotas', '/quotas');
+const request = create(ListQuotasRequestSchema, { pageSize: MAX_PAGE_SIZE });
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
+const QuotasList = () => {
+  const navigate = useNavigate({ from: '/quotas' });
+  const search = useSearch({ from: '/quotas' });
+  const { data, error, isLoading } = useQuery(listQuotas, request, {
+    refetchOnMount: 'always',
+  });
 
-  refreshData(force: boolean) {
-    if (api.userData !== null && api.userData !== undefined && !api.userData.canListQuotas) {
-      return;
-    }
-    api.refreshQuotas(force);
-  }
-
-  render() {
-    if (api.userData !== null && api.userData !== undefined && !api.userData.canListQuotas) {
-      return PermissionDenied;
-    }
-    if (api.Quotas === undefined) {
-      return DefaultSkeleton;
+  const quotasData = useMemo(() => {
+    if (!data?.quotas) {
+      return [];
     }
 
-    const warning =
-      api.Quotas === null ? (
-        <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
-          <AlertIcon />
-          You do not have the necessary permissions to view Quotas
-        </Alert>
-      ) : null;
+    return data.quotas.map((quota) => {
+      const entityType = quota.entity?.entityType ?? Quota_EntityType.UNSPECIFIED;
+      const entityName = quota.entity?.entityName;
 
-    const resources = this.quotasList;
-    const formatBytes = (x: undefined | number) =>
-      x ? (
-        prettyBytes(x)
-      ) : (
-        <span style={{ opacity: 0.3 }}>
-          <SkipIcon />
-        </span>
-      );
-    const formatRate = (x: undefined | number) =>
-      x ? (
-        prettyNumber(x)
-      ) : (
-        <span style={{ opacity: 0.3 }}>
-          <SkipIcon />
-        </span>
-      );
+      return {
+        eqKey: `${entityType}-${entityName}`,
+        entityType: mapEntityTypeToDisplay(entityType),
+        entityName: entityName || undefined,
+        values: quota.values,
+      };
+    });
+  }, [data]);
 
+  const formatBytes = (values: Quota_Value[], valueType: Quota_ValueType) => {
+    const value = values.find((v) => v.valueType === valueType)?.value;
+    return value ? (
+      prettyBytes(value)
+    ) : (
+      <span style={{ opacity: 0.3 }}>
+        <SkipIcon />
+      </span>
+    );
+  };
+
+  const formatRate = (values: Quota_Value[], valueType: Quota_ValueType) => {
+    const value = values.find((v) => v.valueType === valueType)?.value;
+    return value ? (
+      prettyNumber(value)
+    ) : (
+      <span style={{ opacity: 0.3 }}>
+        <SkipIcon />
+      </span>
+    );
+  };
+
+  if (isLoading) {
     return (
       <PageContent>
         <Section>
-          {warning}
-
-          <DataTable<{
-            eqKey: string;
-            entityType: 'client-id' | 'user' | 'ip';
-            entityName?: string | undefined;
-            settings: QuotaResponseSetting[];
-          }>
-            columns={[
-              {
-                size: 100, // Assuming '100px' translates to '100'
-                header: 'Type',
-                accessorKey: 'entityType',
-              },
-              {
-                size: 100, // 'auto' width replaced with an example number
-                header: 'Name',
-                accessorKey: 'entityName',
-              },
-              {
-                size: 100,
-                header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Rate</InfoText>,
-                accessorKey: 'producerRate',
-                cell: ({ row: { original } }) =>
-                  formatBytes(original.settings.first((k) => k.key === QuotaType.PRODUCER_BYTE_RATE)?.value),
-              },
-              {
-                size: 100,
-                header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Rate</InfoText>,
-                accessorKey: 'consumerRate',
-                cell: ({ row: { original } }) =>
-                  formatBytes(original.settings.first((k) => k.key === QuotaType.CONSUMER_BYTE_RATE)?.value),
-              },
-              {
-                size: 100,
-                header: () => (
-                  <InfoText tooltip="Limit rate of topic mutation requests, including create, add, and delete partition, in number of partitions per second">
-                    Controller Mutation Rate
-                  </InfoText>
-                ),
-                accessorKey: 'controllerMutationRate',
-                cell: ({ row: { original } }) =>
-                  formatRate(original.settings.first((k) => k.key === QuotaType.CONTROLLER_MUTATION_RATE)?.value),
-              },
-            ]}
-            data={resources}
-          />
+          <Skeleton height="400px" />
         </Section>
       </PageContent>
     );
   }
 
-  @computed get quotasList() {
-    const quotaResponse = api.Quotas;
-    if (!quotaResponse || quotaResponse.error) {
-      return [];
+  if (error) {
+    console.error('[QuotasList] Error fetching quotas:', error.message, error);
+    const isPermissionError = error.message.includes('permission') || error.message.includes('forbidden');
+
+    if (isPermissionError) {
+      return (
+        <PageContent>
+          <Section>
+            <Result
+              extra={
+                <Link href="https://docs.redpanda.com/docs/manage/console/" target="_blank">
+                  <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
+                </Link>
+              }
+              status={403}
+              title="Forbidden"
+              userMessage={
+                <p>
+                  You are not allowed to view this page.
+                  <br />
+                  Contact the administrator if you think this is an error.
+                </p>
+              }
+            />
+          </Section>
+        </PageContent>
+      );
     }
 
-    return quotaResponse.items.map((x) => ({ ...x, eqKey: toJson(x) }));
+    return (
+      <PageContent>
+        <Section>
+          <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
+            <AlertIcon />
+            {error.message || 'Failed to load quotas'}
+          </Alert>
+        </Section>
+      </PageContent>
+    );
   }
-}
 
-const PermissionDenied = (
-  <>
-    <PageContent key="quotasNoPerms">
+  return (
+    <PageContent>
       <Section>
-        <Result
-          extra={
-            <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
-              <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
-            </a>
-          }
-          status={403}
-          title="Forbidden"
-          userMessage={
-            <p>
-              You are not allowed to view this page.
-              <br />
-              Contact the administrator if you think this is an error.
-            </p>
-          }
+        <DataTable<{
+          eqKey: string;
+          entityType: 'client-id' | 'user' | 'ip' | 'unknown';
+          entityName?: string | undefined;
+          values: Quota_Value[];
+        }>
+          columns={[
+            {
+              size: 100,
+              header: 'Type',
+              accessorKey: 'entityType',
+            },
+            {
+              size: 100,
+              header: 'Name',
+              accessorKey: 'entityName',
+            },
+            {
+              size: 100,
+              header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Rate</InfoText>,
+              accessorKey: 'producerRate',
+              cell: ({ row: { original } }) => formatBytes(original.values, Quota_ValueType.PRODUCER_BYTE_RATE),
+            },
+            {
+              size: 100,
+              header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Rate</InfoText>,
+              accessorKey: 'consumerRate',
+              cell: ({ row: { original } }) => formatBytes(original.values, Quota_ValueType.CONSUMER_BYTE_RATE),
+            },
+            {
+              size: 100,
+              header: () => (
+                <InfoText tooltip="Limit rate of topic mutation requests, including create, add, and delete partition, in number of partitions per second">
+                  Controller Mutation Rate
+                </InfoText>
+              ),
+              accessorKey: 'controllerMutationRate',
+              cell: ({ row: { original } }) => formatRate(original.values, Quota_ValueType.CONTROLLER_MUTATION_RATE),
+            },
+          ]}
+          data={quotasData}
+          defaultPageSize={50}
+          onPaginationChange={(updater) => {
+            const newPagination =
+              typeof updater === 'function'
+                ? updater({ pageIndex: search.page ?? 0, pageSize: search.pageSize ?? 50 })
+                : updater;
+
+            navigate({
+              search: (prev) => ({
+                ...prev,
+                page: newPagination.pageIndex,
+                pageSize: newPagination.pageSize,
+              }),
+              replace: true,
+            });
+          }}
+          pagination={{
+            pageIndex: search.page ?? 0,
+            pageSize: search.pageSize ?? 50,
+          }}
         />
       </Section>
     </PageContent>
-  </>
-);
+  );
+};
 
 export default QuotasList;
