@@ -111,6 +111,13 @@ type StreamMessageResult = {
 };
 
 const TERMINAL_TASK_STATES = new Set(['completed', 'failed', 'canceled', 'rejected']);
+
+/**
+ * Maximum consecutive reconnection attempts before giving up.
+ * With exponential backoff (1s, 2s, 4s, 8s, 16s), total wait is ~31s.
+ * The counter resets on progress, so tasks making incremental progress
+ * can reconnect indefinitely.
+ */
 const MAX_RESUBSCRIBE_ATTEMPTS = 5;
 
 /**
@@ -423,8 +430,10 @@ export const streamMessage = async ({
           const result = await finalizeMessage(state, assistantMessage);
           onMessageUpdate(result.assistantMessage);
           return result;
-        } catch {
-          // finalizeMessage failed (e.g. DB write) -- fall through to error path
+        } catch (finalizeError) {
+          // biome-ignore lint/suspicious/noConsole: intentional error logging for production observability
+          console.error('finalizeMessage failed after recovery:', finalizeError);
+          // fall through to error path
         }
       }
     }
