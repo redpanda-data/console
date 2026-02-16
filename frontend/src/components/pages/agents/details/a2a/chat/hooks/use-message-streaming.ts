@@ -27,6 +27,7 @@ import type { ChatMessage, ContentBlock } from '../types';
 import { createA2AClient } from '../utils/a2a-client';
 import { saveMessage, updateMessage } from '../utils/database-operations';
 import { createAssistantMessage } from '../utils/message-converter';
+import { resolveStaleToolBlocks } from '../utils/task-to-content-blocks';
 
 /**
  * Regex patterns for parsing JSON-RPC error details from error messages.
@@ -126,6 +127,9 @@ const finalizeMessage = async (state: StreamingState, assistantMessage: ChatMess
   closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
   state.activeTextBlock = null;
 
+  // Resolve tool blocks that never received a tool_response
+  resolveStaleToolBlocks(state.contentBlocks, state.capturedTaskState);
+
   const finalMessage = buildMessageWithContentBlocks({
     baseMessage: assistantMessage,
     contentBlocks: state.contentBlocks,
@@ -149,17 +153,27 @@ const finalizeMessage = async (state: StreamingState, assistantMessage: ChatMess
 
 /**
  * Process events from an A2A resubscribe stream using the same handlers as the initial stream.
+ * Returns true if at least one event was successfully processed.
  */
 const processResubscribeStream = async (
   stream: AsyncIterable<{ kind?: string }>,
   state: StreamingState,
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
-): Promise<void> => {
+): Promise<boolean> => {
+  let receivedEvents = false;
   for await (const event of stream) {
     if (!event?.kind) {
       continue;
     }
+
+    // On first real event, mark as reconnected so the spinner is replaced
+    // before event handlers push new content blocks after it.
+    if (!receivedEvents) {
+      receivedEvents = true;
+      pushConnectionStatus({ status: 'reconnected', state, assistantMessage, onMessageUpdate });
+    }
+
     if (event.kind === 'task') {
       handleTaskEvent(event as Task, state, assistantMessage, onMessageUpdate);
     } else if (event.kind === 'status-update') {
@@ -168,6 +182,7 @@ const processResubscribeStream = async (
       handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
     }
   }
+  return receivedEvents;
 };
 
 type ConnectionStatusParams = {
@@ -232,12 +247,18 @@ const pushConnectionStatus = ({
 /**
  * Attempt to resubscribe to a running task after an SSE connection drop.
  * Returns true if resubscription succeeded and the task reached a terminal state.
+ *
+ * The attempt counter resets whenever a resubscribe makes progress (delivers
+ * events), so the loop effectively retries indefinitely as long as the server
+ * is responsive. It only gives up after MAX_RESUBSCRIBE_ATTEMPTS consecutive
+ * failures with no progress.
  */
 const resubscribeLoop = async (
   state: StreamingState,
   agentCardUrl: string,
   assistantMessage: ChatMessage,
   onMessageUpdate: (message: ChatMessage) => void
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: retry loop with backoff, progress detection, and error classification
 ): Promise<boolean> => {
   const taskId = state.capturedTaskId;
   if (!taskId) {
@@ -247,7 +268,10 @@ const resubscribeLoop = async (
   const ctx = { state, assistantMessage, onMessageUpdate };
   pushConnectionStatus({ ...ctx, status: 'disconnected' });
 
-  for (let attempt = 1; attempt <= MAX_RESUBSCRIBE_ATTEMPTS; attempt++) {
+  let attempt = 0;
+
+  while (attempt < MAX_RESUBSCRIBE_ATTEMPTS) {
+    attempt += 1;
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s
     const delay = 2 ** (attempt - 1) * 1000;
     await new Promise((resolve) => setTimeout(resolve, delay));
@@ -257,18 +281,22 @@ const resubscribeLoop = async (
     try {
       const client = await createA2AClient(agentCardUrl);
       const stream = client.resubscribeTask({ id: taskId });
-      await processResubscribeStream(stream, state, assistantMessage, onMessageUpdate);
+      const receivedEvents = await processResubscribeStream(stream, state, assistantMessage, onMessageUpdate);
 
-      // Only declare success if the task actually reached a terminal state.
-      // A clean stream close without terminal state means the server dropped us again.
+      // Task reached a terminal state — done.
       if (state.capturedTaskState && TERMINAL_TASK_STATES.has(state.capturedTaskState)) {
-        pushConnectionStatus({ ...ctx, status: 'reconnected' });
         return true;
+      }
+
+      // Got data but task isn't terminal — stream dropped again.
+      // Reset attempts since we made progress, and signal a new disconnect.
+      if (receivedEvents) {
+        attempt = 0;
+        pushConnectionStatus({ ...ctx, status: 'disconnected' });
       }
     } catch (resubError) {
       // If task reached a terminal state during this attempt, we're done
       if (state.capturedTaskState && TERMINAL_TASK_STATES.has(state.capturedTaskState)) {
-        pushConnectionStatus({ ...ctx, status: 'reconnected' });
         return true;
       }
       // Programming errors (TypeError, ReferenceError) -- stop retrying immediately
@@ -279,7 +307,7 @@ const resubscribeLoop = async (
     }
   }
 
-  // All retries exhausted
+  // All retries exhausted with no progress
   pushConnectionStatus({ ...ctx, status: 'gave-up' });
   return false;
 };

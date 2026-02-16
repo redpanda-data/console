@@ -689,6 +689,116 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
+  // Scenario 13b: Attempt counter resets when resubscribe makes progress
+  // -------------------------------------------------------------------
+  test('resets attempt counter when resubscribe delivers events, allowing unlimited retries with progress', async () => {
+    const TASK_ID = 'task-reset-attempts';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID), { error: new Error('dropped') }), {
+        responseId: TASK_ID,
+      });
+
+    // Each resubscribe delivers a "working" event (progress) but task never completes,
+    // then the stream drops. After 3 such cycles, the task finally completes.
+    let callCount = 0;
+    createA2AClientImpl = vi.fn(() => {
+      callCount += 1;
+      if (callCount <= 3) {
+        return Promise.resolve(
+          buildMockClient([
+            statusUpdateEvent(TASK_ID, 'working', {
+              text: `Progress update ${callCount}`,
+              messageId: `msg-progress-${callCount}`,
+            }),
+          ])
+        );
+      }
+      return Promise.resolve(
+        buildMockClient([
+          statusUpdateEvent(TASK_ID, 'completed', {
+            text: 'Finally done after many reconnects.',
+            messageId: 'msg-final',
+            final: true,
+          }),
+        ])
+      );
+    });
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskState).toBe('completed');
+
+    // Should have called createA2AClient 4 times total (3 progress + 1 completion).
+    // Without attempt reset, it would have given up after 5 consecutive failures.
+    expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(4);
+
+    // All progress updates should be preserved
+    const statusBlocks = result.assistantMessage.contentBlocks.filter((b) => b.type === 'task-status-update');
+    const statusTexts = statusBlocks.map((b) => (b.type === 'task-status-update' ? b.text : ''));
+    expect(statusTexts).toContain('Progress update 1');
+    expect(statusTexts).toContain('Progress update 2');
+    expect(statusTexts).toContain('Progress update 3');
+    expect(statusTexts).toContain('Finally done after many reconnects.');
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 13c: processResubscribeStream pushes "reconnected" on first event
+  // -------------------------------------------------------------------
+  test('shows reconnected status as soon as resubscribe delivers first event', async () => {
+    const TASK_ID = 'task-reconnected-early';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID), { error: new Error('disconnect') }), {
+        responseId: TASK_ID,
+      });
+
+    const mockClient = buildMockClient([
+      statusUpdateEvent(TASK_ID, 'working', {
+        text: 'Resumed work...',
+        messageId: 'msg-resumed',
+      }),
+      statusUpdateEvent(TASK_ID, 'completed', {
+        text: 'Done.',
+        messageId: 'msg-done',
+        final: true,
+      }),
+    ]);
+    createA2AClientImpl = vi.fn(async () => mockClient);
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+    expect(result.success).toBe(true);
+
+    // Track the connection-status progression through onMessageUpdate calls
+    const statusProgression: string[] = [];
+    for (const call of onMessageUpdate.mock.calls) {
+      const msg = call[0] as { contentBlocks: ContentBlock[] };
+      const connBlocks = msg.contentBlocks.filter((b) => b.type === 'connection-status');
+      for (const b of connBlocks) {
+        if (b.type === 'connection-status') {
+          const last = statusProgression.at(-1);
+          // Only track transitions
+          if (b.status !== last) {
+            statusProgression.push(b.status);
+          }
+        }
+      }
+    }
+
+    // Should see: disconnected → reconnecting → reconnected (before content events)
+    expect(statusProgression).toContain('disconnected');
+    expect(statusProgression).toContain('reconnecting');
+    expect(statusProgression).toContain('reconnected');
+
+    // "reconnected" should appear before the "Resumed work..." content block
+    const idx = statusProgression.indexOf('reconnected');
+    expect(idx).toBeLessThan(statusProgression.length);
+  });
+
+  // -------------------------------------------------------------------
   // Scenario 14: updateMessage called with correct args after recovery
   // -------------------------------------------------------------------
   test('persists correct state to database after successful recovery', async () => {
@@ -716,8 +826,11 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
     const mockedUpdate = vi.mocked(updateMessage);
     const lastCall = mockedUpdate.mock.calls.at(-1);
     expect(lastCall).toBeDefined();
+    if (!lastCall) {
+      return;
+    }
 
-    const [messageId, updates] = lastCall!; // biome-ignore lint/style/noNonNullAssertion: asserted above
+    const [messageId, updates] = lastCall;
     expect(messageId).toBe(result.assistantMessage.id);
     expect(updates.isStreaming).toBe(false);
     expect(updates.taskId).toBe(TASK_ID);
