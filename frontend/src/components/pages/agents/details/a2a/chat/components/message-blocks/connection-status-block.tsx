@@ -10,8 +10,9 @@
  */
 
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircleIcon, LoaderCircleIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
+import { AlertCircleIcon, LoaderCircleIcon, RefreshCwIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
 
 type ConnectionStatusBlockProps = {
   status: 'disconnected' | 'reconnecting' | 'reconnected' | 'gave-up';
@@ -61,10 +62,14 @@ export const ConnectionStatusBlock = ({ status, attempt, maxAttempts, timestamp 
   return (
     <Alert className="mb-4" icon={<AlertCircleIcon />} variant="destructive">
       <AlertTitle>Connection lost</AlertTitle>
-      <AlertDescription>
+      <AlertDescription className="flex flex-col items-start gap-2">
         <Text className="text-destructive/90" variant="body">
           Unable to reconnect after {maxAttempts ?? '?'} attempts. The agent task may still be running server-side.
         </Text>
+        <Button onClick={() => window.location.reload()} size="sm" variant="outline">
+          <RefreshCwIcon />
+          Reload to check status
+        </Button>
       </AlertDescription>
     </Alert>
   );
