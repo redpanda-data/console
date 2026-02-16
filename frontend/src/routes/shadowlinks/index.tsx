@@ -29,7 +29,10 @@ export const Route = createFileRoute('/shadowlinks/')({
         createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema, {}), { transport: dataplaneTransport })
       );
     } catch (error) {
-      if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
+      if (
+        error instanceof ConnectError &&
+        (error.code === Code.FailedPrecondition || error.code === Code.Unavailable)
+      ) {
         return;
       }
       throw error;

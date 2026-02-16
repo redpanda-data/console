@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, SearchX } from 'lucide-react';
+import { AlertCircle, Info, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
   <>
@@ -82,6 +83,23 @@ export const ShadowLinkFeatureDisabledState = () => (
       <CodeBlock testId="shadowlink-enable-command">
         <Pre>rpk cluster config set enable_shadow_linking true</Pre>
       </CodeBlock>
+    </CardContent>
+  </Card>
+);
+
+export const ShadowLinkUnavailableState = () => (
+  <Card data-testid="shadowlink-unavailable-card" size="full">
+    <CardHeader>
+      <CardTitle>Shadowing</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Alert icon={<Info />} variant="warning">
+        <AlertDescription>
+          Shadowing is not available for this cluster. This feature requires a Redpanda cluster with the Admin API
+          enabled.
+        </AlertDescription>
+      </Alert>
     </CardContent>
   </Card>
 );

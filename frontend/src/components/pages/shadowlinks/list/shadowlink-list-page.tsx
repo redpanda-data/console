@@ -30,6 +30,7 @@ import {
   ShadowLinkEmptyStateCloud,
   ShadowLinkErrorState,
   ShadowLinkFeatureDisabledState,
+  ShadowLinkUnavailableState,
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
@@ -119,9 +120,9 @@ export const ShadowLinkListPage = () => {
     uiState.pageTitle = 'Shadow Links';
   }, []);
 
-  // Show toast on error (except for feature-disabled errors)
+  // Show toast on error (except for feature-disabled or unavailable admin API errors)
   useEffect(() => {
-    if (error && error.code !== Code.FailedPrecondition) {
+    if (error && error.code !== Code.FailedPrecondition && error.code !== Code.Unavailable) {
       toast.error('Failed to load shadowlinks', {
         description: error.message,
       });
@@ -139,6 +140,15 @@ export const ShadowLinkListPage = () => {
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  // Admin API unavailable
+  if (error?.code === Code.Unavailable) {
+    return (
+      <div className="my-2 flex justify-center gap-2">
+        <ShadowLinkUnavailableState />
+      </div>
+    );
+  }
 
   // Feature disabled state
   if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
