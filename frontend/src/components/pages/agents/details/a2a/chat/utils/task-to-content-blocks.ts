@@ -154,6 +154,50 @@ const processHistory = (history: Message1[]): ContentBlock[] => {
   return blocks;
 };
 
+const TERMINAL_TASK_STATES = new Set(['completed', 'failed', 'canceled', 'rejected']);
+
+/**
+ * Resolve tool blocks still in 'input-available' state when the task is terminal.
+ * Many A2A agents never send tool_response data parts, so tool blocks would show
+ * a "Working" spinner forever. When the task has finished, we infer tool outcome
+ * from the task state (mutates blocks in place):
+ * - completed → output-available (tools succeeded)
+ * - failed/canceled/rejected → output-error (task didn't succeed)
+ */
+export const resolveStaleToolBlocks = (blocks: ContentBlock[], taskState: string | undefined): void => {
+  if (!(taskState && TERMINAL_TASK_STATES.has(taskState))) {
+    return;
+  }
+  const resolvedState = taskState === 'completed' ? 'output-available' : 'output-error';
+  for (const block of blocks) {
+    if (block.type === 'tool' && block.state === 'input-available') {
+      block.state = resolvedState;
+    }
+  }
+};
+
+/**
+ * Merge consecutive text parts into a single text part.
+ * Non-text parts are preserved in order. This prevents the reload problem
+ * where tasks/get returns many individual text parts (one per streamed chunk)
+ * that would each render as a separate Response component.
+ */
+export const consolidateTextParts = (parts: ArtifactPart[]): ArtifactPart[] => {
+  const result: ArtifactPart[] = [];
+  for (const part of parts) {
+    if (part.kind === 'text') {
+      const prev = result.at(-1);
+      if (prev?.kind === 'text') {
+        prev.text += part.text;
+        continue;
+      }
+    }
+    // Clone the part so the caller's array isn't mutated
+    result.push(part.kind === 'text' ? { kind: 'text', text: part.text } : part);
+  }
+  return result;
+};
+
 /**
  * Convert Task artifacts to ContentBlock array.
  */
@@ -165,24 +209,26 @@ const processArtifacts = (artifacts: Artifact[]): ContentBlock[] =>
       artifactId: artifact.artifactId,
       name: artifact.name,
       description: artifact.description,
-      parts: artifact.parts.map((part): ArtifactPart => {
-        if (part.kind === 'text') {
-          return { kind: 'text', text: part.text };
-        }
-        if (part.kind === 'file') {
-          return {
-            kind: 'file',
-            file: {
-              name: part.file.name,
-              mimeType: part.file.mimeType ?? 'application/octet-stream',
-              ...('bytes' in part.file ? { bytes: part.file.bytes } : {}),
-              ...('uri' in part.file ? { uri: part.file.uri } : {}),
-            },
-          };
-        }
-        // DataPart
-        return { kind: 'data', data: part.data };
-      }),
+      parts: consolidateTextParts(
+        artifact.parts.map((part): ArtifactPart => {
+          if (part.kind === 'text') {
+            return { kind: 'text', text: part.text };
+          }
+          if (part.kind === 'file') {
+            return {
+              kind: 'file',
+              file: {
+                name: part.file.name,
+                mimeType: part.file.mimeType ?? 'application/octet-stream',
+                ...('bytes' in part.file ? { bytes: part.file.bytes } : {}),
+                ...('uri' in part.file ? { uri: part.file.uri } : {}),
+              },
+            };
+          }
+          // DataPart
+          return { kind: 'data', data: part.data };
+        })
+      ),
       timestamp: new Date(),
     }));
 
@@ -219,6 +265,9 @@ export const taskToContentBlocks = (task: Task): ContentBlock[] => {
     final: true,
     timestamp: task.status.timestamp ? new Date(task.status.timestamp) : new Date(),
   });
+
+  // Resolve tool blocks that never received a tool_response
+  resolveStaleToolBlocks(blocks, task.status.state);
 
   return blocks;
 };
