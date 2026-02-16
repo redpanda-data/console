@@ -290,7 +290,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       if (isEmbedded()) {
         return isFeatureFlagEnabled('shadowlinkCloudUi') && !isServerless();
       }
-      return true; // self-hosted always visible
+      return true;
     }),
   },
   {
