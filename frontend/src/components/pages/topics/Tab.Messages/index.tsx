@@ -62,6 +62,7 @@ import {
   SkipBackIcon,
   TabIcon,
   TimerIcon,
+  WarningIcon,
 } from 'components/icons';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 
@@ -672,6 +673,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         const endTime = Date.now();
         setMessages(result);
+        if (maxResults < pageSize) {
+          lastLoadMoreRef.current = { pageIndex: 0, total: result.length };
+        }
         setSearchPhase(null);
         setElapsedMs(endTime - startTime);
         setBytesConsumed(search.bytesConsumed);
@@ -793,11 +797,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
     // Calculate if we need more messages for the current page based on virtual position
     // Use ref to get current value without adding to dependency array (prevents cascading)
+    // In infinite scroll mode, use maxResults as the effective page size for load decisions.
+    // The UI pageSize controls how many rows are displayed per table page, but maxResults
+    // controls how many messages are fetched per backend request. We should only trigger
+    // a new load when we need more data for the next maxResults-sized batch, not when the
+    // UI page size exceeds what we've loaded.
+    const effectivePageSize = infiniteScrollEnabled ? maxResults : pageSize;
     const totalVirtualMessages = virtualStartIndexRef.current + messages.length;
-    const messagesNeededForPage = (pageIndex + 1) * pageSize;
+    const messagesNeededForPage = (pageIndex + 1) * effectivePageSize;
 
     // Check if we're on the last page of currently loaded data (including virtual/placeholder messages)
-    const totalVirtualPages = Math.ceil(totalVirtualMessages / pageSize);
+    const totalVirtualPages = Math.ceil(totalVirtualMessages / effectivePageSize);
     const isOnLastPage = pageIndex === totalVirtualPages - 1 && totalVirtualMessages > 0;
 
     // Need more messages if:
@@ -842,7 +852,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
       setIsLoadingMore(true);
       capturedMessageSearch
-        .loadMore(pageSize)
+        .loadMore(maxResults)
         .then(() => {
           // Only update state if component is still mounted and this is still the current search
           if (isMountedRef.current && currentMessageSearchRef.current === capturedMessageSearch) {
@@ -1607,6 +1617,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <AlertIcon />
               <AlertDescription>
                 Auto-pagination is disabled when filters are active. Remove filters to enable automatic loading.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Warning when maxResults is less than page size */}
+          {infiniteScrollEnabled && maxResults < pageSize && (
+            <Alert mt={4} status="warning">
+              <WarningIcon />
+              <AlertDescription ml={2}>
+                Max Results ({maxResults}) is less than the page size ({pageSize}). Increase Max Results or decrease the
+                page size to allow infinite scrolling to fill each page.
               </AlertDescription>
             </Alert>
           )}
