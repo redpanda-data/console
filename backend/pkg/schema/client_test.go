@@ -400,15 +400,13 @@ func (s *TestCachedClientSuite) TestConcurrentAccess() {
 
 	// Launch multiple goroutines accessing the same schema
 	for i := range numGoroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			tenantCtx := context.WithValue(context.Background(), testTenantKey, fmt.Sprintf("tenant-%d", id%3))
+		wg.Go(func() {
+			tenantCtx := context.WithValue(context.Background(), testTenantKey, fmt.Sprintf("tenant-%d", i%3))
 			_, err := s.cachedClient.SchemaByID(tenantCtx, 1)
 			if err != nil {
 				errors <- err
 			}
-		}(i)
+		})
 	}
 
 	wg.Wait()

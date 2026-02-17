@@ -255,7 +255,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // be returned if it fails to request the partition offsets for the given timestamp.
 // makes it harder to understand how the consume request is calculated in total though.
 //
-//nolint:cyclop,gocognit,gocyclo // This is indeed a complex function. Breaking this into multiple smaller functions possibly
+//nolint:cyclop,gocognit // This is indeed a complex function. Breaking this into multiple smaller functions possibly
 func (s *Service) calculateConsumeRequests(
 	ctx context.Context,
 	cl *kgo.Client,
