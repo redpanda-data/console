@@ -67,11 +67,7 @@ func (k *ServiceStartupAttemptsOptions) TotalMaxTime() time.Duration {
 	for i := 1; i < k.MaxRetries; i++ {
 		totalTime += backoff
 		next := time.Duration(float64(backoff) * k.BackoffMultiplier)
-		if next > k.MaxRetryInterval {
-			backoff = k.MaxRetryInterval
-		} else {
-			backoff = next
-		}
+		backoff = min(next, k.MaxRetryInterval)
 	}
 
 	return totalTime

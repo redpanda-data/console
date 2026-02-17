@@ -24,7 +24,7 @@ import (
 type ConfigDefinition struct {
 	Definition ConfigDefinitionKey      `json:"definition"`
 	Value      ConfigDefinitionValue    `json:"value"`
-	Metadata   ConfigDefinitionMetadata `json:"metadata,omitempty"`
+	Metadata   ConfigDefinitionMetadata `json:"metadata"`
 }
 
 // NewConfigDefinitionFromValidationResult creates a ConfigDefinition based on the validation response

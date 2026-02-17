@@ -53,7 +53,6 @@ func main() { //nolint:cyclop,gocognit // this is just some tool
 
 	// Delete DummyService tag
 	for i, tag := range doc3.Tags {
-		tag := tag
 		if tag != nil {
 			if tag.Name == "DummyService" {
 				doc3.Tags = slices.Delete(doc3.Tags, i, i+1)
