@@ -31,7 +31,7 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	req.TopicNames = []string{topicName}
 	req.Topics = []kmsg.DeleteTopicsRequestTopic{
 		{
-			Topic: kmsg.StringPtr(topicName),
+			Topic: new(topicName),
 		},
 	}
 	req.TimeoutMillis = 30 * 1000 // 30s

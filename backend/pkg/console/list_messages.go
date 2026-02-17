@@ -364,12 +364,9 @@ func (s *Service) calculateConsumeRequests(
 			p.StartOffset = offset
 		default:
 			// Either custom offset or resolved offset by timestamp is given
-			p.StartOffset = listReq.StartOffset
-
-			if p.StartOffset < startOffset.Offset {
-				p.StartOffset = startOffset.Offset
+			p.StartOffset = max(listReq.StartOffset,
 				// TODO: Add some note that custom offset was lower than low watermark
-			}
+				startOffset.Offset)
 		}
 
 		// Special handling for live tail and requests with enabled filter code as we don't know how many results on each
@@ -381,10 +378,7 @@ func (s *Service) calculateConsumeRequests(
 				p.EndOffset = math.MaxInt64
 			}
 			if listReq.StartOffset == StartOffsetRecent {
-				p.StartOffset = p.HighWaterMark - 1 - int64(listReq.MessageCount)
-				if p.StartOffset < 0 {
-					p.StartOffset = 0
-				}
+				p.StartOffset = max(p.HighWaterMark-1-int64(listReq.MessageCount), 0)
 			}
 		}
 

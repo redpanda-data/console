@@ -354,7 +354,6 @@ func (s *Service) listConnectorsExpandedToClusterConnectorInfo(l map[string]con.
 
 	connectorInfo := make([]ClusterConnectorInfo, 0, len(l))
 	for _, c := range l {
-		c := c
 		cInfo := connectorsResponseToClusterConnectorInfo(s.Interceptor.KafkaConnectToConsole, &c)
 		connectorInfo = append(connectorInfo, *cInfo)
 	}

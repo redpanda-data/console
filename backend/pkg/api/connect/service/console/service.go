@@ -198,7 +198,6 @@ func (api *Service) PublishMessage(
 		)
 
 		for _, ed := range details {
-			ed := ed
 			err.AddDetail(ed)
 		}
 

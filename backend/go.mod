@@ -1,6 +1,6 @@
 module github.com/redpanda-data/console/backend
 
-go 1.25.1
+go 1.26.0
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1

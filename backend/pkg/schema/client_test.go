@@ -399,7 +399,7 @@ func (s *TestCachedClientSuite) TestConcurrentAccess() {
 	errors := make(chan error, numGoroutines)
 
 	// Launch multiple goroutines accessing the same schema
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
