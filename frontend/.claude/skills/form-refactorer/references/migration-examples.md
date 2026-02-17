@@ -89,13 +89,13 @@ export const CreateServerForm = () => {
 ```
 
 **Key Changes:**
-- Replace Chakra `FormControl` → `Field`
-- Replace Chakra `FormLabel` → `FieldLabel` with `htmlFor`
-- Replace Chakra `FormErrorMessage` → `FieldError`
+- Replace Chakra `FormControl` -> `Field`
+- Replace Chakra `FormLabel` -> `FieldLabel` with `htmlFor`
+- Replace Chakra `FormErrorMessage` -> `FieldError`
 - Add `FieldSet`, `FieldLegend`, `FieldGroup` for proper structure
 - Add `data-invalid` attribute to Field
 - Add `aria-invalid` to Input
-- Replace Yup → Zod for validation
+- Replace Yup -> Zod for validation
 - Import components from Redpanda UI Registry
 
 ## Example 2: Form with Descriptions
@@ -140,10 +140,10 @@ export const SettingsForm = () => {
 ```
 
 **Key Changes:**
-- Replace `Form` component → native `<form>`
-- Replace `Form.Field` → `Field`
-- Replace `label` prop → `FieldLabel` component
-- Replace `helperText` prop → `FieldDescription` component
+- Replace `Form` component -> native `<form>`
+- Replace `Form.Field` -> `Field`
+- Replace `label` prop -> `FieldLabel` component
+- Replace `helperText` prop -> `FieldDescription` component
 - Add `id` and `htmlFor` for accessibility
 
 ## Example 3: Horizontal Field with Switch
@@ -191,7 +191,7 @@ export const NotificationSettings = () => {
 ```
 
 **Key Changes:**
-- Replace Chakra layout props → `orientation="horizontal"` on Field
+- Replace Chakra layout props -> `orientation="horizontal"` on Field
 - Use `FieldContent` to group label and description
 - Remove manual spacing/styling props
 - Add proper `htmlFor` association
@@ -271,7 +271,7 @@ export const ProfileForm = () => {
 ```
 
 **Key Changes:**
-- Replace `Box` layout containers → `FieldSet` and `FieldGroup`
+- Replace `Box` layout containers -> `FieldSet` and `FieldGroup`
 - Add `FieldLegend` for semantic grouping
 - Use `FieldSeparator` instead of margin/spacing props
 - Remove all Chakra spacing props (mb, mt, etc.)
@@ -279,7 +279,7 @@ export const ProfileForm = () => {
 
 ## Common Migration Patterns
 
-### Pattern 1: isInvalid → data-invalid + aria-invalid
+### Pattern 1: isInvalid -> data-invalid + aria-invalid
 
 **Before:**
 ```tsx
@@ -295,7 +295,7 @@ export const ProfileForm = () => {
 </Field>
 ```
 
-### Pattern 2: Helper Text → FieldDescription
+### Pattern 2: Helper Text -> FieldDescription
 
 **Before:**
 ```tsx
@@ -315,7 +315,7 @@ export const ProfileForm = () => {
 </Field>
 ```
 
-### Pattern 3: Error Messages → FieldError
+### Pattern 3: Error Messages -> FieldError
 
 **Before:**
 ```tsx
@@ -331,7 +331,7 @@ export const ProfileForm = () => {
 </Field>
 ```
 
-### Pattern 4: Form Sections → FieldGroup with FieldSeparator
+### Pattern 4: Form Sections -> FieldGroup with FieldSeparator
 
 **Before:**
 ```tsx
@@ -350,3 +350,56 @@ export const ProfileForm = () => {
   <Field>...</Field>
 </FieldGroup>
 ```
+
+## Refactoring Workflow
+
+### Step 1: Identify Legacy Patterns
+
+Scan the form file for these indicators:
+
+**Legacy imports to remove:**
+- `@chakra-ui/react` form components (FormControl, FormLabel, FormErrorMessage, FormHelperText)
+- `@redpanda-data/ui` Form component
+- `components/redpanda-ui/components/form` (legacy)
+- Yup validation imports
+
+**Legacy patterns to replace:**
+- `<FormControl isInvalid={...}>` -> `<Field data-invalid={...}>`
+- `<FormLabel>` -> `<FieldLabel htmlFor="...">`
+- `<FormErrorMessage>` -> `<FieldError>`
+- `<FormHelperText>` -> `<FieldDescription>`
+- Yup schemas -> Zod schemas
+
+### Step 2: Set Up Modern Dependencies
+
+```tsx
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  FieldSet, FieldLegend, FieldGroup, Field,
+  FieldLabel, FieldError, FieldDescription
+} from "components/redpanda-ui/components/field";
+```
+
+### Step 3: Restructure Form Layout
+
+Replace legacy structure with Field components using patterns above.
+
+### Step 4: Handle Validation Errors
+
+Apply error states to both Field and Input:
+```tsx
+<Field data-invalid={!!errors.email}>
+  <FieldLabel htmlFor="email">Email</FieldLabel>
+  <Input id="email" {...register("email")} aria-invalid={!!errors.email} />
+  {errors.email && <FieldError>{errors.email.message}</FieldError>}
+</Field>
+```
+
+### Step 5: Ensure Accessibility
+
+1. **Label association:** Use `htmlFor` on FieldLabel matching Input `id`
+2. **Error state:** Add `data-invalid` to Field when error exists
+3. **ARIA invalid:** Add `aria-invalid` to Input when error exists
+4. **Semantic grouping:** Use FieldSet + FieldLegend for related fields

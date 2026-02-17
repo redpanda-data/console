@@ -33,36 +33,6 @@ Make API calls with Connect Query and handle responses properly.
 
 Regenerate protos: `task proto:generate` (from repo root)
 
-## Basic Patterns
-
-### Query
-
-```typescript
-import { useQuery } from '@connectrpc/connect-query';
-import { getUser } from 'protogen/user-UserService_connectquery';
-
-const { data, isLoading, error } = useQuery(
-  getUser,
-  { id: userId },
-  { enabled: !!userId }
-);
-```
-
-### Mutation
-
-```typescript
-import { useMutation } from '@connectrpc/connect-query';
-import { createUser } from 'protogen/user-UserService_connectquery';
-
-const mutation = useMutation(createUser, {
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['getUser'] });
-  },
-});
-
-mutation.mutate({ name, config });
-```
-
 ## Rules
 
-See `rules/` directory for detailed guidance.
+See `rules/` directory for detailed guidance on queries, mutations, cache invalidation, and error handling.
