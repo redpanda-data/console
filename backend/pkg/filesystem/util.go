@@ -9,9 +9,10 @@
 
 package filesystem
 
-import "slices"
-
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // isStringInSlice returns true if the given string exists in the string slice.
 func isStringInSlice(item string, arr []string) bool {
