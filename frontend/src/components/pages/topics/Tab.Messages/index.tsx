@@ -40,6 +40,8 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
+  Spinner,
+  Switch,
   Tooltip,
   useBreakpoint,
   useToast,
@@ -61,7 +63,7 @@ import {
   TabIcon,
   TimerIcon,
 } from 'components/icons';
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 
 import { MessageSearchFilterBar } from './common/message-search-filter-bar';
 import { SaveMessagesDialog } from './dialogs/save-messages-dialog';
@@ -191,6 +193,22 @@ const defaultSelectChakraStyles = {
   menuList: (provided: Record<string, unknown>) => ({
     ...provided,
     minWidth: 'min-content',
+  }),
+} as const;
+
+const maxResultsSelectChakraStyles = {
+  control: (provided: Record<string, unknown>) => ({
+    ...provided,
+    minWidth: '140px', // Ensure enough width for "∞ Unlimited"
+  }),
+  option: (provided: Record<string, unknown>) => ({
+    ...provided,
+    wordBreak: 'keep-all',
+    whiteSpace: 'nowrap',
+  }),
+  menuList: (provided: Record<string, unknown>) => ({
+    ...provided,
+    minWidth: '140px', // Match control width
   }),
 } as const;
 
@@ -444,6 +462,21 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     sortingParser.withDefault([])
   );
 
+  // Infinite scroll toggle state
+  const [infiniteScrollEnabled, setInfiniteScrollEnabled] = useQueryStateWithCallback<boolean>(
+    {
+      onUpdate: (val) => {
+        setSearchParams(props.topic.topicName, { infiniteScrollEnabled: val });
+      },
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.infiniteScrollEnabled ?? false,
+    },
+    'inf',
+    parseAsBoolean.withDefault(false)
+  );
+
+  // Track total loaded count for trimming indicator
+  const [totalLoadedCount, setTotalLoadedCount] = useState(0);
+
   // Modal states
   const [showColumnSettingsModal, setShowColumnSettingsModal] = useState(false);
   const [showPreviewFieldsModal, setShowPreviewFieldsModal] = useState(false);
@@ -458,16 +491,40 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   // Message search state
   const [messages, setMessages] = useState<TopicMessage[]>([]);
+  const [virtualStartIndex, setVirtualStartIndex] = useState(0);
+  const virtualStartIndexRef = useRef(0); // Ref to avoid stale closures in effects
   const [searchPhase, setSearchPhase] = useState<string | null>(null);
   const [bytesConsumed, setBytesConsumed] = useState(0);
   const [totalMessagesConsumed, setTotalMessagesConsumed] = useState(0);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
 
+  // Pagination state
+  const [messageSearch, setMessageSearch] = useState<ReturnType<typeof createMessageSearch> | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const currentSearchRunRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const prevStartOffsetRef = useRef<number>(startOffset);
+  const prevMaxResultsRef = useRef<number>(maxResults);
+  const prevPageIndexRef = useRef<number>(pageIndex);
+  const [forceRefresh, setForceRefresh] = useState(0);
+
+  // Refs for tracking loadMore state to prevent stale closures and memory leaks
+  const currentMessageSearchRef = useRef<ReturnType<typeof createMessageSearch> | null>(null);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
+  const [loadMoreFailures, setLoadMoreFailures] = useState(0);
+  const isMountedRef = useRef(true);
+  const MAX_LOAD_MORE_RETRIES = 3;
+  // Track the page index and total when we last triggered loadMore to prevent cascading loads
+  const lastLoadMoreRef = useRef<{ pageIndex: number; total: number }>({ pageIndex: -1, total: -1 });
+  // Ref to track current pageIndex for use in async callbacks
+  const pageIndexRef = useRef(pageIndex);
+  // Track pending trim that was deferred because user was on last page
+  // Note: pendingTrimRef was removed - trimming during active pagination was disabled
+  // because it caused confusing page number shifts.
 
   // Filter messages based on quick search
-  const filteredMessages = quickSearch
+  const baseFilteredMessages = quickSearch
     ? messages.filter((m) => {
         const searchStr = quickSearch.toLowerCase();
         return (
@@ -478,22 +535,70 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       })
     : messages;
 
+  // For infinite scroll, just use the filtered messages directly
+  // We don't use placeholders as they cause page content to shift
+  const filteredMessages = baseFilteredMessages;
+
   // Convert @computed activePreviewTags to useMemo
   const activePreviewTags = useMemo(
     () => (topicSettings?.previewTags ?? []).filter((t) => t.isActive),
     [topicSettings?.previewTags]
   );
 
+  // Keep currentMessageSearchRef in sync with messageSearch state
+  useEffect(() => {
+    currentMessageSearchRef.current = messageSearch;
+  }, [messageSearch]);
+
+  // Keep virtualStartIndexRef in sync
+  useEffect(() => {
+    virtualStartIndexRef.current = virtualStartIndex;
+  }, [virtualStartIndex]);
+
+  // Keep pageIndexRef in sync
+  useEffect(() => {
+    pageIndexRef.current = pageIndex;
+  }, [pageIndex]);
+
   // Cleanup effect (replaces componentWillUnmount)
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      if (loadMoreAbortRef.current) {
+        loadMoreAbortRef.current.abort();
+      }
       appGlobal.searchMessagesFunc = undefined;
-    },
-    []
-  );
+    };
+  }, []);
+
+  // Clear sorting when enabling infinite scroll mode
+  useEffect(() => {
+    if (infiniteScrollEnabled && sorting.length > 0) {
+      setSortingState([]);
+    }
+  }, [infiniteScrollEnabled, sorting.length, setSortingState]);
+
+  // Reset to page 1 when start offset changes (e.g., switching from Newest to Beginning)
+  useEffect(() => {
+    // Only reset if startOffset actually changed (not on initial mount or re-renders)
+    if (prevStartOffsetRef.current !== startOffset) {
+      setPageIndex(0);
+      prevStartOffsetRef.current = startOffset;
+    }
+  }, [startOffset, setPageIndex]);
+
+  // Reset to page 1 when max results changes (e.g., switching from Unlimited to fixed size)
+  useEffect(() => {
+    // Only reset if maxResults actually changed (not on initial mount or re-renders)
+    if (prevMaxResultsRef.current !== maxResults) {
+      setPageIndex(0);
+      prevMaxResultsRef.current = maxResults;
+    }
+  }, [maxResults, setPageIndex]);
 
   // Convert executeMessageSearch to useCallback
   const executeMessageSearch = useCallback(
@@ -529,12 +634,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         }
       }
 
+      // Calculate backend page size: for infinite scroll mode,
+      // initial load fetches maxResults at once, subsequent loadMore calls use smaller pageSize.
+      // We send maxResults as pageSize to enable pagination mode in the backend.
+      const backendPageSize = infiniteScrollEnabled ? maxResults : undefined;
+      const backendMaxResults = maxResults;
+
       const request = {
         topicName: props.topic.topicName,
         partitionId: partitionID,
         startOffset,
         startTimestamp,
-        maxResults,
+        maxResults: backendMaxResults,
+        pageSize: backendPageSize,
         filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
         includeRawPayload: true,
         keyDeserializer,
@@ -545,10 +657,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setFetchError(null);
         setSearchPhase('Searching...');
 
-        const messageSearch = createMessageSearch();
+        const search = createMessageSearch();
+        setMessageSearch(search);
         const startTime = Date.now();
 
-        const result = await messageSearch.startSearch(request, abortSignal).catch((err: Error) => {
+        const result = await search.startSearch(request, abortSignal).catch((err: Error) => {
           const msg = err.message ?? String(err);
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`error in searchTopicMessages: ${msg}`);
@@ -561,8 +674,18 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setMessages(result);
         setSearchPhase(null);
         setElapsedMs(endTime - startTime);
-        setBytesConsumed(messageSearch.bytesConsumed);
-        setTotalMessagesConsumed(messageSearch.totalMessagesConsumed);
+        setBytesConsumed(search.bytesConsumed);
+        setTotalMessagesConsumed(search.totalMessagesConsumed);
+
+        // Debug: log pagination state
+        // biome-ignore lint/suspicious/noConsole: debug logging
+        console.log('[Pagination Debug] Initial search complete:', {
+          messagesCount: result.length,
+          nextPageToken: search.nextPageToken,
+          infiniteScrollEnabled,
+          pageSize: backendPageSize,
+          maxResults: backendMaxResults,
+        });
 
         return result;
       } catch (error: unknown) {
@@ -579,6 +702,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       startOffset,
       startTimestamp,
       maxResults,
+      infiniteScrollEnabled,
+      pageSize,
+      getSearchParams,
       keyDeserializer,
       valueDeserializer,
       filters,
@@ -608,6 +734,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
       // Clear messages immediately when starting new search
       setMessages([]);
+      setVirtualStartIndex(0);
+      lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
+      setLoadMoreFailures(0);
 
       try {
         executeMessageSearch(abortControllerRef.current?.signal)
@@ -635,6 +764,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   );
 
   // Auto search when parameters change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: forceRefresh is intentionally watched to trigger forced re-search
   useEffect(() => {
     // Set up auto-search with 100ms delay
     const timer = setTimeout(() => {
@@ -644,11 +774,199 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     appGlobal.searchMessagesFunc = searchFunc;
 
     return () => clearTimeout(timer);
-  }, [searchFunc]);
+  }, [searchFunc, forceRefresh]);
+
+  // Auto-load more messages when user reaches beyond loaded messages (infinite scroll mode only)
+  useEffect(() => {
+    // Only auto-load when infinite scroll is enabled and filters are not active
+    if (
+      !infiniteScrollEnabled ||
+      filters.length > 0 ||
+      !messageSearch ||
+      !messageSearch.nextPageToken ||
+      isLoadingMore ||
+      searchPhase ||
+      loadMoreFailures >= MAX_LOAD_MORE_RETRIES
+    ) {
+      return;
+    }
+
+    // Calculate if we need more messages for the current page based on virtual position
+    // Use ref to get current value without adding to dependency array (prevents cascading)
+    const totalVirtualMessages = virtualStartIndexRef.current + messages.length;
+    const messagesNeededForPage = (pageIndex + 1) * pageSize;
+
+    // Check if we're on the last page of currently loaded data (including virtual/placeholder messages)
+    const totalVirtualPages = Math.ceil(totalVirtualMessages / pageSize);
+    const isOnLastPage = pageIndex === totalVirtualPages - 1 && totalVirtualMessages > 0;
+
+    // Need more messages if:
+    // 1. Current page requires more than we have, OR
+    // 2. We're on the last page and either:
+    //    a. We haven't loaded for this page before, OR
+    //    b. The total has increased since we last loaded (meaning we navigated away and back)
+    const needsMoreForCurrentPage = messagesNeededForPage > totalVirtualMessages;
+    const isNewPageOrTotalChanged =
+      lastLoadMoreRef.current.pageIndex !== pageIndex || lastLoadMoreRef.current.total < totalVirtualMessages;
+    const isNewLastPageRequest = isOnLastPage && isNewPageOrTotalChanged;
+    const needsMoreMessages = needsMoreForCurrentPage || isNewLastPageRequest;
+
+    // Debug: log loadMore decision
+    // biome-ignore lint/suspicious/noConsole: debug logging
+    console.log('[Pagination Debug] loadMore check:', {
+      pageIndex,
+      pageSize,
+      messagesNeededForPage,
+      totalVirtualMessages,
+      isOnLastPage,
+      isNewLastPageRequest,
+      needsMoreMessages,
+      hasNextPageToken: !!messageSearch.nextPageToken,
+      messagesLength: messages.length,
+      virtualStartIndexRef: virtualStartIndexRef.current,
+      lastLoadMoreRef: lastLoadMoreRef.current,
+      isLoadingMore,
+    });
+
+    if (needsMoreMessages && messageSearch.nextPageToken) {
+      // Set the ref IMMEDIATELY to prevent duplicate loads from effect re-runs
+      // We'll update with the actual total after load completes
+      lastLoadMoreRef.current = { pageIndex, total: totalVirtualMessages };
+
+      // Create abort controller for this loadMore operation
+      const abortController = new AbortController();
+      loadMoreAbortRef.current = abortController;
+
+      // Capture the current messageSearch reference to detect stale responses
+      const capturedMessageSearch = messageSearch;
+
+      setIsLoadingMore(true);
+      capturedMessageSearch
+        .loadMore(pageSize)
+        .then(() => {
+          // Only update state if component is still mounted and this is still the current search
+          if (isMountedRef.current && currentMessageSearchRef.current === capturedMessageSearch) {
+            const allMessages = capturedMessageSearch.messages;
+            const newMessages = [...allMessages];
+
+            // Track total loaded count before trimming
+            setTotalLoadedCount(allMessages.length);
+
+            // Calculate the new virtual start index after potential trimming
+            const newVirtualStartIndex = virtualStartIndexRef.current;
+
+            // Note: We don't trim during active pagination to avoid confusing page number changes.
+            // Memory is bounded by maxResults on initial load, and resets when user does a new
+            // search or navigates back to page 1. This allows smooth pagination without jumps.
+            // The virtualStartIndex/totalLoadedCount are kept for potential future use but
+            // currently just track the total without trimming.
+
+            // Update the ref BEFORE setting messages to prevent cascading
+            // Use pageIndexRef.current to get the CURRENT page index, not the captured one
+            // The new total is virtualStartIndex + newMessages.length
+            lastLoadMoreRef.current = {
+              pageIndex: pageIndexRef.current,
+              total: newVirtualStartIndex + newMessages.length,
+            };
+            virtualStartIndexRef.current = newVirtualStartIndex;
+
+            setMessages(newMessages);
+            // Reset failure count on success
+            setLoadMoreFailures(0);
+          }
+        })
+        .catch((err) => {
+          // Only show error if component is still mounted and not aborted
+          if (isMountedRef.current && !abortController.signal.aborted) {
+            setLoadMoreFailures((prev) => prev + 1);
+            toast({
+              title: 'Failed to load more messages',
+              description: (err as Error).message,
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        })
+        .finally(() => {
+          if (isMountedRef.current) {
+            setIsLoadingMore(false);
+          }
+          if (loadMoreAbortRef.current === abortController) {
+            loadMoreAbortRef.current = null;
+          }
+        });
+    }
+
+    return () => {
+      if (loadMoreAbortRef.current) {
+        loadMoreAbortRef.current.abort();
+        loadMoreAbortRef.current = null;
+      }
+    };
+    // Note: virtualStartIndex intentionally excluded from deps to prevent cascading loads after trimming
+    // The effect uses the ref value directly which is always current
+  }, [
+    pageIndex,
+    infiniteScrollEnabled,
+    maxResults,
+    filters.length,
+    messageSearch,
+    isLoadingMore,
+    searchPhase,
+    messages.length,
+    pageSize,
+    toast,
+    loadMoreFailures,
+    startOffset,
+  ]);
+
+  // Reset pagination when navigating back to page 1 in infinite scroll mode
+  // This prevents keeping many pages in memory and triggering excessive requests
+  useEffect(() => {
+    // Check if we're in infinite scroll mode and user navigated back to page 1 from a higher page
+    // Use ref to check messageSearch existence to avoid circular dependency
+    if (infiniteScrollEnabled && pageIndex === 0 && prevPageIndexRef.current > 1 && currentMessageSearchRef.current) {
+      // Clear the message search and state
+      setMessages([]);
+      setMessageSearch(null);
+      // Reset failure count when resetting pagination
+      setLoadMoreFailures(0);
+      // Reset total loaded count
+      setTotalLoadedCount(0);
+      // Reset virtual start index for sliding window
+      setVirtualStartIndex(0);
+      // Reset last loadMore page tracking
+      lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
+      // Clear the search run ref and trigger a forced refresh
+      currentSearchRunRef.current = null;
+      setForceRefresh((prev) => prev + 1);
+    }
+    prevPageIndexRef.current = pageIndex;
+    // Note: messageSearch intentionally excluded to avoid circular dependency
+    // We use currentMessageSearchRef.current instead which is always in sync
+  }, [pageIndex, infiniteScrollEnabled]);
+
+  // Note: Deferred trimming was removed because it caused confusing page number changes.
+  // When we trimmed messages, page numbers would shift (e.g., page 6 becomes page 4),
+  // which was disorienting for users. Instead, we let messages accumulate during active
+  // pagination and reset everything when the user starts a new search or goes to page 1.
 
   // Message Table rendering variables and functions
+  // Calculate pages based on loaded data, but in infinite scroll mode with more
+  // data available, allow navigating one page beyond to trigger loadMore
+  const loadedPages = Math.ceil(filteredMessages.length / pageSize);
+  const hasMoreData = infiniteScrollEnabled && messageSearch?.nextPageToken;
+
+  // Allow one extra page when more data is available - this enables the "next" button
+  const totalPages = Math.max(1, hasMoreData ? loadedPages + 1 : loadedPages);
+  const boundedPageIndex = Math.min(pageIndex, totalPages - 1);
+
+  // Check if we're trying to view a page beyond our loaded data
+  const isOnUnloadedPage = boundedPageIndex >= loadedPages && hasMoreData;
+
   const paginationParams = {
-    pageIndex,
+    pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedPageIndex, // Show last loaded page while loading
     pageSize,
   };
 
@@ -668,7 +986,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         row: {
           original: { offset },
         },
-      }) => numberToThousandsString(offset),
+      }) => (offset < 0 ? <span className="text-muted-foreground">Loading...</span> : numberToThousandsString(offset)),
     },
     partitionID: {
       header: 'Partition',
@@ -677,6 +995,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     timestamp: {
       header: 'Timestamp',
       accessorKey: 'timestamp',
+      enableSorting: !infiniteScrollEnabled, // Disable sorting in infinite scroll mode
       cell: ({
         row: {
           original: { timestamp },
@@ -703,6 +1022,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         ),
       size: hasKeyTags ? 300 : 1,
       accessorKey: 'key',
+      enableSorting: !infiniteScrollEnabled, // Disable sorting in infinite scroll mode
       cell: ({ row: { original } }) => (
         <MessageKeyPreview
           msg={original}
@@ -730,6 +1050,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           'Value'
         ),
       accessorKey: 'value',
+      enableSorting: !infiniteScrollEnabled, // Disable sorting in infinite scroll mode
       cell: ({ row: { original } }) => (
         <MessagePreview
           isCompactTopic={props.topic.cleanupPolicy.includes('compact')}
@@ -868,7 +1189,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       label: (
         <Flex alignItems="center" gap={2}>
           <ReplyIcon />
-          <span data-testid="start-offset-newest">{`Newest - ${String(maxResults)}`}</span>
+          <span data-testid="start-offset-newest">
+            {infiniteScrollEnabled ? 'Newest' : `Newest - ${String(maxResults)}`}
+          </span>
         </Flex>
       ),
     },
@@ -966,12 +1289,21 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <Label text="Max Results">
             <SingleSelect<number>
+              chakraStyles={maxResultsSelectChakraStyles}
               data-testid="max-results-select"
               onChange={(c) => {
                 setMaxResults(c);
               }}
-              options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
+              options={[...[1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, 10_000].map((i) => ({ value: i }))]}
               value={maxResults}
+            />
+          </Label>
+
+          <Label text="Infinite Scroll">
+            <Switch
+              data-testid="infinite-scroll-toggle"
+              isChecked={infiniteScrollEnabled}
+              onChange={(e) => setInfiniteScrollEnabled(e.target.checked)}
             />
           </Label>
 
@@ -1044,10 +1376,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           {Boolean(searchPhase && searchPhase.length > 0) && (
             <StatusIndicator
               bytesConsumed={prettyBytes(bytesConsumed)}
-              fillFactor={messages.length / maxResults}
+              fillFactor={infiniteScrollEnabled ? 0 : messages.length / maxResults}
               identityKey="messageSearch"
               messagesConsumed={String(totalMessagesConsumed)}
-              progressText={`${messages.length} / ${maxResults}`}
+              progressText={
+                infiniteScrollEnabled && totalLoadedCount > messages.length
+                  ? `${messages.length} / ${totalLoadedCount} loaded`
+                  : `${messages.length} / ${maxResults}`
+              }
               // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
               statusText={searchPhase!}
             />
@@ -1221,6 +1557,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               }
             )}
             onSortingChange={(newSorting) => {
+              // Don't allow sorting changes in infinite scroll mode
+              if (infiniteScrollEnabled) {
+                return;
+              }
+
               const updatedSorting: SortingState = typeof newSorting === 'function' ? newSorting(sorting) : newSorting;
               setSortingState(updatedSorting);
             }}
@@ -1248,6 +1589,47 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               />
             )}
           />
+
+          {/* Virtual page indicator for infinite scroll mode */}
+          {infiniteScrollEnabled && virtualStartIndex > 0 && messages.length > 0 && (
+            <Flex align="center" className="text-muted-foreground text-sm" gap={2} justify="center" mt={2}>
+              <span>
+                Showing messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
+                {messageSearch?.nextPageToken ? ' (more available)' : ''}
+              </span>
+              {isLoadingMore && <span className="animate-pulse">Loading...</span>}
+            </Flex>
+          )}
+
+          {/* Warning when filters are active with infinite scroll */}
+          {infiniteScrollEnabled && filters.length > 0 && messages.length > 0 && (
+            <Alert mt={4} status="info">
+              <AlertIcon />
+              <AlertDescription>
+                Auto-pagination is disabled when filters are active. Remove filters to enable automatic loading.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Loading indicator when fetching more pages */}
+          {infiniteScrollEnabled && isLoadingMore ? (
+            <Flex justifyContent="center" mt={4}>
+              <Spinner mr={2} size="sm" />
+              <span>Loading more messages...</span>
+            </Flex>
+          ) : null}
+
+          {/* Indicator when messages are trimmed in infinite scroll mode */}
+          {infiniteScrollEnabled && virtualStartIndex > 0 && !isLoadingMore ? (
+            <Alert mt={4} status="info">
+              <AlertIcon />
+              <AlertDescription>
+                Showing messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length} of {totalLoadedCount}{' '}
+                loaded (oldest trimmed to limit memory to {maxResults} messages).
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <Button
             data-testid="save-messages-button"
             isDisabled={messages.length === 0}

@@ -36,6 +36,7 @@ export type TopicSearchParams = {
   startTimestampWasSetByUser: boolean;
   partitionID: number;
   maxResults: number;
+  infiniteScrollEnabled: boolean;
   page: number;
   pageSize: number;
   sorting: SortingState;
@@ -120,6 +121,7 @@ const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   startTimestampWasSetByUser: false,
   partitionID: -1,
   maxResults: 50,
+  infiniteScrollEnabled: false,
   page: 0,
   pageSize: 10,
   sorting: [],
