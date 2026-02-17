@@ -528,48 +528,24 @@ func (s *Service) calculateConsumeRequests(
 	return filteredRequests, nil
 }
 
-// calculateConsumeRequestsWithPageToken calculates consume requests for pagination mode (descending order).
-// It returns the consume requests map, the next page token, and whether more pages are available.
-//
-//nolint:gocognit,cyclop // complex logic for round-robin distribution across partitions with watermark tracking
-func (s *Service) calculateConsumeRequestsWithPageToken(
+type partitionState struct {
+	cursor                PartitionCursor
+	updatedLowWaterMark   int64
+	updatedHighWaterMark  int64
+	nextOffsetForNextPage int64
+	messagesAvailable     int64
+	isDrained             bool
+}
+
+// collectPartitionStates iterates the token's partition cursors, checks water marks,
+// handles compaction adjustment and exhaustion, and returns active partition states.
+func (s *Service) collectPartitionStates(
 	ctx context.Context,
 	token *PageToken,
-	requestedPartitionIDs []int32,
 	startOffsets, endOffsets kadm.ListedOffsets,
-) (map[int32]*PartitionConsumeRequest, string, bool, error) {
-	requests := make(map[int32]*PartitionConsumeRequest)
+) []*partitionState {
+	states := make([]*partitionState, 0, len(token.Partitions))
 
-	// Validate partition count hasn't changed
-	if int32(len(requestedPartitionIDs)) != token.PartitionCount {
-		return nil, "", false, fmt.Errorf("partition count changed: expected %d, got %d", token.PartitionCount, len(requestedPartitionIDs))
-	}
-
-	// Build a next token to track state for the next page
-	nextToken := &PageToken{
-		TopicName:      token.TopicName,
-		PartitionCount: token.PartitionCount,
-		Partitions:     make([]PartitionCursor, 0, len(token.Partitions)),
-		Direction:      token.Direction,
-		PageSize:       token.PageSize,
-	}
-
-	anyPartitionHasMore := false
-
-	// Initialize consume requests for all non-exhausted partitions
-	// We'll distribute the page size across partitions using round-robin
-	type partitionState struct {
-		cursor                PartitionCursor
-		updatedLowWaterMark   int64
-		updatedHighWaterMark  int64
-		nextOffsetForNextPage int64
-		messagesAvailable     int64
-		isDrained             bool
-	}
-
-	partitionStates := make([]*partitionState, 0, len(token.Partitions))
-
-	// First pass: collect partition states and check exhaustion
 	for _, cursor := range token.Partitions {
 		// Get current water marks
 		startOffset, exists := startOffsets.Lookup(token.TopicName, cursor.ID)
@@ -637,16 +613,48 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 			continue
 		}
 
-		state := &partitionState{
+		states = append(states, &partitionState{
 			cursor:               cursor,
 			updatedLowWaterMark:  updatedLowWaterMark,
 			updatedHighWaterMark: updatedHighWaterMark,
 			messagesAvailable:    messagesAvailable,
 			isDrained:            false,
-		}
-
-		partitionStates = append(partitionStates, state)
+		})
 	}
+
+	return states
+}
+
+// calculateConsumeRequestsWithPageToken calculates consume requests for pagination mode (descending order).
+// It returns the consume requests map, the next page token, and whether more pages are available.
+//
+//nolint:gocognit,cyclop // complex logic for round-robin distribution across partitions with watermark tracking
+func (s *Service) calculateConsumeRequestsWithPageToken(
+	ctx context.Context,
+	token *PageToken,
+	requestedPartitionIDs []int32,
+	startOffsets, endOffsets kadm.ListedOffsets,
+) (map[int32]*PartitionConsumeRequest, string, bool, error) {
+	requests := make(map[int32]*PartitionConsumeRequest)
+
+	// Validate partition count hasn't changed
+	if int32(len(requestedPartitionIDs)) != token.PartitionCount {
+		return nil, "", false, fmt.Errorf("partition count changed: expected %d, got %d", token.PartitionCount, len(requestedPartitionIDs))
+	}
+
+	// Build a next token to track state for the next page
+	nextToken := &PageToken{
+		TopicName:      token.TopicName,
+		PartitionCount: token.PartitionCount,
+		Partitions:     make([]PartitionCursor, 0, len(token.Partitions)),
+		Direction:      token.Direction,
+		PageSize:       token.PageSize,
+	}
+
+	anyPartitionHasMore := false
+
+	// First pass: collect partition states and check exhaustion
+	partitionStates := s.collectPartitionStates(ctx, token, startOffsets, endOffsets)
 
 	// If no partitions available, return empty
 	if len(partitionStates) == 0 {
