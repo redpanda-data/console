@@ -3163,7 +3163,7 @@ export function createMessageSearch() {
       }
     },
 
-    async loadMore(loadMorePageSize?: number): Promise<TopicMessage[]> {
+    async loadMore(loadMorePageSize?: number, externalSignal?: AbortSignal): Promise<TopicMessage[]> {
       if (!this.nextPageToken) {
         throw new Error('No next page available');
       }
@@ -3178,14 +3178,7 @@ export function createMessageSearch() {
         pageSize: loadMorePageSize ?? this.searchRequest.pageSize,
       };
 
-      // biome-ignore lint/suspicious/noConsole: debug logging
-      console.log('[Pagination Debug] loadMore request:', {
-        loadMorePageSize,
-        originalPageSize: this.searchRequest.pageSize,
-        finalPageSize: nextRequest.pageSize,
-      });
-
-      return await this.startSearch(nextRequest, undefined, true);
+      return await this.startSearch(nextRequest, externalSignal, true);
     },
   };
 

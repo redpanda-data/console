@@ -213,22 +213,6 @@ const defaultSelectChakraStyles = {
   }),
 } as const;
 
-const maxResultsSelectChakraStyles = {
-  control: (provided: Record<string, unknown>) => ({
-    ...provided,
-    minWidth: '140px', // Ensure enough width for "∞ Unlimited"
-  }),
-  option: (provided: Record<string, unknown>) => ({
-    ...provided,
-    wordBreak: 'keep-all',
-    whiteSpace: 'nowrap',
-  }),
-  menuList: (provided: Record<string, unknown>) => ({
-    ...provided,
-    minWidth: '140px', // Match control width
-  }),
-} as const;
-
 const inlineSelectChakraStyles = {
   ...defaultSelectChakraStyles,
   control: (provided: Record<string, unknown>) => ({
@@ -328,9 +312,57 @@ async function loadLargeMessage({
   }
 }
 
+/**
+ * Pure function for sliding-window trimming of messages.
+ * Keeps at most maxResults + pageSize messages in the window,
+ * trimming only pages before the user's current view.
+ */
+function trimSlidingWindow({
+  messages,
+  maxResults,
+  pageSize,
+  currentGlobalPage,
+  windowStartPage,
+  virtualStartIndex,
+}: {
+  messages: TopicMessage[];
+  maxResults: number;
+  pageSize: number;
+  currentGlobalPage: number;
+  windowStartPage: number;
+  virtualStartIndex: number;
+}): { messages: TopicMessage[]; windowStartPage: number; virtualStartIndex: number; trimCount: number } {
+  const maxWindowSize = maxResults + pageSize;
+
+  if (maxResults < pageSize || messages.length <= maxWindowSize) {
+    return { messages, windowStartPage, virtualStartIndex, trimCount: 0 };
+  }
+
+  const excess = messages.length - maxWindowSize;
+  const currentLocalPage = Math.max(0, currentGlobalPage - windowStartPage);
+
+  // Never trim the page the user is currently viewing or the one before it
+  const maxPagesToTrim = Math.max(0, currentLocalPage - 1);
+  const pagesToTrim = Math.min(Math.floor(excess / pageSize), maxPagesToTrim);
+  const trimCount = pagesToTrim * pageSize;
+
+  if (trimCount === 0) {
+    return { messages, windowStartPage, virtualStartIndex, trimCount: 0 };
+  }
+
+  return {
+    messages: messages.slice(trimCount),
+    windowStartPage: windowStartPage + pagesToTrim,
+    virtualStartIndex: virtualStartIndex + trimCount,
+    trimCount,
+  };
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   // Zustand store for topic settings
   const { setSorting, getSorting, setTopicSettings, perTopicSettings, setSearchParams, getSearchParams } =
@@ -518,10 +550,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const [totalMessagesConsumed, setTotalMessagesConsumed] = useState(0);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
 
-  // Pagination state
   const [messageSearch, setMessageSearch] = useState<ReturnType<typeof createMessageSearch> | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
 
+  useEffect(() => {
+    if (isLoadingMore) {
+      const timer = setTimeout(() => setShowLoadingIndicator(true), 1000);
+      return () => clearTimeout(timer);
+    }
+    setShowLoadingIndicator(false);
+  }, [isLoadingMore]);
   const currentSearchRunRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const prevStartOffsetRef = useRef<number>(startOffset);
@@ -529,19 +568,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const prevPageIndexRef = useRef<number>(pageIndex);
   const [forceRefresh, setForceRefresh] = useState(0);
 
-  // Refs for tracking loadMore state to prevent stale closures and memory leaks
   const currentMessageSearchRef = useRef<ReturnType<typeof createMessageSearch> | null>(null);
   const loadMoreAbortRef = useRef<AbortController | null>(null);
   const [loadMoreFailures, setLoadMoreFailures] = useState(0);
   const isMountedRef = useRef(true);
   const MAX_LOAD_MORE_RETRIES = 3;
-  // Track the page index and total when we last triggered loadMore to prevent cascading loads
   const lastLoadMoreRef = useRef<{ pageIndex: number; total: number }>({ pageIndex: -1, total: -1 });
-  // Ref to track current pageIndex for use in async callbacks
   const pageIndexRef = useRef(pageIndex);
-  // Track pending trim that was deferred because user was on last page
-  // Note: pendingTrimRef was removed - trimming during active pagination was disabled
-  // because it caused confusing page number shifts.
 
   // Filter messages based on quick search
   const baseFilteredMessages = quickSearch
@@ -557,7 +590,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   // For infinite scroll, just use the filtered messages directly
   // We don't use placeholders as they cause page content to shift
-  const filteredMessages = baseFilteredMessages;
+  const filteredMessages =
+    infiniteScrollEnabled && startOffset === PartitionOffsetOrigin.EndMinusResults
+      ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp)
+      : baseFilteredMessages;
 
   // Convert @computed activePreviewTags to useMemo
   const activePreviewTags = useMemo(
@@ -707,16 +743,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setBytesConsumed(search.bytesConsumed);
         setTotalMessagesConsumed(search.totalMessagesConsumed);
 
-        // Debug: log pagination state
-        // biome-ignore lint/suspicious/noConsole: debug logging
-        console.log('[Pagination Debug] Initial search complete:', {
-          messagesCount: result.length,
-          nextPageToken: search.nextPageToken,
-          infiniteScrollEnabled,
-          pageSize: backendPageSize,
-          maxResults: backendMaxResults,
-        });
-
         return result;
       } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -810,7 +836,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   // Auto-load more messages when user reaches beyond loaded messages (infinite scroll mode only)
   useEffect(() => {
-    // Only auto-load when infinite scroll is enabled and filters are not active
     if (
       !infiniteScrollEnabled ||
       filters.length > 0 ||
@@ -823,117 +848,67 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       return;
     }
 
-    // Calculate if we need more messages for the current page based on window-local position.
-    // Use windowStartPageRef to compute the local page index within the current sliding window.
-    // lastLoadMoreRef still uses global pageIndex to prevent duplicate loads across window shifts.
+    // Compute window-local page position; lastLoadMoreRef uses global pageIndex to deduplicate across window shifts
     const localPage = Math.max(0, pageIndex - windowStartPageRef.current);
     const messagesNeededForPage = (localPage + 1) * pageSize;
 
-    // Check if we're on the last page of currently loaded data
     const totalLoadedPages = Math.ceil(messages.length / pageSize);
-    const isOnLastPage = localPage === totalLoadedPages - 1 && messages.length > 0;
+    const isOnLastPage = localPage === totalLoadedPages - 1;
 
-    // Need more messages if:
-    // 1. Current page requires more than we have in the window, OR
-    // 2. We're on the last page and either:
-    //    a. We haven't loaded for this global page before, OR
-    //    b. The total has increased since we last loaded
     const totalVirtualMessages = virtualStartIndexRef.current + messages.length;
     const needsMoreForCurrentPage = messagesNeededForPage > messages.length;
     const isNewPageOrTotalChanged =
       lastLoadMoreRef.current.pageIndex !== pageIndex || lastLoadMoreRef.current.total < totalVirtualMessages;
-    const isNewLastPageRequest = isOnLastPage && isNewPageOrTotalChanged;
-    const needsMoreMessages = needsMoreForCurrentPage || isNewLastPageRequest;
+    const needsMoreMessages = needsMoreForCurrentPage || (isOnLastPage && isNewPageOrTotalChanged);
 
-    // Debug: log loadMore decision
-    // biome-ignore lint/suspicious/noConsole: debug logging
-    console.log('[Pagination Debug] loadMore check:', {
-      pageIndex,
-      localPage,
-      pageSize,
-      messagesNeededForPage,
-      messagesInWindow: messages.length,
-      isOnLastPage,
-      isNewLastPageRequest,
-      needsMoreMessages,
-      hasNextPageToken: !!messageSearch.nextPageToken,
-      windowStartPage: windowStartPageRef.current,
-      virtualStartIndex: virtualStartIndexRef.current,
-      lastLoadMoreRef: lastLoadMoreRef.current,
-      isLoadingMore,
-    });
-
-    if (needsMoreMessages && messageSearch.nextPageToken) {
-      // Set the ref IMMEDIATELY to prevent duplicate loads from effect re-runs
-      // We'll update with the actual total after load completes
+    if (needsMoreMessages) {
+      // Prevent duplicate loads from effect re-runs
       lastLoadMoreRef.current = { pageIndex, total: totalVirtualMessages };
 
-      // Create abort controller for this loadMore operation
       const abortController = new AbortController();
       loadMoreAbortRef.current = abortController;
-
-      // Capture the current messageSearch reference to detect stale responses
       const capturedMessageSearch = messageSearch;
 
       setIsLoadingMore(true);
       capturedMessageSearch
         .loadMore(maxResults)
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: sliding-window trimming adds necessary branching
         .then(() => {
-          // Only update state if component is still mounted and this is still the current search
-          if (isMountedRef.current && currentMessageSearchRef.current === capturedMessageSearch) {
-            const allMessages = capturedMessageSearch.messages;
-            let newMessages = [...allMessages];
+          if (currentMessageSearchRef.current !== capturedMessageSearch) return;
 
-            // Track total loaded count before trimming
-            setTotalLoadedCount(allMessages.length);
+          const allMessages = capturedMessageSearch.messages;
+          setTotalLoadedCount(allMessages.length);
 
-            // Sliding-window trimming: keep at most maxResults + pageSize messages in memory.
-            // windowStartPage tracks the global page offset so URL page numbers stay stable.
-            const maxWindowSize = maxResults + pageSize;
-            let newWindowStartPage = windowStartPageRef.current;
-            let newVirtualStartIndex = virtualStartIndexRef.current;
+          const trimResult = trimSlidingWindow({
+            messages: [...allMessages],
+            maxResults,
+            pageSize,
+            currentGlobalPage: pageIndexRef.current,
+            windowStartPage: windowStartPageRef.current,
+            virtualStartIndex: virtualStartIndexRef.current,
+          });
 
-            if (infiniteScrollEnabled && maxResults >= pageSize && newMessages.length > maxWindowSize) {
-              const excess = newMessages.length - maxWindowSize;
-              const currentGlobalPage = pageIndexRef.current;
-              const currentLocalPage = Math.max(0, currentGlobalPage - windowStartPageRef.current);
-
-              // Never trim the page the user is currently viewing or the one before it
-              const maxPagesToTrim = Math.max(0, currentLocalPage - 1);
-              const pagesToTrim = Math.min(Math.floor(excess / pageSize), maxPagesToTrim);
-              const messagesToTrim = pagesToTrim * pageSize;
-
-              if (messagesToTrim > 0) {
-                newMessages = newMessages.slice(messagesToTrim);
-                newWindowStartPage += pagesToTrim;
-                newVirtualStartIndex += messagesToTrim;
-
-                // Trim the MobX observable array in messageSearch to actually free memory
-                capturedMessageSearch.messages.splice(0, messagesToTrim);
-              }
-            }
-
-            // Update refs BEFORE setting state to prevent cascading
-            windowStartPageRef.current = newWindowStartPage;
-            virtualStartIndexRef.current = newVirtualStartIndex;
-            lastLoadMoreRef.current = {
-              pageIndex: pageIndexRef.current,
-              total: newVirtualStartIndex + newMessages.length,
-            };
-
-            setWindowStartPage(newWindowStartPage);
-            setVirtualStartIndex(newVirtualStartIndex);
-            setMessages(newMessages);
-            // Reset failure count on success
-            setLoadMoreFailures(0);
+          // Free memory from the MobX observable array
+          if (trimResult.trimCount > 0) {
+            capturedMessageSearch.messages.splice(0, trimResult.trimCount);
           }
+
+          // Update refs BEFORE setting state to prevent cascading
+          windowStartPageRef.current = trimResult.windowStartPage;
+          virtualStartIndexRef.current = trimResult.virtualStartIndex;
+          lastLoadMoreRef.current = {
+            pageIndex: pageIndexRef.current,
+            total: trimResult.virtualStartIndex + trimResult.messages.length,
+          };
+
+          setWindowStartPage(trimResult.windowStartPage);
+          setVirtualStartIndex(trimResult.virtualStartIndex);
+          setMessages(trimResult.messages);
+          setLoadMoreFailures(0);
         })
         .catch((err) => {
-          // Only show error if component is still mounted and not aborted
           if (isMountedRef.current && !abortController.signal.aborted) {
             setLoadMoreFailures((prev) => prev + 1);
-            toast({
+            toastRef.current({
               title: 'Failed to load more messages',
               description: (err as Error).message,
               status: 'error',
@@ -943,9 +918,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           }
         })
         .finally(() => {
-          if (isMountedRef.current) {
-            setIsLoadingMore(false);
-          }
+          setIsLoadingMore(false);
           if (loadMoreAbortRef.current === abortController) {
             loadMoreAbortRef.current = null;
           }
@@ -958,8 +931,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         loadMoreAbortRef.current = null;
       }
     };
-    // Note: virtualStartIndex intentionally excluded from deps to prevent cascading loads after trimming
-    // The effect uses the ref value directly which is always current
+    // Note: virtualStartIndex intentionally excluded — the effect reads it via ref
   }, [
     pageIndex,
     infiniteScrollEnabled,
@@ -970,9 +942,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     searchPhase,
     messages.length,
     pageSize,
-    toast,
     loadMoreFailures,
-    startOffset,
   ]);
 
   // Reset pagination when navigating back to page 1 in infinite scroll mode
@@ -1383,7 +1353,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <Label text="Max Results">
             <SingleSelect<number>
-              chakraStyles={maxResultsSelectChakraStyles}
               data-testid="max-results-select"
               onChange={(c) => {
                 setMaxResults(c);
@@ -1723,7 +1692,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           </div>
 
           {/* Normal pagination */}
-          {!infiniteScrollEnabled && filteredMessages.length > 0 && <DataTablePagination table={table} />}
+          {!infiniteScrollEnabled && filteredMessages.length > 0 && (
+            <div className="pt-2">
+              <DataTablePagination table={table} />
+            </div>
+          )}
 
           {/* Infinite scroll pagination */}
           {infiniteScrollEnabled && filteredMessages.length > 0 && (
@@ -1798,8 +1771,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     <span className="sr-only">Go to last page</span>
                     <ChevronsRight />
                   </RegistryButton>
-
-                  {isLoadingMore ? <Spinner size="sm" /> : null}
                 </div>
               </div>
             </div>
@@ -1838,12 +1809,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           )}
 
           {/* Loading indicator when fetching more pages */}
-          {infiniteScrollEnabled && isLoadingMore ? (
-            <Flex justifyContent="center" mt={4}>
-              <Spinner mr={2} size="sm" />
-              <span>Loading more messages...</span>
-            </Flex>
-          ) : null}
+          <div
+            className={`mt-4 flex h-6 items-center justify-center ${infiniteScrollEnabled && showLoadingIndicator ? 'visible' : 'invisible'}`}
+          >
+            <Spinner mr={2} size="sm" />
+            <span>Loading more messages...</span>
+          </div>
 
           <Button
             data-testid="save-messages-button"
