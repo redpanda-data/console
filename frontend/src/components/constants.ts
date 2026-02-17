@@ -20,6 +20,8 @@ export const FEATURE_FLAGS = {
   enableTranscriptsInConsole: false,
   enableApiKeyConfigurationAgent: false,
   shadowlinkCloudUi: false,
+  enableDataplaneObservabilityServerless: false,
+  enableDataplaneObservability: false,
 };
 
 // Cloud-managed tag keys for service account integration
