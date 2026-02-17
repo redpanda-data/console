@@ -1120,7 +1120,7 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 			Topic:       testTopicName,
 			PartitionId: -1, // All partitions
 			StartOffset: -1, // Recent
-			MaxResults:  -1, // Pagination mode
+			PageSize:    50, // Triggers pagination mode
 			PageToken:   "", // First page
 		}))
 		require.NoError(err)
@@ -1176,7 +1176,7 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 				Topic:       testTopicName,
 				PartitionId: -1,
 				StartOffset: -1,
-				MaxResults:  -1,
+				PageSize:    50,
 				PageToken:   pageToken,
 			}))
 			require.NoError(err)
@@ -1222,7 +1222,7 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 			Topic:                 testTopicName,
 			PartitionId:           -1,
 			StartOffset:           -1,
-			MaxResults:            -1,
+			PageSize:              50,
 			PageToken:             "",
 			FilterInterpreterCode: filterCode,
 		}))
