@@ -1017,7 +1017,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const paginationParams = {
     pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedLocalPageIndex,
-    pageSize,
+    pageSize: infiniteScrollEnabled && maxResults < pageSize ? maxResults : pageSize,
   };
 
   const tsFormat = topicSettings?.previewTimestamps ?? 'default';
