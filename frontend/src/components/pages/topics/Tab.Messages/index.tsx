@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
 import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
@@ -29,7 +29,6 @@ import {
   Badge,
   Box,
   Button,
-  DataTable,
   Flex,
   Grid,
   GridItem,
@@ -43,10 +42,17 @@ import {
   Spinner,
   Switch,
   Tooltip,
-  useBreakpoint,
   useToast,
 } from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import {
   AlertIcon,
   CalendarIcon,
@@ -64,6 +70,17 @@ import {
   TimerIcon,
   WarningIcon,
 } from 'components/icons';
+import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
+import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  Select as RegistrySelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 
 import { MessageSearchFilterBar } from './common/message-search-filter-bar';
@@ -83,7 +100,6 @@ import { appGlobal } from '../../../../state/app-global';
 import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
-import { onPaginationChange } from '../../../../utils/pagination';
 import { sortingParser } from '../../../../utils/sorting-parser';
 import { getTopicFilters, setTopicFilters } from '../../../../utils/topic-filters-session';
 import {
@@ -315,7 +331,6 @@ async function loadLargeMessage({
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const toast = useToast();
-  const breakpoint = useBreakpoint({ ssr: false });
 
   // Zustand store for topic settings
   const { setSorting, getSorting, setTopicSettings, perTopicSettings, setSearchParams, getSearchParams } =
@@ -494,6 +509,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const [messages, setMessages] = useState<TopicMessage[]>([]);
   const [virtualStartIndex, setVirtualStartIndex] = useState(0);
   const virtualStartIndexRef = useRef(0); // Ref to avoid stale closures in effects
+
+  // Sliding window: the global page number of the first page currently in memory
+  const [windowStartPage, setWindowStartPage] = useState(0);
+  const windowStartPageRef = useRef(0);
   const [searchPhase, setSearchPhase] = useState<string | null>(null);
   const [bytesConsumed, setBytesConsumed] = useState(0);
   const [totalMessagesConsumed, setTotalMessagesConsumed] = useState(0);
@@ -555,6 +574,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   useEffect(() => {
     virtualStartIndexRef.current = virtualStartIndex;
   }, [virtualStartIndex]);
+
+  // Keep windowStartPageRef in sync
+  useEffect(() => {
+    windowStartPageRef.current = windowStartPage;
+  }, [windowStartPage]);
 
   // Keep pageIndexRef in sync
   useEffect(() => {
@@ -673,6 +697,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         const endTime = Date.now();
         setMessages(result);
+        setWindowStartPage(0);
+        windowStartPageRef.current = 0;
         if (maxResults < pageSize) {
           lastLoadMoreRef.current = { pageIndex: 0, total: result.length };
         }
@@ -739,6 +765,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       // Clear messages immediately when starting new search
       setMessages([]);
       setVirtualStartIndex(0);
+      setWindowStartPage(0);
+      windowStartPageRef.current = 0;
       lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
       setLoadMoreFailures(0);
 
@@ -795,27 +823,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       return;
     }
 
-    // Calculate if we need more messages for the current page based on virtual position
-    // Use ref to get current value without adding to dependency array (prevents cascading)
-    // In infinite scroll mode, use maxResults as the effective page size for load decisions.
-    // The UI pageSize controls how many rows are displayed per table page, but maxResults
-    // controls how many messages are fetched per backend request. We should only trigger
-    // a new load when we need more data for the next maxResults-sized batch, not when the
-    // UI page size exceeds what we've loaded.
-    const effectivePageSize = infiniteScrollEnabled ? maxResults : pageSize;
-    const totalVirtualMessages = virtualStartIndexRef.current + messages.length;
-    const messagesNeededForPage = (pageIndex + 1) * effectivePageSize;
+    // Calculate if we need more messages for the current page based on window-local position.
+    // Use windowStartPageRef to compute the local page index within the current sliding window.
+    // lastLoadMoreRef still uses global pageIndex to prevent duplicate loads across window shifts.
+    const localPage = Math.max(0, pageIndex - windowStartPageRef.current);
+    const messagesNeededForPage = (localPage + 1) * pageSize;
 
-    // Check if we're on the last page of currently loaded data (including virtual/placeholder messages)
-    const totalVirtualPages = Math.ceil(totalVirtualMessages / effectivePageSize);
-    const isOnLastPage = pageIndex === totalVirtualPages - 1 && totalVirtualMessages > 0;
+    // Check if we're on the last page of currently loaded data
+    const totalLoadedPages = Math.ceil(messages.length / pageSize);
+    const isOnLastPage = localPage === totalLoadedPages - 1 && messages.length > 0;
 
     // Need more messages if:
-    // 1. Current page requires more than we have, OR
+    // 1. Current page requires more than we have in the window, OR
     // 2. We're on the last page and either:
-    //    a. We haven't loaded for this page before, OR
-    //    b. The total has increased since we last loaded (meaning we navigated away and back)
-    const needsMoreForCurrentPage = messagesNeededForPage > totalVirtualMessages;
+    //    a. We haven't loaded for this global page before, OR
+    //    b. The total has increased since we last loaded
+    const totalVirtualMessages = virtualStartIndexRef.current + messages.length;
+    const needsMoreForCurrentPage = messagesNeededForPage > messages.length;
     const isNewPageOrTotalChanged =
       lastLoadMoreRef.current.pageIndex !== pageIndex || lastLoadMoreRef.current.total < totalVirtualMessages;
     const isNewLastPageRequest = isOnLastPage && isNewPageOrTotalChanged;
@@ -825,15 +849,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     // biome-ignore lint/suspicious/noConsole: debug logging
     console.log('[Pagination Debug] loadMore check:', {
       pageIndex,
+      localPage,
       pageSize,
       messagesNeededForPage,
-      totalVirtualMessages,
+      messagesInWindow: messages.length,
       isOnLastPage,
       isNewLastPageRequest,
       needsMoreMessages,
       hasNextPageToken: !!messageSearch.nextPageToken,
-      messagesLength: messages.length,
-      virtualStartIndexRef: virtualStartIndexRef.current,
+      windowStartPage: windowStartPageRef.current,
+      virtualStartIndex: virtualStartIndexRef.current,
       lastLoadMoreRef: lastLoadMoreRef.current,
       isLoadingMore,
     });
@@ -853,33 +878,52 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setIsLoadingMore(true);
       capturedMessageSearch
         .loadMore(maxResults)
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: sliding-window trimming adds necessary branching
         .then(() => {
           // Only update state if component is still mounted and this is still the current search
           if (isMountedRef.current && currentMessageSearchRef.current === capturedMessageSearch) {
             const allMessages = capturedMessageSearch.messages;
-            const newMessages = [...allMessages];
+            let newMessages = [...allMessages];
 
             // Track total loaded count before trimming
             setTotalLoadedCount(allMessages.length);
 
-            // Calculate the new virtual start index after potential trimming
-            const newVirtualStartIndex = virtualStartIndexRef.current;
+            // Sliding-window trimming: keep at most maxResults + pageSize messages in memory.
+            // windowStartPage tracks the global page offset so URL page numbers stay stable.
+            const maxWindowSize = maxResults + pageSize;
+            let newWindowStartPage = windowStartPageRef.current;
+            let newVirtualStartIndex = virtualStartIndexRef.current;
 
-            // Note: We don't trim during active pagination to avoid confusing page number changes.
-            // Memory is bounded by maxResults on initial load, and resets when user does a new
-            // search or navigates back to page 1. This allows smooth pagination without jumps.
-            // The virtualStartIndex/totalLoadedCount are kept for potential future use but
-            // currently just track the total without trimming.
+            if (infiniteScrollEnabled && maxResults >= pageSize && newMessages.length > maxWindowSize) {
+              const excess = newMessages.length - maxWindowSize;
+              const currentGlobalPage = pageIndexRef.current;
+              const currentLocalPage = Math.max(0, currentGlobalPage - windowStartPageRef.current);
 
-            // Update the ref BEFORE setting messages to prevent cascading
-            // Use pageIndexRef.current to get the CURRENT page index, not the captured one
-            // The new total is virtualStartIndex + newMessages.length
+              // Never trim the page the user is currently viewing or the one before it
+              const maxPagesToTrim = Math.max(0, currentLocalPage - 1);
+              const pagesToTrim = Math.min(Math.floor(excess / pageSize), maxPagesToTrim);
+              const messagesToTrim = pagesToTrim * pageSize;
+
+              if (messagesToTrim > 0) {
+                newMessages = newMessages.slice(messagesToTrim);
+                newWindowStartPage += pagesToTrim;
+                newVirtualStartIndex += messagesToTrim;
+
+                // Trim the MobX observable array in messageSearch to actually free memory
+                capturedMessageSearch.messages.splice(0, messagesToTrim);
+              }
+            }
+
+            // Update refs BEFORE setting state to prevent cascading
+            windowStartPageRef.current = newWindowStartPage;
+            virtualStartIndexRef.current = newVirtualStartIndex;
             lastLoadMoreRef.current = {
               pageIndex: pageIndexRef.current,
               total: newVirtualStartIndex + newMessages.length,
             };
-            virtualStartIndexRef.current = newVirtualStartIndex;
 
+            setWindowStartPage(newWindowStartPage);
+            setVirtualStartIndex(newVirtualStartIndex);
             setMessages(newMessages);
             // Reset failure count on success
             setLoadMoreFailures(0);
@@ -946,6 +990,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setTotalLoadedCount(0);
       // Reset virtual start index for sliding window
       setVirtualStartIndex(0);
+      // Reset window start page for sliding window
+      setWindowStartPage(0);
+      windowStartPageRef.current = 0;
       // Reset last loadMore page tracking
       lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
       // Clear the search run ref and trigger a forced refresh
@@ -957,26 +1004,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     // We use currentMessageSearchRef.current instead which is always in sync
   }, [pageIndex, infiniteScrollEnabled]);
 
-  // Note: Deferred trimming was removed because it caused confusing page number changes.
-  // When we trimmed messages, page numbers would shift (e.g., page 6 becomes page 4),
-  // which was disorienting for users. Instead, we let messages accumulate during active
-  // pagination and reset everything when the user starts a new search or goes to page 1.
-
   // Message Table rendering variables and functions
-  // Calculate pages based on loaded data, but in infinite scroll mode with more
-  // data available, allow navigating one page beyond to trigger loadMore
+  // Map global pageIndex to a window-local page index for the DataTable.
+  // windowStartPage is the global page number of the first page in our sliding window.
+  const localPageIndex = infiniteScrollEnabled ? Math.max(0, pageIndex - windowStartPage) : pageIndex;
+
   const loadedPages = Math.ceil(filteredMessages.length / pageSize);
   const hasMoreData = infiniteScrollEnabled && messageSearch?.nextPageToken;
-
-  // Allow one extra page when more data is available - this enables the "next" button
   const totalPages = Math.max(1, hasMoreData ? loadedPages + 1 : loadedPages);
-  const boundedPageIndex = Math.min(pageIndex, totalPages - 1);
-
-  // Check if we're trying to view a page beyond our loaded data
-  const isOnUnloadedPage = boundedPageIndex >= loadedPages && hasMoreData;
+  const boundedLocalPageIndex = Math.min(localPageIndex, totalPages - 1);
+  const isOnUnloadedPage = boundedLocalPageIndex >= loadedPages && hasMoreData;
 
   const paginationParams = {
-    pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedPageIndex, // Show last loaded page while loading
+    pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedLocalPageIndex,
     pageSize,
   };
 
@@ -1178,6 +1218,50 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       ),
     },
   ];
+
+  const expanderColumn: ColumnDef<TopicMessage> = {
+    id: 'expander',
+    size: 40,
+    enableSorting: false,
+    cell: ({ row }) =>
+      row.getCanExpand() ? (
+        <button className="cursor-pointer p-1" onClick={row.getToggleExpandedHandler()} type="button">
+          {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+        </button>
+      ) : null,
+  };
+
+  const table = useReactTable({
+    data: filteredMessages,
+    columns: [expanderColumn, ...columns],
+    state: {
+      pagination: paginationParams,
+      sorting,
+    },
+    onPaginationChange: (updater) => {
+      const newState = typeof updater === 'function' ? updater(paginationParams) : updater;
+      uiState.topicSettings.searchParams.pageSize = newState.pageSize;
+      if (infiniteScrollEnabled) {
+        setPageIndex(windowStartPage + newState.pageIndex);
+      } else {
+        setPageIndex(newState.pageIndex);
+      }
+      setPageSize(newState.pageSize);
+    },
+    onSortingChange: (updater) => {
+      if (infiniteScrollEnabled) {
+        return;
+      }
+      const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+      setSortingState(newSorting);
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getRowCanExpand: () => true,
+    autoResetPageIndex: false,
+  });
 
   // Search controls derived state
   const canUseFilters =
@@ -1552,62 +1636,183 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         </Alert>
       ) : (
         <>
-          <DataTable<TopicMessage>
-            columns={columns}
-            data={filteredMessages}
-            data-testid="messages-table"
-            emptyText="No messages"
-            isLoading={searchPhase !== null}
-            onPaginationChange={onPaginationChange(
-              paginationParams,
-              ({ pageSize: newPageSize, pageIndex: newPageIndex }) => {
-                uiState.topicSettings.searchParams.pageSize = newPageSize;
-                setPageIndex(newPageIndex);
-                setPageSize(newPageSize);
-              }
-            )}
-            onSortingChange={(newSorting) => {
-              // Don't allow sorting changes in infinite scroll mode
-              if (infiniteScrollEnabled) {
-                return;
-              }
+          <div data-testid="messages-table">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
+                      >
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getIsSorted() === 'asc' && ' ↑'}
+                        {header.column.getIsSorted() === 'desc' && ' ↓'}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  if (searchPhase !== null && filteredMessages.length === 0) {
+                    return (
+                      <TableRow>
+                        <TableCell className="py-10 text-center" colSpan={table.getVisibleFlatColumns().length}>
+                          <Spinner size="md" />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  if (filteredMessages.length === 0) {
+                    return (
+                      <TableRow>
+                        <TableCell
+                          className="py-10 text-center text-muted-foreground"
+                          colSpan={table.getVisibleFlatColumns().length}
+                        >
+                          No messages
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  return table.getRowModel().rows.map((row) => (
+                    <React.Fragment key={row.id}>
+                      <TableRow>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell
+                            key={cell.id}
+                            style={{ width: cell.column.getSize() !== 150 ? cell.column.getSize() : undefined }}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {row.getIsExpanded() && (
+                        <TableRow>
+                          <TableCell className="p-0" colSpan={row.getVisibleCells().length}>
+                            <ExpandedMessage
+                              loadLargeMessage={() =>
+                                loadLargeMessage({
+                                  topicName: props.topic.topicName,
+                                  messagePartitionID: row.original.partitionID,
+                                  offset: row.original.offset,
+                                  setMessages,
+                                  keyDeserializer,
+                                  valueDeserializer,
+                                })
+                              }
+                              msg={row.original}
+                              onCopyKey={(msg) => onCopyKey(msg, toast)}
+                              onCopyValue={(msg) => onCopyValue(msg, toast)}
+                              onDownloadRecord={() => {
+                                setDownloadMessages([row.original]);
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  ));
+                })()}
+              </TableBody>
+            </Table>
+          </div>
 
-              const updatedSorting: SortingState = typeof newSorting === 'function' ? newSorting(sorting) : newSorting;
-              setSortingState(updatedSorting);
-            }}
-            pagination={paginationParams}
-            size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
-            sorting={sorting}
-            subComponent={({ row: { original } }) => (
-              <ExpandedMessage
-                loadLargeMessage={() =>
-                  loadLargeMessage({
-                    topicName: props.topic.topicName,
-                    messagePartitionID: original.partitionID,
-                    offset: original.offset,
-                    setMessages,
-                    keyDeserializer,
-                    valueDeserializer,
-                  })
-                }
-                msg={original}
-                onCopyKey={(msg) => onCopyKey(msg, toast)}
-                onCopyValue={(msg) => onCopyValue(msg, toast)}
-                onDownloadRecord={() => {
-                  setDownloadMessages([original]);
-                }}
-              />
-            )}
-          />
+          {/* Normal pagination */}
+          {!infiniteScrollEnabled && filteredMessages.length > 0 && <DataTablePagination table={table} />}
+
+          {/* Infinite scroll pagination */}
+          {infiniteScrollEnabled && filteredMessages.length > 0 && (
+            <div className="flex items-center justify-end px-2 py-2">
+              <div className="flex items-center space-x-6 lg:space-x-8">
+                {/* Page counter */}
+                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+                  Page {pageIndex + 1}
+                  {hasMoreData ? '' : ` of ${windowStartPage + loadedPages}`}
+                </div>
+
+                {/* Rows per page selector */}
+                <div className="flex items-center space-x-2">
+                  <p className="font-medium text-sm">Rows per page</p>
+                  <RegistrySelect
+                    onValueChange={(value) => {
+                      const newSize = Number(value);
+                      uiState.topicSettings.searchParams.pageSize = newSize;
+                      setPageSize(newSize);
+                    }}
+                    value={`${pageSize}`}
+                  >
+                    <SelectTrigger className="h-8 w-[70px]">
+                      <SelectValue placeholder={pageSize} />
+                    </SelectTrigger>
+                    <SelectContent side="top">
+                      {[10, 20, 25, 30, 40, 50].map((size) => (
+                        <SelectItem key={size} value={`${size}`}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </RegistrySelect>
+                </div>
+
+                {/* Navigation buttons */}
+                <div className="flex items-center space-x-2">
+                  <RegistryButton
+                    className="hidden size-8 lg:flex"
+                    disabled={pageIndex === 0}
+                    onClick={() => setPageIndex(0)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to first page</span>
+                    <ChevronsLeft />
+                  </RegistryButton>
+
+                  <RegistryButton
+                    className="size-8"
+                    disabled={localPageIndex === 0}
+                    onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to previous page</span>
+                    <ChevronLeft />
+                  </RegistryButton>
+
+                  <RegistryButton
+                    className="size-8"
+                    disabled={boundedLocalPageIndex >= loadedPages - 1 && !hasMoreData}
+                    onClick={() => setPageIndex(pageIndex + 1)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to next page</span>
+                    <ChevronRight />
+                  </RegistryButton>
+
+                  <RegistryButton className="hidden size-8 lg:flex" disabled size="icon" variant="outline">
+                    <span className="sr-only">Go to last page</span>
+                    <ChevronsRight />
+                  </RegistryButton>
+
+                  {isLoadingMore ? <Spinner size="sm" /> : null}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Virtual page indicator for infinite scroll mode */}
-          {infiniteScrollEnabled && virtualStartIndex > 0 && messages.length > 0 && (
+          {infiniteScrollEnabled && messages.length > 0 && (
             <Flex align="center" className="text-muted-foreground text-sm" gap={2} justify="center" mt={2}>
               <span>
-                Showing messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
-                {messageSearch?.nextPageToken ? ' (more available)' : ''}
+                Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
+                {` (pages ${windowStartPage + 1}–${windowStartPage + loadedPages} in memory)`}
+                {messageSearch?.nextPageToken ? ' · more available' : ''}
               </span>
-              {isLoadingMore && <span className="animate-pulse">Loading...</span>}
             </Flex>
           )}
 
@@ -1638,17 +1843,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <Spinner mr={2} size="sm" />
               <span>Loading more messages...</span>
             </Flex>
-          ) : null}
-
-          {/* Indicator when messages are trimmed in infinite scroll mode */}
-          {infiniteScrollEnabled && virtualStartIndex > 0 && !isLoadingMore ? (
-            <Alert mt={4} status="info">
-              <AlertIcon />
-              <AlertDescription>
-                Showing messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length} of {totalLoadedCount}{' '}
-                loaded (oldest trimmed to limit memory to {maxResults} messages).
-              </AlertDescription>
-            </Alert>
           ) : null}
 
           <Button
