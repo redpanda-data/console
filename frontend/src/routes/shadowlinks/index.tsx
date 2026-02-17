@@ -10,13 +10,13 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ShieldIcon } from 'components/icons';
+import { ShadowLinkListPage } from 'components/pages/shadowlinks/list/shadowlink-list-page';
 import { ListShadowLinksRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
-
-import { ShadowLinkListPage } from '../../components/pages/shadowlinks/list/shadowlink-list-page';
 
 export const Route = createFileRoute('/shadowlinks/')({
   staticData: {
@@ -24,9 +24,19 @@ export const Route = createFileRoute('/shadowlinks/')({
     icon: ShieldIcon,
   },
   loader: async ({ context: { queryClient, dataplaneTransport } }) => {
-    await queryClient.ensureQueryData(
-      createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema, {}), { transport: dataplaneTransport })
-    );
+    try {
+      await queryClient.ensureQueryData(
+        createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema, {}), { transport: dataplaneTransport })
+      );
+    } catch (error) {
+      if (
+        error instanceof ConnectError &&
+        (error.code === Code.FailedPrecondition || error.code === Code.Unavailable)
+      ) {
+        return;
+      }
+      throw error;
+    }
   },
   component: ShadowLinkListPage,
 });
