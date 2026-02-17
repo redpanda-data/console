@@ -73,6 +73,18 @@
       },
       "style": {
         "noDefaultExport": "off",
+        "noRestrictedImports": {
+          "level": "warn",
+          "options": {
+            "paths": {
+              "@redpanda-data/ui": "Deprecated — use components from 'components/redpanda-ui/' instead",
+              "@chakra-ui/react": "Deprecated — use Registry components + Tailwind instead",
+              "mobx": "Deprecated — use Zustand instead",
+              "mobx-react-lite": "Deprecated — use Zustand instead",
+              "yup": "Deprecated — use Zod instead"
+            }
+          }
+        },
         "useConsistentTypeDefinitions": {
           "level": "error",
           "options": {
