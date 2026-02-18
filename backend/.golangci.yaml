@@ -30,7 +30,7 @@ linters:
     - nilerr
     - nilnesserr
     - noctx
-    - nolintlint
+
     - reassign
     - revive
     - rowserrcheck
@@ -76,10 +76,6 @@ linters:
         - G117 # Exported struct fields matching secret patterns - false positives on config structs
         - G704 # SSRF via taint analysis - false positive on HTTP clients
         - G705 # XSS via taint analysis - false positives on HTTP response writers
-    nolintlint:
-      require-explanation: true
-      require-specific: true
-      allow-unused: false
     sloglint:
       attr-only: true
       no-global: all
