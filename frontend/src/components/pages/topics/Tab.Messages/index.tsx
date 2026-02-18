@@ -1198,7 +1198,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     enableSorting: false,
     cell: ({ row }) =>
       row.getCanExpand() ? (
-        <button className="cursor-pointer p-1" onClick={row.getToggleExpandedHandler()} type="button">
+        <button aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'} className="cursor-pointer p-1" onClick={row.getToggleExpandedHandler()} type="button">
           {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
         </button>
       ) : null,
