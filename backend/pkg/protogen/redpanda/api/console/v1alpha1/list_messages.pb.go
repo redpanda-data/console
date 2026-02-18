@@ -38,7 +38,7 @@ type ListMessagesRequest struct {
 	ValueDeserializer         *PayloadEncoding       `protobuf:"varint,11,opt,name=value_deserializer,json=valueDeserializer,proto3,enum=redpanda.api.console.v1alpha1.PayloadEncoding,oneof" json:"value_deserializer,omitempty"` // Optionally specify value payload deserialization strategy to use.
 	IgnoreMaxSizeLimit        bool                   `protobuf:"varint,12,opt,name=ignore_max_size_limit,json=ignoreMaxSizeLimit,proto3" json:"ignore_max_size_limit,omitempty"`                                                   // Optionally ignore configured maximum payload size limit.
 	PageToken                 string                 `protobuf:"bytes,13,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`                                                                                   // Resume from cursor (only used when page_size is present).
-	PageSize                  int32                  `protobuf:"varint,14,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`                                                                                     // Number of messages to fetch per page. When set, pagination mode is enabled and max_results is ignored. Defaults to 50 if not set.
+	PageSize                  int32                  `protobuf:"varint,14,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`                                                                                     // Number of messages to fetch per page. When set (> 0), pagination mode is enabled and max_results is ignored. When unset or 0, legacy mode is used.
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -777,7 +777,7 @@ var file_redpanda_api_console_v1alpha1_list_messages_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x0d, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x09, 0x70, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x27, 0x0a,
 	0x09, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x05,
-	0x42, 0x0a, 0xba, 0x48, 0x07, 0x1a, 0x05, 0x18, 0xf4, 0x03, 0x28, 0x01, 0x52, 0x08, 0x70, 0x61,
+	0x42, 0x0a, 0xba, 0x48, 0x07, 0x1a, 0x05, 0x18, 0x90, 0x4e, 0x28, 0x01, 0x52, 0x08, 0x70, 0x61,
 	0x67, 0x65, 0x53, 0x69, 0x7a, 0x65, 0x42, 0x13, 0x0a, 0x11, 0x5f, 0x6b, 0x65, 0x79, 0x5f, 0x64,
 	0x65, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x69, 0x7a, 0x65, 0x72, 0x42, 0x15, 0x0a, 0x13, 0x5f,
 	0x76, 0x61, 0x6c, 0x75, 0x65, 0x5f, 0x64, 0x65, 0x73, 0x65, 0x72, 0x69, 0x61, 0x6c, 0x69, 0x7a,

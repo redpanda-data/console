@@ -144,7 +144,7 @@ type TopicConsumeRequest struct {
 // 5. Start consume request via the Kafka Service
 // 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
 //
-//nolint:cyclop,gocognit // complex logic with multiple code paths for pagination vs legacy mode
+//nolint:cyclop // complex logic with multiple code paths for pagination vs legacy mode
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
@@ -221,51 +221,17 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
-	// Use pagination mode if PageSize > 0
 	var consumeRequests map[int32]*PartitionConsumeRequest
 	var nextPageToken string
-	var token *PageToken // Declare token outside if block so it's accessible later
+	var token *PageToken
 
 	if listReq.PageSize > 0 {
-		// Pagination mode
-		if listReq.FilterInterpreterCode != "" {
-			return errors.New("cannot use filters with pagination")
-		}
-
-		if listReq.PageToken != "" {
-			token, err = DecodePageToken(listReq.PageToken)
-			if err != nil {
-				return fmt.Errorf("invalid page token: %w", err)
-			}
-		} else {
-			// First page - create initial token with page size from request
-			pageSize := listReq.PageSize
-
-			// Determine direction based on startOffset
-			// StartOffsetOldest (-2) = ascending (oldest first)
-			// StartOffsetNewest (-3) = descending (newest first)
-			// Default to descending for backwards compatibility
-			direction := DirectionDescending
-			if listReq.StartOffset == StartOffsetOldest {
-				direction = DirectionAscending
-			}
-
-			token, err = CreateInitialPageToken(listReq.TopicName, startOffsets, endOffsets, pageSize, direction)
-			if err != nil {
-				return fmt.Errorf("failed to create initial page token: %w", err)
-			}
-		}
-
-		consumeRequests, nextPageToken, _, err = s.calculateConsumeRequestsWithPageToken(ctx, token, partitionIDs, startOffsets, endOffsets)
-		if err != nil {
-			return fmt.Errorf("failed to calculate consume request with page token: %w", err)
-		}
+		token, consumeRequests, nextPageToken, err = s.resolvePagedConsumeRequests(ctx, &listReq, partitionIDs, startOffsets, endOffsets)
 	} else {
-		// Legacy mode
 		consumeRequests, err = s.calculateConsumeRequests(ctx, cl, &listReq, partitionIDs, startOffsets, endOffsets)
-		if err != nil {
-			return fmt.Errorf("failed to calculate consume request: %w", err)
-		}
+	}
+	if err != nil {
+		return err
 	}
 
 	if len(consumeRequests) == 0 {
@@ -311,6 +277,44 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	return nil
+}
+
+// resolvePagedConsumeRequests resolves the page token and calculates consume requests for pagination mode.
+func (s *Service) resolvePagedConsumeRequests(
+	ctx context.Context,
+	listReq *ListMessageRequest,
+	partitionIDs []int32,
+	startOffsets, endOffsets kadm.ListedOffsets,
+) (*PageToken, map[int32]*PartitionConsumeRequest, string, error) {
+	if listReq.FilterInterpreterCode != "" {
+		return nil, nil, "", errors.New("cannot use filters with pagination")
+	}
+
+	token, err := s.resolvePageToken(listReq, startOffsets, endOffsets)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	consumeRequests, nextPageToken, _, err := s.calculateConsumeRequestsWithPageToken(ctx, token, partitionIDs, startOffsets, endOffsets)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to calculate consume request with page token: %w", err)
+	}
+
+	return token, consumeRequests, nextPageToken, nil
+}
+
+// resolvePageToken decodes an existing page token or creates an initial one.
+func (*Service) resolvePageToken(listReq *ListMessageRequest, startOffsets, endOffsets kadm.ListedOffsets) (*PageToken, error) {
+	if listReq.PageToken != "" {
+		return DecodePageToken(listReq.PageToken)
+	}
+
+	direction := DirectionDescending
+	if listReq.StartOffset == StartOffsetOldest {
+		direction = DirectionAscending
+	}
+
+	return CreateInitialPageToken(listReq.TopicName, startOffsets, endOffsets, listReq.PageSize, direction)
 }
 
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
@@ -568,9 +572,9 @@ func (s *Service) collectPartitionStates(
 		updatedLowWaterMark := startOffset.Offset
 		updatedHighWaterMark := endOffset.Offset
 
-		// Adjust for compaction in ascending mode: if the low watermark moved past our
+		// Adjust for compaction: if the low watermark moved past our
 		// next offset, skip ahead to avoid reading deleted/compacted offsets.
-		if token.Direction == DirectionAscending && cursor.NextOffset < updatedLowWaterMark {
+		if cursor.NextOffset < updatedLowWaterMark {
 			s.logger.DebugContext(ctx, "adjusting nextOffset due to compaction",
 				slog.String("topic", token.TopicName),
 				slog.Int("partition", int(cursor.ID)),
@@ -898,7 +902,7 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 	// If descending order, reverse and send messages
 	if consumeReq.Direction == DirectionDescending {
 		// Reverse messages in each partition
-		for partitionID, messages := range messagesPerPartition {
+		for _, messages := range messagesPerPartition {
 			for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
 				messages[i], messages[j] = messages[j], messages[i]
 			}
@@ -907,10 +911,6 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 			for _, msg := range messages {
 				progress.OnMessage(msg)
 			}
-
-			s.logger.DebugContext(ctx, "reversed messages for partition",
-				slog.Int("partition", int(partitionID)),
-				slog.Int("count", len(messages)))
 		}
 	}
 
