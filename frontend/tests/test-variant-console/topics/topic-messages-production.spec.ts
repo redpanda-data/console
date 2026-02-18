@@ -131,7 +131,7 @@ test.describe('Produce Messages', () => {
 
     await test.step('Load large message', async () => {
       // Click on the message row to expand
-      await page.getByTestId('data-table-cell').first().getByRole('button').click();
+      await page.getByLabel('Expand row').first().click();
 
       // Should show warning about performance
       await page

@@ -63,7 +63,7 @@ type ListMessageRequest struct {
 
 	// Pagination fields (used when PageSize > 0)
 	PageToken string
-	PageSize  int // Number of messages per page. When > 0, enables pagination mode.
+	PageSize  int // Number of messages per page. When > 0, enables cursor pagination.
 }
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
@@ -144,7 +144,7 @@ type TopicConsumeRequest struct {
 // 5. Start consume request via the Kafka Service
 // 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
 //
-//nolint:cyclop // complex logic with multiple code paths for pagination vs legacy mode
+//nolint:cyclop // complex logic with multiple code paths for cursor pagination vs standard pagination
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
@@ -240,12 +240,12 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		return nil
 	}
 	// Determine direction based on mode
-	direction := DirectionAscending // Legacy mode is ascending
+	direction := DirectionAscending // Standard pagination is ascending
 	// Determine the max message count for this request
-	// In pagination mode, use PageSize; otherwise use MessageCount (maxResults)
+	// In cursor pagination, use PageSize; otherwise use MessageCount (maxResults)
 	maxMessageCount := listReq.MessageCount
 	if listReq.PageSize > 0 && token != nil {
-		// Pagination mode: use direction from token and limit to PageSize
+		// Cursor pagination: use direction from token and limit to PageSize
 		direction = token.Direction
 		maxMessageCount = listReq.PageSize
 	}
@@ -279,7 +279,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	return nil
 }
 
-// resolvePagedConsumeRequests resolves the page token and calculates consume requests for pagination mode.
+// resolvePagedConsumeRequests resolves the page token and calculates consume requests for cursor pagination.
 func (s *Service) resolvePagedConsumeRequests(
 	ctx context.Context,
 	listReq *ListMessageRequest,
@@ -629,7 +629,7 @@ func (s *Service) collectPartitionStates(
 	return states
 }
 
-// calculateConsumeRequestsWithPageToken calculates consume requests for pagination mode (descending order).
+// calculateConsumeRequestsWithPageToken calculates consume requests for cursor pagination.
 // It returns the consume requests map, the next page token, and whether more pages are available.
 //
 //nolint:gocognit,cyclop // complex logic for round-robin distribution across partitions with watermark tracking

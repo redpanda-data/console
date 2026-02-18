@@ -41,7 +41,7 @@ message ListMessagesRequest {
   int32 page_size = 14 [(buf.validate.field).int32 = {
     gte: 1
     lte: 10000
-  }]; // Number of messages to fetch per page. When set (> 0), pagination mode is enabled and max_results is ignored. When unset or 0, legacy mode is used.
+  }]; // Number of messages to fetch per page. When set (> 0), cursor pagination is enabled and max_results is ignored.
 }
 
 // ListMessagesResponse is the response for ListMessages call.
