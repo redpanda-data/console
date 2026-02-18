@@ -153,8 +153,8 @@ func CreateInitialPageToken(
 		return nil, errors.New("topic name is empty")
 	}
 
-	if pageSize <= 0 || pageSize > 500 {
-		return nil, fmt.Errorf("invalid page size: %d (must be between 1 and 500)", pageSize)
+	if pageSize <= 0 || pageSize > 10_000 {
+		return nil, fmt.Errorf("invalid page size: %d (must be between 1 and 10000)", pageSize)
 	}
 
 	if direction != DirectionDescending && direction != DirectionAscending {
