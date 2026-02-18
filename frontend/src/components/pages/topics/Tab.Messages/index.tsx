@@ -59,6 +59,7 @@ import {
   CodeIcon,
   DownloadIcon,
   ErrorIcon,
+  InfoIcon,
   LayersIcon,
   MoreHorizontalIcon,
   PlayIcon,
@@ -80,6 +81,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tooltip as RegistryTooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 
@@ -760,7 +762,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       maxResults,
       infiniteScrollEnabled,
       pageSize,
-      getSearchParams,
       keyDeserializer,
       valueDeserializer,
       filters,
@@ -873,7 +874,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       capturedMessageSearch
         .loadMore(maxResults)
         .then(() => {
-          if (currentMessageSearchRef.current !== capturedMessageSearch) return;
+          if (currentMessageSearchRef.current !== capturedMessageSearch) {
+            return;
+          }
 
           const allMessages = capturedMessageSearch.messages;
           setTotalLoadedCount(allMessages.length);
@@ -1292,6 +1295,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset
   ) as PartitionOffsetOriginType;
 
+  const infiniteScrollDisabled =
+    currentOffsetOrigin !== PartitionOffsetOrigin.EndMinusResults &&
+    currentOffsetOrigin !== PartitionOffsetOrigin.Start;
+
   // Return JSX for the component
   return (
     <>
@@ -1309,6 +1316,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     }
                   } else {
                     setStartOffset(e);
+                  }
+
+                  // Auto-disable infinite scroll for unsupported offsets
+                  if (
+                    infiniteScrollEnabled &&
+                    e !== PartitionOffsetOrigin.EndMinusResults &&
+                    e !== PartitionOffsetOrigin.Start
+                  ) {
+                    setInfiniteScrollEnabled(false);
                   }
 
                   // Handle timestamp parameter in URL
@@ -1362,12 +1378,32 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             />
           </Label>
 
-          <Label text="Infinite Scroll">
-            <Switch
-              data-testid="infinite-scroll-toggle"
-              isChecked={infiniteScrollEnabled}
-              onChange={(e) => setInfiniteScrollEnabled(e.target.checked)}
-            />
+          <Label
+            style={{}}
+            text="Infinite Scroll"
+            textSuffix={
+              <RegistryTooltip>
+                <TooltipTrigger asChild>
+                  <span style={{ display: 'inline-flex', verticalAlign: 'text-top', cursor: 'pointer' }}>
+                    <InfoIcon size={11} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {infiniteScrollDisabled
+                    ? 'Infinite scroll is only available with Newest or Beginning start offsets'
+                    : 'Page through the full topic while keeping max results in memory and trimming the rest'}
+                </TooltipContent>
+              </RegistryTooltip>
+            }
+          >
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <Switch
+                data-testid="infinite-scroll-toggle"
+                isChecked={infiniteScrollEnabled}
+                isDisabled={infiniteScrollDisabled}
+                onChange={(e) => setInfiniteScrollEnabled(e.target.checked)}
+              />
+            </div>
           </Label>
 
           {dynamicFilters.map(
