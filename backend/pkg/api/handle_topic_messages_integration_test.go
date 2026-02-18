@@ -1114,12 +1114,12 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 		return totalMessages >= int64(messageCount)
 	}, 30*time.Second, 100*time.Millisecond, "All produced messages should be committed")
 
-	t.Run("first page with pagination mode", func(t *testing.T) {
+	t.Run("first page with cursor pagination", func(t *testing.T) {
 		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
 			Topic:       testTopicName,
 			PartitionId: -1, // All partitions
 			StartOffset: -1, // Recent
-			PageSize:    50, // Triggers pagination mode
+			PageSize:    50, // Triggers cursor pagination
 			PageToken:   "", // First page
 		}))
 		require.NoError(err)
@@ -1238,12 +1238,12 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 		assert.Contains(err.Error(), "cannot use filters with pagination")
 	})
 
-	t.Run("legacy mode still works", func(t *testing.T) {
+	t.Run("standard pagination still works", func(t *testing.T) {
 		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{
 			Topic:       testTopicName,
 			PartitionId: -1,
 			StartOffset: -2, // Oldest
-			MaxResults:  50, // Legacy mode
+			MaxResults:  50, // Standard pagination
 			PageToken:   "",
 		}))
 		require.NoError(err)
@@ -1265,8 +1265,8 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 		require.NoError(stream.Err())
 		require.NotNil(done)
 
-		// In legacy mode, should not have pagination tokens
-		assert.Empty(done.NextPageToken, "Legacy mode should not return page token")
+		// In standard pagination, should not have cursor pagination tokens
+		assert.Empty(done.NextPageToken, "Standard pagination should not return page token")
 		assert.LessOrEqual(len(messages), 50, "Should respect maxResults limit")
 	})
 }
