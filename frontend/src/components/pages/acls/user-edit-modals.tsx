@@ -25,12 +25,13 @@ import {
 import { SASLMechanism, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
 
-import { generatePassword, StateRoleSelector } from './user-create';
+import { StateRoleSelector } from './user-create';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
 import { useUpdateUserMutationWithToast } from '../../../react-query/api/user';
 import { rolesApi } from '../../../state/backend-api';
 import { Features } from '../../../state/supported-features';
 import { formatToastErrorMessageGRPC, showToast } from '../../../utils/toast.utils';
+import { generatePassword } from '../../../utils/user';
 import { SingleSelect } from '../../misc/select';
 
 type ChangePasswordModalProps = {
