@@ -199,7 +199,14 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
                 <Statistic title="State" value={<GroupState group={group} />} />
                 <Statistic title="Assigned Partitions" value={totalPartitions} />
                 <ProtocolType group={group} />
-                <Statistic title="Protocol Type" value={group.protocolType} />
+                <Statistic
+                  title="Protocol Type"
+                  value={
+                    group.groupType === 'consumer'
+                      ? `${group.protocolType} (KIP-848)`
+                      : group.protocolType
+                  }
+                />
                 <Statistic
                   title={
                     <Flex alignItems="center" gap={1}>
@@ -535,12 +542,22 @@ const renderMergedID = (id?: string, clientId?: string) => {
   return null;
 };
 
-type StateIcon = 'stable' | 'completingrebalance' | 'preparingrebalance' | 'empty' | 'dead' | 'unknown';
+type StateIcon =
+  | 'stable'
+  | 'completingrebalance'
+  | 'preparingrebalance'
+  | 'assigning'
+  | 'reconciling'
+  | 'empty'
+  | 'dead'
+  | 'unknown';
 
 const stateIcons = new Map<StateIcon, JSX.Element>([
   ['stable', <CheckCircleIcon color="#52c41a" key="stable" size={16} />],
   ['completingrebalance', <HourglassIcon color="#52c41a" key="completingrebalance" size={16} />],
   ['preparingrebalance', <HourglassIcon color="orange" key="preparingrebalance" size={16} />],
+  ['assigning', <HourglassIcon color="orange" key="assigning" size={16} />],
+  ['reconciling', <HourglassIcon color="#52c41a" key="reconciling" size={16} />],
   ['empty', <WarningIcon color="orange" key="empty" size={16} />],
   ['dead', <FlameIcon color="orangered" key="dead" size={16} />],
   ['unknown', <HelpIcon key="unknown" size={16} />],
@@ -550,6 +567,8 @@ const stateIconNames: Record<StateIcon, string> = {
   stable: 'Stable',
   completingrebalance: 'Completing Rebalance',
   preparingrebalance: 'Preparing Rebalance',
+  assigning: 'Assigning',
+  reconciling: 'Reconciling',
   empty: 'Empty',
   dead: 'Dead',
   unknown: 'Unknown',
@@ -559,6 +578,8 @@ const stateIconDescriptions: Record<StateIcon, string> = {
   stable: 'Consumer group has members which have been assigned partitions',
   completingrebalance: 'Kafka is assigning partitions to group members',
   preparingrebalance: 'A reassignment of partitions is required, members have been asked to stop consuming',
+  assigning: 'Coordinator is computing a new assignment (KIP-848)',
+  reconciling: 'Members are converging to their target assignment (KIP-848)',
   empty: 'Consumer group exists, but does not have any members',
   dead: 'Consumer group does not have any members and its metadata has been removed',
   unknown: 'Group state is not known',
@@ -595,6 +616,9 @@ export const GroupState = (p: { group: GroupDescription }) => {
 };
 const ProtocolType = (p: { group: GroupDescription }) => {
   const protocol = p.group.protocolType;
+
+  // Only show Protocol stat for non-consumer protocols (stream, connect, etc.)
+  // Consumer protocol is already shown in "Protocol Type" stat
   if (protocol === 'consumer') {
     return null;
   }
