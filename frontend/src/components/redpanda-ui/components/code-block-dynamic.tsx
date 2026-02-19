@@ -1,5 +1,4 @@
 "use client";
-import { isFeatureFlagEnabled } from "config";
 import type { Components } from "hast-util-to-jsx-runtime";
 import { Check, Copy } from "lucide-react";
 import {
@@ -233,13 +232,12 @@ function CopyButton({
 	onCopy: () => void;
 }) {
 	const [checked, onClick] = useCopyButton(onCopy);
-	const isNewThemeEnabled = isFeatureFlagEnabled("enableNewTheme");
 
 	return (
 		<button
 			type="button"
 			className={cn(
-				buttonVariants(isNewThemeEnabled)({
+				buttonVariants({
 					variant: "ghost",
 				}),
 				"transition-opacity group-hover:opacity-100 [&_svg]:size-3.5",

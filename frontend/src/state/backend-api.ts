@@ -178,7 +178,7 @@ import type {
   KnowledgeBaseCreate,
   KnowledgeBaseUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { getBasePath, getBuildDate } from '../utils/env';
+import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
@@ -204,7 +204,17 @@ declare const registry: Registry;
  * allow custom fetch or websocket interceptors
  * */
 export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
-  const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, requestInit);
+  // Add JWT Bearer token if available (same as gRPC addBearerTokenInterceptor)
+  // Only add if not already set - custom fetch (e.g., Cloud UI's authenticatedFetch) may have already added it
+  const headers = new Headers(requestInit?.headers);
+  if (appConfig.jwt && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${appConfig.jwt}`);
+  }
+
+  const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, {
+    ...requestInit,
+    headers,
+  });
 
   if (res.status === 401) {
     // Unauthorized
@@ -245,18 +255,25 @@ async function handle401(res: Response) {
   // store.urlBeforeLogin = window.location.href;
   // get current path
 
-  if (isEmbedded()) {
-    const path = window.location.pathname.removePrefix(getBasePath() ?? '');
-    // get path you want to redirect to
-    const targetPath = `/clusters/${appConfig.clusterId}/unauthorized`;
-    // when is embedded redirect to the cloud-ui
-    if (path !== targetPath) {
-      window.location.replace(`/clusters/${appConfig.clusterId}/unauthorized`);
-    }
-  } else {
-    // Redirect to login
-    appGlobal.historyPush('/login');
+  // Check if we're in embedded mode using multiple signals to handle V1 Module Federation race conditions
+  // where JWT might not be set yet when this function is called
+  const inEmbeddedContext =
+    isEmbedded() || appConfig.clusterId !== 'default' || window.location.pathname.includes('/clusters/');
+
+  if (inEmbeddedContext) {
+    // In embedded mode, emit an event for the host to handle re-authentication
+    // instead of redirecting, which breaks the embedded experience
+    window.dispatchEvent(
+      new CustomEvent('console:auth-error', {
+        detail: { clusterId: appConfig.clusterId, path: window.location.pathname },
+      })
+    );
+    // Don't redirect - let the request fail gracefully and allow the host to handle auth
+    return;
   }
+
+  // Non-embedded mode: redirect to login
+  appGlobal.historyPush('/login');
 }
 
 function processVersionInfo(headers: Headers) {

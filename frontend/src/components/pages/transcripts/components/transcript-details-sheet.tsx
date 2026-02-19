@@ -44,9 +44,38 @@ type Props = {
 export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onClose }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useQueryState('tab', parseAsString.withDefault('overview'));
-  const { data: traceData, isLoading } = useGetTraceQuery(traceId);
+  const { data: traceData, isLoading, isError } = useGetTraceQuery(traceId);
 
   const trace = traceData?.trace;
+
+  // Auto-close and clear URL params when trace/span doesn't exist
+  // This handles stale URLs from bookmarks or shared links
+  useEffect(() => {
+    // Wait for query to complete
+    if (isLoading || !isOpen) {
+      return;
+    }
+
+    // Case 1: Trace fetch failed or trace doesn't exist
+    if (isError || (!trace && traceId)) {
+      toast.error('Transcript not found', {
+        description: 'The transcript may have expired or been deleted.',
+      });
+      onClose();
+      return;
+    }
+
+    // Case 2: Trace exists but span not found
+    if (trace && spanId) {
+      const spanExists = trace.spans?.some((s) => bytesToHex(s.spanId) === spanId);
+      if (!spanExists) {
+        toast.error('Span not found', {
+          description: 'The span may have expired or been deleted.',
+        });
+        onClose();
+      }
+    }
+  }, [isLoading, isError, trace, traceId, spanId, isOpen, onClose]);
 
   const handleCopyLink = async () => {
     if (!(traceId && spanId)) {
@@ -117,7 +146,7 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
         <div className="flex items-center gap-2">
           {!!isIncomplete && (
             <>
-              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertCircle className="h-4 w-4 text-warning" />
               <Text className="text-muted-foreground" variant="small">
                 Incomplete Transcript
               </Text>
@@ -187,11 +216,11 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
 
         {!(isLoading || selectedSpan) && isIncomplete && (
           <div className="space-y-4 p-4">
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+            <div className="rounded-md border border-warning/30 bg-warning-subtle p-3">
               <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                 <div>
-                  <Text as="p" className="font-medium text-amber-600" variant="small">
+                  <Text as="p" className="font-medium text-warning" variant="small">
                     Waiting for root span
                   </Text>
                   <Text as="p" className="mt-1" variant="muted">

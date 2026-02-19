@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { TaskState } from '@a2a-js/sdk';
+import type { JSONRPCError, TaskState } from '@a2a-js/sdk';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 
 /**
@@ -55,6 +55,18 @@ export type ContentBlock =
       final: boolean;
       timestamp: Date;
       usage?: MessageUsageMetadata;
+    }
+  | {
+      type: 'a2a-error';
+      error: JSONRPCError;
+      timestamp: Date;
+    }
+  | {
+      type: 'connection-status';
+      status: 'disconnected' | 'reconnecting' | 'reconnected' | 'gave-up';
+      attempt?: number;
+      maxAttempts?: number;
+      timestamp: Date;
     };
 
 // Message-level usage metadata (stored in database)

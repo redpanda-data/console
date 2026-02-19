@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun x ultracite fix"
+            "command": "bun run lint && bun run type:check"
           }
         ]
       }

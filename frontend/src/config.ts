@@ -118,6 +118,7 @@ export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
+  aiGatewayUrl?: string;
   urlOverride?: {
     rest?: string;
     ws?: string;
@@ -127,6 +128,7 @@ export type SetConfigArguments = {
   setSidebarItems?: (items: SidebarItem[]) => void;
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
+  isAdpEnabled?: boolean;
   featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -146,6 +148,7 @@ export type Breadcrumb = {
 
 type Config = {
   controlplaneUrl: string;
+  aiGatewayUrl?: string;
   dataplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
@@ -170,6 +173,7 @@ type Config = {
   setSidebarItems: (items: SidebarItem[]) => void;
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
+  isAdpEnabled: boolean;
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -188,6 +192,7 @@ export const config: Config = {
     // no op - set by parent application
   },
   isServerless: false,
+  isAdpEnabled: false,
   featureFlags: FEATURE_FLAGS,
 };
 
@@ -196,6 +201,7 @@ const setConfig = ({
   urlOverride,
   jwt,
   isServerless: isServerlessMode,
+  isAdpEnabled: isAdpEnabledMode,
   featureFlags,
   ...args
 }: SetConfigArguments) => {
@@ -241,6 +247,7 @@ const setConfig = ({
     jwt,
     dataplaneTransport,
     isServerless: isServerlessMode,
+    isAdpEnabled: isAdpEnabledMode ?? false,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
@@ -375,6 +382,16 @@ export function isServerless() {
   return config.isServerless;
 }
 
+export function isAdpEnabled() {
+  return config.isAdpEnabled;
+}
+
+export const embeddedAvailableRoutesObservable = observable({
+  get routes() {
+    return getEmbeddedAvailableRoutes();
+  },
+});
+
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   setConfig(setupArgs);
 
@@ -415,7 +432,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     };
     checkUserData();
   } else {
-    api.refreshSupportedEndpoints();
     api.listLicenses();
+    api.refreshSupportedEndpoints();
   }
 });

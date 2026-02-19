@@ -17,6 +17,7 @@ import type { FC } from 'react';
 import { useMemo } from 'react';
 
 import { ContentPanel } from './content-panel';
+import { convertBytesFieldsToHex } from '../utils/hex-utils';
 
 type Props = {
   span: Span;
@@ -30,7 +31,9 @@ export const RawJSONTab: FC<Props> = ({ span }) => {
       if (jsonObj === null || jsonObj === undefined) {
         return 'null';
       }
-      return JSON.stringify(jsonObj, null, 2);
+      // Convert base64 bytes fields (traceId, spanId, parentSpanId) to hex format
+      const converted = convertBytesFieldsToHex(jsonObj);
+      return JSON.stringify(converted, null, 2);
     } catch {
       return JSON.stringify({ error: 'Failed to serialize span data' }, null, 2);
     }
@@ -44,8 +47,8 @@ export const RawJSONTab: FC<Props> = ({ span }) => {
         </CopyButton>
       </div>
 
-      <ContentPanel className="w-full bg-muted/20" padding="md">
-        <pre className="whitespace-pre-wrap break-words font-mono text-[10px]">
+      <ContentPanel className="w-full bg-muted/20" padding="sm">
+        <pre className="whitespace-pre-wrap break-words font-mono text-muted-foreground text-sm leading-relaxed">
           <code>{jsonString}</code>
         </pre>
       </ContentPanel>

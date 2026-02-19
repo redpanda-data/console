@@ -1,6 +1,5 @@
 "use client";
 
-import { isFeatureFlagEnabled } from "config";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import type React from "react";
 import { cn } from "../lib/utils";
@@ -147,7 +146,7 @@ function AlertDialogAction({
 }) {
 	return (
 		<AlertDialogPrimitive.Action
-			className={cn(buttonVariants(), className)}
+			className={cn(buttonVariants, className)}
 			data-testid={testId}
 			{...props}
 		/>
@@ -161,11 +160,10 @@ function AlertDialogCancel({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> & {
 	testId?: string;
 }) {
-	const isNewThemeEnabled = isFeatureFlagEnabled("enableNewTheme");
 	return (
 		<AlertDialogPrimitive.Cancel
 			className={cn(
-				buttonVariants(isNewThemeEnabled)({ variant: "outline" }),
+				buttonVariants({ variant: "outline" }),
 				className,
 			)}
 			data-testid={testId}

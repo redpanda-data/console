@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -210,13 +211,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to list users: ")
 	}
-	exists := false
-	for _, user := range listedUsers {
-		if user == req.Msg.Name {
-			exists = true
-			break
-		}
-	}
+	exists := slices.Contains(listedUsers, req.Msg.Name)
 	if !exists {
 		return nil, apierrors.NewConnectError(
 			connect.CodeNotFound,

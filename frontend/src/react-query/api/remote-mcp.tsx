@@ -55,11 +55,10 @@ import {
   stopMCPServer as stopMCPServerV1Alpha3,
   updateMCPServer as updateMCPServerV1Alpha3,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
-import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
+import { useMemo } from 'react';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-
-// TODO: Make this dynamic so that pagination can be used properly
-const MCP_SERVER_MAX_PAGE_SIZE = 50;
 
 // Export unified types
 export type GetMCPServerRequest = GetMCPServerRequestV1 | GetMCPServerRequestV1Alpha3;
@@ -78,39 +77,74 @@ export const useListMCPServersQuery = (
 ) => {
   const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
 
-  const listMCPServersRequestV1 = create(ListMCPServersRequestSchemaV1, {
-    pageToken: '',
-    pageSize: MCP_SERVER_MAX_PAGE_SIZE,
-    filter: input?.filter
-      ? create(ListMCPServersRequest_FilterSchemaV1, {
-          displayNameContains: input.filter.displayNameContains,
-          tags: input.filter.tags,
-          secretId: input.filter.secretId,
-        })
-      : undefined,
-  });
+  // Memoize requests to prevent infinite re-renders
+  const listMCPServersRequestV1 = useMemo(
+    () =>
+      create(ListMCPServersRequestSchemaV1, {
+        pageToken: '',
+        pageSize: MAX_PAGE_SIZE,
+        filter: input?.filter
+          ? create(ListMCPServersRequest_FilterSchemaV1, {
+              displayNameContains: input.filter.displayNameContains,
+              tags: input.filter.tags,
+              secretId: input.filter.secretId,
+            })
+          : undefined,
+      }) as ListMCPServersRequestV1 & Required<Pick<ListMCPServersRequestV1, 'pageToken'>>,
+    [input?.filter]
+  );
 
-  const listMCPServersRequestV1Alpha3 = create(ListMCPServersRequestSchemaV1Alpha3, {
-    pageToken: '',
-    pageSize: MCP_SERVER_MAX_PAGE_SIZE,
-    filter: input?.filter
-      ? create(ListMCPServersRequest_FilterSchemaV1Alpha3, {
-          displayNameContains: input.filter.displayNameContains,
-          tags: input.filter.tags,
-          secretId: input.filter.secretId,
-        })
-      : undefined,
-  });
+  const listMCPServersRequestV1Alpha3 = useMemo(
+    () =>
+      create(ListMCPServersRequestSchemaV1Alpha3, {
+        pageToken: '',
+        pageSize: MAX_PAGE_SIZE,
+        filter: input?.filter
+          ? create(ListMCPServersRequest_FilterSchemaV1Alpha3, {
+              displayNameContains: input.filter.displayNameContains,
+              tags: input.filter.tags,
+              secretId: input.filter.secretId,
+            })
+          : undefined,
+      }) as ListMCPServersRequestV1Alpha3 & Required<Pick<ListMCPServersRequestV1Alpha3, 'pageToken'>>,
+    [input?.filter]
+  );
 
-  const resultV1 = useQuery(listMCPServersV1, listMCPServersRequestV1, {
+  const resultV1 = useInfiniteQueryWithAllPages(listMCPServersV1, listMCPServersRequestV1, {
     enabled: useMcpV1 && options?.enabled !== false,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
 
-  const resultV1Alpha3 = useQuery(listMCPServersV1Alpha3, listMCPServersRequestV1Alpha3, {
+  const resultV1Alpha3 = useInfiniteQueryWithAllPages(listMCPServersV1Alpha3, listMCPServersRequestV1Alpha3, {
     enabled: !useMcpV1 && options?.enabled !== false,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
 
-  return useMcpV1 ? resultV1 : resultV1Alpha3;
+  const mcpServersV1 = useMemo(() => {
+    const allMcpServers = resultV1?.data?.pages?.flatMap((response) => response?.mcpServers ?? []);
+    return allMcpServers ?? [];
+  }, [resultV1.data]);
+  const mcpServersV1Alpha3 = useMemo(() => {
+    const allMcpServers = resultV1Alpha3?.data?.pages?.flatMap((response) => response?.mcpServers ?? []);
+    return allMcpServers ?? [];
+  }, [resultV1Alpha3.data]);
+
+  const dataV1 = useMemo(() => ({ mcpServers: mcpServersV1 }), [mcpServersV1]);
+  const dataV1Alpha3 = useMemo(() => ({ mcpServers: mcpServersV1Alpha3 }), [mcpServersV1Alpha3]);
+
+  if (useMcpV1) {
+    return {
+      ...resultV1,
+      data: dataV1,
+    };
+  }
+
+  return {
+    ...resultV1Alpha3,
+    data: dataV1Alpha3,
+  };
 };
 
 export const useGetMCPServerQuery = (
@@ -163,7 +197,7 @@ export const useCreateMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -181,7 +215,7 @@ export const useCreateMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1Alpha3.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -206,7 +240,7 @@ export const useUpdateMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -231,7 +265,7 @@ export const useUpdateMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1Alpha3.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -266,7 +300,7 @@ export const useDeleteMCPServerMutation = (options?: {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -282,7 +316,7 @@ export const useDeleteMCPServerMutation = (options?: {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1Alpha3.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -312,7 +346,7 @@ export const useStopMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -337,7 +371,7 @@ export const useStopMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1Alpha3.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -369,7 +403,7 @@ export const useStartMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -394,7 +428,7 @@ export const useStartMCPServerMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: MCPServerServiceV1Alpha3.method.listMCPServers,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
         exact: false,
       });
@@ -475,7 +509,7 @@ export const createMCPClientWithSession = async (
         headers: {
           ...init?.headers,
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           'Mcp-Session-Id': client?.transport?.sessionId ?? '',
         },
       });

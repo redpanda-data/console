@@ -125,7 +125,6 @@ func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 	headers := make([]*v1alpha.KafkaRecordHeader, 0, len(message.Headers))
 
 	for _, mh := range message.Headers {
-		mh := mh
 		headers = append(
 			headers, &v1alpha.KafkaRecordHeader{
 				Key:   mh.Key,
@@ -185,7 +184,6 @@ func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 
 	data.Key.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Key.Troubleshooting))
 	for _, ts := range message.Key.Troubleshooting {
-		ts := ts
 		data.Key.TroubleshootReport = append(
 			data.Key.TroubleshootReport, &v1alpha.TroubleshootReport{
 				SerdeName: ts.SerdeName,
@@ -196,7 +194,6 @@ func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 
 	data.Value.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Value.Troubleshooting))
 	for _, ts := range message.Value.Troubleshooting {
-		ts := ts
 		data.Value.TroubleshootReport = append(
 			data.Value.TroubleshootReport, &v1alpha.TroubleshootReport{
 				SerdeName: ts.SerdeName,

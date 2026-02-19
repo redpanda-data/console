@@ -9,16 +9,14 @@
 
 package filesystem
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // isStringInSlice returns true if the given string exists in the string slice.
 func isStringInSlice(item string, arr []string) bool {
-	for _, occurrence := range arr {
-		if item == occurrence {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(arr, item)
 }
 
 // isValidFileExtension returns:

@@ -63,8 +63,7 @@ func TestMaybeWithDynamicClientCA(t *testing.T) {
 	})
 
 	t.Run("CA reload works", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		cfg := &tls.Config{}
 		shortInterval := 100 * time.Millisecond

@@ -5,6 +5,9 @@ on:
     paths:
       - "frontend/**"
       - "backend/**"
+      - '.github/workflows/repository-dispatch.yml'
+      - '.github/workflows/backend-lint-test.yml'
+      - '.github/workflows/frontend-verify.yml'
     tags:
       - '*'
     branches:
@@ -25,6 +28,7 @@ jobs:
 
   dispatch:
     needs: [backend-verify, frontend-verify]
+    if: "!failure() && !cancelled()"
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: aws-actions/configure-aws-credentials@v4

@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -344,4 +345,67 @@ func TestFormatOverride(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDurationFormatting(t *testing.T) {
+	tests := []struct {
+		name           string
+		duration       time.Duration
+		expectedString string
+	}{
+		{
+			name:           "hours",
+			duration:       6 * time.Hour,
+			expectedString: "6h0m0s",
+		},
+		{
+			name:           "minutes and seconds",
+			duration:       5*time.Minute + 30*time.Second,
+			expectedString: "5m30s",
+		},
+		{
+			name:           "milliseconds",
+			duration:       150 * time.Millisecond,
+			expectedString: "150ms",
+		},
+		{
+			name:           "complex duration",
+			duration:       2*time.Hour + 30*time.Minute + 45*time.Second,
+			expectedString: "2h30m45s",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			logger := NewSlogLogger(
+				WithOutput(&buf),
+				WithFormat(FormatJSON),
+			)
+
+			logger.Info("test message", slog.Duration("duration", tt.duration))
+
+			// Parse the JSON output
+			var logEntry map[string]any
+			err := json.Unmarshal(buf.Bytes(), &logEntry)
+			require.NoError(t, err)
+
+			// Duration should be formatted as human-readable string, not nanoseconds
+			assert.Equal(t, tt.expectedString, logEntry["duration"], "duration should be human-readable")
+		})
+	}
+}
+
+func TestDurationFormattingTextFormat(t *testing.T) {
+	var buf bytes.Buffer
+	logger := NewSlogLogger(
+		WithOutput(&buf),
+		WithFormat(FormatText),
+	)
+
+	logger.Info("test message", slog.Duration("duration", 6*time.Hour))
+
+	output := buf.String()
+	// Text format should also show human-readable duration
+	assert.Contains(t, output, "duration=6h0m0s")
 }

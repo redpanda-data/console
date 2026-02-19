@@ -49,6 +49,14 @@ export const FormSchema = z
         { message: 'Tags must have unique keys' }
       ),
     triggerType: z.enum(['http', 'slack', 'kafka']).default('http'),
+    gatewayId: z
+      .string()
+      .refine(
+        (val) => !val || (val.length === 20 && /^[a-z0-9]+$/.test(val)),
+        'Gateway ID must be exactly 20 lowercase alphanumeric characters'
+      )
+      .optional()
+      .or(z.literal('')),
     provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible']).default('openai'),
     apiKeySecret: z.string(),
     model: z.string().min(1, 'Model is required'),
@@ -77,15 +85,24 @@ export const FormSchema = z
         },
         { message: 'Subagent names must be unique' }
       ),
-    gatewayId: z
-      .string()
-      .length(20, 'Gateway ID must be exactly 20 characters')
-      .regex(/^[a-z0-9]+$/, 'Gateway ID must contain only lowercase letters and numbers')
-      .optional()
-      .or(z.literal('')),
   })
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex validation logic with multiple conditional checks
   .superRefine((data, ctx) => {
+    // Note: Gateway validation happens in the UI layer based on availability
+    // If gateways are available, gateway is required (enforced by UI)
+    // If gateways are NOT available, API key is required
+
+    const hasGateway = data.gatewayId && data.gatewayId.trim() !== '';
+
+    if (!hasGateway && (!data.apiKeySecret || data.apiKeySecret.trim() === '')) {
+      // No gateway selected: API Key is required
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'API Token is required',
+        path: ['apiKeySecret'],
+      });
+    }
+
     if (data.provider === 'openaiCompatible') {
       if (!data.baseUrl || data.baseUrl.trim() === '') {
         ctx.addIssue({
@@ -131,6 +148,7 @@ export const initialValues: FormValues = {
   description: '',
   tags: [],
   triggerType: 'http',
+  gatewayId: '',
   provider: 'openai',
   apiKeySecret: '',
   model: '',
@@ -142,5 +160,4 @@ export const initialValues: FormValues = {
   systemPrompt: '',
   serviceAccountName: '',
   subagents: [],
-  gatewayId: '',
 };

@@ -17,13 +17,13 @@ import type { ChatMessage, ContentBlock } from '../types';
 /**
  * Deserialize contentBlocks from database (ISO string → Date)
  */
-const deserializeContentBlocks = (dbBlocks: import('database/chat-db').ContentBlock[]): ContentBlock[] =>
+export const deserializeContentBlocks = (dbBlocks: import('database/chat-db').ContentBlock[]): ContentBlock[] =>
   dbBlocks.map((block): ContentBlock => ({ ...block, timestamp: new Date(block.timestamp) }) as ContentBlock);
 
 /**
  * Build chat message from stored contentBlocks
  */
-const buildMessageFromStoredBlocks = (dbMsg: ChatDbMessage): ChatMessage => ({
+export const buildMessageFromStoredBlocks = (dbMsg: ChatDbMessage): ChatMessage => ({
   id: dbMsg.id,
   role: dbMsg.sender === 'user' ? 'user' : 'assistant',
   contentBlocks: deserializeContentBlocks(dbMsg.contentBlocks ?? []),
@@ -39,7 +39,7 @@ const buildMessageFromStoredBlocks = (dbMsg: ChatDbMessage): ChatMessage => ({
  * Reconstruct contentBlocks from flat fields (backward compatibility)
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-const reconstructContentBlocks = (dbMsg: ChatDbMessage): ContentBlock[] => {
+export const reconstructContentBlocks = (dbMsg: ChatDbMessage): ContentBlock[] => {
   const contentBlocks: ContentBlock[] = [];
   const now = new Date();
 
@@ -105,22 +105,19 @@ const reconstructContentBlocks = (dbMsg: ChatDbMessage): ContentBlock[] => {
 };
 
 /**
- * Convert database messages to component message format
+ * Convert database messages to component message format.
+ * Legacy entrypoint -- new code uses loadMessages() which hydrates via tasks/get.
  */
 export const convertDbToComponent = (dbMessages: ChatDbMessage[]): ChatMessage[] =>
   dbMessages.map((dbMsg) => {
-    // NEW: Prefer stored contentBlocks if available (preserves exact temporal structure)
     if (dbMsg.contentBlocks && dbMsg.contentBlocks.length > 0) {
       return buildMessageFromStoredBlocks(dbMsg);
     }
 
-    // FALLBACK: Reconstruct contentBlocks from flat fields (backward compatibility)
-    const contentBlocks = reconstructContentBlocks(dbMsg);
-
     return {
       id: dbMsg.id,
       role: dbMsg.sender === 'user' ? 'user' : 'assistant',
-      contentBlocks,
+      contentBlocks: reconstructContentBlocks(dbMsg),
       timestamp: dbMsg.timestamp,
       contextId: dbMsg.contextId,
       taskId: dbMsg.taskId,

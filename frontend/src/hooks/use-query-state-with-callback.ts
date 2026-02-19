@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
 import { type UseQueryStateReturn, useQueryState } from 'nuqs';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 /**
  * A custom hook that extends `useQueryState` with callback functionality for syncing state changes.
@@ -60,7 +60,15 @@ export function useQueryStateWithCallback<T, U = null>(
   const [key, ...otherOptions] = options;
   const [value, setValue] = useQueryState<T>(key, ...otherOptions);
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.searchStr ?? '');
+
+  // Memoize searchParams to avoid creating a new URLSearchParams object on every render
+  const searchStr = location.searchStr ?? '';
+  const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+
+  // Use ref to store params to avoid dependency issues with unstable config objects
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
+
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -69,16 +77,16 @@ export function useQueryStateWithCallback<T, U = null>(
 
       if (searchParams.has(key)) {
         setValue(value);
-      } else if (params.getDefaultValue) {
-        const defaultValue = params.getDefaultValue();
+      } else if (paramsRef.current.getDefaultValue) {
+        const defaultValue = paramsRef.current.getDefaultValue();
         // The setValue function can accept T or a function that returns T
         setValue(defaultValue as T & {});
       }
     }
-  }, [key, setValue, value, params, searchParams]);
+  }, [key, setValue, value, searchParams]);
 
   const setValueFinal = (newValue: T & {}) => {
-    params.onUpdate(newValue);
+    paramsRef.current.onUpdate(newValue);
     setValue(newValue as T & {});
   };
 

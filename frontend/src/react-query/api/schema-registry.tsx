@@ -25,7 +25,7 @@ export const useListSchemasQuery = () => {
     queryFn: async () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/subjects`, {
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
         },
         method: 'GET',
       });
@@ -53,7 +53,7 @@ export const useSchemaModeQuery = () =>
       const response = await fetch(`${config.restBasePath}/schema-registry/mode`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           'Content-Type': 'application/json',
         },
       });
@@ -79,7 +79,7 @@ export const useSchemaCompatibilityQuery = () =>
       const response = await fetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           'Content-Type': 'application/json',
         },
       });
@@ -107,7 +107,7 @@ export const useSchemaDetailsQuery = (subjectName?: string, options?: { enabled?
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           },
         }
       );
@@ -131,7 +131,7 @@ export const useUpdateGlobalCompatibilityMutation = () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/config`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ compatibility: mode }),
@@ -173,7 +173,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
           {
             method: 'DELETE',
             headers: {
-              Authorization: `Bearer ${config.jwt}`,
+              ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
             },
           }
         );
@@ -189,7 +189,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ compatibility: mode }),
@@ -249,7 +249,7 @@ export const useSchemaTypesQuery = () =>
       const response = await fetch(`${config.restBasePath}/schema-registry/schemas/types`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
         },
       });
 
@@ -286,7 +286,7 @@ export const useCreateSchemaMutation = () => {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -344,7 +344,7 @@ export const useValidateSchemaMutation = () =>
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -385,7 +385,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
         {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
           },
         }
       );
@@ -420,7 +420,7 @@ export const useDeleteSchemaVersionMutation = () => {
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${config.jwt}`,
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
             'Content-Type': 'application/json',
           },
         }
@@ -460,7 +460,7 @@ export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
       const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${config.jwt}`,
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
         },
       });
 

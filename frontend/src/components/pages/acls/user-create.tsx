@@ -24,29 +24,24 @@ import {
   IconButton,
   Input,
   isMultiValue,
-  isSingleValue,
   PasswordInput,
   redpandaTheme,
   redpandaToastOptions,
   Select,
-  Tag,
-  TagCloseButton,
-  TagLabel,
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { RotateCwIcon } from 'components/icons';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useListRolesQuery } from '../../../react-query/api/security';
-import { invalidateUsersCache } from '../../../react-query/api/user';
+import { invalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
-import { AclRequestDefault, type CreateUserRequest } from '../../../state/rest-interfaces';
+import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
+import { uiState } from '../../../state/ui-state';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -57,7 +52,6 @@ import {
 } from '../../../utils/user';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
-import { PageComponent, type PageInitHelper } from '../page';
 
 const { ToastContainer, toast } = createStandaloneToast({
   theme: redpandaTheme,
@@ -68,105 +62,64 @@ const { ToastContainer, toast } = createStandaloneToast({
   },
 });
 
-export type CreateUserModalState = CreateUserRequest & {
-  generateWithSpecialChars: boolean;
-  step: 'CREATE_USER' | 'CREATE_USER_CONFIRMATION';
-  isCreating: boolean;
-  isValidUsername: boolean;
-  isValidPassword: boolean;
-  selectedRoles: string[];
-};
+const UserCreatePage = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState(() => generatePassword(30, false));
+  const [mechanism, setMechanism] = useState<SaslMechanism>('SCRAM-SHA-256');
+  const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
+  const [step, setStep] = useState<'CREATE_USER' | 'CREATE_USER_CONFIRMATION'>('CREATE_USER');
+  const [isCreating, setIsCreating] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
-@observer
-class UserCreatePage extends PageComponent {
-  @observable username = '';
-  @observable password: string = generatePassword(30, false);
-  @observable mechanism: SaslMechanism = 'SCRAM-SHA-256';
+  const { data: usersData } = useLegacyListUsersQuery();
+  const users = usersData?.users?.map((u) => u.name) ?? [];
 
-  @observable isValidUsername = false;
-  @observable isValidPassword = false;
+  const isValidUsername = validateUsername(username);
+  const isValidPassword = validatePassword(password);
 
-  @observable generateWithSpecialChars = false;
-  @observable step: 'CREATE_USER' | 'CREATE_USER_CONFIRMATION' = 'CREATE_USER';
-  @observable isCreating = false;
+  useEffect(() => {
+    uiState.pageTitle = 'Create user';
+    uiState.pageBreadcrumbs = [];
+    uiState.pageBreadcrumbs.push({ title: 'Access Control', linkTo: '/security' });
+    uiState.pageBreadcrumbs.push({ title: 'Create user', linkTo: '/security/users/create' });
 
-  @observable selectedRoles: string[] = [];
+    const refreshData = async () => {
+      if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
+        return;
+      }
+      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
+    };
 
-  constructor(p: Readonly<{ matchedPath: string }>) {
-    super(p);
-    makeObservable(this);
-    this.onCreateUser = this.onCreateUser.bind(this);
-  }
+    refreshData().catch(() => {
+      // Silently ignore refresh errors
+    });
+    appGlobal.onRefresh = () =>
+      refreshData().catch(() => {
+        // Silently ignore refresh errors
+      });
+  }, []);
 
-  initPage(p: PageInitHelper): void {
-    p.title = 'Create user';
-    p.addBreadcrumb('Access Control', '/security');
-    p.addBreadcrumb('Create user', '/security/users/create');
-
-    // biome-ignore lint/suspicious/noConsole: error logging
-    this.refreshData(true).catch(console.error);
-    // biome-ignore lint/suspicious/noConsole: error logging
-    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
-  }
-
-  async refreshData(force: boolean) {
-    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
-      return;
-    }
-
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
-  }
-
-  render() {
-    // if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
-    // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-    // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
-
-    this.isValidUsername = validateUsername(this.username);
-    this.isValidPassword = validatePassword(this.password);
-
-    const onCancel = () => appGlobal.historyPush('/security/users');
-
-    return (
-      <>
-        <ToastContainer />
-
-        <PageContent>
-          <Box>
-            {this.step === 'CREATE_USER' ? (
-              <CreateUserModal onCancel={onCancel} onCreateUser={this.onCreateUser} state={this} />
-            ) : (
-              <CreateUserConfirmationModal closeModal={onCancel} state={this} />
-            )}
-          </Box>
-        </PageContent>
-      </>
-    );
-  }
-
-  async onCreateUser(): Promise<boolean> {
+  const onCreateUser = useCallback(async (): Promise<boolean> => {
     try {
-      this.isCreating = true;
+      setIsCreating(true);
       await api.createServiceAccount({
-        username: this.username,
-        password: this.password,
-        mechanism: this.mechanism,
+        username,
+        password,
+        mechanism,
       });
 
-      // Refresh user list and invalidate React Query cache
       if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
         return false;
       }
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
 
-      // Add the user to the selected roles
       const roleAddPromises: Promise<unknown>[] = [];
-      for (const r of this.selectedRoles) {
-        roleAddPromises.push(rolesApi.updateRoleMembership(r, [this.username], [], false));
+      for (const r of selectedRoles) {
+        roleAddPromises.push(rolesApi.updateRoleMembership(r, [username], [], false));
       }
       await Promise.allSettled(roleAddPromises);
 
-      this.step = 'CREATE_USER_CONFIRMATION';
+      setStep('CREATE_USER_CONFIRMATION');
     } catch (err) {
       toast({
         status: 'error',
@@ -176,264 +129,272 @@ class UserCreatePage extends PageComponent {
         description: String(err),
       });
     } finally {
-      this.isCreating = false;
+      setIsCreating(false);
     }
     return true;
-  }
-}
+  }, [username, password, mechanism, selectedRoles]);
+
+  const onCancel = () => appGlobal.historyPush('/security/users');
+
+  const state = {
+    username,
+    setUsername,
+    password,
+    setPassword,
+    mechanism,
+    setMechanism,
+    generateWithSpecialChars,
+    setGenerateWithSpecialChars,
+    isCreating,
+    isValidUsername,
+    isValidPassword,
+    selectedRoles,
+    setSelectedRoles,
+    users,
+  };
+
+  return (
+    <>
+      <ToastContainer />
+
+      <PageContent>
+        <Box>
+          {step === 'CREATE_USER' ? (
+            <CreateUserModal onCancel={onCancel} onCreateUser={onCreateUser} state={state} />
+          ) : (
+            <CreateUserConfirmationModal
+              closeModal={onCancel}
+              mechanism={mechanism}
+              password={password}
+              username={username}
+            />
+          )}
+        </Box>
+      </PageContent>
+    </>
+  );
+};
 
 export default UserCreatePage;
 
-const CreateUserModal = observer(
-  (p: { state: CreateUserModalState; onCreateUser: () => Promise<boolean>; onCancel: () => void }) => {
-    const state = p.state;
+type CreateUserModalProps = {
+  state: {
+    username: string;
+    setUsername: (v: string) => void;
+    password: string;
+    setPassword: (v: string) => void;
+    mechanism: SaslMechanism;
+    setMechanism: (v: SaslMechanism) => void;
+    generateWithSpecialChars: boolean;
+    setGenerateWithSpecialChars: (v: boolean) => void;
+    isCreating: boolean;
+    isValidUsername: boolean;
+    isValidPassword: boolean;
+    selectedRoles: string[];
+    setSelectedRoles: (v: string[]) => void;
+    users: string[];
+  };
+  onCreateUser: () => Promise<boolean>;
+  onCancel: () => void;
+};
 
-    const isValidUsername = validateUsername(state.username);
-    const users = api.serviceAccounts?.users ?? [];
-    const userAlreadyExists = users.includes(state.username);
-    const isValidPassword = validatePassword(state.password);
+const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
+  const userAlreadyExists = state.users.includes(state.username);
 
-    const errorText = useMemo(() => {
-      if (!isValidUsername) {
-        return 'The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens.';
-      }
+  const errorText = useMemo(() => {
+    if (!state.isValidUsername) {
+      return 'The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens.';
+    }
 
-      if (userAlreadyExists) {
-        return 'User already exists';
-      }
-    }, [isValidUsername, userAlreadyExists]);
+    if (userAlreadyExists) {
+      return 'User already exists';
+    }
+  }, [state.isValidUsername, userAlreadyExists]);
 
-    return (
-      <Box maxWidth="460px">
-        <Flex direction="column" gap="2em">
-          <FormField
-            description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
-            errorText={errorText}
-            isInvalid={(!isValidUsername || userAlreadyExists) && state.username.length > 0}
-            label="Username"
-            showRequiredIndicator
-          >
-            <Input
-              autoComplete="off"
-              autoFocus
-              data-testid="create-user-name"
-              onChange={(v) => {
-                state.username = v.target.value;
-              }}
-              placeholder="Username"
-              spellCheck={false}
-              value={state.username}
-              width="100%"
-            />
-          </FormField>
-
-          <FormField
-            data-testid="create-user-password"
-            description={`Must be at least ${PASSWORD_MIN_LENGTH} characters and should not exceed ${PASSWORD_MAX_LENGTH} characters.`}
-            label="Password"
-            showRequiredIndicator={true}
-          >
-            <Flex direction="column" gap="2">
-              <Flex alignItems="center" gap="2">
-                <PasswordInput
-                  isInvalid={!isValidPassword}
-                  name="test"
-                  onChange={(e) => {
-                    state.password = e.target.value;
-                  }}
-                  value={state.password}
-                />
-
-                <Tooltip hasArrow label={'Generate new random password'} placement="top">
-                  <IconButton
-                    aria-label="Refresh"
-                    display="inline-flex"
-                    icon={<RotateCwIcon size={16} />}
-                    onClick={() => {
-                      state.password = generatePassword(30, state.generateWithSpecialChars);
-                    }}
-                    variant="ghost"
-                  />
-                </Tooltip>
-                <Tooltip hasArrow label={'Copy password'} placement="top">
-                  <CopyButton content={state.password} variant="ghost" />
-                </Tooltip>
-              </Flex>
-              <Checkbox
-                isChecked={state.generateWithSpecialChars}
-                onChange={(e) => {
-                  state.generateWithSpecialChars = e.target.checked;
-                  state.password = generatePassword(30, e.target.checked);
-                }}
-              >
-                Generate with special characters
-              </Checkbox>
-            </Flex>
-          </FormField>
-
-          <FormField label="SASL mechanism" showRequiredIndicator>
-            <SingleSelect<SaslMechanism>
-              onChange={(e) => {
-                state.mechanism = e;
-              }}
-              options={SASL_MECHANISMS.map((mechanism) => ({
-                value: mechanism,
-                label: mechanism,
-              }))}
-              value={state.mechanism}
-            />
-          </FormField>
-
-          {Boolean(Features.rolesApi) && (
-            <FormField
-              description="Assign roles to this user. This is optional and can be changed later."
-              isDisabled={!Features.rolesApi}
-              label="Assign roles"
-            >
-              <RoleSelector state={state.selectedRoles} />
-            </FormField>
-          )}
-        </Flex>
-
-        <Flex gap={4} mt={8}>
-          <Button
-            isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
-            isLoading={state.isCreating}
-            loadingText="Creating..."
-            onClick={p.onCreateUser}
-          >
-            Create
-          </Button>
-          <Button isDisabled={state.isCreating} onClick={p.onCancel} variant="link">
-            Cancel
-          </Button>
-        </Flex>
-      </Box>
-    );
-  }
-);
-
-const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; closeModal: () => void }) => {
   return (
-    <>
-      <Heading as="h1" mb={8} mt={4}>
-        <Flex alignItems="center">
-          {/* <CheckCircleIcon color="green.500" mr={2} transform="translateY(-1px)" /> */}
-          User created successfully
-        </Flex>
-      </Heading>
+    <Box maxWidth="460px">
+      <Flex direction="column" gap="2em">
+        <FormField
+          description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
+          errorText={errorText}
+          isInvalid={(!state.isValidUsername || userAlreadyExists) && state.username.length > 0}
+          label="Username"
+          showRequiredIndicator
+        >
+          <Input
+            autoComplete="off"
+            autoFocus
+            data-testid="create-user-name"
+            onChange={(v) => {
+              state.setUsername(v.target.value);
+            }}
+            placeholder="Username"
+            spellCheck={false}
+            value={state.username}
+            width="100%"
+          />
+        </FormField>
 
-      <Alert mb={4} mt={4} status="info">
-        <AlertIcon />
-        You will not be able to view this password again. Make sure that it is copied and saved.
-      </Alert>
+        <FormField
+          data-testid="create-user-password"
+          description={`Must be at least ${PASSWORD_MIN_LENGTH} characters and should not exceed ${PASSWORD_MAX_LENGTH} characters.`}
+          label="Password"
+          showRequiredIndicator={true}
+        >
+          <Flex direction="column" gap="2">
+            <Flex alignItems="center" gap="2">
+              <PasswordInput
+                isInvalid={!state.isValidPassword}
+                name="test"
+                onChange={(e) => {
+                  state.setPassword(e.target.value);
+                }}
+                value={state.password}
+              />
 
-      <Grid alignItems="center" gridColumnGap={6} gridRowGap={2} maxWidth="460px" templateColumns="max-content 1fr">
-        <Box data-testid="username" fontWeight="bold">
-          Username
-        </Box>
-        <Box>
-          <Flex alignItems="center" gap={2}>
-            <Text overflow="hidden" wordBreak="break-all">
-              {p.state.username}
-            </Text>
-
-            <Tooltip hasArrow label={'Copy username'} placement="top">
-              <CopyButton content={p.state.username} variant="ghost" />
-            </Tooltip>
+              <Tooltip hasArrow label={'Generate new random password'} placement="top">
+                <IconButton
+                  aria-label="Refresh"
+                  display="inline-flex"
+                  icon={<RotateCwIcon size={16} />}
+                  onClick={() => {
+                    state.setPassword(generatePassword(30, state.generateWithSpecialChars));
+                  }}
+                  variant="ghost"
+                />
+              </Tooltip>
+              <Tooltip hasArrow label={'Copy password'} placement="top">
+                <CopyButton content={state.password} variant="ghost" />
+              </Tooltip>
+            </Flex>
+            <Checkbox
+              isChecked={state.generateWithSpecialChars}
+              onChange={(e) => {
+                state.setGenerateWithSpecialChars(e.target.checked);
+                state.setPassword(generatePassword(30, e.target.checked));
+              }}
+            >
+              Generate with special characters
+            </Checkbox>
           </Flex>
-        </Box>
+        </FormField>
 
-        <Box data-testid="password" fontWeight="bold">
-          Password
-        </Box>
-        <Box>
-          <Flex alignItems="center" gap={2}>
-            <PasswordInput isDisabled={true} isReadOnly={true} name="test" value={p.state.password} />
+        <FormField label="SASL mechanism" showRequiredIndicator>
+          <SingleSelect<SaslMechanism>
+            onChange={(e) => {
+              state.setMechanism(e);
+            }}
+            options={SASL_MECHANISMS.map((mechanism) => ({
+              value: mechanism,
+              label: mechanism,
+            }))}
+            value={state.mechanism}
+          />
+        </FormField>
 
-            <Tooltip hasArrow label={'Copy password'} placement="top">
-              <CopyButton content={p.state.password} variant="ghost" />
-            </Tooltip>
-          </Flex>
-        </Box>
-
-        <Box data-testid="mechanism" fontWeight="bold">
-          Mechanism
-        </Box>
-        <Box>
-          <Text isTruncated={true} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-            {p.state.mechanism}
-          </Text>
-        </Box>
-      </Grid>
+        {Boolean(Features.rolesApi) && (
+          <FormField
+            description="Assign roles to this user. This is optional and can be changed later."
+            isDisabled={!Features.rolesApi}
+            label="Assign roles"
+          >
+            <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
+          </FormField>
+        )}
+      </Flex>
 
       <Flex gap={4} mt={8}>
-        <Button onClick={p.closeModal}>Done</Button>
         <Button
-          as={Link}
-          to={`/security/acls/create?principalType=User&principalName=${encodeURIComponent(p.state.username)}`}
-          variant="link"
+          isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
+          isLoading={state.isCreating}
+          loadingText="Creating..."
+          onClick={onCreateUser}
         >
-          Create ACLs
+          Create
+        </Button>
+        <Button isDisabled={state.isCreating} onClick={onCancel} variant="link">
+          Cancel
         </Button>
       </Flex>
-    </>
+    </Box>
   );
-});
+};
 
-export const RoleSelector = observer((p: { state: string[] }) => {
-  // Make sure we have up to date role info
-  useEffect(() => {
-    rolesApi.refreshRoles();
-    rolesApi.refreshRoleMembers();
-  }, []);
-  const [searchValue, setSearchValue] = useState('');
+type CreateUserConfirmationModalProps = {
+  username: string;
+  password: string;
+  mechanism: SaslMechanism;
+  closeModal: () => void;
+};
 
-  const state = p.state;
+const CreateUserConfirmationModal = ({
+  username,
+  password,
+  mechanism,
+  closeModal,
+}: CreateUserConfirmationModalProps) => (
+  <>
+    <Heading as="h1" mb={8} mt={4}>
+      <Flex alignItems="center">User created successfully</Flex>
+    </Heading>
 
-  const availableRoles = (rolesApi.roles ?? []).filter((r) => !state.includes(r)).map((r) => ({ value: r }));
+    <Alert mb={4} mt={4} status="info">
+      <AlertIcon />
+      You will not be able to view this password again. Make sure that it is copied and saved.
+    </Alert>
 
-  return (
-    <Flex direction="column" gap={4}>
-      <Box w="280px">
-        <Select<string>
-          inputValue={searchValue}
-          isMulti={false}
-          noOptionsMessage={() => 'No roles found'}
-          onChange={(val, meta) => {
-            // biome-ignore lint/suspicious/noConsole: debug logging
-            console.log('onChange', { metaAction: meta.action, val });
-            if (val && isSingleValue(val) && val.value) {
-              state.push(val.value);
-              setSearchValue('');
-            }
-          }}
-          onInputChange={setSearchValue}
-          options={availableRoles}
-          // TODO: Selecting an entry triggers onChange properly.
-          //       But there is no way to prevent the component from showing no value as intended
-          //       Seems to be a bug with the component.
-          //       On 'undefined' it should handle selection on its own (this works properly)
-          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
-          //       The override doesn't work either (isOptionSelected={()=>false})
-          placeholder="Select roles..."
-          value={undefined}
-        />
+    <Grid alignItems="center" gridColumnGap={6} gridRowGap={2} maxWidth="460px" templateColumns="max-content 1fr">
+      <Box data-testid="username" fontWeight="bold">
+        Username
+      </Box>
+      <Box>
+        <Flex alignItems="center" gap={2}>
+          <Text overflow="hidden" wordBreak="break-all">
+            {username}
+          </Text>
+
+          <Tooltip hasArrow label={'Copy username'} placement="top">
+            <CopyButton content={username} variant="ghost" />
+          </Tooltip>
+        </Flex>
       </Box>
 
-      <Flex gap={2}>
-        {state.map((role) => (
-          <Tag cursor="pointer" key={role}>
-            <TagLabel>{role}</TagLabel>
-            <TagCloseButton onClick={() => state.remove(role)} />
-          </Tag>
-        ))}
-      </Flex>
-    </Flex>
-  );
-});
+      <Box data-testid="password" fontWeight="bold">
+        Password
+      </Box>
+      <Box>
+        <Flex alignItems="center" gap={2}>
+          <PasswordInput isDisabled={true} isReadOnly={true} name="test" value={password} />
 
-// use instead of RoleSelector whn not using mobx
+          <Tooltip hasArrow label={'Copy password'} placement="top">
+            <CopyButton content={password} variant="ghost" />
+          </Tooltip>
+        </Flex>
+      </Box>
+
+      <Box data-testid="mechanism" fontWeight="bold">
+        Mechanism
+      </Box>
+      <Box>
+        <Text isTruncated={true} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+          {mechanism}
+        </Text>
+      </Box>
+    </Grid>
+
+    <Flex gap={4} mt={8}>
+      <Button onClick={closeModal}>Done</Button>
+      <Button
+        as={Link}
+        to={`/security/acls/create?principalType=User&principalName=${encodeURIComponent(username)}`}
+        variant="link"
+      >
+        Create ACLs
+      </Button>
+    </Flex>
+  </>
+);
+
 export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRoles: (roles: string[]) => void }) => {
   const [searchValue, setSearchValue] = useState('');
   const {
