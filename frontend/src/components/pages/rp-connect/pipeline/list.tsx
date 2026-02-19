@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { PipelineStatusBadge } from './status-badge';
+import { PipelineStatusBadge } from '../../../ui/pipeline/status-badge';
 import { TabKafkaConnect } from '../../connect/overview';
 
 type Pipeline = {
