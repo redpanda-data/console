@@ -13,7 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Loader2, RotateCwIcon } from 'lucide-react';
+import { Loader2, RefreshCcw } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useMemo, useState } from 'react';
@@ -136,7 +136,7 @@ const UserCreatePage = () => {
 
   return (
     <PageContent>
-      <form className="flex max-w-[460px] flex-col gap-8" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="mt-4 flex max-w-[460px] flex-col gap-8" onSubmit={form.handleSubmit(onSubmit)}>
         <Controller
           control={form.control}
           name="username"
@@ -182,14 +182,14 @@ const UserCreatePage = () => {
                         type="button"
                         variant="ghost"
                       >
-                        <RotateCwIcon className="size-4" />
+                        <RefreshCcw className="size-3" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Generate new random password</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <CopyButton content={field.value} size="icon" variant="ghost" />
+                      <CopyButton content={field.value} variant="ghost" />
                     </TooltipTrigger>
                     <TooltipContent>Copy password</TooltipContent>
                   </Tooltip>
