@@ -21,12 +21,12 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commoninterceptor "github.com/redpanda-data/common-go/api/interceptor"
 	"github.com/redpanda-data/common-go/api/metrics"
+	"github.com/rs/cors"
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -523,19 +523,23 @@ func (api *API) routes() *chi.Mux {
 	baseRouter.Use(recoverer.Wrap)
 	baseRouter.Use(chimiddleware.RealIP)
 	baseRouter.Use(basePath.Wrap)
-	baseRouter.Use(cors.Handler(cors.Options{
-		AllowOriginFunc: func(r *http.Request, _ string) bool {
+	// AllowPrivateNetwork enables Chrome's Private Network Access support for BYOC
+	// deployments where browsers access cloud.redpanda.com but VPN routes traffic
+	// to private IP addresses.
+	baseRouter.Use(cors.New(cors.Options{
+		AllowOriginRequestFunc: func(r *http.Request, _ string) bool {
 			isAllowed := checkOriginFn(r)
 			if !isAllowed {
 				api.Logger.Debug("CORS check failed", slog.String("request_origin", r.Header.Get("Origin")))
 			}
 			return isAllowed
 		},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
-	}))
+		AllowedMethods:      []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:      []string{"*"},
+		AllowCredentials:    true,
+		MaxAge:              300, // Maximum value not ignored by any of major browsers
+		AllowPrivateNetwork: api.Cfg.REST.AllowPrivateNetwork,
+	}).Handler)
 
 	// Fork a new router so that we can inject middlewares that are specific to the Connect API
 	baseRouter.Group(func(router chi.Router) {
