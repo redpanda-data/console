@@ -11,12 +11,15 @@
 
 import { Box } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 
 import KowlEditor from './kowl-editor';
 
 export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
-  const str = typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
+  const str = useMemo(
+    () => (typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4)),
+    [props.srcObj]
+  );
 
   return (
     <Box
