@@ -352,7 +352,7 @@ export function isServerless() {
 }
 
 export function isAdpEnabled() {
-  return config.isAdpEnabled;
+  return config.isAdpEnabled && !isServerless();
 }
 
 export const embeddedAvailableRoutesObservable = observable({
