@@ -10,18 +10,9 @@
  */
 
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import {
-  type IReactionDisposer,
-  action,
-  autorun,
-  computed,
-  makeObservable,
-  observable,
-  transaction,
-  untracked,
-} from 'mobx';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, type FC, type ReactNode, useState } from 'react';
+import React, { Component, type FC, type ReactNode, useCallback, useState } from 'react';
 import { type MessageSearch, type MessageSearchRequest, api, createMessageSearch } from '../../../../state/backendApi';
 import type { Payload, Topic, TopicAction } from '../../../../state/restInterfaces';
 import type { TopicMessage } from '../../../../state/restInterfaces';
@@ -250,8 +241,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   currentSearchRun: string | null = null;
 
   @observable downloadMessages: TopicMessage[] | null = null;
-  @observable expandedKeys: React.Key[] = [];
-
   constructor(props: TopicMessageViewProps) {
     super(props);
     this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
@@ -750,29 +739,35 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const tsFormat = uiState.topicSettings.previewTimestamps;
     const hasKeyTags = uiState.topicSettings.previewTags.count((x) => x.isActive && x.searchInMessageKey) > 0;
 
-    function onCopyValue(original: TopicMessage) {
-      navigator.clipboard
-        .writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes))
-        .then(() => {
-          toast({
-            status: 'success',
-            description: 'Value copied to clipboard',
-          });
-        })
-        .catch(navigatorClipboardErrorHandler);
-    }
+    const onCopyValue = useCallback(
+      (original: TopicMessage) => {
+        navigator.clipboard
+          .writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes))
+          .then(() => {
+            toast({
+              status: 'success',
+              description: 'Value copied to clipboard',
+            });
+          })
+          .catch(navigatorClipboardErrorHandler);
+      },
+      [toast],
+    );
 
-    function onCopyKey(original: TopicMessage) {
-      navigator.clipboard
-        .writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes))
-        .then(() => {
-          toast({
-            status: 'success',
-            description: 'Key copied to clipboard',
-          });
-        })
-        .catch(navigatorClipboardErrorHandler);
-    }
+    const onCopyKey = useCallback(
+      (original: TopicMessage) => {
+        navigator.clipboard
+          .writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes))
+          .then(() => {
+            toast({
+              status: 'success',
+              description: 'Key copied to clipboard',
+            });
+          })
+          .catch(navigatorClipboardErrorHandler);
+      },
+      [toast],
+    );
 
     const isValueDeserializerActive =
       uiState.topicSettings.searchParams.valueDeserializer !== null &&
@@ -991,18 +986,21 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
               query.pageSize = String(pageSize);
             });
           })}
-          subComponent={({ row: { original } }) => (
-            <ExpandedMessage
-              msg={original}
-              loadLargeMessage={() =>
-                this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
-              }
-              onDownloadRecord={() => {
-                this.downloadMessages = [original];
-              }}
-              onCopyKey={onCopyKey}
-              onCopyValue={onCopyValue}
-            />
+          subComponent={useCallback(
+            ({ row: { original } }: { row: { original: TopicMessage } }) => (
+              <ExpandedMessage
+                msg={original}
+                loadLargeMessage={() =>
+                  this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
+                }
+                onDownloadRecord={() => {
+                  this.downloadMessages = [original];
+                }}
+                onCopyKey={onCopyKey}
+                onCopyValue={onCopyValue}
+              />
+            ),
+            [onCopyKey, onCopyValue],
           )}
         />
         <Button
@@ -1043,15 +1041,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       </>
     );
   });
-
-  @action toggleRecordExpand(r: TopicMessage) {
-    const key = `${r.offset} ${r.partitionID}${r.timestamp}`;
-    // try collapsing it, removeAll returns the number of matches
-    const removed = this.expandedKeys.removeAll((x) => x === key);
-    if (removed === 0)
-      // wasn't expanded, so expand it now
-      this.expandedKeys.push(key);
-  }
 
   async executeMessageSearch(): Promise<TopicMessage[]> {
     const searchParams = uiState.topicSettings.searchParams;
