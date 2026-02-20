@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link as TanStackRouterLink } from '@tanstack/react-router';
 import { FEATURE_FLAGS } from 'components/constants';
-import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -52,7 +51,7 @@ import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { SASL_MECHANISMS } from 'utils/user';
+import { generatePassword, SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';

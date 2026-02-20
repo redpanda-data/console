@@ -216,7 +216,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-const inputEndClassNames = 'absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none right-2';
+const inputEndClassNames = 'absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none right-2 flex items-center justify-center';
 
 const InputContext = createContext<{
   setStartWidth: (width: number) => void;
