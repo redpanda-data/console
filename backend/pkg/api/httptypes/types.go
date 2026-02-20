@@ -21,11 +21,15 @@ import (
 // used in Console Enterprise to implement the hooks.
 type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
-	StartOffset           int64  `json:"startOffset"`    // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
-	StartTimestamp        int64  `json:"startTimestamp"` // Start offset by unix timestamp in ms (only considered if start offset is set to -4)
-	PartitionID           int32  `json:"partitionId"`    // -1 for all partition ids
-	MaxResults            int    `json:"maxResults"`
+	StartOffset           int64  `json:"startOffset"`           // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
+	StartTimestamp        int64  `json:"startTimestamp"`        // Start offset by unix timestamp in ms (only considered if start offset is set to -4)
+	PartitionID           int32  `json:"partitionId"`           // -1 for all partition ids
+	MaxResults            int    `json:"maxResults"`            // Maximum number of messages to fetch (1-10000).
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
+
+	// Pagination fields (used when PageSize > 0)
+	PageToken string `json:"pageToken,omitempty"`
+	PageSize  int    `json:"pageSize,omitempty"` // Page size for pagination (1-10000)
 
 	// Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred
 	// to the enterprise backend.
@@ -46,8 +50,20 @@ func (l *ListMessagesRequest) OK() error {
 		return errors.New("partitionID is smaller than -1")
 	}
 
-	if l.MaxResults <= 0 || l.MaxResults > 500 {
-		return errors.New("max results must be between 1 and 500")
+	if l.MaxResults <= 0 || l.MaxResults > 10_000 {
+		return errors.New("max results must be between 1 and 10000")
+	}
+
+	// Pagination mode: when PageSize > 0, filters are not supported
+	if l.PageSize > 0 {
+		if l.FilterInterpreterCode != "" {
+			decoded, _ := l.DecodeInterpreterCode()
+			if decoded != "" {
+				return errors.New("cannot use filters with pagination")
+			}
+		}
+		// PageToken validation is done in the console package DecodePageToken
+		return nil
 	}
 
 	if _, err := l.DecodeInterpreterCode(); err != nil {

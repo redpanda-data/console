@@ -88,7 +88,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
-		mockProgress.EXPECT().OnComplete(gomock.Any(), false)
+		mockProgress.EXPECT().OnComplete(gomock.Any(), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -120,7 +120,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(gomock.AssignableToTypeOf(msg)).Times(20)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(20)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -151,7 +151,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(MatchesOrder("10")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -186,7 +186,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessage(MatchesOrder("13")).Times(1)
 		mockProgress.EXPECT().OnMessage(MatchesOrder("14")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -217,7 +217,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(MatchesOrder("19")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -253,7 +253,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnMessage(MatchesOrder("14")).Times(1)
 		mockProgress.EXPECT().OnMessage(MatchesOrder("15")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -326,7 +326,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(MatchesOrder("10")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		var fetchCalls int32
 		mdCalls := atomic.Int32{}
@@ -570,7 +570,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(orderMatcher).Times(11)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -610,7 +610,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(orderMatcher).Times(4)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -656,7 +656,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(orderMatcher).Times(10)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -703,7 +703,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
 		mockProgress.EXPECT().OnMessage(orderMatcher).Times(10)
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 
@@ -749,7 +749,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Consuming messages")
 		mockProgress.EXPECT().OnMessage(orderMatcher).Times(10)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
-		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false, "")
 
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
 

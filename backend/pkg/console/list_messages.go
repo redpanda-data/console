@@ -40,6 +40,11 @@ const (
 	StartOffsetNewest int64 = -3
 	// StartOffsetTimestamp = Start offset is specified as unix timestamp in ms
 	StartOffsetTimestamp int64 = -4
+
+	// DirectionDescending = Newest messages first (high water mark to low water mark)
+	DirectionDescending string = "desc"
+	// DirectionAscending = Oldest messages first (low water mark to high water mark)
+	DirectionAscending string = "asc"
 )
 
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
@@ -48,13 +53,17 @@ type ListMessageRequest struct {
 	PartitionID           int32 // -1 for all partitions
 	StartOffset           int64 // -1 for recent (high - n), -2 for oldest offset, -3 for newest offset, -4 for timestamp
 	StartTimestamp        int64 // Start offset by unix timestamp in ms
-	MessageCount          int
+	MessageCount          int   // Maximum number of messages to fetch
 	FilterInterpreterCode string
 	Troubleshoot          bool
 	IncludeRawPayload     bool
 	IgnoreMaxSizeLimit    bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
+
+	// Pagination fields (used when PageSize > 0)
+	PageToken string
+	PageSize  int // Number of messages per page. When > 0, enables pagination mode.
 }
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
@@ -72,7 +81,7 @@ type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
 	OnMessage(message *TopicMessage)
 	OnMessageConsumed(size int64)
-	OnComplete(elapsedMs int64, isCancelled bool)
+	OnComplete(elapsedMs int64, isCancelled bool, nextPageToken string)
 	OnError(msg string)
 }
 
@@ -123,6 +132,7 @@ type TopicConsumeRequest struct {
 	IgnoreMaxSizeLimit    bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
+	Direction             string // "desc" or "asc" - used for message ordering
 }
 
 // ListMessages processes a list message request as sent from the Frontend. This function is responsible (mostly
@@ -134,7 +144,7 @@ type TopicConsumeRequest struct {
 // 5. Start consume request via the Kafka Service
 // 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
 //
-//nolint:cyclop // complex logic
+//nolint:cyclop // complex logic with multiple code paths for pagination vs legacy mode
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
@@ -211,18 +221,38 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
-	consumeRequests, err := s.calculateConsumeRequests(ctx, cl, &listReq, partitionIDs, startOffsets, endOffsets)
-	if err != nil {
-		return fmt.Errorf("failed to calculate consume request: %w", err)
+	var consumeRequests map[int32]*PartitionConsumeRequest
+	var nextPageToken string
+	var token *PageToken
+
+	if listReq.PageSize > 0 {
+		token, consumeRequests, nextPageToken, err = s.resolvePagedConsumeRequests(ctx, &listReq, partitionIDs, startOffsets, endOffsets)
+	} else {
+		consumeRequests, err = s.calculateConsumeRequests(ctx, cl, &listReq, partitionIDs, startOffsets, endOffsets)
 	}
+	if err != nil {
+		return err
+	}
+
 	if len(consumeRequests) == 0 {
 		// No partitions/messages to consume, we can quit early.
-		progress.OnComplete(time.Since(start).Milliseconds(), false)
+		progress.OnComplete(time.Since(start).Milliseconds(), false, "")
 		return nil
 	}
+	// Determine direction based on mode
+	direction := DirectionAscending // Legacy mode is ascending
+	// Determine the max message count for this request
+	// In pagination mode, use PageSize; otherwise use MessageCount (maxResults)
+	maxMessageCount := listReq.MessageCount
+	if listReq.PageSize > 0 && token != nil {
+		// Pagination mode: use direction from token and limit to PageSize
+		direction = token.Direction
+		maxMessageCount = listReq.PageSize
+	}
+
 	topicConsumeRequest := TopicConsumeRequest{
 		TopicName:             listReq.TopicName,
-		MaxMessageCount:       listReq.MessageCount,
+		MaxMessageCount:       maxMessageCount,
 		Partitions:            consumeRequests,
 		FilterInterpreterCode: listReq.FilterInterpreterCode,
 		Troubleshoot:          listReq.Troubleshoot,
@@ -230,6 +260,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		IgnoreMaxSizeLimit:    listReq.IgnoreMaxSizeLimit,
 		KeyDeserializer:       listReq.KeyDeserializer,
 		ValueDeserializer:     listReq.ValueDeserializer,
+		Direction:             direction,
 	}
 
 	progress.OnPhase("Consuming messages")
@@ -240,12 +271,50 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	isCancelled := ctx.Err() != nil
-	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled)
+	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled, nextPageToken)
 	if isCancelled {
 		return errors.New("request was cancelled while waiting for messages")
 	}
 
 	return nil
+}
+
+// resolvePagedConsumeRequests resolves the page token and calculates consume requests for pagination mode.
+func (s *Service) resolvePagedConsumeRequests(
+	ctx context.Context,
+	listReq *ListMessageRequest,
+	partitionIDs []int32,
+	startOffsets, endOffsets kadm.ListedOffsets,
+) (*PageToken, map[int32]*PartitionConsumeRequest, string, error) {
+	if listReq.FilterInterpreterCode != "" {
+		return nil, nil, "", errors.New("cannot use filters with pagination")
+	}
+
+	token, err := s.resolvePageToken(listReq, startOffsets, endOffsets)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	consumeRequests, nextPageToken, _, err := s.calculateConsumeRequestsWithPageToken(ctx, token, partitionIDs, startOffsets, endOffsets)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to calculate consume request with page token: %w", err)
+	}
+
+	return token, consumeRequests, nextPageToken, nil
+}
+
+// resolvePageToken decodes an existing page token or creates an initial one.
+func (*Service) resolvePageToken(listReq *ListMessageRequest, startOffsets, endOffsets kadm.ListedOffsets) (*PageToken, error) {
+	if listReq.PageToken != "" {
+		return DecodePageToken(listReq.PageToken)
+	}
+
+	direction := DirectionDescending
+	if listReq.StartOffset == StartOffsetOldest {
+		direction = DirectionAscending
+	}
+
+	return CreateInitialPageToken(listReq.TopicName, startOffsets, endOffsets, listReq.PageSize, direction)
 }
 
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
@@ -457,6 +526,282 @@ func (s *Service) calculateConsumeRequests(
 	return filteredRequests, nil
 }
 
+type partitionState struct {
+	cursor                PartitionCursor
+	updatedLowWaterMark   int64
+	updatedHighWaterMark  int64
+	nextOffsetForNextPage int64
+	messagesAvailable     int64
+	isDrained             bool
+}
+
+// collectPartitionStates iterates the token's partition cursors, checks water marks,
+// handles compaction adjustment and exhaustion, and returns active partition states.
+func (s *Service) collectPartitionStates(
+	ctx context.Context,
+	token *PageToken,
+	startOffsets, endOffsets kadm.ListedOffsets,
+) []*partitionState {
+	states := make([]*partitionState, 0, len(token.Partitions))
+
+	for _, cursor := range token.Partitions {
+		// Get current water marks
+		startOffset, exists := startOffsets.Lookup(token.TopicName, cursor.ID)
+		if !exists {
+			s.logger.WarnContext(ctx, "partition from token not found in startOffsets, skipping",
+				slog.String("topic", token.TopicName),
+				slog.Int("partition", int(cursor.ID)))
+			continue
+		}
+
+		endOffset, exists := endOffsets.Lookup(token.TopicName, cursor.ID)
+		if !exists {
+			s.logger.WarnContext(ctx, "partition from token not found in endOffsets, skipping",
+				slog.String("topic", token.TopicName),
+				slog.Int("partition", int(cursor.ID)))
+			continue
+		}
+
+		// Update water marks in case they've changed
+		updatedLowWaterMark := startOffset.Offset
+		updatedHighWaterMark := endOffset.Offset
+
+		// Adjust for compaction: if the low watermark moved past our
+		// next offset, skip ahead to avoid reading deleted/compacted offsets.
+		if cursor.NextOffset < updatedLowWaterMark {
+			s.logger.DebugContext(ctx, "adjusting nextOffset due to compaction",
+				slog.String("topic", token.TopicName),
+				slog.Int("partition", int(cursor.ID)),
+				slog.Int64("old_next_offset", cursor.NextOffset),
+				slog.Int64("new_low_watermark", updatedLowWaterMark))
+			cursor.NextOffset = updatedLowWaterMark
+		}
+
+		// Check if partition is exhausted based on direction
+		var isExhausted bool
+		if token.Direction == DirectionDescending {
+			// Descending: exhausted when nextOffset < lowWaterMark
+			isExhausted = cursor.NextOffset < updatedLowWaterMark
+		} else {
+			// Ascending: exhausted when nextOffset >= highWaterMark
+			isExhausted = cursor.NextOffset >= updatedHighWaterMark
+		}
+
+		if isExhausted {
+			// Partition exhausted, don't include in next token
+			s.logger.DebugContext(ctx, "partition exhausted",
+				slog.String("topic", token.TopicName),
+				slog.Int("partition", int(cursor.ID)),
+				slog.Int64("next_offset", cursor.NextOffset),
+				slog.String("direction", token.Direction))
+			continue
+		}
+
+		// Calculate available messages for this partition
+		var messagesAvailable int64
+		if token.Direction == DirectionDescending {
+			// Available from nextOffset down to lowWaterMark (inclusive)
+			messagesAvailable = cursor.NextOffset - updatedLowWaterMark + 1
+		} else {
+			// Available from nextOffset up to highWaterMark (exclusive)
+			messagesAvailable = updatedHighWaterMark - cursor.NextOffset
+		}
+
+		if messagesAvailable <= 0 {
+			continue
+		}
+
+		states = append(states, &partitionState{
+			cursor:               cursor,
+			updatedLowWaterMark:  updatedLowWaterMark,
+			updatedHighWaterMark: updatedHighWaterMark,
+			messagesAvailable:    messagesAvailable,
+			isDrained:            false,
+		})
+	}
+
+	return states
+}
+
+// calculateConsumeRequestsWithPageToken calculates consume requests for pagination mode (descending order).
+// It returns the consume requests map, the next page token, and whether more pages are available.
+//
+//nolint:gocognit,cyclop // complex logic for round-robin distribution across partitions with watermark tracking
+func (s *Service) calculateConsumeRequestsWithPageToken(
+	ctx context.Context,
+	token *PageToken,
+	requestedPartitionIDs []int32,
+	startOffsets, endOffsets kadm.ListedOffsets,
+) (map[int32]*PartitionConsumeRequest, string, bool, error) {
+	requests := make(map[int32]*PartitionConsumeRequest)
+
+	// Validate partition count hasn't changed
+	if int32(len(requestedPartitionIDs)) != token.PartitionCount {
+		return nil, "", false, fmt.Errorf("partition count changed: expected %d, got %d", token.PartitionCount, len(requestedPartitionIDs))
+	}
+
+	// Build a next token to track state for the next page
+	nextToken := &PageToken{
+		TopicName:      token.TopicName,
+		PartitionCount: token.PartitionCount,
+		Partitions:     make([]PartitionCursor, 0, len(token.Partitions)),
+		Direction:      token.Direction,
+		PageSize:       token.PageSize,
+	}
+
+	anyPartitionHasMore := false
+
+	// First pass: collect partition states and check exhaustion
+	partitionStates := s.collectPartitionStates(ctx, token, startOffsets, endOffsets)
+
+	// If no partitions available, return empty
+	if len(partitionStates) == 0 {
+		return requests, "", false, nil
+	}
+
+	// Second pass: Distribute pageSize across partitions using round-robin
+	remainingMessages := int64(token.PageSize)
+	yieldingPartitions := len(partitionStates)
+
+	// Initialize each partition with 0 messages
+	for _, state := range partitionStates {
+		requests[state.cursor.ID] = &PartitionConsumeRequest{
+			PartitionID:     state.cursor.ID,
+			IsDrained:       false,
+			LowWaterMark:    state.updatedLowWaterMark,
+			HighWaterMark:   state.updatedHighWaterMark,
+			StartOffset:     state.cursor.NextOffset,
+			EndOffset:       state.cursor.NextOffset,
+			MaxMessageCount: 0,
+		}
+	}
+
+	// Round-robin distribution: give each partition one message at a time
+	for remainingMessages > 0 && yieldingPartitions > 0 {
+		progressMade := false
+
+		for _, state := range partitionStates {
+			if state.isDrained || remainingMessages == 0 {
+				continue
+			}
+
+			req := requests[state.cursor.ID]
+
+			// Check if this partition can yield more messages
+			if req.MaxMessageCount >= state.messagesAvailable {
+				state.isDrained = true
+				yieldingPartitions--
+				continue
+			}
+
+			// Give this partition one more message
+			req.MaxMessageCount++
+			remainingMessages--
+			progressMade = true
+		}
+
+		// Safety: if no progress was made in a round, break to avoid infinite loop
+		if !progressMade {
+			break
+		}
+	}
+
+	// Third pass: Calculate actual read ranges and next offsets for each partition
+	totalAssigned := int64(0)
+	for _, state := range partitionStates {
+		req := requests[state.cursor.ID]
+
+		if req.MaxMessageCount == 0 {
+			// No messages assigned to this partition, remove it
+			delete(requests, state.cursor.ID)
+			continue
+		}
+		totalAssigned += req.MaxMessageCount
+
+		// Calculate the actual read range based on direction
+		var readStart, readEnd int64
+		var nextOffsetForNextPage int64
+
+		if token.Direction == DirectionDescending {
+			// Descending: read from (nextOffset - count + 1) to nextOffset
+			readStart = state.cursor.NextOffset - req.MaxMessageCount + 1
+			if readStart < state.updatedLowWaterMark {
+				readStart = state.updatedLowWaterMark
+			}
+			readEnd = state.cursor.NextOffset
+			nextOffsetForNextPage = readStart - 1
+		} else {
+			// Ascending: read from nextOffset to (nextOffset + count - 1)
+			readStart = state.cursor.NextOffset
+			readEnd = state.cursor.NextOffset + req.MaxMessageCount - 1
+			if readEnd >= state.updatedHighWaterMark {
+				readEnd = state.updatedHighWaterMark - 1
+			}
+			nextOffsetForNextPage = readEnd + 1
+		}
+
+		// Update request with calculated ranges
+		req.StartOffset = readStart
+		req.EndOffset = readEnd
+		//  MaxMessageCount stays as assigned by round-robin
+		// But if the actual range is smaller (near water marks), we need to adjust
+		actualAvailable := readEnd - readStart + 1
+		if actualAvailable < req.MaxMessageCount {
+			req.MaxMessageCount = actualAvailable
+		}
+
+		// Determine if this partition has more messages for next page
+		var hasMore bool
+		if token.Direction == DirectionDescending {
+			hasMore = nextOffsetForNextPage >= state.updatedLowWaterMark
+		} else {
+			hasMore = nextOffsetForNextPage < state.updatedHighWaterMark
+		}
+
+		if hasMore {
+			anyPartitionHasMore = true
+		}
+
+		// Store next offset for this partition
+		state.nextOffsetForNextPage = nextOffsetForNextPage
+
+		// Add to next token
+		nextToken.Partitions = append(nextToken.Partitions, PartitionCursor{
+			ID:            state.cursor.ID,
+			NextOffset:    nextOffsetForNextPage,
+			LowWaterMark:  state.updatedLowWaterMark,
+			HighWaterMark: state.updatedHighWaterMark,
+		})
+	}
+
+	// Log detailed partition information for debugging
+	for partID, req := range requests {
+		s.logger.DebugContext(ctx, "partition consume request",
+			slog.Int("partition_id", int(partID)),
+			slog.Int64("start_offset", req.StartOffset),
+			slog.Int64("end_offset", req.EndOffset),
+			slog.Int64("max_message_count", req.MaxMessageCount))
+	}
+
+	s.logger.DebugContext(ctx, "pagination distribution complete",
+		slog.Int("page_size", token.PageSize),
+		slog.Int64("total_assigned", totalAssigned),
+		slog.Int("num_partitions", len(requests)))
+
+	// If no partitions have more data, return empty token
+	if !anyPartitionHasMore {
+		return requests, "", false, nil
+	}
+
+	// Encode next token
+	encodedNextToken, err := nextToken.Encode()
+	if err != nil {
+		return nil, "", false, fmt.Errorf("failed to encode next page token: %w", err)
+	}
+
+	return requests, encodedNextToken, true, nil
+}
+
 // FetchMessages is in charge of fulfilling the topic consume request. This is tricky
 // in many cases, often due to the fact that we can't consume backwards, but we offer
 // users to consume the most recent messages.
@@ -520,6 +865,9 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 	messageCount := 0
 	messageCountByPartition := make(map[int32]int64)
 
+	// For descending order, we need to collect messages per partition and reverse them
+	messagesPerPartition := make(map[int32][]*TopicMessage)
+
 	for msg := range resultsCh {
 		// Since a 'kafka message' is likely transmitted in compressed batches this size is not really accurate
 		progress.OnMessageConsumed(msg.MessageSize)
@@ -529,13 +877,34 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 			messageCount++
 			messageCountByPartition[msg.PartitionID]++
 
-			progress.OnMessage(msg)
+			if consumeReq.Direction == DirectionDescending {
+				// Collect messages for reversal
+				messagesPerPartition[msg.PartitionID] = append(messagesPerPartition[msg.PartitionID], msg)
+			} else {
+				// Stream messages immediately in ascending order
+				progress.OnMessage(msg)
+			}
 		}
 
 		// Do we need more messages to satisfy the user request? Return if request is satisfied
 		isRequestSatisfied := messageCount == consumeReq.MaxMessageCount
 		if isRequestSatisfied {
-			return nil
+			break
+		}
+	}
+
+	// If descending order, reverse and send messages
+	if consumeReq.Direction == DirectionDescending {
+		// Reverse messages in each partition
+		for _, messages := range messagesPerPartition {
+			for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+				messages[i], messages[j] = messages[j], messages[i]
+			}
+
+			// Send reversed messages
+			for _, msg := range messages {
+				progress.OnMessage(msg)
+			}
 		}
 	}
 
@@ -679,11 +1048,11 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 // consumeKafkaMessages consumes messages for the consume request and sends responses to the jobs channel.
 // This function will close the channel.
 // The caller is responsible for closing the client if desired.
-//
-//nolint:gocognit // end condition if statements
 func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
 	defer close(jobs)
 
+	// Track which partitions have finished reading
+	finishedPartitions := make(map[int32]bool)
 	remainingPartitionRequests := len(consumeReq.Partitions)
 
 	for {
@@ -709,6 +1078,11 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 			for !iter.Done() {
 				record := iter.Next()
 
+				// Skip messages from partitions that are already finished
+				if finishedPartitions[record.Partition] {
+					continue
+				}
+
 				// Avoid a deadlock in case the jobs channel is full
 				select {
 				case <-ctx.Done():
@@ -718,10 +1092,11 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 
 				partitionReq := consumeReq.Partitions[record.Partition]
 
+				// Stop reading from this partition when we've reached the EndOffset.
+				// The record was already sent to the jobs channel above, so >= is correct here.
 				if record.Offset >= partitionReq.EndOffset {
-					if remainingPartitionRequests > 0 {
-						remainingPartitionRequests--
-					}
+					finishedPartitions[record.Partition] = true
+					remainingPartitionRequests--
 
 					if remainingPartitionRequests == 0 {
 						return
