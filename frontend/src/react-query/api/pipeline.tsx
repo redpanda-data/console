@@ -76,7 +76,10 @@ export const useGetPipelineQuery = (
 
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>
+  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
+    /** Enable smart polling when pipelines are in transitional states (STARTING/STOPPING) */
+    enableSmartPolling?: boolean;
+  }
 ) => {
   // Stabilize request objects to prevent unnecessary re-renders
   const listPipelinesRequestDataPlane = useMemo(
@@ -99,6 +102,17 @@ export const useListPipelinesQuery = (
 
   const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     enabled: options?.enabled,
+    refetchInterval: options?.enableSmartPolling
+      ? (query) => {
+          const pages = query?.state?.data?.pages;
+          const hasTransitional = pages?.some((page) =>
+            page?.response?.pipelines?.some(
+              (p) => p?.state === Pipeline_State.STARTING || p?.state === Pipeline_State.STOPPING
+            )
+          );
+          return hasTransitional ? SHORT_POLLING_INTERVAL : false;
+        }
+      : false,
     getNextPageParam: (lastPage) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
       if (!nextPageToken) {

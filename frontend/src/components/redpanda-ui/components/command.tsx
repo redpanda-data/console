@@ -1,9 +1,10 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Command as CommandPrimitive } from 'cmdk';
-import { SearchIcon } from 'lucide-react';
+import { ChevronRight, SearchIcon } from 'lucide-react';
 import React from 'react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './dialog';
+import { Popover, PopoverAnchor, PopoverContent } from './popover';
 import { Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -152,6 +153,76 @@ function CommandShortcut({ className, children, ...props }: React.ComponentProps
   );
 }
 
+// ── Command Submenu ───────────────────────────────────────────────────
+
+type CommandSubContextType = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+const CommandSubContext = React.createContext<CommandSubContextType | undefined>(undefined);
+
+interface CommandSubProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+function CommandSub({ open, onOpenChange, children }: CommandSubProps) {
+  return (
+    <CommandSubContext.Provider value={React.useMemo(() => ({ open, onOpenChange }), [open, onOpenChange])}>
+      <Popover open={open} onOpenChange={onOpenChange}>
+        {children}
+      </Popover>
+    </CommandSubContext.Provider>
+  );
+}
+
+interface CommandSubTriggerProps extends React.ComponentProps<typeof CommandPrimitive.Item> {
+  inset?: boolean;
+}
+
+function CommandSubTrigger({ className, children, inset, ...props }: CommandSubTriggerProps) {
+  const ctx = React.useContext(CommandSubContext);
+
+  return (
+    <PopoverAnchor asChild>
+      <CommandPrimitive.Item
+        className={cn(
+          "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+          inset && 'pl-8',
+          className,
+        )}
+        data-slot="command-sub-trigger"
+        onSelect={() => ctx?.onOpenChange(true)}
+        {...props}
+      >
+        {children}
+        <ChevronRight className="ml-auto size-4" />
+      </CommandPrimitive.Item>
+    </PopoverAnchor>
+  );
+}
+
+interface CommandSubContentProps {
+  className?: string;
+  children: React.ReactNode;
+}
+
+function CommandSubContent({ className, children }: CommandSubContentProps) {
+  return (
+    <PopoverContent
+      side="right"
+      align="start"
+      sideOffset={4}
+      className={cn('w-fit p-0', className)}
+      onOpenAutoFocus={(e) => e.preventDefault()}
+    >
+      {children}
+    </PopoverContent>
+  );
+}
+
 // Simplified interface for backend developers
 interface SimpleCommandProps extends SharedProps {
   placeholder?: string;
@@ -212,6 +283,9 @@ export {
   CommandItem,
   CommandShortcut,
   CommandSeparator,
+  CommandSub,
+  CommandSubTrigger,
+  CommandSubContent,
   SimpleCommand,
   commandVariants,
 };
