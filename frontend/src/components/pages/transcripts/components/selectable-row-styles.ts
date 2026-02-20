@@ -20,21 +20,20 @@ export const selectableRowBase =
   'grid w-full cursor-pointer items-center border-b border-border/30 text-left transition-colors';
 
 /** Hover state for unselected rows */
-export const selectableRowHover = 'hover:bg-slate-50 dark:hover:bg-slate-900/40';
+export const selectableRowHover = 'hover:bg-muted/20 dark:hover:bg-muted/15';
 
 /**
- * Selected state styling using sky colors to complement the existing
- * sky-500 duration bars in the transcripts UI
+ * Selected state styling using selection colors from the design system
  */
 export const selectableRowSelected = [
-  'data-[selected=true]:bg-sky-50',
-  'data-[selected=true]:border-sky-200',
-  'data-[selected=true]:hover:bg-sky-100',
-  'dark:data-[selected=true]:bg-sky-950/30',
-  'dark:data-[selected=true]:border-sky-800/60',
-  'dark:data-[selected=true]:hover:bg-sky-950/45',
+  'data-[selected=true]:bg-selection/15',
+  'data-[selected=true]:border-primary/20',
+  'data-[selected=true]:hover:bg-selection/20',
+  'dark:data-[selected=true]:bg-selection/12',
+  'dark:data-[selected=true]:border-primary/25',
+  'dark:data-[selected=true]:hover:bg-selection/16',
 ].join(' ');
 
 /** Focus ring for keyboard navigation */
 export const selectableRowFocus =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 dark:focus-visible:ring-sky-500/40';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:focus-visible:ring-primary/50';

@@ -290,6 +290,39 @@ components:
             $ref: '#/components/schemas/AnyValue'
           type: array
       type: object
+    AttributeFilter:
+      description: AttributeFilter defines a filter condition for span attributes.
+      properties:
+        key:
+          description: Span attribute key without prefix. Backend adds 'span_attributes.' prefix.
+          title: |-
+            Span attribute key (without "span_attributes." prefix).
+            Backend auto-prefixes with "span_attributes." when querying.
+            Example: "gen_ai.operation.name" queries span_attributes.gen_ai.operation.name
+          type: string
+        operator:
+          $ref: '#/components/schemas/AttributeOperator'
+        value:
+          description: Value for EQUALS or NOT_EQUALS comparison.
+          type: string
+        values:
+          description: Values for IN comparison (key matches any of these values).
+          items:
+            type: string
+          type: array
+      type: object
+    AttributeOperator:
+      description: |-
+        AttributeOperator defines comparison operators for attribute filters.
+
+         - ATTRIBUTE_OPERATOR_EQUALS: Exact match: key = value.
+         - ATTRIBUTE_OPERATOR_NOT_EQUALS: Negation: key != value.
+         - ATTRIBUTE_OPERATOR_IN: Set membership: key IN [value1, value2, ...].
+      enum:
+        - ATTRIBUTE_OPERATOR_EQUALS
+        - ATTRIBUTE_OPERATOR_NOT_EQUALS
+        - ATTRIBUTE_OPERATOR_IN
+      type: string
     ComponentType:
       description: Component type for this tool.
       enum:
@@ -320,6 +353,21 @@ components:
       properties:
         mcp_server:
           $ref: '#/components/schemas/v1alpha3.MCPServer'
+      type: object
+    DataPoint:
+      description: A single data point made of value and date when it's been measured.
+      properties:
+        timestamp:
+          format: date-time
+          title: The timestamp when this datapoint was recorded
+          type: string
+        value:
+          format: double
+          nullable: true
+          title: |-
+            The value recorded for the given timestamp. The value may be absent when not available in the
+            metrics system or when it is NaN
+          type: number
       type: object
     DeleteAIAgentResponse:
       type: object
@@ -358,6 +406,70 @@ components:
           format: uint64
           type: string
       type: object
+    ExecuteInstantQueryParams:
+      description: Parameters for executing an instant query.
+      properties:
+        filters:
+          additionalProperties:
+            type: string
+          title: Optional filter values to apply to the query, if the query supports them
+          type: object
+        time:
+          format: date-time
+          nullable: true
+          title: Time at which to evaluate the query (defaults to current time if not provided)
+          type: string
+      type: object
+    ExecuteInstantQueryResponse:
+      description: Response of an ExecuteInstantQuery operation.
+      properties:
+        metadata:
+          $ref: '#/components/schemas/QueryMetadata'
+        results:
+          items:
+            $ref: '#/components/schemas/InstantResult'
+          title: Instant query results, each with a single data point at the requested time
+          type: array
+      type: object
+    ExecuteRangeQueryParams:
+      description: Parameters for executing a range query.
+      properties:
+        end:
+          format: date-time
+          nullable: true
+          title: End time for the range query (defaults to current time if not provided)
+          type: string
+        filters:
+          additionalProperties:
+            type: string
+          title: Optional filter values to apply to the query, if the query supports them
+          type: object
+        start:
+          format: date-time
+          title: Start time for the range query
+          type: string
+      type: object
+    ExecuteRangeQueryResponse:
+      description: Response of an ExecuteRangeQuery operation.
+      properties:
+        metadata:
+          $ref: '#/components/schemas/QueryMetadata'
+        results:
+          items:
+            $ref: '#/components/schemas/TimeSeries'
+          title: Time series data with multiple data points over the time range
+          type: array
+      type: object
+    FilterMetadata:
+      description: Description of a filter that may be available in a query.
+      properties:
+        description:
+          title: A description of the filter
+          type: string
+        key:
+          title: What key to use to provide a value for this filter when executing
+          type: string
+      type: object
     GatewayConfig:
       description: Gateway configuration for routing requests through an AI Gateway.
       properties:
@@ -390,6 +502,17 @@ components:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
       type: object
+    GetTraceHistogramResponse:
+      description: GetTraceHistogramResponse is the response message for getting the trace histogram.
+      properties:
+        histogram:
+          $ref: '#/components/schemas/TraceHistogram'
+        total_count:
+          description: Total number of traces in the time range.
+          format: int32
+          readOnly: true
+          type: integer
+      type: object
     GetTraceResponse:
       description: GetTraceResponse is the response message for retrieving a single trace.
       properties:
@@ -402,6 +525,20 @@ components:
           type: string
         base_url:
           type: string
+      type: object
+    InstantResult:
+      description: A single data point for a label combination at a specific point in time.
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          title: Labels associated to the result
+          type: object
+        name:
+          title: Name is a human friendly name for the result, computed from labels
+          type: string
+        value:
+          $ref: '#/components/schemas/DataPoint'
       type: object
     InstrumentationScope:
       description: |-
@@ -1058,11 +1195,74 @@ components:
           description: Token to retrieve the next page of results. Empty if there are no more results.
           type: string
       type: object
+    ListQueriesRequest.Filter:
+      description: Filter criteria for listing queries.
+      properties:
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: Queries that match all the provided tags will be returned.
+          title: Filter queries that contain all of these key/value pairs
+          type: object
+      type: object
+    ListQueriesResponse:
+      description: Response of the ListQueries operation.
+      properties:
+        queries:
+          items:
+            $ref: '#/components/schemas/QueryMetadata'
+          title: A description for each available predefined query
+          type: array
+      type: object
+    ListTracesRequest.Filter:
+      properties:
+        attribute_filters:
+          description: Span attribute filters. Key is auto-prefixed with 'span_attributes.' by backend. All filters use AND logic.
+          items:
+            $ref: '#/components/schemas/AttributeFilter'
+          type: array
+        end_time:
+          description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
+          format: date-time
+          type: string
+        has_errors:
+          description: When true, filter for spans with error status.
+          nullable: true
+          type: boolean
+        min_duration_ns:
+          description: Filter for spans with duration greater than this value in nanoseconds.
+          format: int64
+          nullable: true
+          type: string
+        service_names:
+          description: Filter by service name (from resource attributes). OR logic - matches if root service is any of these.
+          items:
+            type: string
+          type: array
+        span_ids:
+          description: Filter by span ID. Returns traces containing any of these spans.
+          items:
+            type: string
+          type: array
+        start_time:
+          description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
+          format: date-time
+          type: string
+      title: |-
+        Filter criteria for listing traces including time range.
+        Default behavior:
+        - start_time: defaults to Unix epoch (1970-01-01) if not provided
+        - end_time: defaults to current time + 5 minutes if not provided
+      type: object
     ListTracesResponse:
       description: ListTracesResponse is the response message for listing traces.
       properties:
-        histogram:
-          $ref: '#/components/schemas/TraceHistogram'
+        matched_spans:
+          additionalProperties:
+            $ref: '#/components/schemas/MatchedSpanIds'
+          description: Map of trace_id to span IDs that matched the filters. Only populated when attribute filters are active.
+          readOnly: true
+          type: object
         next_page_token:
           description: Opaque token to retrieve the next page of results. Empty if this is the last page.
           type: string
@@ -1158,6 +1358,15 @@ components:
           description: Map of tool names to their configurations. Each tool defines a capability that the MCP server exposes.
           type: object
       type: object
+    MatchedSpanIds:
+      description: MatchedSpanIds contains the list of span IDs within a trace that matched the filters.
+      properties:
+        span_ids:
+          description: Span IDs that matched the attribute filters within this trace.
+          items:
+            type: string
+          type: array
+      type: object
     OpenAICompatible:
       properties:
         api_key:
@@ -1166,6 +1375,29 @@ components:
           type: string
       required:
         - base_url
+      type: object
+    QueryMetadata:
+      description: A description of a predefined query available in the system.
+      properties:
+        description:
+          title: A description of what this query returns
+          type: string
+        filters:
+          items:
+            $ref: '#/components/schemas/FilterMetadata'
+          title: Available filters for this query
+          type: array
+        name:
+          title: Name of the query that can be used in the service to execute it
+          type: string
+        tags:
+          additionalProperties:
+            type: string
+          title: Tags for grouping queries (e.g., category, type, component)
+          type: object
+        unit:
+          title: Unit of measurement for the returned time series
+          type: string
       type: object
     Resource:
       description: Resource information.
@@ -1519,6 +1751,23 @@ components:
           type: string
       required:
         - system_prompt
+      type: object
+    TimeSeries:
+      description: A sequence of data points for a label combination.
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          title: Labels associated to the time series
+          type: object
+        name:
+          title: Name is a human friendly name for the series, computed from labels
+          type: string
+        values:
+          items:
+            $ref: '#/components/schemas/DataPoint'
+          title: The sequence of data points associated with the time series
+          type: array
       type: object
     Tool:
       description: A configuration tool for the MCP server.
@@ -2060,6 +2309,105 @@ paths:
           description: An unexpected error response.
       tags:
         - KnowledgeBaseService
+  /v1alpha3/observability/queries:
+    get:
+      description: List all available predefined queries with their metadata (name, description, unit, and available filters).
+      operationId: ObservabilityService_ListQueries
+      parameters:
+        - description: |-
+            Filter queries that contain all of these key/value pairs
+
+            This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.tags[string]
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListQueriesResponse'
+          description: Queries metadata
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Available Queries
+      tags:
+        - Observability
+  /v1alpha3/observability/queries/{query_name}:executeInstant:
+    post:
+      description: Execute a predefined query at a single point in time. Returns a single data point for each time series. If time is not specified, defaults to current time. Optional filters can be applied as key-value pairs.
+      operationId: ObservabilityService_ExecuteInstantQuery
+      parameters:
+        - description: Predefined query to request data from
+          in: path
+          name: query_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteInstantQueryParams'
+        description: Instant query execution parameters
+        required: true
+        x-originalParamName: params
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteInstantQueryResponse'
+          description: Instant query results
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Execute Instant Query
+      tags:
+        - Observability
+  /v1alpha3/observability/queries/{query_name}:executeRange:
+    post:
+      description: Execute a predefined query over a time range. Returns multiple data points between the start and end times. Optional filters can be applied as key-value pairs.
+      operationId: ObservabilityService_ExecuteRangeQuery
+      parameters:
+        - description: Predefined query to request data from
+          in: path
+          name: query_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRangeQueryParams'
+        description: Range query execution parameters
+        required: true
+        x-originalParamName: params
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteRangeQueryResponse'
+          description: Range query results
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Execute Range Query
+      tags:
+        - Observability
   /v1alpha3/redpanda-connect/mcp-servers:
     get:
       description: Lists MCP servers. Optionally filter by display name, tags, or secret ID.
@@ -2355,18 +2703,6 @@ paths:
       description: Returns a paginated list of trace summaries for the specified time range.
       operationId: TracingService_ListTraces
       parameters:
-        - description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided. Must be before end_time.
-          in: query
-          name: start_time
-          schema:
-            format: date-time
-            type: string
-        - description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided. Must be after start_time.
-          in: query
-          name: end_time
-          schema:
-            format: date-time
-            type: string
         - description: Maximum number of traces to return per page. Defaults to 100 if not specified or set to 0. Use -1 to disable pagination.
           in: query
           name: page_size
@@ -2378,6 +2714,43 @@ paths:
           name: page_token
           schema:
             type: string
+        - description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
+          in: query
+          name: filter.start_time
+          schema:
+            format: date-time
+            type: string
+        - description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
+          in: query
+          name: filter.end_time
+          schema:
+            format: date-time
+            type: string
+        - description: When true, filter for spans with error status.
+          in: query
+          name: filter.has_errors
+          schema:
+            type: boolean
+        - description: Filter for spans with duration greater than this value in nanoseconds.
+          in: query
+          name: filter.min_duration_ns
+          schema:
+            format: int64
+            type: string
+        - description: Filter by service name (from resource attributes). OR logic - matches if root service is any of these.
+          in: query
+          name: filter.service_names
+          schema:
+            items:
+              type: string
+            type: array
+        - description: Filter by span ID. Returns traces containing any of these spans.
+          in: query
+          name: filter.span_ids
+          schema:
+            items:
+              type: string
+            type: array
       responses:
         default:
           content:
@@ -2409,6 +2782,58 @@ paths:
       summary: Get trace
       tags:
         - Tracing
+  /v1alpha3/traces:histogram:
+    get:
+      description: Returns the distribution of traces over a time range for timeline visualization.
+      operationId: TracingService_GetTraceHistogram
+      parameters:
+        - description: Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided.
+          in: query
+          name: filter.start_time
+          schema:
+            format: date-time
+            type: string
+        - description: End time for the query (exclusive). Defaults to current time + 5 minutes if not provided.
+          in: query
+          name: filter.end_time
+          schema:
+            format: date-time
+            type: string
+        - description: When true, filter for spans with error status.
+          in: query
+          name: filter.has_errors
+          schema:
+            type: boolean
+        - description: Filter for spans with duration greater than this value in nanoseconds.
+          in: query
+          name: filter.min_duration_ns
+          schema:
+            format: int64
+            type: string
+        - description: Filter by service name (from resource attributes). OR logic - matches if root service is any of these.
+          in: query
+          name: filter.service_names
+          schema:
+            items:
+              type: string
+            type: array
+        - description: Filter by span ID. Returns traces containing any of these spans.
+          in: query
+          name: filter.span_ids
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get trace histogram
+      tags:
+        - Tracing
 security:
   - auth0: []
 servers:
@@ -2428,5 +2853,7 @@ tags:
     name: Redpanda AI KnowledgeBase
   - description: Create and manage MCP servers and their configurations.
     name: Remote MCP
+  - description: Observability operations for Redpanda.
+    name: Observability
   - description: Query and retrieve OpenTelemetry traces from Redpanda.
     name: Tracing

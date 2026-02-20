@@ -9,7 +9,7 @@ tags: zustand, persist, sessionStorage, middleware
 
 ## Explanation
 
-Use Zustand's persist middleware with sessionStorage for state that should survive page navigation but not browser sessions. This is useful for wizard data, user preferences within a session, and cross-component state.
+Use Zustand's persist middleware with sessionStorage for state that should survive page navigation but not browser sessions. Use `createFlatStorage` from `src/utils/store.ts` as the storage adapter.
 
 ## Incorrect
 
@@ -38,7 +38,7 @@ const useStore = create<State>()(
 ```tsx
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createPersistedZustandSessionStorage } from './utils';
+import { createFlatStorage } from 'utils/store';
 
 type WizardData = {
   step: number;
@@ -59,7 +59,7 @@ const useWizardStore = create<WizardData>()(
     }),
     {
       name: 'wizard-state',
-      storage: createPersistedZustandSessionStorage<
+      storage: createFlatStorage<
         Omit<WizardData, 'setStep' | 'setFormData' | 'reset'>
       >(),
     }
@@ -76,4 +76,5 @@ Always include a reset function for:
 
 ## Reference
 
+- `src/utils/store.ts` — `createFlatStorage` implementation (uses sessionStorage)
 - [Zustand Persist Middleware](https://docs.pmnd.rs/zustand/integrations/persisting-store-data)

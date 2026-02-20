@@ -41,7 +41,7 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { MatchedSpanIds, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { ChangeEvent, FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -55,6 +55,7 @@ import {
 } from './selectable-row-styles';
 import { TranscriptDetailsSheet } from './transcript-details-sheet';
 import { getIconForServiceName, getServiceName } from '../utils/span-classifier';
+import { filterToMatchedAndAncestors } from '../utils/span-filter';
 import {
   buildSpanTree,
   calculateOffset,
@@ -161,6 +162,14 @@ type Props = {
    * @default false
    */
   disableFaceting?: boolean;
+  /** Optional: Trace ID to auto-expand when displayed (for linked trace mode) */
+  autoExpandTraceId?: string | null;
+  /** Optional: Pre-fetched trace data for linked mode (to avoid re-fetching) */
+  linkedTraceData?: { traceId: string; spans: Span[]; summary?: TraceSummary } | null;
+  /** Optional: Matched spans from API response (for filter highlighting) */
+  matchedSpans?: { [key: string]: MatchedSpanIds };
+  /** Whether to show full traces or only matched spans with ancestors */
+  showFullTraces?: boolean;
 };
 
 // Helper: Calculate next parent depths for child spans
@@ -179,7 +188,7 @@ const getNextParentDepths = (parentDepths: number[], depth: number, isLastChild:
 // Helper: Calculate tree line connector flags for a span row
 const getSpanRowLineFlags = (depth: number, isLastChild: boolean, parentDepths: number[]) => {
   const drawCol0Vertical = parentDepths.includes(0) || depth === 1;
-  const col0VerticalHeight = isLastChild && depth === 1 ? '50%' : 'calc(100% + 1px)';
+  const col0VerticalHeight = isLastChild && depth === 1 ? 'calc(50% + 4px)' : '100%';
 
   return {
     drawCol0Vertical,
@@ -205,13 +214,13 @@ const GutterColumn: FC<GutterColumnProps> = ({ colIndex, depth, isLastChild, par
       style={{ '--tree-x': '11px' } as React.CSSProperties}
     >
       {!!drawAncestorContinuation && (
-        <div className="absolute top-0 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+        <div className="absolute -top-1 bottom-1 w-px -translate-x-1/2 bg-border" style={{ left: 'var(--tree-x)' }} />
       )}
       {!!isCurrentColumn && (
         <>
           <div
-            className="absolute top-0 w-px bg-border"
-            style={{ left: 'var(--tree-x)', height: isLastChild ? '50%' : 'calc(100% + 1px)' }}
+            className="absolute -top-1 w-px -translate-x-1/2 bg-border"
+            style={{ left: 'var(--tree-x)', height: isLastChild ? 'calc(50% + 4px)' : '100%' }}
           />
           <div className="absolute top-1/2 h-px w-[13px] bg-border" style={{ left: 'var(--tree-x)' }} />
         </>
@@ -242,7 +251,7 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
       >
         {!!lineFlags.drawCol0Vertical && (
           <div
-            className="absolute top-0 w-px bg-border"
+            className="absolute -top-1 w-px -translate-x-1/2 bg-border"
             style={{ left: 'var(--tree-x)', height: lineFlags.col0VerticalHeight }}
           />
         )}
@@ -263,33 +272,35 @@ const TreeLines: FC<TreeLinesProps> = ({ depth, isLastChild, parentDepths, isExp
         );
       })}
 
-      {/* Chevron button as final tree column */}
+      {/* Chevron toggle as final tree column - using div to avoid nested button warning */}
       <div
         className="relative flex h-8 w-5 shrink-0 items-center"
         style={{ '--tree-x': '11px' } as React.CSSProperties}
       >
         {!!(isExpanded && hasChildren) && (
-          <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+          <div
+            className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border"
+            style={{ left: 'var(--tree-x)' }}
+          />
         )}
-        <Button
-          aria-expanded={hasChildren ? isExpanded : undefined}
-          aria-label={hasChildren ? `${isExpanded ? 'Collapse' : 'Expand'} child spans` : undefined}
-          className={cn('absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2', !hasChildren && 'invisible')}
+        <div
+          aria-hidden="true"
+          className={cn(
+            'absolute z-10 flex h-4 w-4 shrink-0 -translate-x-1/2 items-center justify-center rounded-sm hover:bg-accent',
+            !hasChildren && 'invisible'
+          )}
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
-          size="icon"
           style={{ left: 'var(--tree-x)' }}
-          tabIndex={hasChildren ? 0 : -1}
-          variant="ghost"
         >
           {isExpanded ? (
             <ChevronDown aria-hidden="true" className="h-3 w-3" />
           ) : (
             <ChevronRight aria-hidden="true" className="h-3 w-3" />
           )}
-        </Button>
+        </div>
       </div>
     </div>
   );
@@ -311,6 +322,10 @@ type SpanRowProps = {
   expandedSpans?: Set<string>;
   toggleSpan?: (spanId: string) => void;
   selectedSpanId: string | null | undefined;
+  /** Whether this span matched the active filters (for highlighting) */
+  isMatchedByFilter?: boolean;
+  /** Set of matched span IDs for propagating to children */
+  matchedSpanIds?: Set<string>;
 };
 
 const SpanRow: FC<SpanRowProps> = ({
@@ -328,6 +343,8 @@ const SpanRow: FC<SpanRowProps> = ({
   expandedSpans,
   toggleSpan,
   selectedSpanId,
+  isMatchedByFilter,
+  matchedSpanIds,
 }) => {
   // Calculate relative position within trace using helper functions
   const barStart = calculateOffset(span.startTime, timeline);
@@ -343,21 +360,32 @@ const SpanRow: FC<SpanRowProps> = ({
   // Check if this span is selected
   const isSelected = selectedSpanId === span.spanId;
 
+  // Determine if this is an unmatched parent span (dimmed when filters active but not matching)
+  const hasActiveFilters = matchedSpanIds && matchedSpanIds.size > 0;
+  const isUnmatchedParent = hasActiveFilters && !isMatchedByFilter;
+
   return (
     <>
       <button
         aria-current={isSelected ? 'true' : undefined}
-        aria-label={`View span ${span.name}${span.hasError ? ', has error' : ''}`}
+        aria-label={`View span ${span.name}${span.hasError ? ', has error' : ''}${isMatchedByFilter ? ', matches filter' : ''}`}
         className={cn(
           selectableRowBase,
           selectableRowHover,
           selectableRowSelected,
           selectableRowFocus,
-          'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]'
+          'h-8 [grid-template-columns:72px_minmax(0,1fr)_260px]',
+          // Highlight matched spans with a subtle muted background (distinct from blue selection color)
+          isMatchedByFilter &&
+            'bg-muted/25 shadow-[inset_2px_0_0_0_color-mix(in_srgb,var(--color-muted-foreground)_40%,transparent)] dark:bg-muted/20',
+          // Dim unmatched parent spans
+          isUnmatchedParent && 'opacity-50'
         )}
+        data-matched={isMatchedByFilter}
         data-selected={isSelected}
         data-testid={`span-row-${span.spanId}`}
         onClick={() => onClick(traceId, span.spanId)}
+        onDoubleClick={hasChildren ? onToggle : undefined}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -426,7 +454,7 @@ const SpanRow: FC<SpanRowProps> = ({
         <div className="flex shrink-0 items-center gap-2 py-1 pr-6 pl-2">
           <div className="relative h-2.5 flex-1 rounded-sm bg-muted/30">
             <div
-              className={cn('absolute h-full rounded-sm', span.hasError ? 'bg-red-500/70' : 'bg-sky-500/70')}
+              className={cn('absolute h-full rounded-sm', span.hasError ? 'bg-destructive/70' : 'bg-info/70')}
               style={{
                 left: `${barStart}%`,
                 width: `${barWidth}%`,
@@ -451,6 +479,7 @@ const SpanRow: FC<SpanRowProps> = ({
               isExpanded={expandedSpans.has(child.spanId)}
               isLastChild={index === span.children.length - 1}
               key={child.spanId}
+              matchedSpanIds={matchedSpanIds}
               onClick={onClick}
               onToggle={() => toggleSpan(child.spanId)}
               parentDepths={nextParentDepths}
@@ -488,7 +517,7 @@ const computeInitialExpandedSpans = (spanTree: SpanNode[]): Set<string> => {
 // Custom hook: Manage span expansion state
 const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   const [expandedSpans, setExpandedSpans] = useState<Set<string>>(() => computeInitialExpandedSpans(spanTree));
-  const prevSpanTreeLength = useRef(0);
+  const hasInitializedRef = useRef(spanTree.length > 0);
 
   // Reset to initial state when collapse all is triggered
   useEffect(() => {
@@ -499,20 +528,15 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
 
   // Sync expansion state when spanTree loads (handles async data loading)
   useEffect(() => {
-    const currentLength = spanTree.length;
-
-    // Only run if transitioning from empty (0) to populated (N)
-    // AND we currently have no expanded spans
-    if (prevSpanTreeLength.current === 0 && currentLength > 0 && expandedSpans.size === 0) {
+    // Only initialize once when spanTree first becomes populated
+    if (!hasInitializedRef.current && spanTree.length > 0) {
+      hasInitializedRef.current = true;
       const initialSpans = computeInitialExpandedSpans(spanTree);
       if (initialSpans.size > 0) {
         setExpandedSpans(initialSpans);
       }
     }
-
-    // Update ref for next render
-    prevSpanTreeLength.current = currentLength;
-  }, [spanTree, expandedSpans.size]);
+  }, [spanTree]);
 
   const toggleSpan = (spanId: string) => {
     setExpandedSpans((prev) => {
@@ -544,6 +568,7 @@ const SpanRowWrapper: FC<{
   expandedSpans: Set<string>;
   toggleSpan: (spanId: string) => void;
   selectedSpanId: string | null | undefined;
+  matchedSpanIds?: Set<string>;
 }> = ({
   span,
   depth,
@@ -558,8 +583,10 @@ const SpanRowWrapper: FC<{
   expandedSpans,
   toggleSpan,
   selectedSpanId,
+  matchedSpanIds,
 }) => {
   const hasChildren = span.children && span.children.length > 0;
+  const isMatchedByFilter = matchedSpanIds?.has(span.spanId);
 
   return (
     <SpanRow
@@ -569,6 +596,8 @@ const SpanRowWrapper: FC<{
       hasChildren={hasChildren}
       isExpanded={isExpanded}
       isLastChild={isLastChild}
+      isMatchedByFilter={isMatchedByFilter}
+      matchedSpanIds={matchedSpanIds}
       onClick={onClick}
       onToggle={onToggle}
       parentDepths={parentDepths}
@@ -588,12 +617,8 @@ const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | u
 }) => {
   if (isIncomplete) {
     return (
-      <Badge
-        className="flex h-4 shrink-0 items-center border-amber-500/30 bg-amber-500/10 px-1.5 py-0 font-normal text-amber-600"
-        variant="outline"
-      >
-        <AlertCircle className="mr-1 h-3 w-3 shrink-0" />
-        <Small className="truncate">awaiting root</Small>
+      <Badge icon={<AlertCircle />} size="sm" variant="warning-inverted">
+        awaiting root
       </Badge>
     );
   }
@@ -620,7 +645,7 @@ const RootTraceDurationCell: FC<{
     return (
       <>
         <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-full rounded-full bg-amber-500/30" />
+          <div className="h-full w-full rounded-full bg-warning/30" />
         </div>
         <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">—</Small>
       </>
@@ -630,7 +655,7 @@ const RootTraceDurationCell: FC<{
     <>
       <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-muted/30">
         <div
-          className={cn('h-full rounded-sm', hasErrors ? 'bg-red-500/70' : 'bg-sky-500/70')}
+          className={cn('h-full rounded-sm', hasErrors ? 'bg-destructive/70' : 'bg-info/70')}
           style={{ width: '100%' }}
         />
       </div>
@@ -684,17 +709,17 @@ const RootTraceRow: FC<{
       aria-label={`${isExpanded ? 'Collapse' : 'Expand'} transcript ${traceSummary.rootSpanName || 'unnamed'}, ${traceSummary.spanCount} spans${rootSpanId ? ', click to inspect root span' : ''}`}
       className={cn(
         selectableRowBase,
+        selectableRowHover,
         selectableRowSelected,
         selectableRowFocus,
         'h-9 [grid-template-columns:72px_minmax(0,1fr)_260px]',
-        'data-[incomplete=true]:bg-amber-500/5 data-[incomplete=true]:hover:bg-amber-500/10',
-        'data-[incomplete=false]:data-[selected=false]:bg-muted/10 data-[incomplete=false]:data-[selected=false]:hover:bg-slate-50',
-        'dark:data-[incomplete=false]:data-[selected=false]:hover:bg-slate-900/40'
+        'data-[incomplete=true]:shadow-[inset_2px_0_0_0_var(--color-warning)]'
       )}
       data-incomplete={isIncomplete}
       data-selected={isSelected}
       data-testid={`transcript-row-${traceSummary.traceId}`}
       onClick={handleRowClick}
+      onDoubleClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -716,28 +741,29 @@ const RootTraceRow: FC<{
           className="relative flex h-8 w-5 shrink-0 items-center"
           style={{ '--tree-x': '9px' } as React.CSSProperties}
         >
-          {/* Vertical line when expanded */}
+          {/* Vertical line when expanded - extends to bottom-0 to connect with child's -top-1 line */}
           {isExpanded && spanTreeLength > 0 && (
-            <div className="absolute top-1/2 bottom-0 w-px bg-border" style={{ left: 'var(--tree-x)' }} />
+            <div
+              className="absolute top-1/2 bottom-0 w-px -translate-x-1/2 bg-border"
+              style={{ left: 'var(--tree-x)' }}
+            />
           )}
-          <Button
+          {/* Using div instead of Button to avoid nested button warning - parent button handles interaction */}
+          <div
             aria-hidden="true"
-            className="absolute z-10 h-4 w-4 shrink-0 -translate-x-1/2"
+            className="absolute z-10 flex h-4 w-4 shrink-0 -translate-x-1/2 items-center justify-center rounded-sm hover:bg-accent"
             onClick={(e) => {
               e.stopPropagation();
               onToggle();
             }}
-            size="icon"
             style={{ left: 'var(--tree-x)' }}
-            tabIndex={-1}
-            variant="ghost"
           >
             {isExpanded ? (
               <ChevronDown aria-hidden="true" className="h-3 w-3" />
             ) : (
               <ChevronRight aria-hidden="true" className="h-3 w-3" />
             )}
-          </Button>
+          </div>
         </div>
 
         {/* Service badge or incomplete badge */}
@@ -797,6 +823,7 @@ const ExpandedSpansContent: FC<{
   onSpanClick: (traceId: string, spanId: string) => void;
   traceId: string;
   selectedSpanId: string | null | undefined;
+  matchedSpanIds?: Set<string>;
 }> = ({
   isLoading,
   error,
@@ -808,6 +835,7 @@ const ExpandedSpansContent: FC<{
   onSpanClick,
   traceId,
   selectedSpanId,
+  matchedSpanIds,
 }) => {
   if (isLoading) {
     return (
@@ -820,7 +848,7 @@ const ExpandedSpansContent: FC<{
 
   if (error) {
     return (
-      <div className="flex items-center justify-center gap-2 p-4 text-center text-red-600 text-sm">
+      <div className="flex items-center justify-center gap-2 p-4 text-center text-destructive text-sm">
         <AlertCircle className="h-4 w-4" />
         <span>Failed to load transcript: {error.message}</span>
       </div>
@@ -841,6 +869,7 @@ const ExpandedSpansContent: FC<{
           isExpanded={expandedSpans.has(span.spanId)}
           isLastChild={index === spanTree.length - 1}
           key={span.spanId}
+          matchedSpanIds={matchedSpanIds}
           onClick={onSpanClick}
           onToggle={() => toggleSpan(span.spanId)}
           parentDepths={[0]}
@@ -863,17 +892,40 @@ const TraceGroup: FC<{
   onSpanClick: (traceId: string, spanId: string) => void;
   collapseAllTrigger: number;
   selectedSpanId: string | null | undefined;
-}> = ({ traceSummary, isExpanded, onToggle, onSpanClick, collapseAllTrigger, selectedSpanId }) => {
+  matchedSpanIds?: Set<string>;
+  showFullTraces: boolean;
+}> = ({
+  traceSummary,
+  isExpanded,
+  onToggle,
+  onSpanClick,
+  collapseAllTrigger,
+  selectedSpanId,
+  matchedSpanIds,
+  showFullTraces,
+}) => {
   const { data: traceData, isLoading, error } = useGetTraceQuery(traceSummary.traceId, { enabled: isExpanded });
 
   const trace = traceData?.trace;
 
-  const spanTree = useMemo(() => {
+  // Filter spans when showFullTraces is false and we have matched spans
+  const filteredSpans = useMemo(() => {
     if (!trace?.spans || trace.spans.length === 0) {
       return [];
     }
-    return buildSpanTree(trace.spans as Span[]);
-  }, [trace?.spans]);
+    const spans = trace.spans as Span[];
+    if (showFullTraces || !matchedSpanIds || matchedSpanIds.size === 0) {
+      return spans;
+    }
+    return filterToMatchedAndAncestors(spans, matchedSpanIds);
+  }, [trace?.spans, showFullTraces, matchedSpanIds]);
+
+  const spanTree = useMemo(() => {
+    if (filteredSpans.length === 0) {
+      return [];
+    }
+    return buildSpanTree(filteredSpans);
+  }, [filteredSpans]);
 
   const timeline = useMemo(() => {
     if (spanTree.length === 0) {
@@ -916,6 +968,7 @@ const TraceGroup: FC<{
           error={error}
           expandedSpans={expandedSpans}
           isLoading={isLoading}
+          matchedSpanIds={matchedSpanIds}
           onSpanClick={onSpanClick}
           selectedSpanId={selectedSpanId}
           spanTree={spanTree}
@@ -944,9 +997,35 @@ export const TranscriptsTable: FC<Props> = ({
   setColumnFilters,
   hideToolbar = false,
   disableFaceting = false,
+  autoExpandTraceId,
+  linkedTraceData: _linkedTraceData,
+  matchedSpans,
+  showFullTraces = true,
 }) => {
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
+
+  // Auto-expand trace when autoExpandTraceId changes (for linked trace mode)
+  useEffect(() => {
+    if (autoExpandTraceId && !expandedTraces.has(autoExpandTraceId)) {
+      setExpandedTraces((prev) => new Set([...prev, autoExpandTraceId]));
+    }
+  }, [autoExpandTraceId, expandedTraces]);
   const [sortOrder, setSortOrder] = useState<'newest-first' | 'oldest-first'>('newest-first');
+
+  // Convert matchedSpans from API response to a lookup function
+  const getMatchedSpanIds = useCallback(
+    (traceId: string): Set<string> | undefined => {
+      if (!matchedSpans) {
+        return;
+      }
+      const matched = matchedSpans[traceId];
+      if (!matched?.spanIds?.length) {
+        return;
+      }
+      return new Set(matched.spanIds);
+    },
+    [matchedSpans]
+  );
 
   // Enhance traces with searchable field and status
   const enhancedTraces = useMemo(
@@ -1077,7 +1156,7 @@ export const TranscriptsTable: FC<Props> = ({
         <div className={selectedTraceId ? 'flex h-full min-w-0 flex-1 flex-col' : 'flex h-full w-full flex-col'}>
           <div className="flex flex-1 flex-col overflow-hidden bg-background">
             {/* Column Headers */}
-            <div className="sticky top-0 grid border-b bg-muted/50 font-medium text-muted-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
+            <div className="sticky top-0 grid h-10 items-center border-b font-medium text-foreground [grid-template-columns:72px_minmax(0,1fr)_260px]">
               <button
                 aria-label={
                   sortOrder === 'newest-first'
@@ -1132,7 +1211,7 @@ export const TranscriptsTable: FC<Props> = ({
               if (error) {
                 return (
                   <div
-                    className="flex h-24 items-center justify-center gap-2 text-red-600 text-sm"
+                    className="flex h-24 items-center justify-center gap-2 text-destructive text-sm"
                     data-testid="transcripts-error-state"
                   >
                     <AlertCircle className="h-4 w-4" />
@@ -1189,9 +1268,11 @@ export const TranscriptsTable: FC<Props> = ({
                             collapseAllTrigger={collapseAllTrigger}
                             isExpanded={expandedTraces.has(traceSummary.traceId)}
                             key={traceSummary.traceId}
+                            matchedSpanIds={getMatchedSpanIds(traceSummary.traceId)}
                             onSpanClick={onSpanClick}
                             onToggle={() => toggleTrace(traceSummary.traceId)}
                             selectedSpanId={selectedSpanId}
+                            showFullTraces={showFullTraces}
                             traceSummary={traceSummary}
                           />
                         ))}

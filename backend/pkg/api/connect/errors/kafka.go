@@ -66,7 +66,7 @@ func resolveKafkaErrorMessage(code int16, kafkaErr error, msg *string) string {
 	if kafkaErr != nil {
 		return kafkaErr.Error()
 	}
-	return fmt.Sprintf("unknown kafka error with code %q", code)
+	return fmt.Sprintf("unknown kafka error with code %d", code)
 }
 
 // KeyValsFromKafkaError tries to check if a given error is a Kafka error.

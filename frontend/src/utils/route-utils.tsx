@@ -35,7 +35,7 @@ import {
   UserCircleIcon,
 } from '../components/icons';
 import { MCPIcon } from '../components/redpanda-ui/components/icons';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
+import { isAdpEnabled, isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backend-api';
 import { Feature, isSupported, shouldHideIfNotSupported } from '../state/supported-features';
 
@@ -192,6 +192,18 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     visibilityCheck: routeVisibility(true),
   },
   {
+    path: '/observability',
+    title: 'Metrics',
+    icon: ActivityIcon,
+    visibilityCheck: routeVisibility(
+      () =>
+        isEmbedded() &&
+        (isServerless()
+          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+          : isFeatureFlagEnabled('enableDataplaneObservability'))
+    ),
+  },
+  {
     path: '/topics',
     title: 'Topics',
     icon: CollectionIcon,
@@ -220,7 +232,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'Knowledge Bases',
     icon: BookOpenIcon,
     visibilityCheck: routeVisibility(
-      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'),
+      () => isAdpEnabled() && isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'),
       [Feature.PipelineService]
     ),
   },
@@ -261,7 +273,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'Transcripts',
     icon: ActivityIcon,
     visibilityCheck: routeVisibility(
-      () => isEmbedded() && isFeatureFlagEnabled('enableTranscriptsInConsole'),
+      () => isEmbedded() && isAdpEnabled() && isFeatureFlagEnabled('enableTranscriptsInConsole'),
       [Feature.TracingService]
     ),
   },
@@ -290,7 +302,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       if (isEmbedded()) {
         return isFeatureFlagEnabled('shadowlinkCloudUi') && !isServerless();
       }
-      return true; // self-hosted always visible
+      return true;
     }),
   },
   {
@@ -300,6 +312,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     visibilityCheck: routeVisibility(
       () =>
         isEmbedded() &&
+        isAdpEnabled() &&
         (!isServerless() || isFeatureFlagEnabled('enableAiAgentsInConsoleServerless')) &&
         isFeatureFlagEnabled('enableAiAgentsInConsole')
     ),

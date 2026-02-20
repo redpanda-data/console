@@ -21,5 +21,5 @@ export const Route = createFileRoute('/security/users/create')({
 });
 
 function UserCreateWrapper() {
-  return <UserCreatePage matchedPath="/security/users/create" />;
+  return <UserCreatePage />;
 }

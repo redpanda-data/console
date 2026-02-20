@@ -9,8 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { AIIcon } from 'components/icons';
+import { ListAIAgentsRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { listAIAgents } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 
 import { AIAgentsListPage } from '../../components/pages/agents/list/ai-agent-list-page';
 
@@ -18,6 +22,13 @@ export const Route = createFileRoute('/agents/')({
   staticData: {
     title: 'AI Agents',
     icon: AIIcon,
+  },
+  loader: async ({ context: { queryClient, dataplaneTransport } }) => {
+    await queryClient.ensureQueryData(
+      createQueryOptions(listAIAgents, create(ListAIAgentsRequestSchema, { pageSize: 50 }), {
+        transport: dataplaneTransport,
+      })
+    );
   },
   component: AIAgentsListPage,
 });

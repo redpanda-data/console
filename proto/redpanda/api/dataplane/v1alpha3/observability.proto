@@ -1,0 +1,234 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// A description of a predefined query available in the system.
+message QueryMetadata {
+  // Description of a filter that may be available in a query.
+  message FilterMetadata {
+    // What key to use to provide a value for this filter when executing
+    string key = 1;
+    // A description of the filter
+    string description = 2;
+  }
+
+  // Name of the query that can be used in the service to execute it
+  string name = 1;
+  // A description of what this query returns
+  string description = 2;
+  // Unit of measurement for the returned time series
+  string unit = 3;
+  // Available filters for this query
+  repeated FilterMetadata filters = 4;
+  // Tags for grouping queries (e.g., category, type, component)
+  map<string, string> tags = 5;
+}
+
+// Contains details of a ListQueries request.
+message ListQueriesRequest {
+  // Filter criteria for listing queries.
+  message Filter {
+    // Filter queries that contain all of these key/value pairs
+    map<string, string> tags = 1 [
+      (buf.validate.field).map = {
+        max_pairs: 16
+        values: {
+          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+        }
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Queries that match all the provided tags will be returned."}
+    ];
+  }
+  // Optional filter to apply when listing queries
+  Filter filter = 1;
+}
+
+// Response of the ListQueries operation.
+message ListQueriesResponse {
+  // A description for each available predefined query
+  repeated QueryMetadata queries = 1;
+}
+
+// A single data point made of value and date when it's been measured.
+message DataPoint {
+  // The timestamp when this datapoint was recorded
+  google.protobuf.Timestamp timestamp = 1;
+  // The value recorded for the given timestamp. The value may be absent when not available in the
+  // metrics system or when it is NaN
+  optional double value = 2;
+}
+
+// A sequence of data points for a label combination.
+message TimeSeries {
+  // Name is a human friendly name for the series, computed from labels
+  string name = 1;
+  // Labels associated to the time series
+  map<string, string> labels = 2;
+  // The sequence of data points associated with the time series
+  repeated DataPoint values = 3;
+}
+
+// A single data point for a label combination at a specific point in time.
+message InstantResult {
+  // Name is a human friendly name for the result, computed from labels
+  string name = 1;
+  // Labels associated to the result
+  map<string, string> labels = 2;
+  // The data point at the requested time
+  DataPoint value = 3;
+}
+
+// Parameters for executing a range query.
+message ExecuteRangeQueryParams {
+  // Start time for the range query
+  google.protobuf.Timestamp start = 1 [(buf.validate.field).required = true];
+  // End time for the range query (defaults to current time if not provided)
+  optional google.protobuf.Timestamp end = 2;
+  // Optional filter values to apply to the query, if the query supports them
+  map<string, string> filters = 3 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+}
+
+// Input data for an ExecuteRangeQuery operation.
+message ExecuteRangeQueryRequest {
+  // Predefined query to request data from
+  string query_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  // Range query execution parameters
+  ExecuteRangeQueryParams params = 2 [(buf.validate.field).required = true];
+}
+
+// Response of an ExecuteRangeQuery operation.
+message ExecuteRangeQueryResponse {
+  QueryMetadata metadata = 1;
+  // Time series data with multiple data points over the time range
+  repeated TimeSeries results = 2;
+}
+
+// Parameters for executing an instant query.
+message ExecuteInstantQueryParams {
+  // Time at which to evaluate the query (defaults to current time if not provided)
+  optional google.protobuf.Timestamp time = 1;
+  // Optional filter values to apply to the query, if the query supports them
+  map<string, string> filters = 2 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+}
+
+// Input data for an ExecuteInstantQuery operation.
+message ExecuteInstantQueryRequest {
+  // Predefined query to request data from
+  string query_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[a-z][a-z0-9_]*$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  // Instant query execution parameters
+  ExecuteInstantQueryParams params = 2 [(buf.validate.field).required = true];
+}
+
+// Response of an ExecuteInstantQuery operation.
+message ExecuteInstantQueryResponse {
+  // Query metadata associated with the query.
+  QueryMetadata metadata = 1;
+  // Instant query results, each with a single data point at the requested time
+  repeated InstantResult results = 2;
+}
+
+// ObservabilityService provides query access to Redpanda metrics.
+service ObservabilityService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Observability"
+    description: "Observability operations for Redpanda."
+  };
+
+  // List available queries
+  rpc ListQueries(ListQueriesRequest) returns (ListQueriesResponse) {
+    option (google.api.http) = {get: "/v1alpha3/observability/queries"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Available Queries"
+      description: "List all available predefined queries with their metadata (name, description, unit, and available filters)."
+      responses: {
+        key: "200"
+        value: {
+          description: "Queries metadata"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListQueriesResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_PROMETHEUS
+    };
+  }
+
+  // Execute a predefined range query
+  rpc ExecuteRangeQuery(ExecuteRangeQueryRequest) returns (ExecuteRangeQueryResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha3/observability/queries/{query_name}:executeRange"
+      body: "params"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Execute Range Query"
+      description: "Execute a predefined query over a time range. Returns multiple data points between the start and end times. Optional filters can be applied as key-value pairs."
+      responses: {
+        key: "200"
+        value: {
+          description: "Range query results"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteRangeQueryResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_PROMETHEUS
+    };
+  }
+
+  // Execute a predefined instant query
+  rpc ExecuteInstantQuery(ExecuteInstantQueryRequest) returns (ExecuteInstantQueryResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha3/observability/queries/{query_name}:executeInstant"
+      body: "params"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Execute Instant Query"
+      description: "Execute a predefined query at a single point in time. Returns a single data point for each time series. If time is not specified, defaults to current time. Optional filters can be applied as key-value pairs."
+      responses: {
+        key: "200"
+        value: {
+          description: "Instant query results"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteInstantQueryResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_PROMETHEUS
+    };
+  }
+}

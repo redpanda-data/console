@@ -17,16 +17,18 @@ import (
 // TracingServiceGatewayServer implements the gRPC server API for the TracingService service.
 type TracingServiceGatewayServer struct {
 	v1alpha3.UnimplementedTracingServiceServer
-	listTraces connect_gateway.UnaryHandler[v1alpha3.ListTracesRequest, v1alpha3.ListTracesResponse]
-	getTrace   connect_gateway.UnaryHandler[v1alpha3.GetTraceRequest, v1alpha3.GetTraceResponse]
+	listTraces        connect_gateway.UnaryHandler[v1alpha3.ListTracesRequest, v1alpha3.ListTracesResponse]
+	getTrace          connect_gateway.UnaryHandler[v1alpha3.GetTraceRequest, v1alpha3.GetTraceResponse]
+	getTraceHistogram connect_gateway.UnaryHandler[v1alpha3.GetTraceHistogramRequest, v1alpha3.GetTraceHistogramResponse]
 }
 
 // NewTracingServiceGatewayServer constructs a Connect-Gateway gRPC server for the TracingService
 // service.
 func NewTracingServiceGatewayServer(svc TracingServiceHandler, opts ...connect_gateway.HandlerOption) *TracingServiceGatewayServer {
 	return &TracingServiceGatewayServer{
-		listTraces: connect_gateway.NewUnaryHandler(TracingServiceListTracesProcedure, svc.ListTraces, opts...),
-		getTrace:   connect_gateway.NewUnaryHandler(TracingServiceGetTraceProcedure, svc.GetTrace, opts...),
+		listTraces:        connect_gateway.NewUnaryHandler(TracingServiceListTracesProcedure, svc.ListTraces, opts...),
+		getTrace:          connect_gateway.NewUnaryHandler(TracingServiceGetTraceProcedure, svc.GetTrace, opts...),
+		getTraceHistogram: connect_gateway.NewUnaryHandler(TracingServiceGetTraceHistogramProcedure, svc.GetTraceHistogram, opts...),
 	}
 }
 
@@ -36,6 +38,10 @@ func (s *TracingServiceGatewayServer) ListTraces(ctx context.Context, req *v1alp
 
 func (s *TracingServiceGatewayServer) GetTrace(ctx context.Context, req *v1alpha3.GetTraceRequest) (*v1alpha3.GetTraceResponse, error) {
 	return s.getTrace(ctx, req)
+}
+
+func (s *TracingServiceGatewayServer) GetTraceHistogram(ctx context.Context, req *v1alpha3.GetTraceHistogramRequest) (*v1alpha3.GetTraceHistogramResponse, error) {
+	return s.getTraceHistogram(ctx, req)
 }
 
 // RegisterTracingServiceHandlerGatewayServer registers the Connect handlers for the TracingService

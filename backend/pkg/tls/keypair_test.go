@@ -74,8 +74,7 @@ func TestMaybeWithDynamicDiskKeyPair(t *testing.T) {
 	})
 
 	t.Run("reloads when certificate changes", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		cfg := &tls.Config{}
 		shortInterval := 100 * time.Millisecond

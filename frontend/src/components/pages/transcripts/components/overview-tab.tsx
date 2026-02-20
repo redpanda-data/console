@@ -10,6 +10,7 @@
  */
 
 import { durationMs } from '@bufbuild/protobuf/wkt';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
@@ -34,7 +35,7 @@ const MetricCard: FC<MetricCardProps> = ({ label, value, variant = 'default' }) 
   const isError = variant === 'error';
   return (
     <ContentPanel className={cn(isError ? 'border-destructive/20 bg-destructive/10' : undefined)}>
-      <Text className="text-[10px]" variant="muted">
+      <Text className="text-xs" variant="muted">
         {label}
       </Text>
       <Text className={cn('font-mono font-semibold', isError && 'text-destructive')} variant="small">
@@ -85,7 +86,7 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {statistics.totalTokens > 0 && (
         <div className="space-y-2">
           <SectionHeader>Token Usage</SectionHeader>
-          <ContentPanel padding="md" spacing>
+          <ContentPanel padding="sm" spacing>
             <div className="flex items-center justify-between">
               <Text className="text-xs" variant="muted">
                 Input tokens
@@ -130,9 +131,22 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
         <div className="space-y-2">
           <SectionHeader>Service</SectionHeader>
           <ContentPanel>
-            <Text className="break-all font-mono" variant="small">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {summary.rootServiceName}
             </Text>
+          </ContentPanel>
+        </div>
+      )}
+
+      {/* Trace ID */}
+      {!!trace?.traceId && (
+        <div className="space-y-2">
+          <SectionHeader>Trace ID</SectionHeader>
+          <ContentPanel className="flex items-center justify-between">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+              {trace.traceId}
+            </Text>
+            <CopyButton content={trace.traceId} size="sm" variant="ghost" />
           </ContentPanel>
         </div>
       )}
@@ -141,10 +155,11 @@ export const OverviewTab: FC<Props> = ({ trace }) => {
       {!!conversationId && (
         <div className="space-y-2">
           <SectionHeader>Conversation ID</SectionHeader>
-          <ContentPanel>
-            <Text className="break-all font-mono" variant="muted">
+          <ContentPanel className="flex items-center justify-between">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {conversationId}
             </Text>
+            <CopyButton content={conversationId} size="sm" variant="ghost" />
           </ContentPanel>
         </div>
       )}

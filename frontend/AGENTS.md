@@ -2,6 +2,12 @@
 
 React 18.3 · Bun · Rsbuild
 
+## Critical Rules
+
+- New code MUST use Registry components (`src/components/redpanda-ui/`), react-hook-form + Zod, Vitest, and Connect Query
+- See [no-legacy](.claude/skills/code-standards/rules/no-legacy.md) for prohibited patterns
+- `src/protogen/` is generated — DO NOT EDIT
+
 ## Commands
 
 | Command | Purpose |
@@ -14,18 +20,9 @@ React 18.3 · Bun · Rsbuild
 | `bun run lint` | Biome linter |
 | `bun run type:check` | TypeScript |
 
-## Critical Rules
+## Verify Changes
 
-### Legacy Patterns
-
-See [no-legacy](.claude/skills/code-standards/rules/no-legacy.md) for prohibited patterns.
-
-### ALWAYS Use (Modern)
-
-- Registry: `src/components/redpanda-ui/`
-- react-hook-form + Zod
-- Vitest, Playwright
-- Connect Query
+After changes: `bun run type:check && bun run lint && bun run test`
 
 ## Directory Structure
 
@@ -33,53 +30,18 @@ See [no-legacy](.claude/skills/code-standards/rules/no-legacy.md) for prohibited
 src/
 ├── components/
 │   ├── pages/          # Feature pages
-│   └── redpanda-ui/    # Modern UI (USE THIS)
+│   └── redpanda-ui/    # UI Registry (USE THIS)
 ├── react-query/        # Connect Query hooks
 ├── hooks/              # Custom hooks
 ├── utils/              # Utilities
 └── protogen/           # Generated (DO NOT EDIT)
 ```
 
-## Quick Patterns
-
-**Query:**
-```typescript
-useQuery(getResource, request, { enabled: !!id })
-```
-
-**Mutation:**
-```typescript
-useMutation(updateResource, { onSuccess: invalidate })
-```
-
-**Store:**
-```typescript
-const v = useStore((s) => s.value) // always use selectors
-```
-
-**Tests:**
-- `.test.ts` = unit (node)
-- `.test.tsx` = integration (jsdom)
-
-## On-Demand Skills
-
-Load skill when task matches trigger:
-
-| Task Type | Skill |
-|-----------|-------|
-| Tests (unit/integration) | [testing](.claude/skills/testing/SKILL.md) |
-| E2E / Playwright | [e2e-tester](.claude/skills/e2e-tester/SKILL.md) |
-| UI components | [ui-development](.claude/skills/ui-development/SKILL.md) |
-| Forms | [form-refactorer](.claude/skills/form-refactorer/SKILL.md) |
-| API calls | [api-patterns](.claude/skills/api-patterns/SKILL.md) |
-| Global state | [state-management](.claude/skills/state-management/SKILL.md) |
-| Performance | [react-best-practices](.claude/skills/react-best-practices/SKILL.md) |
-| Linting | [code-standards](.claude/skills/code-standards/SKILL.md) |
-| Security | [security-scan](.claude/skills/security-scan/SKILL.md) |
-| Router migration | [tanstack-router-migration](.claude/skills/tanstack-router-migration/SKILL.md) |
-| Design review | [web-design-guidelines](.claude/skills/web-design-guidelines/SKILL.md) |
-
 ## Plan Mode
 
-- Make the plan extremely concise. Sacrifice grammar for the sake of concision.
-- At the end of each plan, give me a list of unresolved questions to answer, if any.
+- Extremely concise plans. Sacrifice grammar for concision.
+- End each plan with unresolved questions, if any.
+
+## Compaction
+
+When compacting, preserve: modified file list, test commands, and error messages.

@@ -6,7 +6,6 @@ import { type DayButton, DayPicker, getDefaultClassNames } from 'react-day-picke
 
 import { Button, buttonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
-import { isFeatureFlagEnabled } from 'config';
 
 function CalendarRoot({
   className,
@@ -66,7 +65,6 @@ function Calendar({
     buttonVariant?: React.ComponentProps<typeof Button>['variant'];
   }) {
   const defaultClassNames = getDefaultClassNames();
-  const isNewThemeEnabled = isFeatureFlagEnabled('enableNewTheme');
   const rootComponent = React.useMemo(
     () =>
       ({ ref, ...rootProps }: React.ComponentProps<typeof CalendarRoot> & { ref?: React.Ref<HTMLDivElement> }) => (
@@ -90,12 +88,12 @@ function Calendar({
         month: cn('flex w-full flex-col gap-4', defaultClassNames.month),
         nav: cn('absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1', defaultClassNames.nav),
         button_previous: cn(
-          buttonVariants(isNewThemeEnabled)({ variant: buttonVariant }),
+          buttonVariants({ variant: buttonVariant }),
           'size-(--cell-size) select-none p-0 aria-disabled:opacity-50',
           defaultClassNames.button_previous
         ),
         button_next: cn(
-          buttonVariants(isNewThemeEnabled)({ variant: buttonVariant }),
+          buttonVariants({ variant: buttonVariant }),
           'size-(--cell-size) select-none p-0 aria-disabled:opacity-50',
           defaultClassNames.button_next
         ),

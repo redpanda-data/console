@@ -23,6 +23,7 @@ import { Route as SecurityIndexRouteImport } from './routes/security/index';
 import { Route as SecretsIndexRouteImport } from './routes/secrets/index';
 import { Route as SchemaRegistryIndexRouteImport } from './routes/schema-registry/index';
 import { Route as OverviewIndexRouteImport } from './routes/overview/index';
+import { Route as ObservabilityIndexRouteImport } from './routes/observability/index';
 import { Route as McpServersIndexRouteImport } from './routes/mcp-servers/index';
 import { Route as LoginIndexRouteImport } from './routes/login/index';
 import { Route as KnowledgebasesIndexRouteImport } from './routes/knowledgebases/index';
@@ -142,6 +143,11 @@ const SchemaRegistryIndexRoute = SchemaRegistryIndexRouteImport.update({
 const OverviewIndexRoute = OverviewIndexRouteImport.update({
   id: '/overview/',
   path: '/overview/',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ObservabilityIndexRoute = ObservabilityIndexRouteImport.update({
+  id: '/observability/',
+  path: '/observability/',
   getParentRoute: () => rootRouteImport,
 } as any);
 const McpServersIndexRoute = McpServersIndexRouteImport.update({
@@ -443,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/knowledgebases/': typeof KnowledgebasesIndexRoute;
   '/login/': typeof LoginIndexRoute;
   '/mcp-servers/': typeof McpServersIndexRoute;
+  '/observability/': typeof ObservabilityIndexRoute;
   '/overview/': typeof OverviewIndexRoute;
   '/schema-registry/': typeof SchemaRegistryIndexRoute;
   '/secrets/': typeof SecretsIndexRoute;
@@ -509,6 +516,7 @@ export interface FileRoutesByTo {
   '/knowledgebases': typeof KnowledgebasesIndexRoute;
   '/login': typeof LoginIndexRoute;
   '/mcp-servers': typeof McpServersIndexRoute;
+  '/observability': typeof ObservabilityIndexRoute;
   '/overview': typeof OverviewIndexRoute;
   '/schema-registry': typeof SchemaRegistryIndexRoute;
   '/secrets': typeof SecretsIndexRoute;
@@ -576,6 +584,7 @@ export interface FileRoutesById {
   '/knowledgebases/': typeof KnowledgebasesIndexRoute;
   '/login/': typeof LoginIndexRoute;
   '/mcp-servers/': typeof McpServersIndexRoute;
+  '/observability/': typeof ObservabilityIndexRoute;
   '/overview/': typeof OverviewIndexRoute;
   '/schema-registry/': typeof SchemaRegistryIndexRoute;
   '/secrets/': typeof SecretsIndexRoute;
@@ -644,6 +653,7 @@ export interface FileRouteTypes {
     | '/knowledgebases/'
     | '/login/'
     | '/mcp-servers/'
+    | '/observability/'
     | '/overview/'
     | '/schema-registry/'
     | '/secrets/'
@@ -710,6 +720,7 @@ export interface FileRouteTypes {
     | '/knowledgebases'
     | '/login'
     | '/mcp-servers'
+    | '/observability'
     | '/overview'
     | '/schema-registry'
     | '/secrets'
@@ -776,6 +787,7 @@ export interface FileRouteTypes {
     | '/knowledgebases/'
     | '/login/'
     | '/mcp-servers/'
+    | '/observability/'
     | '/overview/'
     | '/schema-registry/'
     | '/secrets/'
@@ -843,6 +855,7 @@ export interface RootRouteChildren {
   KnowledgebasesIndexRoute: typeof KnowledgebasesIndexRoute;
   LoginIndexRoute: typeof LoginIndexRoute;
   McpServersIndexRoute: typeof McpServersIndexRoute;
+  ObservabilityIndexRoute: typeof ObservabilityIndexRoute;
   OverviewIndexRoute: typeof OverviewIndexRoute;
   SchemaRegistryIndexRoute: typeof SchemaRegistryIndexRoute;
   SecretsIndexRoute: typeof SecretsIndexRoute;
@@ -978,6 +991,13 @@ declare module '@tanstack/react-router' {
       path: '/overview';
       fullPath: '/overview/';
       preLoaderRoute: typeof OverviewIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/observability/': {
+      id: '/observability/';
+      path: '/observability';
+      fullPath: '/observability/';
+      preLoaderRoute: typeof ObservabilityIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/mcp-servers/': {
@@ -1363,6 +1383,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgebasesIndexRoute: KnowledgebasesIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   McpServersIndexRoute: McpServersIndexRoute,
+  ObservabilityIndexRoute: ObservabilityIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
   SchemaRegistryIndexRoute: SchemaRegistryIndexRoute,
   SecretsIndexRoute: SecretsIndexRoute,

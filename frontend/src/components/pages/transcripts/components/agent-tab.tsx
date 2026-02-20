@@ -10,6 +10,7 @@
  */
 
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
@@ -78,7 +79,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             AGENT NAME
           </Text>
           <ContentPanel>
-            <Text className="font-medium" variant="small">
+            <Text className="font-medium" variant="muted">
               {agentData.agentName}
             </Text>
           </ContentPanel>
@@ -92,7 +93,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             DESCRIPTION
           </Text>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
+            <Text className="whitespace-pre-wrap break-words text-sm leading-relaxed" variant="muted">
               {agentData.agentDescription}
             </Text>
           </ContentPanel>
@@ -106,7 +107,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             INPUT
           </Text>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.agentInput}
             </Text>
           </ContentPanel>
@@ -120,7 +121,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             OUTPUT
           </Text>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words leading-relaxed" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.agentOutput}
             </Text>
           </ContentPanel>
@@ -134,7 +135,7 @@ export const AgentTab: FC<Props> = ({ span }) => {
             AGENT ID
           </Text>
           <ContentPanel>
-            <Text className="font-mono" variant="muted">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.agentId}
             </Text>
           </ContentPanel>
@@ -191,10 +192,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
           <Text as="div" className="uppercase tracking-wide" variant="label">
             CONVERSATION ID
           </Text>
-          <ContentPanel>
-            <Text className="font-mono" variant="muted">
+          <ContentPanel className="flex items-center justify-between">
+            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
               {agentData.conversationId}
             </Text>
+            <CopyButton content={agentData.conversationId} size="sm" variant="ghost" />
           </ContentPanel>
         </div>
       )}

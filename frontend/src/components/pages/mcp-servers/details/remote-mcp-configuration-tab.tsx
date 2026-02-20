@@ -611,7 +611,7 @@ export const RemoteMCPConfigurationTab = () => {
                         <Button
                           disabled={isUpdateMCPServerPending || isLintConfigPending}
                           onClick={handleSave}
-                          variant="secondary"
+                          variant="primary"
                         >
                           <Save className="h-4 w-4" />
                           {(() => {
@@ -636,7 +636,7 @@ export const RemoteMCPConfigurationTab = () => {
                         </Button>
                       </>
                     ) : (
-                      <Button onClick={() => setIsEditing(true)} variant="secondary">
+                      <Button onClick={() => setIsEditing(true)} variant="primary">
                         <Edit className="h-4 w-4" />
                         Edit Configuration
                       </Button>

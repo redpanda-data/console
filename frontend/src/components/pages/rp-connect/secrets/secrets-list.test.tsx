@@ -34,13 +34,17 @@ vi.mock('state/app-global', () => ({
   },
 }));
 
-vi.mock('state/ui', () => ({
-  uiSettings: {
-    rpcnSecretList: {
-      quickSearch: '',
+vi.mock('state/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('state/ui')>();
+  return {
+    ...actual,
+    uiSettings: {
+      rpcnSecretList: {
+        quickSearch: '',
+      },
     },
-  },
-}));
+  };
+});
 
 import { rpcnSecretManagerApi } from 'state/backend-api';
 

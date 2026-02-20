@@ -442,7 +442,7 @@ func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName strin
 	}
 	sch, err := srClient.SchemaByVersion(ctx, subjectName, version)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve schema by version %q: %w", version, err)
+		return nil, fmt.Errorf("failed to retrieve schema by version %d: %w", version, err)
 	}
 
 	// Always assuming soft-deleted=false is wrong here! This should be fixed,
@@ -633,7 +633,7 @@ type SchemaRegistrySchemaValidation struct {
 // performed by the schema registry.
 type SchemaRegistrySchemaValidationCompatibility struct {
 	IsCompatible bool                     `json:"isCompatible"`
-	Error        schemaRegValidationError `json:"error,omitempty"`
+	Error        schemaRegValidationError `json:"error"`
 }
 
 // schemaRegValidationError represents the structure of compatibility messages from schema registry

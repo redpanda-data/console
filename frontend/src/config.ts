@@ -23,7 +23,6 @@ import {
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
-import { autorun, configure, observable, when } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
@@ -42,7 +41,7 @@ import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/k
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { appGlobal } from './state/app-global';
 import { api } from './state/backend-api';
-import { uiState } from './state/ui-state';
+import { useUIStateStore } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 import { getEmbeddedAvailableRoutes } from './utils/route-utils';
 
@@ -119,6 +118,7 @@ export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
+  aiGatewayUrl?: string;
   urlOverride?: {
     rest?: string;
     ws?: string;
@@ -128,6 +128,7 @@ export type SetConfigArguments = {
   setSidebarItems?: (items: SidebarItem[]) => void;
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
+  isAdpEnabled?: boolean;
   featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -147,6 +148,7 @@ export type Breadcrumb = {
 
 type Config = {
   controlplaneUrl: string;
+  aiGatewayUrl?: string;
   dataplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
@@ -171,13 +173,12 @@ type Config = {
   setSidebarItems: (items: SidebarItem[]) => void;
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
+  isAdpEnabled: boolean;
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
-// Config object is an mobx observable, always make sure you call it from
-// inside a componenet, don't be tempted to used it as singleton you might find
-// unexpected behaviour
-export const config: Config = observable({
+// Config object - plain JavaScript object, no longer using MobX observable
+export const config: Config = {
   restBasePath: getRestBasePath(),
   grpcBasePath: getGrpcBasePath(),
   controlplaneUrl: '',
@@ -191,14 +192,16 @@ export const config: Config = observable({
     // no op - set by parent application
   },
   isServerless: false,
+  isAdpEnabled: false,
   featureFlags: FEATURE_FLAGS,
-});
+};
 
 const setConfig = ({
   fetch,
   urlOverride,
   jwt,
   isServerless: isServerlessMode,
+  isAdpEnabled: isAdpEnabledMode,
   featureFlags,
   ...args
 }: SetConfigArguments) => {
@@ -244,6 +247,7 @@ const setConfig = ({
     jwt,
     dataplaneTransport,
     isServerless: isServerlessMode,
+    isAdpEnabled: isAdpEnabledMode ?? false,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
@@ -287,41 +291,73 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
   monaco.editor.setTheme('kowl');
 };
 
+// Subscribe to UI state changes for breadcrumbs and sidebar items
+// Delay to ensure stores are initialized
 setTimeout(() => {
-  autorun(() => {
-    const setBreadcrumbs = config.setBreadcrumbs;
-    if (!setBreadcrumbs) {
-      return;
-    }
+  try {
+    // Subscribe to breadcrumbs changes
+    let previousBreadcrumbs = useUIStateStore.getState().pageBreadcrumbs;
 
-    const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
-      title: v.title,
-      to: v.linkTo,
-    }));
+    useUIStateStore.subscribe((state) => {
+      const setBreadcrumbs = config.setBreadcrumbs;
+      if (!setBreadcrumbs) {
+        return;
+      }
 
-    setBreadcrumbs(breadcrumbs);
-  });
+      // Only update if breadcrumbs changed
+      if (state.pageBreadcrumbs === previousBreadcrumbs) {
+        return;
+      }
 
-  autorun(() => {
-    const setSidebarItems = config.setSidebarItems;
-    if (!setSidebarItems) {
-      return;
-    }
+      previousBreadcrumbs = state.pageBreadcrumbs;
 
-    const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
-      (r, i) =>
-        ({
-          title: r.title,
-          to: r.path,
-          icon: r.icon,
-          order: i,
-          group: r.group,
-          isBeta: r.isBeta,
-        }) as SidebarItem
-    );
+      const breadcrumbs = state.pageBreadcrumbs.map((v) => ({
+        title: v.title,
+        to: v.linkTo,
+      }));
 
-    setSidebarItems(sidebarItems);
-  });
+      setBreadcrumbs(breadcrumbs);
+    });
+
+    // Update sidebar items when routes change
+    // Note: This is a simple function call, no longer needs to be observable
+    const updateSidebarItems = () => {
+      const setSidebarItems = config.setSidebarItems;
+      if (!setSidebarItems) {
+        return;
+      }
+
+      // Guard: skip if api is not initialized yet (can happen in tests)
+      // The endpointCompatibility check is needed because getEmbeddedAvailableRoutes()
+      // calls route visibility checks that depend on api.endpointCompatibility
+      if (!api || api.endpointCompatibility === undefined) {
+        return;
+      }
+
+      const sidebarItems = getEmbeddedAvailableRoutes().map(
+        (r, i) =>
+          ({
+            title: r.title,
+            to: r.path,
+            icon: r.icon,
+            order: i,
+            group: r.group,
+            isBeta: r.isBeta,
+          }) as SidebarItem
+      );
+
+      setSidebarItems(sidebarItems);
+    };
+
+    // Call once on initialization
+    updateSidebarItems();
+
+    // If routes can change dynamically, you can subscribe to relevant state changes
+    // For now, we just call it once since routes are static
+  } catch (error) {
+    // Ignore errors in test environments where stores might not be properly initialized
+    // This setTimeout runs globally when config.ts is imported
+  }
 }, 50);
 
 export function isEmbedded() {
@@ -344,6 +380,10 @@ export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
 
 export function isServerless() {
   return config.isServerless;
+}
+
+export function isAdpEnabled() {
+  return config.isAdpEnabled;
 }
 
 export const embeddedAvailableRoutesObservable = observable({
@@ -377,27 +417,22 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     };
   });
 
-  // Configure MobX
-  configure({
-    enforceActions: 'never',
-    safeDescriptors: true,
-  });
-
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is
   // protected, so we need to delay the call until the user is logged in.
   if (AppFeatures.SINGLE_SIGN_ON) {
-    when(
-      () => Boolean(api.userData),
-      () => {
-        setTimeout(() => {
-          api.refreshSupportedEndpoints();
-          api.listLicenses();
-        });
+    // Poll for user data instead of using MobX when
+    const checkUserData = () => {
+      if (api.userData) {
+        api.refreshSupportedEndpoints();
+        api.listLicenses();
+      } else {
+        setTimeout(checkUserData, 100);
       }
-    );
+    };
+    checkUserData();
   } else {
-    api.refreshSupportedEndpoints();
     api.listLicenses();
+    api.refreshSupportedEndpoints();
   }
 });

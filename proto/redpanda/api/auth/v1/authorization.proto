@@ -25,6 +25,7 @@ enum API {
   API_MCP_SERVER = 7;
   API_AI_AGENT = 8;
   API_AI_GATEWAY = 9;
+  API_PROMETHEUS = 10;
 }
 
 // AuthorizationRole defines the primitive pre-defined roles a user can have.

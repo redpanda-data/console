@@ -56,3 +56,4 @@ yes | bunx @fumadocs/cli add --dir https://redpanda-ui-registry.netlify.app/r bu
 
 - https://redpanda-ui-registry.netlify.app
 - MCP tools: `mcp__redpanda-ui__search-docs`, `mcp__redpanda-ui__get_component`
+- See also: [no-legacy](../../code-standards/rules/no-legacy.md) — full list of prohibited legacy patterns

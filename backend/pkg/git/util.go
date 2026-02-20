@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/go-git/go-billy/v5"
@@ -122,10 +123,5 @@ func (c *Service) isValidFileExtension(filename string) (bool, string) {
 
 // isStringInSlice returns true if the given string exists in the string slice.
 func isStringInSlice(item string, arr []string) bool {
-	for _, occurrence := range arr {
-		if item == occurrence {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(arr, item)
 }

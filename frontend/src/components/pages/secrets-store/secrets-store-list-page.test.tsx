@@ -14,6 +14,7 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('state/ui-state', () => ({
@@ -67,7 +68,7 @@ describe('SecretsStoreListPage', () => {
     const callArgs = listSecretsMock.mock.calls[0];
     expect(callArgs[0]).toMatchObject({
       request: {
-        pageSize: 500,
+        pageSize: MAX_PAGE_SIZE,
       },
     });
   });

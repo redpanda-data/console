@@ -943,25 +943,6 @@ test.describe('Allow all operations', () => {
       ],
     },
   ].map(({ testName, principal, host, operation }) => {
-    const allRules: Rule[] = [
-      ResourceTypeCluster,
-      ResourceTypeTopic,
-      ResourceTypeConsumerGroup,
-      ResourceTypeTransactionalId,
-      ResourceTypeSubject,
-      ResourceTypeSchemaRegistry,
-    ].map(
-      (type, i) =>
-        ({
-          id: i,
-          mode: ModeAllowAll,
-          selectorType: ResourcePatternTypeAny,
-          selectorValue: '',
-          operations: {},
-          resourceType: type,
-        }) as Rule
-    );
-
     aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {
         const aclPage = createPage(page);
@@ -983,6 +964,37 @@ test.describe('Allow all operations', () => {
         await test.step('Click the "Allow All" button', async () => {
           await aclPage.allowAllButton();
         });
+
+        // Determine which resource types are available by checking the UI
+        // Schema Registry resources are only available when the feature is enabled
+        const baseResourceTypes = [
+          ResourceTypeCluster,
+          ResourceTypeTopic,
+          ResourceTypeConsumerGroup,
+          ResourceTypeTransactionalId,
+        ];
+
+        // Check if Schema Registry resources are available in the UI
+        const schemaRegistryVisible = await page
+          .getByTestId('card-content-rule-subject-3-*')
+          .isVisible()
+          .catch(() => false);
+
+        const availableResourceTypes = schemaRegistryVisible
+          ? [...baseResourceTypes, ResourceTypeSubject, ResourceTypeSchemaRegistry]
+          : baseResourceTypes;
+
+        const allRules: Rule[] = availableResourceTypes.map(
+          (resourceType, i) =>
+            ({
+              id: i,
+              mode: ModeAllowAll,
+              selectorType: ResourcePatternTypeAny,
+              selectorValue: '',
+              operations: {},
+              resourceType,
+            }) as Rule
+        );
 
         await test.step('Validate the summary shows all operations as Allow All', async () => {
           await aclPage.validateAllSummaryRules(allRules);

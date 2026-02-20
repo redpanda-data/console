@@ -10,30 +10,38 @@
  */
 
 import { DateTimeInput } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { uiState } from '../../../../../state/ui-state';
+import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
 
-export const StartOffsetDateTimePicker = observer(() => {
+type StartOffsetDateTimePickerProps = {
+  topicName: string;
+  value: number;
+  onChange: (value: number) => void;
+};
+
+export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartOffsetDateTimePickerProps) => {
+  const getSearchParams = useTopicSettingsStore((s) => s.getSearchParams);
+  const searchParams = getSearchParams(topicName);
+
+  // Use ref to avoid onChange in useEffect dependencies (it changes every render)
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  // Stable fallback timestamp to avoid Date.now() changes causing re-renders
+  const [initialTimestamp] = useState(() => Date.now());
+
   // Initialize timestamp on mount if not set by user
   useEffect(() => {
-    const searchParams = uiState.topicSettings.searchParams;
-    if (!searchParams.startTimestampWasSetByUser) {
+    if (!searchParams?.startTimestampWasSetByUser && value === -1) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
-      searchParams.startTimestamp = Date.now();
+      onChangeRef.current(Date.now());
     }
-  }, []);
-
-  const searchParams = uiState.topicSettings.searchParams;
+  }, [searchParams?.startTimestampWasSetByUser, value]);
 
   return (
-    <DateTimeInput
-      onChange={(value) => {
-        searchParams.startTimestamp = value;
-        searchParams.startTimestampWasSetByUser = true;
-      }}
-      value={searchParams.startTimestamp}
-    />
+    <div data-testid="start-timestamp-input">
+      <DateTimeInput onChange={onChange} value={value === -1 ? initialTimestamp : value} />
+    </div>
   );
-});
+};

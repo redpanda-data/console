@@ -85,7 +85,7 @@ func TestTopicsSetWithLogDirs(t *testing.T) {
 		}
 
 		topicsSet := topicsSetWithLogDirs{}
-		for i := 0; i < 30; i++ {
+		for i := range 30 {
 			info.PartitionID = int32(i)
 			info.Leader = int32(i % 3)
 			topicsSet.Set(topic, info)
