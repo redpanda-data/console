@@ -91,6 +91,7 @@ export function isSupported(f: FeatureEntry): boolean {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
       case Feature.TracingService.endpoint:
+      case Feature.GetQuotas.endpoint:
         return false;
       default:
         return true;
