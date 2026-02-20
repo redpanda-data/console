@@ -13,11 +13,8 @@ import { create } from '@bufbuild/protobuf';
 import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { WrenchIcon } from 'components/icons';
-import { isFeatureFlagEnabled } from 'config';
-import { ListMCPServersRequestSchema as ListMCPServersRequestSchemaV1 } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
-import { listMCPServers as listMCPServersV1 } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
-import { ListMCPServersRequestSchema as ListMCPServersRequestSchemaV1Alpha3 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { listMCPServers as listMCPServersV1Alpha3 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
+import { ListMCPServersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 
 import { RemoteMCPListPage } from '../../components/pages/mcp-servers/list/remote-mcp-list-page';
 
@@ -27,20 +24,11 @@ export const Route = createFileRoute('/mcp-servers/')({
     icon: WrenchIcon,
   },
   loader: async ({ context: { queryClient, dataplaneTransport } }) => {
-    const useMcpV1 = isFeatureFlagEnabled('enableMcpServiceAccount');
-    if (useMcpV1) {
-      await queryClient.ensureQueryData(
-        createQueryOptions(listMCPServersV1, create(ListMCPServersRequestSchemaV1, { pageSize: 50 }), {
-          transport: dataplaneTransport,
-        })
-      );
-    } else {
-      await queryClient.ensureQueryData(
-        createQueryOptions(listMCPServersV1Alpha3, create(ListMCPServersRequestSchemaV1Alpha3, { pageSize: 50 }), {
-          transport: dataplaneTransport,
-        })
-      );
-    }
+    await queryClient.ensureQueryData(
+      createQueryOptions(listMCPServers, create(ListMCPServersRequestSchema, { pageSize: 50 }), {
+        transport: dataplaneTransport,
+      })
+    );
   },
   component: RemoteMCPListPage,
 });

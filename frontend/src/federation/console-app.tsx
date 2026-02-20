@@ -41,17 +41,8 @@ import { FederatedProviders } from './federated-providers';
 import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
-import {
-  addBearerTokenInterceptor,
-  checkExpiredLicenseInterceptor,
-  config,
-  embeddedAvailableRoutesObservable,
-  getGrpcBasePath,
-  type SidebarItem,
-  setup,
-} from '../config';
+import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
-import { uiState } from '../state/ui-state';
 
 /**
  * Creates an interceptor that refreshes the token on 401 and retries the request.
@@ -223,41 +214,6 @@ function ConsoleAppInner({
       queryClient.clear();
     };
   }, [tokenManager, queryClient, clusterId, onSidebarItemsChange, onBreadcrumbsChange, featureFlags, configOverrides]);
-
-  // Sync sidebar items when routes change
-  useEffect(() => {
-    if (!(isInitialized && onSidebarItemsChange)) {
-      return;
-    }
-
-    // Push current sidebar items to host
-    const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
-      (r, i) =>
-        ({
-          title: String(r.title),
-          to: r.path,
-          icon: r.icon,
-          order: i,
-          group: r.group,
-        }) as SidebarItem
-    );
-
-    onSidebarItemsChange(sidebarItems);
-  }, [isInitialized, onSidebarItemsChange]);
-
-  // Sync breadcrumbs when they change
-  useEffect(() => {
-    if (!(isInitialized && onBreadcrumbsChange)) {
-      return;
-    }
-
-    const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
-      title: v.title,
-      to: v.linkTo,
-    }));
-
-    onBreadcrumbsChange(breadcrumbs);
-  }, [isInitialized, onBreadcrumbsChange]);
 
   // Create transport with token interceptors (including refresh on 401)
   const dataplaneTransport = useMemo(

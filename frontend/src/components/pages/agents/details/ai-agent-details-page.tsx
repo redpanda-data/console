@@ -14,7 +14,6 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 const routeApi = getRouteApi('/agents/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Loader2, Network, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
@@ -37,8 +36,6 @@ export const updatePageTitle = (agentName?: string) => {
 };
 
 export const AIAgentDetailsPage = () => {
-  const isAiAgentsInspectorFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInspectorInConsole');
-
   const { id } = routeApi.useParams();
   const navigate = useNavigate({ from: '/agents/$id' });
   // Use fine-grained selector to only re-render when tab changes
@@ -111,12 +108,10 @@ export const AIAgentDetailsPage = () => {
               A2A
             </div>
           </TabsTrigger>
-          {Boolean(isAiAgentsInspectorFeatureEnabled) && (
-            <TabsTrigger className="gap-2" value="inspector">
-              <Search className="h-4 w-4" />
-              Inspector
-            </TabsTrigger>
-          )}
+          <TabsTrigger className="gap-2" value="inspector">
+            <Search className="h-4 w-4" />
+            Inspector
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="configuration">
@@ -125,11 +120,9 @@ export const AIAgentDetailsPage = () => {
         <TabsContent value="agent-card">
           <AIAgentCardTab />
         </TabsContent>
-        {Boolean(isAiAgentsInspectorFeatureEnabled) && (
-          <TabsContent className="flex h-full flex-col" value="inspector">
-            <AIAgentInspectorTab />
-          </TabsContent>
-        )}
+        <TabsContent className="flex h-full flex-col" value="inspector">
+          <AIAgentInspectorTab />
+        </TabsContent>
       </Tabs>
     </div>
   );

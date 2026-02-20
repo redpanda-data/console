@@ -314,6 +314,12 @@ setTimeout(() => {
       return;
     }
 
+    // Don't emit sidebar items until endpoint compatibility is known,
+    // otherwise items gated by feature support will flicker.
+    if (!api.endpointCompatibility) {
+      return;
+    }
+
     const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
       (r, i) =>
         ({
@@ -352,7 +358,7 @@ export function isServerless() {
 }
 
 export function isAdpEnabled() {
-  return config.isAdpEnabled;
+  return config.isAdpEnabled && !isServerless();
 }
 
 export const embeddedAvailableRoutesObservable = observable({
