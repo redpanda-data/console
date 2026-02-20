@@ -239,7 +239,6 @@ function ConsoleAppInner({
           icon: r.icon,
           order: i,
           group: r.group,
-          isBeta: r.isBeta,
         }) as SidebarItem
     );
 
