@@ -18,7 +18,7 @@ const pulsingIconVariants = cva('rounded-full', {
 
 type PulsingStatusIconProps = VariantProps<typeof pulsingIconVariants>;
 
-const PulsingStatusIcon = ({ variant }: PulsingStatusIconProps) => {
+export const PulsingStatusIcon = ({ variant }: PulsingStatusIconProps) => {
   return (
     <div className="relative flex items-center justify-center size-3">
       {variant === 'disabled' ? null : <div className={cn(pulsingIconVariants({ variant }), 'size-3 opacity-75 animate-ping')} />}

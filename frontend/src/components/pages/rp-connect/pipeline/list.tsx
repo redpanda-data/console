@@ -13,10 +13,23 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  DataTableFilter,
+  type FilterColumnConfig,
+  useDataTableFilter,
+} from 'components/redpanda-ui/components/data-table-filter';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,8 +42,9 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
+import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { PipelineStatusBadge } from 'components/ui/pipeline/status-badge';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import {
@@ -325,6 +339,7 @@ const createColumns = ({
   {
     accessorKey: 'name',
     header: 'Pipeline Name',
+    filterFn: createFilterFn('text'),
     cell: ({ row }) => (
       <div className="flex min-w-[324px] items-center gap-4">
         <Link
@@ -341,6 +356,7 @@ const createColumns = ({
   {
     accessorKey: 'input',
     header: 'Input',
+    filterFn: createFilterFn('option'),
     cell: ({ row }) => {
       const input = row.getValue('input') as string | undefined;
       return (
@@ -353,6 +369,7 @@ const createColumns = ({
   {
     accessorKey: 'output',
     header: 'Output',
+    filterFn: createFilterFn('option'),
     cell: ({ row }) => {
       const output = row.getValue('output') as string | undefined;
       return (
@@ -363,8 +380,10 @@ const createColumns = ({
     },
   },
   {
-    accessorKey: 'state',
+    id: 'state',
+    accessorFn: (row) => String(row.state),
     header: 'Status',
+    filterFn: createFilterFn('option'),
     cell: ({ row }) => <PipelineStatusBadge state={row.original.state} />,
   },
   {
@@ -424,16 +443,43 @@ const PipelineListPageContent = () => {
     [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline]
   );
 
+  const filterColumns = useMemo<FilterColumnConfig[]>(() => {
+    const inputOptions = [...new Set(pipelines.map((p) => p.input).filter(Boolean))].map((v) => ({
+      value: v as string,
+      label: v as string,
+    }));
+    const outputOptions = [...new Set(pipelines.map((p) => p.output).filter(Boolean))].map((v) => ({
+      value: v as string,
+      label: v as string,
+    }));
+    const stateOptions = PIPELINE_STATE_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
+
+    return [
+      { id: 'name', displayName: 'Name', type: 'text' as const, placeholder: 'Search by name...' },
+      { id: 'input', displayName: 'Input', type: 'option' as const, options: inputOptions },
+      { id: 'output', displayName: 'Output', type: 'option' as const, options: outputOptions },
+      { id: 'state', displayName: 'Status', type: 'option' as const, options: stateOptions },
+    ];
+  }, [pipelines]);
+
   const table = useReactTable({
     data: pipelines,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
         pageSize: PAGE_SIZE,
       },
     },
+  });
+
+  const { filters, actions } = useDataTableFilter({
+    columns: filterColumns,
+    table,
   });
 
   const handleCreateClick = useCallback(() => {
@@ -459,7 +505,8 @@ const PipelineListPageContent = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="mb-4">
+      <div className="flex items-center justify-between gap-4">
+        <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
         <Button onClick={handleCreateClick}>Create a pipeline</Button>
       </div>
       <Table>
@@ -478,10 +525,11 @@ const PipelineListPageContent = () => {
           {(() => {
             const rows = table.getRowModel().rows;
             if (rows.length === 0) {
+              const isFiltered = filters.length > 0;
               return (
                 <TableRow>
                   <TableCell className="h-24 text-center" colSpan={columns.length}>
-                    You have no Redpanda Connect pipelines
+                    {isFiltered ? 'No pipelines match the current filters' : 'You have no Redpanda Connect pipelines'}
                   </TableCell>
                 </TableRow>
               );
