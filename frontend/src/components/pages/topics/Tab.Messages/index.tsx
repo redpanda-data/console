@@ -1227,25 +1227,28 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             pagination={paginationParams}
             size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
             sorting={sorting}
-            subComponent={({ row: { original } }) => (
-              <ExpandedMessage
-                loadLargeMessage={() =>
-                  loadLargeMessage({
-                    topicName: props.topic.topicName,
-                    messagePartitionID: original.partitionID,
-                    offset: original.offset,
-                    setMessages,
-                    keyDeserializer,
-                    valueDeserializer,
-                  })
-                }
-                msg={original}
-                onCopyKey={(msg) => onCopyKey(msg, toast)}
-                onCopyValue={(msg) => onCopyValue(msg, toast)}
-                onDownloadRecord={() => {
-                  setDownloadMessages([original]);
-                }}
-              />
+            subComponent={useCallback(
+              ({ row: { original } }: { row: { original: TopicMessage } }) => (
+                <ExpandedMessage
+                  loadLargeMessage={() =>
+                    loadLargeMessage({
+                      topicName: props.topic.topicName,
+                      messagePartitionID: original.partitionID,
+                      offset: original.offset,
+                      setMessages,
+                      keyDeserializer,
+                      valueDeserializer,
+                    })
+                  }
+                  msg={original}
+                  onCopyKey={(msg) => onCopyKey(msg, toast)}
+                  onCopyValue={(msg) => onCopyValue(msg, toast)}
+                  onDownloadRecord={() => {
+                    setDownloadMessages([original]);
+                  }}
+                />
+              ),
+              [props.topic.topicName, keyDeserializer, valueDeserializer]
             )}
           />
           <Button
