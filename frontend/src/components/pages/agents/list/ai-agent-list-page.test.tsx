@@ -12,6 +12,8 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
+import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import {
   AIAgent_State,
   AIAgentSchema,
@@ -29,8 +31,6 @@ import {
   startAIAgent,
   stopAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
-import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 vi.mock('config', async (importOriginal) => {

@@ -271,10 +271,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/transcripts',
     title: 'Transcripts',
     icon: ActivityIcon,
-    visibilityCheck: routeVisibility(
-      () => isEmbedded() && isAdpEnabled() && isFeatureFlagEnabled('enableTranscriptsInConsole'),
-      [Feature.TracingService]
-    ),
+    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled(), [Feature.TracingService]),
   },
   {
     path: '/reassign-partitions',
@@ -291,7 +288,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/mcp-servers',
     title: 'Remote MCP',
     icon: MCPIcon,
-    visibilityCheck: routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')),
+    visibilityCheck: routeVisibility(() => isEmbedded()),
   },
   {
     path: '/shadowlinks',
@@ -299,7 +296,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: ShieldIcon,
     visibilityCheck: routeVisibility(() => {
       if (isEmbedded()) {
-        return isFeatureFlagEnabled('shadowlinkCloudUi') && !isServerless();
+        return !isServerless();
       }
       return true;
     }),
@@ -308,13 +305,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/agents',
     title: 'AI Agents',
     icon: UserCircleIcon,
-    visibilityCheck: routeVisibility(
-      () =>
-        isEmbedded() &&
-        isAdpEnabled() &&
-        (!isServerless() || isFeatureFlagEnabled('enableAiAgentsInConsoleServerless')) &&
-        isFeatureFlagEnabled('enableAiAgentsInConsole')
-    ),
+    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled()),
   },
 ];
 
