@@ -15,6 +15,7 @@ import {
   type ListMCPServersRequest,
   ListMCPServersRequest_FilterSchema,
   ListMCPServersRequestSchema,
+  type ListMCPServersResponse,
   type MCPServer,
   MCPServer_State,
   MCPServer_Tool_ComponentType,
@@ -41,7 +42,7 @@ export type { MCPServer };
 
 export const useListMCPServersQuery = (
   input?: MessageInit<ListMCPServersRequest>,
-  options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersRequest>
+  options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>
 ) => {
   // Memoize requests to prevent infinite re-renders
   const listMCPServersRequest = useMemo(
