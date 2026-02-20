@@ -45,7 +45,7 @@ import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
-import { PipelineStatusBadge } from 'components/ui/pipeline/status-badge';
+import { PipelineStatusBadge, PulsingStatusIcon } from 'components/ui/pipeline/status-badge';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -452,13 +452,31 @@ const PipelineListPageContent = () => {
       value: v as string,
       label: v as string,
     }));
-    const stateOptions = PIPELINE_STATE_OPTIONS.map((o) => ({ value: o.value, label: o.label }));
+    const stateIconMap: Record<string, () => JSX.Element> = {
+      [String(Pipeline_State.RUNNING)]: () => <PulsingStatusIcon pulsing={false} variant="success" />,
+      [String(Pipeline_State.STARTING)]: () => <PulsingStatusIcon pulsing={false} variant="warning" />,
+      [String(Pipeline_State.STOPPING)]: () => <PulsingStatusIcon pulsing={false} variant="warning" />,
+      [String(Pipeline_State.STOPPED)]: () => <PulsingStatusIcon pulsing={false} variant="disabled" />,
+      [String(Pipeline_State.ERROR)]: () => <PulsingStatusIcon pulsing={false} variant="error" />,
+      [String(Pipeline_State.COMPLETED)]: () => <PulsingStatusIcon pulsing={false} variant="success" />,
+    };
+    const stateOptions = PIPELINE_STATE_OPTIONS.map((o) => ({
+      value: o.value,
+      label: o.label,
+      icon: stateIconMap[o.value],
+    }));
 
     return [
       { id: 'name', displayName: 'Name', type: 'text' as const, placeholder: 'Search by name...' },
       { id: 'input', displayName: 'Input', type: 'option' as const, options: inputOptions },
       { id: 'output', displayName: 'Output', type: 'option' as const, options: outputOptions },
-      { id: 'state', displayName: 'Status', type: 'option' as const, options: stateOptions },
+      {
+        id: 'state',
+        displayName: 'Status',
+        displayNamePlural: 'Statuses',
+        type: 'option' as const,
+        options: stateOptions,
+      },
     ];
   }, [pipelines]);
 

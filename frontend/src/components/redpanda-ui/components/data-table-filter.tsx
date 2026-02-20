@@ -27,6 +27,9 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandSub,
+  CommandSubContent,
+  CommandSubTrigger,
 } from './command';
 import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
@@ -43,6 +46,7 @@ export type FilterOption = {
 export type FilterColumnConfig = {
   id: string;
   displayName: string;
+  displayNamePlural?: string;
   icon?: React.ComponentType<{ className?: string }>;
 } & (
   | { type: 'text'; placeholder?: string }
@@ -69,7 +73,7 @@ export function DataTableFilter<TData>({
 }: DataTableFilterProps<TData>) {
   return (
     <div className={cn('flex w-full flex-wrap items-start gap-2', className)}>
-      <FilterSelector columns={columns} filters={filters} actions={actions} />
+      <FilterSelector columns={columns} filters={filters} actions={actions} table={table} />
       {filters.map((filter) => {
         const column = columns.find((c) => c.id === filter.columnId);
         if (!column) return null;
@@ -85,29 +89,63 @@ DataTableFilter.displayName = 'DataTableFilter';
 
 // ── FilterSelector ─────────────────────────────────────────────────────
 
-interface FilterSelectorProps {
+interface FilterSelectorProps<TData> {
   columns: FilterColumnConfig[];
   filters: FiltersState;
   actions: DataTableFilterActions;
+  table?: Table<TData>;
 }
 
-const FilterSelector = memo(function FilterSelector({ columns, filters, actions }: FilterSelectorProps) {
+const FilterSelector = memo(function FilterSelector<TData>({
+  columns,
+  filters,
+  actions,
+  table,
+}: FilterSelectorProps<TData>) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
 
   const hasFilters = filters.length > 0;
-  const activeColumnIds = useMemo(() => new Set(filters.map((f) => f.columnId)), [filters]);
-  const availableColumns = useMemo(
-    () => columns.filter((c) => !activeColumnIds.has(c.id)),
-    [columns, activeColumnIds],
-  );
 
   useEffect(() => {
     if (!open) {
-      const timer = setTimeout(() => setSearch(''), 150);
+      const timer = setTimeout(() => {
+        setSearch('');
+        setActiveColumnId(null);
+      }, 150);
       return () => clearTimeout(timer);
     }
   }, [open]);
+
+  // Hierarchical search: match option values across all columns
+  const matchingOptions = useMemo(() => {
+    if (!search || activeColumnId) return [];
+    const term = search.toLowerCase();
+    const matches: Array<{
+      columnId: string;
+      columnDisplayName: string;
+      columnIcon?: React.ComponentType<{ className?: string }>;
+      option: FilterOption;
+      count?: number;
+    }> = [];
+    for (const col of columns) {
+      if (col.type === 'text' || !('options' in col) || !col.options) continue;
+      const facetedCounts = table?.getColumn(col.id)?.getFacetedUniqueValues();
+      for (const opt of col.options) {
+        if (opt.label.toLowerCase().includes(term)) {
+          matches.push({
+            columnId: col.id,
+            columnDisplayName: col.displayName,
+            columnIcon: col.icon,
+            option: opt,
+            count: facetedCounts?.get(opt.value),
+          });
+        }
+      }
+    }
+    return matches;
+  }, [search, activeColumnId, columns, table]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -123,30 +161,127 @@ const FilterSelector = memo(function FilterSelector({ columns, filters, actions 
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandList className="max-h-fit">
             <CommandGroup>
-              {availableColumns.map((column) => (
-                <CommandItem
-                  key={column.id}
-                  value={column.id}
-                  keywords={[column.displayName]}
-                  onSelect={() => {
-                    actions.addFilter(column.id);
-                    setOpen(false);
-                  }}
-                >
-                  <div className="flex items-center gap-1.5">
-                    {column.icon && <column.icon className="size-4" />}
-                    <span>{column.displayName}</span>
-                  </div>
-                </CommandItem>
-              ))}
+              {columns.map((column) => {
+                const filter = filters.find((f) => f.columnId === column.id);
+                return (
+                  <CommandSub
+                    key={column.id}
+                    open={activeColumnId === column.id}
+                    onOpenChange={(isOpen) => setActiveColumnId(isOpen ? column.id : null)}
+                  >
+                    <CommandSubTrigger value={column.id} keywords={[column.displayName]}>
+                      <div className="flex items-center gap-1.5">
+                        {column.icon && <column.icon className="size-4" />}
+                        <span>{column.displayName}</span>
+                      </div>
+                    </CommandSubTrigger>
+                    <CommandSubContent>
+                      <FilterKeySubmenu
+                        column={column}
+                        selectedValues={filter?.values ?? []}
+                        actions={actions}
+                        table={table}
+                      />
+                    </CommandSubContent>
+                  </CommandSub>
+                );
+              })}
             </CommandGroup>
+            {matchingOptions.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  {matchingOptions.map((match) => {
+                    const { icon: Icon } = match.option;
+                    const ColIcon = match.columnIcon;
+                    const selectedValues = filters.find((f) => f.columnId === match.columnId)?.values ?? [];
+                    const isSelected = selectedValues.includes(match.option.value);
+                    return (
+                      <CommandItem
+                        key={`${match.columnId}:${match.option.value}`}
+                        value={`${match.columnId}:${match.option.value}`}
+                        keywords={[match.option.label, match.columnDisplayName]}
+                        onSelect={() => {
+                          if (isSelected) {
+                            actions.removeFilterValue(match.columnId, match.option.value);
+                          } else {
+                            actions.addFilterValue(match.columnId, match.option.value);
+                          }
+                          setOpen(false);
+                        }}
+                        className="group flex items-center gap-1.5"
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          className="opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100 mr-1"
+                        />
+                        <span className="inline-flex items-center gap-1 text-muted-foreground">
+                          {ColIcon && <ColIcon className="size-3.5" />}
+                          <span>{match.columnDisplayName}</span>
+                          <span>&gt;</span>
+                        </span>
+                        {Icon &&
+                          (isValidElement(Icon) ? Icon : <Icon className="size-4 text-primary" />)}
+                        <span>
+                          {match.option.label}
+                          {match.count != null && (
+                            <sup className={cn('ml-0.5 tabular-nums tracking-tight text-muted-foreground', match.count === 0 && 'slashed-zero')}>
+                              {match.count < 100 ? match.count : '100+'}
+                            </sup>
+                          )}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
   );
-});
-FilterSelector.displayName = 'FilterSelector';
+}) as <TData>(props: FilterSelectorProps<TData>) => React.ReactElement;
+(FilterSelector as { displayName?: string }).displayName = 'FilterSelector';
+
+// ── FilterKeySubmenu ────────────────────────────────────────────────────
+
+function FilterKeySubmenu<TData>({
+  column,
+  selectedValues,
+  actions,
+  table,
+}: {
+  column: FilterColumnConfig;
+  selectedValues: string[];
+  actions: DataTableFilterActions;
+  table?: Table<TData>;
+}) {
+  switch (column.type) {
+    case 'text':
+      return (
+        <TextValueController
+          columnId={column.id}
+          initialValue={selectedValues[0] ?? ''}
+          actions={actions}
+          placeholder={'placeholder' in column ? column.placeholder : undefined}
+        />
+      );
+    case 'option':
+    case 'multiOption':
+      return (
+        <OptionValueController
+          columnId={column.id}
+          selectedValues={selectedValues}
+          column={column}
+          actions={actions}
+          table={table}
+        />
+      );
+    default:
+      return null;
+  }
+}
 
 // ── ActiveFilter (segmented pill) ──────────────────────────────────────
 
@@ -308,7 +443,7 @@ function OptionValueDisplay({
     );
   }
 
-  const name = column.displayName.toLowerCase();
+  const name = (column.displayNamePlural ?? `${column.displayName}s`).toLowerCase();
   const hasIcons = options.length > 0 && !options.some((o) => !o.icon);
 
   return (
@@ -340,10 +475,10 @@ function FilterValueController<TData>({
 }) {
   switch (column.type) {
     case 'text':
-      return <TextValueController filter={filter} actions={actions} placeholder={'placeholder' in column ? column.placeholder : undefined} />;
+      return <TextValueController columnId={filter.columnId} initialValue={filter.values[0] ?? ''} actions={actions} placeholder={'placeholder' in column ? column.placeholder : undefined} />;
     case 'option':
     case 'multiOption':
-      return <OptionValueController filter={filter} column={column} actions={actions} table={table} />;
+      return <OptionValueController columnId={filter.columnId} selectedValues={filter.values} column={column} actions={actions} table={table} />;
     default:
       return null;
   }
@@ -352,22 +487,24 @@ function FilterValueController<TData>({
 // ── TextValueController ────────────────────────────────────────────────
 
 function TextValueController({
-  filter,
+  columnId,
+  initialValue,
   actions,
   placeholder,
 }: {
-  filter: FilterModel;
+  columnId: string;
+  initialValue: string;
   actions: DataTableFilterActions;
   placeholder?: string;
 }) {
-  const [value, setValue] = useState(filter.values[0] ?? '');
+  const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      actions.setFilterValues(filter.columnId, value.trim() ? [value] : []);
+      actions.setFilterValues(columnId, value.trim() ? [value] : []);
     }, 200);
     return () => clearTimeout(timer);
-  }, [value, filter.columnId, actions]);
+  }, [value, columnId, actions]);
 
   return (
     <div className="p-2">
@@ -376,6 +513,7 @@ function TextValueController({
         placeholder={placeholder ?? 'Search...'}
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
         className="h-8"
       />
     </div>
@@ -418,45 +556,37 @@ const OptionItem = memo(function OptionItem({ option, onToggle }: OptionItemProp
 OptionItem.displayName = 'OptionItem';
 
 function OptionValueController<TData>({
-  filter,
+  columnId,
+  selectedValues,
   column,
   actions,
   table,
 }: {
-  filter: FilterModel;
+  columnId: string;
+  selectedValues: string[];
   column: FilterColumnConfig & { type: 'option' | 'multiOption' };
   actions: DataTableFilterActions;
   table?: Table<TData>;
 }) {
   const baseOptions = column.options ?? [];
-  const facetedCounts = table?.getColumn(column.id)?.getFacetedUniqueValues();
+  const facetedCounts = table?.getColumn(columnId)?.getFacetedUniqueValues();
 
   const enrichedOptions = useMemo(
     () =>
       baseOptions.map((o) => ({
         ...o,
-        selected: filter.values.includes(o.value),
+        selected: selectedValues.includes(o.value),
         count: facetedCounts?.get(o.value),
       })),
-    [baseOptions, filter.values, facetedCounts],
+    [baseOptions, selectedValues, facetedCounts],
   );
-
-  const { selectedOptions, unselectedOptions } = useMemo(() => {
-    const sel: typeof enrichedOptions = [];
-    const unsel: typeof enrichedOptions = [];
-    for (const o of enrichedOptions) {
-      if (o.selected) sel.push(o);
-      else unsel.push(o);
-    }
-    return { selectedOptions: sel, unselectedOptions: unsel };
-  }, [enrichedOptions]);
 
   const handleToggle = useCallback(
     (value: string, checked: boolean) => {
-      if (checked) actions.addFilterValue(filter.columnId, value);
-      else actions.removeFilterValue(filter.columnId, value);
+      if (checked) actions.addFilterValue(columnId, value);
+      else actions.removeFilterValue(columnId, value);
     },
-    [actions, filter.columnId],
+    [actions, columnId],
   );
 
   return (
@@ -464,21 +594,11 @@ function OptionValueController<TData>({
       <CommandInput autoFocus placeholder="Search..." />
       <CommandEmpty>No results found.</CommandEmpty>
       <CommandList className="max-h-fit">
-        {selectedOptions.length > 0 && (
-          <CommandGroup>
-            {selectedOptions.map((option) => (
-              <OptionItem key={option.value} option={option} onToggle={handleToggle} />
-            ))}
-          </CommandGroup>
-        )}
-        {selectedOptions.length > 0 && unselectedOptions.length > 0 && <CommandSeparator />}
-        {unselectedOptions.length > 0 && (
-          <CommandGroup>
-            {unselectedOptions.map((option) => (
-              <OptionItem key={option.value} option={option} onToggle={handleToggle} />
-            ))}
-          </CommandGroup>
-        )}
+        <CommandGroup>
+          {enrichedOptions.map((option) => (
+            <OptionItem key={option.value} option={option} onToggle={handleToggle} />
+          ))}
+        </CommandGroup>
       </CommandList>
     </Command>
   );

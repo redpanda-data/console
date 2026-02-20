@@ -16,12 +16,14 @@ const pulsingIconVariants = cva('rounded-full', {
   },
 });
 
-type PulsingStatusIconProps = VariantProps<typeof pulsingIconVariants>;
+type PulsingStatusIconProps = VariantProps<typeof pulsingIconVariants> & {
+  pulsing?: boolean;
+};
 
-export const PulsingStatusIcon = ({ variant }: PulsingStatusIconProps) => {
-  return (
+export const PulsingStatusIcon = ({ pulsing = true, variant }: PulsingStatusIconProps) => {
+  return (  
     <div className="relative flex items-center justify-center size-3">
-      {variant === 'disabled' ? null : <div className={cn(pulsingIconVariants({ variant }), 'size-3 opacity-75 animate-ping')} />}
+      {pulsing && <div className={cn(pulsingIconVariants({ variant }), 'size-3 opacity-75 animate-ping')} />}
       <div className={cn(pulsingIconVariants({ variant }), 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 size-2.5')} />
     </div>
   );
@@ -47,7 +49,7 @@ export const PipelineStatusBadge = ({ state }: { state?: Pipeline_State }) => {
         };
       case Pipeline_State.STOPPED:
         return {
-          icon: <PulsingStatusIcon variant="disabled" />,
+          icon: <PulsingStatusIcon pulsing={false} variant="disabled" />,
           text: 'Stopped',
         };
       case Pipeline_State.COMPLETED:

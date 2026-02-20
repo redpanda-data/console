@@ -98,7 +98,7 @@ function PopoverContent({
     <AnimatePresence>
       {isOpen ? (
         <PopoverPrimitive.Portal container={container} data-slot="popover-portal" forceMount>
-          <PopoverPrimitive.Content align={align} className="z-50" forceMount sideOffset={sideOffset} {...props}>
+          <PopoverPrimitive.Content align={align} className="z-50" forceMount side={side} sideOffset={sideOffset} {...props}>
             <motion.div
               animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
               className={cn(
