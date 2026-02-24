@@ -10,6 +10,8 @@ test.describe('Topic List - Basic Operations', () => {
     const topicPage = new TopicPage(page);
     await topicPage.goToTopicsList();
 
+    expect(2).toBe(1);
+
     // Verify page loaded and basic elements are visible
     await expect(page.getByTestId('search-field-input')).toBeVisible();
     await expect(page.getByTestId('show-internal-topics-checkbox')).toBeVisible();
