@@ -6,9 +6,17 @@ export const useKafkaConnectConnectorsQuery = () => {
   const { data, isLoading } = useQuery<KafkaConnectors>({
     queryKey: ['kafka-connect-connectors'],
     queryFn: async () => {
+      // Add JWT Bearer token if available (same as REST and gRPC calls)
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (config.jwt) {
+        headers.Authorization = `Bearer ${config.jwt}`;
+      }
+
       const response = await config.fetch(`${config.restBasePath}/kafka-connect/connectors`, {
         method: 'GET',
-        headers: [['Content-Type', 'application/json']],
+        headers,
       });
 
       if (!response.ok) {

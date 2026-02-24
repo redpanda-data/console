@@ -625,7 +625,7 @@ export const RemoteMCPInspectorTab = () => {
                       <div className="flex gap-2">
                         {isServerToolPending ? (
                           <>
-                            <Button disabled onClick={executeToolRequest} variant="secondary">
+                            <Button disabled onClick={executeToolRequest} variant="primary">
                               <Clock className="h-4 w-4 animate-spin" />
                               Run Tool
                             </Button>
@@ -641,7 +641,7 @@ export const RemoteMCPInspectorTab = () => {
                                 .isValid
                             }
                             onClick={executeToolRequest}
-                            variant="secondary"
+                            variant="primary"
                           >
                             <Send className="h-4 w-4" />
                             Run Tool

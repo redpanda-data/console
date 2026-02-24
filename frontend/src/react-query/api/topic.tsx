@@ -52,8 +52,15 @@ export const useLegacyListTopicsQuery = (
   const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
     queryKey: infiniteQueryKey,
     queryFn: async () => {
+      // Add JWT Bearer token if available (same as REST and gRPC calls)
+      const headers: HeadersInit = {};
+      if (config.jwt) {
+        headers.Authorization = `Bearer ${config.jwt}`;
+      }
+
       const response = await config.fetch(`${config.restBasePath}/topics`, {
         method: 'GET',
+        headers,
       });
 
       return response.json();

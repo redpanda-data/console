@@ -255,7 +255,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // be returned if it fails to request the partition offsets for the given timestamp.
 // makes it harder to understand how the consume request is calculated in total though.
 //
-//nolint:cyclop,gocognit,gocyclo // This is indeed a complex function. Breaking this into multiple smaller functions possibly
+//nolint:cyclop,gocognit // This is indeed a complex function. Breaking this into multiple smaller functions possibly
 func (s *Service) calculateConsumeRequests(
 	ctx context.Context,
 	cl *kgo.Client,
@@ -364,12 +364,9 @@ func (s *Service) calculateConsumeRequests(
 			p.StartOffset = offset
 		default:
 			// Either custom offset or resolved offset by timestamp is given
-			p.StartOffset = listReq.StartOffset
-
-			if p.StartOffset < startOffset.Offset {
-				p.StartOffset = startOffset.Offset
+			p.StartOffset = max(listReq.StartOffset,
 				// TODO: Add some note that custom offset was lower than low watermark
-			}
+				startOffset.Offset)
 		}
 
 		// Special handling for live tail and requests with enabled filter code as we don't know how many results on each
@@ -381,10 +378,7 @@ func (s *Service) calculateConsumeRequests(
 				p.EndOffset = math.MaxInt64
 			}
 			if listReq.StartOffset == StartOffsetRecent {
-				p.StartOffset = p.HighWaterMark - 1 - int64(listReq.MessageCount)
-				if p.StartOffset < 0 {
-					p.StartOffset = 0
-				}
+				p.StartOffset = max(p.HighWaterMark-1-int64(listReq.MessageCount), 0)
 			}
 		}
 
@@ -483,8 +477,10 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 	defer client.Close()
 
 	// 2. Create consumer workers
-	jobs := make(chan *kgo.Record, 100)
-	resultsCh := make(chan *TopicMessage, 100)
+	// Reduced from 100 to 20 to limit memory usage in serverless environments
+	// With large records (up to 1MB), 100 records = 1GB+ after deserialization
+	jobs := make(chan *kgo.Record, 20)
+	resultsCh := make(chan *TopicMessage, 20)
 	workerCtx, cancel := context.WithCancelCause(ctx)
 	defer cancel(errors.New("worker cancel"))
 

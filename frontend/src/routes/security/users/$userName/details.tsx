@@ -22,5 +22,5 @@ export const Route = createFileRoute('/security/users/$userName/details')({
 
 function UserDetailsWrapper() {
   const { userName } = useParams({ from: '/security/users/$userName/details' });
-  return <UserDetailsPage matchedPath={`/security/users/${userName}/details`} userName={userName} />;
+  return <UserDetailsPage userName={userName} />;
 }

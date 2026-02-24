@@ -25,6 +25,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 import { SubagentConfigSection } from 'components/ui/ai-agent/subagent-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
+import { MarkdownEditor } from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import {
@@ -32,6 +33,7 @@ import {
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
+import { isFeatureFlagEnabled } from 'config';
 import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -51,6 +53,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
+import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -71,6 +74,39 @@ export const AIAgentCreatePage = () => {
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
     skipInvalidation: true,
   });
+
+  // Feature flag: when true, use legacy API key mode (hardcoded providers)
+  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
+
+  // Gateway detection and list query (using v1 API from ai-gateway module)
+  // Only fetch when NOT in legacy mode
+  // Note: System-managed gateways are automatically excluded by the query hook
+  const { data: gatewaysData, isLoading: isLoadingGateways } = useListGatewaysQuery(
+    {},
+    { enabled: !isLegacyApiKeyMode }
+  );
+
+  const hasGatewayDeployed = useMemo(() => {
+    if (isLegacyApiKeyMode || isLoadingGateways) {
+      return false;
+    }
+    return Boolean(gatewaysData?.gateways && gatewaysData.gateways.length > 0);
+  }, [isLegacyApiKeyMode, gatewaysData, isLoadingGateways]);
+
+  const availableGateways = useMemo(() => {
+    if (isLegacyApiKeyMode || !gatewaysData?.gateways) {
+      return [];
+    }
+    return gatewaysData.gateways.map((gw) => {
+      // Extract gateway ID from name (format: "gateways/{gateway_id}")
+      const gatewayId = gw.name.split('/').pop() || gw.name;
+      return {
+        id: gatewayId,
+        displayName: gw.displayName,
+        description: gw.description,
+      };
+    });
+  }, [isLegacyApiKeyMode, gatewaysData]);
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -106,6 +142,13 @@ export const AIAgentCreatePage = () => {
       }
     }
   }, [displayName, form]);
+
+  // Auto-select first gateway when gateways are available (only if not in legacy mode)
+  useEffect(() => {
+    if (!isLegacyApiKeyMode && availableGateways.length > 0 && !form.getValues('gatewayId')) {
+      form.setValue('gatewayId', availableGateways[0].id);
+    }
+  }, [isLegacyApiKeyMode, availableGateways, form]);
 
   const {
     fields: tagFields,
@@ -294,7 +337,9 @@ export const AIAgentCreatePage = () => {
     });
 
     // Build provider configuration based on selected provider
-    const apiKeyRef = `\${secrets.${values.apiKeySecret}}`;
+    // When using gateway: api_key can be empty (proto has ignore = IGNORE_IF_ZERO_VALUE)
+    // When not using gateway: api_key must reference a secret
+    const apiKeyRef = values.apiKeySecret ? `\${secrets.${values.apiKeySecret}}` : '';
     let providerConfig: AIAgent_Provider;
 
     switch (values.provider) {
@@ -464,7 +509,7 @@ export const AIAgentCreatePage = () => {
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
-                    availableGateways={[]}
+                    availableGateways={availableGateways}
                     availableSecrets={availableSecrets}
                     fieldNames={{
                       provider: 'provider',
@@ -475,7 +520,8 @@ export const AIAgentCreatePage = () => {
                       gatewayId: 'gatewayId',
                     }}
                     form={form}
-                    hasGatewayDeployed={false}
+                    hasGatewayDeployed={hasGatewayDeployed}
+                    isLoadingGateways={isLoadingGateways}
                     mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                     showBaseUrl={form.watch('provider') === 'openaiCompatible'}
@@ -485,10 +531,10 @@ export const AIAgentCreatePage = () => {
               </Card>
             </div>
 
-            {/* Prompt */}
+            {/* System Prompt */}
             <Card size="full">
               <CardHeader>
-                <CardTitle>Prompt</CardTitle>
+                <CardTitle>System Prompt</CardTitle>
                 <Text variant="muted">Define the agent's behavior and instructions</Text>
               </CardHeader>
               <CardContent>
@@ -496,13 +542,12 @@ export const AIAgentCreatePage = () => {
                   <FieldLabel htmlFor="systemPrompt" required>
                     System Prompt
                   </FieldLabel>
-                  <Textarea
-                    id="systemPrompt"
-                    placeholder="You are a helpful AI agent that..."
-                    rows={8}
-                    {...form.register('systemPrompt')}
-                    aria-describedby={form.formState.errors.systemPrompt ? 'systemPrompt-error' : undefined}
-                    aria-invalid={!!form.formState.errors.systemPrompt}
+                  <Controller
+                    control={form.control}
+                    name="systemPrompt"
+                    render={({ field }) => (
+                      <MarkdownEditor onChange={(value) => field.onChange(value)} value={field.value} />
+                    )}
                   />
                   {!!form.formState.errors.systemPrompt && (
                     <FieldError id="systemPrompt-error">{form.formState.errors.systemPrompt.message}</FieldError>

@@ -132,7 +132,7 @@ func (*mapper) deleteTopicToKmsg(req *v1.DeleteTopicRequest) kmsg.DeleteTopicsRe
 	kafkaReq.TopicNames = []string{req.TopicName}
 	kafkaReq.Topics = []kmsg.DeleteTopicsRequestTopic{
 		{
-			Topic: kmsg.StringPtr(req.TopicName),
+			Topic: new(req.TopicName),
 		},
 	}
 

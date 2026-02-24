@@ -94,11 +94,9 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 	// 2. Describe partition log dirs
 	var logDirsByTopicPartition map[string]map[int32][]TopicPartitionLogDirs
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		logDirsByTopicPartition = s.describePartitionLogDirs(ctx, cl, topicMetadata)
-	}()
+	})
 
 	// 3. Get partition low & high watermarks
 	topicWatermarkReqs := make(map[string][]int32)

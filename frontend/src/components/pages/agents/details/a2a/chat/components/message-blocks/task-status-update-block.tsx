@@ -24,6 +24,7 @@ type TaskStatusUpdateBlockProps = {
   timestamp: Date;
   inputTokens?: number;
   outputTokens?: number;
+  isLastBlock?: boolean;
 };
 
 /**
@@ -38,6 +39,7 @@ export const TaskStatusUpdateBlock = ({
   timestamp,
   inputTokens,
   outputTokens,
+  isLastBlock = false,
 }: TaskStatusUpdateBlockProps) => {
   const validState = taskState as
     | 'submitted'
@@ -113,15 +115,17 @@ export const TaskStatusUpdateBlock = ({
   );
 
   // State transition display
+  // Previous state should never animate (it's in the past)
+  // Current state only animates if this is the last block and state is 'working'
   const stateTransition = showBadge && (
     <div className="flex items-center gap-2">
       {Boolean(hasPreviousState) && (
         <>
-          <TaskState state={previousState as typeof validState} />
+          <TaskState animate={false} state={previousState as typeof validState} />
           <MoveRightIcon className="size-4 text-muted-foreground" />
         </>
       )}
-      <TaskState state={validState} />
+      <TaskState animate={isLastBlock && validState === 'working'} state={validState} />
     </div>
   );
 

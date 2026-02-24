@@ -9,8 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { BookOpenIcon } from 'components/icons';
+import { ListKnowledgeBasesRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { listKnowledgeBases } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base-KnowledgeBaseService_connectquery';
 
 import { KnowledgeBaseListPage } from '../../components/pages/knowledgebase/list/knowledge-base-list-page';
 
@@ -18,6 +22,13 @@ export const Route = createFileRoute('/knowledgebases/')({
   staticData: {
     title: 'Knowledge Bases',
     icon: BookOpenIcon,
+  },
+  loader: async ({ context: { queryClient, dataplaneTransport } }) => {
+    await queryClient.ensureQueryData(
+      createQueryOptions(listKnowledgeBases, create(ListKnowledgeBasesRequestSchema, {}), {
+        transport: dataplaneTransport,
+      })
+    );
   },
   component: KnowledgeBaseListPage,
 });

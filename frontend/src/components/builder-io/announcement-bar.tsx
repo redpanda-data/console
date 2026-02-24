@@ -5,6 +5,11 @@ import { useEffect, useState } from 'react';
 
 const MODEL_NAME = 'console-announcement-bar';
 
+/**
+ * Builder.io announcement bar component.
+ * Only used in standalone mode (SelfHostedLayout in __root.tsx).
+ * Not imported in federated/embedded mode routes.
+ */
 export default function AnnouncementBar() {
   const [content, setContent] = useState<BuilderContent | null>(null);
 
@@ -35,6 +40,7 @@ export default function AnnouncementBar() {
           apiKey={BUILDER_API_KEY}
           content={content}
           customComponents={builderCustomComponents}
+          enrich={false}
           model={MODEL_NAME}
         />
       )

@@ -43,9 +43,15 @@ export const useLegacyListUsersQuery = (
     // We need to precisely match the query key provided by other parts of connect-query
     queryKey: infiniteQueryKey,
     queryFn: async () => {
+      // Add JWT Bearer token if available (same as REST and gRPC calls)
+      const headers: HeadersInit = {};
+      if (config.jwt) {
+        headers.Authorization = `Bearer ${config.jwt}`;
+      }
+
       const response = await config.fetch(`${config.restBasePath}/users`, {
         method: 'GET',
-        headers: {},
+        headers,
       });
 
       const data = await response.json();
@@ -57,7 +63,7 @@ export const useLegacyListUsersQuery = (
   });
 
   const users: ListUsersResponse_User[] =
-    legacyListUsersResult.data?.users.map((user) =>
+    legacyListUsersResult.data?.users?.map((user) =>
       create(ListUsersResponse_UserSchema, {
         name: user,
         mechanism: undefined, // Not reported by legacy API

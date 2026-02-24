@@ -85,23 +85,23 @@ func (b *basePathMiddleware) Wrap(next http.Handler) http.Handler {
 		}
 
 		// route path
-		if strings.HasPrefix(path, prefix) {
-			rctx.RoutePath = "/" + strings.TrimPrefix(path, prefix)
+		if after, ok := strings.CutPrefix(path, prefix); ok {
+			rctx.RoutePath = "/" + after
 		}
 
 		// URL.path
-		if strings.HasPrefix(r.URL.Path, prefix) {
-			r.URL.Path = "/" + strings.TrimPrefix(r.URL.Path, prefix)
+		if after, ok := strings.CutPrefix(r.URL.Path, prefix); ok {
+			r.URL.Path = "/" + after
 		}
 
 		// URL.RawPath
-		if strings.HasPrefix(r.URL.RawPath, prefix) {
-			r.URL.RawPath = "/" + strings.TrimPrefix(r.URL.RawPath, prefix)
+		if after, ok := strings.CutPrefix(r.URL.RawPath, prefix); ok {
+			r.URL.RawPath = "/" + after
 		}
 
 		// requestURI
-		if strings.HasPrefix(r.RequestURI, prefix) {
-			r.RequestURI = "/" + strings.TrimPrefix(r.RequestURI, prefix)
+		if after, ok := strings.CutPrefix(r.RequestURI, prefix); ok {
+			r.RequestURI = "/" + after
 		}
 		next.ServeHTTP(w, r)
 	})

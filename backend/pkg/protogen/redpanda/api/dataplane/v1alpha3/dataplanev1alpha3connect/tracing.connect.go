@@ -40,13 +40,17 @@ const (
 	TracingServiceListTracesProcedure = "/redpanda.api.dataplane.v1alpha3.TracingService/ListTraces"
 	// TracingServiceGetTraceProcedure is the fully-qualified name of the TracingService's GetTrace RPC.
 	TracingServiceGetTraceProcedure = "/redpanda.api.dataplane.v1alpha3.TracingService/GetTrace"
+	// TracingServiceGetTraceHistogramProcedure is the fully-qualified name of the TracingService's
+	// GetTraceHistogram RPC.
+	TracingServiceGetTraceHistogramProcedure = "/redpanda.api.dataplane.v1alpha3.TracingService/GetTraceHistogram"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	tracingServiceServiceDescriptor          = v1alpha3.File_redpanda_api_dataplane_v1alpha3_tracing_proto.Services().ByName("TracingService")
-	tracingServiceListTracesMethodDescriptor = tracingServiceServiceDescriptor.Methods().ByName("ListTraces")
-	tracingServiceGetTraceMethodDescriptor   = tracingServiceServiceDescriptor.Methods().ByName("GetTrace")
+	tracingServiceServiceDescriptor                 = v1alpha3.File_redpanda_api_dataplane_v1alpha3_tracing_proto.Services().ByName("TracingService")
+	tracingServiceListTracesMethodDescriptor        = tracingServiceServiceDescriptor.Methods().ByName("ListTraces")
+	tracingServiceGetTraceMethodDescriptor          = tracingServiceServiceDescriptor.Methods().ByName("GetTrace")
+	tracingServiceGetTraceHistogramMethodDescriptor = tracingServiceServiceDescriptor.Methods().ByName("GetTraceHistogram")
 )
 
 // TracingServiceClient is a client for the redpanda.api.dataplane.v1alpha3.TracingService service.
@@ -55,6 +59,9 @@ type TracingServiceClient interface {
 	ListTraces(context.Context, *connect.Request[v1alpha3.ListTracesRequest]) (*connect.Response[v1alpha3.ListTracesResponse], error)
 	// GetTrace retrieves the complete trace by trace ID, including all its spans.
 	GetTrace(context.Context, *connect.Request[v1alpha3.GetTraceRequest]) (*connect.Response[v1alpha3.GetTraceResponse], error)
+	// GetTraceHistogram returns the trace count distribution over a time range.
+	// Use this to render a timeline visualization separately from trace listing.
+	GetTraceHistogram(context.Context, *connect.Request[v1alpha3.GetTraceHistogramRequest]) (*connect.Response[v1alpha3.GetTraceHistogramResponse], error)
 }
 
 // NewTracingServiceClient constructs a client for the
@@ -80,13 +87,20 @@ func NewTracingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(tracingServiceGetTraceMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getTraceHistogram: connect.NewClient[v1alpha3.GetTraceHistogramRequest, v1alpha3.GetTraceHistogramResponse](
+			httpClient,
+			baseURL+TracingServiceGetTraceHistogramProcedure,
+			connect.WithSchema(tracingServiceGetTraceHistogramMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // tracingServiceClient implements TracingServiceClient.
 type tracingServiceClient struct {
-	listTraces *connect.Client[v1alpha3.ListTracesRequest, v1alpha3.ListTracesResponse]
-	getTrace   *connect.Client[v1alpha3.GetTraceRequest, v1alpha3.GetTraceResponse]
+	listTraces        *connect.Client[v1alpha3.ListTracesRequest, v1alpha3.ListTracesResponse]
+	getTrace          *connect.Client[v1alpha3.GetTraceRequest, v1alpha3.GetTraceResponse]
+	getTraceHistogram *connect.Client[v1alpha3.GetTraceHistogramRequest, v1alpha3.GetTraceHistogramResponse]
 }
 
 // ListTraces calls redpanda.api.dataplane.v1alpha3.TracingService.ListTraces.
@@ -99,6 +113,11 @@ func (c *tracingServiceClient) GetTrace(ctx context.Context, req *connect.Reques
 	return c.getTrace.CallUnary(ctx, req)
 }
 
+// GetTraceHistogram calls redpanda.api.dataplane.v1alpha3.TracingService.GetTraceHistogram.
+func (c *tracingServiceClient) GetTraceHistogram(ctx context.Context, req *connect.Request[v1alpha3.GetTraceHistogramRequest]) (*connect.Response[v1alpha3.GetTraceHistogramResponse], error) {
+	return c.getTraceHistogram.CallUnary(ctx, req)
+}
+
 // TracingServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha3.TracingService
 // service.
 type TracingServiceHandler interface {
@@ -106,6 +125,9 @@ type TracingServiceHandler interface {
 	ListTraces(context.Context, *connect.Request[v1alpha3.ListTracesRequest]) (*connect.Response[v1alpha3.ListTracesResponse], error)
 	// GetTrace retrieves the complete trace by trace ID, including all its spans.
 	GetTrace(context.Context, *connect.Request[v1alpha3.GetTraceRequest]) (*connect.Response[v1alpha3.GetTraceResponse], error)
+	// GetTraceHistogram returns the trace count distribution over a time range.
+	// Use this to render a timeline visualization separately from trace listing.
+	GetTraceHistogram(context.Context, *connect.Request[v1alpha3.GetTraceHistogramRequest]) (*connect.Response[v1alpha3.GetTraceHistogramResponse], error)
 }
 
 // NewTracingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -126,12 +148,20 @@ func NewTracingServiceHandler(svc TracingServiceHandler, opts ...connect.Handler
 		connect.WithSchema(tracingServiceGetTraceMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	tracingServiceGetTraceHistogramHandler := connect.NewUnaryHandler(
+		TracingServiceGetTraceHistogramProcedure,
+		svc.GetTraceHistogram,
+		connect.WithSchema(tracingServiceGetTraceHistogramMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha3.TracingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TracingServiceListTracesProcedure:
 			tracingServiceListTracesHandler.ServeHTTP(w, r)
 		case TracingServiceGetTraceProcedure:
 			tracingServiceGetTraceHandler.ServeHTTP(w, r)
+		case TracingServiceGetTraceHistogramProcedure:
+			tracingServiceGetTraceHistogramHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -147,4 +177,8 @@ func (UnimplementedTracingServiceHandler) ListTraces(context.Context, *connect.R
 
 func (UnimplementedTracingServiceHandler) GetTrace(context.Context, *connect.Request[v1alpha3.GetTraceRequest]) (*connect.Response[v1alpha3.GetTraceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.TracingService.GetTrace is not implemented"))
+}
+
+func (UnimplementedTracingServiceHandler) GetTraceHistogram(context.Context, *connect.Request[v1alpha3.GetTraceHistogramRequest]) (*connect.Response[v1alpha3.GetTraceHistogramResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.TracingService.GetTraceHistogram is not implemented"))
 }

@@ -164,7 +164,7 @@ export const ShadowLinkEditPage = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8">
         <Text variant="large">Shadow link not found</Text>
-        <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="secondary">
+        <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="outline">
           Back to Shadow Links
         </Button>
       </div>

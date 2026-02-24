@@ -1,5 +1,6 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
+import { KAFKA_CONNECT_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
 import { exec } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -68,7 +69,7 @@ async function setupDockerNetwork(state) {
 
 async function startRedpandaContainer(network, state, ports) {
   console.log('Starting Redpanda container...');
-  const redpanda = await new GenericContainer('redpandadata/redpanda:v25.3.2')
+  const redpanda = await new GenericContainer(REDPANDA_IMAGE)
     .withNetwork(network)
     .withNetworkAliases('redpanda')
     .withExposedPorts(
@@ -169,7 +170,7 @@ schemaRegistry:
   address: "http://redpanda:8081"
 `;
 
-  const owlshop = await new GenericContainer('quay.io/cloudhut/owl-shop:master')
+  const owlshop = await new GenericContainer(OWL_SHOP_IMAGE)
     .withPlatform('linux/amd64')
     .withNetwork(network)
     .withNetworkAliases('owlshop')
@@ -240,7 +241,7 @@ topic.creation.enable=false
 
   let connect;
   try {
-    connect = await new GenericContainer('docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest')
+    connect = await new GenericContainer(KAFKA_CONNECT_IMAGE)
       .withPlatform('linux/amd64')
       .withNetwork(network)
       .withNetworkAliases('connect')
@@ -587,7 +588,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
 
 async function startDestinationRedpandaContainer(network, state, ports) {
   console.log('Starting destination Redpanda container for shadowlink...');
-  const destRedpanda = await new GenericContainer('redpandadata/redpanda:v25.3.2')
+  const destRedpanda = await new GenericContainer(REDPANDA_IMAGE)
     .withNetwork(network)
     .withNetworkAliases('dest-cluster')
     .withExposedPorts(

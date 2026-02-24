@@ -5,8 +5,6 @@ import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
 
-import type { FeatureFlagKey } from './src/config';
-
 // Full setup for integration tests that render React components
 // These tests run in jsdom environment and need browser API mocks
 
@@ -51,22 +49,6 @@ vi.mock('lottie-react', () => ({
     animationLoaded: false,
   }),
 }));
-
-// Mock config module - only mock enableNewTheme flag, pass through all others
-// Tests that need specific flag values can override with their own vi.mock('config')
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./src/config')>();
-  return {
-    ...actual,
-    isFeatureFlagEnabled: vi.fn((flag: FeatureFlagKey) => {
-      // Only mock enableNewTheme to false, pass through all other flags
-      if (flag === 'enableNewTheme') {
-        return false;
-      }
-      return actual.isFeatureFlagEnabled(flag);
-    }),
-  };
-});
 
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {

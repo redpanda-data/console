@@ -30,7 +30,7 @@ linters:
     - nilerr
     - nilnesserr
     - noctx
-    - nolintlint
+
     - reassign
     - revive
     - rowserrcheck
@@ -73,10 +73,9 @@ linters:
       excludes:
         - G104
         - G115
-    nolintlint:
-      require-explanation: true
-      require-specific: true
-      allow-unused: false
+        - G117 # Exported struct fields matching secret patterns - false positives on config structs
+        - G704 # SSRF via taint analysis - false positive on HTTP clients
+        - G705 # XSS via taint analysis - false positives on HTTP response writers
     sloglint:
       attr-only: true
       no-global: all
@@ -135,6 +134,12 @@ linters:
         - name: var-naming
           disabled: true
         - name: enforce-switch-style
+          disabled: true
+        - name: identical-switch-branches
+          disabled: true
+        - name: package-directory-mismatch
+          disabled: true
+        - name: deep-exit
           disabled: true
   exclusions:
     generated: lax

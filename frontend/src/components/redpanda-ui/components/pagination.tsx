@@ -1,4 +1,3 @@
-import { isFeatureFlagEnabled } from "config";
 import {
 	ChevronLeftIcon,
 	ChevronRightIcon,
@@ -59,7 +58,6 @@ function PaginationLink({
 	testId,
 	...props
 }: PaginationLinkProps) {
-	const isNewThemeEnabled = isFeatureFlagEnabled("enableNewTheme");
 	return (
 		<a
 			aria-current={isActive ? "page" : undefined}
@@ -67,7 +65,7 @@ function PaginationLink({
 			data-testid={testId}
 			data-active={isActive}
 			className={cn(
-				buttonVariants(isNewThemeEnabled)({
+				buttonVariants({
 					variant: isActive ? "outline" : "ghost",
 					size,
 				}),

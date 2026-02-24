@@ -9,8 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { WrenchIcon } from 'components/icons';
+import { ListMCPServersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 
 import { RemoteMCPListPage } from '../../components/pages/mcp-servers/list/remote-mcp-list-page';
 
@@ -18,6 +22,13 @@ export const Route = createFileRoute('/mcp-servers/')({
   staticData: {
     title: 'MCP Servers',
     icon: WrenchIcon,
+  },
+  loader: async ({ context: { queryClient, dataplaneTransport } }) => {
+    await queryClient.ensureQueryData(
+      createQueryOptions(listMCPServers, create(ListMCPServersRequestSchema, { pageSize: 50 }), {
+        transport: dataplaneTransport,
+      })
+    );
   },
   component: RemoteMCPListPage,
 });

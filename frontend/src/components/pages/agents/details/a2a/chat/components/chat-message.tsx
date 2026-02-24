@@ -12,7 +12,9 @@
 import { Message, MessageBody, MessageContent, MessageMetadata } from 'components/ai-elements/message';
 
 import { ChatMessageActions } from './chat-message-actions';
+import { A2AErrorBlock } from './message-blocks/a2a-error-block';
 import { ArtifactBlock } from './message-blocks/artifact-block';
+import { ConnectionStatusBlock } from './message-blocks/connection-status-block';
 import { TaskStatusUpdateBlock } from './message-blocks/task-status-update-block';
 import { ToolBlock } from './message-blocks/tool-block';
 import { UserMessageContent } from './message-content/user-message-content';
@@ -92,12 +94,25 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
           return (
             <TaskStatusUpdateBlock
               inputTokens={block.usage?.input_tokens}
+              isLastBlock={index === message.contentBlocks.length - 1}
               key={`${message.id}-status-${index}`}
               messageId={block.messageId}
               outputTokens={block.usage?.output_tokens}
               previousState={block.previousState}
               taskState={block.taskState}
               text={block.text}
+              timestamp={block.timestamp}
+            />
+          );
+        case 'a2a-error':
+          return <A2AErrorBlock error={block.error} key={`${message.id}-error-${index}`} timestamp={block.timestamp} />;
+        case 'connection-status':
+          return (
+            <ConnectionStatusBlock
+              attempt={block.attempt}
+              key={`${message.id}-conn-${index}`}
+              maxAttempts={block.maxAttempts}
+              status={block.status}
               timestamp={block.timestamp}
             />
           );

@@ -38,7 +38,7 @@ func RunRedpandaConnectorsContainer(ctx context.Context, bootstrapServers []stri
 
 	request := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest",
+			Image:        KafkaConnectImage(),
 			ExposedPorts: []string{"8083/tcp"},
 			Env: map[string]string{
 				"CONNECT_CONFIGURATION":     testConnectConfig,
@@ -47,11 +47,15 @@ func RunRedpandaConnectorsContainer(ctx context.Context, bootstrapServers []stri
 				"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
 				"CONNECT_LOG_LEVEL":         "info",
 			},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Kafka Connect started").
-					WithPollInterval(500 * time.Millisecond).
-					WithStartupTimeout(waitTimeout),
-			),
+			// Use HTTP health check instead of log-based wait for better reliability
+			// and early failure detection if the container exits
+			WaitingFor: wait.ForHTTP("/connectors").
+				WithPort("8083/tcp").
+				WithStatusCodeMatcher(func(status int) bool {
+					return status == 200
+				}).
+				WithPollInterval(1 * time.Second).
+				WithStartupTimeout(waitTimeout),
 		},
 		Started: true,
 	}

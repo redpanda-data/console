@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -429,16 +430,12 @@ func (s *Service) collectProtoFiles() map[string]filesystem.File {
 	files := make(map[string]filesystem.File)
 
 	if s.gitSvc != nil {
-		for name, file := range s.gitSvc.GetFilesByFilename() {
-			files[name] = file
-		}
+		maps.Copy(files, s.gitSvc.GetFilesByFilename())
 		s.logger.Debug("fetched .proto files from git service cache",
 			slog.Int("fetched_proto_files", len(files)))
 	}
 	if s.fsSvc != nil {
-		for name, file := range s.fsSvc.GetFilesByFilename() {
-			files[name] = file
-		}
+		maps.Copy(files, s.fsSvc.GetFilesByFilename())
 		s.logger.Debug("fetched .proto files from filesystem service cache",
 			slog.Int("fetched_proto_files", len(files)))
 	}
@@ -537,8 +534,8 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]pro
 				// Check if file is in one of the import paths. If not, ignore it.
 				// If yes, pick up the file,
 				// and trim the prefix because an import path is effectively a root.
-				if strings.HasPrefix(trimmedFilepath, prefix) {
-					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, prefix)
+				if after, ok := strings.CutPrefix(trimmedFilepath, prefix); ok {
+					trimmedFilepath = after
 					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, "/")
 					filesStr[trimmedFilepath] = string(file.Payload)
 					filePaths = append(filePaths, trimmedFilepath)

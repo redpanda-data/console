@@ -161,7 +161,7 @@ const RoleDetailPage = () => {
                   search: { host },
                 })
               }
-              variant="secondary"
+              variant="primary"
             >
               <Pencil className="mr-2 h-4 w-4" />
               Edit ACL

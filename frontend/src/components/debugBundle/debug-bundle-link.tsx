@@ -37,28 +37,36 @@ const DebugBundleLink = ({
         <button
           className="cursor-pointer border-none bg-transparent p-0 font-medium text-primary underline underline-offset-4"
           onClick={() => {
-            config.fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`).then(async (response) => {
-              const url = window.URL.createObjectURL(await response.blob());
+            // Add JWT Bearer token if available (same as REST and gRPC calls)
+            const headers: HeadersInit = {};
+            if (config.jwt) {
+              headers.Authorization = `Bearer ${config.jwt}`;
+            }
 
-              // Create a new anchor element
-              const a = document.createElement('a');
+            config
+              .fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`, { headers })
+              .then(async (response) => {
+                const url = window.URL.createObjectURL(await response.blob());
 
-              // Set the download URL and filename
-              a.href = url;
-              a.download = downloadFilename;
+                // Create a new anchor element
+                const a = document.createElement('a');
 
-              // Append the anchor to the document body (necessary for Firefox)
-              document.body.appendChild(a);
+                // Set the download URL and filename
+                a.href = url;
+                a.download = downloadFilename;
 
-              // Programmatically trigger the download
-              a.click();
+                // Append the anchor to the document body (necessary for Firefox)
+                document.body.appendChild(a);
 
-              // Remove the anchor from the DOM
-              document.body.removeChild(a);
+                // Programmatically trigger the download
+                a.click();
 
-              // Revoke the temporary URL to free memory
-              window.URL.revokeObjectURL(url);
-            });
+                // Remove the anchor from the DOM
+                document.body.removeChild(a);
+
+                // Revoke the temporary URL to free memory
+                window.URL.revokeObjectURL(url);
+              });
           }}
           type="button"
         >

@@ -33,7 +33,11 @@ import fetchWithTimeout from '../../utils/fetch-with-timeout';
 
 const ErrorPage = observer(() => {
   useEffect(() => {
-    fetchWithTimeout(`${config.restBasePath}/console/endpoints`, 5 * 1000)
+    const headers: HeadersInit = {};
+    if (config.jwt) {
+      headers.Authorization = `Bearer ${config.jwt}`;
+    }
+    fetchWithTimeout(`${config.restBasePath}/console/endpoints`, 5 * 1000, { headers })
       .then((r) => {
         if (r.ok) {
           appGlobal.historyReplace('/overview');

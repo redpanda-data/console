@@ -84,16 +84,13 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	var logDirsByTopic map[string]TopicLogDirSummary
 	var logDirErrorMsg string
 	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		configs, err = s.GetTopicsConfigs(childCtx, topicNames, []string{"cleanup.policy"})
 		if err != nil {
 			s.logger.Warn("failed to fetch topic configs to return cleanup.policy", slog.Any("error", err))
 		}
-	}()
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		logDirs, err := s.logDirsByTopic(childCtx)
 		if err == nil {
 			logDirsByTopic = logDirs
@@ -101,7 +98,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 			s.logger.Warn("failed to retrieve log dirs by topic", slog.Any("error", err))
 			logDirErrorMsg = err.Error()
 		}
-	}()
+	})
 	wg.Wait()
 
 	// 4. Merge information from all requests and construct the TopicSummary object

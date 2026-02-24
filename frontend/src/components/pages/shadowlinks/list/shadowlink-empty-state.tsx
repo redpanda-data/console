@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, SearchX } from 'lucide-react';
+import { AlertCircle, Info, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
   <>
@@ -86,6 +87,23 @@ export const ShadowLinkFeatureDisabledState = () => (
   </Card>
 );
 
+export const ShadowLinkUnavailableState = () => (
+  <Card data-testid="shadowlink-unavailable-card" size="full">
+    <CardHeader>
+      <CardTitle>Shadowing</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Alert icon={<Info />} variant="warning">
+        <AlertDescription>
+          Shadowing is not available for this cluster. This feature requires a Redpanda cluster with the Admin API
+          enabled.
+        </AlertDescription>
+      </Alert>
+    </CardContent>
+  </Card>
+);
+
 type ShadowLinkErrorStateProps = {
   errorMessage: string;
   onRetry: () => void;
@@ -100,7 +118,7 @@ export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorS
       <Text>An error occurred while loading shadow links:</Text>
       <Text className="text-destructive">{errorMessage}</Text>
       <div>
-        <Button data-testid="shadowlink-retry-button" onClick={onRetry} variant="secondary">
+        <Button data-testid="shadowlink-retry-button" onClick={onRetry} variant="primary">
           Retry
         </Button>
       </div>
@@ -119,7 +137,7 @@ export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoun
       <SearchX className="h-12 w-12 text-muted-foreground" />
       <Text variant="large">Shadow link "{name}" not found</Text>
       <Text className="text-muted-foreground">The shadow link may have been deleted or the name is incorrect.</Text>
-      <Button data-testid="shadowlink-back-button" onClick={onBackClick} variant="secondary">
+      <Button data-testid="shadowlink-back-button" onClick={onBackClick} variant="outline">
         Back to Shadow Links
       </Button>
     </div>

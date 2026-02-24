@@ -34,18 +34,18 @@ func TestAclFilterToKafka(t *testing.T) {
 		{
 			name: "basic and complete conversion without error",
 			input: &v1alpha2.ListACLsRequest_Filter{
-				Host:                kmsg.StringPtr("localhost"),
-				Principal:           kmsg.StringPtr("principal1"),
-				ResourceName:        kmsg.StringPtr("resource1"),
+				Host:                new("localhost"),
+				Principal:           new("principal1"),
+				ResourceName:        new("resource1"),
 				Operation:           v1alpha2.ACL_OPERATION_READ,
 				PermissionType:      v1alpha2.ACL_PERMISSION_TYPE_ALLOW,
 				ResourcePatternType: v1alpha2.ACL_RESOURCE_PATTERN_TYPE_LITERAL,
 				ResourceType:        v1alpha2.ACL_RESOURCE_TYPE_TOPIC,
 			},
 			want: &kmsg.DescribeACLsRequest{
-				Host:                kmsg.StringPtr("localhost"),
-				Principal:           kmsg.StringPtr("principal1"),
-				ResourceName:        kmsg.StringPtr("resource1"),
+				Host:                new("localhost"),
+				Principal:           new("principal1"),
+				ResourceName:        new("resource1"),
 				Operation:           kmsg.ACLOperationRead,
 				PermissionType:      kmsg.ACLPermissionTypeAllow,
 				ResourcePatternType: kmsg.ACLResourcePatternTypeLiteral,
@@ -83,7 +83,7 @@ func TestAclFilterToKafka(t *testing.T) {
 			name: "conversion with errors",
 			input: &v1alpha2.ListACLsRequest_Filter{
 				ResourceType:        v1alpha2.ACL_RESOURCE_TYPE_TOPIC,
-				ResourceName:        kmsg.StringPtr("okay"),
+				ResourceName:        new("okay"),
 				ResourcePatternType: v1alpha2.ACL_ResourcePatternType(999), // Invalid
 			},
 			want:      nil,

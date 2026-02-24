@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, Link } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id');
 
@@ -41,10 +41,17 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
+import {
+  MarkdownEditor,
+  type MarkdownEditorMode,
+  MarkdownEditorTabs,
+  MarkdownPreview,
+} from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
+import { isFeatureFlagEnabled } from 'config';
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -65,7 +72,10 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { type MCPServer, useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
+import { useListModelProvidersQuery } from 'react-query/api/ai-gateway/model-providers';
+import { useListModelsQuery } from 'react-query/api/ai-gateway/models';
+import { type MCPServer, MCPServer_State, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -278,16 +288,19 @@ const MCPServersSection = ({
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <MCPIcon className="h-4 w-4" />
-          <Text className="font-semibold">MCP Servers</Text>
+          <Link className="font-semibold hover:underline" to="/mcp-servers">
+            MCP Servers
+          </Link>
         </CardTitle>
+        <Text variant="muted">MCP Servers provide tools to the agent.</Text>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <div className="space-y-4">
-          {Boolean(isEditing) && <Text variant="muted">Select MCP servers to enable tools for this agent</Text>}
+          {Boolean(isEditing) && <Text variant="muted">Select MCP servers to enable tools for this agent.</Text>}
           {hasNoServers ? (
             <MCPEmpty>
               <Text className="mb-4 text-center" variant="muted">
-                Create MCP servers first to enable additional tools for your AI agent
+                Create MCP servers first to enable additional tools for your AI agent.
               </Text>
             </MCPEmpty>
           ) : (
@@ -312,31 +325,19 @@ export const AIAgentConfigurationTab = () => {
   const { mutateAsync: updateAIAgent, isPending: isUpdateAIAgentPending } = useUpdateAIAgentMutation();
   const { data: mcpServersData } = useListMCPServersQuery();
   const { data: secretsData } = useListSecretsQuery();
+  const { data: gatewaysData } = useListGatewaysQuery();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
+  const [systemPromptMode, setSystemPromptMode] = useState<MarkdownEditorMode>('editor');
+  const [subagentPromptModes, setSubagentPromptModes] = useState<Record<number, MarkdownEditorMode>>({});
 
-  // Get available MCP servers
-  const availableMcpServers = useMemo(() => {
-    if (!mcpServersData?.mcpServers || mcpServersData.mcpServers.length === 0) {
-      return [];
-    }
-    return mcpServersData.mcpServers;
-  }, [mcpServersData]);
+  // Feature flag: when true, use legacy API key mode (hardcoded providers, no gateway API calls)
+  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
 
-  // Get available secrets for API key dropdown
-  const availableSecrets = useMemo(() => {
-    if (!secretsData?.secrets) {
-      return [];
-    }
-    return secretsData.secrets
-      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => !!secret?.id)
-      .map((secret) => ({
-        id: secret.id,
-        name: secret.id,
-      }));
-  }, [secretsData]);
+  // Check if agent is using gateway AND feature flag allows it
+  const isUsingGateway = !isLegacyApiKeyMode && !!aiAgentData?.aiAgent?.gateway?.virtualGatewayId;
 
   const getResourceTierFromAgent = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
@@ -352,12 +353,11 @@ export const AIAgentConfigurationTab = () => {
     return matchingTier?.id || 'Small';
   }, []);
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: not sure how this slipped through CI
-  const getCurrentData = useCallback((): LocalAIAgent | null => {
+  // Get current provider for filtering models
+  const displayData = useMemo(() => {
     if (editedAgentData) {
       return editedAgentData;
     }
-
     if (aiAgentData?.aiAgent?.provider) {
       const provider = aiAgentData.aiAgent.provider;
       const { apiKeyTemplate, baseUrl } = extractProviderInfo(provider);
@@ -405,84 +405,188 @@ export const AIAgentConfigurationTab = () => {
           : undefined,
       };
     }
-
     return null;
   }, [editedAgentData, aiAgentData, getResourceTierFromAgent]);
 
+  const selectedProvider = displayData?.provider?.provider.case;
+
+  // Fetch providers and models from AI Gateway when using gateway
+  const { data: providersData, isLoading: isLoadingProviders } = useListModelProvidersQuery(
+    { filter: 'enabled = "true"' },
+    { enabled: isUsingGateway }
+  );
+
+  const { data: modelsData, isLoading: isLoadingModels } = useListModelsQuery(
+    {
+      filter: selectedProvider ? `provider = "${selectedProvider}" AND enabled = "true"` : 'enabled = "true"',
+    },
+    { enabled: isUsingGateway && !!selectedProvider }
+  );
+
+  // Get available providers - from gateway API or hardcoded
+  const availableProviders = useMemo(() => {
+    if (isUsingGateway && providersData?.modelProviders) {
+      // Map gateway providers to our format (already filtered for enabled at API level)
+      return providersData.modelProviders.map((provider) => {
+        // Strip "model_providers/" prefix from provider name
+        const providerName = provider.name.replace(/^model_providers\//, '');
+        const providerId = providerName.toLowerCase().replace(/\s+/g, '');
+
+        return {
+          id: providerId,
+          label: provider.displayName || providerName,
+          icon: MODEL_OPTIONS_BY_PROVIDER[providerId as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
+        };
+      });
+    }
+    // Fallback to hardcoded providers
+    return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
+      id,
+      label: provider.label,
+      icon: provider.icon,
+    }));
+  }, [isUsingGateway, providersData]);
+
+  // Get available models - from gateway API or hardcoded
+  const filteredModels = useMemo(() => {
+    if (isUsingGateway && modelsData?.models) {
+      // Map gateway models to our format (already filtered for enabled at API level)
+      return modelsData.models.map((model) => {
+        // Strip "models/provider/" prefix from model name
+        const modelName = model.name.split('/').pop() || model.name;
+
+        return {
+          value: modelName,
+          name: model.displayName || modelName,
+          description: model.description || '',
+        };
+      });
+    }
+    // Fallback to hardcoded models
+    if (!selectedProvider) return [];
+    const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider as keyof typeof MODEL_OPTIONS_BY_PROVIDER];
+    return providerData?.models || [];
+  }, [isUsingGateway, modelsData, selectedProvider]);
+
+  // Get available MCP servers (includes placeholders for missing servers that agent references)
+  const availableMcpServers = useMemo(() => {
+    const existingServers = mcpServersData?.mcpServers ?? [];
+    const existingIds = new Set(existingServers.map((s) => s.id));
+
+    // Find missing server IDs referenced by the agent
+    const connectedServerIds = Object.values(aiAgentData?.aiAgent?.mcpServers ?? {}).map((s) => s.id);
+    const missingServerIds = connectedServerIds.filter((id) => !existingIds.has(id));
+
+    // Create placeholders for missing servers
+    // Note: Cast required because MCPServer is a protobuf Message type with internal properties
+    const missingServers = missingServerIds.map(
+      (id) =>
+        ({
+          id,
+          displayName: `${id} (deleted)`,
+          description: 'This MCP server no longer exists',
+          tools: {},
+          tags: {},
+          state: MCPServer_State.UNSPECIFIED,
+          url: '',
+        }) as MCPServer
+    );
+
+    return [...existingServers, ...missingServers];
+  }, [mcpServersData, aiAgentData]);
+
+  // Get available secrets for API key dropdown
+  const availableSecrets = useMemo(() => {
+    if (!secretsData?.secrets) {
+      return [];
+    }
+    return secretsData.secrets
+      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => !!secret?.id)
+      .map((secret) => ({
+        id: secret.id,
+        name: secret.id,
+      }));
+  }, [secretsData]);
+
+  // Get gateway display name
+  const gatewayDisplayName = useMemo(() => {
+    if (!(aiAgentData?.aiAgent?.gateway?.virtualGatewayId && gatewaysData?.gateways)) {
+      return null;
+    }
+    const gateway = gatewaysData.gateways.find(
+      (gw) => gw.name.split('/').pop() === aiAgentData.aiAgent!.gateway?.virtualGatewayId
+    );
+    return gateway?.displayName || aiAgentData.aiAgent!.gateway!.virtualGatewayId;
+  }, [aiAgentData, gatewaysData]);
+
   const updateField = useCallback(
     (updates: Partial<LocalAIAgent>) => {
-      const currentData = getCurrentData();
-      if (!currentData) {
+      if (!displayData) {
         return;
       }
-      setEditedAgentData({ ...currentData, ...updates });
+      setEditedAgentData({ ...displayData, ...updates });
     },
-    [getCurrentData]
+    [displayData]
   );
 
   const handleAddTag = () => {
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!displayData) {
       return;
     }
 
     setEditedAgentData({
-      ...currentData,
-      tags: [...currentData.tags, { key: '', value: '' }],
+      ...displayData,
+      tags: [...displayData.tags, { key: '', value: '' }],
     });
   };
 
   const handleRemoveTag = (index: number) => {
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!displayData) {
       return;
     }
 
-    const updatedTags = currentData.tags.filter((_, i) => i !== index);
+    const updatedTags = displayData.tags.filter((_, i) => i !== index);
     setEditedAgentData({
-      ...currentData,
+      ...displayData,
       tags: updatedTags,
     });
   };
 
   const handleUpdateTag = (index: number, field: 'key' | 'value', value: string) => {
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!displayData) {
       return;
     }
 
-    const updatedTags = [...currentData.tags];
+    const updatedTags = [...displayData.tags];
     updatedTags[index] = { ...updatedTags[index], [field]: value };
     setEditedAgentData({
-      ...currentData,
+      ...displayData,
       tags: updatedTags,
     });
   };
 
   const handleAddSubagent = () => {
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!displayData) {
       return;
     }
 
-    const newIndex = currentData.subagents.length;
+    const newIndex = displayData.subagents.length;
     setEditedAgentData({
-      ...currentData,
-      subagents: [...currentData.subagents, { name: '', description: '', systemPrompt: '', selectedMcpServers: [] }],
+      ...displayData,
+      subagents: [...displayData.subagents, { name: '', description: '', systemPrompt: '', selectedMcpServers: [] }],
     });
     // Auto-expand the newly added subagent
     setExpandedSubagent(`subagent-${newIndex}`);
   };
 
   const handleRemoveSubagent = (index: number) => {
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!displayData) {
       return;
     }
 
-    const updatedSubagents = currentData.subagents.filter((_, i) => i !== index);
+    const updatedSubagents = displayData.subagents.filter((_, i) => i !== index);
     setEditedAgentData({
-      ...currentData,
+      ...displayData,
       subagents: updatedSubagents,
     });
   };
@@ -492,15 +596,14 @@ export const AIAgentConfigurationTab = () => {
     field: 'name' | 'description' | 'systemPrompt' | 'selectedMcpServers',
     value: string | string[]
   ) => {
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!displayData) {
       return;
     }
 
-    const updatedSubagents = [...currentData.subagents];
+    const updatedSubagents = [...displayData.subagents];
     updatedSubagents[index] = { ...updatedSubagents[index], [field]: value };
     setEditedAgentData({
-      ...currentData,
+      ...displayData,
       subagents: updatedSubagents,
     });
   };
@@ -572,17 +675,12 @@ export const AIAgentConfigurationTab = () => {
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with many conditionals - already refactored with helper functions
   const handleSave = async () => {
-    if (!(aiAgentData?.aiAgent && id)) {
-      return;
-    }
-
-    const currentData = getCurrentData();
-    if (!currentData) {
+    if (!(aiAgentData?.aiAgent && id && displayData)) {
       return;
     }
 
     // Validate that user tags don't use reserved keys
-    for (const tag of currentData.tags) {
+    for (const tag of displayData.tags) {
       if (isCloudManagedTagKey(tag.key.trim())) {
         toast.error(`Tag key "${tag.key.trim()}" is reserved for system use`);
         return;
@@ -591,7 +689,7 @@ export const AIAgentConfigurationTab = () => {
 
     // Validate subagents
     const subagentNames = new Set<string>();
-    for (const [index, subagent] of currentData.subagents.entries()) {
+    for (const [index, subagent] of displayData.subagents.entries()) {
       const trimmedName = subagent.name.trim();
 
       // Validate name is not empty
@@ -633,17 +731,17 @@ export const AIAgentConfigurationTab = () => {
     }
 
     try {
-      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === currentData.resources.tier);
+      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
 
       // Build MCP servers map
       const mcpServersMap: Record<string, { id: string }> = {};
-      for (const serverId of currentData.selectedMcpServers) {
+      for (const serverId of displayData.selectedMcpServers) {
         mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
       }
 
       // Build subagents map
       const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
-      for (const subagent of currentData.subagents) {
+      for (const subagent of displayData.subagents) {
         const trimmedName = subagent.name.trim();
         if (trimmedName) {
           const subagentMcpMap: Record<string, { id: string }> = {};
@@ -659,14 +757,19 @@ export const AIAgentConfigurationTab = () => {
         }
       }
 
-      const tagsMap = buildTagsMap(aiAgentData.aiAgent.tags, currentData.tags);
-      const apiKeyRef = `\${secrets.${currentData.apiKeySecret}}`;
-      const updatedProvider = createUpdatedProvider(currentData.provider.provider.case, apiKeyRef, currentData.baseUrl);
+      const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
+      // When using gateway, keep the existing API key reference; otherwise use the selected secret
+      const currentProvider = aiAgentData.aiAgent!.provider;
+      const apiKeyRef =
+        isUsingGateway && currentProvider
+          ? extractProviderInfo(currentProvider).apiKeyTemplate
+          : `\${secrets.${displayData.apiKeySecret}}`;
+      const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
 
       const gatewayConfig =
-        currentData.gatewayId && currentData.gatewayId.trim() !== ''
+        displayData.gatewayId && displayData.gatewayId.trim() !== ''
           ? create(AIAgent_GatewayConfigSchema, {
-              virtualGatewayId: currentData.gatewayId,
+              virtualGatewayId: displayData.gatewayId,
             })
           : undefined;
 
@@ -687,18 +790,18 @@ export const AIAgentConfigurationTab = () => {
         !!(provider?.organization || provider?.url);
 
       const agentCard =
-        currentData.agentCard && hasAgentCardData(currentData.agentCard)
+        displayData.agentCard && hasAgentCardData(displayData.agentCard)
           ? create(AIAgent_AgentCardSchema, {
-              iconUrl: currentData.agentCard.iconUrl || undefined,
-              documentationUrl: currentData.agentCard.documentationUrl || undefined,
+              iconUrl: displayData.agentCard.iconUrl || undefined,
+              documentationUrl: displayData.agentCard.documentationUrl || undefined,
               provider:
-                currentData.agentCard.provider && hasProviderData(currentData.agentCard.provider)
+                displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
                   ? create(AIAgent_AgentCard_ProviderSchema, {
-                      organization: currentData.agentCard.provider.organization || undefined,
-                      url: currentData.agentCard.provider.url || undefined,
+                      organization: displayData.agentCard.provider.organization || undefined,
+                      url: displayData.agentCard.provider.url || undefined,
                     })
                   : undefined,
-              skills: currentData.agentCard.skills.map(sanitizeSkill),
+              skills: displayData.agentCard.skills.map(sanitizeSkill),
             })
           : undefined;
 
@@ -706,12 +809,12 @@ export const AIAgentConfigurationTab = () => {
         create(UpdateAIAgentRequestSchema, {
           id,
           aiAgent: create(AIAgentUpdateSchema, {
-            displayName: currentData.displayName,
-            description: currentData.description,
-            model: currentData.model,
-            maxIterations: currentData.maxIterations,
+            displayName: displayData.displayName,
+            description: displayData.description,
+            model: displayData.model,
+            maxIterations: displayData.maxIterations,
             provider: updatedProvider,
-            systemPrompt: currentData.systemPrompt,
+            systemPrompt: displayData.systemPrompt,
             serviceAccount: aiAgentData.aiAgent.serviceAccount,
             resources: {
               cpuShares: selectedTier?.cpu || '100m',
@@ -762,24 +865,37 @@ export const AIAgentConfigurationTab = () => {
   };
 
   // Get connected MCP servers (full server objects from mcpServersData)
+  // Includes placeholder objects for servers that no longer exist (deleted)
   const connectedMcpServers = useMemo(() => {
-    if (!(aiAgentData?.aiAgent?.mcpServers && mcpServersData?.mcpServers)) {
+    if (!aiAgentData?.aiAgent?.mcpServers) {
       return [];
     }
     const connectedServerIds = Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id);
-    return mcpServersData.mcpServers.filter((server) => connectedServerIds.includes(server.id));
+    const existingServersMap = new Map((mcpServersData?.mcpServers ?? []).map((s) => [s.id, s]));
+
+    return connectedServerIds.map((id) => {
+      const existing = existingServersMap.get(id);
+      if (existing) {
+        return existing;
+      }
+      // Create placeholder for missing/deleted server
+      return {
+        id,
+        displayName: `${id} (deleted)`,
+        description: 'This MCP server no longer exists',
+        tools: {},
+        tags: {},
+        state: MCPServer_State.UNSPECIFIED,
+        url: '',
+      } as MCPServer;
+    });
   }, [aiAgentData, mcpServersData]);
 
-  if (!aiAgentData?.aiAgent) {
+  if (!(aiAgentData?.aiAgent && displayData)) {
     return null;
   }
 
   const agent = aiAgentData.aiAgent;
-  const displayData = getCurrentData();
-
-  if (!displayData) {
-    return null;
-  }
 
   return (
     <div className="space-y-6">
@@ -797,7 +913,7 @@ export const AIAgentConfigurationTab = () => {
                 <div className="flex gap-2">
                   {isEditing ? (
                     <>
-                      <Button disabled={isUpdateAIAgentPending} onClick={handleSave} variant="secondary">
+                      <Button disabled={isUpdateAIAgentPending} onClick={handleSave} variant="primary">
                         <Save className="h-4 w-4" />
                         {isUpdateAIAgentPending ? 'Saving...' : 'Save Changes'}
                       </Button>
@@ -812,7 +928,7 @@ export const AIAgentConfigurationTab = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => setIsEditing(true)} variant="secondary">
+                    <Button onClick={() => setIsEditing(true)} variant="primary">
                       <Edit className="h-4 w-4" />
                       Edit Configuration
                     </Button>
@@ -908,23 +1024,24 @@ export const AIAgentConfigurationTab = () => {
           {/* System Prompt Card */}
           <Card className="px-0 py-0" size="full">
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex w-full items-center gap-2">
                 <Settings className="h-4 w-4" />
                 <Text className="font-semibold">System Prompt</Text>
+                {isEditing && (
+                  <MarkdownEditorTabs className="ml-auto" mode={systemPromptMode} onModeChange={setSystemPromptMode} />
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <div className="space-y-2">
-                <Label htmlFor="systemPrompt">System Prompt</Label>
                 {isEditing ? (
-                  <Textarea
-                    id="systemPrompt"
-                    onChange={(e) => updateField({ systemPrompt: e.target.value })}
-                    rows={8}
+                  <MarkdownEditor
+                    mode={systemPromptMode}
+                    onChange={(value) => updateField({ systemPrompt: value })}
                     value={displayData.systemPrompt}
                   />
                 ) : (
-                  <DynamicCodeBlock code={displayData.systemPrompt} lang="text" />
+                  <MarkdownPreview disabled source={displayData.systemPrompt} />
                 )}
               </div>
             </CardContent>
@@ -1000,17 +1117,25 @@ export const AIAgentConfigurationTab = () => {
 
                               {/* System Prompt */}
                               <div className="space-y-2">
-                                <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
+                                <div className="flex items-center justify-between">
+                                  <Label htmlFor={`subagent-prompt-${index}`}>System Prompt</Label>
+                                  {isEditing && (
+                                    <MarkdownEditorTabs
+                                      mode={subagentPromptModes[index] || 'editor'}
+                                      onModeChange={(mode) =>
+                                        setSubagentPromptModes((prev) => ({ ...prev, [index]: mode }))
+                                      }
+                                    />
+                                  )}
+                                </div>
                                 {isEditing ? (
-                                  <Textarea
-                                    id={`subagent-prompt-${index}`}
-                                    onChange={(e) => handleUpdateSubagent(index, 'systemPrompt', e.target.value)}
-                                    placeholder="Define the specialized behavior for this subagent..."
-                                    rows={6}
+                                  <MarkdownEditor
+                                    mode={subagentPromptModes[index] || 'editor'}
+                                    onChange={(value) => handleUpdateSubagent(index, 'systemPrompt', value)}
                                     value={subagent.systemPrompt}
                                   />
                                 ) : (
-                                  <DynamicCodeBlock code={subagent.systemPrompt} lang="text" />
+                                  <MarkdownPreview disabled source={subagent.systemPrompt} />
                                 )}
                               </div>
 
@@ -1108,16 +1233,28 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               {isEditing ? (
                 <div className="space-y-4">
+                  {/* AI Gateway - show if configured (read-only in edit mode) */}
+                  {gatewayDisplayName && (
+                    <div className="space-y-2">
+                      <Label>AI Gateway</Label>
+                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <Text variant="muted">{gatewayDisplayName}</Text>
+                      </div>
+                      <Text className="text-xs" variant="muted">
+                        Gateway configuration cannot be changed after creation
+                      </Text>
+                    </div>
+                  )}
                   {/* Provider - now editable */}
                   <div className="space-y-2">
                     <Label htmlFor="provider">Provider</Label>
                     <Select
+                      disabled={isLoadingProviders}
                       onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
-                        const newProviderData = MODEL_OPTIONS_BY_PROVIDER[value];
+                        // Get models for the new provider
+                        const providerModels = isUsingGateway ? [] : MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
                         const firstModel =
-                          newProviderData.models.length > 0 && newProviderData.models[0]
-                            ? newProviderData.models[0].value
-                            : displayData.model;
+                          providerModels.length > 0 && providerModels[0] ? providerModels[0].value : displayData.model;
 
                         updateField({
                           provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
@@ -1128,7 +1265,7 @@ export const AIAgentConfigurationTab = () => {
                       value={displayData.provider?.provider.case}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select provider">
+                        <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
                           {Boolean(displayData.provider?.provider.case) && (
                             <div className="flex items-center gap-2">
                               <img
@@ -1155,10 +1292,10 @@ export const AIAgentConfigurationTab = () => {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([providerId, provider]) => (
-                          <SelectItem key={providerId} value={providerId}>
+                        {availableProviders.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
                             <div className="flex items-center gap-2">
-                              <img alt={provider.label} className="h-4 w-4" src={provider.icon} />
+                              {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
                               <span>{provider.label}</span>
                             </div>
                           </SelectItem>
@@ -1170,16 +1307,21 @@ export const AIAgentConfigurationTab = () => {
                   {/* Model - filtered by provider */}
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
-                    {displayData.provider?.provider.case === 'openaiCompatible' ? (
+                    {displayData.provider?.provider.case === 'openaiCompatible' ||
+                    (isUsingGateway && filteredModels.length === 0 && !isLoadingModels) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
                         placeholder="Enter model name (e.g., llama-3.1-70b)"
                         value={displayData.model}
                       />
                     ) : (
-                      <Select onValueChange={(value) => updateField({ model: value })} value={displayData.model}>
+                      <Select
+                        disabled={isLoadingModels}
+                        onValueChange={(value) => updateField({ model: value })}
+                        value={displayData.model}
+                      >
                         <SelectTrigger>
-                          <SelectValue>
+                          <SelectValue placeholder={isLoadingModels ? 'Loading models...' : 'Select model'}>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
                               <div className="flex items-center gap-2">
                                 <img
@@ -1195,63 +1337,70 @@ export const AIAgentConfigurationTab = () => {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {(() => {
-                            const providerCase = displayData.provider?.provider.case;
-
-                            const providerData = providerCase
-                              ? MODEL_OPTIONS_BY_PROVIDER[providerCase as keyof typeof MODEL_OPTIONS_BY_PROVIDER]
-                              : null;
-
-                            if (!providerData) {
-                              return (
-                                <div className="p-2">
-                                  <Text variant="muted">No models available for this provider</Text>
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <SelectGroup>
+                          {isLoadingModels ? (
+                            <div className="p-2">
+                              <Text variant="muted">Loading models...</Text>
+                            </div>
+                          ) : filteredModels.length > 0 ? (
+                            <SelectGroup>
+                              {!isUsingGateway && displayData.provider?.provider.case && (
                                 <SelectLabel>
                                   <div className="flex items-center gap-2">
-                                    <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
-                                    <span>{providerData.label}</span>
+                                    <img
+                                      alt={
+                                        MODEL_OPTIONS_BY_PROVIDER[
+                                          displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                        ]?.label
+                                      }
+                                      className="h-4 w-4"
+                                      src={
+                                        MODEL_OPTIONS_BY_PROVIDER[
+                                          displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                        ]?.icon
+                                      }
+                                    />
+                                    <span>
+                                      {
+                                        MODEL_OPTIONS_BY_PROVIDER[
+                                          displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                        ]?.label
+                                      }
+                                    </span>
                                   </div>
                                 </SelectLabel>
-                                {providerData.models.map(
-                                  (model: { value: string; name: string; description: string }) => (
-                                    <SelectItem key={model.value} value={model.value}>
-                                      <div className="flex flex-col gap-0.5">
-                                        <Text className="font-medium">{model.name}</Text>
-                                        <Text className="text-xs" variant="muted">
-                                          {model.description}
-                                        </Text>
-                                      </div>
-                                    </SelectItem>
-                                  )
-                                )}
-                              </SelectGroup>
-                            );
-                          })()}
+                              )}
+                              {filteredModels.map((model: { value: string; name: string; description: string }) => (
+                                <SelectItem key={model.value} value={model.value}>
+                                  {model.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ) : (
+                            <div className="p-2">
+                              <Text variant="muted">No models available</Text>
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
                     )}
                   </div>
 
-                  {/* API Token */}
-                  <div className="space-y-2">
-                    <Label htmlFor="apiKeySecret">API Token</Label>
-                    <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
-                      <SecretSelector
-                        availableSecrets={availableSecrets}
-                        customText={AI_AGENT_SECRET_TEXT}
-                        onChange={(value) => updateField({ apiKeySecret: value })}
-                        placeholder="Select from secrets store or create new"
-                        scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                        value={displayData.apiKeySecret}
-                      />
+                  {/* API Token - hide when using gateway */}
+                  {!isUsingGateway && (
+                    <div className="space-y-2">
+                      <Label htmlFor="apiKeySecret">API Token</Label>
+                      <div className="[&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
+                        <SecretSelector
+                          availableSecrets={availableSecrets}
+                          customText={AI_AGENT_SECRET_TEXT}
+                          onChange={(value) => updateField({ apiKeySecret: value })}
+                          placeholder="Select from secrets store or create new"
+                          scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
+                          value={displayData.apiKeySecret}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Base URL - only show for openaiCompatible */}
                   {displayData.provider?.provider.case === 'openaiCompatible' && (
@@ -1282,6 +1431,15 @@ export const AIAgentConfigurationTab = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* AI Gateway - show if configured */}
+                  {gatewayDisplayName && (
+                    <div className="space-y-2">
+                      <Label>AI Gateway</Label>
+                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <Text>{gatewayDisplayName}</Text>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label>Provider</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
@@ -1299,13 +1457,15 @@ export const AIAgentConfigurationTab = () => {
                       <AIAgentModel model={displayData.model} />
                     </div>
                   </div>
-                  {/* API Token */}
-                  <div className="space-y-2">
-                    <Label>API Token</Label>
-                    <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>{displayData.apiKeySecret || 'No secret configured'}</Text>
+                  {/* API Token - hide when using gateway */}
+                  {!isUsingGateway && (
+                    <div className="space-y-2">
+                      <Label>API Token</Label>
+                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <Text>{displayData.apiKeySecret || 'No secret configured'}</Text>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {agent.provider?.provider.case === 'openaiCompatible' && displayData.baseUrl && (
                     <div className="space-y-2">
                       <Label>Base URL</Label>

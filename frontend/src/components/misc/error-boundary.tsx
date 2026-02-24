@@ -11,8 +11,6 @@
 
 import { Box, Button, Flex, Icon, useToast } from '@redpanda-data/ui';
 import { CloseIcon, CopyAllIcon } from 'components/icons';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import React, { type CSSProperties, type FC } from 'react';
 import StackTrace from 'stacktrace-js';
 
@@ -42,92 +40,75 @@ const valueStyle: CSSProperties = {
 
 type InfoItem = {
   name: string;
-  value: string | (() => React.ReactNode);
+  value: string;
 };
 
-@observer
-export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }> {
-  @observable hasError = false;
-  error: Error | null = null;
-  errorInfo: object | null = null;
-  @observable decodingDone = false;
+type ErrorBoundaryState = {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: object | null;
+  decodingDone: boolean;
+  infoItems: InfoItem[];
+};
 
-  @observable infoItems: InfoItem[] = [];
-
+export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }, ErrorBoundaryState> {
   constructor(p: { children?: React.ReactNode }) {
     super(p);
-    makeObservable(this);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      decodingDone: false,
+      infoItems: [],
+    };
   }
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 19 - extensive error parsing for multiple info types (stack, components, environment)
   componentDidCatch(error: Error | null, errorInfo: object) {
-    this.error = error;
-    this.errorInfo = errorInfo;
-    this.decodingDone = false;
-
-    this.infoItems = [];
+    const infoItems: InfoItem[] = [];
 
     // Type
-    if (this.error?.name && this.error.name.toLowerCase() !== 'error') {
-      this.infoItems.push({ name: 'Type', value: this.error.name });
+    if (error?.name && error.name.toLowerCase() !== 'error') {
+      infoItems.push({ name: 'Type', value: error.name });
     }
 
     // Message
-    if (this.error?.message) {
-      this.infoItems.push({ name: 'Message', value: this.error.message });
+    if (error?.message) {
+      infoItems.push({ name: 'Message', value: error.message });
     } else {
-      this.infoItems.push({ name: 'Message', value: '(no message)' });
+      infoItems.push({ name: 'Message', value: '(no message)' });
     }
 
-    // Call Stack
-    if (this.error?.stack) {
-      const dataHolder = observable({
-        value: null as null | string,
-      });
+    // Call Stack - placeholder for decoded stack
+    const decodedStackIndex = infoItems.length;
+    infoItems.push({
+      name: 'Stack (Decoded)',
+      value: 'Decoding stack trace, please wait...',
+    });
 
-      this.infoItems.push({
-        name: 'Stack (Decoded)',
-        value: () => {
-          if (dataHolder.value === null) {
-            return <div style={{ fontSize: '2rem' }}>Decoding stack trace, please wait...</div>;
-          }
-          return dataHolder.value;
-        },
-      });
-
-      StackTrace.fromError(this.error)
-        .then((frames) => {
-          // Decode Success
-          dataHolder.value = frames.join('\n');
-          this.decodingDone = true;
-        })
-        .catch((err) => {
-          // Decode Error
-          dataHolder.value = `Unable to decode stacktrace\n${String(err)}`;
-          this.decodingDone = true;
-        });
-
-      // Normal stack trace
-      let s = this.error.stack;
+    // Normal stack trace
+    if (error?.stack) {
+      let s = error.stack;
       // remove "Error: " prefix
       s = s.removePrefix('error:').trim();
       // remove the error message as well, leaving only the stack trace
-      if (this.error.message && s.startsWith(this.error.message)) {
-        s = s.slice(this.error.message.length).trimStart();
+      if (error.message && s.startsWith(error.message)) {
+        s = s.slice(error.message.length).trimStart();
       }
-      this.infoItems.push({ name: 'Stack (Raw)', value: s });
+      infoItems.push({ name: 'Stack (Raw)', value: s });
     }
 
     // Component Stack
-    if (this.errorInfo && typeof this.errorInfo === 'object' && 'componentStack' in this.errorInfo) {
-      this.infoItems.push({
+    if (errorInfo && typeof errorInfo === 'object' && 'componentStack' in errorInfo) {
+      infoItems.push({
         name: 'Components',
-        value: String((this.errorInfo as { componentStack: unknown }).componentStack),
+        value: String((errorInfo as { componentStack: unknown }).componentStack),
       });
     } else {
-      this.infoItems.push({
+      infoItems.push({
         name: 'Components',
-        value: this.errorInfo
-          ? `(componentStack not set) errorInfo as Json: \n${toJson(this.errorInfo)}`
+        value: errorInfo
+          ? `(componentStack not set) errorInfo as Json: \n${toJson(errorInfo)}`
           : '(errorInfo was not set)',
       });
     }
@@ -135,12 +116,12 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     // EnvVars
     try {
       const padLength = envVarDebugAr.max((e) => e.name.length);
-      this.infoItems.push({
+      infoItems.push({
         name: 'Environment',
         value: envVarDebugAr.map((e) => `${e.name.padEnd(padLength)}: ${e.value}`).join('\n'),
       });
     } catch (_ex) {
-      this.infoItems.push({ name: 'Environment', value: '(error retreiving env list)' });
+      infoItems.push({ name: 'Environment', value: '(error retreiving env list)' });
     }
 
     // Location
@@ -152,40 +133,77 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
         Hash: window?.location?.hash ?? '<null>',
       });
       const padLength = locationItems.max((e) => e.key.length);
-      this.infoItems.push({
+      infoItems.push({
         name: 'Location',
         value: locationItems.map((e) => `${e.key.padEnd(padLength)}: ${e.value}`).join('\n'),
       });
     } catch (_ex) {
-      this.infoItems.push({
+      infoItems.push({
         name: 'Location',
         value: '(error printing location, please include the url in your bug report)',
       });
     }
 
-    this.hasError = true;
+    this.setState({
+      hasError: true,
+      error,
+      errorInfo,
+      decodingDone: false,
+      infoItems,
+    });
+
+    // Decode stack trace asynchronously
+    if (error?.stack) {
+      StackTrace.fromError(error)
+        .then((frames) => {
+          // Decode Success
+          this.setState((prevState) => {
+            const newInfoItems = [...prevState.infoItems];
+            newInfoItems[decodedStackIndex] = {
+              name: 'Stack (Decoded)',
+              value: frames.join('\n'),
+            };
+            return { infoItems: newInfoItems, decodingDone: true };
+          });
+        })
+        .catch((err) => {
+          // Decode Error
+          this.setState((prevState) => {
+            const newInfoItems = [...prevState.infoItems];
+            newInfoItems[decodedStackIndex] = {
+              name: 'Stack (Decoded)',
+              value: `Unable to decode stacktrace\n${String(err)}`,
+            };
+            return { infoItems: newInfoItems, decodingDone: true };
+          });
+        });
+    } else {
+      this.setState({ decodingDone: true });
+    }
   }
 
   getError() {
     let data = '';
 
-    for (const e of this.infoItems) {
-      const str = getStringFromInfo(e);
-      data += `${e.name}:\n${str}\n\n`;
+    for (const e of this.state.infoItems) {
+      data += `${e.name}:\n${e.value}\n\n`;
     }
 
     return data;
   }
 
-  dismiss() {
-    this.error = null;
-    this.errorInfo = null;
-    this.hasError = false;
-    this.decodingDone = false;
-  }
+  dismiss = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      decodingDone: false,
+      infoItems: [],
+    });
+  };
 
   render() {
-    if (!this.hasError) {
+    if (!this.state.hasError) {
       return this.props.children;
     }
 
@@ -203,42 +221,26 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
             </a>
           </p>
           <Box mb={2} mt={0}>
-            <Button onClick={() => this.dismiss()} size="large" style={{ width: '16rem' }} variant="primary">
+            <Button onClick={this.dismiss} size="large" style={{ width: '16rem' }} variant="primary">
               <Icon as={CloseIcon} />
               Dismiss
             </Button>
             <NoClipboardPopover>
               <CopyToClipboardButton
-                disabled={!(isClipboardAvailable && this.decodingDone)}
-                isLoading={!this.decodingDone}
+                disabled={!(isClipboardAvailable && this.state.decodingDone)}
+                isLoading={!this.state.decodingDone}
                 message={this.getError()}
               />
             </NoClipboardPopover>
           </Box>
         </div>
         <Flex flexDirection="column" width="100%">
-          {this.infoItems.map((e) => (
+          {this.state.infoItems.map((e) => (
             <InfoItemDisplay data={e} key={e.name} />
           ))}
         </Flex>
       </Box>
     );
-  }
-}
-
-function getStringFromInfo(info: InfoItem) {
-  if (!info) {
-    return '';
-  }
-
-  if (typeof info.value === 'string') {
-    return info.value;
-  }
-  try {
-    const r = info.value();
-    return String(r);
-  } catch (err) {
-    return `Error calling infoItem func: ${err}`;
   }
 }
 
@@ -273,31 +275,18 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
   );
 };
 
-@observer
-export class InfoItemDisplay extends React.Component<{ data: InfoItem }> {
-  render() {
-    const title = this.props.data.name;
-    const value = this.props.data.value;
-    let content: React.ReactNode;
-    if (typeof value === 'string') {
-      content = value;
-    } else {
-      try {
-        content = value();
-      } catch (err) {
-        content = `error rendering: ${String(err)}`;
-      }
-    }
+function InfoItemDisplay({ data }: { data: InfoItem }) {
+  const title = data.name;
+  let content: React.ReactNode = data.value;
 
-    if (typeof content === 'string') {
-      content = content.replace(/\n\s*/g, '\n').trim();
-    }
-
-    return (
-      <div>
-        <h2>{title}</h2>
-        <pre style={valueStyle}>{content}</pre>
-      </div>
-    );
+  if (typeof content === 'string') {
+    content = content.replace(/\n\s*/g, '\n').trim();
   }
+
+  return (
+    <div>
+      <h2>{title}</h2>
+      <pre style={valueStyle}>{content}</pre>
+    </div>
+  );
 }

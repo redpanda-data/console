@@ -311,7 +311,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     className="w-full"
                     disabled={form.formState.isSubmitting}
                     type="submit"
-                    variant="secondary"
+                    variant="primary"
                   >
                     {form.formState.isSubmitting ? (
                       <div className="flex items-center gap-2">
@@ -409,7 +409,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                   className="w-full"
                   disabled={newSecretForm.formState.isSubmitting}
                   type="submit"
-                  variant="secondary"
+                  variant="primary"
                 >
                   {newSecretForm.formState.isSubmitting ? (
                     <div className="flex items-center gap-2">

@@ -20,6 +20,7 @@ import { Field, FieldLabel, FieldDescription, FieldError } from 'components/redp
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { MarkdownEditor } from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { Plus, Trash2 } from 'lucide-react';
@@ -83,7 +84,7 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                   {/* Name input */}
                   <Field data-invalid={!!errors.subagents?.[index]?.name}>
                     <FieldLabel htmlFor={`subagent-name-${index}`} required>
-                      Subagent Name
+                      Name
                     </FieldLabel>
                     <Controller
                       control={control}
@@ -137,12 +138,9 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                       control={control}
                       name={`subagents.${index}.systemPrompt`}
                       render={({ field: promptField }) => (
-                        <Textarea
-                          id={`subagent-systemPrompt-${index}`}
-                          placeholder="Define the specialized behavior for this subagent..."
-                          rows={6}
-                          {...promptField}
-                          aria-invalid={!!errors.subagents?.[index]?.systemPrompt}
+                        <MarkdownEditor
+                          onChange={(value) => promptField.onChange(value)}
+                          value={promptField.value}
                         />
                       )}
                     />

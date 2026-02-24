@@ -72,21 +72,21 @@ export function renderWithFileRoutes(
     },
   });
 
+  const finalTransport =
+    renderOptions.transport ??
+    createConnectTransport({
+      baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
+    });
+
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({
       initialEntries: [initialLocation],
     }),
-    context: { basePath: '', queryClient, ...routerContext },
+    context: { basePath: '', queryClient, dataplaneTransport: finalTransport, ...routerContext },
   });
 
   function Wrapper({ children }: PropsWithChildren): JSX.Element {
-    const finalTransport =
-      renderOptions.transport ??
-      createConnectTransport({
-        baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
-      });
-
     return (
       <TransportProvider transport={finalTransport}>
         <QueryClientProvider client={queryClient}>
@@ -136,12 +136,16 @@ export function createTestRouterFromFiles(initialLocation = '/') {
     },
   });
 
+  const transport = createConnectTransport({
+    baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
+  });
+
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({
       initialEntries: [initialLocation],
     }),
-    context: { basePath: '', queryClient },
+    context: { basePath: '', queryClient, dataplaneTransport: transport },
   });
 
   return router;
@@ -174,7 +178,7 @@ const connectQueryWrapper = (
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/'] }),
-    context: { basePath: '', queryClient },
+    context: { basePath: '', queryClient, dataplaneTransport: transport },
   });
 
   return {

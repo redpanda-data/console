@@ -68,7 +68,7 @@ const AclDetailPage = () => {
               search: { host },
             })
           }
-          variant="secondary"
+          variant="outline"
         >
           <Pencil className="mr-2 h-4 w-4" />
           Edit

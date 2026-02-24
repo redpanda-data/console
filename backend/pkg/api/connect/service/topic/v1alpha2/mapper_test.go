@@ -34,7 +34,7 @@ func TestDeleteTopicRequestToKafka(t *testing.T) {
 				require.Len(t, mappingResult.TopicNames, 1)
 				require.Len(t, mappingResult.Topics, 1)
 				assert.Equal(t, "test", mappingResult.TopicNames[0])
-				assert.Equal(t, kmsg.StringPtr("test"), mappingResult.Topics[0].Topic)
+				assert.Equal(t, new("test"), mappingResult.Topics[0].Topic)
 			},
 		},
 	}

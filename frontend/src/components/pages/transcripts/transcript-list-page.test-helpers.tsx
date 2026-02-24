@@ -15,12 +15,17 @@ import { DurationSchema, TimestampSchema } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import {
+  GetTraceHistogramResponseSchema,
   GetTraceResponseSchema,
   ListTracesResponseSchema,
   TraceSchema,
   TraceSummarySchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
-import { getTrace, listTraces } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
+import {
+  getTrace,
+  getTraceHistogram,
+  listTraces,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/tracing-TracingService_connectquery';
 import { SpanSchema } from 'protogen/redpanda/otel/v1/trace_pb';
 import { renderWithFileRoutes } from 'test-utils';
 import { vi } from 'vitest';
@@ -39,6 +44,7 @@ export const REGEX_ERROR = /error/i;
 export function setupTransport(options?: {
   listTracesResponse?: ReturnType<typeof create<typeof ListTracesResponseSchema>>;
   getTraceResponse?: ReturnType<typeof create<typeof GetTraceResponseSchema>>;
+  getTraceHistogramResponse?: ReturnType<typeof create<typeof GetTraceHistogramResponseSchema>>;
 }) {
   const listTracesMock = vi.fn().mockReturnValue(
     options?.listTracesResponse ||
@@ -55,12 +61,21 @@ export function setupTransport(options?: {
       })
   );
 
+  const getTraceHistogramMock = vi.fn().mockReturnValue(
+    options?.getTraceHistogramResponse ||
+      create(GetTraceHistogramResponseSchema, {
+        histogram: undefined,
+        totalCount: 0,
+      })
+  );
+
   const transport = createRouterTransport(({ rpc }) => {
     rpc(listTraces, listTracesMock);
     rpc(getTrace, getTraceMock);
+    rpc(getTraceHistogram, getTraceHistogramMock);
   });
 
-  return { transport, listTracesMock, getTraceMock };
+  return { transport, listTracesMock, getTraceMock, getTraceHistogramMock };
 }
 
 // Helper function to render with required providers

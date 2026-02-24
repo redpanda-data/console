@@ -90,25 +90,26 @@ func createHandler(cfg *config) slog.Handler {
 		Level: cfg.level,
 	}
 
-	// If custom timestamp format is specified, use ReplaceAttr to customize the time field
-	if cfg.timestampFormat != "" {
-		handlerOpts.ReplaceAttr = func(_ []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				return formatTimestamp(a, cfg.timestampFormat)
-			}
-			return a
+	// Use ReplaceAttr to customize attribute formatting:
+	// - Durations are formatted as human-readable strings (e.g., "6h0m0s")
+	// - Timestamps use custom format if specified
+	handlerOpts.ReplaceAttr = func(_ []string, a slog.Attr) slog.Attr {
+		// Format durations as human-readable strings instead of nanoseconds
+		if a.Value.Kind() == slog.KindDuration {
+			return slog.String(a.Key, a.Value.Duration().String())
 		}
+		// Format timestamps if custom format is specified
+		if cfg.timestampFormat != "" && a.Key == slog.TimeKey {
+			return formatTimestamp(a, cfg.timestampFormat)
+		}
+		return a
 	}
 
-	// Create handler based on format
-	switch cfg.format {
-	case FormatText:
+	// Create handler based on format (default is JSON)
+	if cfg.format == FormatText {
 		return slog.NewTextHandler(cfg.output, handlerOpts)
-	case FormatJSON:
-		return slog.NewJSONHandler(cfg.output, handlerOpts)
-	default:
-		return slog.NewJSONHandler(cfg.output, handlerOpts)
 	}
+	return slog.NewJSONHandler(cfg.output, handlerOpts)
 }
 
 // formatTimestamp formats a time attribute according to the specified format.
@@ -133,14 +134,14 @@ func FatalStartup(msg string, args ...any) {
 		WithTimestampFormat(time.RFC3339),
 	)
 	logger.Error(msg, args...)
-	os.Exit(1) //nolint:revive // Fatal functions are intended to exit
+	os.Exit(1)
 }
 
 // Fatal logs at error level using the provided slog.Logger and exits.
 // Use this for unrecoverable runtime errors when you already have a logger instance.
 func Fatal(logger *slog.Logger, msg string, args ...any) {
 	logger.Error(msg, args...)
-	os.Exit(1) //nolint:revive // Fatal functions are intended to exit
+	os.Exit(1)
 }
 
 // Named creates a new logger with a "logger" attribute.

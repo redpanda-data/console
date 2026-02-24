@@ -81,3 +81,4 @@ function ClusterList() {
 
 - [TanStack Query Overview](https://tanstack.com/query/latest/docs/framework/react/overview)
 - [Connect Query Docs](https://connectrpc.com/docs/web/query/getting-started)
+- See also: [use-connect-query](../../api-patterns/rules/use-connect-query.md) — Connect Query hook patterns

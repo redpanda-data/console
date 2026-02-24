@@ -40,6 +40,7 @@ import {
   type QueryOptions,
   SHORT_POLLING_INTERVAL,
 } from 'react-query/react-query.utils';
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
@@ -83,14 +84,6 @@ export const useListPipelinesQuery = (
       create(ListPipelinesRequestSchemaDataPlane, {
         pageSize: MAX_PAGE_SIZE,
         pageToken: '',
-        // TODO: Use once nameContains is not required anymore
-        // filter: new ListPipelinesRequest_Filter({
-        //   ...input?.filter,
-        //   tags: {
-        //     ...input?.filter?.tags,
-        //     __redpanda_cloud_pipeline_type: 'pipeline',
-        //   },
-        // }),
         ...input,
       }),
     [input]
@@ -100,30 +93,33 @@ export const useListPipelinesQuery = (
     () =>
       create(ListPipelinesRequestSchema, {
         request: listPipelinesRequestDataPlane,
-      }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>,
+      }) as ListPipelinesRequest & Required<Pick<ListPipelinesRequest, 'request'>>,
     [listPipelinesRequestDataPlane]
   );
 
-  // Stabilize options object to prevent unnecessary re-renders
-  const queryOptions = useMemo(
-    () => ({
-      enabled: options?.enabled,
-    }),
-    [options?.enabled]
-  );
+  const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
+    enabled: options?.enabled,
+    getNextPageParam: (lastPage) => {
+      const nextPageToken = lastPage?.response?.nextPageToken;
+      if (!nextPageToken) {
+        return;
+      }
+      // Return a new request object with the updated pageToken
+      return create(ListPipelinesRequestSchemaDataPlane, {
+        ...listPipelinesRequestDataPlane,
+        pageToken: nextPageToken,
+      });
+    },
+    pageParamKey: 'request',
+  });
 
-  const listPipelinesResult = useQuery(listPipelines, listPipelinesRequest, queryOptions);
+  // Flatten pipelines from all pages
+  const pipelines = useMemo(() => {
+    const allPipelines = listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []);
+    return allPipelines ?? [];
+  }, [listPipelinesResult.data]);
 
-  // Stabilize the pipelines reference
-  const pipelines = listPipelinesResult?.data?.response?.pipelines;
-
-  // Stabilize the data object to prevent component re-renders
-  const data = useMemo(
-    () => ({
-      pipelines,
-    }),
-    [pipelines]
-  );
+  const data = useMemo(() => ({ pipelines }), [pipelines]);
 
   return {
     ...listPipelinesResult,
@@ -139,7 +135,7 @@ export const useCreatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
     },
@@ -160,7 +156,7 @@ export const useUpdatePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
     },
@@ -181,7 +177,7 @@ export const useStartPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -209,7 +205,7 @@ export const useStopPipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
       await queryClient.invalidateQueries({
@@ -237,7 +233,7 @@ export const useDeletePipelineMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: PipelineService.method.listPipelines,
-          cardinality: 'finite',
+          cardinality: 'infinite',
         }),
       });
     },

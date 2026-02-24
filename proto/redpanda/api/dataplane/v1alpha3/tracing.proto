@@ -45,29 +45,26 @@ service TracingService {
       description: "Retrieves a complete trace with all its spans by trace ID."
     };
   }
+
+  // GetTraceHistogram returns the trace count distribution over a time range.
+  // Use this to render a timeline visualization separately from trace listing.
+  rpc GetTraceHistogram(GetTraceHistogramRequest) returns (GetTraceHistogramResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+    option (google.api.http) = {get: "/v1alpha3/traces:histogram"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get trace histogram"
+      description: "Returns the distribution of traces over a time range for timeline visualization."
+    };
+  }
 }
 
 // ListTracesRequest is the request message for listing traces.
 message ListTracesRequest {
-  option (buf.validate.message).cel = {
-    id: "time_range_valid"
-    message: "end_time must be >= start_time when both are provided"
-    expression: "!has(this.start_time) || !has(this.end_time) || this.end_time >= this.start_time"
-  };
-
-  // Start time for trace query (inclusive). Traces that finished after this time will be included.
-  // Optional: defaults to Unix epoch if not provided.
-  google.protobuf.Timestamp start_time = 1 [
-    (google.api.field_behavior) = OPTIONAL,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided. Must be before end_time."}
-  ];
-
-  // End time for trace query (exclusive). Traces that started before this time will be included.
-  // Optional: defaults to current time + 5 minutes if not provided.
-  google.protobuf.Timestamp end_time = 2 [
-    (google.api.field_behavior) = OPTIONAL,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided. Must be after start_time."}
-  ];
+  // Fields 1, 2 were removed (start_time, end_time moved to Filter message).
+  reserved 1, 2;
 
   // Maximum number of traces to return (pagination). Defaults to 100 if not specified or set to 0.
   int32 page_size = 3 [
@@ -84,6 +81,104 @@ message ListTracesRequest {
 
   // Page token for pagination (opaque, from previous response). Leave empty for first page.
   string page_token = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Opaque token from a previous ListTracesResponse to fetch the next page. Leave empty for the first page."}];
+
+  // Optional filter criteria for listing traces.
+  Filter filter = 5;
+
+  // Filter criteria for listing traces including time range.
+  // Default behavior:
+  // - start_time: defaults to Unix epoch (1970-01-01) if not provided
+  // - end_time: defaults to current time + 5 minutes if not provided
+  message Filter {
+    option (buf.validate.message).cel = {
+      id: "time_range_valid"
+      message: "end_time must be >= start_time when both are provided"
+      expression: "!has(this.start_time) || !has(this.end_time) || this.end_time >= this.start_time"
+    };
+
+    // Start time for trace query (inclusive). Traces that finished after this time will be included.
+    // Optional: defaults to Unix epoch if not provided.
+    google.protobuf.Timestamp start_time = 1 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Start time for the query (inclusive). Defaults to Unix epoch (1970-01-01) if not provided."}
+    ];
+
+    // End time for trace query (exclusive). Traces that started before this time will be included.
+    // Optional: defaults to current time + 5 minutes if not provided.
+    google.protobuf.Timestamp end_time = 2 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time for the query (exclusive). Defaults to current time + 5 minutes if not provided."}
+    ];
+
+    // Span attribute filters - key is auto-prefixed with "span_attributes." by backend.
+    // Example: key="gen_ai.operation.name" queries span_attributes.gen_ai.operation.name
+    // All attribute filters use AND logic.
+    repeated AttributeFilter attribute_filters = 3 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Span attribute filters. Key is auto-prefixed with 'span_attributes.' by backend. All filters use AND logic."}
+    ];
+
+    // Filter for spans with error status (status_code = STATUS_CODE_ERROR).
+    optional bool has_errors = 4 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "When true, filter for spans with error status."}
+    ];
+
+    // Filter for spans with duration greater than this value (in nanoseconds).
+    optional int64 min_duration_ns = 5 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter for spans with duration greater than this value in nanoseconds."}
+    ];
+
+    // Field 6 was removed (return_full_traces). Partial trace filtering is now done client-side.
+    reserved 6;
+
+    // Filter by service name (from resource.service.name attribute).
+    // Uses OR logic - trace matches if its root service matches any of these values.
+    repeated string service_names = 7 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by service name (from resource attributes). OR logic - matches if root service is any of these."}
+    ];
+
+    // Filter by specific span IDs.
+    // Uses OR logic - returns traces containing any of these spans.
+    repeated string span_ids = 8 [
+      (google.api.field_behavior) = OPTIONAL,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by span ID. Returns traces containing any of these spans."}
+    ];
+  }
+}
+
+// AttributeOperator defines comparison operators for attribute filters.
+enum AttributeOperator {
+  // Unspecified operator - defaults to EQUALS.
+  ATTRIBUTE_OPERATOR_UNSPECIFIED = 0;
+  // Exact match: key = value.
+  ATTRIBUTE_OPERATOR_EQUALS = 1;
+  // Negation: key != value.
+  ATTRIBUTE_OPERATOR_NOT_EQUALS = 2;
+  // Set membership: key IN [value1, value2, ...].
+  ATTRIBUTE_OPERATOR_IN = 3;
+}
+
+// AttributeFilter defines a filter condition for span attributes.
+message AttributeFilter {
+  // Span attribute key (without "span_attributes." prefix).
+  // Backend auto-prefixes with "span_attributes." when querying.
+  // Example: "gen_ai.operation.name" queries span_attributes.gen_ai.operation.name
+  string key = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Span attribute key without prefix. Backend adds 'span_attributes.' prefix."}
+  ];
+
+  // Comparison operator for the filter.
+  AttributeOperator operator = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Comparison operator: EQUALS, NOT_EQUALS, or IN."}];
+
+  // Single value for EQUALS and NOT_EQUALS operators.
+  string value = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Value for EQUALS or NOT_EQUALS comparison."}];
+
+  // Multiple values for IN operator.
+  repeated string values = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Values for IN comparison (key matches any of these values)."}];
 }
 
 // ListTracesResponse is the response message for listing traces.
@@ -112,11 +207,40 @@ message ListTracesResponse {
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "End time of the newest trace in this page. Use with returned_start_time to highlight the current view window in a timeline."}
   ];
 
-  // Histogram of trace counts over the query time range.
-  // Use this to render a timeline visualization showing trace distribution.
-  TraceHistogram histogram = 6 [
+  // Field 6 was removed (histogram). Use GetTraceHistogram RPC instead.
+  reserved 6;
+
+  // Span IDs that matched the attribute filters, grouped by trace ID.
+  // Only populated when attribute_filters are active in the request.
+  // Use this to highlight matching spans in the UI or filter to partial traces client-side.
+  map<string, MatchedSpanIds> matched_spans = 7 [
     (google.api.field_behavior) = OUTPUT_ONLY,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Histogram showing trace distribution over the query time range. Each bucket represents a time interval with its trace count."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of trace_id to span IDs that matched the filters. Only populated when attribute filters are active."}
+  ];
+}
+
+// MatchedSpanIds contains the list of span IDs within a trace that matched the filters.
+message MatchedSpanIds {
+  // List of span IDs that matched the filter criteria.
+  repeated string span_ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Span IDs that matched the attribute filters within this trace."}];
+}
+
+// GetTraceHistogramRequest is the request message for getting the trace histogram.
+message GetTraceHistogramRequest {
+  // Optional filter criteria for the histogram query.
+  // Reuses the same Filter message as ListTracesRequest for consistency.
+  ListTracesRequest.Filter filter = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter criteria including time range for the histogram query."}];
+}
+
+// GetTraceHistogramResponse is the response message for getting the trace histogram.
+message GetTraceHistogramResponse {
+  // Histogram of trace counts over the query time range.
+  TraceHistogram histogram = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Histogram showing trace distribution over the query time range."}];
+
+  // Total number of traces matching the time range.
+  int32 total_count = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total number of traces in the time range."}
   ];
 }
 

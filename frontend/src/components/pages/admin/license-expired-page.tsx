@@ -7,6 +7,28 @@ import { api } from '../../../state/backend-api';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/license-utils';
 import { PageComponent } from '../page';
 
+/**
+ * Formats a list of enabled enterprise feature names into a human-readable string.
+ * Returns undefined if no features are enabled.
+ */
+function formatEnabledFeatures(features: { name: string; enabled: boolean }[]): string | undefined {
+  const enabledFeatures = features.filter((f) => f.enabled).map((f) => f.name);
+
+  if (enabledFeatures.length === 0) {
+    return;
+  }
+
+  if (enabledFeatures.length === 1) {
+    return enabledFeatures[0];
+  }
+
+  if (enabledFeatures.length === 2) {
+    return `${enabledFeatures[0]} and ${enabledFeatures[1]}`;
+  }
+
+  return `${enabledFeatures.slice(0, -1).join(', ')}, and ${enabledFeatures.at(-1)}`;
+}
+
 @observer
 export default class LicenseExpiredPage extends PageComponent {
   initPage(): void {
@@ -21,6 +43,8 @@ export default class LicenseExpiredPage extends PageComponent {
   }
 
   render() {
+    const enabledFeaturesText = formatEnabledFeatures(api.enterpriseFeaturesUsed);
+
     return (
       <Flex align="center" justify="center" p={4}>
         <Box bg="white" height="100vh" left={0} opacity={0.5} position="fixed" top={0} width="100vw" zIndex={1000} />
@@ -35,7 +59,9 @@ export default class LicenseExpiredPage extends PageComponent {
 
             {/* Subtext */}
             <Text fontSize="lg">
-              You were using Console RBAC/SSO and your trial license has expired. To continue using them, you will need
+              {enabledFeaturesText
+                ? `You were using ${enabledFeaturesText} and your license has expired. To continue using these features, you will need`
+                : 'Your license has expired. To continue using enterprise features, you will need'}{' '}
               an{' '}
               <Link href="https://redpanda.com/upgrade" rel="noopener noreferrer" target="_blank">
                 Enterprise license

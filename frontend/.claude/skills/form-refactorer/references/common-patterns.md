@@ -340,20 +340,54 @@ export const InlineEditForm = () => {
 };
 ```
 
+## Common Zod Patterns
+
+```tsx
+// String validations
+z.string().min(1, "Required")
+z.string().email("Invalid email")
+z.string().url("Invalid URL")
+z.string().regex(/^[A-Z]/, "Must start with capital")
+
+// Number validations
+z.number().min(0, "Must be positive")
+z.number().max(100, "Max 100")
+z.number().int("Must be integer")
+
+// Optional fields
+z.string().optional()
+z.string().nullable()
+
+// Arrays
+z.array(z.string()).min(1, "At least one required")
+
+// Objects
+z.object({
+  nested: z.string(),
+})
+
+// Conditional validation
+z.object({
+  type: z.enum(["a", "b"]),
+  value: z.string(),
+}).refine((data) => {
+  if (data.type === "a") return data.value.length > 5;
+  return true;
+}, "Value must be longer than 5 for type A")
+```
+
 ## Common Pitfalls
 
 ### Pitfall 1: Missing htmlFor/id Association
 
-❌ **Wrong:**
 ```tsx
+// WRONG:
 <Field>
   <FieldLabel>Email</FieldLabel>
   <Input name="email" />
 </Field>
-```
 
-✅ **Correct:**
-```tsx
+// CORRECT:
 <Field>
   <FieldLabel htmlFor="email">Email</FieldLabel>
   <Input id="email" name="email" />
@@ -362,15 +396,13 @@ export const InlineEditForm = () => {
 
 ### Pitfall 2: Missing aria-invalid
 
-❌ **Wrong:**
 ```tsx
+// WRONG:
 <Field data-invalid={!!errors.email}>
   <Input {...register("email")} />
 </Field>
-```
 
-✅ **Correct:**
-```tsx
+// CORRECT:
 <Field data-invalid={!!errors.email}>
   <Input {...register("email")} aria-invalid={!!errors.email} />
 </Field>
@@ -378,42 +410,36 @@ export const InlineEditForm = () => {
 
 ### Pitfall 3: Conditional FieldError Without Check
 
-❌ **Wrong:**
 ```tsx
+// WRONG:
 <FieldError>{errors.email.message}</FieldError>
-```
 
-✅ **Correct:**
-```tsx
+// CORRECT:
 {errors.email && <FieldError>{errors.email.message}</FieldError>}
 ```
 
 ### Pitfall 4: Using Legacy Form Components
 
-❌ **Wrong:**
 ```tsx
+// WRONG:
 import { Form } from "components/redpanda-ui/components/form";
 import { Form } from "@redpanda-data/ui";
-```
 
-✅ **Correct:**
-```tsx
+// CORRECT:
 import { Field, FieldLabel } from "components/redpanda-ui/components/field";
 ```
 
 ### Pitfall 5: Forgetting FieldContent for Horizontal Fields
 
-❌ **Wrong:**
 ```tsx
+// WRONG:
 <Field orientation="horizontal">
   <Switch id="notifications" />
   <FieldLabel htmlFor="notifications">Enable</FieldLabel>
   <FieldDescription>Receive updates</FieldDescription>
 </Field>
-```
 
-✅ **Correct:**
-```tsx
+// CORRECT:
 <Field orientation="horizontal">
   <Switch id="notifications" />
   <FieldContent>

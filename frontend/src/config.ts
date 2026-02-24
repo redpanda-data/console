@@ -119,6 +119,7 @@ export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
+  aiGatewayUrl?: string;
   urlOverride?: {
     rest?: string;
     ws?: string;
@@ -128,6 +129,7 @@ export type SetConfigArguments = {
   setSidebarItems?: (items: SidebarItem[]) => void;
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
+  isAdpEnabled?: boolean;
   featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -137,7 +139,6 @@ export type SidebarItem = {
   icon?: JSX.Element;
   order: number;
   group?: string; // "Agentic AI" - for grouping related items
-  isBeta?: boolean; // true - for displaying beta badge
 };
 
 export type Breadcrumb = {
@@ -147,6 +148,7 @@ export type Breadcrumb = {
 
 type Config = {
   controlplaneUrl: string;
+  aiGatewayUrl?: string;
   dataplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
@@ -171,6 +173,7 @@ type Config = {
   setSidebarItems: (items: SidebarItem[]) => void;
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
+  isAdpEnabled: boolean;
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
@@ -191,6 +194,7 @@ export const config: Config = observable({
     // no op - set by parent application
   },
   isServerless: false,
+  isAdpEnabled: false,
   featureFlags: FEATURE_FLAGS,
 });
 
@@ -199,6 +203,7 @@ const setConfig = ({
   urlOverride,
   jwt,
   isServerless: isServerlessMode,
+  isAdpEnabled: isAdpEnabledMode,
   featureFlags,
   ...args
 }: SetConfigArguments) => {
@@ -244,6 +249,7 @@ const setConfig = ({
     jwt,
     dataplaneTransport,
     isServerless: isServerlessMode,
+    isAdpEnabled: isAdpEnabledMode ?? false,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
@@ -308,6 +314,12 @@ setTimeout(() => {
       return;
     }
 
+    // Don't emit sidebar items until endpoint compatibility is known,
+    // otherwise items gated by feature support will flicker.
+    if (!api.endpointCompatibility) {
+      return;
+    }
+
     const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
       (r, i) =>
         ({
@@ -316,7 +328,6 @@ setTimeout(() => {
           icon: r.icon,
           order: i,
           group: r.group,
-          isBeta: r.isBeta,
         }) as SidebarItem
     );
 
@@ -344,6 +355,10 @@ export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
 
 export function isServerless() {
   return config.isServerless;
+}
+
+export function isAdpEnabled() {
+  return config.isAdpEnabled && !isServerless();
 }
 
 export const embeddedAvailableRoutesObservable = observable({
@@ -397,7 +412,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
       }
     );
   } else {
-    api.refreshSupportedEndpoints();
     api.listLicenses();
+    api.refreshSupportedEndpoints();
   }
 });

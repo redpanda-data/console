@@ -28,9 +28,6 @@ type ExponentialBackoff struct {
 // Each successive call increases the wait time exponentially.
 func (e *ExponentialBackoff) Backoff(attempts int) time.Duration {
 	multiplied := math.Pow(e.Multiplier, float64(attempts))
-	wait := time.Duration(float64(e.BaseInterval) * multiplied)
-	if wait > e.MaxInterval {
-		wait = e.MaxInterval
-	}
+	wait := min(time.Duration(float64(e.BaseInterval)*multiplied), e.MaxInterval)
 	return wait
 }

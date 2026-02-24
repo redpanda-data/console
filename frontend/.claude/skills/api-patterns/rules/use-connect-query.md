@@ -79,3 +79,4 @@ function ClusterList({ organizationId }: Props) {
 
 - [Connect Query Docs](https://connectrpc.com/docs/web/query/getting-started)
 - [TanStack Query Options](https://tanstack.com/query/latest/docs/framework/react/reference/useQuery)
+- See also: [use-react-query-for-server](../../state-management/rules/use-react-query-for-server.md) — when to use React Query vs Zustand

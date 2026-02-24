@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
@@ -34,6 +35,7 @@ import { ModalContainer } from '../utils/modal-container';
 export type RouterContext = {
   basePath: string;
   queryClient: QueryClient;
+  dataplaneTransport: Transport;
 };
 
 export const Route = createRootRouteWithContext<RouterContext>()({

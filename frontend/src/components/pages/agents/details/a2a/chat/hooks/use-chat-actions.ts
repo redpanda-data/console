@@ -18,7 +18,7 @@ import { streamMessage } from './use-message-streaming';
 import type { ChatMessage } from '../types';
 import { createA2AClient } from '../utils/a2a-client';
 import { clearChatHistory, deleteMessages, saveMessage } from '../utils/database-operations';
-import { createErrorMessage, createUserMessage } from '../utils/message-converter';
+import { createUserMessage } from '../utils/message-converter';
 
 type UseChatActionsParams = {
   agentId: string;
@@ -91,7 +91,7 @@ export const useChatActions = ({
       await saveMessage(userMessage, agentId);
 
       // Stream assistant response
-      const result = await streamMessage({
+      await streamMessage({
         prompt: prompt || 'Sent with attachments',
         agentId,
         agentCardUrl,
@@ -107,13 +107,6 @@ export const useChatActions = ({
           });
         },
       });
-
-      // Handle error if streaming failed
-      if (!result.success) {
-        const errorMessage = createErrorMessage(contextId);
-        setMessages((prev) => [...prev, errorMessage]);
-        await saveMessage(errorMessage, agentId, { failure: true });
-      }
 
       setIsLoading(false);
     },

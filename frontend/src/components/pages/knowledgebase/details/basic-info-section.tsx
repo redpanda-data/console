@@ -102,7 +102,7 @@ export const BasicInfoSection = ({
           <div className="flex gap-2">
             {isEditMode ? (
               <>
-                <Button disabled={!formHasChanges || isUpdating} onClick={onSave} variant="secondary">
+                <Button disabled={!formHasChanges || isUpdating} onClick={onSave} variant="primary">
                   <Save className="h-4 w-4" />
                   Save Changes
                 </Button>
@@ -111,7 +111,7 @@ export const BasicInfoSection = ({
                 </Button>
               </>
             ) : (
-              <Button onClick={onStartEdit} variant="secondary">
+              <Button onClick={onStartEdit} variant="primary">
                 <Edit className="h-4 w-4" />
                 Edit Configuration
               </Button>

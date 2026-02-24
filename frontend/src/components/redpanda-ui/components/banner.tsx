@@ -4,18 +4,18 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import React, { type HTMLAttributes, useContext, useEffect, useState } from 'react';
 
-import { Button } from './button';
+import { Button, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
 const bannerVariants = cva(
-  'sticky top-0 z-40 flex w-full flex-row items-center justify-center px-4 text-center font-medium text-sm selection:bg-foreground selection:text-background',
+  'sticky top-0 z-40 flex w-full flex-row items-center justify-center gap-4 px-4 text-center font-medium text-sm selection:bg-foreground selection:text-background',
   {
     variants: {
       variant: {
-        secondary: 'bg-secondary text-secondary-foreground [&_button]:text-foreground',
-        accent: 'bg-accent text-accent-foreground [&_button]:text-foreground',
-        muted: 'bg-muted text-muted-foreground [&_button]:text-foreground',
-        primary: 'bg-primary',
+        secondary: 'bg-secondary text-secondary-foreground',
+        accent: 'bg-accent text-accent-foreground',
+        muted: 'bg-muted text-muted-foreground',
+        primary: 'bg-primary text-primary-foreground',
       },
     },
     defaultVariants: {
@@ -85,9 +85,9 @@ function BannerContent({ ...props }: BannerContentProps) {
   );
 }
 
-interface BannerCloseProps extends HTMLAttributes<HTMLButtonElement> {}
+interface BannerCloseProps extends HTMLAttributes<HTMLButtonElement>, ButtonVariants {}
 
-function BannerClose({ ...props }: BannerCloseProps) {
+function BannerClose({ variant = 'inverse-ghost', ...props }: BannerCloseProps) {
   const { setOpen, globalKey } = useBanner();
 
   return (
@@ -99,9 +99,9 @@ function BannerClose({ ...props }: BannerCloseProps) {
           localStorage.setItem(globalKey, 'true');
         }
       }}
-      size="icon"
+      size="icon-sm"
       type="button"
-      variant="outline"
+      variant={variant}
       {...props}
     >
       <X />

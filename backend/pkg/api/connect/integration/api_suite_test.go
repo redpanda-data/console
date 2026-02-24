@@ -73,7 +73,7 @@ func (s *APISuite) SetupSuite() {
 
 	// 2. Start Redpanda Docker container
 	container, err := redpanda.Run(ctx,
-		"redpandadata/redpanda:v25.2.1",
+		testutil.RedpandaImage(),
 		redpanda.WithEnableWasmTransform(),
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),

@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TracingService_ListTraces_FullMethodName = "/redpanda.api.dataplane.v1alpha3.TracingService/ListTraces"
-	TracingService_GetTrace_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.TracingService/GetTrace"
+	TracingService_ListTraces_FullMethodName        = "/redpanda.api.dataplane.v1alpha3.TracingService/ListTraces"
+	TracingService_GetTrace_FullMethodName          = "/redpanda.api.dataplane.v1alpha3.TracingService/GetTrace"
+	TracingService_GetTraceHistogram_FullMethodName = "/redpanda.api.dataplane.v1alpha3.TracingService/GetTraceHistogram"
 )
 
 // TracingServiceClient is the client API for TracingService service.
@@ -36,6 +37,9 @@ type TracingServiceClient interface {
 	ListTraces(ctx context.Context, in *ListTracesRequest, opts ...grpc.CallOption) (*ListTracesResponse, error)
 	// GetTrace retrieves the complete trace by trace ID, including all its spans.
 	GetTrace(ctx context.Context, in *GetTraceRequest, opts ...grpc.CallOption) (*GetTraceResponse, error)
+	// GetTraceHistogram returns the trace count distribution over a time range.
+	// Use this to render a timeline visualization separately from trace listing.
+	GetTraceHistogram(ctx context.Context, in *GetTraceHistogramRequest, opts ...grpc.CallOption) (*GetTraceHistogramResponse, error)
 }
 
 type tracingServiceClient struct {
@@ -66,6 +70,16 @@ func (c *tracingServiceClient) GetTrace(ctx context.Context, in *GetTraceRequest
 	return out, nil
 }
 
+func (c *tracingServiceClient) GetTraceHistogram(ctx context.Context, in *GetTraceHistogramRequest, opts ...grpc.CallOption) (*GetTraceHistogramResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTraceHistogramResponse)
+	err := c.cc.Invoke(ctx, TracingService_GetTraceHistogram_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TracingServiceServer is the server API for TracingService service.
 // All implementations must embed UnimplementedTracingServiceServer
 // for forward compatibility.
@@ -78,6 +92,9 @@ type TracingServiceServer interface {
 	ListTraces(context.Context, *ListTracesRequest) (*ListTracesResponse, error)
 	// GetTrace retrieves the complete trace by trace ID, including all its spans.
 	GetTrace(context.Context, *GetTraceRequest) (*GetTraceResponse, error)
+	// GetTraceHistogram returns the trace count distribution over a time range.
+	// Use this to render a timeline visualization separately from trace listing.
+	GetTraceHistogram(context.Context, *GetTraceHistogramRequest) (*GetTraceHistogramResponse, error)
 	mustEmbedUnimplementedTracingServiceServer()
 }
 
@@ -93,6 +110,9 @@ func (UnimplementedTracingServiceServer) ListTraces(context.Context, *ListTraces
 }
 func (UnimplementedTracingServiceServer) GetTrace(context.Context, *GetTraceRequest) (*GetTraceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTrace not implemented")
+}
+func (UnimplementedTracingServiceServer) GetTraceHistogram(context.Context, *GetTraceHistogramRequest) (*GetTraceHistogramResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTraceHistogram not implemented")
 }
 func (UnimplementedTracingServiceServer) mustEmbedUnimplementedTracingServiceServer() {}
 func (UnimplementedTracingServiceServer) testEmbeddedByValue()                        {}
@@ -151,6 +171,24 @@ func _TracingService_GetTrace_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TracingService_GetTraceHistogram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTraceHistogramRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TracingServiceServer).GetTraceHistogram(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TracingService_GetTraceHistogram_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TracingServiceServer).GetTraceHistogram(ctx, req.(*GetTraceHistogramRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TracingService_ServiceDesc is the grpc.ServiceDesc for TracingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -165,6 +203,10 @@ var TracingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTrace",
 			Handler:    _TracingService_GetTrace_Handler,
+		},
+		{
+			MethodName: "GetTraceHistogram",
+			Handler:    _TracingService_GetTraceHistogram_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

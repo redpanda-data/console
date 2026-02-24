@@ -21,7 +21,6 @@ import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
-import { isFeatureFlagEnabled, isServerless } from 'config';
 import { AlertCircle, Code, Link as LinkIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
@@ -73,9 +72,7 @@ export const RemoteMCPConnectionTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          {(!isServerless() || isFeatureFlagEnabled('enableRemoteMcpConnectClientInConsoleServerless')) && (
-            <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
-          )}
+          <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
         </CardContent>
       </Card>
 

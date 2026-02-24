@@ -51,12 +51,22 @@ import { NotFoundPage } from './components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routeTree } from './routeTree.gen';
 
+// Create transport before router so loaders can use it
+const dataplaneTransport = createConnectTransport({
+  baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
+  interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+  jsonOptions: {
+    registry: protobufRegistry,
+  },
+});
+
 // Create router instance
 const router = createRouter({
   routeTree,
   context: {
     basePath: getBasePath(),
     queryClient,
+    dataplaneTransport,
   },
   basepath: getBasePath(),
   trailingSlash: 'never',
@@ -84,14 +94,6 @@ declare module '@tanstack/react-router' {
 const App = () => {
   const developerView = useDeveloperView();
   setup({});
-
-  const dataplaneTransport = createConnectTransport({
-    baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
-    interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
-    jsonOptions: {
-      registry: protobufRegistry,
-    },
-  });
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (

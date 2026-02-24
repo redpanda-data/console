@@ -69,9 +69,7 @@ export const ConversationTab: FC<Props> = ({ trace }) => {
                 </Badge>
               </div>
               <div className="min-w-0 flex-1">
-                <Pre className="my-0 whitespace-pre-wrap break-words font-sans" variant="dense">
-                  {message.content}
-                </Pre>
+                <Pre className="my-0 whitespace-pre-wrap break-words font-sans">{message.content}</Pre>
               </div>
             </div>
           );

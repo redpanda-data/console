@@ -20,19 +20,18 @@ import {
   StartMCPServerResponseSchema,
   StopMCPServerRequestSchema,
   StopMCPServerResponseSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import {
   getMCPServer,
   startMCPServer,
   stopMCPServer,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
+} from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
   },
-  isFeatureFlagEnabled: vi.fn(() => false),
 }));
 
 const SERVER_ID = 'server-1';
