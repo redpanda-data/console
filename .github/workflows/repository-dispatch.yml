@@ -8,6 +8,7 @@ on:
       - '.github/workflows/repository-dispatch.yml'
       - '.github/workflows/backend-lint-test.yml'
       - '.github/workflows/frontend-verify.yml'
+      - 'test-images.json'
     tags:
       - '*'
     branches:
