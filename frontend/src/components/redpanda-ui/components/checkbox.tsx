@@ -13,11 +13,11 @@ const checkboxVariants = cva(
     variants: {
       variant: {
         primary:
-          'border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
+          '!border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-inverse',
         secondary:
-          'border-input data-[state=checked]:border-secondary data-[state=checked]:bg-secondary data-[state=checked]:text-secondary-foreground',
+          '!border-input data-[state=checked]:border-secondary data-[state=checked]:bg-secondary data-[state=checked]:text-inverse',
         outline:
-          'border-input data-[state=checked]:border-foreground data-[state=checked]:bg-transparent data-[state=checked]:text-foreground',
+          '!border-input data-[state=checked]:border-foreground data-[state=checked]:bg-transparent data-[state=checked]:text-foreground',
       },
     },
     defaultVariants: {

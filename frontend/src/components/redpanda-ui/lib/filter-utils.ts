@@ -1,14 +1,3 @@
-/**
- * Copyright 2025 Redpanda Data, Inc.
- *
- * Use of this software is governed by the Business Source License
- * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
- *
- * As of the Change Date specified in that file, in accordance with
- * the Business Source License, use of this software will be governed
- * by the Apache License, Version 2.0
- */
-
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type FilterType = 'text' | 'option' | 'multiOption';
@@ -153,7 +142,7 @@ export function determineNewOperator(
   type: FilterType,
   oldValues: string[],
   nextValues: string[],
-  currentOperator: string,
+  currentOperator: string
 ): string {
   const a = oldValues.length;
   const b = nextValues.length;
@@ -163,12 +152,18 @@ export function determineNewOperator(
   }
 
   const opDetails = filterTypeOperatorDetails[type][currentOperator];
-  if (!opDetails) return currentOperator;
+  if (!opDetails) {
+    return currentOperator;
+  }
 
   // Single → multiple
-  if (a < b && b >= 2) return (opDetails.singularOf as string) ?? currentOperator;
+  if (a < b && b >= 2) {
+    return (opDetails.singularOf as string) ?? currentOperator;
+  }
   // Multiple → single
-  if (a > b && b <= 1) return (opDetails.pluralOf as string) ?? currentOperator;
+  if (a > b && b <= 1) {
+    return (opDetails.pluralOf as string) ?? currentOperator;
+  }
 
   return currentOperator;
 }
@@ -176,8 +171,12 @@ export function determineNewOperator(
 // ── Filter Predicate Functions (for TanStack Table filterFn) ───────────
 
 export function optionFilterFn(rowValue: string, filterModel: FilterModel<'option'>): boolean {
-  if (!rowValue) return false;
-  if (filterModel.values.length === 0) return true;
+  if (!rowValue) {
+    return false;
+  }
+  if (filterModel.values.length === 0) {
+    return true;
+  }
 
   const value = rowValue.toString().toLowerCase();
   const found = filterModel.values.some((v) => v.toLowerCase() === value);
@@ -195,8 +194,12 @@ export function optionFilterFn(rowValue: string, filterModel: FilterModel<'optio
 }
 
 export function multiOptionFilterFn(rowValue: string[], filterModel: FilterModel<'multiOption'>): boolean {
-  if (!rowValue) return false;
-  if (filterModel.values.length === 0) return true;
+  if (!rowValue) {
+    return false;
+  }
+  if (filterModel.values.length === 0) {
+    return true;
+  }
 
   const intersection = rowValue.filter((v) => filterModel.values.some((fv) => fv.toLowerCase() === v.toLowerCase()));
 
@@ -214,12 +217,16 @@ export function multiOptionFilterFn(rowValue: string[], filterModel: FilterModel
 }
 
 export function textFilterFn(rowValue: string, filterModel: FilterModel<'text'>): boolean {
-  if (!filterModel.values.length) return true;
+  if (!filterModel.values.length) {
+    return true;
+  }
 
   const value = rowValue?.toLowerCase().trim() ?? '';
   const filterStr = filterModel.values[0].toLowerCase().trim();
 
-  if (filterStr === '') return true;
+  if (filterStr === '') {
+    return true;
+  }
 
   const found = value.includes(filterStr);
 
@@ -235,7 +242,9 @@ export function textFilterFn(rowValue: string, filterModel: FilterModel<'text'>)
 
 export function createFilterFn(type: FilterType) {
   return (row: { getValue: (id: string) => unknown }, columnId: string, filterModel: FilterModel) => {
-    if (!filterModel || filterModel.values.length === 0) return true;
+    if (!filterModel || filterModel.values.length === 0) {
+      return true;
+    }
 
     const value = row.getValue(columnId);
 

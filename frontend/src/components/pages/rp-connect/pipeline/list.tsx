@@ -23,13 +23,10 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
-import {
-  DataTableFilter,
-  type FilterColumnConfig,
-  useDataTableFilter,
-} from 'components/redpanda-ui/components/data-table-filter';
+import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,13 +36,16 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
+import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
+import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
-import { PipelineStatusBadge, PulsingStatusIcon } from 'components/ui/pipeline/status-badge';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -64,13 +64,9 @@ import {
 import { toast } from 'sonner';
 import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { parse as parseYaml } from 'yaml';
 
 import { TabKafkaConnect } from '../../connect/overview';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { parseConfigComponents } from '../utils/yaml';
 
 type Pipeline = {
   id: string;
@@ -79,42 +75,12 @@ type Pipeline = {
   state: Pipeline_State;
   configYaml: string;
   input?: string;
-  output?: string;
-};
-
-type ParsedYamlConfig = {
-  input?: Record<string, unknown>;
-  output?: Record<string, unknown>;
-};
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-const parseInputOutput = (configYaml: string): { input?: string; output?: string } => {
-  if (!configYaml) {
-    return {};
-  }
-  try {
-    const config = parseYaml(configYaml) as ParsedYamlConfig | null;
-    if (!config) {
-      return {};
-    }
-
-    const inputObj = config.input;
-    const outputObj = config.output;
-
-    return {
-      input: inputObj && typeof inputObj === 'object' ? Object.keys(inputObj)[0] : undefined,
-      output: outputObj && typeof outputObj === 'object' ? Object.keys(outputObj)[0] : undefined,
-    };
-  } catch {
-    return {};
-  }
+  processors: string[];
+  outputs: string[];
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
-  const { input, output } = parseInputOutput(apiPipeline.configYaml);
+  const { input, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
@@ -122,19 +88,31 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     state: apiPipeline.state,
     configYaml: apiPipeline.configYaml,
     input,
-    output,
+    processors,
+    outputs,
   };
 };
 
-// ============================================================================
-// Constants
-// ============================================================================
+const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> = {
+  [Pipeline_State.COMPLETED]: 'success',
+  [Pipeline_State.STARTING]: 'starting',
+  [Pipeline_State.STOPPING]: 'stopping',
+  [Pipeline_State.STOPPED]: 'disabled',
+  [Pipeline_State.ERROR]: 'error',
+  [Pipeline_State.RUNNING]: 'success',
+  [Pipeline_State.UNSPECIFIED]: 'disabled',
+};
+const pipelineStateFilterIcon: Record<string, React.ComponentType<{ className?: string }>> = {
+  [String(Pipeline_State.COMPLETED)]: (props) => <StatusDot variant="success" {...props} />,
+  [String(Pipeline_State.STARTING)]: (props) => <Spinner className={cn('text-success', props.className)} />,
+  [String(Pipeline_State.STOPPING)]: (props) => <Spinner className={cn('text-destructive', props.className)} />,
+  [String(Pipeline_State.STOPPED)]: (props) => <StatusDot variant="disabled" {...props} />,
+  [String(Pipeline_State.ERROR)]: (props) => <StatusDot variant="error" {...props} />,
+  [String(Pipeline_State.RUNNING)]: (props) => <StatusDot variant="success" {...props} />,
+  [String(Pipeline_State.UNSPECIFIED)]: (props) => <StatusDot variant="disabled" {...props} />,
+};
 
 const PAGE_SIZE = 20;
-
-// ============================================================================
-// Skeleton Component
-// ============================================================================
 
 const PipelineListSkeleton = () => (
   <div className="flex flex-col gap-4">
@@ -150,6 +128,9 @@ const PipelineListSkeleton = () => (
           </TableHead>
           <TableHead>
             <Skeleton className="h-4 w-16" />
+          </TableHead>
+          <TableHead>
+            <Skeleton className="h-4 w-20" />
           </TableHead>
           <TableHead>
             <Skeleton className="h-4 w-16" />
@@ -175,6 +156,12 @@ const PipelineListSkeleton = () => (
               <Skeleton className="h-6 w-20" />
             </TableCell>
             <TableCell>
+              <div className="flex gap-1">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+            </TableCell>
+            <TableCell>
               <Skeleton className="h-6 w-20" />
             </TableCell>
             <TableCell>
@@ -189,10 +176,6 @@ const PipelineListSkeleton = () => (
     </Table>
   </div>
 );
-
-// ============================================================================
-// Actions Cell
-// ============================================================================
 
 type ActionsCellProps = {
   pipeline: Pipeline;
@@ -317,10 +300,6 @@ const ActionsCell = memo(
 
 ActionsCell.displayName = 'ActionsCell';
 
-// ============================================================================
-// Table Columns
-// ============================================================================
-
 type CreateColumnsOptions = {
   navigate: ReturnType<typeof useNavigate>;
   deleteMutation: ReturnType<typeof useDeletePipelineMutation>['mutate'];
@@ -367,15 +346,42 @@ const createColumns = ({
     },
   },
   {
-    accessorKey: 'output',
-    header: 'Output',
-    filterFn: createFilterFn('option'),
+    accessorKey: 'processors',
+    header: 'Processors',
+    filterFn: createFilterFn('multiOption'),
     cell: ({ row }) => {
-      const output = row.getValue('output') as string | undefined;
+      const processors = row.getValue('processors') as string[];
+      if (processors.length === 0) {
+        return null;
+      }
       return (
-        <div className="flex min-w-[176px] items-center gap-2">
-          {output ? <Badge variant="neutral-inverted">{output}</Badge> : null}
-        </div>
+        <BadgeGroup maxVisible={2}>
+          {processors.map((p) => (
+            <Badge key={p} variant="neutral-inverted">
+              {p}
+            </Badge>
+          ))}
+        </BadgeGroup>
+      );
+    },
+  },
+  {
+    accessorKey: 'outputs',
+    header: 'Output',
+    filterFn: createFilterFn('multiOption'),
+    cell: ({ row }) => {
+      const outputs = row.getValue('outputs') as string[];
+      if (outputs.length === 0) {
+        return null;
+      }
+      return (
+        <BadgeGroup maxVisible={2}>
+          {outputs.map((o) => (
+            <Badge key={o} variant="neutral-inverted">
+              {o}
+            </Badge>
+          ))}
+        </BadgeGroup>
       );
     },
   },
@@ -384,7 +390,7 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: 'Status',
     filterFn: createFilterFn('option'),
-    cell: ({ row }) => <PipelineStatusBadge state={row.original.state} />,
+    cell: ({ row }) => <StatusBadge variant={pipelineStateToStatusVariant[row.original.state]} />,
   },
   {
     id: 'actions',
@@ -401,10 +407,6 @@ const createColumns = ({
     ),
   },
 ];
-
-// ============================================================================
-// Main Pipeline List Component
-// ============================================================================
 
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
@@ -448,28 +450,25 @@ const PipelineListPageContent = () => {
       value: v as string,
       label: v as string,
     }));
-    const outputOptions = [...new Set(pipelines.map((p) => p.output).filter(Boolean))].map((v) => ({
-      value: v as string,
-      label: v as string,
+    const processorOptions = [...new Set(pipelines.flatMap((p) => p.processors))].map((v) => ({
+      value: v,
+      label: v,
     }));
-    const stateIconMap: Record<string, () => JSX.Element> = {
-      [String(Pipeline_State.RUNNING)]: () => <PulsingStatusIcon pulsing={false} variant="success" />,
-      [String(Pipeline_State.STARTING)]: () => <PulsingStatusIcon pulsing={false} variant="warning" />,
-      [String(Pipeline_State.STOPPING)]: () => <PulsingStatusIcon pulsing={false} variant="warning" />,
-      [String(Pipeline_State.STOPPED)]: () => <PulsingStatusIcon pulsing={false} variant="disabled" />,
-      [String(Pipeline_State.ERROR)]: () => <PulsingStatusIcon pulsing={false} variant="error" />,
-      [String(Pipeline_State.COMPLETED)]: () => <PulsingStatusIcon pulsing={false} variant="success" />,
-    };
+    const outputOptions = [...new Set(pipelines.flatMap((p) => p.outputs))].map((v) => ({
+      value: v,
+      label: v,
+    }));
     const stateOptions = PIPELINE_STATE_OPTIONS.map((o) => ({
       value: o.value,
       label: o.label,
-      icon: stateIconMap[o.value],
+      icon: pipelineStateFilterIcon[o.value],
     }));
 
     return [
       { id: 'name', displayName: 'Name', type: 'text' as const, placeholder: 'Search by name...' },
       { id: 'input', displayName: 'Input', type: 'option' as const, options: inputOptions },
-      { id: 'output', displayName: 'Output', type: 'option' as const, options: outputOptions },
+      { id: 'processors', displayName: 'Processors', type: 'multiOption' as const, options: processorOptions },
+      { id: 'outputs', displayName: 'Output', type: 'multiOption' as const, options: outputOptions },
       {
         id: 'state',
         displayName: 'Status',

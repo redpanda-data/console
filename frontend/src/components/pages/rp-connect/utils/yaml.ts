@@ -1,7 +1,7 @@
 import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
+import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
 // import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
@@ -513,4 +513,82 @@ export const getConnectTemplate = ({
   }
 
   return configToYaml(newConfigObject, spec);
+};
+
+// ============================================================================
+// Config Component Parsing (used by pipeline list)
+// ============================================================================
+
+/** Extract the first key from an object, or undefined if not a valid object. */
+const firstKey = (obj: unknown): string | undefined =>
+  obj && typeof obj === 'object' && !Array.isArray(obj) ? Object.keys(obj)[0] : undefined;
+
+/** Extract child output names from a multi-output component (broker, switch, fallback). */
+const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefined => {
+  // broker: broker.outputs[] is an array of output objects
+  if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
+    const items = (value as { outputs?: unknown[] }).outputs;
+    if (Array.isArray(items)) {
+      return items.map(firstKey).filter((k): k is string => !!k);
+    }
+  }
+
+  // switch: switch.cases[].output is a single output per case
+  if (outputKey === 'switch' && value && typeof value === 'object' && !Array.isArray(value) && 'cases' in value) {
+    const cases = (value as { cases?: { output?: unknown }[] }).cases;
+    if (Array.isArray(cases)) {
+      return cases.map((c) => firstKey(c.output)).filter((k): k is string => !!k);
+    }
+  }
+
+  // fallback: the value itself is an array of output objects
+  if (outputKey === 'fallback' && Array.isArray(value)) {
+    return value.map(firstKey).filter((k): k is string => !!k);
+  }
+
+  return;
+};
+
+type ParsedYamlConfig = {
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  pipeline?: { processors?: Record<string, unknown>[] };
+};
+
+type ParsedConfigComponents = {
+  input?: string;
+  processors: string[];
+  outputs: string[];
+};
+
+/** Parse a pipeline's configYaml to extract input, processor, and output component names. */
+export const parseConfigComponents = (configYaml: string): ParsedConfigComponents => {
+  const empty: ParsedConfigComponents = { processors: [], outputs: [] };
+  if (!configYaml) {
+    return empty;
+  }
+
+  try {
+    const config = parseYaml(configYaml) as ParsedYamlConfig | null;
+    if (!config) {
+      return empty;
+    }
+
+    const processors = Array.isArray(config.pipeline?.processors)
+      ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
+      : [];
+
+    const outputObj = config.output;
+    let outputs: string[] = [];
+    if (outputObj && typeof outputObj === 'object') {
+      const outputKey = firstKey(outputObj);
+      if (outputKey) {
+        outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
+      }
+    }
+
+    return { input: firstKey(config.input), processors, outputs };
+  } catch {
+    return empty;
+  }
 };

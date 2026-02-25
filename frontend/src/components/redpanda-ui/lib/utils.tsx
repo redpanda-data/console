@@ -1,3 +1,4 @@
+import { cva } from 'class-variance-authority';
 import { type ClassValue, clsx } from 'clsx';
 import type React from 'react';
 import { twMerge } from 'tailwind-merge';
@@ -80,3 +81,47 @@ export type FixedPositionContentProps = PortalContentProps & {
   /** When false, hides the overlay/backdrop */
   showOverlay?: boolean;
 };
+
+// =============================================================================
+// Indicator Component Common Types
+// =============================================================================
+// Shared types for StatusDot, CountDot, and StatusBadge components.
+
+export type SemanticVariant = 'success' | 'info' | 'warning' | 'error' | 'disabled';
+export type DotSize = 'xxs' | 'xs' | 'sm' | 'md' | 'lg';
+export type StackableProps = { stacked?: boolean };
+
+// =============================================================================
+// Shared Dot Component Styles
+// =============================================================================
+// Common CVAs used by StatusDot, CountDot, and related indicator components.
+
+export const dotColorVariants = cva('', {
+  variants: {
+    variant: {
+      success: 'bg-background-success-strong',
+      info: 'bg-background-informative-strong',
+      warning: 'bg-background-warning-strong',
+      error: 'bg-background-error-strong',
+      disabled: 'bg-surface-strong-hover',
+    },
+  },
+  defaultVariants: {
+    variant: 'info',
+  },
+});
+
+export const dotStackedVariants = cva('!border-background', {
+  variants: {
+    size: {
+      xxs: 'border-[1px]',
+      xs: 'border-[2px]',
+      sm: 'border',
+      md: 'border-[1.5px]',
+      lg: 'border-2',
+    },
+  },
+  defaultVariants: {
+    size: 'md',
+  },
+});

@@ -1,27 +1,17 @@
-/**
- * Copyright 2025 Redpanda Data, Inc.
- *
- * Use of this software is governed by the Business Source License
- * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
- *
- * As of the Change Date specified in that file, in accordance with
- * the Business Source License, use of this software will be governed
- * by the Apache License, Version 2.0
- */
-
 import type { Table } from '@tanstack/react-table';
 import { useEffect, useMemo } from 'react';
 
 import type { FilterColumnConfig } from '../components/data-table-filter';
+import { useControllableState } from './use-controllable-state';
 import {
+  determineNewOperator,
   type FilterModel,
   type FiltersState,
-  determineNewOperator,
+  type FilterType,
   getDefaultOperator,
 } from './filter-utils';
-import { useControllableState } from './use-controllable-state';
 
-export interface DataTableFilterActions {
+export type DataTableFilterActions = {
   addFilter: (columnId: string) => void;
   removeFilter: (columnId: string) => void;
   removeAllFilters: () => void;
@@ -29,14 +19,45 @@ export interface DataTableFilterActions {
   addFilterValue: (columnId: string, value: string) => void;
   removeFilterValue: (columnId: string, value: string) => void;
   setFilterOperator: (columnId: string, operator: string) => void;
-}
+};
 
-export interface UseDataTableFilterOptions<TData> {
+export type UseDataTableFilterOptions<TData> = {
   columns: FilterColumnConfig[];
   table?: Table<TData>;
   value?: FiltersState;
   onValueChange?: (filters: FiltersState) => void;
   defaultValue?: FiltersState;
+};
+
+function computeSetFilterValues(
+  prev: FiltersState,
+  columnId: string,
+  values: string[],
+  type: FilterType
+): FiltersState {
+  const filter = prev.find((f) => f.columnId === columnId);
+
+  if (!filter) {
+    if (values.length === 0) {
+      return prev;
+    }
+    return [
+      ...prev,
+      {
+        columnId,
+        type,
+        operator: getDefaultOperator(type, values.length > 1 ? 'multiple' : 'single'),
+        values,
+      },
+    ];
+  }
+
+  if (values.length === 0) {
+    return prev.filter((f) => f.columnId !== columnId);
+  }
+
+  const newOperator = determineNewOperator(type, filter.values, values, filter.operator);
+  return prev.map((f) => (f.columnId === columnId ? { columnId, type, operator: newOperator, values } : f));
 }
 
 export function useDataTableFilter<TData>({
@@ -59,7 +80,9 @@ export function useDataTableFilter<TData>({
     () => ({
       addFilter(columnId: string) {
         setFilters((prev) => {
-          if (prev.some((f) => f.columnId === columnId)) return prev;
+          if (prev.some((f) => f.columnId === columnId)) {
+            return prev;
+          }
           const type = columnsMap.get(columnId)?.type ?? 'text';
           return [
             ...prev,
@@ -84,32 +107,7 @@ export function useDataTableFilter<TData>({
       setFilterValues(columnId: string, values: string[]) {
         setFilters((prev) => {
           const type = columnsMap.get(columnId)?.type ?? 'text';
-          const filter = prev.find((f) => f.columnId === columnId);
-
-          if (!filter) {
-            if (values.length === 0) return prev;
-            return [
-              ...prev,
-              {
-                columnId,
-                type,
-                operator: getDefaultOperator(type, values.length > 1 ? 'multiple' : 'single'),
-                values,
-              },
-            ];
-          }
-
-          if (values.length === 0) {
-            return prev.filter((f) => f.columnId !== columnId);
-          }
-
-          const newOperator = determineNewOperator(type, filter.values, values, filter.operator);
-
-          return prev.map((f) =>
-            f.columnId === columnId
-              ? { columnId, type, operator: newOperator, values }
-              : f,
-          );
+          return computeSetFilterValues(prev, columnId, values, type);
         });
       },
 
@@ -131,22 +129,20 @@ export function useDataTableFilter<TData>({
               ];
             }
             return prev.map((f) =>
-              f.columnId === columnId
-                ? { ...f, values: [value], operator: getDefaultOperator(type) }
-                : f,
+              f.columnId === columnId ? { ...f, values: [value], operator: getDefaultOperator(type) } : f
             );
           }
 
-          if (filter.values.includes(value)) return prev;
+          if (filter.values.includes(value)) {
+            return prev;
+          }
 
           const oldValues = filter.values;
           const newValues = [...oldValues, value];
           const newOperator = determineNewOperator(type, oldValues, newValues, filter.operator);
 
           return prev.map((f) =>
-            f.columnId === columnId
-              ? { columnId, type, operator: newOperator, values: newValues }
-              : f,
+            f.columnId === columnId ? { columnId, type, operator: newOperator, values: newValues } : f
           );
         });
       },
@@ -156,7 +152,9 @@ export function useDataTableFilter<TData>({
           const type = columnsMap.get(columnId)?.type ?? 'text';
           const filter = prev.find((f) => f.columnId === columnId);
 
-          if (!filter) return prev;
+          if (!filter) {
+            return prev;
+          }
 
           const oldValues = filter.values;
           const newValues = oldValues.filter((v) => v !== value);
@@ -168,39 +166,37 @@ export function useDataTableFilter<TData>({
           const newOperator = determineNewOperator(type, oldValues, newValues, filter.operator);
 
           return prev.map((f) =>
-            f.columnId === columnId
-              ? { columnId, type, operator: newOperator, values: newValues }
-              : f,
+            f.columnId === columnId ? { columnId, type, operator: newOperator, values: newValues } : f
           );
         });
       },
 
       setFilterOperator(columnId: string, operator: string) {
-        setFilters((prev) =>
-          prev.map((f) => (f.columnId === columnId ? { ...f, operator } : f)),
-        );
+        setFilters((prev) => prev.map((f) => (f.columnId === columnId ? { ...f, operator } : f)));
       },
     }),
-    [columnsMap, setFilters],
+    [columnsMap, setFilters]
   );
 
   // Sync filters → TanStack Table column filter values
   useEffect(() => {
-    if (!table) return;
+    if (!table) {
+      return;
+    }
 
-    for (const column of columns) {
-      const tableColumn = table.getColumn(column.id);
-      if (!tableColumn) continue;
+    for (const col of columns) {
+      const tableColumn = table.getColumn(col.id);
+      if (!tableColumn) {
+        continue;
+      }
 
-      const filter = filters.find((f) => f.columnId === column.id);
+      const filter = filters.find((f) => f.columnId === col.id);
       const currentValue = tableColumn.getFilterValue() as FilterModel | undefined;
 
-      if (!filter) {
-        if (currentValue != null) {
-          tableColumn.setFilterValue(undefined);
-        }
-      } else {
+      if (filter) {
         tableColumn.setFilterValue(filter);
+      } else if (currentValue !== null) {
+        tableColumn.setFilterValue(undefined);
       }
     }
   }, [table, columns, filters]);

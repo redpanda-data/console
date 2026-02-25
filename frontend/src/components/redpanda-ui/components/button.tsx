@@ -44,13 +44,13 @@ const buttonVariants = cva(
           'disabled:bg-background-disabled disabled:text-disabled',
         ],
         accent: [
-          'bg-brand text-brand-foreground shadow-xs',
+          'bg-brand text-inverse shadow-xs',
           'hover:bg-surface-brand-hover',
           'active:bg-surface-brand-pressed',
           'disabled:bg-background-disabled disabled:text-disabled',
         ],
         destructive: [
-          'bg-destructive text-destructive-foreground shadow-xs',
+          'bg-destructive text-inverse shadow-xs',
           'hover:bg-surface-error-hover',
           'active:bg-surface-error-pressed',
           'focus-visible:ring-destructive',
