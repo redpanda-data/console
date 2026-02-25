@@ -6,7 +6,7 @@
     },
     "kafkaConnect": {
       "repository": "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors",
-      "tag": "sha256:0ff21e793ef3042f2f48fb3d6549fae0ef687950a76b8017ab9d8b17c33cadb0"
+      "tag": "latest"
     },
     "owlShop": {
       "repository": "quay.io/cloudhut/owl-shop",

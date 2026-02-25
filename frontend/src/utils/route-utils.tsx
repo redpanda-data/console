@@ -56,7 +56,6 @@ export type SidebarItem = {
   icon?: LucideIcon | ((props: React.SVGProps<SVGSVGElement>) => JSX.Element);
   visibilityCheck?: () => MenuItemState;
   group?: string; // For grouping related items (e.g., "Agentic AI")
-  isBeta?: boolean; // For displaying beta badge
 };
 
 // Visibility state for menu items
@@ -272,10 +271,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/transcripts',
     title: 'Transcripts',
     icon: ActivityIcon,
-    visibilityCheck: routeVisibility(
-      () => isEmbedded() && isAdpEnabled() && isFeatureFlagEnabled('enableTranscriptsInConsole'),
-      [Feature.TracingService]
-    ),
+    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled(), [Feature.TracingService]),
   },
   {
     path: '/reassign-partitions',
@@ -292,7 +288,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/mcp-servers',
     title: 'Remote MCP',
     icon: MCPIcon,
-    visibilityCheck: routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')),
+    visibilityCheck: routeVisibility(() => isEmbedded()),
   },
   {
     path: '/shadowlinks',
@@ -300,7 +296,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: ShieldIcon,
     visibilityCheck: routeVisibility(() => {
       if (isEmbedded()) {
-        return isFeatureFlagEnabled('shadowlinkCloudUi') && !isServerless();
+        return !isServerless();
       }
       return true;
     }),
@@ -309,13 +305,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/agents',
     title: 'AI Agents',
     icon: UserCircleIcon,
-    visibilityCheck: routeVisibility(
-      () =>
-        isEmbedded() &&
-        isAdpEnabled() &&
-        (!isServerless() || isFeatureFlagEnabled('enableAiAgentsInConsoleServerless')) &&
-        isFeatureFlagEnabled('enableAiAgentsInConsole')
-    ),
+    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled()),
   },
 ];
 
@@ -324,9 +314,6 @@ const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 
 // Routes that should be hidden in serverless mode
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
-
-// Routes with beta badge suffix
-const BETA_ROUTES = ['/knowledgebases', '/agents', '/transcripts'];
 
 /**
  * Process a single sidebar item for legacy sidebar display.
@@ -343,10 +330,9 @@ function processSidebarItem(item: SidebarItem): NavLinkProps | null {
 
   const isEnabled = visibility.disabledReasons.length === 0;
   const disabledText = getDisabledText(visibility.disabledReasons);
-  const title = formatTitle(item.path, String(item.title));
 
   return {
-    title,
+    title: String(item.title),
     to: item.path,
     icon: item.icon,
     isDisabled: !isEnabled,
@@ -373,13 +359,6 @@ function getDisabledText(reasons: DisabledReason[]): string {
 }
 
 /**
- * Format title with beta suffix if needed.
- */
-function formatTitle(path: string, title: string): string {
-  return BETA_ROUTES.includes(path) ? `${title} (beta)` : title;
-}
-
-/**
  * Creates visible sidebar items for the legacy @redpanda-data/ui Sidebar.
  */
 export function createVisibleSidebarItems(): NavLinkProps[] {
@@ -392,12 +371,11 @@ export function createVisibleSidebarItems(): NavLinkProps[] {
  */
 export function getEmbeddedAvailableRoutes(): SidebarItem[] {
   return SIDEBAR_ITEMS.map((item) => {
-    // Mark AI-related routes with group and beta flag
+    // Mark AI-related routes with group
     if (item.path === '/knowledgebases' || item.path === '/agents' || item.path === '/transcripts') {
       return {
         ...item,
         group: 'Agentic AI',
-        isBeta: true,
       };
     }
 

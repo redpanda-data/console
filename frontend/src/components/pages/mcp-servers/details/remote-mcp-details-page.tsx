@@ -14,7 +14,6 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 const routeApi = getRouteApi('/mcp-servers/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Link, Loader2, Logs, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
@@ -38,8 +37,6 @@ export const updatePageTitle = (serverName?: string) => {
 };
 
 export const RemoteMCPDetailsPage = () => {
-  const isRemoteMcpInspectorFeatureEnabled = isFeatureFlagEnabled('enableRemoteMcpInspectorInConsole');
-
   const { id } = routeApi.useParams();
   const navigate = useNavigate({ from: '/mcp-servers/$id' });
   // Use fine-grained selector to only re-render when tab changes
@@ -114,12 +111,10 @@ export const RemoteMCPDetailsPage = () => {
             <Logs className="h-4 w-4" />
             Logs
           </TabsTrigger>
-          {Boolean(isRemoteMcpInspectorFeatureEnabled) && (
-            <TabsTrigger className="gap-2" value="inspector">
-              <Search className="h-4 w-4" />
-              MCP Inspector
-            </TabsTrigger>
-          )}
+          <TabsTrigger className="gap-2" value="inspector">
+            <Search className="h-4 w-4" />
+            MCP Inspector
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="configuration">
@@ -131,11 +126,9 @@ export const RemoteMCPDetailsPage = () => {
         <TabsContent value="logs">
           <RemoteMCPLogsTab />
         </TabsContent>
-        {Boolean(isRemoteMcpInspectorFeatureEnabled) && (
-          <TabsContent value="inspector">
-            <RemoteMCPInspectorTab />
-          </TabsContent>
-        )}
+        <TabsContent value="inspector">
+          <RemoteMCPInspectorTab />
+        </TabsContent>
       </Tabs>
     </div>
   );

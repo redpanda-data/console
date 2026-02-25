@@ -12,16 +12,10 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
-import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp-MCPServerService_connectquery';
+import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
-import { describe, expect, test, vi } from 'vitest';
-
-// Mock config module so isFeatureFlagEnabled('enableMcpServiceAccount') returns false (use v1alpha3 path)
-vi.mock('config', () => ({
-  isFeatureFlagEnabled: vi.fn(() => false),
-  config: {},
-}));
+import { describe, expect, test } from 'vitest';
 
 import { useListMCPServersQuery } from './remote-mcp';
 

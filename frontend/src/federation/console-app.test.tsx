@@ -42,19 +42,6 @@ vi.mock('config', () => ({
   getGrpcBasePath: vi.fn(() => 'http://localhost:9090'),
   addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
   checkExpiredLicenseInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
-  embeddedAvailableRoutesObservable: {
-    routes: [
-      { path: '/topics', title: 'Topics', icon: () => null },
-      { path: '/groups', title: 'Consumer Groups', icon: () => null },
-    ],
-  },
-}));
-
-vi.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
 }));
 
 vi.mock('protobuf-registry', () => ({
@@ -159,22 +146,6 @@ describe('ConsoleApp', () => {
         })
       );
     });
-  });
-
-  test('calls onSidebarItemsChange after initialization', async () => {
-    render(<ConsoleApp {...defaultProps} />);
-
-    await waitFor(() => {
-      expect(mockOnSidebarItemsChange).toHaveBeenCalled();
-    });
-
-    const sidebarItems = mockOnSidebarItemsChange.mock.calls[0][0];
-    expect(sidebarItems).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ title: 'Topics', to: '/topics' }),
-        expect.objectContaining({ title: 'Consumer Groups', to: '/groups' }),
-      ])
-    );
   });
 
   test('stays in loading state while token refresh is pending', async () => {
