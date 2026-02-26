@@ -69,7 +69,6 @@ import {
   SkipBackIcon,
   TabIcon,
   TimerIcon,
-  WarningIcon,
 } from 'components/icons';
 import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
@@ -512,13 +511,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     sortingParser.withDefault([])
   );
 
-  // Infinite scroll toggle state
-  const [infiniteScrollEnabled, setInfiniteScrollEnabled] = useQueryStateWithCallback<boolean>(
+  // Continuous pagination toggle state
+  const [continuousPaginationEnabled, setContinuousPaginationEnabled] = useQueryStateWithCallback<boolean>(
     {
       onUpdate: (val) => {
-        setSearchParams(props.topic.topicName, { infiniteScrollEnabled: val });
+        setSearchParams(props.topic.topicName, { continuousPaginationEnabled: val });
       },
-      getDefaultValue: () => getSearchParams(props.topic.topicName)?.infiniteScrollEnabled ?? false,
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.continuousPaginationEnabled ?? false,
     },
     'inf',
     parseAsBoolean.withDefault(false)
@@ -590,10 +589,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       })
     : messages;
 
-  // For infinite scroll, just use the filtered messages directly
+  // For continuous pagination, just use the filtered messages directly
   // We don't use placeholders as they cause page content to shift
   const filteredMessages =
-    infiniteScrollEnabled && startOffset === PartitionOffsetOrigin.EndMinusResults
+    continuousPaginationEnabled && startOffset === PartitionOffsetOrigin.EndMinusResults
       ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp)
       : baseFilteredMessages;
 
@@ -638,12 +637,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     };
   }, []);
 
-  // Clear sorting when enabling infinite scroll mode
+  // Clear sorting when enabling continuous pagination mode
   useEffect(() => {
-    if (infiniteScrollEnabled && sorting.length > 0) {
+    if (continuousPaginationEnabled && sorting.length > 0) {
       setSortingState([]);
     }
-  }, [infiniteScrollEnabled, sorting.length, setSortingState]);
+  }, [continuousPaginationEnabled, sorting.length, setSortingState]);
+
+  // Auto-cap page size to maxResults when continuous pagination is enabled
+  useEffect(() => {
+    if (continuousPaginationEnabled && maxResults < pageSize) {
+      setPageSize(maxResults);
+    }
+  }, [continuousPaginationEnabled, maxResults, pageSize, setPageSize]);
 
   // Reset to page 1 when start offset changes (e.g., switching from Newest to Beginning)
   useEffect(() => {
@@ -697,10 +703,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         }
       }
 
-      // Calculate backend page size: for infinite scroll mode,
+      // Calculate backend page size: for continuous pagination mode,
       // initial load fetches maxResults at once, subsequent loadMore calls use smaller pageSize.
       // We send maxResults as pageSize to enable pagination mode in the backend.
-      const backendPageSize = infiniteScrollEnabled ? maxResults : undefined;
+      const backendPageSize = continuousPaginationEnabled ? maxResults : undefined;
       const backendMaxResults = maxResults;
 
       const request = {
@@ -760,7 +766,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       startOffset,
       startTimestamp,
       maxResults,
-      infiniteScrollEnabled,
+      continuousPaginationEnabled,
       pageSize,
       keyDeserializer,
       valueDeserializer,
@@ -835,10 +841,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     return () => clearTimeout(timer);
   }, [searchFunc, forceRefresh]);
 
-  // Auto-load more messages when user reaches beyond loaded messages (infinite scroll mode only)
+  // Auto-load more messages when user reaches beyond loaded messages (continuous pagination mode only)
   useEffect(() => {
     if (
-      !infiniteScrollEnabled ||
+      !continuousPaginationEnabled ||
       filters.length > 0 ||
       !messageSearch ||
       !messageSearch.nextPageToken ||
@@ -937,7 +943,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     // Note: virtualStartIndex intentionally excluded — the effect reads it via ref
   }, [
     pageIndex,
-    infiniteScrollEnabled,
+    continuousPaginationEnabled,
     maxResults,
     filters.length,
     messageSearch,
@@ -948,12 +954,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     loadMoreFailures,
   ]);
 
-  // Reset pagination when navigating back to page 1 in infinite scroll mode
+  // Reset pagination when navigating back to page 1 in continuous pagination mode
   // This prevents keeping many pages in memory and triggering excessive requests
   useEffect(() => {
-    // Check if we're in infinite scroll mode and user navigated back to page 1 from a higher page
+    // Check if we're in continuous pagination mode and user navigated back to page 1 from a higher page
     // Use ref to check messageSearch existence to avoid circular dependency
-    if (infiniteScrollEnabled && pageIndex === 0 && prevPageIndexRef.current > 1 && currentMessageSearchRef.current) {
+    if (
+      continuousPaginationEnabled &&
+      pageIndex === 0 &&
+      prevPageIndexRef.current > 1 &&
+      currentMessageSearchRef.current
+    ) {
       // Clear the message search and state
       setMessages([]);
       setMessageSearch(null);
@@ -975,22 +986,22 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     prevPageIndexRef.current = pageIndex;
     // Note: messageSearch intentionally excluded to avoid circular dependency
     // We use currentMessageSearchRef.current instead which is always in sync
-  }, [pageIndex, infiniteScrollEnabled]);
+  }, [pageIndex, continuousPaginationEnabled]);
 
   // Message Table rendering variables and functions
   // Map global pageIndex to a window-local page index for the DataTable.
   // windowStartPage is the global page number of the first page in our sliding window.
-  const localPageIndex = infiniteScrollEnabled ? Math.max(0, pageIndex - windowStartPage) : pageIndex;
+  const localPageIndex = continuousPaginationEnabled ? Math.max(0, pageIndex - windowStartPage) : pageIndex;
 
   const loadedPages = Math.ceil(filteredMessages.length / pageSize);
-  const hasMoreData = infiniteScrollEnabled && messageSearch?.nextPageToken;
+  const hasMoreData = continuousPaginationEnabled && messageSearch?.nextPageToken;
   const totalPages = Math.max(1, hasMoreData ? loadedPages + 1 : loadedPages);
   const boundedLocalPageIndex = Math.min(localPageIndex, totalPages - 1);
   const isOnUnloadedPage = boundedLocalPageIndex >= loadedPages && hasMoreData;
 
   const paginationParams = {
     pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedLocalPageIndex,
-    pageSize: infiniteScrollEnabled && maxResults < pageSize ? maxResults : pageSize,
+    pageSize: continuousPaginationEnabled && maxResults < pageSize ? maxResults : pageSize,
   };
 
   const tsFormat = topicSettings?.previewTimestamps ?? 'default';
@@ -1018,7 +1029,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     timestamp: {
       header: 'Timestamp',
       accessorKey: 'timestamp',
-      enableSorting: !infiniteScrollEnabled, // Disable sorting in infinite scroll mode
+      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
       cell: ({
         row: {
           original: { timestamp },
@@ -1045,7 +1056,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         ),
       size: hasKeyTags ? 300 : 1,
       accessorKey: 'key',
-      enableSorting: !infiniteScrollEnabled, // Disable sorting in infinite scroll mode
+      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
       cell: ({ row: { original } }) => (
         <MessageKeyPreview
           msg={original}
@@ -1073,7 +1084,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           'Value'
         ),
       accessorKey: 'value',
-      enableSorting: !infiniteScrollEnabled, // Disable sorting in infinite scroll mode
+      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
       cell: ({ row: { original } }) => (
         <MessagePreview
           isCompactTopic={props.topic.cleanupPolicy.includes('compact')}
@@ -1198,9 +1209,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     enableSorting: false,
     cell: ({ row }) =>
       row.getCanExpand() ? (
-        <button aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'} className="cursor-pointer p-1" onClick={row.getToggleExpandedHandler()} type="button">
+        <RegistryButton
+          aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+          onClick={row.getToggleExpandedHandler()}
+          size="icon-xs"
+          variant="ghost"
+        >
           {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-        </button>
+        </RegistryButton>
       ) : null,
   };
 
@@ -1214,7 +1230,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     onPaginationChange: (updater) => {
       const newState = typeof updater === 'function' ? updater(paginationParams) : updater;
       uiState.topicSettings.searchParams.pageSize = newState.pageSize;
-      if (infiniteScrollEnabled) {
+      if (continuousPaginationEnabled) {
         setPageIndex(windowStartPage + newState.pageIndex);
       } else {
         setPageIndex(newState.pageIndex);
@@ -1222,7 +1238,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       setPageSize(newState.pageSize);
     },
     onSortingChange: (updater) => {
-      if (infiniteScrollEnabled) {
+      if (continuousPaginationEnabled) {
         return;
       }
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
@@ -1257,7 +1273,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         <Flex alignItems="center" gap={2}>
           <ReplyIcon />
           <span data-testid="start-offset-newest">
-            {infiniteScrollEnabled ? 'Newest' : `Newest - ${String(maxResults)}`}
+            {continuousPaginationEnabled ? 'Newest' : `Newest - ${String(maxResults)}`}
           </span>
         </Flex>
       ),
@@ -1295,7 +1311,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset
   ) as PartitionOffsetOriginType;
 
-  const infiniteScrollDisabled =
+  const continuousPaginationDisabled =
     currentOffsetOrigin !== PartitionOffsetOrigin.EndMinusResults &&
     currentOffsetOrigin !== PartitionOffsetOrigin.Start;
 
@@ -1318,13 +1334,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     setStartOffset(e);
                   }
 
-                  // Auto-disable infinite scroll for unsupported offsets
+                  // Auto-disable continuous pagination for unsupported offsets
                   if (
-                    infiniteScrollEnabled &&
+                    continuousPaginationEnabled &&
                     e !== PartitionOffsetOrigin.EndMinusResults &&
                     e !== PartitionOffsetOrigin.Start
                   ) {
-                    setInfiniteScrollEnabled(false);
+                    setContinuousPaginationEnabled(false);
                   }
 
                   // Handle timestamp parameter in URL
@@ -1380,7 +1396,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <Label
             style={{}}
-            text="Infinite Scroll"
+            text="Continuous Pagination"
             textSuffix={
               <RegistryTooltip>
                 <TooltipTrigger asChild>
@@ -1389,19 +1405,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {infiniteScrollDisabled
-                    ? 'Infinite scroll is only available with Newest or Beginning start offsets'
-                    : 'Page through the full topic while keeping max results in memory and trimming the rest'}
+                  {continuousPaginationDisabled
+                    ? 'Continuous pagination is only available with Newest or Beginning start offsets'
+                    : 'Continuously load more messages as you page forward through the topic. Only the most recent pages are kept in memory.'}
                 </TooltipContent>
               </RegistryTooltip>
             }
           >
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
               <Switch
-                data-testid="infinite-scroll-toggle"
-                isChecked={infiniteScrollEnabled}
-                isDisabled={infiniteScrollDisabled}
-                onChange={(e) => setInfiniteScrollEnabled(e.target.checked)}
+                data-testid="continuous-pagination-toggle"
+                isChecked={continuousPaginationEnabled}
+                isDisabled={continuousPaginationDisabled}
+                onChange={(e) => setContinuousPaginationEnabled(e.target.checked)}
               />
             </div>
           </Label>
@@ -1475,11 +1491,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           {Boolean(searchPhase && searchPhase.length > 0) && (
             <StatusIndicator
               bytesConsumed={prettyBytes(bytesConsumed)}
-              fillFactor={infiniteScrollEnabled ? 0 : messages.length / maxResults}
+              fillFactor={continuousPaginationEnabled ? 0 : messages.length / maxResults}
               identityKey="messageSearch"
               messagesConsumed={String(totalMessagesConsumed)}
               progressText={
-                infiniteScrollEnabled && totalLoadedCount > messages.length
+                continuousPaginationEnabled && totalLoadedCount > messages.length
                   ? `${messages.length} / ${totalLoadedCount} loaded`
                   : `${messages.length} / ${maxResults}`
               }
@@ -1728,14 +1744,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           </div>
 
           {/* Normal pagination */}
-          {!infiniteScrollEnabled && filteredMessages.length > 0 && (
+          {!continuousPaginationEnabled && filteredMessages.length > 0 && (
             <div className="pt-2">
               <DataTablePagination table={table} />
             </div>
           )}
 
           {/* Infinite scroll pagination */}
-          {infiniteScrollEnabled && filteredMessages.length > 0 && (
+          {continuousPaginationEnabled && filteredMessages.length > 0 && (
             <div className="flex items-center justify-end px-2 py-2">
               <div className="flex items-center space-x-6 lg:space-x-8">
                 {/* Page counter */}
@@ -1812,8 +1828,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             </div>
           )}
 
-          {/* Virtual page indicator for infinite scroll mode */}
-          {infiniteScrollEnabled && messages.length > 0 && (
+          {/* Virtual page indicator for continuous pagination mode */}
+          {continuousPaginationEnabled && messages.length > 0 && (
             <Flex align="center" className="text-muted-foreground text-sm" gap={2} justify="center" mt={2}>
               <span>
                 Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
@@ -1823,8 +1839,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             </Flex>
           )}
 
-          {/* Warning when filters are active with infinite scroll */}
-          {infiniteScrollEnabled && filters.length > 0 && messages.length > 0 && (
+          {/* Warning when filters are active with continuous pagination */}
+          {continuousPaginationEnabled && filters.length > 0 && messages.length > 0 && (
             <Alert mt={4} status="info">
               <AlertIcon />
               <AlertDescription>
@@ -1833,20 +1849,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             </Alert>
           )}
 
-          {/* Warning when maxResults is less than page size */}
-          {infiniteScrollEnabled && maxResults < pageSize && (
-            <Alert mt={4} status="warning">
-              <WarningIcon />
-              <AlertDescription ml={2}>
-                Max Results ({maxResults}) is less than the page size ({pageSize}). Increase Max Results or decrease the
-                page size to allow infinite scrolling to fill each page.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Loading indicator when fetching more pages */}
           <div
-            className={`mt-4 flex h-6 items-center justify-center ${infiniteScrollEnabled && showLoadingIndicator ? 'visible' : 'invisible'}`}
+            className={`mt-4 flex h-6 items-center justify-center ${continuousPaginationEnabled && showLoadingIndicator ? 'visible' : 'invisible'}`}
           >
             <Spinner mr={2} size="sm" />
             <span>Loading more messages...</span>

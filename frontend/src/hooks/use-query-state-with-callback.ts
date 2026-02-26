@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router';
 import { type UseQueryStateReturn, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 /**
  * A custom hook that extends `useQueryState` with callback functionality for syncing state changes.
@@ -85,10 +85,13 @@ export function useQueryStateWithCallback<T, U = null>(
     }
   }, [key, setValue, value, searchParams]);
 
-  const setValueFinal = (newValue: T & {}) => {
-    paramsRef.current.onUpdate(newValue);
-    setValue(newValue as T & {});
-  };
+  const setValueFinal = useCallback(
+    (newValue: T & {}) => {
+      paramsRef.current.onUpdate(newValue);
+      setValue(newValue as T & {});
+    },
+    [setValue]
+  );
 
   return [value, setValueFinal] as UseQueryStateReturn<T, U>;
 }

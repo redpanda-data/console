@@ -2843,7 +2843,7 @@ export function createMessageSearch() {
       req.partitionId = searchRequest.partitionId;
       req.maxResults = searchRequest.maxResults;
       req.pageToken = searchRequest.pageToken ?? '';
-      req.pageSize = searchRequest.pageSize ?? 0; // Backend will default to 50 if 0
+      req.pageSize = searchRequest.pageSize ?? 0;
       req.filterInterpreterCode = searchRequest.filterInterpreterCode;
       req.includeOriginalRawPayload = searchRequest.includeRawPayload ?? false;
       req.ignoreMaxSizeLimit = searchRequest.ignoreSizeLimit ?? false;
