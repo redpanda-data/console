@@ -627,8 +627,6 @@ func (s *Service) collectPartitionStates(
 
 // calculateConsumeRequestsWithPageToken calculates consume requests for pagination mode (descending order).
 // It returns the consume requests map, the next page token, and whether more pages are available.
-//
-//nolint:gocognit,cyclop // complex logic for round-robin distribution across partitions with watermark tracking
 func (s *Service) calculateConsumeRequestsWithPageToken(
 	ctx context.Context,
 	token *pageToken,
@@ -642,17 +640,7 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 		return nil, "", fmt.Errorf("partition count changed: expected %d, got %d", len(token.Partitions), len(requestedPartitionIDs))
 	}
 
-	// Build a next token to track state for the next page
-	nextToken := &pageToken{
-		TopicName:  token.TopicName,
-		Partitions: make([]partitionCursor, 0, len(token.Partitions)),
-		Direction:  token.Direction,
-		PageSize:   token.PageSize,
-	}
-
-	anyPartitionHasMore := false
-
-	// First pass: collect partition states and check exhaustion
+	// Collect partition states and check exhaustion
 	partitionStates := s.collectPartitionStates(ctx, token, startOffsets, endOffsets)
 
 	// If no partitions available, return empty
@@ -660,11 +648,46 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 		return requests, "", nil
 	}
 
-	// Second pass: Distribute pageSize across partitions using round-robin
-	remainingMessages := int64(token.PageSize)
-	yieldingPartitions := len(partitionStates)
+	// Distribute pageSize across partitions using bulk allocation
+	requests = distributePageSize(int64(token.PageSize), partitionStates)
 
-	// Initialize each partition with 0 messages
+	// Calculate actual read ranges and build next page token
+	nextToken, anyPartitionHasMore := s.calculateReadRanges(token, partitionStates, requests)
+
+	// Log detailed partition information for debugging
+	totalAssigned := int64(0)
+	for partID, req := range requests {
+		totalAssigned += req.MaxMessageCount
+		s.logger.DebugContext(ctx, "partition consume request",
+			slog.Int("partition_id", int(partID)),
+			slog.Int64("start_offset", req.StartOffset),
+			slog.Int64("end_offset", req.EndOffset),
+			slog.Int64("max_message_count", req.MaxMessageCount))
+	}
+
+	s.logger.DebugContext(ctx, "pagination distribution complete",
+		slog.Int("page_size", token.PageSize),
+		slog.Int64("total_assigned", totalAssigned),
+		slog.Int("num_partitions", len(requests)))
+
+	// If no partitions have more data, return empty token
+	if !anyPartitionHasMore {
+		return requests, "", nil
+	}
+
+	// Encode next token
+	encodedNextToken, err := nextToken.Encode()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to encode next page token: %w", err)
+	}
+
+	return requests, encodedNextToken, nil
+}
+
+// distributePageSize distributes pageSize messages across partitions
+func distributePageSize(pageSize int64, partitionStates []*partitionState) map[int32]*PartitionConsumeRequest {
+	requests := make(map[int32]*PartitionConsumeRequest, len(partitionStates))
+
 	for _, state := range partitionStates {
 		requests[state.cursor.ID] = &PartitionConsumeRequest{
 			PartitionID:     state.cursor.ID,
@@ -677,38 +700,64 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 		}
 	}
 
-	// Round-robin distribution: give each partition one message at a time
-	for remainingMessages > 0 && yieldingPartitions > 0 {
-		progressMade := false
+	activeCount := int64(len(partitionStates))
+	baseAllocation := pageSize / activeCount
 
+	excess := int64(0)
+	for _, state := range partitionStates {
+		req := requests[state.cursor.ID]
+		req.MaxMessageCount = min(baseAllocation, state.messagesAvailable)
+		if req.MaxMessageCount >= state.messagesAvailable {
+			state.isDrained = true
+			excess += baseAllocation - req.MaxMessageCount
+		}
+	}
+
+	toDistribute := pageSize%activeCount + excess
+
+	for toDistribute > 0 {
+		progressMade := false
 		for _, state := range partitionStates {
-			if state.isDrained || remainingMessages == 0 {
+			if toDistribute == 0 {
+				break
+			}
+			if state.isDrained {
 				continue
 			}
-
 			req := requests[state.cursor.ID]
-
-			// Check if this partition can yield more messages
 			if req.MaxMessageCount >= state.messagesAvailable {
 				state.isDrained = true
-				yieldingPartitions--
 				continue
 			}
-
-			// Give this partition one more message
 			req.MaxMessageCount++
-			remainingMessages--
+			toDistribute--
 			progressMade = true
 		}
-
-		// Safety: if no progress was made in a round, break to avoid infinite loop
 		if !progressMade {
 			break
 		}
 	}
 
-	// Third pass: Calculate actual read ranges and next offsets for each partition
-	totalAssigned := int64(0)
+	return requests
+}
+
+// calculateReadRanges calculates actual read ranges for each partition and builds the next page token.
+// It modifies requests in place, removing partitions with no assigned messages and updating
+// offsets. It returns the next page token and whether any partition has more data.
+func (*Service) calculateReadRanges(
+	token *pageToken,
+	partitionStates []*partitionState,
+	requests map[int32]*PartitionConsumeRequest,
+) (*pageToken, bool) {
+	nextToken := &pageToken{
+		TopicName:  token.TopicName,
+		Partitions: make([]partitionCursor, 0, len(token.Partitions)),
+		Direction:  token.Direction,
+		PageSize:   token.PageSize,
+	}
+
+	anyPartitionHasMore := false
+
 	for _, state := range partitionStates {
 		req := requests[state.cursor.ID]
 
@@ -717,7 +766,6 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 			delete(requests, state.cursor.ID)
 			continue
 		}
-		totalAssigned += req.MaxMessageCount
 
 		// Calculate the actual read range based on direction
 		var readStart, readEnd int64
@@ -741,8 +789,7 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 		// Update request with calculated ranges
 		req.StartOffset = readStart
 		req.EndOffset = readEnd
-		//  MaxMessageCount stays as assigned by round-robin
-		// But if the actual range is smaller (near water marks), we need to adjust
+		// If the actual range is smaller (near water marks), adjust MaxMessageCount
 		actualAvailable := readEnd - readStart + 1
 		if actualAvailable < req.MaxMessageCount {
 			req.MaxMessageCount = actualAvailable
@@ -772,32 +819,7 @@ func (s *Service) calculateConsumeRequestsWithPageToken(
 		})
 	}
 
-	// Log detailed partition information for debugging
-	for partID, req := range requests {
-		s.logger.DebugContext(ctx, "partition consume request",
-			slog.Int("partition_id", int(partID)),
-			slog.Int64("start_offset", req.StartOffset),
-			slog.Int64("end_offset", req.EndOffset),
-			slog.Int64("max_message_count", req.MaxMessageCount))
-	}
-
-	s.logger.DebugContext(ctx, "pagination distribution complete",
-		slog.Int("page_size", token.PageSize),
-		slog.Int64("total_assigned", totalAssigned),
-		slog.Int("num_partitions", len(requests)))
-
-	// If no partitions have more data, return empty token
-	if !anyPartitionHasMore {
-		return requests, "", nil
-	}
-
-	// Encode next token
-	encodedNextToken, err := nextToken.Encode()
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to encode next page token: %w", err)
-	}
-
-	return requests, encodedNextToken, nil
+	return nextToken, anyPartitionHasMore
 }
 
 // FetchMessages is in charge of fulfilling the topic consume request. This is tricky

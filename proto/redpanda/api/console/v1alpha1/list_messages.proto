@@ -40,7 +40,7 @@ message ListMessagesRequest {
   string page_token = 13; // Resume from cursor (only used when page_size is present).
   int32 page_size = 14 [(buf.validate.field).int32 = {
     gte: 1
-    lte: 10000
+    lte: 500
   }]; // Number of messages to fetch per page. When set (> 0), pagination mode is enabled and max_results is ignored. When unset or 0, legacy mode is used.
 }
 
