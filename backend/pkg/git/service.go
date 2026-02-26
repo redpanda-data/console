@@ -63,6 +63,9 @@ func NewService(cfg config.Git, logger *slog.Logger, onFilesUpdatedHook func()) 
 	case cfg.BasicAuth.Enabled:
 		childLogger.Debug("using BasicAuth for Git authentication")
 		auth = buildBasicAuth(cfg.BasicAuth)
+	case cfg.GithubApp.Enabled:
+		childLogger.Debug("using GitHub App for Git authentication")
+		auth, err = buildGithubAppAuth(cfg.GithubApp, childLogger)
 	default:
 		childLogger.Debug("using Git without authentication")
 	}

@@ -38,6 +38,7 @@ type Git struct {
 	// Authentication Configs
 	BasicAuth GitAuthBasicAuth `yaml:"basicAuth"`
 	SSH       GitAuthSSH       `yaml:"ssh"`
+	GithubApp GitGithubApp     `yaml:"githubApp"`
 
 	// CloneSubmodules enables shallow cloning of submodules at recursion depth of 1.
 	CloneSubmodules bool `yaml:"cloneSubmodules"`
@@ -47,6 +48,7 @@ type Git struct {
 func (c *Git) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
 	c.BasicAuth.RegisterFlagsWithPrefix(f, prefix)
 	c.SSH.RegisterFlagsWithPrefix(f, prefix)
+	c.GithubApp.RegisterFlagsWithPrefix(f, prefix)
 }
 
 // Validate all root and child config structs
@@ -59,6 +61,10 @@ func (c *Git) Validate() error {
 	}
 	if c.MaxFileSize <= 0 {
 		return errors.New("git config is enabled but file max size is <= 0")
+	}
+
+	if err := c.GithubApp.Validate(); err != nil {
+		return err
 	}
 
 	return c.Repository.Validate()
