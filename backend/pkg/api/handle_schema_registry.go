@@ -92,7 +92,7 @@ func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
 		schemaIDStr := rest.GetURLParam(r, "id")
 		schemaID, err := strconv.Atoi(schemaIDStr)
 		if err != nil {
-			descriptiveErr := fmt.Errorf("schema id %q is not valid. Must be a positive integer", schemaID)
+			descriptiveErr := fmt.Errorf("schema id %q is not valid. Must be a positive integer", schemaIDStr)
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      descriptiveErr,
 				Status:   http.StatusBadRequest,
@@ -425,7 +425,7 @@ func parseVersionStr(versionStr string) (int, *rest.Error) {
 	// Must be number or it's invalid input
 	version, err := strconv.Atoi(versionStr)
 	if err != nil {
-		descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", version, console.SchemaVersionsLatest)
+		descriptiveErr := fmt.Errorf("version %q is not valid. Must be %q or a positive integer", versionStr, console.SchemaVersionsLatest)
 		return 0, &rest.Error{
 			Err:      descriptiveErr,
 			Status:   http.StatusBadRequest,

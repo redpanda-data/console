@@ -187,11 +187,9 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 				}
 				t.PartitionsWithOffset++
 
-				lag := watermark.HighWaterMark - groupOffset
-				if lag < 0 {
+				lag := max(watermark.HighWaterMark-groupOffset,
 					// If Watermark has been updated after we got the group offset lag could be negative, which ofc doesn't make sense
-					lag = 0
-				}
+					0)
 				t.SummedLag += lag
 				t.PartitionOffsets = append(t.PartitionOffsets, PartitionOffsets{
 					PartitionID:   pID,

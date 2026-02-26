@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 func TestNewKafkaErrorWithDynamicMessage(t *testing.T) {
@@ -38,7 +37,7 @@ func TestNewKafkaErrorWithDynamicMessage(t *testing.T) {
 		{
 			name: "INVALID_PARTITIONS error with dynamic error message",
 			code: kerr.InvalidPartitions.Code,
-			msg:  kmsg.StringPtr("unable to create topic with 100000 partitions due to hardware constraints"),
+			msg:  new("unable to create topic with 100000 partitions due to hardware constraints"),
 			validateFn: func(t *testing.T, err error) {
 				require.NotNil(t, err)
 				expectedErrMsg := fmt.Sprintf("%s: unable to create topic with 100000 partitions due to hardware constraints", kerr.InvalidPartitions.Message)

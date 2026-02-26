@@ -26,7 +26,6 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
-import { isFeatureFlagEnabled } from 'config';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -160,10 +159,13 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
     if (isOnMetadataStep) {
-      const fieldsToValidate: Array<keyof FormValues> = ['displayName', 'description', 'resourcesTier', 'tags'];
-      if (isFeatureFlagEnabled('enableMcpServiceAccount')) {
-        fieldsToValidate.push('serviceAccountName');
-      }
+      const fieldsToValidate: Array<keyof FormValues> = [
+        'displayName',
+        'description',
+        'resourcesTier',
+        'tags',
+        'serviceAccountName',
+      ];
       const valid = await form.trigger(fieldsToValidate);
       if (!valid) {
         return;
@@ -305,29 +307,25 @@ export const RemoteMCPCreatePage: React.FC = () => {
       };
     }
 
-    const useMcpServiceAccount = isFeatureFlagEnabled('enableMcpServiceAccount');
     let serviceAccountConfig: ReturnType<typeof create<typeof MCPServer_ServiceAccountSchema>> | undefined;
 
-    // Create service account if feature flag is enabled
     // NOTE: Service account and secret are created before MCP server creation.
     // If server creation fails, these resources will not be automatically cleaned up.
     // This matches the AI agents implementation pattern.
-    if (useMcpServiceAccount) {
-      const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
-      if (!serviceAccountResult) {
-        return; // Error already shown by createServiceAccountIfNeeded
-      }
-
-      const { secretName, serviceAccountId } = serviceAccountResult;
-
-      // Add system-generated service account tags
-      addServiceAccountTags(tagsMap, serviceAccountId, secretName);
-
-      serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
-        clientId: `\${secrets.${secretName}.client_id}`,
-        clientSecret: `\${secrets.${secretName}.client_secret}`,
-      });
+    const serviceAccountResult = await createServiceAccountIfNeeded(values.displayName);
+    if (!serviceAccountResult) {
+      return; // Error already shown by createServiceAccountIfNeeded
     }
+
+    const { secretName, serviceAccountId } = serviceAccountResult;
+
+    // Add system-generated service account tags
+    addServiceAccountTags(tagsMap, serviceAccountId, secretName);
+
+    serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
+      clientId: `\${secrets.${secretName}.client_id}`,
+      clientSecret: `\${secrets.${secretName}.client_secret}`,
+    });
 
     const mcpServerPayload = {
       displayName: values.displayName.trim(),
@@ -338,7 +336,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
         cpuShares: tier?.cpu ?? '200m',
         memoryShares: tier?.memory ?? '800M',
       },
-      ...(useMcpServiceAccount && { serviceAccount: serviceAccountConfig }),
+      serviceAccount: serviceAccountConfig,
     };
 
     await createServer(
@@ -463,15 +461,13 @@ export const RemoteMCPCreatePage: React.FC = () => {
               )}
             </Stepper.Controls>
 
-            {isFeatureFlagEnabled('enableMcpServiceAccount') && (
-              <ServiceAccountSelector
-                createSecret={createSecret}
-                onPendingChange={setIsCreateServiceAccountPending}
-                ref={serviceAccountSelectorRef}
-                resourceType="MCP server"
-                serviceAccountName={serviceAccountName}
-              />
-            )}
+            <ServiceAccountSelector
+              createSecret={createSecret}
+              onPendingChange={setIsCreateServiceAccountPending}
+              ref={serviceAccountSelectorRef}
+              resourceType="MCP server"
+              serviceAccountName={serviceAccountName}
+            />
 
             {/* Expanded YAML Editor Dialog */}
             {expandedTool ? (

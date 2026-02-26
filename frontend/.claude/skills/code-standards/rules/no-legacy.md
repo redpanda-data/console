@@ -101,3 +101,7 @@ When converting observables to React state, automatic behaviors must become expl
 
 - MobX stores: `src/state/` (do not add new files)
 - Chakra components: throughout codebase (migrate on touch)
+
+## See Also
+
+- [use-ui-registry](../../ui-development/rules/use-ui-registry.md) — Registry component usage and installation

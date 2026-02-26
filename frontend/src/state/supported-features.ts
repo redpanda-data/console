@@ -91,6 +91,7 @@ export function isSupported(f: FeatureEntry): boolean {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
       case Feature.TracingService.endpoint:
+      case Feature.GetQuotas.endpoint:
         return false;
       default:
         return true;
@@ -118,7 +119,7 @@ export function isSupported(f: FeatureEntry): boolean {
 /**
  * A list of features we should hide instead of showing a disabled message.
  */
-const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.ShadowLinkService, Feature.TracingService];
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.TracingService];
 export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }

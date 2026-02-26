@@ -29,6 +29,7 @@ import { ONE_MINUTE } from 'react-query/react-query.utils';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
 import { pluralize } from 'utils/string';
+import { getTimeRanges } from 'utils/time-range';
 import { z } from 'zod';
 
 import { LinkedTraceBanner } from './components/linked-trace-banner';
@@ -38,16 +39,7 @@ import { type SpanFilter, type SpanFilterPreset, TranscriptFilterBar } from './c
 import { TranscriptsTable } from './components/transcripts-table';
 import { calculateVisibleWindow } from './utils/transcript-statistics';
 
-const TIME_RANGES = [
-  { value: '5m', label: 'Last 5 minutes', ms: 5 * 60 * 1000 },
-  { value: '15m', label: 'Last 15 minutes', ms: 15 * 60 * 1000 },
-  { value: '30m', label: 'Last 30 minutes', ms: 30 * 60 * 1000 },
-  { value: '1h', label: 'Last 1 hour', ms: 60 * 60 * 1000 },
-  { value: '3h', label: 'Last 3 hours', ms: 3 * 60 * 60 * 1000 },
-  { value: '6h', label: 'Last 6 hours', ms: 6 * 60 * 60 * 1000 },
-  { value: '12h', label: 'Last 12 hours', ms: 12 * 60 * 60 * 1000 },
-  { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
-];
+const TIME_RANGES = getTimeRanges(24 * 60 * 60 * 1000); // Up to 24 hours
 
 export const TRANSCRIPTS_PAGE_SIZE = 100;
 

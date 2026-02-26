@@ -96,7 +96,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.54.0
+      BUF_VERSION: 1.65.0
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin
@@ -112,7 +112,7 @@ tasks:
     desc: install yq
     run: once
     vars:
-      YQ_VERSION: 4.42.1
+      YQ_VERSION: 4.52.4
     cmds:
       - '{{ .PATH_PREFIX }} go install github.com/mikefarah/yq/v4@v{{.YQ_VERSION}}'
     status:
@@ -124,7 +124,7 @@ tasks:
       - :backend:install-go
     desc: install connect-gateway
     vars:
-      VERSION: 0.11.0
+      VERSION: 0.12.0
     cmds:
       - |
         {{ .PATH_PREFIX }} go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
@@ -137,7 +137,7 @@ tasks:
       - :backend:install-go
     desc: Installs connectrpc.com/connect/cmd/protoc-gen-connect-go
     vars:
-      VERSION: 1.18.1
+      VERSION: 1.19.1
     run: once
     cmds:
       - '{{.PATH_PREFIX}} go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v{{.VERSION}}'

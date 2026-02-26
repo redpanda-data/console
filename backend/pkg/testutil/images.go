@@ -53,7 +53,7 @@ func findTestImagesJSON() (string, error) {
 
 	// Navigate from backend/pkg/testutil to repo root
 	dir := filepath.Dir(currentFile)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		candidate := filepath.Join(dir, "test-images.json")
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate, nil

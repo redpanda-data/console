@@ -134,14 +134,14 @@ func FatalStartup(msg string, args ...any) {
 		WithTimestampFormat(time.RFC3339),
 	)
 	logger.Error(msg, args...)
-	os.Exit(1) //nolint:revive // Fatal functions are intended to exit
+	os.Exit(1)
 }
 
 // Fatal logs at error level using the provided slog.Logger and exits.
 // Use this for unrecoverable runtime errors when you already have a logger instance.
 func Fatal(logger *slog.Logger, msg string, args ...any) {
 	logger.Error(msg, args...)
-	os.Exit(1) //nolint:revive // Fatal functions are intended to exit
+	os.Exit(1)
 }
 
 // Named creates a new logger with a "logger" attribute.

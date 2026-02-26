@@ -14,7 +14,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/twmb/franz-go/pkg/kmsg"
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -70,7 +69,6 @@ func main() { //nolint:cyclop,gocognit // this is just some tool
 
 	// Delete DummyService tag
 	for i, tag := range doc3.Tags {
-		tag := tag
 		if tag != nil {
 			if tag.Name == "DummyService" {
 				doc3.Tags = slices.Delete(doc3.Tags, i, i+1)
@@ -602,7 +600,7 @@ func updateTransforms(doc3 *openapi3.T) {
 		transformsOperation.Responses = openapi3.NewResponses(
 			openapi3.WithStatus(http.StatusCreated, &openapi3.ResponseRef{
 				Value: &openapi3.Response{
-					Description: kmsg.StringPtr("Created"),
+					Description: new("Created"),
 					Content: openapi3.NewContentWithJSONSchemaRef(&openapi3.SchemaRef{
 						Ref: "#/components/schemas/TransformMetadata",
 						Value: &openapi3.Schema{

@@ -18,11 +18,11 @@ Write code that is accessible, performant, type-safe, and maintainable.
 
 | Action | Rule |
 |--------|------|
-| Avoid any | `ts-no-any.md` |
-| Handle unknowns | `ts-use-unknown.md` |
 | Write components | `react-functional-only.md` |
 | Async code | `async-await-promises.md` |
 | Avoid legacy libs | `no-legacy.md` |
+
+`any` types and top-level regex are enforced by Biome (`noExplicitAny`, `useTopLevelRegex`).
 
 ## Commands
 
