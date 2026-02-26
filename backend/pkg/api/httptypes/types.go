@@ -50,19 +50,16 @@ func (l *ListMessagesRequest) OK() error {
 		return errors.New("partitionID is smaller than -1")
 	}
 
-	if l.MaxResults <= 0 || l.MaxResults > 10_000 {
-		return errors.New("max results must be between 1 and 10000")
+	if l.MaxResults <= 0 || l.MaxResults > 500 {
+		return errors.New("max results must be between 1 and 500")
 	}
 
 	// Pagination mode: when PageSize > 0, filters are not supported
 	if l.PageSize > 0 {
 		if l.FilterInterpreterCode != "" {
-			decoded, _ := l.DecodeInterpreterCode()
-			if decoded != "" {
-				return errors.New("cannot use filters with pagination")
-			}
+			return errors.New("cannot use filters with pagination")
 		}
-		// PageToken validation is done in the console package DecodePageToken
+		// PageToken validation is done in the console package decodePageToken
 		return nil
 	}
 

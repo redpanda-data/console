@@ -1068,8 +1068,6 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 
 	// Create test topic with multiple messages
 	testTopicName := testutil.TopicNameForTest("pagination_test")
-	const messageCount = 150
-
 	// Create topic
 	_, err := s.kafkaAdminClient.CreateTopic(ctx, 3, 1, nil, testTopicName)
 	require.NoError(err)
@@ -1089,8 +1087,9 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 	}, 30*time.Second, 100*time.Millisecond, "Topic should be created and ready")
 
 	// Produce messages
+	const messageCount = 150
 	records := make([]*kgo.Record, messageCount)
-	for i := 0; i < messageCount; i++ {
+	for i := range messageCount {
 		records[i] = &kgo.Record{
 			Key:   []byte(fmt.Sprintf("key-%d", i)),
 			Value: []byte(fmt.Sprintf(`{"id": %d, "message": "test message %d"}`, i, i)),
@@ -1101,19 +1100,19 @@ func (s *APIIntegrationTestSuite) TestListMessages_Pagination() {
 	produceResults := s.kafkaClient.ProduceSync(ctx, records...)
 	require.NoError(produceResults.FirstErr())
 
-	// Give Kafka a moment to commit
-	time.Sleep(500 * time.Millisecond)
-
-	// Debug: Check actual message distribution across partitions
-	offsets, err := s.kafkaAdminClient.ListEndOffsets(ctx, testTopicName)
-	require.NoError(err)
-	totalMessages := int64(0)
-	offsets.Each(func(offset kadm.ListedOffset) {
-		count := offset.Offset
-		totalMessages += count
-		t.Logf("Partition %d: %d messages (offset: 0 to %d)", offset.Partition, count, offset.Offset-1)
-	})
-	t.Logf("Total messages across all partitions: %d (expected %d)", totalMessages, messageCount)
+	// Wait for all produced messages to be committed
+	require.Eventually(func() bool {
+		offsets, err := s.kafkaAdminClient.ListEndOffsets(ctx, testTopicName)
+		if err != nil {
+			return false
+		}
+		totalMessages := int64(0)
+		offsets.Each(func(offset kadm.ListedOffset) {
+			totalMessages += offset.Offset
+		})
+		t.Logf("Total messages across all partitions: %d (expected %d)", totalMessages, messageCount)
+		return totalMessages >= int64(messageCount)
+	}, 30*time.Second, 100*time.Millisecond, "All produced messages should be committed")
 
 	t.Run("first page with pagination mode", func(t *testing.T) {
 		stream, err := client.ListMessages(ctx, connect.NewRequest(&v1pb.ListMessagesRequest{

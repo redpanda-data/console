@@ -18,19 +18,18 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 )
 
-// PageToken represents the pagination cursor state for ListMessages requests.
+// pageToken represents the pagination cursor state for ListMessages requests.
 // It encodes per-partition offset information to enable stateless pagination
 // across multiple API calls.
-type PageToken struct {
-	TopicName      string            `json:"t"`  // Topic name for validation
-	PartitionCount int32             `json:"pc"` // Partition count for change detection
-	Partitions     []PartitionCursor `json:"p"`  // Per-partition cursor state
-	Direction      string            `json:"d"`  // DirectionDescending or DirectionAscending
-	PageSize       int               `json:"ps"` // Messages per page
+type pageToken struct {
+	TopicName  string            `json:"t"`  // Topic name for validation
+	Partitions []partitionCursor `json:"p"`  // Per-partition cursor state
+	Direction  string            `json:"d"`  // directionDescending or directionAscending
+	PageSize   int               `json:"ps"` // Messages per page
 }
 
-// PartitionCursor represents the offset state for a single partition.
-type PartitionCursor struct {
+// partitionCursor represents the offset state for a single partition.
+type partitionCursor struct {
 	ID            int32 `json:"id"` // Partition ID
 	NextOffset    int64 `json:"no"` // Next offset to read from
 	LowWaterMark  int64 `json:"lw"` // Low water mark (for validation)
@@ -38,7 +37,7 @@ type PartitionCursor struct {
 }
 
 // Encode serializes the page token to a URL-safe base64 string.
-func (pt *PageToken) Encode() (string, error) {
+func (pt *pageToken) Encode() (string, error) {
 	// Validate before encoding
 	if err := pt.Validate(); err != nil {
 		return "", fmt.Errorf("invalid page token: %w", err)
@@ -54,8 +53,8 @@ func (pt *PageToken) Encode() (string, error) {
 	return encoded, nil
 }
 
-// DecodePageToken deserializes a page token from a base64 string.
-func DecodePageToken(encoded string) (*PageToken, error) {
+// decodePageToken deserializes a page token from a base64 string.
+func decodePageToken(encoded string) (*pageToken, error) {
 	if encoded == "" {
 		return nil, errors.New("page token is empty")
 	}
@@ -66,7 +65,7 @@ func DecodePageToken(encoded string) (*PageToken, error) {
 		return nil, fmt.Errorf("failed to decode page token: %w", err)
 	}
 
-	var token PageToken
+	var token pageToken
 	if err := json.Unmarshal(jsonBytes, &token); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal page token: %w", err)
 	}
@@ -80,24 +79,16 @@ func DecodePageToken(encoded string) (*PageToken, error) {
 }
 
 // Validate checks if the page token is valid.
-func (pt *PageToken) Validate() error {
+func (pt *pageToken) Validate() error {
 	if pt.TopicName == "" {
 		return errors.New("topic name is empty")
-	}
-
-	if pt.PartitionCount <= 0 {
-		return fmt.Errorf("invalid partition count: %d", pt.PartitionCount)
 	}
 
 	if len(pt.Partitions) == 0 {
 		return errors.New("no partition cursors")
 	}
 
-	if int32(len(pt.Partitions)) != pt.PartitionCount {
-		return fmt.Errorf("partition count mismatch: expected %d, got %d", pt.PartitionCount, len(pt.Partitions))
-	}
-
-	if pt.Direction != DirectionDescending && pt.Direction != DirectionAscending {
+	if pt.Direction != directionDescending && pt.Direction != directionAscending {
 		return fmt.Errorf("invalid direction: %s (must be 'desc' or 'asc')", pt.Direction)
 	}
 
@@ -106,9 +97,9 @@ func (pt *PageToken) Validate() error {
 	}
 
 	const maxTotalMessages = 100_000
-	if int64(pt.PageSize)*int64(pt.PartitionCount) > maxTotalMessages {
+	if int64(pt.PageSize)*int64(len(pt.Partitions)) > maxTotalMessages {
 		return fmt.Errorf("page size %d with %d partitions exceeds max total messages (%d)",
-			pt.PageSize, pt.PartitionCount, maxTotalMessages)
+			pt.PageSize, len(pt.Partitions), maxTotalMessages)
 	}
 
 	// Validate each partition cursor
@@ -139,16 +130,16 @@ func (pt *PageToken) Validate() error {
 	return nil
 }
 
-// CreateInitialPageToken creates a new page token for the first page of results.
+// createInitialPageToken creates a new page token for the first page of results.
 // It initializes partition cursors based on the specified direction:
-// - DirectionDescending: Start from high water mark (newest messages first)
-// - DirectionAscending: Start from low water mark (oldest messages first)
-func CreateInitialPageToken(
+// - directionDescending: Start from high water mark (newest messages first)
+// - directionAscending: Start from low water mark (oldest messages first)
+func createInitialPageToken(
 	topicName string,
 	startOffsets, endOffsets kadm.ListedOffsets,
 	pageSize int,
 	direction string,
-) (*PageToken, error) {
+) (*pageToken, error) {
 	if topicName == "" {
 		return nil, errors.New("topic name is empty")
 	}
@@ -157,11 +148,11 @@ func CreateInitialPageToken(
 		return nil, fmt.Errorf("invalid page size: %d (must be between 1 and 10000)", pageSize)
 	}
 
-	if direction != DirectionDescending && direction != DirectionAscending {
+	if direction != directionDescending && direction != directionAscending {
 		return nil, fmt.Errorf("invalid direction: %s (must be 'desc' or 'asc')", direction)
 	}
 
-	var partitions []PartitionCursor
+	var partitions []partitionCursor
 
 	// Build cursors from water marks
 	startOffsets.Each(func(start kadm.ListedOffset) {
@@ -173,20 +164,17 @@ func CreateInitialPageToken(
 		}
 
 		var nextOffset int64
-		if direction == DirectionDescending {
+		if direction == directionDescending {
 			// For descending order, start from high water mark
 			// NextOffset points to the highest consumable offset (HWM - 1)
-			nextOffset = end.Offset - 1
-			if nextOffset < start.Offset {
-				nextOffset = start.Offset
-			}
+			nextOffset = max(end.Offset-1, start.Offset)
 		} else {
 			// For ascending order, start from low water mark
 			// NextOffset points to the lowest consumable offset (LWM)
 			nextOffset = start.Offset
 		}
 
-		cursor := PartitionCursor{
+		cursor := partitionCursor{
 			ID:            start.Partition,
 			NextOffset:    nextOffset,
 			LowWaterMark:  start.Offset,
@@ -200,22 +188,21 @@ func CreateInitialPageToken(
 		return nil, errors.New("no partitions available")
 	}
 
-	token := &PageToken{
-		TopicName:      topicName,
-		PartitionCount: int32(len(partitions)),
-		Partitions:     partitions,
-		Direction:      direction,
-		PageSize:       pageSize,
+	token := &pageToken{
+		TopicName:  topicName,
+		Partitions: partitions,
+		Direction:  direction,
+		PageSize:   pageSize,
 	}
 
 	return token, nil
 }
 
 // HasMore returns true if there are more messages to fetch for any partition.
-func (pt *PageToken) HasMore() bool {
+func (pt *pageToken) HasMore() bool {
 	for _, cursor := range pt.Partitions {
 		// Check if cursor has more messages to read based on direction
-		if pt.Direction == DirectionDescending {
+		if pt.Direction == directionDescending {
 			// Descending: exhausted when nextOffset < lowWaterMark
 			if cursor.NextOffset >= cursor.LowWaterMark {
 				return true
@@ -232,10 +219,10 @@ func (pt *PageToken) HasMore() bool {
 
 // IsExhausted returns true if the given partition has no more messages.
 // Direction is needed to determine if we're going forward or backward.
-func (pt *PageToken) IsExhausted(partitionID int32) bool {
+func (pt *pageToken) IsExhausted(partitionID int32) bool {
 	for _, cursor := range pt.Partitions {
 		if cursor.ID == partitionID {
-			if pt.Direction == DirectionDescending {
+			if pt.Direction == directionDescending {
 				return cursor.NextOffset < cursor.LowWaterMark
 			}
 			return cursor.NextOffset >= cursor.HighWaterMark

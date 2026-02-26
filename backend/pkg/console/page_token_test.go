@@ -16,16 +16,15 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 )
 
-func TestPageToken_EncodeDecodeRoundTrip(t *testing.T) {
-	token := &PageToken{
-		TopicName:      "test-topic",
-		PartitionCount: 3,
-		Partitions: []PartitionCursor{
+func Test_pageToken_EncodeDecodeRoundTrip(t *testing.T) {
+	token := &pageToken{
+		TopicName: "test-topic",
+		Partitions: []partitionCursor{
 			{ID: 0, NextOffset: 1000, LowWaterMark: 0, HighWaterMark: 1500},
 			{ID: 1, NextOffset: 2000, LowWaterMark: 0, HighWaterMark: 2500},
 			{ID: 2, NextOffset: 1500, LowWaterMark: 0, HighWaterMark: 2000},
 		},
-		Direction: DirectionDescending,
+		Direction: directionDescending,
 		PageSize:  50,
 	}
 
@@ -35,12 +34,11 @@ func TestPageToken_EncodeDecodeRoundTrip(t *testing.T) {
 	assert.NotEmpty(t, encoded)
 
 	// Decode
-	decoded, err := DecodePageToken(encoded)
+	decoded, err := decodePageToken(encoded)
 	require.NoError(t, err)
 
 	// Verify round-trip
 	assert.Equal(t, token.TopicName, decoded.TopicName)
-	assert.Equal(t, token.PartitionCount, decoded.PartitionCount)
 	assert.Equal(t, token.Direction, decoded.Direction)
 	assert.Equal(t, token.PageSize, decoded.PageSize)
 	assert.Len(t, decoded.Partitions, 3)
@@ -53,97 +51,69 @@ func TestPageToken_EncodeDecodeRoundTrip(t *testing.T) {
 	}
 }
 
-func TestPageToken_ValidateErrors(t *testing.T) {
+func Test_pageToken_ValidateErrors(t *testing.T) {
 	tests := []struct {
 		name      string
-		token     *PageToken
+		token     *pageToken
 		expectErr string
 	}{
 		{
 			name: "empty topic name",
-			token: &PageToken{
-				TopicName:      "",
-				PartitionCount: 1,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "desc",
-				PageSize:       50,
+			token: &pageToken{
+				TopicName:  "",
+				Partitions: []partitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
+				Direction:  "desc",
+				PageSize:   50,
 			},
 			expectErr: "topic name is empty",
 		},
 		{
-			name: "invalid partition count",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 0,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "desc",
-				PageSize:       50,
-			},
-			expectErr: "invalid partition count",
-		},
-		{
-			name: "partition count mismatch",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 2,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "desc",
-				PageSize:       50,
-			},
-			expectErr: "partition count mismatch",
-		},
-		{
 			name: "invalid direction",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 1,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "invalid",
-				PageSize:       50,
+			token: &pageToken{
+				TopicName:  "test",
+				Partitions: []partitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
+				Direction:  "invalid",
+				PageSize:   50,
 			},
 			expectErr: "invalid direction",
 		},
 		{
 			name: "invalid page size - too small",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 1,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "desc",
-				PageSize:       0,
+			token: &pageToken{
+				TopicName:  "test",
+				Partitions: []partitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
+				Direction:  "desc",
+				PageSize:   0,
 			},
 			expectErr: "invalid page size",
 		},
 		{
 			name: "invalid page size - too large",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 1,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "desc",
-				PageSize:       501,
+			token: &pageToken{
+				TopicName:  "test",
+				Partitions: []partitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200}},
+				Direction:  "desc",
+				PageSize:   501,
 			},
 			expectErr: "invalid page size",
 		},
 		{
 			name: "next offset -2 (too negative)",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 1,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: -2, LowWaterMark: 0, HighWaterMark: 200}},
-				Direction:      "desc",
-				PageSize:       50,
+			token: &pageToken{
+				TopicName:  "test",
+				Partitions: []partitionCursor{{ID: 0, NextOffset: -2, LowWaterMark: 0, HighWaterMark: 200}},
+				Direction:  "desc",
+				PageSize:   50,
 			},
 			expectErr: "invalid next offset",
 		},
 		{
 			name: "high water mark < low water mark",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 1,
-				Partitions:     []PartitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 200, HighWaterMark: 100}},
-				Direction:      "desc",
-				PageSize:       50,
+			token: &pageToken{
+				TopicName:  "test",
+				Partitions: []partitionCursor{{ID: 0, NextOffset: 100, LowWaterMark: 200, HighWaterMark: 100}},
+				Direction:  "desc",
+				PageSize:   50,
 			},
 			expectErr: "high water mark",
 		},
@@ -158,20 +128,20 @@ func TestPageToken_ValidateErrors(t *testing.T) {
 	}
 }
 
-func TestDecodePageToken_InvalidBase64(t *testing.T) {
-	_, err := DecodePageToken("not-valid-base64!!!")
+func Test_decodePageToken_InvalidBase64(t *testing.T) {
+	_, err := decodePageToken("not-valid-base64!!!")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode")
 }
 
-func TestDecodePageToken_InvalidJSON(t *testing.T) {
+func Test_decodePageToken_InvalidJSON(t *testing.T) {
 	// Valid base64 but invalid JSON
-	_, err := DecodePageToken("bm90LWpzb24")
+	_, err := decodePageToken("bm90LWpzb24")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to unmarshal")
 }
 
-func TestCreateInitialPageToken(t *testing.T) {
+func Test_createInitialPageToken(t *testing.T) {
 	// Mock kadm.ListedOffsets
 	startOffsets := kadm.ListedOffsets{
 		"test-topic": {
@@ -189,18 +159,17 @@ func TestCreateInitialPageToken(t *testing.T) {
 		},
 	}
 
-	token, err := CreateInitialPageToken("test-topic", startOffsets, endOffsets, 50, DirectionDescending)
+	token, err := createInitialPageToken("test-topic", startOffsets, endOffsets, 50, directionDescending)
 	require.NoError(t, err)
 
 	assert.Equal(t, "test-topic", token.TopicName)
-	assert.Equal(t, int32(3), token.PartitionCount)
-	assert.Equal(t, DirectionDescending, token.Direction)
+	assert.Equal(t, directionDescending, token.Direction)
 	assert.Equal(t, 50, token.PageSize)
 	assert.Len(t, token.Partitions, 3)
 
 	// Check that NextOffset is set to HWM - 1 for descending
 	// Build map by partition ID since order is not guaranteed
-	partByID := make(map[int32]PartitionCursor)
+	partByID := make(map[int32]partitionCursor)
 	for _, p := range token.Partitions {
 		partByID[p.ID] = p
 	}
@@ -209,7 +178,7 @@ func TestCreateInitialPageToken(t *testing.T) {
 	assert.Equal(t, int64(1499), partByID[2].NextOffset)
 }
 
-func TestCreateInitialPageToken_EmptyTopic(t *testing.T) {
+func Test_createInitialPageToken_EmptyTopic(t *testing.T) {
 	startOffsets := kadm.ListedOffsets{
 		"test-topic": {
 			0: {Topic: "test-topic", Partition: 0, Offset: 0},
@@ -222,57 +191,54 @@ func TestCreateInitialPageToken_EmptyTopic(t *testing.T) {
 		},
 	}
 
-	token, err := CreateInitialPageToken("test-topic", startOffsets, endOffsets, 50, DirectionDescending)
+	token, err := createInitialPageToken("test-topic", startOffsets, endOffsets, 50, directionDescending)
 	require.NoError(t, err)
 
 	// NextOffset should be clamped to low water mark for empty topic
 	assert.Equal(t, int64(0), token.Partitions[0].NextOffset)
 }
 
-func TestPageToken_HasMore(t *testing.T) {
+func Test_pageToken_HasMore(t *testing.T) {
 	tests := []struct {
 		name     string
-		token    *PageToken
+		token    *pageToken
 		expected bool
 	}{
 		{
 			name: "has more messages",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 2,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				TopicName: "test",
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200},
 					{ID: 1, NextOffset: 150, LowWaterMark: 0, HighWaterMark: 300},
 				},
-				Direction: DirectionDescending,
+				Direction: directionDescending,
 				PageSize:  50,
 			},
 			expected: true,
 		},
 		{
 			name: "no more messages - all exhausted",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 2,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				TopicName: "test",
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: -1, LowWaterMark: 0, HighWaterMark: 200},
 					{ID: 1, NextOffset: -1, LowWaterMark: 0, HighWaterMark: 300},
 				},
-				Direction: DirectionDescending,
+				Direction: directionDescending,
 				PageSize:  50,
 			},
 			expected: false,
 		},
 		{
 			name: "some partitions exhausted",
-			token: &PageToken{
-				TopicName:      "test",
-				PartitionCount: 2,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				TopicName: "test",
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: -1, LowWaterMark: 0, HighWaterMark: 200},
 					{ID: 1, NextOffset: 50, LowWaterMark: 0, HighWaterMark: 300},
 				},
-				Direction: DirectionDescending,
+				Direction: directionDescending,
 				PageSize:  50,
 			},
 			expected: true,
@@ -287,18 +253,18 @@ func TestPageToken_HasMore(t *testing.T) {
 	}
 }
 
-func TestPageToken_IsExhausted(t *testing.T) {
+func Test_pageToken_IsExhausted(t *testing.T) {
 	tests := []struct {
 		name        string
-		token       *PageToken
+		token       *pageToken
 		partitionID int32
 		expected    bool
 	}{
 		{
 			name: "descending - not exhausted",
-			token: &PageToken{
-				Direction: DirectionDescending,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				Direction: directionDescending,
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200},
 				},
 			},
@@ -307,9 +273,9 @@ func TestPageToken_IsExhausted(t *testing.T) {
 		},
 		{
 			name: "descending - exhausted below low water mark",
-			token: &PageToken{
-				Direction: DirectionDescending,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				Direction: directionDescending,
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: -1, LowWaterMark: 0, HighWaterMark: 200},
 				},
 			},
@@ -318,9 +284,9 @@ func TestPageToken_IsExhausted(t *testing.T) {
 		},
 		{
 			name: "descending - at low water mark boundary",
-			token: &PageToken{
-				Direction: DirectionDescending,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				Direction: directionDescending,
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: 0, LowWaterMark: 0, HighWaterMark: 200},
 				},
 			},
@@ -329,9 +295,9 @@ func TestPageToken_IsExhausted(t *testing.T) {
 		},
 		{
 			name: "ascending - not exhausted",
-			token: &PageToken{
-				Direction: DirectionAscending,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				Direction: directionAscending,
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: 100, LowWaterMark: 0, HighWaterMark: 200},
 				},
 			},
@@ -340,9 +306,9 @@ func TestPageToken_IsExhausted(t *testing.T) {
 		},
 		{
 			name: "ascending - exhausted at high water mark",
-			token: &PageToken{
-				Direction: DirectionAscending,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				Direction: directionAscending,
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: 200, LowWaterMark: 0, HighWaterMark: 200},
 				},
 			},
@@ -351,9 +317,9 @@ func TestPageToken_IsExhausted(t *testing.T) {
 		},
 		{
 			name: "ascending - one below high water mark boundary",
-			token: &PageToken{
-				Direction: DirectionAscending,
-				Partitions: []PartitionCursor{
+			token: &pageToken{
+				Direction: directionAscending,
+				Partitions: []partitionCursor{
 					{ID: 0, NextOffset: 199, LowWaterMark: 0, HighWaterMark: 200},
 				},
 			},
