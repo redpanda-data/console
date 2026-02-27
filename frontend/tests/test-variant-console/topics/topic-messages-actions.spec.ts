@@ -19,7 +19,7 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Click copy value button
       await page.getByRole('button', { name: /copy value/i }).click();
@@ -48,7 +48,7 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Click download/export button
       await page.getByText('Download Record').click();
@@ -93,7 +93,7 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Click download/export button
       await page.getByText('Download Record').click();
@@ -139,7 +139,7 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Export as JSON
       await page.getByText('Download Record').click();
@@ -178,7 +178,7 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Open export dialog
       await page.getByText('Download Record').click();
@@ -230,7 +230,7 @@ test.describe('Message Actions and Export', () => {
       }
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Export as JSON
       await page.getByText('Download Record').click();
@@ -268,7 +268,7 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
-      await page.getByLabel('Collapse row').first().click();
+      await page.getByLabel('Expand row').first().click();
 
       // Verify metadata is visible
       await expect(page.getByText(/Offset|offset/i).first()).toBeVisible();

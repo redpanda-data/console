@@ -24,6 +24,8 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -35,7 +37,7 @@ import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide
 import { observer } from 'mobx-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { createVisibleSidebarItems } from 'utils/route-utils';
+import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
 
 import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
 import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
@@ -179,7 +181,7 @@ const UserProfile = observer(() => {
 });
 
 type NavItemProps = {
-  item: ReturnType<typeof createVisibleSidebarItems>[number];
+  item: SidebarGroupedItems['items'][number];
   isActive: boolean;
   onNavClick: () => void;
 };
@@ -221,7 +223,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 const SidebarNavigation = observer(() => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
-  const sidebarItems = createVisibleSidebarItems();
+  const groupedItems = createGroupedSidebarItems();
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -231,13 +233,21 @@ const SidebarNavigation = observer(() => {
 
   return (
     <nav aria-label="Main navigation">
-      <SidebarMenu>
-        {sidebarItems.map((item) => {
-          const isActive =
-            location.pathname === item.to || (item.to !== '/overview' && location.pathname.startsWith(`${item.to}/`));
-          return <SidebarNavItem isActive={isActive} item={item} key={item.to} onNavClick={handleNavClick} />;
-        })}
-      </SidebarMenu>
+      {groupedItems.map((section) => (
+        <SidebarGroup key={section.group}>
+          <SidebarGroupLabel>{section.group}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {section.items.map((item) => {
+                const isActive =
+                  location.pathname === item.to ||
+                  (item.to !== '/overview' && location.pathname.startsWith(`${item.to}/`));
+                return <SidebarNavItem isActive={isActive} item={item} key={item.to} onNavClick={handleNavClick} />;
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
     </nav>
   );
 });
@@ -252,9 +262,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarNavigation />
-        </SidebarGroup>
+        <SidebarNavigation />
       </SidebarContent>
 
       <SidebarFooter>

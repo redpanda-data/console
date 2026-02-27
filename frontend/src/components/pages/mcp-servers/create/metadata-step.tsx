@@ -15,7 +15,6 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
-import { isFeatureFlagEnabled } from 'config';
 import { Controller, type UseFieldArrayReturn, type UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
@@ -89,28 +88,26 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
               )}
             </Field>
 
-            {isFeatureFlagEnabled('enableMcpServiceAccount') && (
-              <Field data-invalid={!!form.formState.errors.serviceAccountName}>
-                <FieldLabel htmlFor="serviceAccountName" required>
-                  Service Account Name
-                </FieldLabel>
-                <Input
-                  id="serviceAccountName"
-                  placeholder="e.g., cluster-abc123-mcp-my-server-sa"
-                  {...form.register('serviceAccountName')}
-                  aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
-                  aria-invalid={!!form.formState.errors.serviceAccountName}
-                />
-                <FieldDescription>
-                  This service account will be created automatically when you create the MCP server.
-                </FieldDescription>
-                {!!form.formState.errors.serviceAccountName && (
-                  <FieldError id="serviceAccountName-error">
-                    {form.formState.errors.serviceAccountName.message}
-                  </FieldError>
-                )}
-              </Field>
-            )}
+            <Field data-invalid={!!form.formState.errors.serviceAccountName}>
+              <FieldLabel htmlFor="serviceAccountName" required>
+                Service Account Name
+              </FieldLabel>
+              <Input
+                id="serviceAccountName"
+                placeholder="e.g., cluster-abc123-mcp-my-server-sa"
+                {...form.register('serviceAccountName')}
+                aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
+                aria-invalid={!!form.formState.errors.serviceAccountName}
+              />
+              <FieldDescription>
+                This service account will be created automatically when you create the MCP server.
+              </FieldDescription>
+              {!!form.formState.errors.serviceAccountName && (
+                <FieldError id="serviceAccountName-error">
+                  {form.formState.errors.serviceAccountName.message}
+                </FieldError>
+              )}
+            </Field>
           </div>
         </form>
       </div>

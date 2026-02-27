@@ -130,7 +130,7 @@ export class TopicPage {
    * Message operations
    */
   async expandFirstMessage() {
-    await this.page.getByLabel('Collapse row').first().click();
+    await this.page.getByLabel('Expand row').first().click();
   }
 
   async clickDownloadRecord() {

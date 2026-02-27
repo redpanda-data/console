@@ -21,7 +21,7 @@ test.describe('View and Filter Messages', () => {
       await expect(page.getByText(messageContent)).toBeVisible();
 
       // Click expand button
-      const expandButton = page.getByLabel('Collapse row').first();
+      const expandButton = page.getByLabel('Expand row').first();
       await expandButton.click();
 
       // Expanded details should be visible
@@ -123,7 +123,7 @@ test.describe('View and Filter Messages', () => {
         await page.waitForTimeout(1000);
 
         // Messages from offset 1 onwards should be visible
-        await expect(page.getByTestId('data-table-cell').first()).toBeVisible();
+        await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
       }
     });
 

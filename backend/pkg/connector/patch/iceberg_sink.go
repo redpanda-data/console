@@ -34,7 +34,7 @@ func NewConfigPatchIcebergSink() *ConfigPatchIcebergSink {
 			Exclude: nil,
 		},
 		ConnectorClassSelector: IncludeExcludeSelector{
-			Include: regexp.MustCompile(`io.tabular.iceberg.connect.IcebergSinkConnector`),
+			Include: regexp.MustCompile(`org.apache.iceberg.connect.IcebergSinkConnector`),
 			Exclude: nil,
 		},
 	}

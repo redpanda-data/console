@@ -22,7 +22,7 @@ func NewIcebergSinkGuide(opts ...Option) Guide {
 		DefaultGuide: DefaultGuide{
 			options: o,
 		},
-		className: "io.tabular.iceberg.connect.IcebergSinkConnector",
+		className: "org.apache.iceberg.connect.IcebergSinkConnector",
 		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topics to export",

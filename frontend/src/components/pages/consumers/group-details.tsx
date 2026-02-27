@@ -179,7 +179,7 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
     }
 
     // Get info about each topic
-    const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
+    const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds?.length ?? 0);
 
     return (
       <PageContent className="groupDetails">
@@ -309,7 +309,7 @@ const GroupByTopics = observer(
 
     const topicLags = groupProps.group.topicOffsets;
     const allAssignments = groupProps.group.members.flatMap((m) =>
-      m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }))
+      m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds ?? [] }))
     );
 
     const lagsFlat = topicLags.flatMap((topicLag) =>

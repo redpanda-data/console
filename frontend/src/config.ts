@@ -138,7 +138,6 @@ export type SidebarItem = {
   icon?: JSX.Element;
   order: number;
   group?: string; // "Agentic AI" - for grouping related items
-  isBeta?: boolean; // true - for displaying beta badge
 };
 
 export type Breadcrumb = {
@@ -327,24 +326,22 @@ setTimeout(() => {
         return;
       }
 
-      // Guard: skip if api is not initialized yet (can happen in tests)
-      // The endpointCompatibility check is needed because getEmbeddedAvailableRoutes()
-      // calls route visibility checks that depend on api.endpointCompatibility
-      if (!api || api.endpointCompatibility === undefined) {
-        return;
-      }
+    // Don't emit sidebar items until endpoint compatibility is known,
+    // otherwise items gated by feature support will flicker.
+    if (!api.endpointCompatibility) {
+      return;
+    }
 
-      const sidebarItems = getEmbeddedAvailableRoutes().map(
-        (r, i) =>
-          ({
-            title: r.title,
-            to: r.path,
-            icon: r.icon,
-            order: i,
-            group: r.group,
-            isBeta: r.isBeta,
-          }) as SidebarItem
-      );
+    const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
+      (r, i) =>
+        ({
+          title: r.title,
+          to: r.path,
+          icon: r.icon,
+          order: i,
+          group: r.group,
+        }) as SidebarItem
+    );
 
       setSidebarItems(sidebarItems);
     };
@@ -383,7 +380,7 @@ export function isServerless() {
 }
 
 export function isAdpEnabled() {
-  return config.isAdpEnabled;
+  return config.isAdpEnabled && !isServerless();
 }
 
 export const embeddedAvailableRoutesObservable = observable({
