@@ -36,6 +36,12 @@ message ListMessagesRequest {
 
   bool ignore_max_size_limit = 12; // Optionally ignore configured maximum payload size limit.
   // Used to force returning deserialized payloads.
+
+  string page_token = 13; // Resume from cursor (only used when page_size is present).
+  int32 page_size = 14 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 500
+  }]; // Number of messages to fetch per page. When set (> 0), pagination mode is enabled and max_results is ignored. When unset or 0, legacy mode is used.
 }
 
 // ListMessagesResponse is the response for ListMessages call.
@@ -70,6 +76,7 @@ message ListMessagesResponse {
     bool is_cancelled = 2; // Whether the call was cancelled.
     int64 messages_consumed = 3; // Total consumed messages.
     int64 bytes_consumed = 4; // Total consumed bytes.
+    string next_page_token = 5; // Token for next page (empty when max_results != -1 or no more pages).
   }
 
   // Error control message.

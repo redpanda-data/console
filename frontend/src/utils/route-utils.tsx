@@ -39,6 +39,14 @@ import { isAdpEnabled, isEmbedded, isFeatureFlagEnabled, isServerless } from '..
 import { api } from '../state/backend-api';
 import { Feature, isSupported, shouldHideIfNotSupported } from '../state/supported-features';
 
+const SidebarSection = {
+  STREAMING: 'Streaming',
+  AGENTIC: 'Agentic',
+  PLATFORM: 'Platform',
+} as const;
+
+type SidebarSectionName = (typeof SidebarSection)[keyof typeof SidebarSection];
+
 // NavLinkProps type compatible with @redpanda-data/ui Sidebar
 type NavLinkProps = {
   title: string;
@@ -47,6 +55,7 @@ type NavLinkProps = {
   icon: any;
   isDisabled?: boolean;
   disabledText?: string;
+  group?: string;
 };
 
 // Sidebar item definition
@@ -55,7 +64,7 @@ export type SidebarItem = {
   title: string | ReactNode;
   icon?: LucideIcon | ((props: React.SVGProps<SVGSVGElement>) => JSX.Element);
   visibilityCheck?: () => MenuItemState;
-  group?: string; // For grouping related items (e.g., "Agentic AI")
+  group: SidebarSectionName;
 };
 
 // Visibility state for menu items
@@ -184,16 +193,19 @@ function routeVisibility(
  * Ordered by display order in the sidebar.
  */
 export const SIDEBAR_ITEMS: SidebarItem[] = [
+  // --- Streaming ---
   {
     path: '/overview',
     title: 'Overview',
     icon: HomeIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true),
   },
   {
     path: '/observability',
     title: 'Metrics',
     icon: ActivityIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(
       () =>
         isEmbedded() &&
@@ -206,51 +218,42 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/topics',
     title: 'Topics',
     icon: CollectionIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true),
   },
   {
     path: '/schema-registry',
     title: 'Schema Registry',
     icon: CubeIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true),
   },
   {
     path: '/groups',
     title: 'Consumer Groups',
     icon: FilterIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true, [Feature.ConsumerGroups]),
-  },
-  {
-    path: '/secrets',
-    title: 'Secrets Store',
-    icon: KeyIcon,
-    visibilityCheck: routeVisibility(() => isEmbedded(), [Feature.PipelineService]),
-  },
-  {
-    path: '/knowledgebases',
-    title: 'Knowledge Bases',
-    icon: BookOpenIcon,
-    visibilityCheck: routeVisibility(
-      () => isAdpEnabled() && isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'),
-      [Feature.PipelineService]
-    ),
   },
   {
     path: '/security',
     title: 'Security',
     icon: ShieldCheckIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true),
   },
   {
     path: '/quotas',
     title: 'Quotas',
     icon: ScaleIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
   },
   {
     path: '/connect-clusters',
     title: 'Connect',
     icon: LinkIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: () => {
       if (isServerless()) {
         if (isSupported(Feature.PipelineService)) {
@@ -265,18 +268,14 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/transforms',
     title: 'Transforms',
     icon: AIIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true, [Feature.TransformsService]),
-  },
-  {
-    path: '/transcripts',
-    title: 'Transcripts',
-    icon: ActivityIcon,
-    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled(), [Feature.TracingService]),
   },
   {
     path: '/reassign-partitions',
     title: 'Reassign Partitions',
     icon: BeakerIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(
       true,
       [Feature.GetReassignments, Feature.PatchReassignments],
@@ -285,15 +284,10 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     ),
   },
   {
-    path: '/mcp-servers',
-    title: 'Remote MCP',
-    icon: MCPIcon,
-    visibilityCheck: routeVisibility(() => isEmbedded()),
-  },
-  {
     path: '/shadowlinks',
     title: 'Shadow Links',
     icon: ShieldIcon,
+    group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(() => {
       if (isEmbedded()) {
         return !isServerless();
@@ -301,11 +295,45 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       return true;
     }),
   },
+  // --- Agentic ---
+  {
+    path: '/mcp-servers',
+    title: 'Remote MCP',
+    icon: MCPIcon,
+    group: SidebarSection.AGENTIC,
+    visibilityCheck: routeVisibility(() => isEmbedded()),
+  },
   {
     path: '/agents',
     title: 'AI Agents',
     icon: UserCircleIcon,
+    group: SidebarSection.AGENTIC,
     visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled()),
+  },
+  {
+    path: '/knowledgebases',
+    title: 'Knowledge Bases',
+    icon: BookOpenIcon,
+    group: SidebarSection.AGENTIC,
+    visibilityCheck: routeVisibility(
+      () => isAdpEnabled() && isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'),
+      [Feature.PipelineService]
+    ),
+  },
+  {
+    path: '/transcripts',
+    title: 'Transcripts',
+    icon: ActivityIcon,
+    group: SidebarSection.AGENTIC,
+    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled(), [Feature.TracingService]),
+  },
+  // --- Platform ---
+  {
+    path: '/secrets',
+    title: 'Secrets Store',
+    icon: KeyIcon,
+    group: SidebarSection.PLATFORM,
+    visibilityCheck: routeVisibility(() => isEmbedded(), [Feature.PipelineService]),
   },
 ];
 
@@ -365,23 +393,43 @@ export function createVisibleSidebarItems(): NavLinkProps[] {
   return SIDEBAR_ITEMS.map(processSidebarItem).filter((item): item is NavLinkProps => item !== null);
 }
 
+export type SidebarGroupedItems = { group: string; items: NavLinkProps[] };
+
+const SECTION_ORDER = [SidebarSection.STREAMING, SidebarSection.AGENTIC, SidebarSection.PLATFORM];
+
+/**
+ * Creates sidebar items grouped by section (Streaming, Agentic, Platform).
+ * Filters invisible items and omits empty groups.
+ */
+export function createGroupedSidebarItems(): SidebarGroupedItems[] {
+  const groupMap = new Map<string, NavLinkProps[]>();
+
+  for (const section of SECTION_ORDER) {
+    groupMap.set(section, []);
+  }
+
+  for (const item of SIDEBAR_ITEMS) {
+    const processed = processSidebarItem(item);
+    if (processed && item.group) {
+      const list = groupMap.get(item.group);
+      if (list) {
+        list.push(processed);
+      }
+    }
+  }
+
+  return SECTION_ORDER.map((section) => ({
+    group: section,
+    items: groupMap.get(section) ?? [],
+  })).filter((g) => g.items.length > 0);
+}
+
 /**
  * Get filtered routes for embedded mode.
  * Used by config.ts for embeddedAvailableRoutesObservable.
  */
 export function getEmbeddedAvailableRoutes(): SidebarItem[] {
-  return SIDEBAR_ITEMS.map((item) => {
-    // Mark AI-related routes with group
-    if (item.path === '/knowledgebases' || item.path === '/agents' || item.path === '/transcripts') {
-      return {
-        ...item,
-        group: 'Agentic AI',
-      };
-    }
-
-    return item;
-  })
-    .filter((x) => x.icon !== null && x.icon !== undefined) // Routes without icon are "nested"
+  return SIDEBAR_ITEMS.filter((x) => x.icon !== null && x.icon !== undefined) // Routes without icon are "nested"
     .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // Things that should not be visible in embedded/cloud mode
     .filter((x) => {
       if (x.visibilityCheck) {

@@ -303,7 +303,7 @@ const connectorMetadata: ConnectorMetadata[] = [
 
   // Iceberg Connectors
   {
-    classNamePrefix: 'io.tabular.iceberg.connect.IcebergSinkConnector',
+    classNamePrefix: 'org.apache.iceberg.connect.IcebergSinkConnector',
     logo: <img alt="Iceberg logo" className="connectorLogo" src={IcebergLogo} />,
     author: 'Tabular',
     friendlyName: 'Iceberg',
