@@ -132,6 +132,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1alpha2() {
 
 	// Run HTTPBin container
 	httpC, err := testutil.RunHTTPBinContainer(ctx, network.WithNetwork([]string{"httpbin", "local-httpbin"}, s.network))
+	testutil.LogContainerLogsIfFailed(ctx, t, httpC, err)
 	requireT.NoError(err)
 
 	client := v1alpha2connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())

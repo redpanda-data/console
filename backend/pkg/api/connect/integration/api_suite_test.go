@@ -78,6 +78,7 @@ func (s *APISuite) SetupSuite() {
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),
 	)
+	testutil.LogContainerLogsIfFailed(ctx, t, container, err)
 	require.NoError(err)
 	s.redpandaContainer = container
 
@@ -99,6 +100,7 @@ func (s *APISuite) SetupSuite() {
 		[]string{"redpanda:29092"},
 		network.WithNetwork([]string{"kconnect"}, s.network),
 	)
+	testutil.LogContainerLogsIfFailed(ctx, t, kConnectContainer, err)
 	require.NoError(err)
 
 	s.kConnectContainer = kConnectContainer
