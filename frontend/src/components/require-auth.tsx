@@ -88,6 +88,7 @@ const RequireAuth = observer(({ children }: { children: ReactNode }) => {
 });
 
 const FeatureErrorCheck = observer(() => {
+  const { featureErrors } = useSupportedFeaturesStore();
   if (featureErrors.length > 0) {
     const allErrors = featureErrors.join(' ');
     throw new Error(allErrors);

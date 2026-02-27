@@ -326,22 +326,22 @@ setTimeout(() => {
         return;
       }
 
-    // Don't emit sidebar items until endpoint compatibility is known,
-    // otherwise items gated by feature support will flicker.
-    if (!api.endpointCompatibility) {
-      return;
-    }
+      // Don't emit sidebar items until endpoint compatibility is known,
+      // otherwise items gated by feature support will flicker.
+      if (!api.endpointCompatibility) {
+        return;
+      }
 
-    const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
-      (r, i) =>
-        ({
-          title: r.title,
-          to: r.path,
-          icon: r.icon,
-          order: i,
-          group: r.group,
-        }) as SidebarItem
-    );
+      const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
+        (r, i) =>
+          ({
+            title: r.title,
+            to: r.path,
+            icon: r.icon,
+            order: i,
+            group: r.group,
+          }) as SidebarItem
+      );
 
       setSidebarItems(sidebarItems);
     };
@@ -383,11 +383,11 @@ export function isAdpEnabled() {
   return config.isAdpEnabled && !isServerless();
 }
 
-export const embeddedAvailableRoutesObservable = observable({
+export const embeddedAvailableRoutesObservable = {
   get routes() {
     return getEmbeddedAvailableRoutes();
   },
-});
+};
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   setConfig(setupArgs);
