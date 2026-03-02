@@ -255,7 +255,7 @@ const ActionsCell = memo(
     };
 
     return (
-      <div className="flex justify-end min-w-[68px]" data-actions-column>
+      <div className="flex min-w-[68px] justify-end" data-actions-column>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="size-8" size="icon" variant="secondary-ghost">
@@ -356,8 +356,8 @@ const createColumns = ({
       }
       return (
         <BadgeGroup
-          maxVisible={2}
           className="min-w-[184px]"
+          maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
               {processors.slice(-overflow.length).map((o) => (
@@ -386,8 +386,8 @@ const createColumns = ({
       }
       return (
         <BadgeGroup
-          maxVisible={2}
           className="min-w-[184px]"
+          maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
               {outputs.slice(-overflow.length).map((o) => (
