@@ -10,33 +10,21 @@
  */
 
 import { Flex } from '@redpanda-data/ui';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import { Component } from 'react';
+import type { FC } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { ConfigEntry } from '../../../state/rest-interfaces';
-import { uiSettings } from '../../../state/ui';
+import { useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton, OptionGroup } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { ConfigList } from '../../misc/config-list';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { Statistic } from '../../misc/statistic';
-import { PageComponent, type PageInitHelper, type PageProps } from '../page';
+import { PageComponent, type PageInitHelper } from '../page';
 
-@observer
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
-  @observable id = 0;
-
-  constructor(p: Readonly<PageProps<{ brokerId: string }>>) {
-    super(p);
-    makeObservable(this);
-
-    this.id = Number(this.props.brokerId);
-  }
-
   initPage(p: PageInitHelper): void {
     p.title = 'Broker Details';
     p.addBreadcrumb('Overview', '/overview');
@@ -55,111 +43,99 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
   }
 
   render() {
-    const brokerConfigs = api.brokerConfigs.get(this.id);
-    if (brokerConfigs === undefined || brokerConfigs.length === 0) {
-      return DefaultSkeleton;
-    }
-
-    const broker = api.brokers?.first((x) => x.brokerId === this.id);
-    if (!broker) {
-      return DefaultSkeleton;
-    }
-
-    // Handle error while getting config
-    if (typeof brokerConfigs === 'string') {
-      return (
-        <div className="error">
-          <h3>Error</h3>
-          <div>
-            <p>{brokerConfigs}</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <PageContent>
-        <Section py={4}>
-          <Flex>
-            <Statistic title="Broker ID" value={this.id} />
-            <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
-            {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
-            <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
-            <Statistic title="IP address" value={broker.address} />
-            {Boolean(broker.rack) && <Statistic title="Rack" value={broker.rack} />}
-          </Flex>
-        </Section>
-        <Section py={4}>
-          <BrokerConfigView entries={brokerConfigs} />
-        </Section>
-      </PageContent>
-    );
+    return <BrokerDetailsContent brokerId={Number(this.props.brokerId)} />;
   }
 }
 
 export { BrokerDetails };
 
-@observer
-class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
-  render() {
-    const entries = this.props.entries.slice().sort((a, b) => {
-      switch (uiSettings.brokerList.propsOrder) {
-        case 'default':
-          return 0;
-        case 'alphabetical':
-          return a.name.localeCompare(b.name);
-        case 'changedFirst': {
-          if (uiSettings.brokerList.propsOrder !== 'changedFirst') {
-            return 0;
-          }
-          const v1 = a.isExplicitlySet ? 1 : 0;
-          const v2 = b.isExplicitlySet ? 1 : 0;
-          return v2 - v1;
-        }
-        default:
-          return 0;
-      }
-    });
+const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
+  const brokerConfigs = api.brokerConfigs.get(brokerId);
+  if (brokerConfigs === undefined || brokerConfigs.length === 0) {
+    return DefaultSkeleton;
+  }
 
+  const broker = api.brokers?.first((x) => x.brokerId === brokerId);
+  if (!broker) {
+    return DefaultSkeleton;
+  }
+
+  // Handle error while getting config
+  if (typeof brokerConfigs === 'string') {
     return (
-      <div className="brokerConfigView">
-        <DetailsDisplaySettings />
-        <ConfigList
-          configEntries={entries}
-          key={uiSettings.brokerList.propsOrder}
-          valueDisplay={uiSettings.brokerList.valueDisplay}
-        />
+      <div className="error">
+        <h3>Error</h3>
+        <div>
+          <p>{brokerConfigs}</p>
+        </div>
       </div>
     );
   }
-}
 
-const DetailsDisplaySettings = observer(() => (
-  <div className="brokerConfigViewSettings" style={{ marginLeft: '1px', marginBottom: '1em' }}>
-    <Flex gap="2rem">
-      <OptionGroup
-        label="Formatting"
-        onChange={(s) => {
-          uiSettings.brokerList.valueDisplay = s;
-        }}
-        options={{
-          Friendly: 'friendly',
-          Raw: 'raw',
-        }}
-        value={uiSettings.brokerList.valueDisplay}
-      />
-      <OptionGroup
-        label="Sort"
-        onChange={(s) => {
-          uiSettings.brokerList.propsOrder = s;
-        }}
-        options={{
-          'Changed First': 'changedFirst',
-          Alphabetical: 'alphabetical',
-          None: 'default',
-        }}
-        value={uiSettings.brokerList.propsOrder}
-      />
-    </Flex>
-  </div>
-));
+  return (
+    <PageContent>
+      <Section py={4}>
+        <Flex>
+          <Statistic title="Broker ID" value={brokerId} />
+          <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
+          {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
+          <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
+          <Statistic title="IP address" value={broker.address} />
+          {Boolean(broker.rack) && <Statistic title="Rack" value={broker.rack} />}
+        </Flex>
+      </Section>
+      <Section py={4}>
+        <BrokerConfigView entries={brokerConfigs} />
+      </Section>
+    </PageContent>
+  );
+};
+
+const BrokerConfigView: FC<{ entries: ConfigEntry[] }> = ({ entries }) => {
+  const { brokerList, updateSettings } = useUISettingsStore();
+
+  const sorted = entries.slice().sort((a, b) => {
+    switch (brokerList.propsOrder) {
+      case 'default':
+        return 0;
+      case 'alphabetical':
+        return a.name.localeCompare(b.name);
+      case 'changedFirst': {
+        const v1 = a.isExplicitlySet ? 1 : 0;
+        const v2 = b.isExplicitlySet ? 1 : 0;
+        return v2 - v1;
+      }
+      default:
+        return 0;
+    }
+  });
+
+  return (
+    <div className="brokerConfigView">
+      <div className="brokerConfigViewSettings" style={{ marginLeft: '1px', marginBottom: '1em' }}>
+        <Flex gap="2rem">
+          <OptionGroup
+            label="Formatting"
+            onChange={(s) => updateSettings({ brokerList: { ...brokerList, valueDisplay: s } })}
+            options={{
+              Friendly: 'friendly',
+              Raw: 'raw',
+            }}
+            value={brokerList.valueDisplay}
+          />
+          <OptionGroup
+            label="Sort"
+            onChange={(s) => updateSettings({ brokerList: { ...brokerList, propsOrder: s } })}
+            options={{
+              'Changed First': 'changedFirst',
+              Alphabetical: 'alphabetical',
+              None: 'default',
+            }}
+            value={brokerList.propsOrder}
+          />
+        </Flex>
+      </div>
+      <ConfigList configEntries={sorted} key={brokerList.propsOrder} valueDisplay={brokerList.valueDisplay} />
+    </div>
+  );
+};

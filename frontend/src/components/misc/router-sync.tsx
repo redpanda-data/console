@@ -10,7 +10,6 @@
  */
 
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
-import { observer } from 'mobx-react';
 import { useEffect, useRef } from 'react';
 
 import { isEmbedded } from '../../config';
@@ -26,7 +25,7 @@ import { api } from '../../state/backend-api';
  * In embedded mode, it also notifies the shell (Cloud UI) when Console
  * navigates internally, allowing the shell to sync its router state.
  */
-export const RouterSync = observer(() => {
+export const RouterSync = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const router = useRouter();
@@ -66,4 +65,4 @@ export const RouterSync = observer(() => {
   }, [location.pathname]);
 
   return null;
-});
+};
