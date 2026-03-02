@@ -77,7 +77,7 @@ test.describe('Topic List - Basic Operations', () => {
       await topicPage.searchTopics('non-matching-search-term');
       await page.waitForTimeout(1000);
 
-      await topicPage.coverifyTopicNotInList(topicName);
+      await topicPage.verifyTopicNotInList(topicName);
 
       // Clear search filter
       await topicPage.clearSearch();
