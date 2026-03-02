@@ -15,8 +15,8 @@ import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
-import { observer, useLocalObservable } from 'mobx-react';
-import { Component, type FunctionComponent } from 'react';
+import { observer } from 'mobx-react';
+import { Component, type FunctionComponent, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 
 import {
@@ -287,11 +287,7 @@ const TabConnectors = observer(() => {
   const allConnectors: ConnectorType[] =
     clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
 
-  const state = useLocalObservable<{
-    filteredResults: ConnectorType[];
-  }>(() => ({
-    filteredResults: [],
-  }));
+  const [filteredResults, setFilteredResults] = useState<ConnectorType[]>([]);
 
   const isFilterMatch = (filter: string, item: ConnectorType): boolean => {
     try {
@@ -308,9 +304,7 @@ const TabConnectors = observer(() => {
         dataSource={() => allConnectors}
         filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
         isFilterMatch={isFilterMatch}
-        onFilteredDataChanged={(data) => {
-          state.filteredResults = data;
-        }}
+        onFilteredDataChanged={setFilteredResults}
         onQueryChanged={(x) => {
           uiSettings.clusterOverview.connectorsList.quickSearch = x;
         }}
@@ -367,7 +361,7 @@ const TabConnectors = observer(() => {
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },
         ]}
-        data={state.filteredResults}
+        data={filteredResults}
         pagination
         sorting={false}
       />

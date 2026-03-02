@@ -1,6 +1,5 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex } from '@redpanda-data/ui';
 import { Link, useLocation } from '@tanstack/react-router';
-import { observer } from 'mobx-react';
 
 import {
   coreHasEnterpriseFeatures,
@@ -16,7 +15,7 @@ import { api } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export const LicenseNotification = observer(() => {
+export const LicenseNotification = () => {
   const location = useLocation();
 
   // This Global License Notification banner is used only for Enterprise licenses
@@ -134,4 +133,4 @@ export const LicenseNotification = observer(() => {
       </Alert>
     </Box>
   );
-});
+};

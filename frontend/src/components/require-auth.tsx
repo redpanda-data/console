@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import { ConnectionErrorUI } from './misc/connection-error-ui';
 import { config as appConfig } from '../config';
 import { api } from '../state/backend-api';
-import { featureErrors } from '../state/supported-features';
+import { useSupportedFeaturesStore } from '../state/supported-features';
 import { uiState } from '../state/ui-state';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 
@@ -88,6 +88,7 @@ const RequireAuth = observer(({ children }: { children: ReactNode }) => {
 });
 
 const FeatureErrorCheck = observer(() => {
+  const { featureErrors } = useSupportedFeaturesStore();
   if (featureErrors.length > 0) {
     const allErrors = featureErrors.join(' ');
     throw new Error(allErrors);

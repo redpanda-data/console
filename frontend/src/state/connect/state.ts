@@ -9,18 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  action,
-  autorun,
-  comparer,
-  flow,
-  type IReactionDisposer,
-  intercept,
-  makeAutoObservable,
-  observable,
-  reaction,
-} from 'mobx';
-
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
 import { api } from '../backend-api';
@@ -31,7 +19,6 @@ import {
   type ConnectorPossibleStatesLiteral,
   type ConnectorProperty,
   type ConnectorStep,
-  type CreateSecretResponse,
   DataType,
   PropertyImportance,
   PropertyWidth,
@@ -61,33 +48,6 @@ export class ConnectorValidationError extends CustomError {}
 export class ConnectorCreationError extends CustomError {}
 
 export class SecretCreationError extends CustomError {}
-
-/* compact following logic in the functions  sanitizeValue and sanitizeDefaultValue */
-
-/* let defaultValue: any = p.definition.default_value;
- * let initialValue: any = p.value.value;
- * if (p.definition.type == DataType.Boolean) {
- *     // Boolean
- *     // convert 'false' | 'true' to actual boolean values
- // biome-ignore lint/suspicious/noConsole: intentional console usage
- *     console.log(name, initialValue);
- *     if (typeof defaultValue == 'string')
- *         if (defaultValue.toLowerCase() == 'false') defaultValue = p.definition.default_value = false as any;
- *         else if (defaultValue.toLowerCase() == 'true') defaultValue = p.definition.default_value = true as any;
- *
- *     if (typeof initialValue == 'string')
- *         if (initialValue.toLowerCase() == 'false') initialValue = p.value.value = false as any;
- *         else if (initialValue.toLowerCase() == 'true') initialValue = p.value.value = true as any;
- * }
- * if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
- *     // Number
- *     const n = Number.parseFloat(defaultValue);
- *     if (Number.isFinite(n)) defaultValue = p.definition.default_value = n as any;
- * }
- *
- * let value: any = initialValue ?? defaultValue;
- * if (p.definition.type == DataType.Boolean && value == null) value = false;
- */
 
 const sanitizeBoolean = (val: unknown) => {
   if (typeof val === 'boolean') {
@@ -141,17 +101,10 @@ export class ConnectClusterStore {
   additionalClusterInfo: ClusterAdditionalInfo;
 
   static connectClusters: Map<string, ConnectClusterStore> = new Map();
+
   constructor(clusterName: string) {
     this.clusterName = clusterName;
-    makeAutoObservable<ConnectClusterStore, 'plugins' | 'connectors'>(this, {
-      setup: action.bound,
-      refreshData: action.bound,
-      createConnector: flow.bound,
-      deleteConnector: flow.bound,
-      updateConnnector: flow.bound,
-      plugins: observable,
-      connectors: observable,
-    });
+    this.connectors = new Map();
   }
 
   static getInstance(clusterName: string): ConnectClusterStore {
@@ -168,7 +121,7 @@ export class ConnectClusterStore {
       this.connectors = new Map();
       await this.refreshData(false);
 
-      // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+      // biome-ignore lint/style/noNonNullAssertion: safe after refreshData
       this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
       this.features.secretStore = !!this.additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
       this.isInitialized = true;
@@ -178,17 +131,13 @@ export class ConnectClusterStore {
   async refreshData(force: boolean) {
     await api.refreshConnectClusters();
     await api.refreshClusterAdditionalInfo(this.clusterName, force);
-    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+    // biome-ignore lint/style/noNonNullAssertion: safe after refresh
     this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
   }
 
   // CRUD operations
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
-  createConnector = flow(function* (
-    this: ConnectClusterStore,
-    pluginClass: string,
-    updatedConfig: Record<string, unknown> = {}
-  ) {
+  async createConnector(pluginClass: string, updatedConfig: Record<string, unknown> = {}) {
     const connector = this.getConnector(pluginClass, null, undefined);
     const secrets = connector?.secrets;
     if (secrets) {
@@ -241,11 +190,7 @@ export class ConnectClusterStore {
             throw new Error(`Failed to serialize secret for key "${key}". The encoded secret data is empty.`);
           }
 
-          const createSecretResponse = (yield api.createSecret(
-            this.clusterName,
-            connectorNameValue,
-            serializedSecret
-          )) as CreateSecretResponse;
+          const createSecretResponse = await api.createSecret(this.clusterName, connectorNameValue, serializedSecret);
 
           if (!createSecretResponse?.secretId) {
             throw new Error(`Failed to create secret for key "${key}": API response did not include a secretId`);
@@ -276,38 +221,30 @@ export class ConnectClusterStore {
         }
       }
 
-      yield api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties);
+      await api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties);
       this.removePluginState(pluginClass);
     } catch (error) {
-      // In case we want to delete secrets on failure
-      // if (secrets) {
-      //     yield Promise.all(
-      //         secrets.ids.map((secretId) =>
-      //             retrier(() => api.deleteSecret(this.clusterName, secretId), { attempts: 3, delayTime: 200 })
-      //         )
-      //     );
-      // }
       throw new ConnectorCreationError(String(error));
     }
-  });
+  }
 
-  deleteConnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
+  async deleteConnector(connectorName: string) {
     const connectorState = this.getConnectorStore(connectorName);
     const secrets = connectorState?.secrets;
 
-    yield api.deleteConnector(this.clusterName, connectorName);
+    await api.deleteConnector(this.clusterName, connectorName);
 
     if (secrets) {
-      yield Promise.all(
+      await Promise.all(
         secrets.ids.map((secretId) =>
           retrier(() => api.deleteSecret(this.clusterName, secretId), { attempts: 3, delayTime: 200 })
         )
       );
     }
-  });
+  }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
-  updateConnnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
+  async updateConnnector(connectorName: string) {
     const remoteConnector = this.getRemoteConnector(connectorName);
 
     const connectorState = this.getConnectorStore(connectorName);
@@ -317,10 +254,10 @@ export class ConnectClusterStore {
       if (secrets) {
         for (const [key, secret] of secrets.secrets) {
           if (secret.isDirty && secret.id) {
-            const createSecretResponse = yield api.updateSecret(this.clusterName, secret.id, secret.serialized);
+            await api.updateSecret(this.clusterName, secret.id, secret.serialized);
             const property = connectorState.propsByName.get(key);
             if (property) {
-              property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+              property.value = secret.getSecretString(key, secret.id);
             }
           }
         }
@@ -328,11 +265,11 @@ export class ConnectClusterStore {
       if (remoteConnector) {
         const connectorConfigObject = connectorState?.getConfigObject();
         if (connectorConfigObject) {
-          yield api.updateConnector(this.clusterName, connectorName, connectorConfigObject);
+          await api.updateConnector(this.clusterName, connectorName, connectorConfigObject);
         }
       }
     }
-  });
+  }
 
   removePluginState(identifier: string) {
     this.connectors.delete(identifier);
@@ -427,10 +364,6 @@ export class SecretsStore {
   _data = new Map<string, Secret>();
   _secrets = new Map<string, Secret>();
 
-  constructor() {
-    makeAutoObservable(this);
-  }
-
   getSecret(key: string) {
     let secret = this._data.get(key);
 
@@ -464,15 +397,35 @@ export class Secret {
   id: string | null = null;
   secretString: string | null = null;
   isDirty = false;
+  private listeners: Set<() => void> = new Set();
 
   constructor(key: string) {
     this.key = key;
-    makeAutoObservable(this);
-    autorun(() => {
-      if (this.secretString && this.value) {
-        this.isDirty = this.value !== this.secretString;
-      }
-    });
+  }
+
+  // Manual reactivity - call this when value or secretString changes
+  private notifyListeners() {
+    if (this.secretString && this.value) {
+      this.isDirty = this.value !== this.secretString;
+    }
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  setValue(newValue: string) {
+    this.value = newValue;
+    this.notifyListeners();
+  }
+
+  setSecretString(newSecretString: string) {
+    this.secretString = newSecretString;
+    this.notifyListeners();
   }
 
   get serialized() {
@@ -512,7 +465,7 @@ export class Secret {
 
 export class ConnectorPropertiesStore {
   allGroups: PropertyGroup[] = [];
-  propsByName = observable.map<string, Property>();
+  propsByName = new Map<string, Property>();
   jsonText = '';
   error: string | undefined = undefined;
   crud: 'create' | 'update' = 'create';
@@ -521,7 +474,7 @@ export class ConnectorPropertiesStore {
   viewMode: 'form' | 'json' = 'form';
   initPending = true;
   fallbackGroupName = '';
-  reactionDisposers: IReactionDisposer[] = [];
+  private cleanupFunctions: Array<() => void> = [];
 
   connectorStepDefinitions: ConnectorStep[] = [];
 
@@ -530,7 +483,10 @@ export class ConnectorPropertiesStore {
   connectorType: 'sink' | 'source';
   private readonly appliedConfig: Record<string, unknown> | undefined;
 
-  // biome-ignore lint/nursery/useMaxParams: Legacy MobX class with multiple constructor parameters
+  // Track changes for manual invalidation
+  private changeListeners: Set<() => void> = new Set();
+
+  // biome-ignore lint/nursery/useMaxParams: Legacy class with multiple constructor parameters
   constructor(
     clusterName: string,
     pluginClassName: string,
@@ -542,11 +498,7 @@ export class ConnectorPropertiesStore {
     this.pluginClassName = pluginClassName;
     this.connectorType = connectorType;
     this.appliedConfig = appliedConfig;
-    makeAutoObservable(this, {
-      fallbackGroupName: false,
-      reactionDisposers: false,
-      initConfig: action.bound,
-    });
+
     if (features?.secretStore) {
       this.secrets = new SecretsStore();
     }
@@ -559,13 +511,23 @@ export class ConnectorPropertiesStore {
     this.initConfig().catch(console.error);
   }
 
-  createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]) {
+  private notifyChange() {
+    for (const listener of this.changeListeners) {
+      listener();
+    }
+  }
+
+  subscribe(listener: () => void) {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
+  }
+
+  createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]): PropertyGroup {
     const self = this;
 
-    return observable<PropertyGroup>({
+    return {
       step,
       group,
-
       properties,
       propertiesWithErrors: [],
 
@@ -577,8 +539,9 @@ export class ConnectorPropertiesStore {
         // in simple mode, we only show props that are high importance
         return this.properties.filter((p) => p.entry.definition.importance === PropertyImportance.High);
       },
-    });
+    };
   }
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   getConfigObject(): object {
     if (this.viewMode === 'json') {
@@ -636,6 +599,7 @@ export class ConnectorPropertiesStore {
         property.value = value as null | string | number | boolean | string[];
       }
     }
+    this.notifyChange();
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
@@ -715,28 +679,38 @@ export class ConnectorPropertiesStore {
         g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
       }
 
-      // Update JSON
-      this.reactionDisposers.push(
-        reaction(
-          () => this.getConfigObject(),
-          (config) => {
-            this.jsonText = JSON.stringify(config, undefined, 4);
-          },
-          { delay: 100, fireImmediately: true, equals: comparer.structural }
-        )
-      );
+      // Update JSON when config changes (manual tracking)
+      let lastConfig: string | null = null;
+      const updateJson = () => {
+        const config = this.getConfigObject();
+        const configStr = JSON.stringify(config);
+        if (configStr !== lastConfig) {
+          lastConfig = configStr;
+          this.jsonText = JSON.stringify(config, undefined, 4);
+        }
+      };
+      updateJson(); // Initial update
+      const unsubJsonUpdate = this.subscribe(() => {
+        setTimeout(updateJson, 100);
+      });
+      this.cleanupFunctions.push(unsubJsonUpdate);
 
-      // Validate on changes
-      this.reactionDisposers.push(
-        reaction(
-          () => this.getConfigObject(),
-          (config) => {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            this.validate(config).catch(console.error);
-          },
-          { delay: 300, fireImmediately: true, equals: comparer.structural }
-        )
-      );
+      // Validate on changes (manual tracking)
+      let lastValidationConfig: string | null = null;
+      const validateOnChange = () => {
+        const config = this.getConfigObject();
+        const configStr = JSON.stringify(config);
+        if (configStr !== lastValidationConfig) {
+          lastValidationConfig = configStr;
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          this.validate(config).catch(console.error);
+        }
+      };
+      validateOnChange(); // Initial validation
+      const unsubValidate = this.subscribe(() => {
+        setTimeout(validateOnChange, 300);
+      });
+      this.cleanupFunctions.push(unsubValidate);
     } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error in initConfig', err);
@@ -783,25 +757,6 @@ export class ConnectorPropertiesStore {
         // Property does not exist yet, create it!
         if (!target) {
           this.propsByName.set(source.name, source);
-
-          /*
-                    // Find existing group it belongs to (or create one for it)
-                    let group = this.allGroups.first((g) => g.groupName == source.entry.definition.group);
-                    if (!group) {
-                        // Create new group
-                        group = this.createPropertyGroup(source.entry.definition.group!, []);
-                        this.allGroups.push(group);
-
-                        // TODO: Sort groups (?)
-                    }
-
-                    // Add the property to the group
-                    group.properties.push(source);
-                    source.propertyGroup = group;
-
-                    // Sort properties within group
-                    group.properties.sort((a, b) => a.entry.definition.order - b.entry.definition.order);
-                     */
           continue;
         }
 
@@ -818,7 +773,7 @@ export class ConnectorPropertiesStore {
         // Update: errors
         if (!target.errors.isEqual(source.errors)) {
           if (source.errors.length > 0) {
-            target.lastErrors = [...source.errors]; // create copy, so 'updateWith' won't modify this array as well
+            target.lastErrors = [...source.errors]; // create copy
           }
 
           // Update
@@ -901,7 +856,7 @@ export class ConnectorPropertiesStore {
         const initialValue: unknown = sanitizeValue(p.value.value, definitionType);
         const value: unknown = initialValue ?? defaultValue;
 
-        const property = observable({
+        const property: Property = {
           name,
           entry: p,
           value: value as null | string | number | boolean | string[],
@@ -911,10 +866,10 @@ export class ConnectorPropertiesStore {
           showErrors: p.value.errors.length > 0,
           currentErrorIndex: 0,
           lastErrorValue: undefined as unknown,
-          propertyGroup: undefined as PropertyGroup | undefined,
+          propertyGroup: undefined as unknown as PropertyGroup,
           crud: this.crud,
           isDisabled: undefined,
-        }) as Property;
+        };
 
         if (this.appliedConfig?.[name]) {
           property.value = sanitizeValue(this.appliedConfig[name], definitionType) as
@@ -924,15 +879,24 @@ export class ConnectorPropertiesStore {
             | boolean
             | string[];
         }
+
         if (p.definition.type === DataType.Password && !!this.secrets) {
           const secret = this.secrets.getSecret(property.name);
           secret.extractSecretId(String(property.value));
 
-          // Catch assignments to the "value" of this property,
-          // in order to copy the new value into the secret as well
-          intercept(property, 'value', (change) => {
-            secret.value = String(change.newValue);
-            return change;
+          // Instead of intercept, we'll use a custom setter pattern
+          // Store original value
+          let currentValue = property.value;
+          Object.defineProperty(property, 'value', {
+            get() {
+              return currentValue;
+            },
+            set(newValue) {
+              currentValue = newValue;
+              secret.value = String(newValue);
+            },
+            enumerable: true,
+            configurable: true,
           });
         }
 
@@ -941,6 +905,13 @@ export class ConnectorPropertiesStore {
       .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
 
     return allProps;
+  }
+
+  dispose() {
+    for (const cleanup of this.cleanupFunctions) {
+      cleanup();
+    }
+    this.cleanupFunctions = [];
   }
 }
 

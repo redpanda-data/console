@@ -20,7 +20,6 @@ import {
   VStack,
 } from '@redpanda-data/ui';
 import { CheckIcon } from 'components/icons';
-import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { capitalizeFirst } from 'utils/utils';
@@ -62,7 +61,7 @@ type RegisterModalProps = {
   onClose: () => void;
 };
 
-export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) => {
+export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSuccess, setIsSuccess] = useState(false);
@@ -309,4 +308,4 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
       </ModalContent>
     </Modal>
   );
-});
+};

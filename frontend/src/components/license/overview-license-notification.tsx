@@ -1,6 +1,5 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Text } from '@redpanda-data/ui';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
 
 import {
@@ -254,7 +253,7 @@ const getLicenseAlertContent = (
   return null;
 };
 
-export const OverviewLicenseNotification: FC = observer(() => {
+export const OverviewLicenseNotification: FC = () => {
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
@@ -297,4 +296,4 @@ export const OverviewLicenseNotification: FC = observer(() => {
       <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
     </Box>
   );
-});
+};

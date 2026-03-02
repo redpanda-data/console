@@ -1,7 +1,5 @@
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import type React from 'react';
-import { Component, useEffect, useState } from 'react';
+import { type ReactElement, type ReactNode, useEffect, useReducer, useRef, useState } from 'react';
 
 import type { TopicConfigEntry } from '../../../../state/rest-interfaces';
 import { Label } from '../../../../utils/tsx-utils';
@@ -10,14 +8,27 @@ import './CreateTopicModal.scss';
 import {
   Box,
   Button,
+  CopyButton,
+  Flex,
+  Grid,
   Input,
   InputGroup,
   InputLeftAddon,
   InputRightAddon,
   isSingleValue,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Result,
   Select,
+  Text,
+  VStack,
 } from '@redpanda-data/ui';
 import { CloseIcon, PlusIcon } from 'components/icons';
+import { useCreateTopicMutation } from 'react-query/api/topic';
 
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backend-api';
@@ -36,6 +47,9 @@ import type { CleanupPolicyType } from '../types';
 
 // Regex for checking if value has 4 or more decimal places
 const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+
+// Regex for validating topic names
+const TOPIC_NAME_REGEX = /^\S+$/;
 
 type CreateTopicModalState = {
   topicName: string; // required
@@ -70,138 +84,133 @@ type Props = {
   state: CreateTopicModalState;
 };
 
-@observer
-export class CreateTopicModalContent extends Component<Props> {
-  render() {
-    const state = this.props.state;
+export function CreateTopicModalContent({ state }: Props) {
+  let replicationFactorError = '';
+  if (api.clusterOverview && state.replicationFactor !== null && state.replicationFactor !== undefined) {
+    replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
+  }
 
-    let replicationFactorError = '';
-    if (api.clusterOverview && state.replicationFactor !== null && state.replicationFactor !== undefined) {
-      replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
-    }
+  return (
+    <div className="createTopicModal">
+      <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
+        <Label text="Topic Name">
+          <Input
+            autoFocus
+            data-testid="topic-name"
+            onChange={(e) => {
+              state.topicName = e.target.value;
+            }}
+            value={state.topicName}
+            width="100%"
+          />
+        </Label>
 
-    return (
-      <div className="createTopicModal">
-        <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
-          <Label text="Topic Name">
-            <Input
-              autoFocus
-              data-testid="topic-name"
+        <div style={{ display: 'flex', gap: '2em' }}>
+          <Label style={{ flexBasis: '160px' }} text="Partitions">
+            <NumInput
+              data-testid="topic-partitions"
+              min={1}
               onChange={(e) => {
-                state.topicName = e.target.value;
+                state.partitions = e;
               }}
-              value={state.topicName}
-              width="100%"
+              placeholder={state.defaults.partitions}
+              value={state.partitions}
             />
           </Label>
-
-          <div style={{ display: 'flex', gap: '2em' }}>
-            <Label style={{ flexBasis: '160px' }} text="Partitions">
+          <Label style={{ flexBasis: '160px' }} text="Replication Factor">
+            <Box>
               <NumInput
-                data-testid="topic-partitions"
+                data-testid="topic-replication-factor"
+                disabled={isServerless()}
                 min={1}
                 onChange={(e) => {
-                  state.partitions = e;
+                  state.replicationFactor = e;
                 }}
-                placeholder={state.defaults.partitions}
-                value={state.partitions}
+                placeholder={state.defaults.replicationFactor}
+                value={state.replicationFactor}
               />
-            </Label>
-            <Label style={{ flexBasis: '160px' }} text="Replication Factor">
-              <Box>
-                <NumInput
-                  data-testid="topic-replication-factor"
-                  disabled={isServerless()}
-                  min={1}
-                  onChange={(e) => {
-                    state.replicationFactor = e;
-                  }}
-                  placeholder={state.defaults.replicationFactor}
-                  value={state.replicationFactor}
-                />
-                <Box
-                  color="red.500"
-                  fontSize="12px"
-                  fontWeight={500}
-                  visibility={replicationFactorError ? undefined : 'hidden'}
-                >
-                  {replicationFactorError}
-                </Box>
+              <Box
+                color="red.500"
+                fontSize="12px"
+                fontWeight={500}
+                visibility={replicationFactorError ? undefined : 'hidden'}
+              >
+                {replicationFactorError}
               </Box>
-            </Label>
+            </Box>
+          </Label>
 
-            {!api.isRedpanda && (
-              <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
-                <NumInput
-                  data-testid="topic-min-insync-replicas"
-                  min={1}
-                  onChange={(e) => {
-                    state.minInSyncReplicas = e;
-                  }}
-                  placeholder={state.defaults.minInSyncReplicas}
-                  value={state.minInSyncReplicas}
-                />
-              </Label>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
-            {!isServerless() && (
-              <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
-                <SingleSelect<CleanupPolicyType>
-                  isReadOnly={isServerless()}
-                  onChange={(e) => {
-                    state.cleanupPolicy = e;
-                  }}
-                  options={[
-                    { value: 'delete', label: 'delete' },
-                    { value: 'compact', label: 'compact' },
-                    { value: 'compact,delete', label: 'compact,delete' },
-                  ]}
-                  value={state.cleanupPolicy}
-                />
-              </Label>
-            )}
-            <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
-              <RetentionTimeSelect
-                data-testid="topic-retention-time"
-                defaultConfigValue={state.defaults.retentionTime}
-                onChangeUnit={(x) => {
-                  state.retentionTimeUnit = x;
+          {!api.isRedpanda && (
+            <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
+              <NumInput
+                data-testid="topic-min-insync-replicas"
+                min={1}
+                onChange={(e) => {
+                  state.minInSyncReplicas = e;
                 }}
-                onChangeValue={(x) => {
-                  state.retentionTimeMs = x;
-                }}
-                unit={state.retentionTimeUnit}
-                value={state.retentionTimeMs}
+                placeholder={state.defaults.minInSyncReplicas}
+                value={state.minInSyncReplicas}
               />
             </Label>
-            <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
-              <RetentionSizeSelect
-                data-testid="topic-retention-size"
-                defaultConfigValue={state.defaults.retentionBytes}
-                onChangeUnit={(x) => {
-                  state.retentionSizeUnit = x;
-                }}
-                onChangeValue={(x) => {
-                  state.retentionSize = x;
-                }}
-                unit={state.retentionSizeUnit}
-                value={state.retentionSize}
-              />
-            </Label>
-          </div>
-
-          {!isServerless() && (
-            <div>
-              <h4 style={{ fontSize: '13px' }}>Additional Configuration</h4>
-              <KeyValuePairEditor entries={state.additionalConfig} />
-            </div>
           )}
         </div>
+
+        <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
+          {!isServerless() && (
+            <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
+              <SingleSelect<CleanupPolicyType>
+                isReadOnly={isServerless()}
+                onChange={(e) => {
+                  state.cleanupPolicy = e;
+                }}
+                options={[
+                  { value: 'delete', label: 'delete' },
+                  { value: 'compact', label: 'compact' },
+                  { value: 'compact,delete', label: 'compact,delete' },
+                ]}
+                value={state.cleanupPolicy}
+              />
+            </Label>
+          )}
+          <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
+            <RetentionTimeSelect
+              data-testid="topic-retention-time"
+              defaultConfigValue={state.defaults.retentionTime}
+              onChangeUnit={(x) => {
+                state.retentionTimeUnit = x;
+              }}
+              onChangeValue={(x) => {
+                state.retentionTimeMs = x;
+              }}
+              unit={state.retentionTimeUnit}
+              value={state.retentionTimeMs}
+            />
+          </Label>
+          <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
+            <RetentionSizeSelect
+              data-testid="topic-retention-size"
+              defaultConfigValue={state.defaults.retentionBytes}
+              onChangeUnit={(x) => {
+                state.retentionSizeUnit = x;
+              }}
+              onChangeValue={(x) => {
+                state.retentionSize = x;
+              }}
+              unit={state.retentionSizeUnit}
+              value={state.retentionSize}
+            />
+          </Label>
+        </div>
+
+        {!isServerless() && (
+          <div>
+            <h4 style={{ fontSize: '13px' }}>Additional Configuration</h4>
+            <KeyValuePairEditor entries={state.additionalConfig} />
+          </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export function NumInput(p: {
@@ -470,7 +479,7 @@ function RetentionSizeSelect(p: {
   );
 }
 
-const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => (
+const KeyValuePairEditor = (p: { entries: TopicConfigEntry[] }) => (
   <div className="keyValuePairEditor">
     {p.entries.map((x, i) => (
       <KeyValuePair entries={p.entries} entry={x} key={String(i)} />
@@ -488,9 +497,9 @@ const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => (
       Add Entry
     </Button>
   </div>
-));
+);
 
-const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry }) => {
+const KeyValuePair = (p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry }) => {
   const { entry } = p;
 
   return (
@@ -525,7 +534,7 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
       </Button>
     </Box>
   );
-});
+};
 
 export type { Props as CreateTopicModalProps };
 export type { CreateTopicModalState };
@@ -554,29 +563,17 @@ const durationFactors = {
   years: 1000 * 60 * 60 * 24 * 365,
 } as const;
 
-@observer
-class UnitSelect<UnitType extends string> extends Component<{
+function UnitSelect<UnitType extends string>(props: {
   baseValue: number;
   unitFactors: { [index in UnitType]: number };
   onChange: (baseValue: number) => void;
   allowInfinite: boolean;
   className?: string;
-}> {
-  @observable unit: UnitType;
-
-  constructor(p: {
-    baseValue: number;
-    unitFactors: { [index in UnitType]: number };
-    onChange: (baseValue: number) => void;
-    allowInfinite: boolean;
-    className?: string;
-  }) {
-    super(p);
-
-    const value = this.props.baseValue;
-
-    // Find best initial unit, simply by chosing the shortest text representation
-    const textPairs = Object.entries(this.props.unitFactors)
+}) {
+  // Find best initial unit, simply by choosing the shortest text representation
+  const getInitialUnit = () => {
+    const value = props.baseValue;
+    const textPairs = Object.entries(props.unitFactors)
       .map(([unit, factor]) => ({
         unit: unit as UnitType,
         factor: factor as number,
@@ -597,86 +594,83 @@ class UnitSelect<UnitType extends string> extends Component<{
       .orderBy((x) => x.text.length);
 
     const shortestPair = textPairs[0];
-    this.unit = shortestPair.unit;
+    let initialUnit = shortestPair.unit;
 
-    if (this.props.allowInfinite && value < 0) {
-      this.unit = 'infinite' as UnitType;
+    if (props.allowInfinite && value < 0) {
+      initialUnit = 'infinite' as UnitType;
     }
 
-    makeObservable(this);
+    return initialUnit;
+  };
+
+  const [unit, setUnit] = useState<UnitType>(getInitialUnit());
+
+  const unitFactors = props.unitFactors;
+  const unitValue = props.baseValue / unitFactors[unit];
+
+  const numDisabled = unit === 'infinite';
+
+  let placeholder: string | undefined;
+  if (unit === 'infinite') {
+    placeholder = 'Infinite';
   }
 
-  render() {
-    const unitFactors = this.props.unitFactors;
-    const unit = this.unit;
-    const unitValue = this.props.baseValue / unitFactors[unit];
-
-    const numDisabled = unit === 'infinite';
-
-    let placeholder: string | undefined;
-    if (unit === 'infinite') {
-      placeholder = 'Infinite';
-    }
-
-    const selectOptions = Object.entries(unitFactors).map(([name]) => {
+  const selectOptions = Object.entries(unitFactors)
+    .map(([name]) => {
       const isSpecial = name === 'infinite';
       return {
         value: name as UnitType,
         label: isSpecial ? titleCase(name) : name,
         // style: isSpecial ? { fontStyle: 'italic' } : undefined,
       };
-    });
+    })
+    .filter((x) => props.allowInfinite || x.value !== 'infinite');
 
-    if (!this.props.allowInfinite) {
-      selectOptions.removeAll((x) => x.value === 'infinite');
-    }
+  return (
+    <NumInput
+      addonAfter={
+        <Select<UnitType>
+          // style={{ minWidth: '90px' }}
+          onChange={(arg) => {
+            if (isSingleValue(arg) && arg) {
+              const u = arg.value as UnitType;
+              const changedFromInfinite = unit === 'infinite' && u !== 'infinite';
 
-    return (
-      <NumInput
-        addonAfter={
-          <Select<UnitType>
-            // style={{ minWidth: '90px' }}
-            onChange={(arg) => {
-              if (isSingleValue(arg) && arg) {
-                const u = arg.value as UnitType;
-                const changedFromInfinite = this.unit === 'infinite' && u !== 'infinite';
-
-                this.unit = u;
-                if (this.unit === 'infinite') {
-                  this.props.onChange(unitFactors[this.unit]);
-                }
-
-                if (changedFromInfinite) {
-                  // Example: if new unit is "seconds", then we'd want 1000 ms
-                  // The "1*" is redundant of course, but left in to better clarify what
-                  // value we're trying to create and why
-                  const newValue = 1 * unitFactors[u];
-                  this.props.onChange(newValue);
-                }
+              setUnit(u);
+              if (u === 'infinite') {
+                props.onChange(unitFactors[u]);
               }
-            }}
-            options={selectOptions}
-            value={{ value: unit }}
-          />
-        }
-        className={this.props.className}
-        disabled={numDisabled}
-        min={0}
-        onChange={(x) => {
-          if (x === undefined) {
-            this.props.onChange(0);
-            return;
-          }
 
-          const factor = unitFactors[this.unit];
-          const bytes = x * factor;
-          this.props.onChange(bytes);
-        }}
-        placeholder={placeholder}
-        value={numDisabled ? undefined : unitValue}
-      />
-    );
-  }
+              if (changedFromInfinite) {
+                // Example: if new unit is "seconds", then we'd want 1000 ms
+                // The "1*" is redundant of course, but left in to better clarify what
+                // value we're trying to create and why
+                const newValue = 1 * unitFactors[u];
+                props.onChange(newValue);
+              }
+            }
+          }}
+          options={selectOptions}
+          value={{ value: unit }}
+        />
+      }
+      className={props.className}
+      disabled={numDisabled}
+      min={0}
+      onChange={(x) => {
+        if (x === undefined) {
+          props.onChange(0);
+          return;
+        }
+
+        const factor = unitFactors[unit];
+        const bytes = x * factor;
+        props.onChange(bytes);
+      }}
+      placeholder={placeholder}
+      value={numDisabled ? undefined : unitValue}
+    />
+  );
 }
 
 export function DataSizeSelect(p: {
@@ -766,5 +760,311 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
         </div>
       </div>
     </div>
+  );
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+function getRetentionTimeFinalValue(value: number | undefined, unit: RetentionTimeUnit) {
+  if (unit === 'default') {
+    return;
+  }
+
+  if (value === undefined) {
+    throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
+  }
+
+  if (unit === 'ms') return value;
+  if (unit === 'seconds') return value * 1000;
+  if (unit === 'minutes') return value * 1000 * 60;
+  if (unit === 'hours') return value * 1000 * 60 * 60;
+  if (unit === 'days') return value * 1000 * 60 * 60 * 24;
+  if (unit === 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
+  if (unit === 'years') return value * 1000 * 60 * 60 * 24 * 365;
+  if (unit === 'infinite') return -1;
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+function getRetentionSizeFinalValue(value: number | undefined, unit: RetentionSizeUnit) {
+  if (unit === 'default') {
+    return;
+  }
+
+  if (value === undefined) {
+    throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
+  }
+
+  if (unit === 'Bit') return value;
+  if (unit === 'KiB') return value * 1024;
+  if (unit === 'MiB') return value * 1024 * 1024;
+  if (unit === 'GiB') return value * 1024 * 1024 * 1024;
+  if (unit === 'TiB') return value * 1024 * 1024 * 1024 * 1024;
+  if (unit === 'infinite') return -1;
+}
+
+function createInitialState(tryGetBrokerConfig: (name: string) => string | undefined): CreateTopicModalState {
+  return {
+    topicName: '',
+    retentionTimeMs: 1,
+    retentionTimeUnit: 'default',
+    retentionSize: 1,
+    retentionSizeUnit: 'default',
+    partitions: undefined,
+    cleanupPolicy: 'delete',
+    minInSyncReplicas: undefined,
+    replicationFactor: undefined,
+    additionalConfig: [{ name: '', value: '' }],
+    defaults: {
+      get retentionTime() {
+        return tryGetBrokerConfig('log.retention.ms');
+      },
+      get retentionBytes() {
+        return tryGetBrokerConfig('log.retention.bytes');
+      },
+      get replicationFactor() {
+        return tryGetBrokerConfig('default.replication.factor');
+      },
+      get partitions() {
+        return tryGetBrokerConfig('num.partitions');
+      },
+      get cleanupPolicy() {
+        return tryGetBrokerConfig('log.cleanup.policy');
+      },
+      get minInSyncReplicas() {
+        return '1';
+      },
+    },
+    hasErrors: false,
+  };
+}
+
+export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { mutateAsync: createTopic } = useCreateTopicMutation();
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<{ error?: unknown; returnValue?: ReactElement } | null>(null);
+
+  const tryGetBrokerConfig = (configName: string): string | undefined =>
+    api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
+
+  const stateRef = useRef<CreateTopicModalState>(createInitialState(tryGetBrokerConfig));
+
+  const state = new Proxy(stateRef.current, {
+    set(target, prop, value) {
+      // biome-ignore lint/suspicious/noExplicitAny: proxy trap requires any
+      (target as any)[prop] = value;
+      forceUpdate();
+      return true;
+    },
+  }) as CreateTopicModalState;
+
+  // Fetch broker configs on mount so defaults are ready when the modal opens
+  useEffect(() => {
+    api.refreshCluster();
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      api.refreshCluster();
+      stateRef.current = createInitialState(tryGetBrokerConfig);
+      setResult(null);
+      forceUpdate();
+    }
+  }, [isOpen]);
+
+  const isOkEnabled = TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors;
+
+  const handleClose = () => {
+    setResult(null);
+    onClose();
+  };
+
+  const handleOk = async () => {
+    if (result?.error) {
+      setResult(null);
+      return;
+    }
+
+    const currentState = stateRef.current;
+
+    setIsLoading(true);
+    try {
+      if (!currentState.topicName) {
+        throw new Error('"Topic Name" must be set');
+      }
+      if (!currentState.cleanupPolicy) {
+        throw new Error('"Cleanup Policy" must be set');
+      }
+
+      const config: { name: string; value: string }[] = [];
+      const setVal = (name: string, value: string | number | undefined) => {
+        if (value === undefined) return;
+        config.removeAll((x) => x.name === name);
+        config.push({ name, value: String(value) });
+      };
+
+      for (const x of currentState.additionalConfig) {
+        setVal(x.name, x.value);
+      }
+
+      if (currentState.retentionTimeUnit !== 'default') {
+        setVal(
+          'retention.ms',
+          getRetentionTimeFinalValue(currentState.retentionTimeMs, currentState.retentionTimeUnit)
+        );
+      }
+      if (currentState.retentionSizeUnit !== 'default') {
+        setVal(
+          'retention.bytes',
+          getRetentionSizeFinalValue(currentState.retentionSize, currentState.retentionSizeUnit)
+        );
+      }
+      if (currentState.minInSyncReplicas !== undefined) {
+        setVal('min.insync.replicas', currentState.minInSyncReplicas);
+      }
+
+      setVal('cleanup.policy', currentState.cleanupPolicy);
+
+      const apiResult = await createTopic({
+        topic: {
+          name: currentState.topicName,
+          partitionCount: currentState.partitions ?? Number(currentState.defaults.partitions ?? '-1'),
+          replicationFactor: currentState.replicationFactor ?? Number(currentState.defaults.replicationFactor ?? '-1'),
+          configs: config.filter((x) => x.name.length > 0).map((x) => ({ name: x.name, value: x.value })),
+        },
+        validateOnly: false,
+      });
+
+      const returnValue = (
+        <Grid
+          alignItems="center"
+          columnGap={2}
+          justifyContent="center"
+          justifyItems="flex-end"
+          py={2}
+          rowGap={1}
+          templateColumns="auto auto"
+        >
+          <Text>Name:</Text>
+          <Flex alignItems="center" gap={2} justifySelf="start">
+            <Text noOfLines={1} whiteSpace="break-spaces" wordBreak="break-word">
+              {apiResult.topicName}
+            </Text>
+            <CopyButton content={apiResult.topicName} variant="ghost" />
+          </Flex>
+          <Text>Partitions:</Text>
+          <Text justifySelf="start">{String(apiResult.partitionCount).replace('-1', '(Default)')}</Text>
+          <Text>Replication Factor:</Text>
+          <Text justifySelf="start">{String(apiResult.replicationFactor).replace('-1', '(Default)')}</Text>
+        </Grid>
+      );
+
+      setResult({ returnValue, error: undefined });
+
+      api.refreshClusterOverview();
+      api.refreshClusterHealth().catch(() => {
+        // Error handling managed by API layer
+      });
+    } catch (e) {
+      setResult({ error: e });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderError = (err: unknown): ReactElement => {
+    let content: ReactNode;
+    let title = 'Error';
+    const codeBoxStyle = {
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      color: 'hsl(0deg 0% 25%)',
+      margin: '0em 1em',
+    };
+
+    if (typeof err === 'string') {
+      content = <div style={codeBoxStyle}>{err}</div>;
+    } else if (err instanceof Error) {
+      title = err.name;
+      content = <div style={codeBoxStyle}>{err.message}</div>;
+    } else {
+      content = <div style={codeBoxStyle}>{JSON.stringify(err, null, 4)}</div>;
+    }
+
+    return <Result extra={content} status="error" title={title} />;
+  };
+
+  const renderSuccess = (response: ReactElement | undefined) => (
+    <Result
+      extra={
+        <VStack>
+          <Box>{response}</Box>
+          <Button
+            data-testid="create-topic-success__close-button"
+            onClick={handleClose}
+            size="lg"
+            style={{ width: '16rem' }}
+            variant="solid"
+          >
+            Close
+          </Button>
+        </VStack>
+      }
+      status="success"
+      title="Topic created!"
+    />
+  );
+
+  let content: ReactElement;
+  let modalState: 'error' | 'success' | 'normal' = 'normal';
+
+  if (result) {
+    if (result.error) {
+      modalState = 'error';
+      content = renderError(result.error);
+    } else {
+      modalState = 'success';
+      content = renderSuccess(result.returnValue);
+    }
+  } else {
+    content = <CreateTopicModalContent state={state} />;
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose}>
+      <ModalOverlay />
+      <ModalContent
+        style={{
+          width: '80%',
+          minWidth: '600px',
+          maxWidth: '1000px',
+          top: '50px',
+          paddingTop: '10px',
+          paddingBottom: '10px',
+        }}
+      >
+        {modalState !== 'success' && <ModalHeader>Create Topic</ModalHeader>}
+        <ModalBody>{content}</ModalBody>
+        {modalState !== 'success' && (
+          <ModalFooter>
+            <Flex gap={2}>
+              {modalState === 'normal' && (
+                <Button onClick={handleClose} variant="ghost">
+                  Cancel
+                </Button>
+              )}
+              <Button
+                data-testid="onOk-button"
+                isDisabled={!isOkEnabled}
+                isLoading={isLoading}
+                onClick={handleOk}
+                variant="solid"
+              >
+                {modalState === 'error' ? 'Back' : 'Create'}
+              </Button>
+            </Flex>
+          </ModalFooter>
+        )}
+      </ModalContent>
+    </Modal>
   );
 }
