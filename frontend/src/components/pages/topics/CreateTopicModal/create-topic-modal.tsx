@@ -881,38 +881,44 @@ export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose
 
     const currentState = stateRef.current;
 
-    if (!currentState.topicName) {
-      throw new Error('"Topic Name" must be set');
-    }
-    if (!currentState.cleanupPolicy) {
-      throw new Error('"Cleanup Policy" must be set');
-    }
-
-    const config: { name: string; value: string }[] = [];
-    const setVal = (name: string, value: string | number | undefined) => {
-      if (value === undefined) return;
-      config.removeAll((x) => x.name === name);
-      config.push({ name, value: String(value) });
-    };
-
-    for (const x of currentState.additionalConfig) {
-      setVal(x.name, x.value);
-    }
-
-    if (currentState.retentionTimeUnit !== 'default') {
-      setVal('retention.ms', getRetentionTimeFinalValue(currentState.retentionTimeMs, currentState.retentionTimeUnit));
-    }
-    if (currentState.retentionSizeUnit !== 'default') {
-      setVal('retention.bytes', getRetentionSizeFinalValue(currentState.retentionSize, currentState.retentionSizeUnit));
-    }
-    if (currentState.minInSyncReplicas !== undefined) {
-      setVal('min.insync.replicas', currentState.minInSyncReplicas);
-    }
-
-    setVal('cleanup.policy', currentState.cleanupPolicy);
-
     setIsLoading(true);
     try {
+      if (!currentState.topicName) {
+        throw new Error('"Topic Name" must be set');
+      }
+      if (!currentState.cleanupPolicy) {
+        throw new Error('"Cleanup Policy" must be set');
+      }
+
+      const config: { name: string; value: string }[] = [];
+      const setVal = (name: string, value: string | number | undefined) => {
+        if (value === undefined) return;
+        config.removeAll((x) => x.name === name);
+        config.push({ name, value: String(value) });
+      };
+
+      for (const x of currentState.additionalConfig) {
+        setVal(x.name, x.value);
+      }
+
+      if (currentState.retentionTimeUnit !== 'default') {
+        setVal(
+          'retention.ms',
+          getRetentionTimeFinalValue(currentState.retentionTimeMs, currentState.retentionTimeUnit)
+        );
+      }
+      if (currentState.retentionSizeUnit !== 'default') {
+        setVal(
+          'retention.bytes',
+          getRetentionSizeFinalValue(currentState.retentionSize, currentState.retentionSizeUnit)
+        );
+      }
+      if (currentState.minInSyncReplicas !== undefined) {
+        setVal('min.insync.replicas', currentState.minInSyncReplicas);
+      }
+
+      setVal('cleanup.policy', currentState.cleanupPolicy);
+
       const apiResult = await createTopic({
         topic: {
           name: currentState.topicName,
