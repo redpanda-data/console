@@ -9,22 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { useQuery } from '@connectrpc/connect-query';
 import { Alert, AlertIcon, Button, DataTable, Result, Skeleton } from '@redpanda-data/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { SkipIcon } from 'components/icons';
-import { Link } from 'components/redpanda-ui/components/typography';
+import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { useMemo } from 'react';
 
+import { useListQuotas } from '../../../hooks/use-list-quotas';
 import {
-  ListQuotasRequestSchema,
   Quota_EntityType,
   type Quota_Value,
   Quota_ValueType,
 } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
-import { listQuotas } from '../../../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
-import { MAX_PAGE_SIZE } from '../../../react-query/react-query.utils';
 import { InfoText } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -47,14 +43,10 @@ const mapEntityTypeToDisplay = (entityType: Quota_EntityType): 'client-id' | 'us
   }
 };
 
-const request = create(ListQuotasRequestSchema, { pageSize: MAX_PAGE_SIZE });
-
 const QuotasList = () => {
   const navigate = useNavigate({ from: '/quotas' });
   const search = useSearch({ from: '/quotas' });
-  const { data, error, isLoading } = useQuery(listQuotas, request, {
-    refetchOnMount: 'always',
-  });
+  const { data, error, isLoading } = useListQuotas();
 
   const quotasData = useMemo(() => {
     if (!data?.quotas) {
@@ -107,7 +99,6 @@ const QuotasList = () => {
   }
 
   if (error) {
-    console.error('[QuotasList] Error fetching quotas:', error.message, error);
     const isPermissionError = error.message.includes('permission') || error.message.includes('forbidden');
 
     if (isPermissionError) {
@@ -123,11 +114,11 @@ const QuotasList = () => {
               status={403}
               title="Forbidden"
               userMessage={
-                <p>
+                <Text>
                   You are not allowed to view this page.
                   <br />
                   Contact the administrator if you think this is an error.
-                </p>
+                </Text>
               }
             />
           </Section>
