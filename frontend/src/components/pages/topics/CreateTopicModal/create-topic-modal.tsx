@@ -857,6 +857,11 @@ export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose
     },
   }) as CreateTopicModalState;
 
+  // Fetch broker configs on mount so defaults are ready when the modal opens
+  useEffect(() => {
+    api.refreshCluster();
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       api.refreshCluster();
