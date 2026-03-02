@@ -74,20 +74,20 @@ type Pipeline = {
   description: string;
   state: Pipeline_State;
   configYaml: string;
-  input?: string;
+  inputs: string[];
   processors: string[];
   outputs: string[];
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
-  const { input, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
+  const { inputs, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
     description: apiPipeline.description,
     state: apiPipeline.state,
     configYaml: apiPipeline.configYaml,
-    input,
+    inputs,
     processors,
     outputs,
   };
@@ -333,15 +333,32 @@ const createColumns = ({
     ),
   },
   {
-    accessorKey: 'input',
+    accessorKey: 'inputs',
     header: 'Input',
-    filterFn: createFilterFn('option'),
+    filterFn: createFilterFn('multiOption'),
     cell: ({ row }) => {
-      const input = row.getValue('input') as string | undefined;
+      const inputs = row.getValue('inputs') as string[];
+      if (inputs.length === 0) {
+        return null;
+      }
       return (
-        <div className="flex min-w-[184px] items-center gap-4">
-          {input ? <Badge variant="neutral-inverted">{input}</Badge> : null}
-        </div>
+        <BadgeGroup
+          className="min-w-[184px]"
+          maxVisible={2}
+          renderOverflowContent={(overflow) => (
+            <List>
+              {inputs.slice(-overflow.length).map((o) => (
+                <ListItem key={o?.toString()}>{o}</ListItem>
+              ))}
+            </List>
+          )}
+        >
+          {inputs.map((i) => (
+            <Badge key={i} variant="neutral-inverted">
+              {i}
+            </Badge>
+          ))}
+        </BadgeGroup>
       );
     },
   },
@@ -468,9 +485,9 @@ const PipelineListPageContent = () => {
   );
 
   const filterColumns = useMemo<FilterColumnConfig[]>(() => {
-    const inputOptions = [...new Set(pipelines.map((p) => p.input).filter(Boolean))].map((v) => ({
-      value: v as string,
-      label: v as string,
+    const inputOptions = [...new Set(pipelines.flatMap((p) => p.inputs))].map((v) => ({
+      value: v,
+      label: v,
     }));
     const processorOptions = [...new Set(pipelines.flatMap((p) => p.processors))].map((v) => ({
       value: v,
@@ -494,9 +511,9 @@ const PipelineListPageContent = () => {
         placeholder: 'Search by name...',
       },
       {
-        id: 'input',
+        id: 'inputs',
         displayName: 'Input',
-        type: 'option' as const,
+        type: 'multiOption' as const,
         options: inputOptions,
       },
       {

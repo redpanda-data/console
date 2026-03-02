@@ -523,6 +523,25 @@ export const getConnectTemplate = ({
 const firstKey = (obj: unknown): string | undefined =>
   obj && typeof obj === 'object' && !Array.isArray(obj) ? Object.keys(obj)[0] : undefined;
 
+/** Extract child input names from a multi-input component (broker, sequence). */
+const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
+  // broker/sequence: .inputs[] is an array of input objects
+  if (
+    (inputKey === 'broker' || inputKey === 'sequence') &&
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    'inputs' in value
+  ) {
+    const items = (value as { inputs?: unknown[] }).inputs;
+    if (Array.isArray(items)) {
+      return items.map(firstKey).filter((k): k is string => !!k);
+    }
+  }
+
+  return;
+};
+
 /** Extract child output names from a multi-output component (broker, switch, fallback). */
 const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefined => {
   // broker: broker.outputs[] is an array of output objects
@@ -556,14 +575,14 @@ type ParsedYamlConfig = {
 };
 
 type ParsedConfigComponents = {
-  input?: string;
+  inputs: string[];
   processors: string[];
   outputs: string[];
 };
 
 /** Parse a pipeline's configYaml to extract input, processor, and output component names. */
 export const parseConfigComponents = (configYaml: string): ParsedConfigComponents => {
-  const empty: ParsedConfigComponents = { processors: [], outputs: [] };
+  const empty: ParsedConfigComponents = { inputs: [], processors: [], outputs: [] };
   if (!configYaml) {
     return empty;
   }
@@ -578,6 +597,15 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
       ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
       : [];
 
+    const inputObj = config.input;
+    let inputs: string[] = [];
+    if (inputObj && typeof inputObj === 'object') {
+      const inputKey = firstKey(inputObj);
+      if (inputKey) {
+        inputs = parseMultiInputs(inputKey, inputObj[inputKey]) ?? [inputKey];
+      }
+    }
+
     const outputObj = config.output;
     let outputs: string[] = [];
     if (outputObj && typeof outputObj === 'object') {
@@ -587,7 +615,7 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
       }
     }
 
-    return { input: firstKey(config.input), processors, outputs };
+    return { inputs, processors, outputs };
   } catch {
     return empty;
   }
