@@ -21,10 +21,8 @@ import {
   Box,
   Button,
   Checkbox,
-  CopyButton,
   DataTable,
   Flex,
-  Grid,
   Icon,
   Popover,
   SearchField,
@@ -38,19 +36,17 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 
-import { CreateTopicModalContent, type CreateTopicModalState } from './CreateTopicModal/create-topic-modal';
+import { CreateTopicModal } from './CreateTopicModal/create-topic-modal';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/use-pagination-params';
 import { api } from '../../../state/backend-api';
-import { type Topic, TopicActions, type TopicConfigEntry } from '../../../state/rest-interfaces';
+import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
-import createAutoModal from '../../../utils/create-auto-modal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
-import type { RetentionSizeUnit, RetentionTimeUnit } from '../../../utils/topic-utils';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsx-utils';
 import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/page-content';
@@ -80,11 +76,7 @@ const TopicList: FC = () => {
 
   const { data, isLoading, isError, refetch: refetchTopics } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
-  const { mutateAsync: createTopic } = useCreateTopicMutation();
-  const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(
-    () => makeCreateTopicModal(createTopic),
-    [createTopic]
-  );
+  const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
 
   const refreshData = useCallback(() => {
     api.refreshClusterOverview();
@@ -154,7 +146,7 @@ const TopicList: FC = () => {
         <Button
           className="min-w-[160px]"
           data-testid="create-topic-button"
-          onClick={() => showCreateTopicModal()}
+          onClick={() => setIsCreateTopicModalOpen(true)}
           variant="solid"
         >
           Create topic
@@ -198,7 +190,7 @@ const TopicList: FC = () => {
             Show internal topics
           </Checkbox>
 
-          <CreateTopicModal />
+          <CreateTopicModal isOpen={isCreateTopicModalOpen} onClose={() => setIsCreateTopicModalOpen(false)} />
         </div>
         <Box my={4}>
           <TopicsTable
@@ -528,219 +520,6 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
 function hasDeletePrivilege() {
   // TODO - we will provide ACL for this
   return true;
-}
-
-// Regex for validating topic names
-const TOPIC_NAME_REGEX = /^\S+$/;
-
-function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutation>['mutateAsync']) {
-  api.refreshCluster(); // get brokers (includes configs) to display default values
-  const tryGetBrokerConfig = (configName: string): string | undefined =>
-    api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
-    if (unit === 'default') {
-      return;
-    }
-
-    if (value === undefined) {
-      throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
-    }
-
-    if (unit === 'ms') {
-      return value;
-    }
-    if (unit === 'seconds') {
-      return value * 1000;
-    }
-    if (unit === 'minutes') {
-      return value * 1000 * 60;
-    }
-    if (unit === 'hours') {
-      return value * 1000 * 60 * 60;
-    }
-    if (unit === 'days') {
-      return value * 1000 * 60 * 60 * 24;
-    }
-    if (unit === 'months') {
-      return value * 1000 * 60 * 60 * 24 * (365 / 12);
-    }
-    if (unit === 'years') {
-      return value * 1000 * 60 * 60 * 24 * 365;
-    }
-
-    if (unit === 'infinite') {
-      return -1;
-    }
-  };
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
-    if (unit === 'default') {
-      return;
-    }
-
-    if (value === undefined) {
-      throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
-    }
-
-    if (unit === 'Bit') {
-      return value;
-    }
-    if (unit === 'KiB') {
-      return value * 1024;
-    }
-    if (unit === 'MiB') {
-      return value * 1024 * 1024;
-    }
-    if (unit === 'GiB') {
-      return value * 1024 * 1024 * 1024;
-    }
-    if (unit === 'TiB') {
-      return value * 1024 * 1024 * 1024 * 1024;
-    }
-
-    if (unit === 'infinite') {
-      return -1;
-    }
-  };
-
-  return createAutoModal<void, CreateTopicModalState>({
-    modalProps: {
-      title: 'Create Topic',
-      style: {
-        width: '80%',
-        minWidth: '600px',
-        maxWidth: '1000px',
-        top: '50px',
-        paddingTop: '10px',
-        paddingBottom: '10px',
-      },
-
-      okText: 'Create',
-      successTitle: 'Topic created!',
-
-      closable: false,
-      keyboard: false,
-      maskClosable: false,
-    },
-    onCreate: () => ({
-      topicName: '',
-
-      // todo: get 'log.retention.bytes' and 'log.retention.ms' from any broker and show it for "default"
-
-      retentionTimeMs: 1,
-      retentionTimeUnit: 'default' as const,
-
-      retentionSize: 1,
-      retentionSizeUnit: 'default' as const,
-
-      partitions: undefined,
-      cleanupPolicy: 'delete' as const,
-      minInSyncReplicas: undefined,
-      replicationFactor: undefined,
-
-      additionalConfig: [{ name: '', value: '' }],
-
-      defaults: {
-        get retentionTime() {
-          return tryGetBrokerConfig('log.retention.ms');
-        },
-        get retentionBytes() {
-          return tryGetBrokerConfig('log.retention.bytes');
-        },
-        get replicationFactor() {
-          return tryGetBrokerConfig('default.replication.factor');
-        },
-        get partitions() {
-          return tryGetBrokerConfig('num.partitions');
-        },
-        get cleanupPolicy() {
-          return tryGetBrokerConfig('log.cleanup.policy');
-        },
-        get minInSyncReplicas() {
-          return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
-        },
-      },
-      hasErrors: false,
-    }),
-    isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-    onOk: async (state) => {
-      if (!state.topicName) {
-        throw new Error('"Topic Name" must be set');
-      }
-      if (!state.cleanupPolicy) {
-        throw new Error('"Cleanup Policy" must be set');
-      }
-
-      const config: TopicConfigEntry[] = [];
-      const setVal = (name: string, value: string | number | undefined) => {
-        if (value === undefined) {
-          return;
-        }
-        config.removeAll((x) => x.name === name);
-        config.push({ name, value: String(value) });
-      };
-
-      for (const x of state.additionalConfig) {
-        setVal(x.name, x.value);
-      }
-
-      if (state.retentionTimeUnit !== 'default') {
-        setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
-      }
-      if (state.retentionSizeUnit !== 'default') {
-        setVal('retention.bytes', getRetentionSizeFinalValue(state.retentionSize, state.retentionSizeUnit));
-      }
-      if (state.minInSyncReplicas !== undefined) {
-        setVal('min.insync.replicas', state.minInSyncReplicas);
-      }
-
-      setVal('cleanup.policy', state.cleanupPolicy);
-
-      const result = await createTopic({
-        topic: {
-          name: state.topicName,
-          partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
-          replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-          configs: config.filter((x) => x.name.length > 0).map((x) => ({ name: x.name, value: x.value })),
-        },
-        validateOnly: false,
-      });
-
-      return (
-        <Grid
-          alignItems="center"
-          columnGap={2}
-          justifyContent="center"
-          justifyItems="flex-end"
-          py={2}
-          rowGap={1}
-          templateColumns="auto auto"
-        >
-          <Text>Name:</Text>
-          <Flex alignItems="center" gap={2} justifySelf="start">
-            <Text noOfLines={1} whiteSpace="break-spaces" wordBreak="break-word">
-              {result.topicName}
-            </Text>
-            <CopyButton content={result.topicName} variant="ghost" />
-          </Flex>
-          <Text>Partitions:</Text>
-          <Text justifySelf="start">{String(result.partitionCount).replace('-1', '(Default)')}</Text>
-          <Text>Replication Factor:</Text>
-          <Text justifySelf="start">{String(result.replicationFactor).replace('-1', '(Default)')}</Text>
-        </Grid>
-      );
-    },
-    onSuccess: (_state, _result) => {
-      api.refreshClusterOverview();
-      api.refreshClusterHealth().catch(() => {
-        // Error handling managed by API layer
-      });
-    },
-    content: (state) => <CreateTopicModalContent state={state} />,
-  });
 }
 
 export default TopicList;

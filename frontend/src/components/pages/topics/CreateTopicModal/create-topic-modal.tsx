@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { type ReactElement, type ReactNode, useEffect, useReducer, useRef, useState } from 'react';
 
 import type { TopicConfigEntry } from '../../../../state/rest-interfaces';
 import { Label } from '../../../../utils/tsx-utils';
@@ -8,14 +8,27 @@ import './CreateTopicModal.scss';
 import {
   Box,
   Button,
+  CopyButton,
+  Flex,
+  Grid,
   Input,
   InputGroup,
   InputLeftAddon,
   InputRightAddon,
   isSingleValue,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Result,
   Select,
+  Text,
+  VStack,
 } from '@redpanda-data/ui';
 import { CloseIcon, PlusIcon } from 'components/icons';
+import { useCreateTopicMutation } from 'react-query/api/topic';
 
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backend-api';
@@ -34,6 +47,9 @@ import type { CleanupPolicyType } from '../types';
 
 // Regex for checking if value has 4 or more decimal places
 const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+
+// Regex for validating topic names
+const TOPIC_NAME_REGEX = /^\S+$/;
 
 type CreateTopicModalState = {
   topicName: string; // required
@@ -744,5 +760,300 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
         </div>
       </div>
     </div>
+  );
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+function getRetentionTimeFinalValue(value: number | undefined, unit: RetentionTimeUnit) {
+  if (unit === 'default') {
+    return;
+  }
+
+  if (value === undefined) {
+    throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
+  }
+
+  if (unit === 'ms') return value;
+  if (unit === 'seconds') return value * 1000;
+  if (unit === 'minutes') return value * 1000 * 60;
+  if (unit === 'hours') return value * 1000 * 60 * 60;
+  if (unit === 'days') return value * 1000 * 60 * 60 * 24;
+  if (unit === 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
+  if (unit === 'years') return value * 1000 * 60 * 60 * 24 * 365;
+  if (unit === 'infinite') return -1;
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+function getRetentionSizeFinalValue(value: number | undefined, unit: RetentionSizeUnit) {
+  if (unit === 'default') {
+    return;
+  }
+
+  if (value === undefined) {
+    throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
+  }
+
+  if (unit === 'Bit') return value;
+  if (unit === 'KiB') return value * 1024;
+  if (unit === 'MiB') return value * 1024 * 1024;
+  if (unit === 'GiB') return value * 1024 * 1024 * 1024;
+  if (unit === 'TiB') return value * 1024 * 1024 * 1024 * 1024;
+  if (unit === 'infinite') return -1;
+}
+
+function createInitialState(tryGetBrokerConfig: (name: string) => string | undefined): CreateTopicModalState {
+  return {
+    topicName: '',
+    retentionTimeMs: 1,
+    retentionTimeUnit: 'default',
+    retentionSize: 1,
+    retentionSizeUnit: 'default',
+    partitions: undefined,
+    cleanupPolicy: 'delete',
+    minInSyncReplicas: undefined,
+    replicationFactor: undefined,
+    additionalConfig: [{ name: '', value: '' }],
+    defaults: {
+      get retentionTime() {
+        return tryGetBrokerConfig('log.retention.ms');
+      },
+      get retentionBytes() {
+        return tryGetBrokerConfig('log.retention.bytes');
+      },
+      get replicationFactor() {
+        return tryGetBrokerConfig('default.replication.factor');
+      },
+      get partitions() {
+        return tryGetBrokerConfig('num.partitions');
+      },
+      get cleanupPolicy() {
+        return tryGetBrokerConfig('log.cleanup.policy');
+      },
+      get minInSyncReplicas() {
+        return '1';
+      },
+    },
+    hasErrors: false,
+  };
+}
+
+export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { mutateAsync: createTopic } = useCreateTopicMutation();
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<{ error?: unknown; returnValue?: ReactElement } | null>(null);
+
+  const tryGetBrokerConfig = (configName: string): string | undefined =>
+    api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
+
+  const stateRef = useRef<CreateTopicModalState>(createInitialState(tryGetBrokerConfig));
+
+  const state = new Proxy(stateRef.current, {
+    set(target, prop, value) {
+      // biome-ignore lint/suspicious/noExplicitAny: proxy trap requires any
+      (target as any)[prop] = value;
+      forceUpdate();
+      return true;
+    },
+  }) as CreateTopicModalState;
+
+  useEffect(() => {
+    if (isOpen) {
+      api.refreshCluster();
+      stateRef.current = createInitialState(tryGetBrokerConfig);
+      setResult(null);
+      forceUpdate();
+    }
+  }, [isOpen]);
+
+  const isOkEnabled = TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors;
+
+  const handleClose = () => {
+    setResult(null);
+    onClose();
+  };
+
+  const handleOk = async () => {
+    if (result?.error) {
+      setResult(null);
+      return;
+    }
+
+    const currentState = stateRef.current;
+
+    if (!currentState.topicName) {
+      throw new Error('"Topic Name" must be set');
+    }
+    if (!currentState.cleanupPolicy) {
+      throw new Error('"Cleanup Policy" must be set');
+    }
+
+    const config: { name: string; value: string }[] = [];
+    const setVal = (name: string, value: string | number | undefined) => {
+      if (value === undefined) return;
+      config.removeAll((x) => x.name === name);
+      config.push({ name, value: String(value) });
+    };
+
+    for (const x of currentState.additionalConfig) {
+      setVal(x.name, x.value);
+    }
+
+    if (currentState.retentionTimeUnit !== 'default') {
+      setVal('retention.ms', getRetentionTimeFinalValue(currentState.retentionTimeMs, currentState.retentionTimeUnit));
+    }
+    if (currentState.retentionSizeUnit !== 'default') {
+      setVal('retention.bytes', getRetentionSizeFinalValue(currentState.retentionSize, currentState.retentionSizeUnit));
+    }
+    if (currentState.minInSyncReplicas !== undefined) {
+      setVal('min.insync.replicas', currentState.minInSyncReplicas);
+    }
+
+    setVal('cleanup.policy', currentState.cleanupPolicy);
+
+    setIsLoading(true);
+    try {
+      const apiResult = await createTopic({
+        topic: {
+          name: currentState.topicName,
+          partitionCount: currentState.partitions ?? Number(currentState.defaults.partitions ?? '-1'),
+          replicationFactor: currentState.replicationFactor ?? Number(currentState.defaults.replicationFactor ?? '-1'),
+          configs: config.filter((x) => x.name.length > 0).map((x) => ({ name: x.name, value: x.value })),
+        },
+        validateOnly: false,
+      });
+
+      const returnValue = (
+        <Grid
+          alignItems="center"
+          columnGap={2}
+          justifyContent="center"
+          justifyItems="flex-end"
+          py={2}
+          rowGap={1}
+          templateColumns="auto auto"
+        >
+          <Text>Name:</Text>
+          <Flex alignItems="center" gap={2} justifySelf="start">
+            <Text noOfLines={1} whiteSpace="break-spaces" wordBreak="break-word">
+              {apiResult.topicName}
+            </Text>
+            <CopyButton content={apiResult.topicName} variant="ghost" />
+          </Flex>
+          <Text>Partitions:</Text>
+          <Text justifySelf="start">{String(apiResult.partitionCount).replace('-1', '(Default)')}</Text>
+          <Text>Replication Factor:</Text>
+          <Text justifySelf="start">{String(apiResult.replicationFactor).replace('-1', '(Default)')}</Text>
+        </Grid>
+      );
+
+      setResult({ returnValue, error: undefined });
+
+      api.refreshClusterOverview();
+      api.refreshClusterHealth().catch(() => {
+        // Error handling managed by API layer
+      });
+    } catch (e) {
+      setResult({ error: e });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderError = (err: unknown): ReactElement => {
+    let content: ReactNode;
+    let title = 'Error';
+    const codeBoxStyle = {
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      color: 'hsl(0deg 0% 25%)',
+      margin: '0em 1em',
+    };
+
+    if (typeof err === 'string') {
+      content = <div style={codeBoxStyle}>{err}</div>;
+    } else if (err instanceof Error) {
+      title = err.name;
+      content = <div style={codeBoxStyle}>{err.message}</div>;
+    } else {
+      content = <div style={codeBoxStyle}>{JSON.stringify(err, null, 4)}</div>;
+    }
+
+    return <Result extra={content} status="error" title={title} />;
+  };
+
+  const renderSuccess = (response: ReactElement | undefined) => (
+    <Result
+      extra={
+        <VStack>
+          <Box>{response}</Box>
+          <Button
+            data-testid="create-topic-success__close-button"
+            onClick={handleClose}
+            size="lg"
+            style={{ width: '16rem' }}
+            variant="solid"
+          >
+            Close
+          </Button>
+        </VStack>
+      }
+      status="success"
+      title="Topic created!"
+    />
+  );
+
+  let content: ReactElement;
+  let modalState: 'error' | 'success' | 'normal' = 'normal';
+
+  if (result) {
+    if (result.error) {
+      modalState = 'error';
+      content = renderError(result.error);
+    } else {
+      modalState = 'success';
+      content = renderSuccess(result.returnValue);
+    }
+  } else {
+    content = <CreateTopicModalContent state={state} />;
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose}>
+      <ModalOverlay />
+      <ModalContent
+        style={{
+          width: '80%',
+          minWidth: '600px',
+          maxWidth: '1000px',
+          top: '50px',
+          paddingTop: '10px',
+          paddingBottom: '10px',
+        }}
+      >
+        {modalState !== 'success' && <ModalHeader>Create Topic</ModalHeader>}
+        <ModalBody>{content}</ModalBody>
+        {modalState !== 'success' && (
+          <ModalFooter>
+            <Flex gap={2}>
+              {modalState === 'normal' && (
+                <Button onClick={handleClose} variant="ghost">
+                  Cancel
+                </Button>
+              )}
+              <Button
+                data-testid="onOk-button"
+                isDisabled={!isOkEnabled}
+                isLoading={isLoading}
+                onClick={handleOk}
+                variant="solid"
+              >
+                {modalState === 'error' ? 'Back' : 'Create'}
+              </Button>
+            </Flex>
+          </ModalFooter>
+        )}
+      </ModalContent>
+    </Modal>
   );
 }
