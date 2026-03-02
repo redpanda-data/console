@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import type { FC } from 'react';
 
 import type { Topic, TopicConsumer } from '../../../state/rest-interfaces';
@@ -28,7 +27,7 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 
 type TopicConsumersProps = { topic: Topic };
 
-export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
+export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
   let consumers = api.topicConsumers.get(topic.topicName);
   const isLoading = consumers === null;
   if (isLoading) {
@@ -62,4 +61,4 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
       sorting
     />
   );
-});
+};

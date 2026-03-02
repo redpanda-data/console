@@ -10,7 +10,6 @@
  */
 
 import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 
 import type {
   AclRule,
@@ -39,7 +38,7 @@ function flatResourceList(store: Acls) {
   return flatResources;
 }
 
-export default observer(({ acl }: AclListProps) => {
+export default ({ acl }: AclListProps) => {
   const resources = flatResourceList(acl);
 
   return (
@@ -107,4 +106,4 @@ export default observer(({ acl }: AclListProps) => {
       />
     </>
   );
-});
+};

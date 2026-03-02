@@ -19,7 +19,6 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import type { FC } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
@@ -30,7 +29,7 @@ export const PreviewFieldsModal: FC<{
   setShowDialog: (val: boolean) => void;
   messages: TopicMessage[];
   topicName: string;
-}> = observer(({ getShowDialog, setShowDialog, messages, topicName }) => (
+}> = ({ getShowDialog, setShowDialog, messages, topicName }) => (
   <Modal
     isOpen={getShowDialog()}
     onClose={() => {
@@ -56,4 +55,4 @@ export const PreviewFieldsModal: FC<{
       </ModalFooter>
     </ModalContent>
   </Modal>
-));
+);

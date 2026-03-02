@@ -10,12 +10,11 @@
  */
 
 import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Grid, GridItem, Heading } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { useState } from 'react';
 
 import type { Payload } from '../../../../../state/rest-interfaces';
 
-export const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
+export const TroubleshootReportViewer = (props: { payload: Payload }) => {
   const report = props.payload.troubleshootReport;
   const [show, setShow] = useState(true);
 
@@ -79,4 +78,4 @@ export const TroubleshootReportViewer = observer((props: { payload: Payload }) =
       </Alert>
     </Box>
   );
-});
+};

@@ -1,7 +1,6 @@
 import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
 import { PauseIcon, PlayIcon, RefreshIcon } from 'components/icons';
 import { autorun, observable } from 'mobx';
-import { observer } from 'mobx-react';
 
 /**
  * Copyright 2022 Redpanda Data, Inc.
@@ -83,7 +82,7 @@ autorun(() => {
   }
 });
 
-export const DataRefreshButton = observer(() => {
+export const DataRefreshButton = () => {
   // Track how many requests we've sent in total
   const countStr =
     autoRefresh.maxRequestCount > 1
@@ -152,6 +151,6 @@ export const DataRefreshButton = observer(() => {
       </Text>
     </div>
   );
-});
+};
 
 export default DataRefreshButton;

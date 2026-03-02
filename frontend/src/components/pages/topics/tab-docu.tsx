@@ -15,7 +15,6 @@ import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Button, Empty, VStack } from '@redpanda-data/ui';
 import { motion } from 'framer-motion';
-import { observer } from 'mobx-react';
 import ReactMarkdown, { defaultUrlTransform as baseUriTransformer } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -60,7 +59,6 @@ function sanitizeUrl(uri: string): string {
   return ''; // didn't match any allowed protocol, remove the link
 }
 
-@observer
 export class TopicDocumentation extends Component<{ topic: Topic }> {
   private readonly components = {
     // biome-ignore lint/suspicious/noExplicitAny: react-markdown component props are complex and dynamic

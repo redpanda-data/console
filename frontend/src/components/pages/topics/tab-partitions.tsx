@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import type { FC } from 'react';
 
 import { api } from '../../../state/backend-api';
@@ -30,7 +29,7 @@ type TopicPartitionsProps = {
   topic: Topic;
 };
 
-export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) => {
+export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const partitions = api.topicPartitions.get(topic.topicName);
   const paginationParams = usePaginationParams(partitions?.length ?? 0, uiState.topicSettings.partitionPageSize);
 
@@ -136,7 +135,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
       />
     </>
   );
-});
+};
 
 const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
   if (!(partition.partitionError || partition.waterMarksError)) {

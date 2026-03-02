@@ -11,7 +11,6 @@
 
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 import { AlertIcon } from 'components/icons';
-import { observer } from 'mobx-react';
 import React, { type PropsWithChildren, useState } from 'react';
 
 import type { TopicLogDirSummary } from '../../state/rest-interfaces';
@@ -65,7 +64,7 @@ export function range(start: number, end: number): number[] {
  * Reloading the page does not ensure we'll get the update!
  * If there are multiple backend instances, we might get connected to an old instance again when we trigger a reload.
  */
-export const UpdatePopup = observer(() => {
+export const UpdatePopup = () => {
   const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(true);
   if (IsDev) {
     return null;
@@ -121,7 +120,7 @@ export const UpdatePopup = observer(() => {
       </ModalContent>
     </Modal>
   );
-});
+};
 
 export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
   if (!summary.hint) {

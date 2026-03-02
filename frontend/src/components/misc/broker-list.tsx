@@ -11,7 +11,6 @@
 
 import { Tooltip } from '@redpanda-data/ui';
 import { ChevronRightIcon } from 'components/icons';
-import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 
 import { api, brokerMap } from '../../state/backend-api';
@@ -21,7 +20,6 @@ type BrokerListProps =
   | { brokerIds: number[]; addedIds?: number[]; removedIds?: number[]; leaderId?: number }
   | { partition: Partition };
 
-@observer
 export class BrokerList extends Component<BrokerListProps> {
   constructor(p: BrokerListProps) {
     super(p);
