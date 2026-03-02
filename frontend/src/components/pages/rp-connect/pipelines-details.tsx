@@ -244,7 +244,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
 export default RpConnectPipelinesDetails;
 
-const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
+const PipelineEditor = (p: { pipeline: Pipeline }) => {
   const { pipeline } = p;
 
   return (
@@ -262,7 +262,7 @@ const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
       </Flex>
     </Box>
   );
-});
+};
 
 export const LogsTab = observer((p: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
@@ -451,7 +451,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
   });
 }
 
-export const PipelineResources = observer((p: { resources?: Pipeline_Resources }) => {
+export const PipelineResources = (p: { resources?: Pipeline_Resources }) => {
   const r = p.resources;
 
   if (!r) {
@@ -463,4 +463,4 @@ export const PipelineResources = observer((p: { resources?: Pipeline_Resources }
       {tasks || '-'} Compute Units ({r.cpuShares} CPU / {r.memoryShares} Memory)
     </Flex>
   );
-});
+};

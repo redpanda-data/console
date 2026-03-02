@@ -52,7 +52,7 @@ const LegacyEmptyState = () => (
   </Flex>
 );
 
-export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
+export const PipelineStatus = (p: { status: Pipeline_State }) => {
   switch (p.status) {
     case Pipeline_State.UNSPECIFIED:
       return (
@@ -103,9 +103,9 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
         </Flex>
       );
   }
-});
+};
 
-export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
+export const PipelineThroughput = (p: { pipeline: Pipeline }) => {
   const { resources } = p.pipeline;
   if (!resources) {
     return null;
@@ -116,7 +116,7 @@ export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
       {resources.cpuShares} {resources.memoryShares}
     </>
   );
-});
+};
 
 @observer
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params

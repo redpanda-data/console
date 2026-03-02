@@ -11,7 +11,6 @@
 
 import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { observer } from 'mobx-react';
 import { useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
@@ -26,7 +25,6 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
-@observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   placeholder = 5;
 
@@ -108,92 +106,90 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   }
 }
 
-const ConnectorsList = observer(
-  ({ clusterName, connectors }: { clusterName: string; connectors: ClusterConnectorInfo[] }) => {
-    const [filteredResults, setFilteredResults] = useState<ClusterConnectorInfo[]>([]);
+const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; connectors: ClusterConnectorInfo[] }) => {
+  const [filteredResults, setFilteredResults] = useState<ClusterConnectorInfo[]>([]);
 
-    const isFilterMatch = (filter: string, item: ClusterConnectorInfo): boolean => {
-      try {
-        const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i');
-        return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
-      } catch (_e) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.warn('Invalid expression');
-        return item.name.toLowerCase().includes(filter.toLowerCase());
-      }
-    };
+  const isFilterMatch = (filter: string, item: ClusterConnectorInfo): boolean => {
+    try {
+      const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i');
+      return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
+    } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.warn('Invalid expression');
+      return item.name.toLowerCase().includes(filter.toLowerCase());
+    }
+  };
 
-    return (
-      <div>
-        <div style={{ display: 'flex', marginBottom: '.5em' }}>
-          <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
-            <Button variant="solid">Create connector</Button>
-          </Link>
-        </div>
-
-        <Box my={5}>
-          <SearchBar<ClusterConnectorInfo>
-            dataSource={() => connectors}
-            filterText={uiSettings.connectorsList.quickSearch}
-            isFilterMatch={isFilterMatch}
-            onFilteredDataChanged={setFilteredResults}
-            onQueryChanged={(filterText) => {
-              uiSettings.connectorsList.quickSearch = filterText;
-            }}
-            placeholderText="Enter search term/regex"
-          />
-        </Box>
-
-        <DataTable<ClusterConnectorInfo>
-          columns={[
-            {
-              header: 'Connector',
-              accessorKey: 'name',
-              cell: ({ row: { original } }) => (
-                <Link
-                  params={{
-                    clusterName: encodeURIComponent(clusterName),
-                    connector: encodeURIComponent(original.name),
-                  }}
-                  to="/connect-clusters/$clusterName/$connector"
-                >
-                  <Text whiteSpace="break-spaces" wordBreak="break-word">
-                    {original.name}
-                  </Text>
-                </Link>
-              ),
-              size: Number.POSITIVE_INFINITY,
-            },
-            {
-              header: 'Class',
-              accessorKey: 'class',
-              cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
-            },
-            {
-              header: 'Type',
-              accessorKey: 'type',
-              size: 100,
-            },
-            {
-              header: 'State',
-              accessorKey: 'state',
-              size: 120,
-              cell: ({ row: { original } }) => <TaskState observable={original} />,
-            },
-            {
-              header: 'Tasks',
-              size: 120,
-              cell: ({ row: { original } }) => <TasksColumn observable={original} />,
-            },
-          ]}
-          data={filteredResults}
-          defaultPageSize={10}
-          pagination
-          sorting
-        />
+  return (
+    <div>
+      <div style={{ display: 'flex', marginBottom: '.5em' }}>
+        <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
+          <Button variant="solid">Create connector</Button>
+        </Link>
       </div>
-    );
-  }
-);
+
+      <Box my={5}>
+        <SearchBar<ClusterConnectorInfo>
+          dataSource={() => connectors}
+          filterText={uiSettings.connectorsList.quickSearch}
+          isFilterMatch={isFilterMatch}
+          onFilteredDataChanged={setFilteredResults}
+          onQueryChanged={(filterText) => {
+            uiSettings.connectorsList.quickSearch = filterText;
+          }}
+          placeholderText="Enter search term/regex"
+        />
+      </Box>
+
+      <DataTable<ClusterConnectorInfo>
+        columns={[
+          {
+            header: 'Connector',
+            accessorKey: 'name',
+            cell: ({ row: { original } }) => (
+              <Link
+                params={{
+                  clusterName: encodeURIComponent(clusterName),
+                  connector: encodeURIComponent(original.name),
+                }}
+                to="/connect-clusters/$clusterName/$connector"
+              >
+                <Text whiteSpace="break-spaces" wordBreak="break-word">
+                  {original.name}
+                </Text>
+              </Link>
+            ),
+            size: Number.POSITIVE_INFINITY,
+          },
+          {
+            header: 'Class',
+            accessorKey: 'class',
+            cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
+          },
+          {
+            header: 'Type',
+            accessorKey: 'type',
+            size: 100,
+          },
+          {
+            header: 'State',
+            accessorKey: 'state',
+            size: 120,
+            cell: ({ row: { original } }) => <TaskState observable={original} />,
+          },
+          {
+            header: 'Tasks',
+            size: 120,
+            cell: ({ row: { original } }) => <TasksColumn observable={original} />,
+          },
+        ]}
+        data={filteredResults}
+        defaultPageSize={10}
+        pagination
+        sorting
+      />
+    </div>
+  );
+};
 
 export default KafkaClusterDetails;

@@ -336,107 +336,105 @@ const registerContextualVariablesAutocomplete = (
   setContextualVarsAutocomplete(autocomplete);
 };
 
-export const PipelineEditor = observer(
-  (p: {
-    yaml: string;
-    onChange?: (newYaml: string) => void;
-    secrets?: string[];
-    quickActions?: React.FunctionComponent;
-    isDisabled?: boolean;
-  }) => {
-    const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
-    const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
-    const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
-    const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
+export const PipelineEditor = (p: {
+  yaml: string;
+  onChange?: (newYaml: string) => void;
+  secrets?: string[];
+  quickActions?: React.FunctionComponent;
+  isDisabled?: boolean;
+}) => {
+  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
+  const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
+  const [contextualVarsAutocomplete, setContextualVarsAutocomplete] = useState<IDisposable | undefined>(undefined);
+  const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
 
-    useEffect(() => {
-      return () => {
-        if (secretAutocomplete) {
-          // avoid duplicate secret autocomplete registration
-          secretAutocomplete.dispose();
-        }
-        if (contextualVarsAutocomplete) {
-          // avoid duplicate contextual variables autocomplete registration
-          contextualVarsAutocomplete.dispose();
-        }
-      };
-    }, [secretAutocomplete, contextualVarsAutocomplete]);
+  useEffect(() => {
+    return () => {
+      if (secretAutocomplete) {
+        // avoid duplicate secret autocomplete registration
+        secretAutocomplete.dispose();
+      }
+      if (contextualVarsAutocomplete) {
+        // avoid duplicate contextual variables autocomplete registration
+        contextualVarsAutocomplete.dispose();
+      }
+    };
+  }, [secretAutocomplete, contextualVarsAutocomplete]);
 
-    return (
-      <Tabs
-        tabs={[
-          {
-            key: 'config',
-            title: 'Configuration',
-            content: () => (
-              <div>
-                {/* yaml editor */}
-                <div className="flex min-h-[400px] gap-7">
-                  <PipelinesYamlEditor
-                    defaultPath="config.yaml"
-                    defaultValue={p.yaml}
-                    language="yaml"
-                    onChange={(e) => {
-                      if (e) {
-                        p.onChange?.(e);
+  return (
+    <Tabs
+      tabs={[
+        {
+          key: 'config',
+          title: 'Configuration',
+          content: () => (
+            <div>
+              {/* yaml editor */}
+              <div className="flex min-h-[400px] gap-7">
+                <PipelinesYamlEditor
+                  defaultPath="config.yaml"
+                  defaultValue={p.yaml}
+                  language="yaml"
+                  onChange={(e) => {
+                    if (e) {
+                      p.onChange?.(e);
+                    }
+                  }}
+                  onMount={async (editorRef, monacoInst) => {
+                    setEditorInstance(editorRef);
+                    setMonaco(monacoInst);
+                    await registerSecretsAutocomplete(monacoInst, setSecretAutocomplete);
+                    registerContextualVariablesAutocomplete(monacoInst, setContextualVarsAutocomplete);
+                  }}
+                  options={{
+                    readOnly: p.isDisabled,
+                  }}
+                  path="config.yaml"
+                />
+
+                {!p.isDisabled && (
+                  <QuickActions
+                    editorInstance={editorInstance}
+                    resetAutocompleteSecrets={async () => {
+                      if (secretAutocomplete && monaco) {
+                        secretAutocomplete.dispose();
+                        await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                       }
                     }}
-                    onMount={async (editorRef, monacoInst) => {
-                      setEditorInstance(editorRef);
-                      setMonaco(monacoInst);
-                      await registerSecretsAutocomplete(monacoInst, setSecretAutocomplete);
-                      registerContextualVariablesAutocomplete(monacoInst, setContextualVarsAutocomplete);
-                    }}
-                    options={{
-                      readOnly: p.isDisabled,
-                    }}
-                    path="config.yaml"
                   />
-
-                  {!p.isDisabled && (
-                    <QuickActions
-                      editorInstance={editorInstance}
-                      resetAutocompleteSecrets={async () => {
-                        if (secretAutocomplete && monaco) {
-                          secretAutocomplete.dispose();
-                          await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-
-                {isKafkaConnectPipeline(p.yaml) && (
-                  <Alert variant="destructive">
-                    <AlertCircle size={16} />
-                    <AlertDescription>
-                      <UIText>
-                        This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
-                        <UILink
-                          href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                          target="_blank"
-                        >
-                          see our quickstart documentation
-                        </UILink>
-                        .
-                      </UIText>
-                    </AlertDescription>
-                  </Alert>
                 )}
               </div>
-            ),
-          },
-          {
-            key: 'preview',
-            title: 'Pipeline preview',
-            content: <></>,
-            disabled: true,
-          },
-        ]}
-      />
-    );
-  }
-);
+
+              {isKafkaConnectPipeline(p.yaml) && (
+                <Alert variant="destructive">
+                  <AlertCircle size={16} />
+                  <AlertDescription>
+                    <UIText>
+                      This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
+                      <UILink
+                        href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                        target="_blank"
+                      >
+                        see our quickstart documentation
+                      </UILink>
+                      .
+                    </UIText>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          ),
+        },
+        {
+          key: 'preview',
+          title: 'Pipeline preview',
+          content: <></>,
+          disabled: true,
+        },
+      ]}
+    />
+  );
+};
 
 /**
  * Determines whether a given string represents a Kafka Connect configuration.

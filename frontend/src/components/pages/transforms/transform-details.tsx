@@ -137,7 +137,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 }
 export default TransformDetails;
 
-const OverviewTab = observer((p: { transform: TransformMetadata }) => {
+const OverviewTab = (p: { transform: TransformMetadata }) => {
   let overallStatus = <></>;
   if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
     overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
@@ -194,7 +194,7 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
       </Box>
     </>
   );
-});
+};
 
 const LogsTab = observer((p: { transform: TransformMetadata }) => {
   const topicName = '_redpanda.transform_logs';

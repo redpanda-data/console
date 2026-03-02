@@ -17,7 +17,6 @@ import {
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { EditIcon, TrashIcon } from 'components/icons';
-import { observer } from 'mobx-react';
 
 import SittingPanda from '../../../../assets/redpanda/SittingPanda.svg';
 import { DeleteSecretRequestSchema, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';

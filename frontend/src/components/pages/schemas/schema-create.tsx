@@ -54,7 +54,6 @@ import { PageComponent, type PageInitHelper } from '../page';
 const JSON_NAME_REGEX = /"name"\s*:\s*"(.*)"/;
 const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(\S+)\s*\{/;
 
-@observer
 export class SchemaCreatePage extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Create schema';

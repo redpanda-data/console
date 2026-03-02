@@ -288,7 +288,6 @@ export class StepSelectPartitions extends Component<{
   }
 }
 
-@observer
 export class SelectPartitionTable extends Component<{
   topic: Topic;
   topicPartitions: Partition[];

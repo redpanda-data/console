@@ -10,7 +10,6 @@
  */
 
 import { Text } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 
 import { RoleForm } from './role-form';
 import { appGlobal } from '../../../state/app-global';
@@ -19,7 +18,6 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 
-@observer
 class RoleCreatePage extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Create role';

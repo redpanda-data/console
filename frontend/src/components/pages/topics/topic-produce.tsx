@@ -674,7 +674,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
   );
 });
 
-@observer
 export class TopicProducePage extends PageComponent<{ topicName: string }> {
   initPage(p: PageInitHelper): void {
     const topicName = this.props.topicName;

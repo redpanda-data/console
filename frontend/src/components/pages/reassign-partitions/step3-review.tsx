@@ -265,40 +265,36 @@ export class StepReview extends Component<{
   }
 }
 
-const ReviewPartitionTable = observer(
-  (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
-    <Box py={2} width="full">
-      <DataTable<Partition>
-        columns={[
-          {
-            header: 'Partition',
-            accessorKey: 'id',
+const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
+  <Box py={2} width="full">
+    <DataTable<Partition>
+      columns={[
+        {
+          header: 'Partition',
+          accessorKey: 'id',
+        },
+        {
+          header: 'Brokers Before',
+          cell: ({ row: { original: partition } }) => (
+            <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
+          ),
+        },
+        {
+          header: 'Brokers After',
+          cell: ({ row: { original: partition } }) => {
+            const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
+            if (
+              partitionAssignments === null ||
+              partitionAssignments === undefined ||
+              partitionAssignments.replicas === null
+            ) {
+              return '??';
+            }
+            return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />;
           },
-          {
-            header: 'Brokers Before',
-            cell: ({ row: { original: partition } }) => (
-              <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
-            ),
-          },
-          {
-            header: 'Brokers After',
-            cell: ({ row: { original: partition } }) => {
-              const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
-              if (
-                partitionAssignments === null ||
-                partitionAssignments === undefined ||
-                partitionAssignments.replicas === null
-              ) {
-                return '??';
-              }
-              return (
-                <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />
-              );
-            },
-          },
-        ]}
-        data={props.topicPartitions}
-      />
-    </Box>
-  )
+        },
+      ]}
+      data={props.topicPartitions}
+    />
+  </Box>
 );

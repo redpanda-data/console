@@ -21,7 +21,6 @@ import { api } from '../../../state/backend-api';
 import type { Broker } from '../../../state/rest-interfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
 
-@observer
 export class StepSelectBrokers extends Component<{
   selectedBrokerIds: number[];
   partitionSelection: PartitionSelection;
