@@ -70,7 +70,7 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
     return (
       <div className="flex items-center justify-between px-1">
         <Text as="span" className="flex items-center gap-2" variant="muted">
-          <Spinner size="xs" />
+          <Spinner className="size-3" />
           Loading transcripts...
         </Text>
         <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ const LoadMoreButton: FC<LoadMoreButtonProps> = ({ hasMore, isLoading, isLoading
       <Button className="gap-2" disabled={isLoadingMore} onClick={onLoadMore} size="sm" variant="outline">
         {isLoadingMore ? (
           <>
-            <Spinner size="xs" />
+            <Spinner className="size-3" />
             Loading...
           </>
         ) : (

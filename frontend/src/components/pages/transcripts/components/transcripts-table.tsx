@@ -840,7 +840,7 @@ const ExpandedSpansContent: FC<{
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 p-4 text-center text-muted-foreground text-sm">
-        <Spinner size="sm" />
+        <Spinner className="size-4" />
         Loading spans...
       </div>
     );
@@ -1202,7 +1202,7 @@ export const TranscriptsTable: FC<Props> = ({
                     className="flex h-24 items-center justify-center gap-2 text-muted-foreground text-sm"
                     data-testid="transcripts-loading-state"
                   >
-                    <Spinner size="sm" />
+                    <Spinner className="size-3" />
                     Loading transcripts...
                   </div>
                 );

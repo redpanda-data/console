@@ -34,7 +34,7 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
         <Text className="font-medium" variant="label">
           Linting issues
         </Text>
-        {isPending && <Spinner size="sm" />}
+        {isPending && <Spinner className="size-4" />}
       </div>
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
         <div className="flex flex-col gap-4 p-3">
