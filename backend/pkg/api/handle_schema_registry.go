@@ -48,7 +48,7 @@ func (api *API) handleGetSchemaRegistryMode() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		res, err := api.ConsoleSvc.GetSchemaRegistryMode(r.Context())
+		res, err := api.ConsoleSvc.GetSchemaRegistryMode(r.Context(), "")
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
@@ -102,7 +102,8 @@ func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
 			return
 		}
 
-		res, err := api.ConsoleSvc.GetSchemaUsagesByID(r.Context(), schemaID)
+		subject := rest.GetQueryParam(r, "subject")
+		res, err := api.ConsoleSvc.GetSchemaUsagesByID(r.Context(), schemaID, subject)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
@@ -248,13 +249,188 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetSchemaRegistrySubjectConfig() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		subjectName := getSubjectFromRequestPath(r)
+
+		res, err := api.ConsoleSvc.GetSchemaRegistryConfig(r.Context(), subjectName)
+		if err != nil {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve subject's compatibility level: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleGetSchemaRegistrySubjectMode() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		subjectName := getSubjectFromRequestPath(r)
+
+		res, err := api.ConsoleSvc.GetSchemaRegistryMode(r.Context(), subjectName)
+		if err != nil {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve subject's mode: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handlePutSchemaRegistryMode() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	type request struct {
+		Mode sr.Mode `json:"mode"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := request{}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res, err := api.ConsoleSvc.PutSchemaRegistryMode(r.Context(), req.Mode, "")
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to set global mode: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handlePutSchemaRegistrySubjectMode() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	type request struct {
+		Mode sr.Mode `json:"mode"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		subjectName := getSubjectFromRequestPath(r)
+
+		req := request{}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res, err := api.ConsoleSvc.PutSchemaRegistryMode(r.Context(), req.Mode, subjectName)
+		if err != nil {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to set subject's mode: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleDeleteSchemaRegistrySubjectMode() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		subjectName := getSubjectFromRequestPath(r)
+
+		err := api.ConsoleSvc.DeleteSchemaRegistrySubjectMode(r.Context(), subjectName)
+		if err != nil {
+			var schemaError *sr.ResponseError
+			if errors.As(err, &schemaError) && schemaError.ErrorCode == 40401 {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:      err,
+					Status:   http.StatusNotFound,
+					Message:  "Requested subject does not exist",
+					IsSilent: false,
+				})
+				return
+			}
+
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to delete subject's mode: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, nil)
+	}
+}
+
 func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		res, err := api.ConsoleSvc.GetSchemaRegistrySubjects(r.Context())
+		subjectPrefix := rest.GetQueryParam(r, "subjectPrefix")
+		res, err := api.ConsoleSvc.GetSchemaRegistrySubjects(r.Context(), subjectPrefix)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
@@ -629,6 +805,7 @@ func getSubjectFromRequestPath(r *http.Request) string {
 	requestURI = strings.Replace(requestURI, r.Host, "", 1)
 	requestURI = strings.Replace(requestURI, "/api/schema-registry/subjects/", "", 1)
 	requestURI = strings.Replace(requestURI, "/api/schema-registry/config/", "", 1)
+	requestURI = strings.Replace(requestURI, "/api/schema-registry/mode/", "", 1)
 	if r.URL.RawQuery != "" {
 		requestURI = strings.TrimSuffix(requestURI, "?"+r.URL.RawQuery)
 	}
