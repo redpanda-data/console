@@ -1,5 +1,6 @@
 import { test } from '@playwright/test';
 
+import { sizeFactors } from '../../../src/utils/topic-utils';
 import { createClientIdQuota, createUserQuota, deleteClientIdQuota, deleteUserQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
@@ -91,12 +92,12 @@ test.describe('Quotas - RPK Integration', () => {
 
       await createClientIdQuota({
         clientId: quotaClient2,
-        consumerByteRate: 4_194_304, // 4MB
+        consumerByteRate: 4 * sizeFactors.MiB,
       });
 
       await createUserQuota({
         user: quotaUser1,
-        producerByteRate: 6_291_456, // 6MB
+        producerByteRate: 6 * sizeFactors.MiB,
         controllerMutationRate: 3,
       });
     });

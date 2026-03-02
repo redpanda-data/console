@@ -418,6 +418,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             className="hidden size-8 lg:flex"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            aria-label="First Page"
           >
             <span className="sr-only">Go to first page</span>
             <ChevronsLeft />
@@ -428,6 +429,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             className="size-8"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            aria-label="Previous Page"
           >
             <span className="sr-only">Go to previous page</span>
             <ChevronLeft />
@@ -438,6 +440,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             className="size-8"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            aria-label="Next Page"
           >
             <span className="sr-only">Go to next page</span>
             <ChevronRight />
@@ -448,6 +451,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             className="hidden size-8 lg:flex"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            aria-label="Last Page"
           >
             <span className="sr-only">Go to last page</span>
             <ChevronsRight />

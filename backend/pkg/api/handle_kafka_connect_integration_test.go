@@ -51,6 +51,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		network.WithNetwork([]string{"redpanda"}, testNetwork),
 		redpanda.WithListener("redpanda:29092"),
 	)
+	testutil.LogContainerLogsIfFailed(ctx, t, redpandaContainer, err)
 	require.NoError(err)
 
 	seedBroker, err := redpandaContainer.KafkaSeedBroker(ctx)
@@ -68,6 +69,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		network.WithNetwork([]string{"kafka-connect"}, testNetwork),
 		testcontainers.WithLogConsumers(logConsumer),
 	)
+	testutil.LogContainerLogsIfFailed(ctx, t, connectContainer, err)
 	require.NoError(err)
 
 	// Register cleanup in correct order: containers first, then network

@@ -74,6 +74,17 @@ const config = defineConfig({
         ...devices['Desktop Chrome'],
         permissions: ['clipboard-read', 'clipboard-write'],
       },
+      testIgnore: '**/quotas/*.spec.ts',
+    },
+    // Isolated project for quota tests (avoid RPK conflicts)
+    {
+      name: 'quotas-isolated',
+      testMatch: '**/quotas/*.spec.ts',
+      workers: 1,
+      use: {
+        ...devices['Desktop Chrome'],
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
     },
   ],
 });

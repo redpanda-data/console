@@ -63,6 +63,7 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 
 	ctx := context.Background()
 	container, err := redpanda.Run(ctx, testutil.RedpandaImage())
+	testutil.LogContainerLogsIfFailed(ctx, t, container, err)
 	require.NoError(err)
 	s.redpandaContainer = container
 
