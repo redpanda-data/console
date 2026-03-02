@@ -93,7 +93,7 @@ const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps
       </Button>
       <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
         {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
-        {Boolean(isSaving) && <Spinner size="sm" />}
+        {Boolean(isSaving) && <Spinner />}
       </Button>
     </div>
   );

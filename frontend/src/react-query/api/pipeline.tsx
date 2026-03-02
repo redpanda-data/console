@@ -46,6 +46,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
+const transitionalStates: Pipeline_State[] = [Pipeline_State.STARTING, Pipeline_State.STOPPING];
 
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
@@ -66,7 +67,7 @@ export const useGetPipelineQuery = (
       ((query) => {
         const state = query?.state?.data?.response?.pipeline?.state;
         // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
-        const shouldPoll = state === Pipeline_State.STARTING || state === Pipeline_State.STOPPING;
+        const shouldPoll = state && transitionalStates.includes(state);
         return shouldPoll ? SHORT_POLLING_INTERVAL : false;
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
@@ -76,7 +77,10 @@ export const useGetPipelineQuery = (
 
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>
+  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
+    /** Enable smart polling when pipelines are in transitional states (STARTING/STOPPING) */
+    enableSmartPolling?: boolean;
+  }
 ) => {
   // Stabilize request objects to prevent unnecessary re-renders
   const listPipelinesRequestDataPlane = useMemo(
@@ -99,6 +103,15 @@ export const useListPipelinesQuery = (
 
   const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     enabled: options?.enabled,
+    refetchInterval: options?.enableSmartPolling
+      ? (query) => {
+          const pages = query?.state?.data?.pages;
+          const hasTransitional = pages?.some((page) =>
+            page?.response?.pipelines?.some((p) => transitionalStates.includes(p?.state))
+          );
+          return hasTransitional ? SHORT_POLLING_INTERVAL : false;
+        }
+      : false,
     getNextPageParam: (lastPage) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
       if (!nextPageToken) {

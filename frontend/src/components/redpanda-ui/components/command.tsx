@@ -1,18 +1,19 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Command as CommandPrimitive } from 'cmdk';
-import { SearchIcon } from 'lucide-react';
+import { ChevronRight, SearchIcon } from 'lucide-react';
 import React from 'react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './dialog';
+import { Popover, PopoverAnchor, PopoverContent } from './popover';
 import { Text } from './typography';
-import { cn, type SharedProps } from '../lib/utils';
+import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
 const commandVariants = cva(
   'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground',
   {
     variants: {
       variant: {
-        elevated: 'border shadow-md',
+        elevated: '!border-input border shadow-md',
         minimal: '',
         dialog: '',
       },
@@ -50,18 +51,29 @@ function CommandDialog({
   title = 'Command Palette',
   description = 'Search for a command to run...',
   children,
+  showOverlay = true,
+  container,
+  onOpenAutoFocus,
+  className,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
-  title?: string;
-  description?: string;
-}) {
+}: React.ComponentProps<typeof Dialog> &
+  Pick<FixedPositionContentProps, 'showOverlay' | 'container' | 'onOpenAutoFocus'> & {
+    title?: string;
+    description?: string;
+    className?: string;
+  }) {
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
-      <DialogContent className="overflow-hidden p-0">
+      <DialogContent
+        className={cn('overflow-hidden p-0', container && 'absolute', className)}
+        container={container}
+        onOpenAutoFocus={onOpenAutoFocus}
+        showOverlay={showOverlay}
+      >
         <Command
           className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
           variant="dialog"
@@ -75,7 +87,7 @@ function CommandDialog({
 
 function CommandInput({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div className="flex h-9 items-center gap-2 border-b px-3" data-slot="command-input-wrapper">
+    <div className="!border-input flex h-9 items-center gap-2 border-b px-3" data-slot="command-input-wrapper">
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         className={cn(
@@ -119,7 +131,7 @@ function CommandGroup({ className, ...props }: React.ComponentProps<typeof Comma
 function CommandSeparator({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Separator>) {
   return (
     <CommandPrimitive.Separator
-      className={cn('-mx-1 h-px bg-border', className)}
+      className={cn('-mx-1 h-px bg-divider', className)}
       data-slot="command-separator"
       {...props}
     />
@@ -149,6 +161,76 @@ function CommandShortcut({ className, children, ...props }: React.ComponentProps
     >
       {children}
     </Text>
+  );
+}
+
+// ── Command Submenu ───────────────────────────────────────────────────
+
+type CommandSubContextType = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+const CommandSubContext = React.createContext<CommandSubContextType | undefined>(undefined);
+
+type CommandSubProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+};
+
+function CommandSub({ open, onOpenChange, children }: CommandSubProps) {
+  return (
+    <CommandSubContext.Provider value={React.useMemo(() => ({ open, onOpenChange }), [open, onOpenChange])}>
+      <Popover onOpenChange={onOpenChange} open={open}>
+        {children}
+      </Popover>
+    </CommandSubContext.Provider>
+  );
+}
+
+interface CommandSubTriggerProps extends React.ComponentProps<typeof CommandPrimitive.Item> {
+  inset?: boolean;
+}
+
+function CommandSubTrigger({ className, children, inset, ...props }: CommandSubTriggerProps) {
+  const ctx = React.useContext(CommandSubContext);
+
+  return (
+    <PopoverAnchor asChild>
+      <CommandPrimitive.Item
+        className={cn(
+          "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+          inset && 'pl-8',
+          className
+        )}
+        data-slot="command-sub-trigger"
+        onSelect={() => ctx?.onOpenChange(true)}
+        {...props}
+      >
+        {children}
+        <ChevronRight className="ml-auto size-4" />
+      </CommandPrimitive.Item>
+    </PopoverAnchor>
+  );
+}
+
+type CommandSubContentProps = {
+  className?: string;
+  children: React.ReactNode;
+};
+
+function CommandSubContent({ className, children }: CommandSubContentProps) {
+  return (
+    <PopoverContent
+      align="start"
+      className={cn('w-fit p-0', className)}
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      side="right"
+      sideOffset={4}
+    >
+      {children}
+    </PopoverContent>
   );
 }
 
@@ -212,6 +294,9 @@ export {
   CommandItem,
   CommandShortcut,
   CommandSeparator,
+  CommandSub,
+  CommandSubTrigger,
+  CommandSubContent,
   SimpleCommand,
   commandVariants,
 };
