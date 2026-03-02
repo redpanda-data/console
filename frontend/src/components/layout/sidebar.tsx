@@ -34,7 +34,6 @@ import {
   useSidebar,
 } from 'components/redpanda-ui/components/sidebar';
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide-react';
-import { observer } from 'mobx-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
@@ -81,7 +80,7 @@ function SidebarCollapseToggle() {
   );
 }
 
-const UserProfile = observer(() => {
+const UserProfile = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const { state, isMobile, setOpenMobile } = useSidebar();
 
@@ -178,7 +177,7 @@ const UserProfile = observer(() => {
       <UserPreferencesDialog isOpen={preferencesOpen} onClose={() => setPreferencesOpen(false)} />
     </>
   );
-});
+};
 
 type NavItemProps = {
   item: SidebarGroupedItems['items'][number];
@@ -220,7 +219,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
   );
 }
 
-const SidebarNavigation = observer(() => {
+const SidebarNavigation = () => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const groupedItems = createGroupedSidebarItems();
@@ -250,7 +249,7 @@ const SidebarNavigation = observer(() => {
       ))}
     </nav>
   );
-});
+};
 
 export function AppSidebar() {
   return (

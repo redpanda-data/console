@@ -32,7 +32,6 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
 
 import styles from './DeleteRecordsModal.module.scss';
@@ -235,112 +234,110 @@ const SelectOffsetStep = ({
   );
 };
 
-const ManualOffsetContent = observer(
-  ({
-    topicName,
-    onOffsetSpecified,
-    partitionInfo,
-  }: {
-    topicName: string;
-    partitionInfo: PartitionInfo;
-    onOffsetSpecified: (v: number) => void;
-  }) => {
-    const [sliderValue, setSliderValue] = useState(0);
+const ManualOffsetContent = ({
+  topicName,
+  onOffsetSpecified,
+  partitionInfo,
+}: {
+  topicName: string;
+  partitionInfo: PartitionInfo;
+  onOffsetSpecified: (v: number) => void;
+}) => {
+  const [sliderValue, setSliderValue] = useState(0);
 
-    const updateOffsetFromSlider = (v: number) => {
-      setSliderValue(v);
-      onOffsetSpecified(v);
-    };
+  const updateOffsetFromSlider = (v: number) => {
+    setSliderValue(v);
+    onOffsetSpecified(v);
+  };
 
-    if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
-      const partitionErrors = api.topicPartitionErrors
-        .get(topicName)
-        ?.map(({ partitionError }) => <li key={`${topicName}-${partitionError}`}>{partitionError}</li>);
-      const waterMarksErrors = api.topicWatermarksErrors
-        .get(topicName)
-        ?.map(({ waterMarksError }) => <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>);
-      const message = (
-        <>
-          {partitionErrors && partitionErrors.length > 0 ? (
-            <>
-              <strong>Partition Errors:</strong>
-              <ul>{partitionErrors}</ul>
-            </>
-          ) : null}
-          {waterMarksErrors && waterMarksErrors.length > 0 ? (
-            <>
-              <strong>Watermarks Errors:</strong>
-              <ul>{waterMarksErrors}</ul>
-            </>
-          ) : null}
-        </>
-      );
-      return (
-        <Alert status="error">
-          <AlertIcon />
-          {message}
-        </Alert>
-      );
-    }
-
-    const partitions = api.topicPartitions?.get(topicName);
-
-    if (!partitions) {
-      return <Spinner size="lg" />;
-    }
-
-    const [, partitionId] = partitionInfo;
-    const partition = partitions.find((p) => p.id === partitionId);
-
-    if (!partition) {
-      return (
-        <Alert status="error">
-          <AlertIcon />
-          {`Partition of topic ${topicName} with ID ${partitionId} not found!`}
-        </Alert>
-      );
-    }
-
-    const { marks, min, max } = getMarks(partition);
+  if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
+    const partitionErrors = api.topicPartitionErrors
+      .get(topicName)
+      ?.map(({ partitionError }) => <li key={`${topicName}-${partitionError}`}>{partitionError}</li>);
+    const waterMarksErrors = api.topicWatermarksErrors
+      .get(topicName)
+      ?.map(({ waterMarksError }) => <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>);
+    const message = (
+      <>
+        {partitionErrors && partitionErrors.length > 0 ? (
+          <>
+            <strong>Partition Errors:</strong>
+            <ul>{partitionErrors}</ul>
+          </>
+        ) : null}
+        {waterMarksErrors && waterMarksErrors.length > 0 ? (
+          <>
+            <strong>Watermarks Errors:</strong>
+            <ul>{waterMarksErrors}</ul>
+          </>
+        ) : null}
+      </>
+    );
     return (
-      <Flex alignItems="center" gap={2}>
-        <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
-          {marks
-            ? Object.entries(marks).map(([value, label]) => (
-                <SliderMark key={value} value={Number(value)}>
-                  {label}
-                </SliderMark>
-              ))
-            : null}
-          <SliderTrack>
-            <SliderFilledTrack />
-          </SliderTrack>
-          <SliderThumb />
-        </Slider>
-        <Input
-          maxWidth={124}
-          onBlur={() => {
-            if (sliderValue < min) {
-              updateOffsetFromSlider(min);
-            } else if (sliderValue > max) {
-              updateOffsetFromSlider(max);
-            } else {
-              updateOffsetFromSlider(sliderValue);
-            }
-          }}
-          onChange={(e) => {
-            const { value } = e.target;
-            if (!DIGITS_ONLY_REGEX.test(value)) {
-              return;
-            }
-            updateOffsetFromSlider(Number(value));
-          }}
-          value={sliderValue}
-        />
-      </Flex>
+      <Alert status="error">
+        <AlertIcon />
+        {message}
+      </Alert>
     );
   }
-);
+
+  const partitions = api.topicPartitions?.get(topicName);
+
+  if (!partitions) {
+    return <Spinner size="lg" />;
+  }
+
+  const [, partitionId] = partitionInfo;
+  const partition = partitions.find((p) => p.id === partitionId);
+
+  if (!partition) {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        {`Partition of topic ${topicName} with ID ${partitionId} not found!`}
+      </Alert>
+    );
+  }
+
+  const { marks, min, max } = getMarks(partition);
+  return (
+    <Flex alignItems="center" gap={2}>
+      <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
+        {marks
+          ? Object.entries(marks).map(([value, label]) => (
+              <SliderMark key={value} value={Number(value)}>
+                {label}
+              </SliderMark>
+            ))
+          : null}
+        <SliderTrack>
+          <SliderFilledTrack />
+        </SliderTrack>
+        <SliderThumb />
+      </Slider>
+      <Input
+        maxWidth={124}
+        onBlur={() => {
+          if (sliderValue < min) {
+            updateOffsetFromSlider(min);
+          } else if (sliderValue > max) {
+            updateOffsetFromSlider(max);
+          } else {
+            updateOffsetFromSlider(sliderValue);
+          }
+        }}
+        onChange={(e) => {
+          const { value } = e.target;
+          if (!DIGITS_ONLY_REGEX.test(value)) {
+            return;
+          }
+          updateOffsetFromSlider(Number(value));
+        }}
+        value={sliderValue}
+      />
+    </Flex>
+  );
+};
 
 function getMarks(partition: Partition) {
   if (!partition) {
