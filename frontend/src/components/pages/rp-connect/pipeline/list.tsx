@@ -40,7 +40,7 @@ import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/com
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -255,7 +255,7 @@ const ActionsCell = memo(
     };
 
     return (
-      <div className="flex justify-end" data-actions-column>
+      <div className="flex justify-end min-w-[68px]" data-actions-column>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="size-8" size="icon" variant="secondary-ghost">
@@ -355,7 +355,17 @@ const createColumns = ({
         return null;
       }
       return (
-        <BadgeGroup maxVisible={2}>
+        <BadgeGroup
+          maxVisible={2}
+          className="min-w-[184px]"
+          renderOverflowContent={(overflow) => (
+            <List>
+              {processors.slice(-overflow.length).map((o) => (
+                <ListItem key={o?.toString()}>{o}</ListItem>
+              ))}
+            </List>
+          )}
+        >
           {processors.map((p) => (
             <Badge key={p} variant="neutral-inverted">
               {p}
@@ -375,7 +385,17 @@ const createColumns = ({
         return null;
       }
       return (
-        <BadgeGroup maxVisible={2}>
+        <BadgeGroup
+          maxVisible={2}
+          className="min-w-[184px]"
+          renderOverflowContent={(overflow) => (
+            <List>
+              {outputs.slice(-overflow.length).map((o) => (
+                <ListItem key={o?.toString()}>{o}</ListItem>
+              ))}
+            </List>
+          )}
+        >
           {outputs.map((o) => (
             <Badge key={o} variant="neutral-inverted">
               {o}
@@ -390,7 +410,9 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: 'Status',
     filterFn: createFilterFn('option'),
-    cell: ({ row }) => <StatusBadge variant={pipelineStateToStatusVariant[row.original.state]} />,
+    cell: ({ row }) => (
+      <StatusBadge className="min-w-[150px]" variant={pipelineStateToStatusVariant[row.original.state]} />
+    ),
   },
   {
     id: 'actions',
@@ -465,10 +487,30 @@ const PipelineListPageContent = () => {
     }));
 
     return [
-      { id: 'name', displayName: 'Name', type: 'text' as const, placeholder: 'Search by name...' },
-      { id: 'input', displayName: 'Input', type: 'option' as const, options: inputOptions },
-      { id: 'processors', displayName: 'Processors', type: 'multiOption' as const, options: processorOptions },
-      { id: 'outputs', displayName: 'Output', type: 'multiOption' as const, options: outputOptions },
+      {
+        id: 'name',
+        displayName: 'Name',
+        type: 'text' as const,
+        placeholder: 'Search by name...',
+      },
+      {
+        id: 'input',
+        displayName: 'Input',
+        type: 'option' as const,
+        options: inputOptions,
+      },
+      {
+        id: 'processors',
+        displayName: 'Processors',
+        type: 'multiOption' as const,
+        options: processorOptions,
+      },
+      {
+        id: 'outputs',
+        displayName: 'Output',
+        type: 'multiOption' as const,
+        options: outputOptions,
+      },
       {
         id: 'state',
         displayName: 'Status',
