@@ -10,7 +10,6 @@
  */
 
 import { Button, Flex, useToast } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
@@ -57,7 +56,7 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
+export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
   const { payload, loadLargeMessage } = p;
   const toast = useToast();
   const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
@@ -155,4 +154,4 @@ export const PayloadComponent = observer((p: { payload: Payload; loadLargeMessag
   } catch (e) {
     return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {(e as Error).message ?? String(e)}</span>;
   }
-});
+};

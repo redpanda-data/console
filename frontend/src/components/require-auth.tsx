@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import type { ReactNode } from 'react';
 
 import { ConnectionErrorUI } from './misc/connection-error-ui';
@@ -73,7 +72,7 @@ function loginHandling(): JSX.Element | null {
   return null;
 }
 
-const RequireAuth = observer(({ children }: { children: ReactNode }) => {
+const RequireAuth = ({ children }: { children: ReactNode }) => {
   const r = loginHandling(); // Complete login, or fetch user if needed
   if (r) {
     return r;
@@ -85,15 +84,15 @@ const RequireAuth = observer(({ children }: { children: ReactNode }) => {
       <FeatureErrorCheck />
     </>
   );
-});
+};
 
-const FeatureErrorCheck = observer(() => {
+const FeatureErrorCheck = () => {
   const { featureErrors } = useSupportedFeaturesStore();
   if (featureErrors.length > 0) {
     const allErrors = featureErrors.join(' ');
     throw new Error(allErrors);
   }
   return null;
-});
+};
 
 export default RequireAuth;

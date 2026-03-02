@@ -10,12 +10,11 @@
  */
 
 import { Box } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import type { CSSProperties } from 'react';
 
 import KowlEditor from './kowl-editor';
 
-export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
+export const KowlJsonView = (props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
   const str = typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
 
   return (
@@ -56,4 +55,4 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
       </Box>
     </Box>
   );
-});
+};

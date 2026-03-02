@@ -23,7 +23,6 @@ import {
   Text,
   VStack,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { useEffect } from 'react';
 
 import PageContent from './page-content';
@@ -31,7 +30,7 @@ import { config } from '../../config';
 import { appGlobal } from '../../state/app-global';
 import fetchWithTimeout from '../../utils/fetch-with-timeout';
 
-const ErrorPage = observer(() => {
+const ErrorPage = () => {
   useEffect(() => {
     const headers: HeadersInit = {};
     if (config.jwt) {
@@ -93,6 +92,6 @@ const ErrorPage = observer(() => {
       </Flex>
     </PageContent>
   );
-});
+};
 
 export default ErrorPage;
