@@ -153,6 +153,12 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Method:         "POST",
 			HasRedpandaAPI: false,
 		},
+		{
+			URL:             "/api/schema-registry/contexts",
+			Method:          "GET",
+			HasRedpandaAPI:  true,
+			RedpandaFeature: redpandaFeatureSchemaRegistryContexts,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))

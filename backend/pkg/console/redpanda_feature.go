@@ -34,7 +34,14 @@ const (
 
 	// redpandaFeatureSchemaRegistryACL represents Schema Registry ACL feature.
 	redpandaFeatureSchemaRegistryACL redpandaFeature = "redpanda_feature_schema_registry_acl"
+
+	// redpandaFeatureSchemaRegistryContexts represents Schema Registry Contexts feature.
+	redpandaFeatureSchemaRegistryContexts redpandaFeature = "redpanda_feature_schema_registry_contexts"
 )
+
+// clusterConfigSchemaRegistryQualifiedSubjects is the Redpanda cluster config
+// key that enables qualified subjects (contexts) in Schema Registry.
+const clusterConfigSchemaRegistryQualifiedSubjects = "schema_registry_enable_qualified_subjects"
 
 // checkRedpandaFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
@@ -64,6 +71,17 @@ func (*Service) checkRedpandaFeature(ctx context.Context, redpandaCl redpandafac
 			}
 		}
 		return true
+	case redpandaFeatureSchemaRegistryContexts:
+		cfg, err := redpandaCl.SingleKeyConfig(ctx, clusterConfigSchemaRegistryQualifiedSubjects)
+		if err != nil {
+			return false
+		}
+		val, ok := cfg[clusterConfigSchemaRegistryQualifiedSubjects]
+		if !ok {
+			return false
+		}
+		enabled, ok := val.(bool)
+		return ok && enabled
 	default:
 		return false
 	}
