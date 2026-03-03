@@ -1,5 +1,6 @@
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { defineConfig, loadEnv } from '@rsbuild/core';
+import { pluginBabel } from '@rsbuild/plugin-babel';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
@@ -20,6 +21,13 @@ export default defineConfig({
     pluginReact({
       reactRefreshOptions: {
         forceEnable: true,
+      },
+    }),
+    pluginBabel({
+      include: /\.(?:ts|tsx)$/,
+      babelLoaderOptions(opts) {
+        opts.plugins ??= [];
+        opts.plugins.unshift(['babel-plugin-react-compiler', { target: '18' }]);
       },
     }),
     pluginSvgr({ mixedImport: true }),
