@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/redpanda-data/common-go/rpsr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
@@ -843,6 +844,71 @@ func (s *Service) CheckSchemaRegistryACLSupport(ctx context.Context) bool {
 		return true
 	}
 	return true
+}
+
+// CheckSchemaRegistryContextsSupport checks if the Schema Registry supports
+// the Contexts feature. For Redpanda clusters with Admin API, it checks the
+// cluster config. For Kafka clusters, it probes the /contexts endpoint.
+// Redpanda clusters without Admin API default to false, users must configure
+// the Admin API for reliable detection until v26.2
+func (s *Service) CheckSchemaRegistryContextsSupport(ctx context.Context) bool {
+	if !s.cfg.SchemaRegistry.Enabled {
+		return false
+	}
+
+	// For Redpanda clusters with Admin API, check the cluster config.
+	// Per the RFC, probing /contexts is not enough for Redpanda because
+	// the endpoint returns 200 even when qualified subjects are not enabled.
+	if s.cfg.Redpanda.AdminAPI.Enabled {
+		adminAPICl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+		if err != nil {
+			return false
+		}
+		return s.checkRedpandaFeature(ctx, adminAPICl, redpandaFeatureSchemaRegistryContexts)
+	}
+
+	// If Admin API is not configured, check if this is a Redpanda cluster
+	// by inspecting the Kafka Metadata cluster ID. Redpanda cluster IDs
+	// always start with "redpanda.".
+	// For Redpanda without Admin API, we cannot reliably detect the feature,
+	// so we default to false; users must configure Admin API.
+	if s.isRedpandaCluster(ctx) {
+		return false
+	}
+
+	// For Kafka/non-Redpanda clusters, probe the /contexts endpoint.
+	// A 404 means the SR does not support contexts.
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return false
+	}
+
+	var contexts []string
+	err = srClient.Do(ctx, http.MethodGet, "/contexts", nil, &contexts)
+	if err != nil {
+		var se *sr.ResponseError
+		if errors.As(err, &se) && se.StatusCode == http.StatusNotFound {
+			return false
+		}
+		// Non-404 errors (auth, network), the endpoint likely exists
+		return true
+	}
+	return true
+}
+
+// isRedpandaCluster checks if the connected cluster is Redpanda by inspecting
+// the Kafka Metadata cluster ID. Redpanda cluster IDs start with "redpanda.".
+func (s *Service) isRedpandaCluster(ctx context.Context) bool {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return false
+	}
+	req := kmsg.NewMetadataRequest()
+	res, err := req.RequestWith(ctx, cl)
+	if err != nil {
+		return false
+	}
+	return res.ClusterID != nil && strings.HasPrefix(*res.ClusterID, "redpanda.")
 }
 
 // ListSRACLs lists Schema Registry ACLs based on the provided filter
