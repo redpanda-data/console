@@ -27,10 +27,7 @@ export default defineConfig({
       include: /\.(?:ts|tsx)$/,
       babelLoaderOptions(opts) {
         opts.plugins ??= [];
-        opts.plugins.unshift([
-          'babel-plugin-react-compiler',
-          { target: '18' },
-        ]);
+        opts.plugins.unshift(['babel-plugin-react-compiler', { target: '18' }]);
       },
     }),
     pluginSvgr({ mixedImport: true }),
