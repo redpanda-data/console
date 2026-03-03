@@ -13,7 +13,8 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import type { Trace, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 
-import { getAttributeFromSpan, hasAttribute } from './attribute-helpers';
+import { getAttributeFromSpan } from './attribute-helpers';
+import { isLLMSpan, isToolSpan } from './span-classifier';
 
 export type TranscriptStatistics = {
   totalInputTokens: number;
@@ -40,18 +41,7 @@ export const calculateTranscriptStatistics = (trace: Trace | undefined): Transcr
   let toolCallCount = 0;
 
   for (const span of trace.spans) {
-    const isLLMSpan =
-      hasAttribute(span, 'gen_ai.request.model') ||
-      hasAttribute(span, 'gen_ai.system') ||
-      hasAttribute(span, 'gen_ai.prompt') ||
-      hasAttribute(span, 'gen_ai.completion');
-
-    const isToolSpan =
-      hasAttribute(span, 'gen_ai.tool.name') ||
-      hasAttribute(span, 'gen_ai.tool.call.id') ||
-      hasAttribute(span, 'gen_ai.tool.call.arguments');
-
-    if (isLLMSpan) {
+    if (isLLMSpan(span)) {
       llmCallCount += 1;
       const inputTokens = getAttributeFromSpan(span, 'gen_ai.usage.input_tokens');
       const outputTokens = getAttributeFromSpan(span, 'gen_ai.usage.output_tokens');
@@ -64,7 +54,7 @@ export const calculateTranscriptStatistics = (trace: Trace | undefined): Transcr
       }
     }
 
-    if (isToolSpan) {
+    if (isToolSpan(span)) {
       toolCallCount += 1;
     }
   }
