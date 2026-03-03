@@ -10,7 +10,6 @@
  */
 
 import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { useState } from 'react';
 
 import { ConnectorStepComponent } from './connector-step';
@@ -28,7 +27,7 @@ export type ConfigPageProps = {
   context: 'CREATE' | 'EDIT';
 };
 
-export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore, context }: ConfigPageProps) => {
+export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context }: ConfigPageProps) => {
   if (connectorStore.error) {
     return (
       <div>
@@ -103,7 +102,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
       )}
     </>
   );
-});
+};
 
 function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; context: 'CREATE' | 'EDIT' }) {
   const connectorStore = p.connectorStore;

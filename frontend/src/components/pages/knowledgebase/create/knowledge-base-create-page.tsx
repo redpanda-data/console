@@ -18,7 +18,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Loader2 } from 'lucide-react';
-import { runInAction } from 'mobx';
 import {
   CreateKnowledgeBaseRequestSchema,
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_CohereSchema,
@@ -85,17 +84,15 @@ export const KnowledgeBaseCreatePage = () => {
 
   // Update page title and breadcrumbs
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = 'Create Knowledge Base';
-      uiState.pageBreadcrumbs.pop();
-      uiState.pageBreadcrumbs.push({
-        title: 'Knowledge Bases',
-        linkTo: '/knowledgebases',
-      });
-      uiState.pageBreadcrumbs.push({
-        title: 'Create',
-        linkTo: '/knowledgebases/create',
-      });
+    uiState.pageTitle = 'Create Knowledge Base';
+    uiState.pageBreadcrumbs.pop();
+    uiState.pageBreadcrumbs.push({
+      title: 'Knowledge Bases',
+      linkTo: '/knowledgebases',
+    });
+    uiState.pageBreadcrumbs.push({
+      title: 'Create',
+      linkTo: '/knowledgebases/create',
     });
   }, []);
 

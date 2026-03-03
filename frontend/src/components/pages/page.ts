@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { makeAutoObservable } from 'mobx';
 import React from 'react';
 
 import { type BreadcrumbOptions, uiState } from '../../state/ui-state';
@@ -23,9 +22,6 @@ export type NoRouteParams = {};
 export type PageProps<TRouteParams = NoRouteParams> = TRouteParams & { matchedPath: string };
 
 export class PageInitHelper {
-  constructor() {
-    makeAutoObservable(this);
-  }
   set title(title: string) {
     uiState.pageTitle = title;
   }

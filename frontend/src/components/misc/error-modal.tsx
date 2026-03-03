@@ -22,8 +22,7 @@ import {
   Text,
 } from '@redpanda-data/ui';
 import { ErrorIcon } from 'components/icons';
-import { action, observable } from 'mobx';
-import React, { Component } from 'react';
+import React, { Component, useEffect, useReducer } from 'react';
 
 class ErrorModal extends Component<ErrorModalProps> {
   title: string;
@@ -96,7 +95,12 @@ type ErrorModalProps = {
   animate: boolean;
 };
 
-const errorModals: ErrorModalProps[] = observable([]);
+const errorModals: ErrorModalProps[] = [];
+const subscribers = new Set<() => void>();
+
+function notifySubscribers() {
+  for (const sub of subscribers) sub();
+}
 
 let nextErrorKey = 0;
 export function showErrorModal(title: string, subTitle: React.ReactNode, content: React.ReactNode) {
@@ -134,16 +138,15 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
 
     animate: true,
   });
+  notifySubscribers();
 }
 
-const onClose = action((key: number) => {
+const onClose = (key: number) => {
   const current = errorModals[0];
   const next = errorModals.length > 1 ? errorModals[1] : undefined;
 
   if (next) {
-    // Switch to next
-    // don't animate current or next modal
-
+    // Switch to next — don't animate current or next modal
     current.animate = false;
     next.animate = false;
     afterClose(key); // immediately switch to next
@@ -152,13 +155,25 @@ const onClose = action((key: number) => {
     current.animate = true;
     current.isVisible = false;
   }
-});
+  notifySubscribers();
+};
 
-const afterClose = action((key: number) => {
-  errorModals.removeAll((x) => x.key === key);
-});
+const afterClose = (key: number) => {
+  const idx = errorModals.findIndex((x) => x.key === key);
+  if (idx > -1) errorModals.splice(idx, 1);
+  notifySubscribers();
+};
 
-export function renderErrorModals() {
+function ErrorModalsRenderer() {
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+
+  useEffect(() => {
+    subscribers.add(forceUpdate);
+    return () => {
+      subscribers.delete(forceUpdate);
+    };
+  }, []);
+
   if (errorModals.length === 0) {
     return null;
   }
@@ -166,8 +181,6 @@ export function renderErrorModals() {
   return <ErrorModal {...e} />;
 }
 
-// showErrorModal(
-//     'Consumer group not found',
-//     <span>Could not find a consumer group named <span className='codeBox'>{"a9i6f8o4btroaw87"}</span> to compute new offsets.</span>,
-//     null
-// );
+export function renderErrorModals() {
+  return <ErrorModalsRenderer />;
+}

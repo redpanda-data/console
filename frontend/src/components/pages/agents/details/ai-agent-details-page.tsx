@@ -15,7 +15,6 @@ const routeApi = getRouteApi('/agents/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { AlertCircle, Loader2, Network, Search, Settings } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
@@ -26,13 +25,11 @@ import { AIAgentDetailsHeader } from './ai-agent-details-header';
 import { AIAgentInspectorTab } from './ai-agent-inspector-tab';
 
 export const updatePageTitle = (agentName?: string) => {
-  runInAction(() => {
-    uiState.pageTitle = agentName ? `AI Agent - ${agentName}` : 'AI Agent Details';
-    uiState.pageBreadcrumbs = [
-      { title: 'AI Agents', linkTo: '/agents' },
-      { title: agentName || 'Details', linkTo: '', heading: agentName || 'AI Agent Details' },
-    ];
-  });
+  uiState.pageTitle = agentName ? `AI Agent - ${agentName}` : 'AI Agent Details';
+  uiState.pageBreadcrumbs = [
+    { title: 'AI Agents', linkTo: '/agents' },
+    { title: agentName || 'Details', linkTo: '', heading: agentName || 'AI Agent Details' },
+  ];
 };
 
 export const AIAgentDetailsPage = () => {

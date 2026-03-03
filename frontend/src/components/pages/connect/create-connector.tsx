@@ -31,8 +31,6 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
-import { comparer } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useState } from 'react';
 
 import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './connector-box-card';
@@ -51,165 +49,158 @@ import { SingleSelect } from '../../misc/select';
 import { Wizard, type WizardStep } from '../../misc/wizard';
 import { PageComponent, type PageInitHelper } from '../page';
 
-const ConnectorType = observer(
-  (p: {
-    connectClusters: ClusterConnectors[];
-    activeCluster: string | null;
-    onActiveClusterChange: (clusterName: string | null) => void;
-    selectedPlugin: ConnectorPlugin | null;
-    onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
-  }) => {
-    const tabFilterModes = ['all', 'export', 'import'] as const;
-    const state = useLocalObservable(() => ({
-      textFilter: '',
-      tabFilter: 'all' as 'all' | 'export' | 'import',
-    }));
+const ConnectorType = (p: {
+  connectClusters: ClusterConnectors[];
+  activeCluster: string | null;
+  onActiveClusterChange: (clusterName: string | null) => void;
+  selectedPlugin: ConnectorPlugin | null;
+  onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
+}) => {
+  const tabFilterModes = ['all', 'export', 'import'] as const;
+  const [textFilter, setTextFilter] = useState('');
+  const [tabFilter, setTabFilter] = useState<'all' | 'export' | 'import'>('all');
 
-    let filteredPlugins = [] as {
-      class: string;
-      type: 'sink' | 'source';
-      version?: string | undefined;
-    }[];
+  let filteredPlugins = [] as {
+    class: string;
+    type: 'sink' | 'source';
+    version?: string | undefined;
+  }[];
 
-    if (p.activeCluster) {
-      const allPlugins = api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins;
+  if (p.activeCluster) {
+    const allPlugins = api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins;
 
-      filteredPlugins =
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 33, refactor later
-        allPlugins?.filter((plugin) => {
-          if (state.tabFilter === 'export' && plugin.type === 'source') {
-            return false; // not an "export" type
+    filteredPlugins =
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 33, refactor later
+      allPlugins?.filter((plugin) => {
+        if (tabFilter === 'export' && plugin.type === 'source') {
+          return false; // not an "export" type
+        }
+
+        if (tabFilter === 'import' && plugin.type === 'sink') {
+          return false; // not an "import" type
+        }
+
+        const meta = findConnectorMetadata(plugin.class);
+        if (!meta) {
+          return true; // no metadata, show it always
+        }
+
+        if (textFilter) {
+          let matchesFilter = false;
+
+          if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, textFilter)) {
+            matchesFilter = true;
           }
 
-          if (state.tabFilter === 'import' && plugin.type === 'sink') {
-            return false; // not an "import" type
+          if (plugin.class && containsIgnoreCase(plugin.class, textFilter)) {
+            matchesFilter = true;
           }
 
-          const meta = findConnectorMetadata(plugin.class);
-          if (!meta) {
-            return true; // no metadata, show it always
+          if (meta.description && containsIgnoreCase(meta.description, textFilter)) {
+            matchesFilter = true;
           }
 
-          if (state.textFilter) {
-            let matchesFilter = false;
-
-            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter)) {
-              matchesFilter = true;
-            }
-
-            if (plugin.class && containsIgnoreCase(plugin.class, state.textFilter)) {
-              matchesFilter = true;
-            }
-
-            if (meta.description && containsIgnoreCase(meta.description, state.textFilter)) {
-              matchesFilter = true;
-            }
-
-            if (!matchesFilter) {
-              return false; // doesn't match the text filter
-            }
+          if (!matchesFilter) {
+            return false; // doesn't match the text filter
           }
+        }
 
-          // no filters active that would remove the entry from the list
-          return true;
-        }) || [];
-    }
-
-    const noResultsBox =
-      filteredPlugins?.length > 0 ? null : (
-        <Flex alignItems="center" background="blackAlpha.100" borderRadius="8px" justifyContent="center" p="10">
-          <Text color="gray" fontSize="large">
-            No connectors that match the search filters
-          </Text>
-        </Flex>
-      );
-
-    return (
-      <>
-        {p.connectClusters.length > 1 && (
-          <>
-            <h2>Installation Target</h2>
-            <Box maxWidth={400}>
-              <SingleSelect<string | undefined>
-                onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
-                options={p.connectClusters.map(({ clusterName }) => ({
-                  value: clusterName,
-                  label: clusterName,
-                }))}
-                value={p.activeCluster ?? undefined}
-              />
-            </Box>
-          </>
-        )}
-
-        {Boolean(p.activeCluster) && (
-          <>
-            <Flex direction="column" gap="1em">
-              <Box maxWidth="600px">
-                <Text>
-                  Select a managed connector. Connectors simplify importing and exporting data between Redpanda and
-                  popular data sources.{' '}
-                  <Link href="https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/">
-                    Learn more
-                  </Link>
-                </Text>
-
-                <Box marginBlock="4" marginTop="8">
-                  <SearchField
-                    icon="filter"
-                    placeholderText="Search"
-                    searchText={state.textFilter}
-                    setSearchText={(x) => {
-                      state.textFilter = x;
-                    }}
-                  />
-                </Box>
-              </Box>
-            </Flex>
-
-            <Tabs
-              items={[
-                {
-                  key: 'all',
-                  name: 'All',
-                  component: <></>,
-                },
-                {
-                  key: 'export',
-                  name: 'Export to',
-                  component: <></>,
-                },
-                {
-                  key: 'import',
-                  name: 'Import from',
-                  component: <></>,
-                },
-              ]}
-              marginBlock="2"
-              onChange={(_, key) => {
-                state.tabFilter = key as (typeof tabFilterModes)[number];
-              }}
-            />
-
-            <HiddenRadioList<ConnectorPlugin>
-              name={'connector-type'}
-              onChange={p.onPluginSelectionChange}
-              options={filteredPlugins.map((plugin) => ({
-                value: plugin,
-                render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
-              }))}
-              value={p.selectedPlugin ?? undefined}
-            />
-
-            {noResultsBox}
-          </>
-        )}
-      </>
-    );
+        // no filters active that would remove the entry from the list
+        return true;
+      }) || [];
   }
-);
 
-@observer
+  const noResultsBox =
+    filteredPlugins?.length > 0 ? null : (
+      <Flex alignItems="center" background="blackAlpha.100" borderRadius="8px" justifyContent="center" p="10">
+        <Text color="gray" fontSize="large">
+          No connectors that match the search filters
+        </Text>
+      </Flex>
+    );
+
+  return (
+    <>
+      {p.connectClusters.length > 1 && (
+        <>
+          <h2>Installation Target</h2>
+          <Box maxWidth={400}>
+            <SingleSelect<string | undefined>
+              onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
+              options={p.connectClusters.map(({ clusterName }) => ({
+                value: clusterName,
+                label: clusterName,
+              }))}
+              value={p.activeCluster ?? undefined}
+            />
+          </Box>
+        </>
+      )}
+
+      {Boolean(p.activeCluster) && (
+        <>
+          <Flex direction="column" gap="1em">
+            <Box maxWidth="600px">
+              <Text>
+                Select a managed connector. Connectors simplify importing and exporting data between Redpanda and
+                popular data sources.{' '}
+                <Link href="https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/">
+                  Learn more
+                </Link>
+              </Text>
+
+              <Box marginBlock="4" marginTop="8">
+                <SearchField
+                  icon="filter"
+                  placeholderText="Search"
+                  searchText={textFilter}
+                  setSearchText={setTextFilter}
+                />
+              </Box>
+            </Box>
+          </Flex>
+
+          <Tabs
+            items={[
+              {
+                key: 'all',
+                name: 'All',
+                component: <></>,
+              },
+              {
+                key: 'export',
+                name: 'Export to',
+                component: <></>,
+              },
+              {
+                key: 'import',
+                name: 'Import from',
+                component: <></>,
+              },
+            ]}
+            marginBlock="2"
+            onChange={(_, key) => {
+              setTabFilter(key as (typeof tabFilterModes)[number]);
+            }}
+          />
+
+          <HiddenRadioList<ConnectorPlugin>
+            name={'connector-type'}
+            onChange={p.onPluginSelectionChange}
+            options={filteredPlugins.map((plugin) => ({
+              value: plugin,
+              render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
+            }))}
+            value={p.selectedPlugin ?? undefined}
+          />
+
+          {noResultsBox}
+        </>
+      )}
+    </>
+  );
+};
+
 class CreateConnector extends PageComponent<{ clusterName: string }> {
   initPage(p: PageInitHelper) {
     const clusterName = decodeURIComponent(this.props.clusterName);
@@ -254,7 +245,7 @@ type ConnectorWizardProps = {
   activeCluster: string;
 };
 
-const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorWizardProps) => {
+const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProps) => {
   const toast = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
@@ -384,7 +375,13 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         setLoading(true);
         const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '', null, undefined);
 
-        if (parsedUpdatedConfig !== null && !comparer.shallow(parsedUpdatedConfig, connectorRef?.getConfigObject())) {
+        const configObj = connectorRef?.getConfigObject() as Record<string, unknown> | undefined;
+        const isShallowEqual =
+          parsedUpdatedConfig !== null &&
+          configObj !== undefined &&
+          Object.keys(parsedUpdatedConfig).length === Object.keys(configObj).length &&
+          Object.keys(parsedUpdatedConfig).every((k) => parsedUpdatedConfig[k] === configObj[k]);
+        if (parsedUpdatedConfig !== null && !isShallowEqual) {
           connectorRef?.updateProperties(parsedUpdatedConfig);
         }
 
@@ -555,7 +552,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       </Modal>
     </>
   );
-});
+};
 
 function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   if (!p.plugin) {

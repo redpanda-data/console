@@ -41,7 +41,6 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, X } from 'lucide-react';
-import { runInAction } from 'mobx';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
@@ -340,14 +339,12 @@ function KnowledgeBaseDataTableToolbar({ table }: { table: TanstackTable<Knowled
 }
 
 export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Knowledge Bases';
-    uiState.pageBreadcrumbs.pop();
-    uiState.pageBreadcrumbs.push({
-      title: 'Knowledge Bases',
-      linkTo: '/knowledgebases',
-      heading: 'Knowledge Bases',
-    });
+  uiState.pageTitle = 'Knowledge Bases';
+  uiState.pageBreadcrumbs.pop();
+  uiState.pageBreadcrumbs.push({
+    title: 'Knowledge Bases',
+    linkTo: '/knowledgebases',
+    heading: 'Knowledge Bases',
   });
 };
 

@@ -27,9 +27,7 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { WrenchIcon } from 'components/icons';
-import { transaction } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react';
-import { Component, type FC, useState } from 'react';
+import { type FC, useState } from 'react';
 
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsx-utils';
@@ -85,147 +83,148 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
   </Modal>
 );
 
-@observer
-class StatsBarTab extends Component {
-  render() {
-    return (
-      <div>
-        <p>Controls on what pages Redpanda Console shows the statistics bar</p>
-        <div
-          style={{
-            display: 'inline-grid',
-            gridAutoFlow: 'row',
-            gridRowGap: '24px',
-            gridColumnGap: '32px',
-            marginRight: 'auto',
-          }}
-        >
-          <Label text="Topic Details">
-            <Checkbox
-              isChecked={uiSettings.topicDetailsShowStatisticsBar}
-              onChange={(e) => {
-                uiSettings.topicDetailsShowStatisticsBar = e.target.checked;
-              }}
-            >
-              Enabled
-            </Checkbox>
-          </Label>
-          <Label text="Consumer Group Details">
-            <Checkbox
-              isChecked={uiSettings.consumerGroupDetails.showStatisticsBar}
-              onChange={(e) => {
-                uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked;
-              }}
-            >
-              Enabled
-            </Checkbox>
-          </Label>
-        </div>
+const StatsBarTab: FC = () => {
+  const [topicDetails, setTopicDetails] = useState(uiSettings.topicDetailsShowStatisticsBar);
+  const [consumerGroup, setConsumerGroup] = useState(uiSettings.consumerGroupDetails.showStatisticsBar);
+
+  return (
+    <div>
+      <p>Controls on what pages Redpanda Console shows the statistics bar</p>
+      <div
+        style={{
+          display: 'inline-grid',
+          gridAutoFlow: 'row',
+          gridRowGap: '24px',
+          gridColumnGap: '32px',
+          marginRight: 'auto',
+        }}
+      >
+        <Label text="Topic Details">
+          <Checkbox
+            isChecked={topicDetails}
+            onChange={(e) => {
+              uiSettings.topicDetailsShowStatisticsBar = e.target.checked;
+              setTopicDetails(e.target.checked);
+            }}
+          >
+            Enabled
+          </Checkbox>
+        </Label>
+        <Label text="Consumer Group Details">
+          <Checkbox
+            isChecked={consumerGroup}
+            onChange={(e) => {
+              uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked;
+              setConsumerGroup(e.target.checked);
+            }}
+          >
+            Enabled
+          </Checkbox>
+        </Label>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
-@observer
-class JsonViewerTab extends Component {
-  render() {
-    const settings = uiSettings.jsonViewer;
+const JsonViewerTab: FC = () => {
+  const settings = uiSettings.jsonViewer;
+  const [fontSize, setFontSize] = useState(settings.fontSize);
+  const [lineHeight, setLineHeight] = useState(settings.lineHeight);
+  const [maxStringLength, setMaxStringLength] = useState(settings.maxStringLength);
+  const [collapsed, setCollapsed] = useState(settings.collapsed);
 
-    return (
-      <div>
-        <p>Settings for the JsonViewer</p>
+  return (
+    <div>
+      <p>Settings for the JsonViewer</p>
 
-        <div
-          style={{
-            display: 'inline-grid',
-            gridAutoFlow: 'row',
-            gridRowGap: '24px',
-            gridColumnGap: '32px',
-            marginRight: 'auto',
-          }}
-        >
-          <Label text="Font Size">
-            <Input
-              maxWidth={150}
-              onChange={(e) => {
-                settings.fontSize = e.target.value;
-              }}
-              value={settings.fontSize}
-            />
-          </Label>
-          <Label text="Line Height">
-            <Input
-              maxWidth={150}
-              onChange={(e) => {
-                settings.lineHeight = e.target.value;
-              }}
-              value={settings.lineHeight}
-            />
-          </Label>
-          <Label text="Maximum string length before collapsing">
-            <NumberInput
-              max={10_000}
-              maxWidth={150}
-              min={0}
-              onChange={(e) => {
-                settings.maxStringLength = Number(e ?? 200);
-              }}
-              value={settings.maxStringLength}
-            />
-          </Label>
-          <Label text="Maximum depth before collapsing nested objects">
-            <NumberInput
-              max={50}
-              maxWidth={150}
-              min={1}
-              onChange={(e) => {
-                settings.collapsed = Number(e ?? 2);
-              }}
-              value={settings.collapsed}
-            />
-          </Label>
-        </div>
+      <div
+        style={{
+          display: 'inline-grid',
+          gridAutoFlow: 'row',
+          gridRowGap: '24px',
+          gridColumnGap: '32px',
+          marginRight: 'auto',
+        }}
+      >
+        <Label text="Font Size">
+          <Input
+            maxWidth={150}
+            onChange={(e) => {
+              settings.fontSize = e.target.value;
+              setFontSize(e.target.value);
+            }}
+            value={fontSize}
+          />
+        </Label>
+        <Label text="Line Height">
+          <Input
+            maxWidth={150}
+            onChange={(e) => {
+              settings.lineHeight = e.target.value;
+              setLineHeight(e.target.value);
+            }}
+            value={lineHeight}
+          />
+        </Label>
+        <Label text="Maximum string length before collapsing">
+          <NumberInput
+            max={10_000}
+            maxWidth={150}
+            min={0}
+            onChange={(e) => {
+              const v = Number(e ?? 200);
+              settings.maxStringLength = v;
+              setMaxStringLength(v);
+            }}
+            value={maxStringLength}
+          />
+        </Label>
+        <Label text="Maximum depth before collapsing nested objects">
+          <NumberInput
+            max={50}
+            maxWidth={150}
+            min={1}
+            onChange={(e) => {
+              const v = Number(e ?? 2);
+              settings.collapsed = v;
+              setCollapsed(v);
+            }}
+            value={collapsed}
+          />
+        </Label>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
-const ImportExportTab: FC = observer(() => {
+const ImportExportTab: FC = () => {
   const toast = useToast();
-  const $state = useLocalObservable<{
-    importCode: string;
-    resetConfirm: string;
-  }>(() => ({
-    importCode: '',
-    resetConfirm: '',
-  }));
+  const [importCode, setImportCode] = useState('');
+  const [resetConfirm, setResetConfirm] = useState('');
+
   return (
     <Flex flexDirection="column" gap={2}>
       <Label text="Import">
         <Flex gap={2}>
           <Input
             maxWidth={360}
-            onChange={(e) => {
-              $state.importCode = e.target.value;
-            }}
+            onChange={(e) => setImportCode(e.target.value)}
             placeholder="Paste a previously exported settings string..."
             spellCheck={false}
-            value={$state.importCode}
+            value={importCode}
           />
           <Button
             onClick={() => {
               try {
-                const data = JSON.parse($state.importCode);
+                const data = JSON.parse(importCode);
                 const skipped: string[] = [];
-                transaction(() => {
-                  for (const k in data) {
-                    if (Reflect.has(uiSettings, k)) {
-                      (uiSettings as Record<string, unknown>)[k] = data[k];
-                    } else {
-                      skipped.push(k);
-                    }
+                for (const k in data) {
+                  if (Reflect.has(uiSettings, k)) {
+                    (uiSettings as Record<string, unknown>)[k] = data[k];
+                  } else {
+                    skipped.push(k);
                   }
-                });
+                }
                 if (skipped.length > 0) {
                   toast({
                     status: 'warning',
@@ -237,7 +236,7 @@ const ImportExportTab: FC = observer(() => {
                     description: 'Settings imported successfully',
                   });
                 }
-                $state.importCode = '';
+                setImportCode('');
               } catch (e) {
                 toast({
                   status: 'error',
@@ -275,23 +274,21 @@ const ImportExportTab: FC = observer(() => {
         <Flex alignItems="center" gap={2}>
           <Input
             maxWidth={360}
-            onChange={(str) => {
-              $state.resetConfirm = str.target.value;
-            }}
+            onChange={(str) => setResetConfirm(str.target.value)}
             placeholder='type "reset" here to confirm and enable the button'
             spellCheck={false}
-            value={$state.resetConfirm}
+            value={resetConfirm}
           />
           <Button
             colorScheme="red"
-            isDisabled={$state.resetConfirm !== 'reset'}
+            isDisabled={resetConfirm !== 'reset'}
             onClick={() => {
               clearSettings();
               toast({
                 status: 'success',
                 description: 'All settings have been reset to their defaults',
               });
-              $state.resetConfirm = '';
+              setResetConfirm('');
             }}
           >
             Reset
@@ -301,38 +298,39 @@ const ImportExportTab: FC = observer(() => {
       </Label>
     </Flex>
   );
-});
+};
 
-@observer
-class AutoRefreshTab extends Component {
-  render() {
-    return (
-      <div>
-        <p>Settings for the Auto Refresh Button</p>
-        <div
-          style={{
-            display: 'inline-grid',
-            gridAutoFlow: 'row',
-            gridRowGap: '24px',
-            gridColumnGap: '32px',
-            marginRight: 'auto',
-          }}
-        >
-          <Label text="Interval in seconds">
-            <NumberInput
-              max={300}
-              maxWidth={150}
-              min={5}
-              onChange={(e) => {
-                if (e) {
-                  uiSettings.autoRefreshIntervalSecs = Number(e);
-                }
-              }}
-              value={uiSettings.autoRefreshIntervalSecs}
-            />
-          </Label>
-        </div>
+const AutoRefreshTab: FC = () => {
+  const [intervalSecs, setIntervalSecs] = useState(uiSettings.autoRefreshIntervalSecs);
+
+  return (
+    <div>
+      <p>Settings for the Auto Refresh Button</p>
+      <div
+        style={{
+          display: 'inline-grid',
+          gridAutoFlow: 'row',
+          gridRowGap: '24px',
+          gridColumnGap: '32px',
+          marginRight: 'auto',
+        }}
+      >
+        <Label text="Interval in seconds">
+          <NumberInput
+            max={300}
+            maxWidth={150}
+            min={5}
+            onChange={(e) => {
+              if (e) {
+                const v = Number(e);
+                uiSettings.autoRefreshIntervalSecs = v;
+                setIntervalSecs(v);
+              }
+            }}
+            value={intervalSecs}
+          />
+        </Label>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};

@@ -40,7 +40,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
-import { runInAction } from 'mobx';
 import React, { useCallback, useEffect } from 'react';
 import {
   type MCPServer as APIMCPServer,
@@ -255,14 +254,12 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Remote MCP';
-    uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({
-      title: 'Remote MCP',
-      linkTo: '/mcp-servers',
-      heading: 'Remote MCP',
-    });
+  uiState.pageTitle = 'Remote MCP';
+  uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
+  uiState.pageBreadcrumbs.push({
+    title: 'Remote MCP',
+    linkTo: '/mcp-servers',
+    heading: 'Remote MCP',
   });
 };
 

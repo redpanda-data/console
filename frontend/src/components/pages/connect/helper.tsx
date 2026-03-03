@@ -33,8 +33,6 @@ import {
   VStack,
 } from '@redpanda-data/ui';
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
-import { action, runInAction } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react';
 import { type CSSProperties, useRef, useState } from 'react';
 
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
@@ -447,7 +445,7 @@ export function findConnectorMetadata(className: string): ConnectorMetadata | nu
   return meta;
 }
 
-export const ConnectorClass = observer((props: { observable: { class: string } }) => {
+export const ConnectorClass = (props: { observable: { class: string } }) => {
   const c = props.observable.class;
   const meta = findConnectorMetadata(c);
   const displayName = meta?.friendlyName ?? removeNamespace(c);
@@ -472,7 +470,7 @@ export const ConnectorClass = observer((props: { observable: { class: string } }
       </Popover>
     </div>
   );
-});
+};
 
 export function removeNamespace(className: string): string {
   if (!className) {
@@ -487,7 +485,7 @@ export function removeNamespace(className: string): string {
   return className;
 }
 
-export const OverviewStatisticsCard = observer(() => {
+export const OverviewStatisticsCard = () => {
   const totalClusters = api.connectConnectors?.clusters?.length ?? '...';
   const totalConnectors = api.connectConnectors?.clusters?.sum((c) => c.totalConnectors) ?? '...';
 
@@ -499,9 +497,9 @@ export const OverviewStatisticsCard = observer(() => {
       </div>
     </Section>
   );
-});
+};
 
-export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
+export const ClusterStatisticsCard = (p: { clusterName: string }) => {
   if (isEmbedded()) {
     return null;
   }
@@ -525,9 +523,9 @@ export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
       </div>
     </Section>
   );
-});
+};
 
-export const ConnectorStatisticsCard = observer((p: { clusterName: string; connectorName: string }) => {
+export const ConnectorStatisticsCard = (p: { clusterName: string; connectorName: string }) => {
   const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName === p.clusterName);
   const connector = cluster?.connectors.first((x) => x.name === p.connectorName);
 
@@ -541,7 +539,7 @@ export const ConnectorStatisticsCard = observer((p: { clusterName: string; conne
       </div>
     </Section>
   );
-});
+};
 
 export function NotConfigured() {
   return (
@@ -574,21 +572,19 @@ type ConfirmModalProps<T> = {
   onOk: (target: T) => Promise<void>;
 };
 
-export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
-  const $state = useLocalObservable<{ isPending: boolean; error: string | Error | null }>(() => ({
-    isPending: false,
-    error: null,
-  }));
+export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | Error | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
 
   const toast = useToast();
 
-  const renderError: () => { title: string; content: string } | undefined = () => {
-    if (!$state.error) {
+  const renderError = (): { title: string; content: string } | undefined => {
+    if (!error) {
       return;
     }
 
-    const txt = typeof $state.error === 'string' ? $state.error : $state.error.message;
+    const txt = typeof error === 'string' ? error : error.message;
 
     // try parsing as json
     let apiErr: ApiError | undefined;
@@ -616,15 +612,13 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     };
   };
 
-  const cancel = action(() => {
-    runInAction(() => {
-      $state.isPending = false;
-      $state.error = null;
-      props.clearTarget();
-    });
-  });
+  const cancel = () => {
+    setIsPending(false);
+    setError(null);
+    props.clearTarget();
+  };
 
-  const success = action((successTarget: T) => {
+  const success = (successTarget: T) => {
     const messageContent = props.successMessage(successTarget);
     toast({
       status: 'success',
@@ -632,21 +626,21 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     });
 
     cancel();
-  });
+  };
 
-  const onOk = action(async () => {
-    $state.isPending = true;
-    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+  const onOk = async () => {
+    setIsPending(true);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by isOpen check
     const target = props.target()!;
     try {
       await props.onOk(target);
       success(target);
-    } catch (error) {
-      $state.error = error as Error;
+    } catch (err) {
+      setError(err as Error);
     } finally {
-      $state.isPending = false;
+      setIsPending(false);
     }
-  });
+  };
 
   const target = props.target();
   const err = renderError();
@@ -678,20 +672,20 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
             <Button onClick={cancel} ref={cancelRef} variant="outline">
               No
             </Button>
-            <Button isLoading={$state.isPending} onClick={onOk}>
-              {$state.error ? 'Retry' : 'Yes'}
+            <Button isLoading={isPending} onClick={onOk}>
+              {error ? 'Retry' : 'Yes'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialogOverlay>
     </AlertDialog>
   );
-});
+};
 
 // Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
 // or an array of connectors (in which case it will show the sum)
 
-export const TasksColumn = observer((props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
+export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
   const obs = props.observable;
 
   let running = 0;
@@ -722,10 +716,10 @@ export const TasksColumn = observer((props: { observable: ClusterConnectors | Cl
       </span>
     </>
   );
-});
+};
 
 type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error?: string };
-export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
+export const ConnectorsColumn = (props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
   let running = 0;
   let total = 0;
   let error: string | undefined;
@@ -754,90 +748,90 @@ export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | C
       </span>
     </>
   );
-});
+};
 
-export const TaskState = observer(
-  (p: { observable: { state: ClusterConnectorTaskInfo['state']; trace?: string; taskId?: number } }) => {
-    const [err, showErr] = useState(undefined as string | undefined);
+export const TaskState = (p: {
+  observable: { state: ClusterConnectorTaskInfo['state']; trace?: string; taskId?: number };
+}) => {
+  const [err, showErr] = useState(undefined as string | undefined);
 
-    const task = p.observable;
-    const state = task.state;
+  const task = p.observable;
+  const state = task.state;
 
-    const iconWrapper = (iconElement: JSX.Element) => <span style={{ fontSize: '18px' }}>{iconElement}</span>;
+  const iconWrapper = (iconElement: JSX.Element) => <span style={{ fontSize: '18px' }}>{iconElement}</span>;
 
-    let icon: JSX.Element = <></>;
-    if (state === ConnectorState.Running) {
-      icon = iconWrapper(okIcon);
-    }
-    if (state === ConnectorState.Failed) {
-      icon = iconWrapper(errIcon);
-    }
-    if (state === ConnectorState.Paused) {
-      icon = iconWrapper(pauseIcon);
-    }
-    if (state === ConnectorState.Unassigned) {
-      icon = iconWrapper(waitIcon);
-    }
-
-    let stateContent = (
-      <span className="capitalize" style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }}>
-        {icon}
-        {String(state).toLowerCase()}
-      </span>
-    );
-
-    let errBtn: JSX.Element | undefined;
-    let errModal: JSX.Element | undefined;
-    if (task.trace) {
-      errBtn = (
-        <Button
-          colorScheme="red"
-          onClick={() => showErr(task.trace)}
-          style={{
-            padding: '0px 12px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            height: '30px',
-            gap: '5px',
-          }}
-          variant="outline"
-        >
-          {stateContent}
-          <span>(Show Error)</span>
-        </Button>
-      );
-
-      const close = () => showErr(undefined);
-      errModal = (
-        <Modal isOpen={err !== null && err !== undefined} onClose={close}>
-          <ModalOverlay />
-          <ModalContent minW="5xl">
-            <ModalHeader>
-              {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
-            </ModalHeader>
-            <ModalBody>
-              <Box className="codeBox" px={2} py={3} style={{ whiteSpace: 'pre', overflow: 'scroll' }} w="full">
-                {err}
-              </Box>
-            </ModalBody>
-            <ModalFooter gap={2}>
-              <Button onClick={close}>Close</Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      );
-
-      stateContent = errBtn;
-    }
-
-    return (
-      <div>
-        {stateContent}
-        {errModal}
-      </div>
-    );
+  let icon: JSX.Element = <></>;
+  if (state === ConnectorState.Running) {
+    icon = iconWrapper(okIcon);
   }
-);
+  if (state === ConnectorState.Failed) {
+    icon = iconWrapper(errIcon);
+  }
+  if (state === ConnectorState.Paused) {
+    icon = iconWrapper(pauseIcon);
+  }
+  if (state === ConnectorState.Unassigned) {
+    icon = iconWrapper(waitIcon);
+  }
+
+  let stateContent = (
+    <span className="capitalize" style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }}>
+      {icon}
+      {String(state).toLowerCase()}
+    </span>
+  );
+
+  let errBtn: JSX.Element | undefined;
+  let errModal: JSX.Element | undefined;
+  if (task.trace) {
+    errBtn = (
+      <Button
+        colorScheme="red"
+        onClick={() => showErr(task.trace)}
+        style={{
+          padding: '0px 12px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          height: '30px',
+          gap: '5px',
+        }}
+        variant="outline"
+      >
+        {stateContent}
+        <span>(Show Error)</span>
+      </Button>
+    );
+
+    const close = () => showErr(undefined);
+    errModal = (
+      <Modal isOpen={err !== null && err !== undefined} onClose={close}>
+        <ModalOverlay />
+        <ModalContent minW="5xl">
+          <ModalHeader>
+            {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
+          </ModalHeader>
+          <ModalBody>
+            <Box className="codeBox" px={2} py={3} style={{ whiteSpace: 'pre', overflow: 'scroll' }} w="full">
+              {err}
+            </Box>
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button onClick={close}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    );
+
+    stateContent = errBtn;
+  }
+
+  return (
+    <div>
+      {stateContent}
+      {errModal}
+    </div>
+  );
+};
 
 export const okIcon = <CheckCircleIcon color="#52c41a" />;
 export const warnIcon = <WarningIcon color="orange" />;

@@ -14,7 +14,6 @@ import type { ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
-import { runInAction } from 'mobx';
 import { parseAsArrayOf, parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import {
   type AttributeFilter,
@@ -45,14 +44,12 @@ export const TRANSCRIPTS_PAGE_SIZE = 100;
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Transcripts';
-    uiState.pageBreadcrumbs.pop();
-    uiState.pageBreadcrumbs.push({
-      title: 'Transcripts',
-      linkTo: '/transcripts',
-      heading: 'Transcripts',
-    });
+  uiState.pageTitle = 'Transcripts';
+  uiState.pageBreadcrumbs.pop();
+  uiState.pageBreadcrumbs.push({
+    title: 'Transcripts',
+    linkTo: '/transcripts',
+    heading: 'Transcripts',
   });
 };
 

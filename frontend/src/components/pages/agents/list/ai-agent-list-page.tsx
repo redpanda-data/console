@@ -40,7 +40,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
-import { runInAction } from 'mobx';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React, { useCallback, useEffect } from 'react';
@@ -268,14 +267,12 @@ function AIAgentDataTableToolbar({ table }: { table: TanstackTable<AIAgent> }) {
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'AI Agents';
-    uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({
-      title: 'AI Agents',
-      linkTo: '/agents',
-      heading: 'AI Agents',
-    });
+  uiState.pageTitle = 'AI Agents';
+  uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
+  uiState.pageBreadcrumbs.push({
+    title: 'AI Agents',
+    linkTo: '/agents',
+    heading: 'AI Agents',
   });
 };
 

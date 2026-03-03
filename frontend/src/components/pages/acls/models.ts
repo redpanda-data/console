@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { comparer, observable } from 'mobx';
-
 import { api } from '../../../state/backend-api';
 import type {
   AclStrOperation,
@@ -367,102 +365,96 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
   return clusterAcls;
 }
 
-export const principalGroupsView = observable(
-  {
-    get flatAcls() {
-      const acls = api.ACLs;
-      if (!acls?.aclResources || acls.aclResources.length === 0) {
-        return [];
-      }
+export const principalGroupsView = {
+  get flatAcls() {
+    const acls = api.ACLs;
+    if (!acls?.aclResources || acls.aclResources.length === 0) {
+      return [];
+    }
 
-      const flattened: AclFlat[] = [];
-      for (const res of acls.aclResources) {
-        for (const rule of res.acls) {
-          const flattenedEntry: AclFlat = {
-            resourceType: res.resourceType,
-            resourceName: res.resourceName,
-            resourcePatternType: res.resourcePatternType,
+    const flattened: AclFlat[] = [];
+    for (const res of acls.aclResources) {
+      for (const rule of res.acls) {
+        const flattenedEntry: AclFlat = {
+          resourceType: res.resourceType,
+          resourceName: res.resourceName,
+          resourcePatternType: res.resourcePatternType,
 
-            principal: rule.principal,
-            host: rule.host,
-            operation: rule.operation,
-            permissionType: rule.permissionType,
-          };
-
-          flattened.push(flattenedEntry);
-        }
-      }
-
-      return observable(flattened);
-    },
-
-    get principalGroups(): AclPrincipalGroup[] {
-      const flat = this.flatAcls;
-
-      const g = flat.groupInto((f) => {
-        const groupingKey = `${f.principal ?? 'Any'} ${f.host ?? 'Any'}`;
-        return groupingKey;
-      });
-
-      const result: AclPrincipalGroup[] = [];
-
-      for (const { items } of g) {
-        const { principal, host } = items[0];
-
-        let principalType: PrincipalType;
-        let principalName: string;
-        if (principal?.includes(':')) {
-          const split = principal.split(':', 2);
-          principalType = split[0] as PrincipalType;
-          principalName = split[1];
-        } else {
-          principalType = 'User';
-          principalName = principal;
-        }
-
-        const principalGroup: AclPrincipalGroup = {
-          principalType,
-          principalName,
-          host,
-
-          topicAcls: collectTopicAcls(items),
-          consumerGroupAcls: collectConsumerGroupAcls(items),
-          clusterAcls: collectClusterAcls(items),
-          transactionalIdAcls: collectTransactionalIdAcls(items),
-
-          sourceEntries: items,
+          principal: rule.principal,
+          host: rule.host,
+          operation: rule.operation,
+          permissionType: rule.permissionType,
         };
-        result.push(principalGroup);
+
+        flattened.push(flattenedEntry);
+      }
+    }
+
+    return flattened;
+  },
+
+  get principalGroups(): AclPrincipalGroup[] {
+    const flat = this.flatAcls;
+
+    const g = flat.groupInto((f) => {
+      const groupingKey = `${f.principal ?? 'Any'} ${f.host ?? 'Any'}`;
+      return groupingKey;
+    });
+
+    const result: AclPrincipalGroup[] = [];
+
+    for (const { items } of g) {
+      const { principal, host } = items[0];
+
+      let principalType: PrincipalType;
+      let principalName: string;
+      if (principal?.includes(':')) {
+        const split = principal.split(':', 2);
+        principalType = split[0] as PrincipalType;
+        principalName = split[1];
+      } else {
+        principalType = 'User';
+        principalName = principal;
       }
 
-      // Add service accounts that exist but have no associated acl rules
-      const serviceAccounts = api.serviceAccounts?.users;
-      if (serviceAccounts) {
-        for (const acc of serviceAccounts) {
-          if (!result.any((group) => group.principalName === acc)) {
-            // Doesn't have a group yet, create one
-            result.push({
-              principalType: 'User',
-              host: '',
-              principalName: acc,
-              topicAcls: [createEmptyTopicAcl()],
-              consumerGroupAcls: [createEmptyConsumerGroupAcl()],
-              transactionalIdAcls: [createEmptyTransactionalIdAcl()],
-              clusterAcls: createEmptyClusterAcl(),
-              sourceEntries: [],
-            });
-          }
+      const principalGroup: AclPrincipalGroup = {
+        principalType,
+        principalName,
+        host,
+
+        topicAcls: collectTopicAcls(items),
+        consumerGroupAcls: collectConsumerGroupAcls(items),
+        clusterAcls: collectClusterAcls(items),
+        transactionalIdAcls: collectTransactionalIdAcls(items),
+
+        sourceEntries: items,
+      };
+      result.push(principalGroup);
+    }
+
+    // Add service accounts that exist but have no associated acl rules
+    const serviceAccounts = api.serviceAccounts?.users;
+    if (serviceAccounts) {
+      for (const acc of serviceAccounts) {
+        if (!result.any((group) => group.principalName === acc)) {
+          // Doesn't have a group yet, create one
+          result.push({
+            principalType: 'User',
+            host: '',
+            principalName: acc,
+            topicAcls: [createEmptyTopicAcl()],
+            consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+            transactionalIdAcls: [createEmptyTransactionalIdAcl()],
+            clusterAcls: createEmptyClusterAcl(),
+            sourceEntries: [],
+          });
         }
       }
+    }
 
-      return observable(result);
-    },
+    return result;
   },
-  undefined,
-  {
-    equals: comparer.structural,
-  }
-);
+};
 
 /*
  Sooner or later you want to go back from an 'AclPrincipalGroup' to flat ACLs.

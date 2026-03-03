@@ -37,9 +37,7 @@ import {
   TextDivider,
 } from '@redpanda-data/ui';
 import { useLocation } from '@tanstack/react-router';
-import { observable } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { SingleSelect } from './select';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
@@ -52,21 +50,19 @@ import {
 import { appGlobal } from '../../state/app-global';
 import { uiState } from '../../state/ui-state';
 
-const authenticationApi = observable({
-  methods: [] as AuthenticationMethod[],
-  methodsErrorResponse: null as ConnectError | null,
-
-  async refreshAuthenticationMethods(): Promise<void> {
+const authenticationApiClient = {
+  async refreshAuthenticationMethods(): Promise<{ methods: AuthenticationMethod[]; error: ConnectError | null }> {
     const client = appConfig.authenticationClient;
     if (!client) {
       throw new Error('security client is not initialized');
     }
 
-    const { methods } = await client.listAuthenticationMethods({}).catch((e: ConnectError) => {
-      this.methodsErrorResponse = e;
-      return { methods: [] };
-    });
-    this.methods = methods;
+    try {
+      const { methods } = await client.listAuthenticationMethods({});
+      return { methods, error: null };
+    } catch (e) {
+      return { methods: [], error: e as ConnectError };
+    }
   },
 
   async loginWithUsername({
@@ -97,132 +93,125 @@ const authenticationApi = observable({
     // biome-ignore lint/suspicious/noConsole: debug logging
     console.log({ response });
   },
-});
-
-const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
-  [AuthenticationMethod.NONE]: observer(() => {
-    const { searchStr } = useLocation();
-    const searchParams = new URLSearchParams(searchStr);
-    // Don't auto-redirect if there was an auth error - user needs to see the login page
-    const hasError = searchParams.has('error_code') || authenticationApi.methodsErrorResponse !== null;
-
-    useEffect(() => {
-      if (!hasError) {
-        appGlobal.historyPush('/overview');
-      }
-    }, [hasError]);
-
-    return hasError ? (
-      <Alert status="info">
-        <AlertIcon />
-        <AlertDescription>No authentication is configured. Refresh the page to try again.</AlertDescription>
-      </Alert>
-    ) : null;
-  }),
-  [AuthenticationMethod.BASIC]: observer(() => {
-    const formState = useLocalObservable(() => ({
-      username: '',
-      password: '',
-      mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-      isLoading: false,
-      error: undefined as string | undefined,
-      setUsername(value: string) {
-        this.username = value;
-      },
-      setPassword(value: string) {
-        this.password = value;
-      },
-      async handleSubmit() {
-        formState.isLoading = true;
-        await authenticationApi
-          .loginWithUsername({
-            username: formState.username,
-            password: formState.password,
-            mechanism: formState.mechanism,
-          })
-          .catch((ex) => {
-            formState.error = ex.message;
-          })
-          .finally(() => {
-            formState.isLoading = false;
-          });
-      },
-    }));
-
-    return (
-      <Flex flexDirection="column" gap={3}>
-        <FormControl>
-          <FormLabel>Username</FormLabel>
-          <Input
-            data-testid="auth-username-input"
-            disabled={formState.isLoading}
-            onChange={(e) => formState.setUsername(e.target.value)}
-            value={formState.username}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>Password</FormLabel>
-          <Input
-            data-testid="auth-password-input"
-            disabled={formState.isLoading}
-            onChange={(e) => formState.setPassword(e.target.value)}
-            type="password"
-            value={formState.password}
-          />
-        </FormControl>
-
-        <FormControl>
-          <FormLabel>SASL Mechanism</FormLabel>
-          <SingleSelect<SASLMechanism>
-            chakraStyles={{
-              control: (provided) => ({
-                ...provided,
-              }),
-            }}
-            onChange={(mechanism) => {
-              formState.mechanism = mechanism;
-            }}
-            options={[
-              {
-                label: 'SCRAM-SHA-256',
-                value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-              },
-              {
-                label: 'SCRAM-SHA-512',
-                value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
-              },
-            ]}
-            value={formState.mechanism}
-          />
-        </FormControl>
-        {Boolean(formState.error) && (
-          <Alert status="error">
-            <AlertIcon />
-            <AlertDescription>{formState.error}</AlertDescription>
-          </Alert>
-        )}
-        <Button data-testid="auth-submit" onClick={formState.handleSubmit} variant="brand">
-          {Boolean(formState.isLoading) && <Spinner mr="1" size="sm" />}
-          Log in
-        </Button>
-      </Flex>
-    );
-  }),
-  [AuthenticationMethod.OIDC]: () => (
-    <div>
-      <Button as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} variant="brand" width="full">
-        Log in with OIDC
-      </Button>
-    </div>
-  ),
 };
 
-const LoginPage = observer(() => {
+const NoneAuthComponent = ({ hasMethodsError }: { hasMethodsError: boolean }) => {
   const { searchStr } = useLocation();
   const searchParams = new URLSearchParams(searchStr);
+  const hasError = searchParams.has('error_code') || hasMethodsError;
 
   useEffect(() => {
-    authenticationApi.refreshAuthenticationMethods();
+    if (!hasError) {
+      appGlobal.historyPush('/overview');
+    }
+  }, [hasError]);
+
+  return hasError ? (
+    <Alert status="info">
+      <AlertIcon />
+      <AlertDescription>No authentication is configured. Refresh the page to try again.</AlertDescription>
+    </Alert>
+  ) : null;
+};
+
+const BasicAuthComponent = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [mechanism, setMechanism] = useState(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    await authenticationApiClient
+      .loginWithUsername({ username, password, mechanism })
+      .catch((ex) => {
+        setError(ex.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
+  return (
+    <Flex flexDirection="column" gap={3}>
+      <FormControl>
+        <FormLabel>Username</FormLabel>
+        <Input
+          data-testid="auth-username-input"
+          disabled={isLoading}
+          onChange={(e) => setUsername(e.target.value)}
+          value={username}
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Password</FormLabel>
+        <Input
+          data-testid="auth-password-input"
+          disabled={isLoading}
+          onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          value={password}
+        />
+      </FormControl>
+
+      <FormControl>
+        <FormLabel>SASL Mechanism</FormLabel>
+        <SingleSelect<SASLMechanism>
+          chakraStyles={{
+            control: (provided) => ({
+              ...provided,
+            }),
+          }}
+          onChange={(value) => {
+            setMechanism(value);
+          }}
+          options={[
+            {
+              label: 'SCRAM-SHA-256',
+              value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+            },
+            {
+              label: 'SCRAM-SHA-512',
+              value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
+            },
+          ]}
+          value={mechanism}
+        />
+      </FormControl>
+      {Boolean(error) && (
+        <Alert status="error">
+          <AlertIcon />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <Button data-testid="auth-submit" onClick={handleSubmit} variant="brand">
+        {Boolean(isLoading) && <Spinner mr="1" size="sm" />}
+        Log in
+      </Button>
+    </Flex>
+  );
+};
+
+const OidcAuthComponent = () => (
+  <div>
+    <Button as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} variant="brand" width="full">
+      Log in with OIDC
+    </Button>
+  </div>
+);
+
+const LoginPage = () => {
+  const { searchStr } = useLocation();
+  const searchParams = new URLSearchParams(searchStr);
+  const [methods, setMethods] = useState<AuthenticationMethod[]>([]);
+  const [methodsError, setMethodsError] = useState<ConnectError | null>(null);
+
+  useEffect(() => {
+    authenticationApiClient.refreshAuthenticationMethods().then(({ methods: m, error }) => {
+      setMethods(m);
+      setMethodsError(error);
+    });
   }, []);
 
   return (
@@ -275,25 +264,26 @@ const LoginPage = observer(() => {
             </Box>
           )}
           <Stack my={5}>
-            {authenticationApi.methodsErrorResponse ? (
+            {methodsError ? (
               <Alert status="error">
                 <AlertIcon />
-                <AlertDescription>
-                  Failed to fetch authentication methods: {authenticationApi.methodsErrorResponse.message}
-                </AlertDescription>
+                <AlertDescription>Failed to fetch authentication methods: {methodsError.message}</AlertDescription>
               </Alert>
             ) : null}
-            {authenticationApi.methods.reduce((acc, method, index) => {
-              const AuthComponent = AUTH_ELEMENTS[method];
-              if (AuthComponent) {
+            {methods.reduce((acc, method, index) => {
+              let authComponent: React.ReactNode = null;
+              if (method === AuthenticationMethod.NONE) {
+                authComponent = <NoneAuthComponent hasMethodsError={methodsError !== null} />;
+              } else if (method === AuthenticationMethod.BASIC) {
+                authComponent = <BasicAuthComponent />;
+              } else if (method === AuthenticationMethod.OIDC) {
+                authComponent = <OidcAuthComponent />;
+              }
+              if (authComponent) {
                 if (index > 0) {
                   acc.push(<TextDivider key={`divider-${method}`} my={3} text="OR" />);
                 }
-                acc.push(
-                  <div key={method}>
-                    <AuthComponent />
-                  </div>
-                );
+                acc.push(<div key={method}>{authComponent}</div>);
               }
               return acc;
             }, [] as React.ReactNode[])}
@@ -313,6 +303,6 @@ const LoginPage = observer(() => {
       </Flex>
     </Flex>
   );
-});
+};
 
 export default LoginPage;

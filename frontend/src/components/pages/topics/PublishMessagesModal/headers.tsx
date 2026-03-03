@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import './headersEditor.scss';
 import { Button, Input } from '@redpanda-data/ui';
 import { PlusIcon, TrashIcon } from 'components/icons';
@@ -21,43 +20,50 @@ type Header = {
 
 export type Props = {
   items: Header[];
+  onChange: (items: Header[]) => void;
 };
-const HeadersEditor = observer(
-  (p: Props): JSX.Element => (
-    <div className="headersEditor">
-      <table>
-        <thead>
-          <tr>
-            <th className="index">#</th>
-            <th className="name">Header Name</th>
-            <th className="value">Value</th>
-            <th className="actions">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {p.items.map((h, i) => (
-            <HeaderComp header={h} index={i} key={String(i)} list={p.items} />
-          ))}
-        </tbody>
-      </table>
-      <Button
-        onClick={() => {
-          p.items.push({ key: '', value: '' });
-        }}
-        variant="outline"
-        width="100%"
-      >
-        <span style={{ opacity: 0.66 }}>
-          <PlusIcon size="small" />
-        </span>
-        Add Row
-      </Button>
-    </div>
-  )
+
+const HeadersEditor = (p: Props): JSX.Element => (
+  <div className="headersEditor">
+    <table>
+      <thead>
+        <tr>
+          <th className="index">#</th>
+          <th className="name">Header Name</th>
+          <th className="value">Value</th>
+          <th className="actions">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {p.items.map((h, i) => (
+          <HeaderComp
+            header={h}
+            index={i}
+            key={String(i)}
+            onDelete={() => p.onChange(p.items.filter((_, idx) => idx !== i))}
+            onUpdate={(updated) => p.onChange(p.items.map((item, idx) => (idx === i ? updated : item)))}
+          />
+        ))}
+      </tbody>
+    </table>
+    <Button
+      onClick={() => {
+        p.onChange([...p.items, { key: '', value: '' }]);
+      }}
+      variant="outline"
+      width="100%"
+    >
+      <span style={{ opacity: 0.66 }}>
+        <PlusIcon size="small" />
+      </span>
+      Add Row
+    </Button>
+  </div>
 );
+
 export default HeadersEditor;
 
-const HeaderComp = observer((p: { list: Header[]; header: Header; index: number }) => {
+const HeaderComp = (p: { header: Header; index: number; onUpdate: (header: Header) => void; onDelete: () => void }) => {
   const { key, value } = p.header;
   return (
     <tr>
@@ -66,7 +72,7 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
         <Input
           borderRightRadius="0"
           onChange={(e) => {
-            p.header.key = e.target.value;
+            p.onUpdate({ ...p.header, key: e.target.value });
           }}
           placeholder="Key"
           spellCheck={false}
@@ -76,7 +82,7 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
       <td className="value">
         <Input
           onChange={(e) => {
-            p.header.value = e.target.value;
+            p.onUpdate({ ...p.header, value: e.target.value });
           }}
           placeholder="Value"
           spellCheck={false}
@@ -88,7 +94,7 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
           className="iconButton"
           onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             event.stopPropagation();
-            p.list.remove(p.header);
+            p.onDelete();
           }}
           variant="ghost"
         >
@@ -97,129 +103,4 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
       </td>
     </tr>
   );
-});
-
-/*
-
-
-type bool = boolean;
-type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> };
-
-class MyClass {
-    constructor(public name: string) { }
-    sayHi() { console.log('hi ' + this.name); }
-}
-
-class HelperContainer<TEvent extends EventNames, TData> extends CustomEvent<TData> {
-    constructor(name: TEvent, data: TData) {
-        super(name, { detail: data });
-    }
-}
-
-const customEvents = {
-    "myClass": MyClass,
-    "delete": {
-        key: "" as string,
-        state: 'before' as 'before' | 'after'
-    }
 };
-
-type EventNames = keyof typeof customEvents;
-type EventTypes<TName extends EventNames> = typeof customEvents[TName];
-
-function dispatch<TEvent extends EventNames, TData extends EventTypes<TEvent>>(eventName: TEvent, data: TData) {
-    const e = new CustomEvent(eventName, { detail: data });
-    const preventDefault = dispatchEvent(e);
-}
-
-type CustomEventMap = {
-    [N in EventNames]: CustomEvent<EventTypes<N>>;
-};
-
-declare global {
-    interface WindowEventMap extends CustomEventMap {
-    }
-}
-
-addEventListener('delete', ({ detail: e }) => {
-    console.log(`I heard the delete event!! with id ${e.id} in state ${e.state}`);
-});
-
-
-
-// to optimize removing elements from list, so not every button in the list needs yet another handler with onClick={()=>...}
-function useEvent<TName extends EventNames>(name: TName, listener: (event: EventTypes<TName>) => void): void {
-    const realListener = useCallback(() => {
-        console.log('creating the real listener (inside useCallback)');
-        return ((event: CustomEvent<EventTypes<TName>>) => {
-            listener(event.detail);
-        }) as EventListener;
-
-    }, []);
-
-    useEffect(() => {
-        // Register
-        addEventListener(name, realListener);
-
-        // Unregister
-        return () => removeEventListener(name, realListener);
-    }, [realListener]);
-}
-
-export interface NewTab {
-    title: React.ReactNode | (() => React.ReactNode);
-    content: React.ReactNode | (() => React.ReactNode);
-    disabled?: boolean;
-};
-export interface NewTabsProps {
-    tabs: { [key: string]: NewTab }
-
-    selectedTabKey?: string;
-    defaultSelectedTabKey?: string;
-    onChange?: (selectedTabKey: string) => void;
-
-    // Only makes sense when you also set "tabButtonStyle={{ maxWidth: '150px' }}".
-    // Renders the given element in the empty space on the right.
-    extra?: JSX.Element;
-
-    // The wrapper around the whole tabs control, header bar and content.
-    wrapperStyle?: CSSProperties;
-    //
-    barStyle?: CSSProperties;
-    tabButtonStyle?: CSSProperties;
-}
-
-export function NewTabs(props: TabsProps) {
-    const { tabs, selectedTabKey, extra, onChange = () => undefined } = props;
-
-    const [selectedTab, setSelectedTab] = useState(selectedTabKey || props.defaultSelectedTabKey || props.tabs[0].key);
-
-    dispatchEvent(new CustomEvent('ok', { detail: "whatever dude" }));
-
-    return (
-        <div style={props.wrapperStyle} >
-            <nav>
-                <ul className={styles.navigationList} style={props.barStyle}>
-                    {tabs.map((tab) => (
-                        <li key={tab.key} style={props.tabButtonStyle}>
-                            <div className={`${selectedTab === tab.key ? styles.active : styles.tabHeaderButton} ${tab.disabled ? styles.disabled : ''}`}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    if (tab.disabled) return;
-                                    setSelectedTab(tab.key);
-                                    onChange(tab.key);
-                                }}
-                            >
-                                {typeof tab.title === 'function' ? tab.title() : tab.title}
-                            </div>
-                        </li>
-                    ))}
-                    {extra && <li className='extra'>{extra}</li>}
-                </ul>
-            </nav>
-            <article>{renderContent(tabs, selectedTab)}</article>
-        </div>
-    );
-}
-
-*/

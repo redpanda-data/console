@@ -10,7 +10,6 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { observable } from 'mobx';
 
 import AclList from './acl-list';
 import type {
@@ -22,17 +21,17 @@ import type {
 
 describe('AclList', () => {
   test('renders an empty table when no data is present', () => {
-    const store = observable({
+    const store = {
       isAuthorizerEnabled: true,
       aclResources: [],
-    });
+    };
 
     render(<AclList acl={store} />);
     expect(screen.getByText('No data found')).toBeInTheDocument();
   });
 
   test('a table with one entry', () => {
-    const store = observable({
+    const store = {
       isAuthorizerEnabled: true,
       aclResources: [
         {
@@ -49,7 +48,7 @@ describe('AclList', () => {
           ],
         },
       ],
-    } as GetAclOverviewResponse);
+    } as GetAclOverviewResponse;
 
     render(<AclList acl={store} />);
 
@@ -66,10 +65,10 @@ describe('AclList', () => {
   });
 
   test('informs user about missing authorizer config in Kafka cluster', () => {
-    const store = observable({
+    const store = {
       isAuthorizerEnabled: false,
       aclResources: [],
-    });
+    };
 
     render(<AclList acl={store} />);
     expect(screen.getByText("There's no authorizer configured in your Kafka cluster")).toBeInTheDocument();

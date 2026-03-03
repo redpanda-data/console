@@ -25,7 +25,6 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { useNavigate } from '@tanstack/react-router';
-import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -61,23 +60,25 @@ type RoleFormProps = {
   initialData?: Partial<CreateRoleFormState>;
 };
 
-export const RoleForm = observer(({ initialData }: RoleFormProps) => {
+export const RoleForm = ({ initialData }: RoleFormProps) => {
   const navigate = useNavigate();
-  const formState = useLocalObservable<CreateRoleFormState>(() => ({
-    roleName: '',
-    allowAllOperations: false,
-    host: '',
-    topicACLs: [createEmptyTopicAcl()],
-    consumerGroupsACLs: [createEmptyConsumerGroupAcl()],
-    transactionalIDACLs: [createEmptyTransactionalIdAcl()],
-    clusterACLs: createEmptyClusterAcl(),
-    principals: [],
-    ...initialData,
-  }));
-
-  if (!formState.clusterACLs) {
-    formState.clusterACLs = createEmptyClusterAcl();
-  }
+  const [formState, setFormState] = useState<CreateRoleFormState>(() => {
+    const initial: CreateRoleFormState = {
+      roleName: '',
+      allowAllOperations: false,
+      host: '',
+      topicACLs: [createEmptyTopicAcl()],
+      consumerGroupsACLs: [createEmptyConsumerGroupAcl()],
+      transactionalIDACLs: [createEmptyTransactionalIdAcl()],
+      clusterACLs: createEmptyClusterAcl(),
+      principals: [],
+      ...initialData,
+    };
+    if (!initial.clusterACLs) {
+      initial.clusterACLs = createEmptyClusterAcl();
+    }
+    return initial;
+  });
 
   const [isFormValid, setIsFormValid] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -179,7 +180,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                   isDisabled={editMode}
                   isRequired
                   onChange={(v) => {
-                    formState.roleName = v.target.value;
+                    setFormState((prev) => ({ ...prev, roleName: v.target.value }));
                   }}
                   pattern="^[^,=]+$"
                   title="Please avoid using commas or equal signs."
@@ -193,25 +194,30 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
               alignSelf="self-end"
               data-testid="roles-allow-all-operations"
               onClick={() => {
-                if (formState.topicACLs.length === 0) {
-                  formState.topicACLs.push(createEmptyTopicAcl());
-                }
-                formState.topicACLs[0].selector = '*';
-                formState.topicACLs[0].all = 'Allow';
+                setFormState((prev) => {
+                  const topicACLs = prev.topicACLs.length === 0 ? [createEmptyTopicAcl()] : [...prev.topicACLs];
+                  topicACLs[0] = { ...topicACLs[0], selector: '*', all: 'Allow' };
 
-                if (formState.consumerGroupsACLs.length === 0) {
-                  formState.consumerGroupsACLs.push(createEmptyConsumerGroupAcl());
-                }
-                formState.consumerGroupsACLs[0].selector = '*';
-                formState.consumerGroupsACLs[0].all = 'Allow';
+                  const consumerGroupsACLs =
+                    prev.consumerGroupsACLs.length === 0
+                      ? [createEmptyConsumerGroupAcl()]
+                      : [...prev.consumerGroupsACLs];
+                  consumerGroupsACLs[0] = { ...consumerGroupsACLs[0], selector: '*', all: 'Allow' };
 
-                if (formState.transactionalIDACLs.length === 0) {
-                  formState.transactionalIDACLs.push(createEmptyTransactionalIdAcl());
-                }
-                formState.transactionalIDACLs[0].selector = '*';
-                formState.transactionalIDACLs[0].all = 'Allow';
+                  const transactionalIDACLs =
+                    prev.transactionalIDACLs.length === 0
+                      ? [createEmptyTransactionalIdAcl()]
+                      : [...prev.transactionalIDACLs];
+                  transactionalIDACLs[0] = { ...transactionalIDACLs[0], selector: '*', all: 'Allow' };
 
-                formState.clusterACLs.all = 'Allow';
+                  return {
+                    ...prev,
+                    topicACLs,
+                    consumerGroupsACLs,
+                    transactionalIDACLs,
+                    clusterACLs: { ...prev.clusterACLs, all: 'Allow' },
+                  };
+                });
               }}
               variant="outline"
             >
@@ -225,7 +231,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
           >
             <Input
               onChange={(v) => {
-                formState.host = v.target.value;
+                setFormState((prev) => ({ ...prev, host: v.target.value }));
               }}
               value={formState.host}
               width={600}
@@ -237,8 +243,17 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
                 key={`topic-${topicACL.selector}-${index}`}
+                onChange={(updated) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    topicACLs: prev.topicACLs.map((t, i) => (i === index ? (updated as TopicACLs) : t)),
+                  }))
+                }
                 onDelete={() => {
-                  formState.topicACLs.splice(index, 1);
+                  setFormState((prev) => ({
+                    ...prev,
+                    topicACLs: prev.topicACLs.filter((_, i) => i !== index),
+                  }));
                 }}
                 resource={topicACL}
                 resourceType="Topic"
@@ -249,7 +264,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Box>
               <Button
                 onClick={() => {
-                  formState.topicACLs.push(createEmptyTopicAcl());
+                  setFormState((prev) => ({ ...prev, topicACLs: [...prev.topicACLs, createEmptyTopicAcl()] }));
                 }}
                 variant="outline"
               >
@@ -263,8 +278,19 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={`consumer-group-${acl.selector}-${index}`}
+                onChange={(updated) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    consumerGroupsACLs: prev.consumerGroupsACLs.map((t, i) =>
+                      i === index ? (updated as ConsumerGroupACLs) : t
+                    ),
+                  }))
+                }
                 onDelete={() => {
-                  formState.consumerGroupsACLs.splice(index, 1);
+                  setFormState((prev) => ({
+                    ...prev,
+                    consumerGroupsACLs: prev.consumerGroupsACLs.filter((_, i) => i !== index),
+                  }));
                 }}
                 resource={acl}
                 resourceType="Group"
@@ -275,7 +301,10 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Box>
               <Button
                 onClick={() => {
-                  formState.consumerGroupsACLs.push(createEmptyConsumerGroupAcl());
+                  setFormState((prev) => ({
+                    ...prev,
+                    consumerGroupsACLs: [...prev.consumerGroupsACLs, createEmptyConsumerGroupAcl()],
+                  }));
                 }}
                 variant="outline"
               >
@@ -289,8 +318,19 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={`transactional-id-${acl.selector}-${index}`}
+                onChange={(updated) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    transactionalIDACLs: prev.transactionalIDACLs.map((t, i) =>
+                      i === index ? (updated as TransactionalIdACLs) : t
+                    ),
+                  }))
+                }
                 onDelete={() => {
-                  formState.transactionalIDACLs.splice(index, 1);
+                  setFormState((prev) => ({
+                    ...prev,
+                    transactionalIDACLs: prev.transactionalIDACLs.filter((_, i) => i !== index),
+                  }));
                 }}
                 resource={acl}
                 resourceType="TransactionalID"
@@ -301,7 +341,10 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Box>
               <Button
                 onClick={() => {
-                  formState.transactionalIDACLs.push(createEmptyTransactionalIdAcl());
+                  setFormState((prev) => ({
+                    ...prev,
+                    transactionalIDACLs: [...prev.transactionalIDACLs, createEmptyTransactionalIdAcl()],
+                  }));
                 }}
                 variant="outline"
               >
@@ -315,6 +358,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <HStack>
               <Box flexGrow={1}>
                 <ResourceACLsEditor
+                  onChange={(updated) => setFormState((prev) => ({ ...prev, clusterACLs: updated as ClusterACLs }))}
                   resource={formState.clusterACLs}
                   resourceType="Cluster"
                   setIsFormValid={setIsFormValid}
@@ -326,7 +370,10 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
           <Flex flexDirection="column" gap={4}>
             <Heading>Principals</Heading>
             <FormField description="This can be edited later" label="Assign this role to principals">
-              <PrincipalSelector state={formState.principals} />
+              <PrincipalSelector
+                onPrincipalsChange={(principals) => setFormState((prev) => ({ ...prev, principals }))}
+                principals={formState.principals}
+              />
             </FormField>
           </Flex>
         </Flex>
@@ -374,9 +421,12 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
       </form>
     </Box>
   );
-});
+};
 
-const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
+const PrincipalSelector = (p: {
+  principals: RolePrincipal[];
+  onPrincipalsChange: (principals: RolePrincipal[]) => void;
+}) => {
   const [searchValue, setSearchValue] = useState<string>('');
 
   useEffect(() => {
@@ -385,7 +435,7 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
     });
   }, []);
 
-  const state = p.state;
+  const { principals, onPrincipalsChange } = p;
 
   const availableUsers =
     api.serviceAccounts?.users.map((u) => ({
@@ -424,7 +474,7 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
           isMulti={false}
           onChange={(val) => {
             if (val && isSingleValue(val) && val.value) {
-              state.push({ name: val.value, principalType: 'User' });
+              onPrincipalsChange([...principals, { name: val.value, principalType: 'User' }]);
               setSearchValue('');
             }
           }}
@@ -435,13 +485,13 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
       </Box>
 
       <Flex gap={2}>
-        {state.map((principal) => (
+        {principals.map((principal) => (
           <Tag cursor="pointer" key={principal.name}>
             <TagLabel>{principal.name}</TagLabel>
-            <TagCloseButton onClick={() => state.remove(principal)} />
+            <TagCloseButton onClick={() => onPrincipalsChange(principals.filter((pr) => pr !== principal))} />
           </Tag>
         ))}
       </Flex>
     </Flex>
   );
-});
+};

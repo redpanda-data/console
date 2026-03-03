@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
 import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -146,13 +145,11 @@ export const ConnectOnboardingWizard = ({
   });
 
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = 'Create Pipeline';
-      uiState.pageBreadcrumbs = [
-        { title: 'Redpanda Connect', linkTo: '/connect-clusters' },
-        { title: 'Create Pipeline', linkTo: '' },
-      ];
-    });
+    uiState.pageTitle = 'Create Pipeline';
+    uiState.pageBreadcrumbs = [
+      { title: 'Redpanda Connect', linkTo: '/connect-clusters' },
+      { title: 'Create Pipeline', linkTo: '' },
+    ];
   }, []);
 
   const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {

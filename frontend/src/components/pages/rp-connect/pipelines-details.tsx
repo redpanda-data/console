@@ -14,8 +14,6 @@ import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, 
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { observable, runInAction } from 'mobx';
-import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -40,8 +38,7 @@ import {
   pipelinesApi,
 } from '../../../state/backend-api';
 import type { TopicMessage } from '../../../state/rest-interfaces';
-import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
-import { uiState } from '../../../state/ui-state';
+import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
@@ -262,35 +259,43 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-export const LogsTab = observer((p: { pipeline: Pipeline }) => {
+export const LogsTab = (p: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
-  const createLogsTabState = () => {
-    const search: MessageSearch = createMessageSearch();
-    const tabState = observable({
-      messages: search.messages,
-      isComplete: false,
-      error: null as string | null,
-      search,
+  const [messages, setMessages] = useState<TopicMessage[]>([]);
+  const [isComplete, setIsComplete] = useState(false);
+  const [logsQuickSearch, setLogsQuickSearch] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const searchRef = useRef<MessageSearch | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  useEffect(() => {
+    searchRef.current?.stopSearch();
+    const search = createMessageSearch();
+    searchRef.current = search;
+    setMessages([]);
+    setIsComplete(false);
+    executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
+      setIsComplete(true);
+      setMessages([...search.messages]);
     });
+    return () => {
+      search.stopSearch();
+    };
+  }, [refreshCount]);
 
-    // Resume search immediately
-    const searchPromise = executeMessageSearch(search, topicName, p.pipeline.id);
-    searchPromise
-      .catch((x) => {
-        tabState.error = String(x);
-      })
-      .finally(() => {
-        tabState.isComplete = true;
-      });
-    return tabState;
-  };
-
-  const [state, setState] = useState(createLogsTabState);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const search = searchRef.current;
+      if (search) {
+        setMessages([...search.messages]);
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadLargeMessage = async (msgTopicName: string, partitionID: number, offset: number) => {
-    // Create a new search that looks for only this message specifically
     const search = createMessageSearch();
     const searchReq: MessageSearchRequest = {
       filterInterpreterCode: '',
@@ -304,25 +309,22 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
       keyDeserializer: PayloadEncoding.UNSPECIFIED,
       valueDeserializer: PayloadEncoding.UNSPECIFIED,
     };
-    const messages = await search.startSearch(searchReq);
+    const loadedMessages = await search.startSearch(searchReq);
 
-    if (messages && messages.length === 1) {
-      // We must update the old message (that still says "payload too large")
-      // So we just find its index and replace it in the array we are currently displaying
-      const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
-      if (indexOfOldMessage > -1) {
-        state.messages[indexOfOldMessage] = messages[0];
-      } else {
-        throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
-        );
-      }
+    if (loadedMessages && loadedMessages.length === 1) {
+      setMessages((prev) => {
+        const idx = prev.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = loadedMessages[0];
+        return updated;
+      });
     } else {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
   };
 
-  const paginationParams = usePaginationParams(state.messages.length, 10);
+  const paginationParams = usePaginationParams(messages.length, 10);
   const messageTableColumns: ColumnDef<TopicMessage>[] = [
     {
       header: 'Timestamp',
@@ -348,11 +350,11 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
     },
   ];
 
-  const filteredMessages = state.messages.filter((x) => {
-    if (!uiSettings.pipelinesDetails.logsQuickSearch) {
+  const filteredMessages = messages.filter((x) => {
+    if (!logsQuickSearch) {
       return true;
     }
-    return isFilterMatch(uiSettings.pipelinesDetails.logsQuickSearch, x);
+    return isFilterMatch(logsQuickSearch, x);
   });
 
   return (
@@ -361,14 +363,8 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
       <Section minWidth="800px">
         <Flex mb="6">
-          <SearchField
-            searchText={uiSettings.pipelinesDetails.logsQuickSearch}
-            setSearchText={(x) => {
-              uiSettings.pipelinesDetails.logsQuickSearch = x;
-            }}
-            width="230px"
-          />
-          <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
+          <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
+          <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
             Refresh logs
           </Button>
         </Flex>
@@ -377,18 +373,20 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
           columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
-          onSortingChange={(sorting) => {
-            uiSettings.pipelinesDetails.sorting =
-              typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
-          }}
+          isLoading={!isComplete && messages.length === 0}
+          onSortingChange={setSorting}
           pagination={paginationParams}
-          sorting={uiSettings.pipelinesDetails.sorting ?? []}
+          sorting={sorting}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
               loadLargeMessage={() =>
-                loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
+                loadLargeMessage(
+                  searchRef.current?.searchRequest?.topicName ?? '',
+                  original.partitionID,
+                  original.offset
+                )
               }
               msg={original}
             />
@@ -397,7 +395,7 @@ export const LogsTab = observer((p: { pipeline: Pipeline }) => {
       </Section>
     </>
   );
-});
+};
 
 function isFilterMatch(str: string, m: TopicMessage) {
   const lowerStr = str.toLowerCase();
@@ -434,19 +432,13 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
     valueDeserializer: PayloadEncoding.UNSPECIFIED,
   } as MessageSearchRequest;
 
-  // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
-  // so any changes in phase, messages, error, etc can be used immediately in the ui
-  return runInAction(() => {
-    try {
-      return search.startSearch(request);
-    } catch (error) {
-      const connectError = ConnectError.from(error);
-      sonnerToast.error(
-        formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' })
-      );
-      return Promise.resolve([]);
-    }
-  });
+  try {
+    return search.startSearch(request);
+  } catch (error) {
+    const connectError = ConnectError.from(error);
+    sonnerToast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' }));
+    return Promise.resolve([]);
+  }
 }
 
 export const PipelineResources = (p: { resources?: Pipeline_Resources }) => {

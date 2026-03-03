@@ -22,14 +22,11 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Logs, RefreshCcw } from 'lucide-react';
-import { observable, runInAction } from 'mobx';
-import { observer } from 'mobx-react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MessageSearch, MessageSearchRequest } from 'state/backend-api';
 import { createMessageSearch } from 'state/backend-api';
 import type { TopicMessage } from 'state/rest-interfaces';
-import { uiState } from 'state/ui-state';
 import { sanitizeString } from 'utils/filter-helper';
 import { TimestampDisplay } from 'utils/tsx-utils';
 import { encodeBase64 } from 'utils/utils';
@@ -86,60 +83,61 @@ function executeMessageSearch(search: MessageSearch, topicName: string, remoteMc
     valueDeserializer: PayloadEncoding.UNSPECIFIED,
   };
 
-  // Start the search with the configured parameters
-  return runInAction(() => {
-    try {
-      return search.startSearch(request).catch((err) => {
-        const msg = (err as Error).message ?? String(err);
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in remoteMcpLogsMessageSearch: ${msg}`);
-        return [];
-      });
-    } catch (error: unknown) {
+  try {
+    return search.startSearch(request).catch((err) => {
+      const msg = (err as Error).message ?? String(err);
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error(`error in remoteMcpLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return Promise.resolve([]);
-    }
-  });
+      console.error(`error in remoteMcpLogsMessageSearch: ${msg}`);
+      return [];
+    });
+  } catch (error: unknown) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error(`error in remoteMcpLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
+    return Promise.resolve([]);
+  }
 }
 
-/**
- * This component is separated from others because it is using MobX. We need to stream the remote MCP logs to have better UX.
- * The existing implementation is tightly coupled with how state is managed in Console UI today.
- * In the future, this should be refactored to use useStream, ideally with a custom hook for react-query.
- */
-export const RemoteMCPLogsTab = observer(() => {
+export const RemoteMCPLogsTab = () => {
   const { id } = routeApi.useParams();
 
-  // Initialize default sorting if not set
-  if (uiState.remoteMcpDetails.sorting.length === 0) {
-    runInAction(() => {
-      uiState.remoteMcpDetails.sorting = DEFAULT_SORTING;
-    });
-  }
+  const [messages, setMessages] = useState<TopicMessage[]>([]);
+  const [isComplete, setIsComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [logsQuickSearch, setLogsQuickSearch] = useState('');
+  const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+  const searchRef = useRef<MessageSearch | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
 
-  const createLogsTabState = () => {
-    const messageSearch: MessageSearch = createMessageSearch();
-    const tabState = observable({
-      messages: messageSearch.messages,
-      isComplete: false,
-      error: null as string | null,
-      search: messageSearch,
-    });
-
-    // Start search immediately if remote MCP ID is available
-    if (id) {
-      const searchPromise = executeMessageSearch(messageSearch, REMOTE_MCP_LOGS_TOPIC, id);
-      searchPromise.catch((x) => {
-        tabState.error = String(x);
-        tabState.isComplete = true;
+  useEffect(() => {
+    if (!id) return;
+    searchRef.current?.stopSearch();
+    const search = createMessageSearch();
+    searchRef.current = search;
+    setMessages([]);
+    setIsComplete(false);
+    setError(null);
+    executeMessageSearch(search, REMOTE_MCP_LOGS_TOPIC, id)
+      .catch((x) => {
+        setError(String(x));
+      })
+      .finally(() => {
+        setIsComplete(true);
+        setMessages([...search.messages]);
       });
-    }
+    return () => {
+      search.stopSearch();
+    };
+  }, [refreshCount]);
 
-    return tabState;
-  };
-
-  const [state, setState] = useState(createLogsTabState);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const search = searchRef.current;
+      if (search) {
+        setMessages([...search.messages]);
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
 
   const messageTableColumns: ColumnDef<TopicMessage>[] = [
     {
@@ -162,12 +160,7 @@ export const RemoteMCPLogsTab = observer(() => {
     },
   ];
 
-  const filteredMessages = state.messages.filter((x) => {
-    if (!uiState.remoteMcpDetails.logsQuickSearch) {
-      return true;
-    }
-    return isFilterMatch(uiState.remoteMcpDetails.logsQuickSearch, x);
-  });
+  const filteredMessages = messages.filter((x) => isFilterMatch(logsQuickSearch, x));
 
   return (
     <Card className="px-0 py-0" size="full">
@@ -184,15 +177,11 @@ export const RemoteMCPLogsTab = observer(() => {
           <div className="mb-6 flex items-center gap-4">
             <Input
               className="w-60"
-              onChange={(e) => {
-                runInAction(() => {
-                  uiState.remoteMcpDetails.logsQuickSearch = e.target.value;
-                });
-              }}
+              onChange={(e) => setLogsQuickSearch(e.target.value)}
               placeholder="Filter logs..."
-              value={uiState.remoteMcpDetails.logsQuickSearch}
+              value={logsQuickSearch}
             />
-            <Button className="ml-auto" onClick={() => setState(createLogsTabState())} variant="outline">
+            <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
               <div className="flex items-center gap-2">
                 <RefreshCcw className="h-4 w-4" />
                 Refresh logs
@@ -203,10 +192,10 @@ export const RemoteMCPLogsTab = observer(() => {
 
         <div>
           {(() => {
-            if (state.error) {
-              return <Text className="text-destructive">Error loading logs: {state.error}</Text>;
+            if (error) {
+              return <Text className="text-destructive">Error loading logs: {error}</Text>;
             }
-            if (!state.isComplete && state.messages.length === 0) {
+            if (!isComplete && messages.length === 0) {
               return (
                 <div className="flex flex-col space-y-3">
                   <Skeleton className="h-[125px] w-full rounded-xl" />
@@ -223,15 +212,10 @@ export const RemoteMCPLogsTab = observer(() => {
                 columns={messageTableColumns}
                 data={filteredMessages}
                 emptyText="No messages"
-                isLoading={!state.isComplete}
+                isLoading={!isComplete}
                 loadingText="Loading... This can take several seconds."
-                onSortingChange={(sorting) => {
-                  runInAction(() => {
-                    uiState.remoteMcpDetails.sorting =
-                      typeof sorting === 'function' ? sorting(uiState.remoteMcpDetails.sorting) : sorting;
-                  });
-                }}
-                sorting={uiState.remoteMcpDetails.sorting ?? []}
+                onSortingChange={setSorting}
+                sorting={sorting}
                 subComponent={({ row: { original } }) => (
                   <ExpandedMessage
                     loadLargeMessage={
@@ -247,4 +231,4 @@ export const RemoteMCPLogsTab = observer(() => {
       </CardContent>
     </Card>
   );
-});
+};

@@ -1,13 +1,10 @@
 import { Box } from '@redpanda-data/ui';
-import { observable } from 'mobx';
-import { observer } from 'mobx-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 let nextModalId = 1;
-const modals = observable([]) as {
-  id: number;
-  element: JSX.Element;
-}[];
+type Modal = { id: number; element: JSX.Element };
+const modals: Modal[] = [];
+let setModalsState: React.Dispatch<React.SetStateAction<Modal[]>> | null = null;
 
 function removeModal(id: number) {
   const index = modals.findIndex((x) => x.id === id);
@@ -15,6 +12,7 @@ function removeModal(id: number) {
     return;
   }
   modals.splice(index, 1);
+  setModalsState?.([...modals]);
 }
 
 export function openModal<P extends object>(
@@ -29,16 +27,25 @@ export function openModal<P extends object>(
   };
 
   const element = React.createElement(component, p as P, []);
-  modals.push({
-    element,
-    id,
-  });
+  modals.push({ element, id });
+  setModalsState?.([...modals]);
 }
 
-export const ModalContainer = observer(() => (
-  <Box id="modalContainer">
-    {modals.map((e) => (
-      <React.Fragment key={e.id}>{e.element}</React.Fragment>
-    ))}
-  </Box>
-));
+export const ModalContainer = () => {
+  const [modalList, setModalList] = useState<Modal[]>([]);
+
+  useEffect(() => {
+    setModalsState = setModalList;
+    return () => {
+      setModalsState = null;
+    };
+  }, []);
+
+  return (
+    <Box id="modalContainer">
+      {modalList.map((e) => (
+        <React.Fragment key={e.id}>{e.element}</React.Fragment>
+      ))}
+    </Box>
+  );
+};
