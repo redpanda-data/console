@@ -12,9 +12,9 @@
 import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

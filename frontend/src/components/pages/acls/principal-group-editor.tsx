@@ -299,10 +299,13 @@ export const AclPrincipalGroupEditor = (p: {
                     <ResourceACLsEditor
                       key={`topic-${t.selector}-${i}`}
                       onChange={(updated) =>
-                        setGroup((prev) => ({
-                          ...prev,
-                          topicAcls: prev.topicAcls.map((item, idx) => (idx === i ? updated : item)),
-                        }))
+                        setGroup(
+                          (prev) =>
+                            ({
+                              ...prev,
+                              topicAcls: prev.topicAcls.map((item, idx) => (idx === i ? updated : item)),
+                            }) as AclPrincipalGroup
+                        )
                       }
                       onDelete={() =>
                         setGroup((prev) => ({ ...prev, topicAcls: prev.topicAcls.filter((x) => x !== t) }))

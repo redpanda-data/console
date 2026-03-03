@@ -27,7 +27,7 @@ import {
 } from '@redpanda-data/ui';
 import { CopyIcon, DownloadIcon, HelpIcon, InfoIcon } from 'components/icons';
 import { motion } from 'framer-motion';
-import React, { Component, type CSSProperties, type ReactNode, useState } from 'react';
+import React, { Component, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
