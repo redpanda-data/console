@@ -21,8 +21,6 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon } from 'lucide-react';
-import { action, makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
@@ -44,23 +42,8 @@ import { PageComponent, type PageInitHelper } from '../page';
 const exampleContent = `
 `;
 
-@observer
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
-  @observable fileName = '';
-  @observable description = '';
-  @observable tasks = MIN_TASKS;
-  @observable editorContent = exampleContent;
-  @observable isCreating = false;
-  @observable secrets: string[] = [];
-  // TODO: Actually show this within the pipeline create page
-  @observable tags = {} as Record<string, string>;
-
-  constructor(p: Readonly<{ matchedPath: string }>) {
-    super(p);
-    makeObservable(this, undefined, { autoBind: true });
-  }
-
   initPage(p: PageInitHelper): void {
     p.title = 'Create Pipeline';
     p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
@@ -83,152 +66,145 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
-    if (rpcnSecretManagerApi.secrets) {
-      // inject secrets to editor
-      this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
-    }
-    const alreadyExists = pipelinesApi.pipelines.any((x) => x.id === this.fileName);
-    const isNameEmpty = this.fileName.trim().length === 0;
-
-    const CreateButton = () => (
-      <Button
-        disabled={alreadyExists || isNameEmpty || this.isCreating}
-        onClick={action(() => this.createPipeline())}
-        variant="primary"
-      >
-        {Boolean(this.isCreating) && <Spinner />}
-        {this.isCreating ? 'Creating...' : 'Create'}
-      </Button>
-    );
-
-    return (
-      <PageContent>
-        <div className="my-2">
-          <UIText>
-            For help creating your pipeline, see our{' '}
-            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
-              quickstart
-            </UILink>
-            ,{' '}
-            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
-              library of examples
-            </UILink>
-            , and{' '}
-            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
-              connector catalog
-            </UILink>
-            .
-          </UIText>
-        </div>
-
-        <Flex flexDirection="column" gap={3}>
-          <FormField errorText="Pipeline name is already in use" isInvalid={alreadyExists} label="Pipeline name">
-            <Flex alignItems="center" gap="2">
-              <Input
-                data-testid="pipelineName"
-                isRequired
-                onChange={(x) => {
-                  this.fileName = x.target.value;
-                }}
-                pattern="[a-zA-Z0-9_\-]+"
-                placeholder="Enter a config name..."
-                value={this.fileName}
-                width={500}
-              />
-            </Flex>
-          </FormField>
-          <FormField label="Description">
-            <Input
-              data-testid="pipelineDescription"
-              onChange={(x) => {
-                this.description = x.target.value;
-              }}
-              value={this.description}
-              width={500}
-            />
-          </FormField>
-          <FormField
-            description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
-            label="Compute units"
-            w={500}
-          >
-            <NumberInput
-              max={MAX_TASKS}
-              maxWidth={150}
-              min={MIN_TASKS}
-              onChange={(e) => {
-                this.tasks = Number(e ?? MIN_TASKS);
-              }}
-              value={this.tasks}
-            />
-          </FormField>
-        </Flex>
-
-        <div className="mt-4">
-          <PipelineEditor
-            onChange={(x) => {
-              this.editorContent = x;
-            }}
-            secrets={this.secrets}
-            yaml={this.editorContent}
-          />
-        </div>
-
-        <Flex alignItems="center" gap="4">
-          <CreateButton />
-          <Link to="/connect-clusters">
-            <Button variant="link">Cancel</Button>
-          </Link>
-        </Flex>
-      </PageContent>
-    );
-  }
-
-  // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
-  async createPipeline() {
-    this.isCreating = true;
-
-    pipelinesApi
-      .createPipeline(
-        create(PipelineCreateSchema, {
-          configYaml: this.editorContent,
-          description: this.description,
-          displayName: this.fileName,
-          resources: {
-            cpuShares: tasksToCPU(this.tasks) || '0',
-            memoryShares: '0', // still required by API but unused
-          },
-          tags: {
-            ...this.tags,
-            __redpanda_cloud_pipeline_type: 'pipeline',
-          },
-        })
-      )
-      .then(
-        action(async (r) => {
-          toast.success('Pipeline created');
-          const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-          if (retUnits && this.tasks !== retUnits) {
-            toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
-          }
-          await pipelinesApi.refreshPipelines(true);
-          appGlobal.historyPush('/connect-clusters');
-        })
-      )
-      .catch(
-        action((err) => {
-          toast.error('Failed to create pipeline', {
-            description: formatPipelineError(ConnectError.from(err)),
-          });
-        })
-      )
-      .finally(() => {
-        this.isCreating = false;
-      });
+    return <RpConnectPipelinesCreateContent />;
   }
 }
 
 export default RpConnectPipelinesCreate;
+
+const RpConnectPipelinesCreateContent = () => {
+  const [fileName, setFileName] = useState('');
+  const [description, setDescription] = useState('');
+  const [tasks, setTasks] = useState(MIN_TASKS);
+  const [editorContent, setEditorContent] = useState(exampleContent);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
+  const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);
+  const isNameEmpty = fileName.trim().length === 0;
+
+  const createPipeline = () => {
+    setIsCreating(true);
+
+    pipelinesApi
+      .createPipeline(
+        create(PipelineCreateSchema, {
+          configYaml: editorContent,
+          description,
+          displayName: fileName,
+          resources: {
+            cpuShares: tasksToCPU(tasks) || '0',
+            memoryShares: '0', // still required by API but unused
+          },
+          tags: {
+            __redpanda_cloud_pipeline_type: 'pipeline',
+          },
+        })
+      )
+      .then(async (r) => {
+        toast.success('Pipeline created');
+        const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+        if (retUnits && tasks !== retUnits) {
+          toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
+        }
+        await pipelinesApi.refreshPipelines(true);
+        appGlobal.historyPush('/connect-clusters');
+      })
+      .catch((err) => {
+        toast.error('Failed to create pipeline', {
+          description: formatPipelineError(ConnectError.from(err)),
+        });
+      })
+      .finally(() => {
+        setIsCreating(false);
+      });
+  };
+
+  return (
+    <PageContent>
+      <div className="my-2">
+        <UIText>
+          For help creating your pipeline, see our{' '}
+          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
+            quickstart
+          </UILink>
+          ,{' '}
+          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+            library of examples
+          </UILink>
+          , and{' '}
+          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
+            connector catalog
+          </UILink>
+          .
+        </UIText>
+      </div>
+
+      <Flex flexDirection="column" gap={3}>
+        <FormField errorText="Pipeline name is already in use" isInvalid={alreadyExists} label="Pipeline name">
+          <Flex alignItems="center" gap="2">
+            <Input
+              data-testid="pipelineName"
+              isRequired
+              onChange={(x) => {
+                setFileName(x.target.value);
+              }}
+              pattern="[a-zA-Z0-9_\-]+"
+              placeholder="Enter a config name..."
+              value={fileName}
+              width={500}
+            />
+          </Flex>
+        </FormField>
+        <FormField label="Description">
+          <Input
+            data-testid="pipelineDescription"
+            onChange={(x) => {
+              setDescription(x.target.value);
+            }}
+            value={description}
+            width={500}
+          />
+        </FormField>
+        <FormField
+          description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
+          label="Compute units"
+          w={500}
+        >
+          <NumberInput
+            max={MAX_TASKS}
+            maxWidth={150}
+            min={MIN_TASKS}
+            onChange={(e) => {
+              setTasks(Number(e ?? MIN_TASKS));
+            }}
+            value={tasks}
+          />
+        </FormField>
+      </Flex>
+
+      <div className="mt-4">
+        <PipelineEditor
+          onChange={(x) => {
+            setEditorContent(x);
+          }}
+          secrets={secrets}
+          yaml={editorContent}
+        />
+      </div>
+
+      <Flex alignItems="center" gap="4">
+        <Button disabled={alreadyExists || isNameEmpty || isCreating} onClick={createPipeline} variant="primary">
+          {Boolean(isCreating) && <Spinner />}
+          {isCreating ? 'Creating...' : 'Create'}
+        </Button>
+        <Link to="/connect-clusters">
+          <Button variant="link">Cancel</Button>
+        </Link>
+      </Flex>
+    </PageContent>
+  );
+};
 
 type QuickActionsProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;

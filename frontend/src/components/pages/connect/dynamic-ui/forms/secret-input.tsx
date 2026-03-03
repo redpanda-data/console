@@ -10,7 +10,7 @@ import {
   useBoolean,
 } from '@redpanda-data/ui';
 import { EyeIcon, EyeOffIcon } from 'components/icons';
-import { observer, useLocalObservable } from 'mobx-react';
+import { useRef, useState } from 'react';
 
 export type SecretInputProps = {
   value: string;
@@ -32,25 +32,17 @@ const ClearButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
   </Button>
 );
 
-export const SecretInput = observer(({ value, onChange, updating = false }: SecretInputProps) => {
+export const SecretInput = ({ value, onChange, updating = false }: SecretInputProps) => {
   const [visible, setVisible] = useBoolean();
-  const localState = useLocalObservable(() => ({
-    canEdit: !updating,
-    initialValue: value,
-    value,
-    clear() {
-      this.value = '';
-    },
-    reset() {
-      this.value = this.initialValue;
-    },
-  }));
+  const initialValueRef = useRef(value);
+  const [canEdit, setCanEdit] = useState(!updating);
+  const [localValue, setLocalValue] = useState(value);
 
   const editButton = (
     <EditButton
       onClick={() => {
-        localState.canEdit = !localState.canEdit;
-        localState.clear();
+        setCanEdit(true);
+        setLocalValue('');
       }}
     />
   );
@@ -58,9 +50,9 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
   const clearButton = (
     <ClearButton
       onClick={() => {
-        localState.canEdit = !localState.canEdit;
-        localState.reset();
-        onChange(localState.initialValue);
+        setCanEdit(false);
+        setLocalValue(initialValueRef.current);
+        onChange(initialValueRef.current);
         setVisible.off();
       }}
     />
@@ -71,16 +63,16 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
       <InputGroup>
         <Input
           onChange={(e) => {
-            localState.value = e.target.value;
+            setLocalValue(e.target.value);
             if (onChange) {
               onChange(e.target.value);
             }
           }}
-          readOnly={!localState.canEdit}
+          readOnly={!canEdit}
           type={visible ? 'text' : 'password'}
-          value={localState.value}
+          value={localValue}
         />
-        {Boolean(localState.canEdit) && (
+        {Boolean(canEdit) && (
           <InputRightElement>
             <Button onClick={() => setVisible.toggle()} variant="ghost">
               <Icon as={visible ? EyeIcon : EyeOffIcon} color="gray.500" />
@@ -88,9 +80,9 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
           </InputRightElement>
         )}
       </InputGroup>
-      {Boolean(updating) && (localState.canEdit ? clearButton : editButton)}
+      {Boolean(updating) && (canEdit ? clearButton : editButton)}
     </Flex>
   );
-});
+};
 
 export default SecretInput;

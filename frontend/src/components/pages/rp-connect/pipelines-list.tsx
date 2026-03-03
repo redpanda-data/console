@@ -13,8 +13,6 @@ import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -118,16 +116,8 @@ export const PipelineThroughput = (p: { pipeline: Pipeline }) => {
   );
 };
 
-@observer
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesList extends PageComponent<{}> {
-  @observable placeholder = 5;
-
-  constructor(p: Readonly<{ matchedPath: string }>) {
-    super(p);
-    makeObservable(this);
-  }
-
   initPage(p: PageInitHelper): void {
     p.addBreadcrumb('Redpanda Connect Pipelines', '/rp-connect');
 

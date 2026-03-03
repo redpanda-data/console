@@ -14,7 +14,7 @@ import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, 
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { makeObservable, observable, runInAction } from 'mobx';
+import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
@@ -49,21 +49,13 @@ import PageContent from '../../misc/page-content';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
-import { PageComponent, type PageInitHelper, type PageProps } from '../page';
+import { PageComponent, type PageInitHelper } from '../page';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-@observer
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
-  @observable isChangingPauseState = false;
-
-  constructor(p: Readonly<PageProps<{ pipelineId: string }>>) {
-    super(p);
-    makeObservable(this);
-  }
-
   initPage(p: PageInitHelper): void {
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
     const pipeline = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
@@ -93,156 +85,162 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
     if (!pipeline) {
       return DefaultSkeleton;
     }
-    const isStopped = pipeline.state === Pipeline_State.STOPPED;
-    const isTransitioningState =
-      pipeline.state === Pipeline_State.STARTING || pipeline.state === Pipeline_State.STOPPING;
 
-    const error = pipeline.status?.error;
+    return <RpConnectPipelinesDetailsContent pipeline={pipeline} pipelineId={pipelineId} />;
+  }
+}
 
-    return (
-      <PageContent>
-        <ToastContainer />
+export default RpConnectPipelinesDetails;
 
-        <Box my="4">
-          {QuickTable(
-            [
-              { key: 'ID', value: pipeline.id },
-              { key: 'Name', value: pipeline.displayName },
-              { key: 'Description', value: pipeline.description ?? '' },
-              { key: 'Status', value: <PipelineStatus status={pipeline.state} /> },
-              { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
-              ...(pipeline.url ? [{ key: 'URL', value: pipeline.url }] : []),
-            ],
-            { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
-          )}
-        </Box>
+const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: Pipeline; pipelineId: string }) => {
+  const [isChangingPauseState, setIsChangingPauseState] = useState(false);
 
-        <Flex gap="4" mb="4">
-          <Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit">
-            <Button variant="solid">Edit</Button>
-          </Link>
+  const isStopped = pipeline.state === Pipeline_State.STOPPED;
+  const isTransitioningState = pipeline.state === Pipeline_State.STARTING || pipeline.state === Pipeline_State.STOPPING;
 
-          <Button
-            isDisabled={this.isChangingPauseState || isTransitioningState}
-            isLoading={this.isChangingPauseState}
-            onClick={() => {
-              this.isChangingPauseState = true;
+  const error = pipeline.status?.error;
 
-              const watchPipelineUpdates = async () => {
-                const waitDelays = [200, 400, 1000, 1000, 1000, 5000];
-                let waitIteration = 0;
+  return (
+    <PageContent>
+      <ToastContainer />
 
-                while (true) {
-                  const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration)];
-                  waitIteration += 1;
-                  await delay(waitTime);
+      <Box my="4">
+        {QuickTable(
+          [
+            { key: 'ID', value: pipeline.id },
+            { key: 'Name', value: pipeline.displayName },
+            { key: 'Description', value: pipeline.description ?? '' },
+            { key: 'Status', value: <PipelineStatus status={pipeline.state} /> },
+            { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
+            ...(pipeline.url ? [{ key: 'URL', value: pipeline.url }] : []),
+          ],
+          { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
+        )}
+      </Box>
 
-                  await pipelinesApi.refreshPipelines(true);
-                  // if we can't find the pipeline we're checking anymore it got deleted
-                  const p = pipelinesApi.pipelines?.first((x) => x.id === pipeline.id);
-                  if (!p) {
-                    return;
-                  }
+      <Flex gap="4" mb="4">
+        <Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit">
+          <Button variant="solid">Edit</Button>
+        </Link>
 
-                  // if its no longer in a transition state, we're done
-                  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
-                    return;
-                  }
+        <Button
+          isDisabled={isChangingPauseState || isTransitioningState}
+          isLoading={isChangingPauseState}
+          onClick={() => {
+            setIsChangingPauseState(true);
+
+            const watchPipelineUpdates = async () => {
+              const waitDelays = [200, 400, 1000, 1000, 1000, 5000];
+              let waitIteration = 0;
+
+              while (true) {
+                const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration)];
+                waitIteration += 1;
+                await delay(waitTime);
+
+                await pipelinesApi.refreshPipelines(true);
+                // if we can't find the pipeline we're checking anymore it got deleted
+                const p = pipelinesApi.pipelines?.first((x) => x.id === pipeline.id);
+                if (!p) {
+                  return;
                 }
-              };
 
-              const changePromise = isStopped
-                ? pipelinesApi.startPipeline(pipeline.id)
-                : pipelinesApi.stopPipeline(pipeline.id);
+                // if its no longer in a transition state, we're done
+                if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
+                  return;
+                }
+              }
+            };
 
-              changePromise
+            const changePromise = isStopped
+              ? pipelinesApi.startPipeline(pipeline.id)
+              : pipelinesApi.stopPipeline(pipeline.id);
+
+            changePromise
+              .then(() => {
+                toast({
+                  status: 'success',
+                  duration: 4000,
+                  isClosable: false,
+                  title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`,
+                });
+
+                // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+                watchPipelineUpdates().catch(console.error);
+              })
+              .catch((err) => {
+                toast({
+                  status: 'error',
+                  duration: null,
+                  isClosable: true,
+                  title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
+                  description: String(err),
+                });
+              })
+              .finally(() => {
+                setIsChangingPauseState(false);
+              });
+          }}
+          variant="outline"
+        >
+          {isStopped ? 'Start' : 'Stop'}
+        </Button>
+        <Button
+          onClick={() => {
+            openDeleteModal(pipeline.displayName, () => {
+              pipelinesApi
+                .deletePipeline(pipeline.id)
                 .then(() => {
                   toast({
                     status: 'success',
                     duration: 4000,
                     isClosable: false,
-                    title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`,
+                    title: 'Pipeline deleted',
                   });
-
-                  // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-                  watchPipelineUpdates().catch(console.error);
+                  pipelinesApi.refreshPipelines(true);
+                  appGlobal.historyPush('/connect-clusters');
                 })
                 .catch((err) => {
                   toast({
                     status: 'error',
                     duration: null,
                     isClosable: true,
-                    title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
+                    title: 'Failed to delete pipeline',
                     description: String(err),
                   });
-                })
-                .finally(() => {
-                  this.isChangingPauseState = false;
                 });
-            }}
-            variant="outline"
-          >
-            {isStopped ? 'Start' : 'Stop'}
-          </Button>
-          <Button
-            onClick={() => {
-              openDeleteModal(pipeline.displayName, () => {
-                pipelinesApi
-                  .deletePipeline(pipeline.id)
-                  .then(() => {
-                    toast({
-                      status: 'success',
-                      duration: 4000,
-                      isClosable: false,
-                      title: 'Pipeline deleted',
-                    });
-                    pipelinesApi.refreshPipelines(true);
-                    appGlobal.historyPush('/connect-clusters');
-                  })
-                  .catch((err) => {
-                    toast({
-                      status: 'error',
-                      duration: null,
-                      isClosable: true,
-                      title: 'Failed to delete pipeline',
-                      description: String(err),
-                    });
-                  });
-              });
-            }}
-            variant="outline-delete"
-          >
-            Delete
-          </Button>
-        </Flex>
+            });
+          }}
+          variant="outline-delete"
+        >
+          Delete
+        </Button>
+      </Flex>
 
-        {Boolean(error) && (
-          <Alert status="error" variant="left-accent">
-            <AlertIcon />
-            {error}
-          </Alert>
-        )}
+      {Boolean(error) && (
+        <Alert status="error" variant="left-accent">
+          <AlertIcon />
+          {error}
+        </Alert>
+      )}
 
-        <Tabs
-          tabs={[
-            {
-              key: 'config',
-              title: 'Configuration',
-              content: <PipelineEditor pipeline={pipeline} />,
-            },
-            {
-              key: 'logs',
-              title: 'Logs',
-              content: <LogsTab pipeline={pipeline} />,
-            },
-          ]}
-        />
-      </PageContent>
-    );
-  }
-}
-
-export default RpConnectPipelinesDetails;
+      <Tabs
+        tabs={[
+          {
+            key: 'config',
+            title: 'Configuration',
+            content: <PipelineEditor pipeline={pipeline} />,
+          },
+          {
+            key: 'logs',
+            title: 'Logs',
+            content: <LogsTab pipeline={pipeline} />,
+          },
+        ]}
+      />
+    </PageContent>
+  );
+};
 
 const PipelineEditor = (p: { pipeline: Pipeline }) => {
   const { pipeline } = p;

@@ -10,8 +10,6 @@
  */
 
 import { Box, DataTable, Empty } from '@redpanda-data/ui';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import { Component } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
@@ -41,24 +39,12 @@ export type TopicWithMoves = {
   selectedPartitions: PartitionWithMoves[];
 };
 
-@observer
 export class StepReview extends Component<{
   partitionSelection: PartitionSelection;
   topicsWithMoves: TopicWithMoves[];
   assignments: PartitionReassignmentRequest;
   reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
-  @observable unused = 0;
-  constructor(p: {
-    partitionSelection: PartitionSelection;
-    topicsWithMoves: TopicWithMoves[];
-    assignments: PartitionReassignmentRequest;
-    reassignPartitions: ReassignPartitions;
-  }) {
-    super(p);
-    makeObservable(this);
-  }
-
   render() {
     if (!api.topics) {
       return DefaultSkeleton;
