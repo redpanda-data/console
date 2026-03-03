@@ -23,6 +23,7 @@ import {
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
+import { autorun } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
@@ -318,8 +319,6 @@ setTimeout(() => {
       setBreadcrumbs(breadcrumbs);
     });
 
-    // Update sidebar items when routes change
-    // Note: This is a simple function call, no longer needs to be observable
     const updateSidebarItems = () => {
       const setSidebarItems = config.setSidebarItems;
       if (!setSidebarItems) {
@@ -346,11 +345,11 @@ setTimeout(() => {
       setSidebarItems(sidebarItems);
     };
 
-    // Call once on initialization
-    updateSidebarItems();
-
-    // If routes can change dynamically, you can subscribe to relevant state changes
-    // For now, we just call it once since routes are static
+    // Reactively emit sidebar items when endpoint compatibility becomes available.
+    // In embedded mode, endpointCompatibility loads asynchronously after setup(),
+    // so autorun ensures items are emitted once the data is ready.
+    // Disposer intentionally not captured — this reaction lives for the app's lifetime.
+    autorun(updateSidebarItems);
   } catch (error) {
     // Ignore errors in test environments where stores might not be properly initialized
     // This setTimeout runs globally when config.ts is imported

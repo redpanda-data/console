@@ -43,8 +43,8 @@ export class TopicPage {
   }
 
   async clearSearch() {
-    const searchInput = this.page.getByTestId('search-field-input');
-    await searchInput.clear();
+    await this.page.getByTestId('search-field-reset-icon').click();
+    await expect(this.page.getByTestId('search-field-search-icon')).toBeVisible();
   }
 
   async toggleInternalTopics(checked: boolean) {
