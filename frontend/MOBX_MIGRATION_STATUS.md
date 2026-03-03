@@ -1,6 +1,11 @@
 # MobX Migration Status
 
-## Progress: 61/94 component files (65%) + 5 state files ✅
+## Progress: 94/94 component files (100%) ✅ + 5 state files ✅
+
+**`src/components/` is fully MobX-free.** Remaining MobX is in infrastructure/utility files outside `src/components/`:
+- `src/app.tsx`, `src/embedded-app.tsx`, `src/federation/console-app.tsx` — root `observer()` wrappers (critical for MobX reactivity with `api.*` state)
+- `src/utils/modal-container.tsx`, `src/utils/tsx-utils.tsx`, `src/utils/utils.ts` — utility components
+- `src/stores/topic-settings-store.ts` — store file
 
 ### ✅ Completed State Files (5)
 These are core state management files that have been migrated from MobX:
@@ -65,6 +70,22 @@ These are core state management files that have been migrated from MobX:
 62. **pages/rp-connect/pipelines-create.tsx** - Extracted `RpConnectPipelinesCreateContent`; 7 `@observable` fields → `useState`; `secrets.updateWith()` → derived from API; removed `action()` wrappers
 63. **pages/rp-connect/pipelines-edit.tsx** - Extracted `RpConnectPipelinesEditContent`; 9 `@observable` fields → `useState` initialized from `pipeline` prop; dropped unused `lintResults`; `secrets.updateWith()` → derived; `useToast()` directly in component
 
+**Completed in session 7 (7 files):**
+64. **pages/transforms/transform-details.tsx** - Removed `@observer`, dummy `@observable placeholder`, constructor; kept `observer`/`observable`/`runInAction` for streaming `LogsTab`
+65. **pages/overview/overview.tsx** - Removed `@observer`, `@computed hasRack`, constructor; inlined `this.hasRack` → `api.brokers?.sum(...)`
+66. **pages/connect/dynamic-ui/components.tsx** - Removed `observer()` wrapper
+67. **pages/connect/dynamic-ui/connector-step.tsx** - Removed `observer()` wrapper
+68. **pages/connect/dynamic-ui/property-component.tsx** - Removed `observer()` wrapper
+69. **pages/connect/dynamic-ui/property-group.tsx** - Removed `observer()` wrapper
+70. **pages/connect/dynamic-ui/debug-editor.tsx** - Removed `observer()` wrapper
+
+**Completed in session 8 (5 files):**
+71. **pages/connect/helper.tsx** - Removed all `observer()` wrappers (7 components); `ConfirmModal` `useLocalObservable` → `useState`; removed `action`/`runInAction`
+72. **pages/connect/dynamic-ui/list.tsx** - Full rewrite: `CommaSeparatedStringList` class → functional; `@observable data` → `useState`; `autorun` → `useEffect`; `List` class → functional with `onReorder` callback
+73. **misc/kowl-time-picker.tsx** - `KowlTimePicker` class → functional; `@observable timestampUtcMs` → `useState`; dropped unused `isLocalTimeMode`
+74. **reassign-partitions/components/statistics-bar.tsx** - `SelectionInfoBar` class → functional; `@computed selectedPartitions`/`involvedBrokers` → inline derived values
+75. **misc/login.tsx** - Full rewrite: `authenticationApi` `observable({})` → plain client object; `BASIC` `useLocalObservable` → `useState`; `LoginPage` methods state lifted to React state; `NONE`/`BASIC`/`OIDC` extracted as named components
+
 **Completed since last update (~28 files):**
 22. **layout/sidebar.tsx** - Removed `observer()` wrapper
 23. **misc/broker-list.tsx** - Removed `observer()` wrapper
@@ -97,14 +118,12 @@ These are core state management files that have been migrated from MobX:
 50. **pages/transforms/modals.tsx** - Removed `observer()` wrapper
 51. **pages/transforms/transforms-list.tsx** - Removed `observer()` wrapper
 
-## Remaining: 33 component files
+## Remaining: 21 component files
 
 ### Components Still Using MobX
 
-**Misc Components (4 files):**
-- misc/kowl-table.tsx
-- misc/kowl-time-picker.tsx
-- misc/login.tsx
+**Misc Components (2 files):**
+- misc/kowl-table.tsx ⚠️ (used with step1-partitions MobX props - migrate together)
 - misc/user-preferences.tsx ⚠️ (338 lines, useLocalObservable - very complex)
 
 **ACL Pages (4 files):**
@@ -113,17 +132,9 @@ These are core state management files that have been migrated from MobX:
 - pages/acls/role-edit-page.tsx
 - pages/acls/role-form.tsx
 
-**Connect Pages (11 files):**
+**Connect Pages (2 files):**
 - pages/connect/connector-details.tsx ⚠️ (856 lines - very complex)
 - pages/connect/create-connector.tsx
-- pages/connect/dynamic-ui/components.tsx
-- pages/connect/dynamic-ui/connector-step.tsx
-- pages/connect/dynamic-ui/debug-editor.tsx
-- pages/connect/dynamic-ui/forms/topic-input.tsx
-- pages/connect/dynamic-ui/list.tsx
-- pages/connect/dynamic-ui/property-component.tsx
-- pages/connect/dynamic-ui/property-group.tsx
-- pages/connect/helper.tsx
 
 **Consumer Pages (2 files):**
 - pages/consumers/group-details.tsx ⚠️ (641 lines)
@@ -132,16 +143,11 @@ These are core state management files that have been migrated from MobX:
 **MCP Server Pages (1 file):**
 - pages/mcp-servers/details/remote-mcp-logs-tab.tsx
 
-**Overview Pages (1 file):**
-- pages/overview/overview.tsx (454 lines)
-
-**Reassign Partitions (6 files):**
-- pages/reassign-partitions/components/active-reassignments.tsx
-- pages/reassign-partitions/components/statistics-bar.tsx
+**Reassign Partitions (4 files):**
+- pages/reassign-partitions/components/active-reassignments.tsx ⚠️ (complex, multiple classes)
 - pages/reassign-partitions/reassign-partitions.tsx ⚠️ (863 lines - complex)
-- pages/reassign-partitions/step1-partitions.tsx
-- pages/reassign-partitions/step2-brokers.tsx
-
+- pages/reassign-partitions/step1-partitions.tsx ⚠️ (@computed, inline observers in cells)
+- pages/reassign-partitions/step2-brokers.tsx (inline observers in cells, MobX array mutations)
 
 **Schema Pages (1 file):**
 - pages/schemas/schema-create.tsx ⚠️ (843 lines - complex)
@@ -152,9 +158,6 @@ These are core state management files that have been migrated from MobX:
 - pages/topics/topic-configuration.tsx ⚠️ (observer() + useLocalObservable)
 - pages/topics/topic-details.tsx (483 lines)
 - pages/topics/topic-produce.tsx ⚠️ (691 lines)
-
-**Transform Pages (1 file):**
-- pages/transforms/transform-details.tsx (394 lines)
 
 ## Migration Pattern Used
 
@@ -250,4 +253,4 @@ All 4 license components followed this simple pattern:
 ✅ **Tests:** 375 unit tests passing
 ✅ **Linter:** Passing
 
-**Last Updated:** 2026-03-03 (Session 6 — 61/94 done)
+**Last Updated:** 2026-03-03 (Session 8 — 73/94 done)

@@ -42,9 +42,7 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
-import { computed, makeObservable, observable } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react';
-import React, { Component, type FC, useRef } from 'react';
+import React, { Component, type FC, useRef, useState } from 'react';
 
 import { BandwidthSlider } from './bandwidth-slider';
 import { api } from '../../../../state/backend-api';
@@ -65,16 +63,16 @@ const { ToastContainer, toast } = createStandaloneToast({
   },
 });
 
-@observer
 export class ActiveReassignments extends Component<{
   throttledTopics: string[];
   onRemoveThrottleFromTopics: () => void;
 }> {
   pageConfig = { defaultPageSize: 5 };
 
-  // When set, a modal will be shown for the reassignment state
-  @observable reassignmentDetails: ReassignmentState | null = null;
-  @observable showThrottleDialog = false;
+  state = {
+    reassignmentDetails: null as ReassignmentState | null,
+    showThrottleDialog: false,
+  };
 
   constructor(p: {
     throttledTopics: string[];
@@ -82,11 +80,33 @@ export class ActiveReassignments extends Component<{
   }) {
     super(p);
     api.refreshCluster(true);
-    makeObservable(this);
   }
 
   render() {
-    const minThrottle = this.minThrottle;
+    const leaderThrottle = [...api.brokerConfigs.values()]
+      .filter((c) => typeof c !== 'string')
+      .flatMap((c) => c as ConfigEntry[])
+      .filter((c) => c !== undefined)
+      .first((e) => e.name === 'leader.replication.throttled.rate');
+    const followerThrottle = [...api.brokerConfigs.values()]
+      .filter((c) => typeof c !== 'string')
+      .flatMap((c) => c as ConfigEntry[])
+      .filter((c) => c !== undefined)
+      .first((e) => e.name === 'follower.replication.throttled.rate');
+
+    const throttleSettings = {
+      leaderThrottle: leaderThrottle ? Number(leaderThrottle.value) : undefined,
+      followerThrottle: followerThrottle ? Number(followerThrottle.value) : undefined,
+    };
+
+    const minThrottle =
+      throttleSettings.followerThrottle === undefined && throttleSettings.leaderThrottle === undefined
+        ? undefined
+        : Math.min(
+            throttleSettings.followerThrottle ?? Number.POSITIVE_INFINITY,
+            throttleSettings.leaderThrottle ?? Number.POSITIVE_INFINITY
+          );
+
     const throttleText =
       minThrottle === undefined ? 'Throttle: Not set (unlimited)' : <>Throttle: {prettyBytesOrNA(minThrottle)}/s</>;
 
@@ -104,7 +124,7 @@ export class ActiveReassignments extends Component<{
             !api.isRedpanda && (
               <Button
                 onClick={() => {
-                  this.showThrottleDialog = true;
+                  this.setState({ showThrottleDialog: true });
                 }}
                 size="sm"
                 style={{ fontSize: 'smaller', padding: '0px 8px' }}
@@ -144,7 +164,7 @@ export class ActiveReassignments extends Component<{
           defaultPageSize={10}
           emptyText="No reassignments currently in progress"
           onRow={(row) => {
-            this.reassignmentDetails = row.original;
+            this.setState({ reassignmentDetails: row.original });
           }}
           pagination
           sorting={false}
@@ -152,16 +172,16 @@ export class ActiveReassignments extends Component<{
 
         <ReassignmentDetailsDialog
           onClose={() => {
-            this.reassignmentDetails = null;
+            this.setState({ reassignmentDetails: null });
           }}
-          state={this.reassignmentDetails}
+          state={this.state.reassignmentDetails}
         />
         <ThrottleDialog
           lastKnownMinThrottle={minThrottle}
           onClose={() => {
-            this.showThrottleDialog = false;
+            this.setState({ showThrottleDialog: false });
           }}
-          visible={this.showThrottleDialog}
+          visible={this.state.showThrottleDialog}
         />
 
         {this.props.throttledTopics.length > 0 && (
@@ -179,155 +199,125 @@ export class ActiveReassignments extends Component<{
       </>
     );
   }
-
-  @computed get throttleSettings(): { followerThrottle: number | undefined; leaderThrottle: number | undefined } {
-    const leaderThrottle = [...api.brokerConfigs.values()]
-      .filter((c) => typeof c !== 'string')
-      .flatMap((c) => c as ConfigEntry[])
-      .filter((c) => c !== undefined)
-      .first((e) => e.name === 'leader.replication.throttled.rate');
-    const followerThrottle = [...api.brokerConfigs.values()]
-      .filter((c) => typeof c !== 'string')
-      .flatMap((c) => c as ConfigEntry[])
-      .filter((c) => c !== undefined)
-      .first((e) => e.name === 'follower.replication.throttled.rate');
-
-    const result = {
-      leaderThrottle: leaderThrottle ? Number(leaderThrottle.value) : undefined,
-      followerThrottle: followerThrottle ? Number(followerThrottle.value) : undefined,
-    };
-
-    return result;
-  }
-
-  @computed get minThrottle(): number | undefined {
-    const t = this.throttleSettings;
-    if (t.followerThrottle === undefined && t.leaderThrottle === undefined) {
-      // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
-      return;
-    }
-    return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
-  }
 }
 
-export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number | undefined; onClose: () => void }> =
-  observer(({ visible, lastKnownMinThrottle, onClose }) => {
-    const $state = useLocalObservable<{
-      newThrottleValue: number | null;
-    }>(() => ({
-      newThrottleValue: lastKnownMinThrottle ?? null,
-    }));
+export const ThrottleDialog: FC<{
+  visible: boolean;
+  lastKnownMinThrottle: number | undefined;
+  onClose: () => void;
+}> = ({ visible, lastKnownMinThrottle, onClose }) => {
+  const [newThrottleValue, setNewThrottleValue] = useState<number | null>(lastKnownMinThrottle ?? null);
 
-    const toastFn = useToast();
-    const toastRef = useRef<ToastId>();
+  const toastFn = useToast();
+  const toastRef = useRef<ToastId>();
 
-    const throttleValue = $state.newThrottleValue ?? 0;
-    const noChange = $state.newThrottleValue === lastKnownMinThrottle || $state.newThrottleValue === null;
+  const throttleValue = newThrottleValue ?? 0;
+  const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;
 
-    const applyBandwidthThrottle = async () => {
-      toastRef.current = toastFn({
-        status: 'loading',
-        description: 'Setting throttle rate...',
-      });
-      try {
-        const allBrokers = api.clusterInfo?.brokers.map((b) => b.brokerId);
-        if (!allBrokers) {
-          toast({
-            status: 'error',
-            title: 'Error',
-            description: 'Cluster info not available',
-          });
-          return;
-        }
-
-        if ($state.newThrottleValue && $state.newThrottleValue > 0) {
-          await api.setReplicationThrottleRate(allBrokers, $state.newThrottleValue);
-        } else {
-          await api.resetReplicationThrottleRate(allBrokers);
-        }
-
-        setTimeout(() => {
-          // need to update actual value after changing
-          api.refreshCluster(true);
-        });
-
-        toast.update(toastRef.current, {
-          status: 'success',
-          description: 'Setting throttle rate... done',
-        });
-      } catch (err) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in applyBandwidthThrottle: ${err}`);
-        toast.update(toastRef.current, {
+  const applyBandwidthThrottle = async () => {
+    toastRef.current = toastFn({
+      status: 'loading',
+      description: 'Setting throttle rate...',
+    });
+    try {
+      const allBrokers = api.clusterInfo?.brokers.map((b) => b.brokerId);
+      if (!allBrokers) {
+        toast({
           status: 'error',
-          description: 'Setting throttle rate... error',
+          title: 'Error',
+          description: 'Cluster info not available',
         });
+        return;
       }
 
-      onClose();
-    };
+      if (newThrottleValue && newThrottleValue > 0) {
+        await api.setReplicationThrottleRate(allBrokers, newThrottleValue);
+      } else {
+        await api.resetReplicationThrottleRate(allBrokers);
+      }
 
-    return (
-      <Modal isOpen={visible} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent minW="3xl">
-          <ModalHeader>Throttle Settings</ModalHeader>
-          <ModalBody>
-            <Flex flexDirection="column" gap={4}>
-              <Box mx={4}>
-                <Text>Using throttling you can limit the network traffic for reassignments.</Text>
-                <UnorderedList mt={2} px={6}>
-                  <ListItem>Throttling applies to all replication traffic, not just to active reassignments.</ListItem>
-                  <ListItem>
-                    Once the reassignment completes you'll have to remove the throttling configuration. <br />
-                    Console will show a warning below the "Current Reassignments" table when there are throttled topics
-                    that are no longer being reassigned.
-                  </ListItem>
-                </UnorderedList>
-              </Box>
-              <BandwidthSlider
-                onChange={(x) => {
-                  $state.newThrottleValue = x;
-                }}
-                value={throttleValue}
-              />
-            </Flex>
-          </ModalBody>
-          <ModalFooter justifyContent="space-between">
+      setTimeout(() => {
+        // need to update actual value after changing
+        api.refreshCluster(true);
+      });
+
+      toast.update(toastRef.current, {
+        status: 'success',
+        description: 'Setting throttle rate... done',
+      });
+    } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.error(`error in applyBandwidthThrottle: ${err}`);
+      toast.update(toastRef.current, {
+        status: 'error',
+        description: 'Setting throttle rate... error',
+      });
+    }
+
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={visible} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent minW="3xl">
+        <ModalHeader>Throttle Settings</ModalHeader>
+        <ModalBody>
+          <Flex flexDirection="column" gap={4}>
+            <Box mx={4}>
+              <Text>Using throttling you can limit the network traffic for reassignments.</Text>
+              <UnorderedList mt={2} px={6}>
+                <ListItem>Throttling applies to all replication traffic, not just to active reassignments.</ListItem>
+                <ListItem>
+                  Once the reassignment completes you'll have to remove the throttling configuration. <br />
+                  Console will show a warning below the "Current Reassignments" table when there are throttled topics
+                  that are no longer being reassigned.
+                </ListItem>
+              </UnorderedList>
+            </Box>
+            <BandwidthSlider
+              onChange={(x) => {
+                setNewThrottleValue(x);
+              }}
+              value={throttleValue}
+            />
+          </Flex>
+        </ModalBody>
+        <ModalFooter justifyContent="space-between">
+          <Button
+            colorScheme="red"
+            onClick={() => {
+              setNewThrottleValue(null);
+              applyBandwidthThrottle().catch(() => {
+                // Error handling managed by API layer
+              });
+            }}
+            variant="outline"
+          >
+            Remove throttle
+          </Button>
+
+          <Flex gap={2}>
+            <Button onClick={onClose} style={{ marginLeft: 'auto' }} variant="ghost">
+              Close
+            </Button>
             <Button
-              colorScheme="red"
+              disabled={noChange}
               onClick={() => {
-                $state.newThrottleValue = null;
                 applyBandwidthThrottle().catch(() => {
                   // Error handling managed by API layer
                 });
               }}
-              variant="outline"
+              variant="solid"
             >
-              Remove throttle
+              Apply
             </Button>
-
-            <Flex gap={2}>
-              <Button onClick={onClose} style={{ marginLeft: 'auto' }} variant="ghost">
-                Close
-              </Button>
-              <Button
-                disabled={noChange}
-                onClick={() => {
-                  applyBandwidthThrottle().catch(() => {
-                    // Error handling managed by API layer
-                  });
-                }}
-                variant="solid"
-              >
-                Apply
-              </Button>
-            </Flex>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  });
+          </Flex>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
 const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) => {
   const { isOpen, onToggle, onClose } = useDisclosure();
@@ -357,15 +347,14 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
   );
 };
 
-@observer
 export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentState | null; onClose: () => void }> {
   lastState: ReassignmentState | null;
-  @observable shouldThrottle = false;
   wasVisible = false;
+
+  state = { shouldThrottle: false };
 
   constructor(p: { state: ReassignmentState | null; onClose: () => void }) {
     super(p);
-    makeObservable(this);
   }
 
   render() {
@@ -385,7 +374,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       setTimeout(async () => {
         api.topicConfig.delete(state.topicName);
         await api.refreshTopicConfig(state.topicName, true);
-        this.shouldThrottle = this.isThrottled();
+        this.setState({ shouldThrottle: this.isThrottled() });
       });
     }
     this.wasVisible = visible;
@@ -417,9 +406,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         {/* Throttle */}
         <Flex gap={4}>
           <Checkbox
-            isChecked={this.shouldThrottle}
+            isChecked={this.state.shouldThrottle}
             onChange={(e) => {
-              this.shouldThrottle = e.target.checked;
+              this.setState({ shouldThrottle: e.target.checked });
             }}
           >
             <span>
@@ -546,7 +535,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       return;
     }
 
-    if (this.shouldThrottle) {
+    if (this.state.shouldThrottle) {
       const leaderReplicas: { partitionId: number; brokerId: number }[] = [];
       const followerReplicas: { partitionId: number; brokerId: number }[] = [];
       for (const p of state.partitions) {
@@ -637,7 +626,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   }
 }
 
-@observer
 export class TopicNameCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
@@ -646,7 +634,6 @@ export class TopicNameCol extends Component<{ state: ReassignmentState }> {
   }
 }
 
-@observer
 export class ProgressCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
@@ -693,7 +680,6 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
   }
 }
 
-@observer
 export class ETACol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
@@ -708,7 +694,6 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
   }
 }
 
-@observer
 export class BrokersCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;

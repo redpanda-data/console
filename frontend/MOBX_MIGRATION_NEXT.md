@@ -1,8 +1,8 @@
 # MobX Migration - Next Steps
 
 ## Quick Stats
-- **Completed:** 61/94 component files (65%) + 5 state files
-- **Remaining:** 33 component files
+- **Completed:** 68/94 component files (72%) + 5 state files
+- **Remaining:** 26 component files
 - **Status:** ✅ All tests passing, types valid
 
 ## Suggested Next Targets (Easiest First)
@@ -11,7 +11,7 @@
 
 - pages/mcp-servers/details/remote-mcp-logs-tab.tsx ⚠️ (streaming via MobX — needs `useEffect`/callback approach, not a simple removal)
 
-### Medium Complexity - Class Components / @observable Fields (17 files)
+### Medium Complexity - Class Components / @observable Fields (9 files)
 
 **Reassign Partitions (inline observer() in cells + MobX observable array props — do with parent):**
 - pages/reassign-partitions/components/active-reassignments.tsx
@@ -20,18 +20,9 @@
 - pages/reassign-partitions/step2-brokers.tsx
 
 **Connect Dynamic UI:**
-- pages/connect/dynamic-ui/components.tsx
-- pages/connect/dynamic-ui/connector-step.tsx
 - pages/connect/dynamic-ui/list.tsx
-- pages/connect/dynamic-ui/property-component.tsx
-- pages/connect/dynamic-ui/property-group.tsx
-- pages/connect/dynamic-ui/debug-editor.tsx
 - pages/connect/helper.tsx
 - pages/connect/create-connector.tsx
-
-**Other:**
-- pages/overview/overview.tsx (454 lines)
-- pages/transforms/transform-details.tsx (394 lines)
 
 ### Hard - Large Files or Complex State (16 files)
 
@@ -151,4 +142,4 @@ bun run type:check && bun run lint
 - Keep the api.* access pattern for now (data layer separate)
 - PageComponent wrapper can stay - just extract render() to functional component
 
-**Last Updated:** 2026-03-03 (Session 6 — 61/94 done)
+**Last Updated:** 2026-03-03 (Session 7 — 68/94 done)

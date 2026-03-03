@@ -13,8 +13,6 @@
 // - manages timers for refreshing current reassignments
 // - tracks progress history for each reassignment to estimate speed and ETA
 
-import { observable, transaction } from 'mobx';
-
 import { api } from '../../../../state/backend-api';
 import type { PartitionReassignments } from '../../../../state/rest-interfaces';
 import { IsDev } from '../../../../utils/env';
@@ -69,7 +67,7 @@ export class ReassignmentTracker {
   clusterTimer: number | null = null;
   reassignTimer: number | null = null;
 
-  @observable trackingReassignments: ReassignmentState[] = [];
+  trackingReassignments: ReassignmentState[] = [];
 
   constructor() {
     this.refreshReassignments = this.refreshReassignments.bind(this);
@@ -119,54 +117,51 @@ export class ReassignmentTracker {
       await api.refreshPartitions(topics, true);
     }
 
-    transaction(() => {
-      // Add new reassignments
-      for (const r of liveReassignments) {
-        const existingState = this.trackingReassignments.first((x) => x.id === r.id);
-        if (existingState === null) {
-          // console.log('adding new state', { id: r.id, reassignment: r });
-          const state = this.createReassignmentState(r);
-          this.trackingReassignments.push(state);
-        }
+    // Add new reassignments
+    for (const r of liveReassignments) {
+      const existingState = this.trackingReassignments.first((x) => x.id === r.id);
+      if (existingState === null) {
+        // console.log('adding new state', { id: r.id, reassignment: r });
+        const state = this.createReassignmentState(r);
+        this.trackingReassignments.push(state);
+      }
+    }
+
+    // Mark removed reassignments as completed
+    for (const r of this.trackingReassignments) {
+      if (r.actualTimeCompleted !== null) {
+        continue; // no need to the ones already marked as completed
       }
 
-      // Mark removed reassignments as completed
-      for (const r of this.trackingReassignments) {
-        if (r.actualTimeCompleted !== null) {
-          continue; // no need to the ones already marked as completed
-        }
-
-        const live = liveReassignments.first((x) => x.id === r.id);
-        if (!live) {
-          // this tracked reassignment does not exist in the live assignments anymore
-          r.actualTimeCompleted = new Date();
-          r.progressPercent = 100;
-          r.remaining = { value: 0, timestamp: new Date() };
-        }
+      const live = liveReassignments.first((x) => x.id === r.id);
+      if (!live) {
+        // this tracked reassignment does not exist in the live assignments anymore
+        r.actualTimeCompleted = new Date();
+        r.progressPercent = 100;
+        r.remaining = { value: 0, timestamp: new Date() };
       }
+    }
 
-      // Update running reassignments
-      for (const r of this.trackingReassignments.slice()) {
-        this.updateReassignmentState(r);
+    // Update running reassignments
+    for (const r of this.trackingReassignments.slice()) {
+      this.updateReassignmentState(r);
+    }
+
+    // Remove reassignments that are in completed state for some time
+    this.trackingReassignments = this.trackingReassignments.filter((x) => {
+      if (x.actualTimeCompleted === null) {
+        return true; // not yet complete, keep it
       }
-
-      // Remove reassignments that are in completed state for some time
-      const expiredTrackers = this.trackingReassignments.filter((x) => {
-        if (x.actualTimeCompleted === null) {
-          return false; // not yet complete
-        }
-        const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
-        if (age > 8 && IsDev) {
-          return true;
-        }
-        return false;
-      });
-      this.trackingReassignments.removeAll((x) => expiredTrackers.includes(x));
+      const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
+      if (age > 8 && IsDev) {
+        return false; // expired in dev, remove it
+      }
+      return true;
     });
   }
 
   createReassignmentState(r: PartitionReassignments): ReassignmentState {
-    return observable({
+    return {
       id: this.computeId(r),
 
       topicName: r.topicName,
@@ -188,7 +183,7 @@ export class ReassignmentTracker {
       estimateSpeed: null,
       estimateCompletionTime: null,
       actualTimeCompleted: null,
-    });
+    };
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
