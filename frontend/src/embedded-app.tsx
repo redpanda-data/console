@@ -39,7 +39,6 @@ import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-d
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
-import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 
@@ -157,4 +156,4 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   );
 }
 
-export default observer(EmbeddedApp);
+export default EmbeddedApp;

@@ -34,7 +34,6 @@ import { Code, ConnectError, type Interceptor } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
-import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 
 import { FederatedProviders } from './federated-providers';
@@ -300,10 +299,6 @@ function ConsoleAppInner({
   );
 }
 
-/**
- * Export the observed version of ConsoleApp.
- * This ensures MobX reactivity works correctly.
- */
-export const ConsoleApp = observer(ConsoleAppInner);
+export const ConsoleApp = ConsoleAppInner;
 
 export default ConsoleApp;

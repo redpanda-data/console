@@ -42,7 +42,6 @@ import { builderCustomComponents } from 'components/builder-io/builder-custom-co
 import { BUILDER_API_KEY } from 'components/constants';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
-import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 import { getBasePath } from 'utils/env';
@@ -111,4 +110,4 @@ const App = () => {
   );
 };
 
-export default observer(App);
+export default App;
