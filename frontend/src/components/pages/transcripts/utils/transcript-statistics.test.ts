@@ -38,10 +38,7 @@ const createMockTranscript = (data: { transcriptId: string; startTimeMs?: number
  * Helper to create a mock Span with the given attributes.
  * Attributes use stringValue by default (matching real OTel JSON transport).
  */
-const createMockSpan = (
-  name: string,
-  attributes: Array<{ key: string; value: string }>,
-): Span =>
+const createMockSpan = (name: string, attributes: Array<{ key: string; value: string }>): Span =>
   ({
     spanId: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
     parentSpanId: new Uint8Array(8),
