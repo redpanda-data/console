@@ -190,6 +190,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   componentWillUnmount() {
+    super.componentWillUnmount();
     reassignmentTracker.stop();
     this.stopRefreshingTopicConfigs();
   }
