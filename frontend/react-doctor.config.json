@@ -1,0 +1,5 @@
+{
+  "ignore": {
+    "files": ["src/components/ui/**", "src/components/redpanda-ui/**", "src/hooks/use-mobile.ts", "src/globals.css"]
+  }
+}

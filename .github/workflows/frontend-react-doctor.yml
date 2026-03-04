@@ -1,0 +1,57 @@
+---
+name: "Frontend React Doctor"
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-react-doctor.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-react-doctor.yml"
+env:
+  CI: true
+jobs:
+  react-doctor:
+    name: React Doctor
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Run React Doctor (PR diff mode)
+        id: react_doctor_pr
+        if: github.event_name == 'pull_request'
+        uses: millionco/react-doctor@main
+        with:
+          directory: frontend
+          diff: master
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on: error
+      - name: Run React Doctor (push full scan)
+        id: react_doctor_push
+        if: github.event_name == 'push'
+        uses: millionco/react-doctor@main
+        with:
+          directory: frontend
+          fail-on: error
+      - name: Publish React Doctor score
+        if: always()
+        shell: bash
+        run: |
+          SCORE="${{ steps.react_doctor_pr.outputs.score }}"
+          if [ -z "$SCORE" ]; then
+            SCORE="${{ steps.react_doctor_push.outputs.score }}"
+          fi
+          if [ -z "$SCORE" ]; then
+            SCORE="N/A"
+          fi
+          {
+            echo "# React Doctor"
+            echo ""
+            echo "- Score: $SCORE"
+          } >> "$GITHUB_STEP_SUMMARY"
