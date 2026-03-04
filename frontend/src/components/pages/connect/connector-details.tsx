@@ -562,6 +562,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
       return <NotConfigured />;
     }
 
+    // Touch observables so PageComponent's Reaction tracks them for re-renders.
+    void api.topics;
+
     return (
       <PageContent>
         <KafkaConnectorMain clusterName={clusterName} connectorName={connectorName} refreshData={this.refreshData} />

@@ -189,6 +189,11 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 
   render() {
+    // Touch observables so PageComponent's Reaction tracks them and triggers re-renders
+    // when async data arrives (TopicDetailsContent is a functional component child
+    // that reads api.* outside the MobX tracking context).
+    void api.topics;
+    void api.topicConfig.get(this.props.topicName);
     return <TopicDetailsContent topicName={this.props.topicName} />;
   }
 }

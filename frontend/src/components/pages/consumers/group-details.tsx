@@ -103,6 +103,9 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
   }
 
   render() {
+    // Touch observables so PageComponent's Reaction tracks them for re-renders.
+    void api.consumerGroups;
+    void api.consumerGroupAcls;
     return (
       <GroupDetailsMain
         groupId={this.props.groupId}
