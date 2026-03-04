@@ -64,6 +64,7 @@ import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
 // Redpanda UI Registry components
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
+import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -266,7 +267,7 @@ const SchemaList: FC = () => {
         if (isLoading) {
           return (
             <Section>
-              <Skeleton height="400px" />
+              <Skeleton size="xl" width="full" />
             </Section>
           );
         }
@@ -456,7 +457,7 @@ const SchemaTypeColumn: FC<{ name: string }> = ({ name }) => {
   const { data: details, isLoading } = useSchemaDetailsQuery(name);
 
   if (isLoading || !details) {
-    return <Skeleton height="15px" />;
+    return <Skeleton variant="text" />;
   }
 
   const getSchemaTypeBadgeProps = (type: string) => {
@@ -485,7 +486,7 @@ const SchemaCompatibilityColumn: FC<{ name: string }> = ({ name }) => {
   const { data: details, isLoading } = useSchemaDetailsQuery(name);
 
   if (isLoading || !details) {
-    return <Skeleton height="15px" />;
+    return <Skeleton variant="text" />;
   }
 
   return <>{details.compatibility}</>;
@@ -495,7 +496,7 @@ const LatestVersionColumn: FC<{ name: string }> = ({ name }) => {
   const { data: details, isLoading } = useSchemaDetailsQuery(name);
 
   if (isLoading || !details) {
-    return <Skeleton height="15px" />;
+    return <Skeleton variant="text" />;
   }
 
   if (details.latestActiveVersion < 0) {
