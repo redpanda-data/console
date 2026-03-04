@@ -44,6 +44,14 @@ type SchemaRegistrySubject struct {
 	IsSoftDeleted bool   `json:"isSoftDeleted"`
 }
 
+// For Schema Registry compatibility level and mode we have 2 custom responses:
+// - DEFAULT: there is no per-subject configuration set.
+// - UNKNOWN: there is an error, and we are unable to get the configuration.
+const (
+	unknownSRConfigResponse = "UNKNOWN"
+	defaultSRConfigResponse = "DEFAULT"
+)
+
 // GetSchemaRegistryMode retrieves the schema registry mode. The global mode
 // can be retrieved by using an empty subject.
 func (s *Service) GetSchemaRegistryMode(ctx context.Context, subject string) (*SchemaRegistryMode, error) {
@@ -435,11 +443,11 @@ func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rp
 		var schemaErr *sr.ResponseError
 		if errors.As(err, &schemaErr) && schemaErr.ErrorCode == 40408 {
 			// Subject compatibility not configured, this means the default compatibility will be used
-			return "DEFAULT"
+			return defaultSRConfigResponse
 		}
 		// For other errors, log warning and return UNKNOWN
 		s.logger.WarnContext(ctx, "failed to get subject config", slog.String("subject", subjectName), slog.Any("error", err))
-		return "UNKNOWN"
+		return unknownSRConfigResponse
 	}
 	return compatibility.Level.String()
 }
