@@ -722,6 +722,228 @@ output:
     });
   });
 
+  describe('label sibling handling', () => {
+    test('skips label on single input and returns component name', () => {
+      const yaml = `
+input:
+  label: ""
+  generate:
+    mapping: ""
+    interval: 1s
+    count: 0
+    batch_size: 0
+
+output:
+  drop: {}
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.inputs).toEqual(['generate']);
+    });
+
+    test('skips label on single output and returns component name', () => {
+      const yaml = `
+input:
+  generate:
+    mapping: 'root = {}'
+
+output:
+  label: ""
+  redpanda:
+    topic: test
+    key: ""
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.outputs).toEqual(['redpanda']);
+    });
+
+    test('skips label on both input and output', () => {
+      const yaml = `
+input:
+  label: ""
+  generate:
+    mapping: ""
+    interval: 1s
+    count: 0
+    batch_size: 0
+    auto_replay_nacks: false
+
+output:
+  label: ""
+  redpanda:
+    tls:
+      client_certs:
+        - key: ""
+          password: \${secrets.KAFKA_PASSWORD_USER}
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER_USER}
+        password: \${secrets.KAFKA_PASSWORD_USER}
+    topic: test
+    key: ""
+    partition: ""
+    max_in_flight: 0
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.inputs).toEqual(['generate']);
+      expect(result.outputs).toEqual(['redpanda']);
+    });
+
+    test('skips label on processor items', () => {
+      const yaml = `
+input:
+  generate:
+    mapping: 'root = {}'
+
+pipeline:
+  processors:
+    - label: "enrichment"
+      branch:
+        request_map: 'root = this.doc.id'
+        processors:
+          - http:
+              url: http://example.com
+        result_map: 'root.enriched = this'
+    - label: "transform"
+      mapping: 'root.processed = true'
+
+output:
+  drop: {}
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.processors).toEqual(['branch', 'mapping']);
+    });
+
+    test('skips label on broker child inputs', () => {
+      const yaml = `
+input:
+  broker:
+    inputs:
+      - label: "source_a"
+        kafka:
+          addresses:
+            - localhost:9092
+          topics:
+            - events
+      - label: "source_b"
+        amqp_0_9:
+          urls:
+            - amqp://guest:guest@localhost:5672/
+          queue: orders
+
+output:
+  drop: {}
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
+    });
+
+    test('skips label on broker child outputs', () => {
+      const yaml = `
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - label: "primary"
+        kafka:
+          addresses:
+            - localhost:9092
+          topic: topic_a
+      - label: "secondary"
+        http_client:
+          url: http://example.com/post
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.outputs).toEqual(['kafka', 'http_client']);
+    });
+
+    test('skips label on fallback child outputs', () => {
+      const yaml = `
+output:
+  fallback:
+    - label: "primary"
+      http_client:
+        url: http://foo:4195/post
+        retries: 3
+    - label: "backup"
+      file:
+        path: /usr/local/benthos/failed.jsonl
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.outputs).toEqual(['http_client', 'file']);
+    });
+
+    test('skips label on switch case outputs', () => {
+      const yaml = `
+output:
+  switch:
+    cases:
+      - check: this.type == "foo"
+        output:
+          label: "foo_output"
+          amqp_1:
+            urls:
+              - amqps://guest:guest@localhost:5672/
+            target_address: queue:/the_foos
+      - check: this.type == "bar"
+        output:
+          label: "bar_output"
+          gcp_pubsub:
+            project: dealing_with_mike
+            topic: mikes_bars
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+    });
+
+    test('full pipeline with labels everywhere', () => {
+      const yaml = `
+input:
+  label: "my_input"
+  broker:
+    inputs:
+      - label: "source_1"
+        kafka:
+          addresses:
+            - localhost:9092
+          topics:
+            - events
+      - label: "source_2"
+        generate:
+          mapping: 'root = {}'
+
+pipeline:
+  processors:
+    - label: "step_1"
+      mapping: 'root.processed = true'
+    - label: "step_2"
+      branch:
+        request_map: 'root = this.id'
+        processors:
+          - http:
+              url: http://example.com
+        result_map: 'root.enriched = this'
+
+output:
+  label: "my_output"
+  broker:
+    pattern: fan_out
+    outputs:
+      - label: "dest_1"
+        kafka:
+          addresses:
+            - localhost:9092
+          topic: processed_events
+      - label: "dest_2"
+        http_client:
+          url: http://example.com/webhook
+`;
+      const result = parseConfigComponents(yaml);
+      expect(result.inputs).toEqual(['kafka', 'generate']);
+      expect(result.processors).toEqual(['mapping', 'branch']);
+      expect(result.outputs).toEqual(['kafka', 'http_client']);
+    });
+  });
+
   describe('edge cases', () => {
     test('returns empty for empty string', () => {
       const result = parseConfigComponents('');

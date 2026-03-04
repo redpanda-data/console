@@ -519,9 +519,35 @@ export const getConnectTemplate = ({
 // Config Component Parsing (used by pipeline list)
 // ============================================================================
 
-/** Extract the first key from an object, or undefined if not a valid object. */
-const firstKey = (obj: unknown): string | undefined =>
-  obj && typeof obj === 'object' && !Array.isArray(obj) ? Object.keys(obj)[0] : undefined;
+/**
+ * Keys that can appear as siblings to the actual component name in a Connect
+ * component config object (e.g. `label` next to `generate` inside `input:`).
+ */
+const RESERVED_COMPONENT_KEYS = new Set(['label']);
+
+/**
+ * Processors whose configs contain nested child `processors` arrays.
+ * We intentionally do not recurse into these when extracting processor names
+ * for the pipeline list display.
+ */
+export const PROCESSORS_WITH_NESTED_STEPS = [
+  'branch',
+  'catch',
+  'for_each',
+  'parallel',
+  'switch',
+  'try',
+  'while',
+  'workflow',
+] as const;
+
+/** Extract the component name from an object, skipping reserved metadata keys like `label`. */
+const componentName = (obj: unknown): string | undefined => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return;
+  }
+  return Object.keys(obj).find((k) => !RESERVED_COMPONENT_KEYS.has(k));
+};
 
 /** Extract child input names from a multi-input component (broker, sequence). */
 const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
@@ -535,7 +561,7 @@ const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefine
   ) {
     const items = (value as { inputs?: unknown[] }).inputs;
     if (Array.isArray(items)) {
-      return items.map(firstKey).filter((k): k is string => !!k);
+      return items.map(componentName).filter((k): k is string => !!k);
     }
   }
 
@@ -548,7 +574,7 @@ const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefi
   if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
     const items = (value as { outputs?: unknown[] }).outputs;
     if (Array.isArray(items)) {
-      return items.map(firstKey).filter((k): k is string => !!k);
+      return items.map(componentName).filter((k): k is string => !!k);
     }
   }
 
@@ -556,13 +582,13 @@ const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefi
   if (outputKey === 'switch' && value && typeof value === 'object' && !Array.isArray(value) && 'cases' in value) {
     const cases = (value as { cases?: { output?: unknown }[] }).cases;
     if (Array.isArray(cases)) {
-      return cases.map((c) => firstKey(c.output)).filter((k): k is string => !!k);
+      return cases.map((c) => componentName(c.output)).filter((k): k is string => !!k);
     }
   }
 
   // fallback: the value itself is an array of output objects
   if (outputKey === 'fallback' && Array.isArray(value)) {
-    return value.map(firstKey).filter((k): k is string => !!k);
+    return value.map(componentName).filter((k): k is string => !!k);
   }
 
   return;
@@ -594,13 +620,13 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
     }
 
     const processors = Array.isArray(config.pipeline?.processors)
-      ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
+      ? config.pipeline.processors.map(componentName).filter((p): p is string => !!p)
       : [];
 
     const inputObj = config.input;
     let inputs: string[] = [];
     if (inputObj && typeof inputObj === 'object') {
-      const inputKey = firstKey(inputObj);
+      const inputKey = componentName(inputObj);
       if (inputKey) {
         inputs = parseMultiInputs(inputKey, inputObj[inputKey]) ?? [inputKey];
       }
@@ -609,7 +635,7 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
     const outputObj = config.output;
     let outputs: string[] = [];
     if (outputObj && typeof outputObj === 'object') {
-      const outputKey = firstKey(outputObj);
+      const outputKey = componentName(outputObj);
       if (outputKey) {
         outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
       }
