@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "dependencies": {
@@ -55,8 +54,6 @@
         "jwt-decode": "^4.0.0",
         "lottie-react": "^2.4.1",
         "lucide-react": "^0.563.0",
-        "mobx": "^6.10.0",
-        "mobx-react": "^7.6.0",
         "moment": "^2.30.1",
         "monaco-editor": "^0.54.0",
         "monaco-editor-webpack-plugin": "^7.1.1",
@@ -2690,12 +2687,6 @@
     "mkdirp-classic": ["mkdirp-classic@0.5.3", "", {}, "sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A=="],
 
     "mlly": ["mlly@1.8.0", "", { "dependencies": { "acorn": "^8.15.0", "pathe": "^2.0.3", "pkg-types": "^1.3.1", "ufo": "^1.6.1" } }, "sha512-l8D9ODSRWLe2KHJSifWGwBqpTZXIXTeo8mlKjY+E2HAakaTeNpqAyBZ8GSqLzHgw4XmHmC8whvpjJNMbFZN7/g=="],
-
-    "mobx": ["mobx@6.15.0", "", {}, "sha512-UczzB+0nnwGotYSgllfARAqWCJ5e/skuV2K/l+Zyck/H6pJIhLXuBnz+6vn2i211o7DtbE78HQtsYEKICHGI+g=="],
-
-    "mobx-react": ["mobx-react@7.6.0", "", { "dependencies": { "mobx-react-lite": "^3.4.0" }, "peerDependencies": { "mobx": "^6.1.0", "react": "^16.8.0 || ^17 || ^18" } }, "sha512-+HQUNuh7AoQ9ZnU6c4rvbiVVl+wEkb9WqYsVDzGLng+Dqj1XntHu79PvEWKtSMoMj67vFp/ZPXcElosuJO8ckA=="],
-
-    "mobx-react-lite": ["mobx-react-lite@3.4.3", "", { "peerDependencies": { "mobx": "^6.1.0", "react": "^16.8.0 || ^17 || ^18" } }, "sha512-NkJREyFTSUXR772Qaai51BnE1voWx56LOL80xG7qkZr6vo8vEaLF3sz1JNUVh+rxmUzxYaqOhfuxTfqUh0FXUg=="],
 
     "moment": ["moment@2.30.1", "", {}, "sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how=="],
 

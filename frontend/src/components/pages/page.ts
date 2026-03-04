@@ -9,9 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { Reaction } from 'mobx';
 import React from 'react';
 
+import {
+  useApiStore,
+  useKnowledgebaseStore,
+  usePipelinesStore,
+  useRolesStore,
+  useRpcnSecretManagerStore,
+  useTransformsStore,
+} from '../../state/backend-api';
 import { type BreadcrumbOptions, uiState } from '../../state/ui-state';
 
 //
@@ -31,8 +38,7 @@ export class PageInitHelper {
   }
 }
 export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {
-  // biome-ignore lint/style/useNamingConvention: internal MobX bridge field
-  private __mobxReaction: Reaction | null = null;
+  private _storeUnsubscribers: Array<() => void> = [];
 
   constructor(props: Readonly<PageProps<TRouteParams>>) {
     super(props);
@@ -40,31 +46,27 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
     uiState.pageBreadcrumbs = [];
 
     this.initPage(new PageInitHelper());
+  }
 
-    // Bridge MobX api.* observables → React re-renders.
-    // Pages read from api.* (a MobX observable object) in their render methods.
-    // This reaction wraps each render call, tracks the observables accessed,
-    // and calls forceUpdate() when any of them change (e.g. async data arrives).
-    const reaction = new Reaction(`${this.constructor.name}.render`, () => {
-      this.forceUpdate();
-    });
-    this.__mobxReaction = reaction;
-
-    // biome-ignore lint/suspicious/noExplicitAny: patching instance render for MobX→React bridge
-    const originalRender: () => React.ReactNode = (this as any).render.bind(this);
-    // biome-ignore lint/suspicious/noExplicitAny: patching instance render for MobX→React bridge
-    (this as any).render = () => {
-      let result: React.ReactNode;
-      reaction.track(() => {
-        result = originalRender();
-      });
-      return result;
-    };
+  componentDidMount() {
+    // Subscribe to all Zustand stores that pages read from via api.*, rolesApi.*, etc.
+    // Each store change triggers a re-render so pages see fresh data.
+    const update = () => this.forceUpdate();
+    this._storeUnsubscribers = [
+      useApiStore.subscribe(update),
+      useRolesStore.subscribe(update),
+      usePipelinesStore.subscribe(update),
+      useKnowledgebaseStore.subscribe(update),
+      useRpcnSecretManagerStore.subscribe(update),
+      useTransformsStore.subscribe(update),
+    ];
   }
 
   componentWillUnmount() {
-    this.__mobxReaction?.dispose();
-    this.__mobxReaction = null;
+    for (const unsub of this._storeUnsubscribers) {
+      unsub();
+    }
+    this._storeUnsubscribers = [];
   }
 
   abstract initPage(p: PageInitHelper): void;

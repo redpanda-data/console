@@ -47,13 +47,13 @@ test.describe('Filter Messages by Timestamp', () => {
         await page.waitForTimeout(500);
       });
 
-      await test.step('Fill time input', async () => {
-        const timeInput = page.getByTestId('start-timestamp-input').locator('input[type="time"]');
+      await test.step('Fill time input and wait for API request', async () => {
+        // The time input is inside the Chakra Popover portal — not a descendant of
+        // start-timestamp-input, so we search the whole page.
+        const timeInput = page.locator('input[type="time"]');
         await expect(timeInput).toBeVisible();
-        await timeInput.fill(timeValue);
-      });
 
-      await test.step('Submit time and wait for API request', async () => {
+        // Set up request listener BEFORE filling — fill() triggers onChange which triggers the request
         const apiRequestPromise = page.waitForRequest((request) => {
           if (!request.url().includes('ConsoleService/ListMessages') || request.method() !== 'POST') {
             return false;
@@ -71,7 +71,7 @@ test.describe('Filter Messages by Timestamp', () => {
           }
         });
 
-        await page.keyboard.press('Enter');
+        await timeInput.fill(timeValue);
 
         const apiRequest = await apiRequestPromise;
         expect(apiRequest).toBeTruthy();
@@ -92,8 +92,16 @@ test.describe('Filter Messages by Timestamp', () => {
     });
 
     await test.step('Verify date input displays a value', async () => {
-      // The readonly display input should show the formatted datetime
-      const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
+      // Close the popover (Escape triggers onClose via closeOnEsc default)
+      await page.keyboard.press('Escape');
+
+      // Wait for the popover to finish closing (time input disappears)
+      await expect(page.locator('input[type="time"]')).not.toBeVisible({ timeout: 3000 });
+
+      // The readonly display input should now show the formatted datetime.
+      // Use input[readonly] to avoid matching the time input (which also has ARIA role "textbox").
+      const dateTimeDisplay = page.getByTestId('start-timestamp-input').locator('input[readonly]');
+      await expect(dateTimeDisplay).toBeVisible();
       const displayValue = await dateTimeDisplay.inputValue();
 
       // Verify the display value is not empty
@@ -136,17 +144,16 @@ test.describe('Filter Messages by Timestamp', () => {
       const timestampInSeconds = 1_704_067_200; // 2024-01-01 00:00:00 UTC
       const timestampInMilliseconds = timestampInSeconds * 1000; // 1704067200000
 
-      // Find the readonly display input and click it to potentially open input mode
+      // Click the readonly display input to open the popover (switches to number input mode)
       const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
       await expect(dateTimeDisplay).toBeVisible();
+      await dateTimeDisplay.click();
 
-      // Try to clear and input the unix timestamp directly
-      // First, try triple-click to select all
-      await dateTimeDisplay.click({ clickCount: 3 });
-      await page.keyboard.press('Control+A'); // Select all
-      await page.keyboard.press('Meta+A'); // Select all (Mac)
+      // Wait for the number input to become visible (popover open, number input mode)
+      const numberInput = page.getByTestId('start-timestamp-input').locator('input[type="number"]');
+      await expect(numberInput).toBeVisible({ timeout: 3000 });
 
-      // Listen for the API request
+      // Listen for the API request BEFORE pressing Enter (Enter triggers onChange)
       const apiRequestPromise = page.waitForRequest((request) => {
         if (!request.url().includes('ConsoleService/ListMessages') || request.method() !== 'POST') {
           return false;
@@ -168,9 +175,10 @@ test.describe('Filter Messages by Timestamp', () => {
         }
       });
 
-      // Type the unix timestamp in seconds
-      await page.keyboard.type(String(timestampInSeconds));
-      await page.keyboard.press('Enter');
+      // Fill the number input with the unix timestamp in seconds
+      await numberInput.fill(String(timestampInSeconds));
+      // Press Enter to commit: the component converts seconds → milliseconds and calls onChange
+      await numberInput.press('Enter');
 
       // Wait for the API request with the correct timestamp
       const apiRequest = await apiRequestPromise;
