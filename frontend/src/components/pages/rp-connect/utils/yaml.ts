@@ -226,6 +226,14 @@ const mergeByComponentType = (
   }
 };
 
+function convertRequiredFieldSentinels(yamlString: string): string {
+  // With inline comment: `  key: __REQUIRED_FIELD__ # comment` → `  # key: comment`
+  let result = yamlString.replace(/^(\s*)([\w][\w.-]*): "?__REQUIRED_FIELD__"?\s*#\s*(.+)$/gm, '$1# $2: $3');
+  // Without comment (fallback): `  key: __REQUIRED_FIELD__` → `  # key: Required`
+  result = result.replace(/^(\s*)([\w][\w.-]*): "?__REQUIRED_FIELD__"?\s*$/gm, '$1# $2: Required');
+  return result;
+}
+
 const keyMatchRegex = /^([^:#\n]+):/;
 
 const addRootSpacing = (yamlString: string): string => {
@@ -436,6 +444,7 @@ export const configToYaml = (
     }
 
     let yamlString = yamlStringify(doc, yamlConfig);
+    yamlString = convertRequiredFieldSentinels(yamlString);
     yamlString = addRootSpacing(yamlString);
     return yamlString;
   } catch (error) {
@@ -457,14 +466,12 @@ export const getConnectTemplate = ({
   connectionName,
   connectionType,
   components,
-  showOptionalFields,
   showAdvancedFields,
   existingYaml,
 }: {
   connectionName: string;
   connectionType: string;
   components: ConnectComponentSpec[];
-  showOptionalFields?: boolean;
   showAdvancedFields?: boolean;
   existingYaml?: string;
 }) => {
@@ -486,7 +493,7 @@ export const getConnectTemplate = ({
   }
 
   // Phase 1: Generate config object for new component
-  const result = schemaToConfig(componentSpec, showOptionalFields, showAdvancedFields);
+  const result = schemaToConfig(componentSpec, showAdvancedFields);
   if (!result) {
     return;
   }

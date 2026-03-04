@@ -84,41 +84,9 @@ output:
       const { config } = result;
       const yaml = configToYaml(config, spec);
 
-      expect(yaml).toContain('required_field:');
-      expect(yaml).toContain('# Required');
-    });
-
-    test('should add comments to optional fields with defaults', () => {
-      const spec = {
-        name: 'test_output',
-        type: 'output',
-        plugin: false,
-        config: {
-          name: 'root',
-          type: 'object',
-          kind: 'scalar',
-          children: [
-            {
-              name: 'optional_field',
-              type: 'string',
-              kind: 'scalar',
-              optional: true,
-              defaultValue: 'default_value',
-            },
-          ],
-        },
-      } as unknown as ConnectComponentSpec;
-
-      const result = schemaToConfig(spec, true);
-      if (!result) {
-        throw new Error('Failed to generate config');
-      }
-
-      const { config } = result;
-      const yaml = configToYaml(config, spec);
-
-      expect(yaml).toContain('optional_field:');
-      expect(yaml).toContain('# Optional (default: "default_value")');
+      // Sentinel is converted to comment-only line (no key-value pair)
+      expect(yaml).not.toMatch(/^\s*required_field:/m);
+      expect(yaml).toContain('# required_field: Required - string, must be manually set');
     });
 
     test('should add comments to critical connection fields', () => {
@@ -136,9 +104,11 @@ output:
       const { config } = result;
       const yaml = configToYaml(config, kafkaSpec);
 
-      // Critical fields like topic should have comments
-      expect(yaml).toContain('topic:');
-      expect(yaml).toContain('# Required');
+      // Scalar required fields become comment-only lines
+      expect(yaml).toContain('# topic: Required - string, must be manually set');
+      // Array fields with empty-string default render as arrays, not sentinels
+      expect(yaml).toContain('addresses:');
+      expect(yaml).not.toContain('# addresses: Required');
     });
 
     test('should not add comments to parent objects but should add to arrays', () => {
@@ -162,19 +132,14 @@ output:
 
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];
-        // tls: line itself should just be "tls:" without inline comment (it's a parent object)
-        expect(tlsLine.trim()).toBe('tls: {}');
+        // For Redpanda components, TLS now renders as a parent object with enabled: true
+        // tls: line should not have an inline comment
+        expect(tlsLine.trim()).not.toContain('#');
       }
 
-      // But critical array fields SHOULD get inline comments
-      // kafka output has 'addresses' which is a critical array field
-      const addressesLine = lines.find((line) => line.includes('addresses:'));
-      if (addressesLine) {
-        // Arrays should have inline comments (not the parent object)
-        expect(addressesLine).toContain('addresses:');
-        // Note: addresses might be on its own line with array items below,
-        // so we just verify the field exists and the array structure is present
-      }
+      // Array fields with empty-string default render as arrays, not sentinels
+      expect(yaml).toContain('addresses:');
+      expect(yaml).not.toContain('# addresses: Required');
     });
 
     test('should preserve existing comments and add comments to merged component', () => {
@@ -194,7 +159,6 @@ output:
         connectionType: 'output',
         components: Object.values(mockComponents),
         existingYaml: inputYaml,
-        showOptionalFields: false,
       });
 
       // Should preserve existing input comments
@@ -204,9 +168,8 @@ output:
       expect(mergedYaml).toContain('output:');
       expect(mergedYaml).toContain('kafka:');
 
-      // Should add comments to the newly merged output (critical fields)
-      expect(mergedYaml).toContain('topic:');
-      expect(mergedYaml).toContain('# Required');
+      // Required fields become comment-only lines in merged output
+      expect(mergedYaml).toContain('# topic: Required - string, must be manually set');
     });
   });
 });

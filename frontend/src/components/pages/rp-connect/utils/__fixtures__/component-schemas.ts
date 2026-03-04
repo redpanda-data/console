@@ -194,7 +194,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
             type: 'int',
             kind: 'scalar',
             defaultValue: '0',
-            optional: false, // Non-advanced, shows even when showOptionalFields=false
+            optional: false,
           }),
         ],
       }),
@@ -209,7 +209,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
             name: 'include_prefixes',
             type: 'string',
             kind: 'array',
-            optional: false, // Non-advanced, shows even when showOptionalFields=false
+            optional: false,
           }),
         ],
       }),
@@ -225,7 +225,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
             type: 'string',
             kind: 'scalar',
             defaultValue: '1s',
-            optional: false, // Non-advanced, shows even when showOptionalFields=false
+            optional: false,
           }),
         ],
       }),
