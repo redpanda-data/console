@@ -123,6 +123,43 @@ export const useSchemaDetailsQuery = (subjectName?: string, options?: { enabled?
     enabled: options?.enabled !== false && subjectName !== '',
   });
 
+export type SchemaRegistryMode = 'READWRITE' | 'READONLY' | 'IMPORT';
+
+export const useUpdateGlobalModeMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation<{ mode: string }, Error, SchemaRegistryMode>({
+    mutationFn: async (mode: SchemaRegistryMode) => {
+      const response = await fetch(`${config.restBasePath}/schema-registry/mode`, {
+        method: 'PUT',
+        headers: {
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mode }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update global mode');
+      }
+
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'mode'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'global mode',
+      });
+    },
+  });
+};
+
 export const useUpdateGlobalCompatibilityMutation = () => {
   const queryClient = useQueryClient();
 

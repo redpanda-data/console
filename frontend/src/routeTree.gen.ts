@@ -35,6 +35,7 @@ import { Route as TransformsTransformNameRouteImport } from './routes/transforms
 import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create';
 import { Route as SecurityTabRouteImport } from './routes/security/$tab';
 import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
+import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
 import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility';
 import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create';
 import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard';
@@ -203,6 +204,11 @@ const SecurityTabRoute = SecurityTabRouteImport.update({
 const SecretsCreateRoute = SecretsCreateRouteImport.update({
   id: '/secrets/create',
   path: '/secrets/create',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const SchemaRegistryEditModeRoute = SchemaRegistryEditModeRouteImport.update({
+  id: '/schema-registry/edit-mode',
+  path: '/schema-registry/edit-mode',
   getParentRoute: () => rootRouteImport,
 } as any);
 const SchemaRegistryEditCompatibilityRoute =
@@ -438,6 +444,7 @@ export interface FileRoutesByFullPath {
   '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
@@ -505,6 +512,7 @@ export interface FileRoutesByTo {
   '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
@@ -573,6 +581,7 @@ export interface FileRoutesById {
   '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
@@ -642,6 +651,7 @@ export interface FileRouteTypes {
     | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
+    | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/security/$tab'
     | '/shadowlinks/create'
@@ -709,6 +719,7 @@ export interface FileRouteTypes {
     | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
+    | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/security/$tab'
     | '/shadowlinks/create'
@@ -776,6 +787,7 @@ export interface FileRouteTypes {
     | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
+    | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/security/$tab'
     | '/shadowlinks/create'
@@ -844,6 +856,7 @@ export interface RootRouteChildren {
   RpConnectWizardRoute: typeof RpConnectWizardRoute;
   SchemaRegistryCreateRoute: typeof SchemaRegistryCreateRoute;
   SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute;
+  SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute;
   SecretsCreateRoute: typeof SecretsCreateRoute;
   SecurityTabRoute: typeof SecurityTabRoute;
   ShadowlinksCreateRoute: typeof ShadowlinksCreateRoute;
@@ -1075,6 +1088,13 @@ declare module '@tanstack/react-router' {
       path: '/secrets/create';
       fullPath: '/secrets/create';
       preLoaderRoute: typeof SecretsCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/schema-registry/edit-mode': {
+      id: '/schema-registry/edit-mode';
+      path: '/schema-registry/edit-mode';
+      fullPath: '/schema-registry/edit-mode';
+      preLoaderRoute: typeof SchemaRegistryEditModeRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/schema-registry/edit-compatibility': {
@@ -1372,6 +1392,7 @@ const rootRouteChildren: RootRouteChildren = {
   RpConnectWizardRoute: RpConnectWizardRoute,
   SchemaRegistryCreateRoute: SchemaRegistryCreateRoute,
   SchemaRegistryEditCompatibilityRoute: SchemaRegistryEditCompatibilityRoute,
+  SchemaRegistryEditModeRoute: SchemaRegistryEditModeRoute,
   SecretsCreateRoute: SecretsCreateRoute,
   SecurityTabRoute: SecurityTabRoute,
   ShadowlinksCreateRoute: ShadowlinksCreateRoute,

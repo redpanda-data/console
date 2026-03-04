@@ -21,16 +21,14 @@ import {
   Divider,
   Flex,
   SearchField,
-  Skeleton,
   Spinner,
   Text,
   Tooltip,
-  VStack,
 } from '@redpanda-data/ui';
 // Routing and state management
 import { Link } from '@tanstack/react-router';
 // Icons
-import { ArchiveIcon, InfoIcon, TrashIcon } from 'components/icons';
+import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -56,13 +54,12 @@ import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 // Utility components and functions
-import { Button, InlineSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 // Layout components
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
-// Redpanda UI Registry components
+import { Button } from '../../redpanda-ui/components/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
@@ -166,34 +163,61 @@ const SchemaList: FC = () => {
       <ToastContainer />
       {/* Statistics Bar */}
       <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
-        <SmallStat title="Mode">{schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
+        <SmallStat title="Mode">
+          <Flex alignItems="center" gap="1.5">
+            {schemaMode ?? <Skeleton variant="text" width="sm" />}
+            <Tooltip
+              hasArrow
+              isDisabled={api.userData?.canManageSchemaRegistry !== false}
+              label="You don't have the 'canManageSchemaRegistry' permission"
+              placement="top"
+            >
+              <Button
+                aria-label="Edit mode"
+                data-testid="schema-list-edit-mode-btn"
+                disabled={api.userData?.canManageSchemaRegistry === false}
+                onClick={() => appGlobal.historyPush('/schema-registry/edit-mode')}
+                size="icon-xs"
+                variant="secondary-ghost"
+              >
+                <EditIcon />
+              </Button>
+            </Tooltip>
+          </Flex>
+        </SmallStat>
         <Divider height="2ch" orientation="vertical" />
-        <SmallStat title="Compatibility">{schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
+        <SmallStat title="Compatibility">
+          <Flex alignItems="center" gap="1.5">
+            {schemaCompatibility ?? <Skeleton variant="text" width="sm" />}
+            <Tooltip
+              hasArrow
+              isDisabled={api.userData?.canManageSchemaRegistry !== false}
+              label="You don't have the 'canManageSchemaRegistry' permission"
+              placement="top"
+            >
+              <Button
+                aria-label="Edit compatibility"
+                data-testid="schema-list-edit-compatibility-btn"
+                disabled={api.userData?.canManageSchemaRegistry === false}
+                onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
+                size="icon-xs"
+                variant="secondary-ghost"
+              >
+                <EditIcon />
+              </Button>
+            </Tooltip>
+          </Flex>
+        </SmallStat>
       </Flex>
 
       <div className="mb-4 flex items-center gap-2">
         <Button
           data-testid="schema-list-create-btn"
-          disabledReason={
-            api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
-          }
+          disabled={api.userData?.canCreateSchemas === false}
           onClick={() => appGlobal.historyPush('/schema-registry/create')}
-          variant="solid"
+          variant="primary"
         >
           Create new schema
-        </Button>
-        <Button
-          data-testid="schema-list-edit-compatibility-btn"
-          disabledReason={
-            api.userData?.canManageSchemaRegistry === false
-              ? "You don't have the 'canManageSchemaRegistry' permission"
-              : undefined
-          }
-          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
-          variant="outline"
-          width="fit-content"
-        >
-          Edit compatibility
         </Button>
       </div>
 
@@ -351,14 +375,9 @@ const SchemaList: FC = () => {
                   id: 'actions',
                   cell: ({ row: { original: r } }) => (
                     <Button
-                      color="gray.500"
+                      aria-label="Delete schema"
                       data-testid={`schema-list-delete-btn-${r.name}`}
-                      disabledReason={
-                        api.userData?.canDeleteSchemas === false
-                          ? "You don't have the 'canDeleteSchemas' permission"
-                          : undefined
-                      }
-                      height="16px"
+                      disabled={api.userData?.canDeleteSchemas === false}
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
@@ -415,7 +434,8 @@ const SchemaList: FC = () => {
                           });
                         }
                       }}
-                      variant="icon"
+                      size="icon-sm"
+                      variant="secondary-ghost"
                     >
                       <TrashIcon />
                     </Button>
