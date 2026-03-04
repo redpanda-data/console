@@ -19,7 +19,6 @@ import {
   createStandaloneToast,
   DataTable,
   Divider,
-  Empty,
   Flex,
   SearchField,
   Skeleton,
@@ -38,6 +37,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // Local modals
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { SchemaNotConfiguredPage } from './schema-not-configured';
 // Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 // API hooks
@@ -82,29 +82,6 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
         </Alert>
       ))}
     </Section>
-  );
-};
-
-const NotConfigured: FC = () => {
-  return (
-    <PageContent>
-      <Section>
-        <VStack gap={4}>
-          <Empty description="Not Configured" />
-          <Text textAlign="center">
-            Schema Registry is not configured in Redpanda Console.
-            <br />
-            To view all registered schemas, their documentation and their versioned history simply provide the
-            connection credentials in the Redpanda Console config.
-          </Text>
-
-          {/* todo: fix link once we have a better guide */}
-          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
-            <Button variant="solid">Redpanda Console Config Documentation</Button>
-          </a>
-        </VStack>
-      </Section>
-    </PageContent>
   );
 };
 
@@ -180,8 +157,8 @@ const SchemaList: FC = () => {
     return subjects;
   }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages]);
 
-  if (api.schemaOverviewIsConfigured === false) {
-    return <NotConfigured />;
+  if (schemaMode === null) {
+    return <SchemaNotConfiguredPage />;
   }
 
   return (

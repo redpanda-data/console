@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
+import { Box, CodeBlock, Flex, Grid, GridItem, RadioGroup, Text, useToast } from '@redpanda-data/ui';
 import { useNavigate } from '@tanstack/react-router';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
+import { SchemaNotConfiguredPage } from './schema-not-configured';
 import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -31,29 +32,6 @@ import type {
 import { uiState } from '../../../state/ui-state';
 import { Button, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
-
-const SchemaNotConfiguredPage: FC = () => {
-  return (
-    <PageContent>
-      <Section>
-        <VStack data-testid="edit-compatibility-not-configured" gap={4}>
-          <Empty description="Not Configured" />
-          <Text textAlign="center">
-            Schema Registry is not configured in Redpanda Console.
-            <br />
-            To view all registered schemas, their documentation and their versioned history simply provide the
-            connection credentials in the Redpanda Console config.
-          </Text>
-          {/* todo: fix link once we have a better guide */}
-          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
-            <Button variant="solid">Redpanda Console Config Documentation</Button>
-          </a>
-        </VStack>
-      </Section>
-    </PageContent>
-  );
-};
 
 const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
   const navigate = useNavigate();
@@ -86,11 +64,12 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
     }
   }, [subjectName]);
 
-  if (api.schemaOverviewIsConfigured === false) {
-    return <SchemaNotConfiguredPage />;
-  }
   if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) {
     return DefaultSkeleton;
+  }
+
+  if (schemaMode === null) {
+    return <SchemaNotConfiguredPage />;
   }
 
   return (
