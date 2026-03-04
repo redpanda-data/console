@@ -213,6 +213,7 @@ type SchemaRegistrySubjectDetails struct {
 	Name                string                                `json:"name"`
 	Type                sr.SchemaType                         `json:"type"`
 	Compatibility       string                                `json:"compatibility"`
+	Mode                string                                `json:"mode"`
 	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
 	LatestActiveVersion int                                   `json:"latestActiveVersion"`
 	Schemas             []SchemaRegistryVersionedSchema       `json:"schemas"`
@@ -282,14 +283,19 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		}
 	}
 
-	// 2. Retrieve schemas and compat level concurrently
-	var compatLevel string
+	// 2. Retrieve schemas, compat level and mode concurrently
+	var compatLevel, modeLevel string
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.SetLimit(10)
 
 	grp.Go(func() error {
 		compatLevel = s.getSubjectCompatibilityLevel(grpCtx, srClient, subjectName)
+		return nil
+	})
+
+	grp.Go(func() error {
+		modeLevel = s.getSubjectMode(grpCtx, srClient, subjectName)
 		return nil
 	})
 
@@ -339,6 +345,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		Name:                subjectName,
 		Type:                schemaType,
 		Compatibility:       compatLevel,
+		Mode:                modeLevel,
 		RegisteredVersions:  versions,
 		LatestActiveVersion: latestActiveVersion,
 		Schemas:             schemas,
@@ -441,7 +448,7 @@ func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rp
 	compatibility := compatibilityRes[0]
 	if err := compatibility.Err; err != nil {
 		var schemaErr *sr.ResponseError
-		if errors.As(err, &schemaErr) && schemaErr.ErrorCode == 40408 {
+		if errors.As(err, &schemaErr) && errors.Is(schemaErr.SchemaError(), sr.ErrSubjectLevelCompatibilityNotConfigured) {
 			// Subject compatibility not configured, this means the default compatibility will be used
 			return defaultSRConfigResponse
 		}
@@ -450,6 +457,23 @@ func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rp
 		return unknownSRConfigResponse
 	}
 	return compatibility.Level.String()
+}
+
+// getSubjectMode retrieves the mode for a subject, handling the case where no
+// subject-specific mode is configured (returns DEFAULT).
+func (s *Service) getSubjectMode(ctx context.Context, srClient *rpsr.Client, subjectName string) string {
+	modeResult := srClient.Mode(ctx, subjectName)
+	res := modeResult[0]
+	if err := res.Err; err != nil {
+		var schemaErr *sr.ResponseError
+		if errors.As(err, &schemaErr) && errors.Is(schemaErr.SchemaError(), sr.ErrSubjectLevelModeNotConfigured) {
+			// Subject-level mode not configured, the global mode applies
+			return defaultSRConfigResponse
+		}
+		s.logger.WarnContext(ctx, "failed to get subject mode", slog.String("subject", subjectName), slog.Any("error", err))
+		return unknownSRConfigResponse
+	}
+	return res.Mode.String()
 }
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
