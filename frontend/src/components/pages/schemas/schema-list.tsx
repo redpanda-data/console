@@ -360,6 +360,11 @@ const SchemaList: FC = () => {
                   size: 100,
                 },
                 {
+                  header: 'Mode',
+                  cell: ({ row: { original: r } }) => <SchemaModeColumn name={r.name} />,
+                  size: 100,
+                },
+                {
                   header: 'Latest Version',
                   cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
                   size: 100,
@@ -490,6 +495,16 @@ const SchemaCompatibilityColumn: FC<{ name: string }> = ({ name }) => {
   }
 
   return <>{details.compatibility}</>;
+};
+
+const SchemaModeColumn: FC<{ name: string }> = ({ name }) => {
+  const { data: details, isLoading } = useSchemaDetailsQuery(name);
+
+  if (isLoading || !details) {
+    return <Skeleton variant="text" />;
+  }
+
+  return <>{details.mode}</>;
 };
 
 const LatestVersionColumn: FC<{ name: string }> = ({ name }) => {
