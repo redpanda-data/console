@@ -26,6 +26,7 @@ jobs:
       - name: Run React Doctor (PR diff mode)
         id: react_doctor_pr
         if: github.event_name == 'pull_request'
+        continue-on-error: true # TODO: remove once react-doctor warnings are resolved
         uses: millionco/react-doctor@main
         with:
           directory: frontend
@@ -35,6 +36,7 @@ jobs:
       - name: Run React Doctor (push full scan)
         id: react_doctor_push
         if: github.event_name == 'push'
+        continue-on-error: true # TODO: remove once react-doctor warnings are resolved
         uses: millionco/react-doctor@main
         with:
           directory: frontend

@@ -184,14 +184,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     }
   }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors]);
 
-  useEffect(() => {
-    setValue('key.data', '');
-  }, [setValue]);
-
-  useEffect(() => {
-    setValue('value.data', '');
-  }, [setValue]);
-
   const showKeySchemaSelection =
     keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF;
   const showValueSchemaSelection =

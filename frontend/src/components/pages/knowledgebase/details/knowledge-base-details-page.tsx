@@ -254,15 +254,10 @@ export const KnowledgeBaseDetailsPage = () => {
   const refreshFormData = useCallback(() => {
     if (knowledgeBase) {
       form.reset(initializeFormData(knowledgeBase));
-      setFormHasChanges(false);
     }
   }, [knowledgeBase, form]);
 
-  useEffect(() => {
-    if (knowledgebaseId) {
-      updatePageTitle(knowledgebaseId);
-    }
-  }, [knowledgebaseId]);
+  updatePageTitle(knowledgebaseId);
 
   // Only refresh form when entering edit mode, not when data refetches while in edit mode
   useEffect(() => {
@@ -279,9 +274,12 @@ export const KnowledgeBaseDetailsPage = () => {
   // Subscribe to form changes by accessing isDirty during render
   const { isDirty } = form.formState;
 
-  useEffect(() => {
+  // Sync isDirty to formHasChanges (adjusting state during render instead of useEffect)
+  const [prevIsDirty, setPrevIsDirty] = useState(isDirty);
+  if (isDirty !== prevIsDirty) {
+    setPrevIsDirty(isDirty);
     setFormHasChanges(isDirty);
-  }, [isDirty]);
+  }
 
   const generateUpdateMask = useCallback((): string[] => {
     const updateMask: string[] = [];

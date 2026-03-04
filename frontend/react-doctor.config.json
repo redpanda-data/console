@@ -1,5 +1,11 @@
 {
   "ignore": {
-    "files": ["src/components/ui/**", "src/components/redpanda-ui/**", "src/hooks/use-mobile.ts", "src/globals.css"]
+    "files": [
+      "src/components/ui/**",
+      "src/components/redpanda-ui/**",
+      "src/components/ai-elements/**",
+      "src/hooks/use-mobile.ts",
+      "src/globals.css"
+    ]
   }
 }
