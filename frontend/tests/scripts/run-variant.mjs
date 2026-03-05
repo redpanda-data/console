@@ -51,6 +51,8 @@ async function runVariant(variantName, playwrightArgs = []) {
     cwd: testsDir,
     env: {
       ...process.env,
+      // Force IPv4 for testcontainers wait strategies (localhost resolves to ::1 on macOS, causing hangs)
+      TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
     },
   });
 
