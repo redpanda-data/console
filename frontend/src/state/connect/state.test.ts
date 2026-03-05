@@ -21,7 +21,7 @@ vi.mock('../backend-api', () => ({
   },
 }));
 
-import { ConnectorPropertiesStore } from './state';
+import { ConnectorPropertiesStore, SecretsStore } from './state';
 import { api } from '../backend-api';
 
 function createMockProperty(overrides: {
@@ -216,6 +216,105 @@ describe('ConnectorPropertiesStore', () => {
       // Assert: custom_default_value strings should be applied
       expect(store.propsByName.get('bool.custom.true')?.value).toBe('true');
       expect(store.propsByName.get('bool.custom.false')?.value).toBe('false');
+    });
+  });
+});
+
+describe('Redpanda Connect — SecretsStore', () => {
+  let store: SecretsStore;
+
+  beforeEach(() => {
+    store = new SecretsStore();
+  });
+
+  describe('connector secret initialization', () => {
+    it('initializes secret value to empty string, not undefined', () => {
+      const secret = store.getSecret('source.cluster.sasl.jaas.config');
+      expect(secret.value).toBe('');
+      expect(secret.value).not.toBeUndefined();
+    });
+  });
+
+  describe('secrets getter — UX-933: MM2 connector creation fails on empty secrets', () => {
+    it('excludes PASSWORD connector properties the user never filled in', () => {
+      // Backend returns all PASSWORD properties for MM2 connector plugin.
+      // User only filled in sasl.password but not jaas.config or ssl certs.
+      store.getSecret('source.cluster.sasl.password').value = 'my-password';
+      store.getSecret('source.cluster.sasl.jaas.config'); // created but never assigned
+      store.getSecret('source.cluster.ssl.truststore.certificates'); // created but never assigned
+
+      const secrets = store.secrets;
+      expect(secrets.size).toBe(1);
+      expect(secrets.has('source.cluster.sasl.password')).toBe(true);
+      expect(secrets.has('source.cluster.sasl.jaas.config')).toBe(false);
+      expect(secrets.has('source.cluster.ssl.truststore.certificates')).toBe(false);
+    });
+
+    it('excludes connector secrets with whitespace-only values', () => {
+      store.getSecret('source.cluster.sasl.password').value = '   ';
+
+      expect(store.secrets.size).toBe(0);
+    });
+
+    it('excludes connector secrets with empty string values', () => {
+      store.getSecret('source.cluster.sasl.password').value = '';
+
+      expect(store.secrets.size).toBe(0);
+    });
+
+    it('includes connector secrets that have actual values', () => {
+      store.getSecret('source.cluster.sasl.username').value = 'support';
+      store.getSecret('source.cluster.sasl.password').value = 'support';
+      store.getSecret('source.cluster.sasl.jaas.config').value =
+        "org.apache.kafka.common.security.scram.ScramLoginModule required username=support password='support';";
+
+      const secrets = store.secrets;
+      expect(secrets.size).toBe(3);
+      expect(secrets.has('source.cluster.sasl.username')).toBe(true);
+      expect(secrets.has('source.cluster.sasl.password')).toBe(true);
+      expect(secrets.has('source.cluster.sasl.jaas.config')).toBe(true);
+    });
+
+    it('clears stale connector secret entries between calls', () => {
+      // First call: secret has a value
+      store.getSecret('source.cluster.sasl.password').value = 'my-password';
+      expect(store.secrets.size).toBe(1);
+
+      // User clears the value in the connector form
+      store.getSecret('source.cluster.sasl.password').value = '';
+      expect(store.secrets.size).toBe(0);
+    });
+
+    it('MM2 creation with SASL_PLAINTEXT should not fail on unused SSL properties', () => {
+      // UX-933: User creates MirrorSourceConnector with SASL_PLAINTEXT security protocol.
+      // Backend returns PASSWORD properties for both SASL and SSL.
+      // User fills in SASL credentials but leaves SSL fields empty.
+      store.getSecret('source.cluster.sasl.username').value = 'blah';
+      store.getSecret('source.cluster.sasl.password').value = 'blah';
+      // These SSL properties are returned by backend but irrelevant for SASL_PLAINTEXT:
+      store.getSecret('source.cluster.ssl.truststore.certificates');
+      store.getSecret('source.cluster.ssl.keystore.key');
+      store.getSecret('source.cluster.ssl.keystore.certificate.chain');
+
+      const secrets = store.secrets;
+      expect(secrets.has('source.cluster.ssl.truststore.certificates')).toBe(false);
+      expect(secrets.has('source.cluster.ssl.keystore.key')).toBe(false);
+      expect(secrets.has('source.cluster.ssl.keystore.certificate.chain')).toBe(false);
+      expect(secrets.size).toBe(2);
+    });
+  });
+
+  describe('ids getter', () => {
+    it('returns only ids for connector secrets with values', () => {
+      const filled = store.getSecret('source.cluster.sasl.password');
+      filled.value = 'my-password';
+      filled.id = 'secret-123';
+
+      const empty = store.getSecret('source.cluster.ssl.truststore.certificates');
+      empty.id = 'secret-456';
+
+      // Empty secret should be filtered out, so its id should not appear
+      expect(store.ids).toEqual(['secret-123']);
     });
   });
 });

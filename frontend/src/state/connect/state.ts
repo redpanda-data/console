@@ -381,9 +381,10 @@ export class SecretsStore {
   }
 
   get secrets() {
-    for (const [key, value] of this._data) {
-      if (value.value !== '' && value.value !== null) {
-        this._secrets.set(key, value);
+    this._secrets.clear();
+    for (const [key, secret] of this._data) {
+      if (secret.value && secret.value.trim() !== '') {
+        this._secrets.set(key, secret);
       }
     }
 
@@ -401,6 +402,7 @@ export class Secret {
 
   constructor(key: string) {
     this.key = key;
+    this.value = '';
   }
 
   // Manual reactivity - call this when value or secretString changes
