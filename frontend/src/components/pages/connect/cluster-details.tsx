@@ -151,11 +151,11 @@ const ConnectorsList = observer(
               accessorKey: 'name',
               cell: ({ row: { original } }) => (
                 <Link
-                  className="hoverLink"
                   params={{
                     clusterName: encodeURIComponent(clusterName),
                     connector: encodeURIComponent(original.name),
                   }}
+                  style={{ color: 'var(--ant-primary-color)', textDecoration: 'none' }}
                   to="/connect-clusters/$clusterName/$connector"
                 >
                   <Text whiteSpace="break-spaces" wordBreak="break-word">
