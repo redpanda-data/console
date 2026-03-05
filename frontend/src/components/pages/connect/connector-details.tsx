@@ -88,17 +88,23 @@ const KafkaConnectorMain = observer(
     connectorName: string;
     refreshData: (force: boolean) => Promise<void>;
   }) => {
-    const [connectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
+    const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
+    const [isStoreInitialized, setIsStoreInitialized] = useState(connectClusterStore.isInitialized);
 
     const logsTopic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
 
     useEffect(() => {
+      const store = ConnectClusterStore.getInstance(clusterName);
+      setConnectClusterStore(store);
+      setIsStoreInitialized(store.isInitialized);
+
       const init = async () => {
-        await connectClusterStore.setup();
+        await store.setup();
+        setIsStoreInitialized(true);
       };
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       init().catch(console.error);
-    }, [connectClusterStore]);
+    }, [clusterName]);
 
     const $state = useLocalObservable<LocalConnectorState>(() => ({
       pausingConnector: null,
@@ -107,7 +113,7 @@ const KafkaConnectorMain = observer(
       restartingTask: null,
       deletingConnector: null,
     }));
-    if (!connectClusterStore.isInitialized) {
+    if (!isStoreInitialized) {
       return <Skeleton height={4} mt={5} noOfLines={20} />;
     }
 
