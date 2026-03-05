@@ -164,6 +164,28 @@ output:
       expect(yaml).toContain('# topics: Required - string list, must be manually set');
     });
 
+    test('should not comment out metadata children when parent is optional (ancestor-optional)', () => {
+      const redpandaOutputSpec = mockComponents.redpandaOutput;
+
+      const result = schemaToConfig(redpandaOutputSpec, false);
+      if (!result) {
+        throw new Error('Failed to generate redpanda output config');
+      }
+
+      const { config, spec } = result;
+      const yaml = configToYaml(config, spec);
+
+      // topic IS required (no optional ancestor) → commented out
+      expect(yaml).toContain('# topic: Required - string, must be manually set');
+
+      // metadata children are NOT required (parent metadata is optional)
+      // They should appear as normal YAML keys, not as comment-only lines
+      expect(yaml).toMatch(/^\s+include_prefixes:/m);
+      expect(yaml).toMatch(/^\s+include_patterns:/m);
+      expect(yaml).not.toContain('# include_prefixes: Required');
+      expect(yaml).not.toContain('# include_patterns: Required');
+    });
+
     test('should preserve existing comments and add comments to merged component', () => {
       // Start with a simple input
       const inputYaml = `input:

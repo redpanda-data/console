@@ -344,12 +344,17 @@ function generateObjectValue(
   }
 
   const obj: Record<string, unknown> = {};
+  // Only pass optionality from this node — don't propagate grandparent's optionality.
+  // A non-optional child under an optional parent establishes a new "required boundary":
+  // its own children follow normal required rules.
+  const childAncestorOptional = spec.optional === true;
 
   for (const child of spec.children) {
     const childValue = generateDefaultValue(child, {
       showAdvancedFields,
       componentName,
       parentName: spec.name,
+      ancestorOptional: childAncestorOptional,
     });
 
     if (childValue !== undefined && child.name) {
@@ -365,8 +370,11 @@ function generateArrayValue(params: {
   spec: RawFieldSpec;
   showAdvancedFields: boolean;
   componentName: string | undefined;
+  ancestorOptional?: boolean;
 }): unknown[] | undefined {
   const { spec, showAdvancedFields, componentName } = params;
+  // Only pass optionality from this node — same as generateObjectValue.
+  const childAncestorOptional = spec.optional === true;
   // Special case: SASL arrays for redpanda/kafka_franz components
   const isSaslArray = spec.name?.toLowerCase() === 'sasl';
   if (isSaslArray && spec.children && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
@@ -377,6 +385,7 @@ function generateArrayValue(params: {
         showAdvancedFields,
         componentName,
         parentName: spec.name,
+        ancestorOptional: childAncestorOptional,
       });
       if (childValue !== undefined && child.name) {
         saslObj[child.name] = childValue;
@@ -440,6 +449,7 @@ type GenerateDefaultValueOptions = {
   showAdvancedFields?: boolean;
   componentName?: string;
   parentName?: string;
+  ancestorOptional?: boolean;
 };
 
 /**
@@ -475,6 +485,52 @@ function convertDefaultValue(defaultValue: string, type: string, kind?: string):
 
 export const SENTINEL_REQUIRED_FIELD = '__REQUIRED_FIELD__';
 
+/**
+ * Determines if a field should be marked as required.
+ * Mirrors backend's CheckRequired() with workarounds for proto serialization gaps.
+ *
+ * ancestorOptional only suppresses non-scalar kinds (array, map, 2darray) because the backend
+ * loses collection defaults ([] → "", {} → "") during proto serialization. Scalar fields under
+ * optional parents are still evaluated normally — if they look required, they are required.
+ */
+export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
+  // Explicitly optional → not required
+  if (spec.optional === true) {
+    return false;
+  }
+  // Ancestor is optional AND field is non-scalar: proto likely lost a collection default
+  // (e.g., include_prefixes had default: [] which became ""). Suppress required marking.
+  // Scalar fields are NOT suppressed — they're genuinely required if they have no default.
+  if (ancestorOptional && spec.kind !== 'scalar') {
+    return false;
+  }
+  // Has a surviving non-empty default → not required
+  if (spec.defaultValue && spec.defaultValue !== '') {
+    return false;
+  }
+  // Non-string types: backend drops defaults (int 0 → "", bool false → "", array [] → "")
+  // Can't distinguish "no default" from "lost default", so treat as not required
+  if (spec.type !== 'string') {
+    return false;
+  }
+  // When optional flag is absent (proto didn't set it) but defaultValue was provided (even ""),
+  // the backend acknowledged a default exists — treat as not required.
+  // Only fields with explicit optional: false OR no defaultValue at all can be required.
+  if (spec.optional === undefined && spec.defaultValue !== undefined) {
+    return false;
+  }
+  // Advanced non-scalar fields typically have defaults that were lost in proto serialization
+  if (spec.kind !== 'scalar' && spec.advanced) {
+    return false;
+  }
+  // Leaf field without default → required
+  if (!spec.children?.length) {
+    return true;
+  }
+  // Object with children: required if any child is required
+  return spec.children.some((c) => checkRequired(c));
+}
+
 function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
   const typeLabel = (() => {
     switch (spec.type) {
@@ -504,12 +560,7 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex field generation logic with many conditions
 export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefaultValueOptions): unknown {
-  const { showAdvancedFields, componentName, parentName } = options || {};
-
-  const isExplicitlyRequired = spec.optional !== undefined && spec.optional === false;
-  // Temporary heuristic: fields with no `optional` flag and no default are treated as required.
-  // Remove once the backend explicitly sets `optional` on all fields.
-  const isImplicitlyRequired = spec.optional === undefined && spec.defaultValue === undefined;
+  const { showAdvancedFields, componentName, parentName, ancestorOptional } = options || {};
 
   // Try wizard data population first for Redpanda secret components
   // If these succeed, the field is relevant regardless of optional/advanced flags
@@ -543,16 +594,9 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     return;
   }
 
-  // A field is "Required" only when it has no useful default value.
-  // Non-string types with defaultValue="" (proto serialization artifact) always get
-  // generated fallback values (0 for int, false for bool), so they're never truly "required."
-  // For non-scalar kinds (array, map, 2darray), empty-string default is also a proto artifact.
-  const hasNoMeaningfulDefault =
-    spec.defaultValue === undefined ||
-    (spec.defaultValue === '' && spec.type === 'string' && spec.kind === 'scalar') ||
-    (spec.defaultValue === '' && spec.kind !== 'scalar');
-
-  if ((isExplicitlyRequired || isImplicitlyRequired) && hasNoMeaningfulDefault && spec.type !== 'object') {
+  // Mark field as required if checkRequired determines it should be, skipping objects
+  // (objects generate structure from children, not sentinel values)
+  if (checkRequired(spec, ancestorOptional) && spec.type !== 'object') {
     spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;
     return SENTINEL_REQUIRED_FIELD;
   }
@@ -583,6 +627,7 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
         spec,
         showAdvancedFields: showAdvancedFields ?? false,
         componentName,
+        ancestorOptional,
       });
       generatedValue = arrayValue && arrayValue.length > 0 ? arrayValue : undefined;
       break;

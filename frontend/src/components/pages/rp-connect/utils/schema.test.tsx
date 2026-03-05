@@ -4,7 +4,7 @@ import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
-import { generateDefaultValue, SENTINEL_REQUIRED_FIELD, schemaToConfig } from './schema';
+import { checkRequired, generateDefaultValue, SENTINEL_REQUIRED_FIELD, schemaToConfig } from './schema';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 vi.mock('zustand');
@@ -921,5 +921,224 @@ describe('generateDefaultValue', () => {
       // Has a meaningful default ("256" → 256), so NOT Required
       expect(spec.comment).toBeUndefined();
     });
+  });
+
+  describe('Ancestor-optional propagation', () => {
+    test('redpanda output metadata children are not marked required (parent optional)', () => {
+      const result = schemaToConfig(mockComponents.redpandaOutput, false);
+      const config = result?.config as Record<string, any>;
+      const outputConfig = config?.output?.redpanda;
+
+      expect(outputConfig).toBeDefined();
+
+      // topic IS required (no optional ancestor, empty string default for string scalar)
+      expect(outputConfig.topic).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // metadata children are NOT required (parent metadata is optional)
+      expect(outputConfig.metadata).toBeDefined();
+      expect(outputConfig.metadata.include_prefixes).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.metadata.include_patterns).not.toBe(SENTINEL_REQUIRED_FIELD);
+
+      // They should generate array placeholder values instead
+      expect(Array.isArray(outputConfig.metadata.include_prefixes)).toBe(true);
+      expect(Array.isArray(outputConfig.metadata.include_patterns)).toBe(true);
+    });
+
+    test('array field under optional parent generates array value, not sentinel', () => {
+      const spec = {
+        name: 'include_prefixes',
+        type: 'string',
+        kind: 'array',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'redpanda',
+        ancestorOptional: true,
+      });
+
+      // Should NOT be sentinel — ancestor is optional
+      expect(result).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(Array.isArray(result)).toBe(true);
+      expect(spec.comment).toBeUndefined();
+    });
+
+    test('array field without optional ancestor remains sentinel', () => {
+      const spec = {
+        name: 'addresses',
+        type: 'string',
+        kind: 'array',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'kafka',
+        ancestorOptional: false,
+      });
+
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
+    });
+
+    test('non-string type under non-optional ancestor is not required (proto default loss)', () => {
+      const spec = {
+        name: 'max_retries',
+        type: 'int',
+        kind: 'scalar',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'test',
+      });
+
+      // int with empty default — backend dropped the real default, so not required
+      expect(result).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(result).toBe(0);
+    });
+
+    test('redpanda_migrator: non-scalar children of optional parent are not required, scalar grandchildren are', () => {
+      const result = schemaToConfig(mockComponents.redpandaMigratorOutput, false);
+      const config = result?.config as Record<string, any>;
+      const outputConfig = config?.output?.redpanda_migrator;
+
+      expect(outputConfig).toBeDefined();
+
+      // Top-level: topic and seed_brokers are required
+      expect(outputConfig.topic).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.seed_brokers).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // schema_registry is optional but shown (non-advanced)
+      expect(outputConfig.schema_registry).toBeDefined();
+
+      // url is wizard-populated for redpanda components (contextual variable),
+      // so it doesn't reach checkRequired. Test scalar-under-optional via basic_auth.username instead.
+      // basic_auth.username: scalar string grandchild through non-optional intermediary → sentinel
+      expect(outputConfig.schema_registry.basic_auth.username).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.schema_registry.basic_auth.password).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // metadata.include_prefixes: array child of optional metadata → NOT required
+      // (non-scalar kind, proto likely lost the [] default)
+      expect(outputConfig.metadata).toBeDefined();
+      expect(outputConfig.metadata.include_prefixes).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(Array.isArray(outputConfig.metadata.include_prefixes)).toBe(true);
+    });
+
+    test('grandchild through non-optional intermediary is required (schema_registry → basic_auth → username)', () => {
+      const result = schemaToConfig(mockComponents.redpandaMigratorOutput, false);
+      const config = result?.config as Record<string, any>;
+      const outputConfig = config?.output?.redpanda_migrator;
+
+      expect(outputConfig.schema_registry).toBeDefined();
+      expect(outputConfig.schema_registry.basic_auth).toBeDefined();
+
+      // basic_auth is NOT optional, so its children follow normal required rules.
+      // ancestorOptional does NOT propagate through non-optional basic_auth.
+      // username and password are string scalars with empty defaults → sentinel
+      expect(outputConfig.schema_registry.basic_auth.username).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.schema_registry.basic_auth.password).toBe(SENTINEL_REQUIRED_FIELD);
+    });
+
+    test('scalar field under optional parent is still required (ancestorOptional only suppresses non-scalar)', () => {
+      const spec = {
+        name: 'url',
+        type: 'string',
+        kind: 'scalar',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'test',
+        ancestorOptional: true,
+      });
+
+      // Scalar string with empty default is genuinely required, even under optional parent
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string, must be manually set');
+    });
+  });
+});
+
+describe('checkRequired', () => {
+  test('explicitly optional field is not required', () => {
+    expect(checkRequired({ optional: true, type: 'string', kind: 'scalar' } as RawFieldSpec)).toBe(false);
+  });
+
+  test('non-scalar field with optional ancestor is not required (proto lost collection default)', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'array' } as RawFieldSpec, true)).toBe(false);
+    expect(checkRequired({ optional: false, type: 'string', kind: 'map' } as RawFieldSpec, true)).toBe(false);
+  });
+
+  test('scalar field with optional ancestor is still required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'scalar' } as RawFieldSpec, true)).toBe(true);
+  });
+
+  test('field with non-empty default is not required', () => {
+    expect(
+      checkRequired({ optional: false, type: 'string', kind: 'scalar', defaultValue: 'hello' } as RawFieldSpec)
+    ).toBe(false);
+  });
+
+  test('non-string type is not required (proto drops non-string defaults)', () => {
+    expect(checkRequired({ optional: false, type: 'int', kind: 'scalar' } as RawFieldSpec)).toBe(false);
+    expect(checkRequired({ optional: false, type: 'bool', kind: 'scalar' } as RawFieldSpec)).toBe(false);
+  });
+
+  test('string scalar leaf without default is required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'scalar' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('string array leaf without default is required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'array' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('string map leaf without default is required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'map' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('field with undefined optional but defined defaultValue is not required', () => {
+    expect(checkRequired({ type: 'string', kind: 'map', defaultValue: '' } as RawFieldSpec)).toBe(false);
+  });
+
+  test('field with undefined optional and undefined defaultValue is required', () => {
+    expect(checkRequired({ type: 'string', kind: 'scalar' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('advanced non-scalar field is not required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'array', advanced: true } as RawFieldSpec)).toBe(
+      false
+    );
+  });
+
+  test('object with required child is required', () => {
+    const spec = {
+      optional: false,
+      type: 'string',
+      kind: 'scalar',
+      children: [{ optional: false, type: 'string', kind: 'scalar' } as RawFieldSpec],
+    } as RawFieldSpec;
+    expect(checkRequired(spec)).toBe(true);
+  });
+
+  test('object with all optional children is not required', () => {
+    const spec = {
+      optional: false,
+      type: 'string',
+      kind: 'scalar',
+      children: [{ optional: true, type: 'string', kind: 'scalar' } as RawFieldSpec],
+    } as RawFieldSpec;
+    expect(checkRequired(spec)).toBe(false);
   });
 });
