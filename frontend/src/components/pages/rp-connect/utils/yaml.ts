@@ -4,7 +4,6 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
-// import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
 import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -156,49 +155,6 @@ const detectComponentType = (
   return 'unknown';
 };
 
-// const findUnhandledArrayMergePaths = (
-//   newConfigObject: Partial<ConnectConfigObject>,
-//   doc: Document.Parsed
-// ): string[] => {
-//   const unhandled: string[] = [];
-
-//   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Nested traversal needed to surface unsupported array merges.
-//   const visit = (node: unknown, path: string[]) => {
-//     if (!node || typeof node !== 'object' || Array.isArray(node)) {
-//       return;
-//     }
-
-//     for (const [key, value] of Object.entries(node)) {
-//       const nextPath = [...path, key];
-
-//       if (Array.isArray(value)) {
-//         const normalizedPath = nextPath.join('.');
-//         if (!HANDLED_ARRAY_MERGE_PATHS.includes(normalizedPath)) {
-//           const existingValue = doc.getIn(nextPath);
-//           if (existingValue !== undefined) {
-//             unhandled.push(normalizedPath);
-//           }
-//         }
-
-//         for (const item of value) {
-//           if (item && typeof item === 'object') {
-//             visit(item, nextPath);
-//           }
-//         }
-//         continue;
-//       }
-
-//       if (value && typeof value === 'object') {
-//         visit(value, nextPath);
-//       }
-//     }
-//   };
-
-//   visit(newConfigObject, []);
-
-//   return [...new Set(unhandled)];
-// };
-
 const mergeByComponentType = (
   componentType: DetectedComponentType,
   doc: Document.Parsed,
@@ -225,6 +181,14 @@ const mergeByComponentType = (
       break;
   }
 };
+
+function convertRequiredFieldSentinels(yamlString: string): string {
+  // With inline comment: `  key: __REQUIRED_FIELD__ # comment` → `  # key: comment`
+  let result = yamlString.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(.+)$/gm, '$1# $2: $3');
+  // Without comment (fallback): `  key: __REQUIRED_FIELD__` → `  # key: Required`
+  result = result.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*$/gm, '$1# $2: Required');
+  return result;
+}
 
 const keyMatchRegex = /^([^:#\n]+):/;
 
@@ -436,6 +400,7 @@ export const configToYaml = (
     }
 
     let yamlString = yamlStringify(doc, yamlConfig);
+    yamlString = convertRequiredFieldSentinels(yamlString);
     yamlString = addRootSpacing(yamlString);
     return yamlString;
   } catch (error) {
@@ -457,14 +422,12 @@ export const getConnectTemplate = ({
   connectionName,
   connectionType,
   components,
-  showOptionalFields,
   showAdvancedFields,
   existingYaml,
 }: {
   connectionName: string;
   connectionType: string;
   components: ConnectComponentSpec[];
-  showOptionalFields?: boolean;
   showAdvancedFields?: boolean;
   existingYaml?: string;
 }) => {
@@ -486,7 +449,7 @@ export const getConnectTemplate = ({
   }
 
   // Phase 1: Generate config object for new component
-  const result = schemaToConfig(componentSpec, showOptionalFields, showAdvancedFields);
+  const result = schemaToConfig(componentSpec, showAdvancedFields);
   if (!result) {
     return;
   }

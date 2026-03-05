@@ -305,7 +305,6 @@ export default function PipelinePage() {
           connectionName: inputData.connectionName,
           connectionType: inputData.connectionType,
           components,
-          showOptionalFields: false,
           existingYaml: generatedYaml,
         }) || generatedYaml;
 
@@ -316,7 +315,6 @@ export default function PipelinePage() {
             connectionName: outputData.connectionName,
             connectionType: outputData.connectionType,
             components,
-            showOptionalFields: false,
             existingYaml: generatedYaml,
           }) || generatedYaml;
       }

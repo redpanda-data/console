@@ -14,23 +14,6 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
   'redpanda_migrator_offsets',
 ];
 
-/**
- * Fields that are critical for connection and should always be shown
- * even when they have defaults.
- *
- * Note: These fields are only shown if they exist in the component's schema.
- * The existence check happens naturally through schema iteration.
- */
-export const CRITICAL_CONNECTION_FIELDS = new Set([
-  'sasl',
-  'consumer_group',
-  'topics',
-  'topic',
-  'key',
-  'partition',
-  'label',
-]);
-
 export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_BROKERS: {
     name: 'REDPANDA_BROKERS' as const,
@@ -104,7 +87,5 @@ export const stepMotionProps: MotionProps = {
   exit: { opacity: 0, x: -20 },
   transition: { duration: 0.3, ease: 'easeInOut' },
 };
-
-export const HANDLED_ARRAY_MERGE_PATHS = ['pipeline.processors', 'cache_resources', 'rate_limit_resources'];
 
 export type PipelineMode = 'create' | 'edit' | 'view';
