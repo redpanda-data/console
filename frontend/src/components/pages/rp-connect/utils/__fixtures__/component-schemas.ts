@@ -410,6 +410,38 @@ export const mockAvroScanner = create(ComponentSpecSchema, {
 });
 
 /**
+ * Redpanda Common Input Component - Tests redpanda_common path in addCommentsFromSpec
+ */
+export const mockRedpandaCommonInput = create(ComponentSpecSchema, {
+  name: 'redpanda_common',
+  type: 'input',
+  status: ComponentStatus.STABLE,
+  summary: 'Redpanda common input for testing',
+  description: 'Reads messages from Redpanda topics (common component)',
+  config: createField({
+    name: 'root',
+    type: 'object',
+    kind: 'scalar',
+    children: [
+      createField({
+        name: 'topics',
+        type: 'string',
+        kind: 'array',
+        defaultValue: '',
+        description: 'Topics to consume from',
+      }),
+      createField({
+        name: 'consumer_group',
+        type: 'string',
+        kind: 'scalar',
+        defaultValue: '',
+        optional: true,
+      }),
+    ],
+  }),
+});
+
+/**
  * Create a mock ComponentList with all test fixtures
  */
 export function createMockComponentList(): ComponentList {
@@ -428,6 +460,88 @@ export function createMockComponentList(): ComponentList {
     bloblangMethods: [],
   });
 }
+
+/**
+ * Helper to create a field matching the actual backend JSON schema shape.
+ * Unlike createField (which applies proto3 defaults), this only sets properties
+ * that are explicitly provided — `optional` and `defaultValue` are undefined
+ * when not set, matching what the real REST schema sends.
+ *
+ * Reference: src/assets/rp-connect-schema-full.json
+ */
+function createSchemaField(field: Record<string, unknown>): FieldSpec {
+  return field as unknown as FieldSpec;
+}
+
+/**
+ * Generate Input Component — from real schema (rp-connect-schema-full.json)
+ *
+ * Tests field classification for a non-Redpanda component:
+ * - mapping: implicitly required (no optional, no default) → sentinel
+ * - interval: has default '1s' → returns default
+ * - count: has int default 0 → returns 0
+ * - batch_size: has int default 1 → returns 1
+ * - auto_replay_nacks: has bool default true → returns true
+ */
+export const mockGenerateInput: ConnectComponentSpec = {
+  name: 'generate',
+  type: 'input',
+  status: ComponentStatus.STABLE,
+  summary: 'Generates messages at a given interval',
+  description: 'Generates messages for testing pipeline configs',
+  config: createSchemaField({
+    name: 'root',
+    type: 'object',
+    kind: 'scalar',
+    children: [
+      createSchemaField({ name: 'mapping', type: 'string', kind: 'scalar' }),
+      createSchemaField({ name: 'interval', type: 'string', kind: 'scalar', defaultValue: '1s' }),
+      createSchemaField({ name: 'count', type: 'int', kind: 'scalar', defaultValue: '0' }),
+      createSchemaField({ name: 'batch_size', type: 'int', kind: 'scalar', defaultValue: '1' }),
+      createSchemaField({ name: 'auto_replay_nacks', type: 'bool', kind: 'scalar', defaultValue: 'true' }),
+    ],
+  }),
+} as ConnectComponentSpec;
+
+/**
+ * HTTP Client Input Component — from real schema (rp-connect-schema-full.json)
+ *
+ * Tests field classification for a non-Redpanda component with optional fields:
+ * - url: implicitly required (no optional, no default) → sentinel
+ * - verb: has default 'GET' → returns default
+ * - headers: map type (no optional, no default) → sentinel (can't represent {} in proto defaultValue)
+ * - metadata: explicitly optional + advanced → hidden
+ * - stream_scanner: explicitly optional, non-advanced, no default → shown with kind-based fallback
+ */
+export const mockHttpClientInput: ConnectComponentSpec = {
+  name: 'http_client',
+  type: 'input',
+  status: ComponentStatus.STABLE,
+  summary: 'Connects to a server and performs requests',
+  description: 'HTTP client input',
+  config: createSchemaField({
+    name: 'root',
+    type: 'object',
+    kind: 'scalar',
+    children: [
+      createSchemaField({ name: 'url', type: 'string', kind: 'scalar' }),
+      createSchemaField({ name: 'verb', type: 'string', kind: 'scalar', defaultValue: 'GET' }),
+      createSchemaField({ name: 'headers', type: 'string', kind: 'map' }),
+      createSchemaField({
+        name: 'metadata',
+        type: 'object',
+        kind: 'scalar',
+        optional: true,
+        advanced: true,
+        children: [
+          createSchemaField({ name: 'include_prefixes', type: 'string', kind: 'array', advanced: true }),
+          createSchemaField({ name: 'include_patterns', type: 'string', kind: 'array', advanced: true }),
+        ],
+      }),
+      createSchemaField({ name: 'stream_scanner', type: 'string', kind: 'scalar', optional: true }),
+    ],
+  }),
+} as ConnectComponentSpec;
 
 /**
  * Convert ComponentSpec to ConnectComponentSpec for testing
@@ -449,7 +563,11 @@ export function mockComponentToConnectSpec(
 export const mockComponents = {
   kafkaOutput: mockComponentToConnectSpec(mockKafkaOutput, 'output'),
   redpandaInput: mockComponentToConnectSpec(mockRedpandaInput, 'input'),
+  redpandaCommonInput: mockComponentToConnectSpec(mockRedpandaCommonInput, 'input'),
   memoryCache: mockComponentToConnectSpec(mockMemoryCache, 'cache'),
   bloblangProcessor: mockComponentToConnectSpec(mockBloblangProcessor, 'processor'),
   avroScanner: mockComponentToConnectSpec(mockAvroScanner, 'scanner'),
+  // Real JSON schema fixtures (no proto defaults applied)
+  generateInput: mockGenerateInput,
+  httpClientInput: mockHttpClientInput,
 };

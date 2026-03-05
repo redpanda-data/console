@@ -507,6 +507,8 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
   const { showAdvancedFields, componentName, parentName } = options || {};
 
   const isExplicitlyRequired = spec.optional !== undefined && spec.optional === false;
+  // Temporary heuristic: fields with no `optional` flag and no default are treated as required.
+  // Remove once the backend explicitly sets `optional` on all fields.
   const isImplicitlyRequired = spec.optional === undefined && spec.defaultValue === undefined;
 
   // Try wizard data population first for Redpanda secret components
@@ -544,8 +546,11 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
   // A field is "Required" only when it has no useful default value.
   // Non-string types with defaultValue="" (proto serialization artifact) always get
   // generated fallback values (0 for int, false for bool), so they're never truly "required."
+  // For non-scalar kinds (array, map, 2darray), empty-string default is also a proto artifact.
   const hasNoMeaningfulDefault =
-    spec.defaultValue === undefined || (spec.defaultValue === '' && spec.type === 'string' && spec.kind === 'scalar');
+    spec.defaultValue === undefined ||
+    (spec.defaultValue === '' && spec.type === 'string' && spec.kind === 'scalar') ||
+    (spec.defaultValue === '' && spec.kind !== 'scalar');
 
   if ((isExplicitlyRequired || isImplicitlyRequired) && hasNoMeaningfulDefault && spec.type !== 'object') {
     spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;

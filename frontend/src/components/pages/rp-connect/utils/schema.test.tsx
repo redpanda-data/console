@@ -200,14 +200,14 @@ describe('generateDefaultValue', () => {
       expect(result).toEqual(['example']);
     });
 
-    test('topics array field without wizard data generates array with empty string', () => {
+    test('topics array field without wizard data returns sentinel for required field', () => {
       onboardingWizardStore.setTopicData({ topicName: undefined });
 
       const spec = {
         name: 'topics',
         type: 'string',
         kind: 'array',
-        defaultValue: '',
+        comment: undefined,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
@@ -215,8 +215,8 @@ describe('generateDefaultValue', () => {
         componentName: 'redpanda',
       });
 
-      expect(result).toEqual(['']);
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
     });
 
     test('populates user/password fields as secret references in SASL context', () => {
@@ -587,9 +587,9 @@ describe('generateDefaultValue', () => {
 
       expect(outputConfig).toBeDefined();
 
-      // Required fields: topic populated by wizard, addresses is array with empty-string default
+      // Required fields: topic populated by wizard, addresses is required array → sentinel
       expect(outputConfig.topic).toBe('example');
-      expect(outputConfig.addresses).toEqual(['']);
+      expect(outputConfig.addresses).toBe(SENTINEL_REQUIRED_FIELD);
 
       // SASL shown with wizard data
       expect(outputConfig.sasl).toBeDefined();
@@ -636,13 +636,77 @@ describe('generateDefaultValue', () => {
     });
   });
 
+  describe('Non-Redpanda component integration (real schema shapes)', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    test('generate input: implicitly required field → sentinel, fields with defaults → values', () => {
+      const result = schemaToConfig(mockComponents.generateInput, false);
+      const config = result?.config as Record<string, any>;
+      const inputConfig = config?.input?.generate;
+
+      expect(inputConfig).toBeDefined();
+
+      // Pattern 1: implicitly required (no optional, no defaultValue) → sentinel
+      expect(inputConfig.mapping).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // Pattern 3: has default → returns converted default
+      expect(inputConfig.interval).toBe('1s');
+      expect(inputConfig.count).toBe(0);
+      expect(inputConfig.batch_size).toBe(1);
+      expect(inputConfig.auto_replay_nacks).toBe(true);
+    });
+
+    test('http_client input: required, optional, and advanced field classification', () => {
+      const result = schemaToConfig(mockComponents.httpClientInput, false);
+      const config = result?.config as Record<string, any>;
+      const inputConfig = config?.input?.http_client;
+
+      expect(inputConfig).toBeDefined();
+
+      // Pattern 1: implicitly required scalar string → sentinel
+      expect(inputConfig.url).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // Pattern 3: has default → returns default
+      expect(inputConfig.verb).toBe('GET');
+
+      // Pattern 1: implicitly required map (no optional, no default) → sentinel
+      expect(inputConfig.headers).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // Pattern 2: explicitly optional + advanced → hidden
+      expect(inputConfig.metadata).toBeUndefined();
+
+      // Explicitly optional + non-advanced + no default → shown with kind-based fallback
+      expect(inputConfig.stream_scanner).toBe('');
+    });
+
+    test('generate input includes label field for input type', () => {
+      const result = schemaToConfig(mockComponents.generateInput, false);
+      const config = result?.config as Record<string, any>;
+
+      expect(config?.input?.label).toBe('');
+    });
+
+    test('http_client with showAdvancedFields=true reveals advanced optional fields', () => {
+      const result = schemaToConfig(mockComponents.httpClientInput, true);
+      const config = result?.config as Record<string, any>;
+      const inputConfig = config?.input?.http_client;
+
+      expect(inputConfig).toBeDefined();
+
+      // Advanced optional metadata now visible
+      expect(inputConfig.metadata).toBeDefined();
+    });
+  });
+
   describe('Redpanda input fields', () => {
-    test('seed_brokers is shown as array for redpanda input', () => {
+    test('seed_brokers with empty default returns sentinel for required array', () => {
       const spec = {
         name: 'seed_brokers',
         type: 'string',
         kind: 'array',
-        defaultValue: '',
+        comment: undefined,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
@@ -650,16 +714,16 @@ describe('generateDefaultValue', () => {
         componentName: 'redpanda',
       });
 
-      expect(result).toEqual(['']);
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
     });
 
-    test('regexp_topics is shown as array for redpanda input', () => {
+    test('regexp_topics with empty default returns sentinel for required array', () => {
       const spec = {
         name: 'regexp_topics',
         type: 'string',
         kind: 'array',
-        defaultValue: '',
+        comment: undefined,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
@@ -667,8 +731,8 @@ describe('generateDefaultValue', () => {
         componentName: 'redpanda',
       });
 
-      expect(result).toEqual(['']);
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
     });
 
     test('auto_replay_nacks defaults to boolean true', () => {
@@ -798,12 +862,13 @@ describe('generateDefaultValue', () => {
       expect(httpResult).toBe('');
     });
 
-    test('regexp_topics generates array even with empty default', () => {
+    test('optional array field with empty default still generates placeholder array', () => {
       const spec = {
         name: 'regexp_topics',
         type: 'string',
         kind: 'array',
         defaultValue: '',
+        optional: true,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {

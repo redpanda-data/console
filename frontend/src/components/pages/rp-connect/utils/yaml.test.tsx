@@ -106,9 +106,9 @@ output:
 
       // Scalar required fields become comment-only lines
       expect(yaml).toContain('# topic: Required - string, must be manually set');
-      // Array fields with empty-string default render as arrays, not sentinels
-      expect(yaml).toContain('addresses:');
-      expect(yaml).not.toContain('# addresses: Required');
+      // Required array fields with empty-string default also become comment-only lines
+      expect(yaml).toContain('# addresses: Required - string list, must be manually set');
+      expect(yaml).not.toMatch(/^\s*addresses:/m);
     });
 
     test('should not add comments to parent objects but should add to arrays', () => {
@@ -137,9 +137,31 @@ output:
         expect(tlsLine.trim()).not.toContain('#');
       }
 
-      // Array fields with empty-string default render as arrays, not sentinels
-      expect(yaml).toContain('addresses:');
-      expect(yaml).not.toContain('# addresses: Required');
+      // Required array fields with empty-string default also become comment-only lines
+      expect(yaml).toContain('# addresses: Required - string list, must be manually set');
+      expect(yaml).not.toMatch(/^\s*addresses:/m);
+    });
+
+    test('should add comments to redpanda_common component (input type path)', () => {
+      const redpandaCommonSpec = mockComponents.redpandaCommonInput;
+
+      if (!redpandaCommonSpec) {
+        throw new Error('redpanda_common input not found');
+      }
+
+      const result = schemaToConfig(redpandaCommonSpec, false);
+      if (!result) {
+        throw new Error('Failed to generate redpanda_common config');
+      }
+
+      const { config, spec } = result;
+      const yaml = configToYaml(config, spec);
+
+      // redpanda_common uses [componentSpec.type, componentName] path
+      expect(yaml).toContain('input:');
+      expect(yaml).toContain('redpanda_common:');
+      // Required array field should become comment-only
+      expect(yaml).toContain('# topics: Required - string list, must be manually set');
     });
 
     test('should preserve existing comments and add comments to merged component', () => {

@@ -88,6 +88,4 @@ export const stepMotionProps: MotionProps = {
   transition: { duration: 0.3, ease: 'easeInOut' },
 };
 
-export const HANDLED_ARRAY_MERGE_PATHS = ['pipeline.processors', 'cache_resources', 'rate_limit_resources'];
-
 export type PipelineMode = 'create' | 'edit' | 'view';
