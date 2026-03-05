@@ -10,6 +10,7 @@
  */
 
 import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
 
 import { ErrorWrapper } from './forms/error-wrapper';
 import { SecretInput } from './forms/secret-input';
@@ -19,7 +20,7 @@ import { PropertyWidth } from '../../../../state/rest-interfaces';
 import { SingleSelect } from '../../../misc/select';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export const PropertyComponent = (props: { property: Property }) => {
+export const PropertyComponent = observer((props: { property: Property }) => {
   const p = props.property;
   const def = p.entry.definition;
   const metadata = p.entry.metadata;
@@ -176,7 +177,7 @@ export const PropertyComponent = (props: { property: Property }) => {
       {inputComp}
     </Box>
   );
-};
+});
 
 const inputSizeToClass = {
   [PropertyWidth.None]: 'none',

@@ -511,16 +511,23 @@ export class ConnectorPropertiesStore {
     this.initConfig().catch(console.error);
   }
 
+  version = 0;
+
   private notifyChange() {
+    this.version += 1;
     for (const listener of this.changeListeners) {
       listener();
     }
   }
 
-  subscribe(listener: () => void) {
+  subscribe(listener: () => void): () => void {
     this.changeListeners.add(listener);
-    return () => this.changeListeners.delete(listener);
+    return () => {
+      this.changeListeners.delete(listener);
+    };
   }
+
+  getVersion = () => this.version;
 
   createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]): PropertyGroup {
     const self = this;
@@ -722,7 +729,6 @@ export class ConnectorPropertiesStore {
     }
 
     this.initPending = false;
-    this.notifyChange();
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
@@ -824,6 +830,7 @@ export class ConnectorPropertiesStore {
           p.lastErrorValue = p.value;
         }
       }
+      this.notifyChange();
     } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error validating config', err);

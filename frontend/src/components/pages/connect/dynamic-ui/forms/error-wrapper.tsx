@@ -1,4 +1,5 @@
 import { FormField } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
 import type { PropsWithoutRef } from 'react';
 
 import type { Property } from '../../../../../state/connect/state';
@@ -7,7 +8,7 @@ import { ExpandableText } from '../../../../misc/expandable-text';
 const isRequiredError = (name: string) => `Required configuration "${name}" must be provided`;
 const isEmpty = (property: Property) => property.value === '' || property.value === null;
 
-export const ErrorWrapper = (props: PropsWithoutRef<{ property: Property; input: JSX.Element }>) => {
+export const ErrorWrapper = observer((props: PropsWithoutRef<{ property: Property; input: JSX.Element }>) => {
   const { property, input } = props;
   const isRequired = property.entry.definition.required;
   const showErrors = property.errors.length > 0;
@@ -36,4 +37,4 @@ export const ErrorWrapper = (props: PropsWithoutRef<{ property: Property; input:
       </FormField>
     </div>
   );
-};
+});

@@ -151,6 +151,7 @@ const ConnectorsList = observer(
               accessorKey: 'name',
               cell: ({ row: { original } }) => (
                 <Link
+                  className="hoverLink"
                   params={{
                     clusterName: encodeURIComponent(clusterName),
                     connector: encodeURIComponent(original.name),
