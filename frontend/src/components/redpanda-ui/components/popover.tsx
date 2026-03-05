@@ -4,7 +4,8 @@ import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from '
 import { Popover as PopoverPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn, type SharedProps } from '../lib/utils';
+import { usePortalContainer } from '../lib/use-portal-container';
+import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
 type PopoverContextType = {
   isOpen: boolean;
@@ -75,9 +76,9 @@ function PopoverTrigger({ testId, ...props }: PopoverTriggerProps) {
 
 type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content> &
   HTMLMotionProps<'div'> &
-  SharedProps & {
+  SharedProps &
+  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
     transition?: Transition;
-    container?: Element;
   };
 
 function PopoverContent({
@@ -89,20 +90,30 @@ function PopoverContent({
   children,
   testId,
   container,
+  onOpenAutoFocus,
   ...props
 }: PopoverContentProps) {
   const { isOpen } = usePopover();
   const initialPosition = getInitialPosition(side);
+  const portalContainer = usePortalContainer();
 
   return (
     <AnimatePresence>
       {isOpen ? (
-        <PopoverPrimitive.Portal container={container} data-slot="popover-portal" forceMount>
-          <PopoverPrimitive.Content align={align} className="z-50" forceMount sideOffset={sideOffset} {...props}>
+        <PopoverPrimitive.Portal container={container ?? portalContainer} data-slot="popover-portal" forceMount>
+          <PopoverPrimitive.Content
+            align={align}
+            className="z-50"
+            forceMount
+            side={side}
+            sideOffset={sideOffset}
+            {...(onOpenAutoFocus && { onOpenAutoFocus })}
+            {...props}
+          >
             <motion.div
               animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
               className={cn(
-                'w-72 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
+                '!border-input w-72 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
                 className
               )}
               data-slot="popover-content"

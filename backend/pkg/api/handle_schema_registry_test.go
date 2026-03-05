@@ -47,6 +47,11 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 			expected: "asdf",
 		},
 		{
+			name:     "with qualified subject",
+			target:   "http://example.com/api/schema-registry/subjects/:.myctx:foobar",
+			expected: ":.myctx:foobar",
+		},
+		{
 			name:     "with slashes",
 			target:   "http://example.com/api/schema-registry/subjects/common%2Ffolder%2Fenvelope.proto/versions/last",
 			expected: "common/folder/envelope.proto",
@@ -105,6 +110,21 @@ func Test_getSubjectFromRequestPath(t *testing.T) {
 			name:     "with query",
 			target:   "https://console-123.cn456.fmc.ppd.cloud.redpanda.com/api/schema-registry/subjects/repro?permanent=false",
 			expected: "repro",
+		},
+		{
+			name:     "mode path no special characters",
+			target:   "http://example.com/api/schema-registry/mode/my-subject",
+			expected: "my-subject",
+		},
+		{
+			name:     "mode path with %252F",
+			target:   "http://example.com/api/schema-registry/mode/with%252Fslash",
+			expected: "with%2Fslash",
+		},
+		{
+			name:     "mode path qualified subject (context)",
+			target:   "http://example.com/api/schema-registry/mode/%3A.staging%3Atest-value",
+			expected: ":.staging:test-value",
 		},
 	}
 

@@ -427,3 +427,255 @@ func (s *APIIntegrationTestSuite) TestSchemaMetadata() {
 		assert.Nil(details.Schemas[0].Metadata, "metadata should be nil for schema without metadata")
 	})
 }
+
+func (s *APIIntegrationTestSuite) TestSchemaRegistryMode() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("get global mode", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/mode", nil)
+		require.Equal(200, res.StatusCode)
+
+		var mode console.SchemaRegistryMode
+		err := json.Unmarshal(body, &mode)
+		require.NoError(err)
+		assert.Equal("READWRITE", mode.Mode)
+	})
+
+	t.Run("set and get global mode", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		// Set to READONLY
+		setReq := struct {
+			Mode string `json:"mode"`
+		}{Mode: "READONLY"}
+		res, body := s.apiRequest(ctx, http.MethodPut, "/api/schema-registry/mode", setReq)
+		require.Equal(200, res.StatusCode)
+
+		var mode console.SchemaRegistryMode
+		err := json.Unmarshal(body, &mode)
+		require.NoError(err)
+		assert.Equal("READONLY", mode.Mode)
+
+		// Verify via GET
+		res, body = s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/mode", nil)
+		require.Equal(200, res.StatusCode)
+
+		err = json.Unmarshal(body, &mode)
+		require.NoError(err)
+		assert.Equal("READONLY", mode.Mode)
+
+		// Restore to READWRITE
+		setReq.Mode = "READWRITE"
+		res, _ = s.apiRequest(ctx, http.MethodPut, "/api/schema-registry/mode", setReq)
+		require.Equal(200, res.StatusCode)
+	})
+
+	t.Run("set and get subject-level mode", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		// Create a subject first
+		schemaStr := `{"type":"record","name":"ModeTest","fields":[{"name":"id","type":"int"}]}`
+		createReq := struct {
+			Schema string `json:"schema"`
+			Type   string `json:"schemaType"`
+		}{Schema: schemaStr, Type: sr.TypeAvro.String()}
+		res, _ := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-mode-subject/versions", createReq)
+		require.Equal(200, res.StatusCode)
+
+		// Set subject-level mode
+		setReq := struct {
+			Mode string `json:"mode"`
+		}{Mode: "READONLY"}
+		res, body := s.apiRequest(ctx, http.MethodPut, "/api/schema-registry/mode/test-mode-subject", setReq)
+		require.Equal(200, res.StatusCode)
+
+		var mode console.SchemaRegistryMode
+		err := json.Unmarshal(body, &mode)
+		require.NoError(err)
+		assert.Equal("READONLY", mode.Mode)
+
+		// Verify via GET
+		res, body = s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/mode/test-mode-subject", nil)
+		require.Equal(200, res.StatusCode)
+
+		err = json.Unmarshal(body, &mode)
+		require.NoError(err)
+		assert.Equal("READONLY", mode.Mode)
+
+		// Delete subject-level mode
+		res, _ = s.apiRequest(ctx, http.MethodDelete, "/api/schema-registry/mode/test-mode-subject", nil)
+		require.Equal(200, res.StatusCode)
+	})
+}
+
+func (s *APIIntegrationTestSuite) TestSchemaRegistrySubjectConfig() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	t.Run("get and set subject-level config", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		// Create a subject first
+		schemaStr := `{"type":"record","name":"ConfigTest","fields":[{"name":"id","type":"int"}]}`
+		createReq := struct {
+			Schema string `json:"schema"`
+			Type   string `json:"schemaType"`
+		}{Schema: schemaStr, Type: sr.TypeAvro.String()}
+		res, _ := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/test-config-subject/versions", createReq)
+		require.Equal(200, res.StatusCode)
+
+		// Set subject-level config
+		configReq := struct {
+			Compatibility string `json:"compatibility"`
+		}{Compatibility: "FULL"}
+		res, body := s.apiRequest(ctx, http.MethodPut, "/api/schema-registry/config/test-config-subject", configReq)
+		require.Equal(200, res.StatusCode)
+
+		var cfg console.SchemaRegistryConfig
+		err := json.Unmarshal(body, &cfg)
+		require.NoError(err)
+		assert.Equal(sr.CompatFull, cfg.Compatibility)
+
+		// Verify via GET
+		res, body = s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/config/test-config-subject", nil)
+		require.Equal(200, res.StatusCode)
+
+		err = json.Unmarshal(body, &cfg)
+		require.NoError(err)
+		assert.Equal(sr.CompatFull, cfg.Compatibility)
+
+		// Delete subject-level config
+		res, _ = s.apiRequest(ctx, http.MethodDelete, "/api/schema-registry/config/test-config-subject", nil)
+		require.Equal(200, res.StatusCode)
+	})
+}
+
+func (s *APIIntegrationTestSuite) TestSchemaRegistrySubjectPrefix() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	// Create two subjects with a common prefix
+	subjects := []struct {
+		subject    string
+		recordName string
+	}{
+		{"prefix-orders-value", "PrefixOrders"},
+		{"prefix-users-value", "PrefixUsers"},
+	}
+	for _, subj := range subjects {
+		schemaStr := fmt.Sprintf(`{"type":"record","name":"%s","fields":[{"name":"id","type":"int"}]}`, subj.recordName)
+		createReq := struct {
+			Schema string `json:"schema"`
+			Type   string `json:"schemaType"`
+		}{Schema: schemaStr, Type: sr.TypeAvro.String()}
+		res, _ := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/"+subj.subject+"/versions", createReq)
+		require.Equal(200, res.StatusCode)
+	}
+
+	t.Run("list subjects with matching prefix", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/subjects?subjectPrefix=prefix-", nil)
+		require.Equal(200, res.StatusCode)
+
+		var subjects []console.SchemaRegistrySubject
+		err := json.Unmarshal(body, &subjects)
+		require.NoError(err)
+		assert.Len(subjects, 2)
+
+		names := make([]string, len(subjects))
+		for i, s := range subjects {
+			names[i] = s.Name
+		}
+		assert.Contains(names, "prefix-orders-value")
+		assert.Contains(names, "prefix-users-value")
+	})
+
+	t.Run("list subjects with non-matching prefix", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/subjects?subjectPrefix=nonexistent-", nil)
+		require.Equal(200, res.StatusCode)
+
+		var subjects []console.SchemaRegistrySubject
+		err := json.Unmarshal(body, &subjects)
+		require.NoError(err)
+		assert.Empty(subjects)
+	})
+}
+
+func (s *APIIntegrationTestSuite) TestSchemaUsagesByIDSubjectFilter() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	// Create a schema so we have a known ID
+	schemaStr := `{"type":"record","name":"UsageTest","fields":[{"name":"id","type":"int"}]}`
+	createReq := struct {
+		Schema string `json:"schema"`
+		Type   string `json:"schemaType"`
+	}{Schema: schemaStr, Type: sr.TypeAvro.String()}
+	res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/usage-test-value/versions", createReq)
+	require.Equal(200, res.StatusCode)
+
+	createResponse := struct {
+		ID int `json:"id"`
+	}{}
+	err := json.Unmarshal(body, &createResponse)
+	require.NoError(err)
+	schemaID := createResponse.ID
+
+	t.Run("get usages without subject filter", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, fmt.Sprintf("/api/schema-registry/schemas/ids/%d/versions", schemaID), nil)
+		require.Equal(200, res.StatusCode)
+
+		type schemaVersion struct {
+			Subject string `json:"subject"`
+			Version int    `json:"version"`
+		}
+		var versions []schemaVersion
+		err := json.Unmarshal(body, &versions)
+		require.NoError(err)
+		require.NotEmpty(versions)
+		assert.Equal("usage-test-value", versions[0].Subject)
+	})
+
+	t.Run("get usages with matching subject filter", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, fmt.Sprintf("/api/schema-registry/schemas/ids/%d/versions?subject=usage-test-value", schemaID), nil)
+		require.Equal(200, res.StatusCode)
+
+		type schemaVersion struct {
+			Subject string `json:"subject"`
+			Version int    `json:"version"`
+		}
+		var versions []schemaVersion
+		err := json.Unmarshal(body, &versions)
+		require.NoError(err)
+		require.Len(versions, 1)
+		assert.Equal("usage-test-value", versions[0].Subject)
+	})
+}

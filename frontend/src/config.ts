@@ -23,6 +23,7 @@ import {
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
+import { autorun } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
@@ -318,8 +319,6 @@ setTimeout(() => {
       setBreadcrumbs(breadcrumbs);
     });
 
-    // Update sidebar items when routes change
-    // Note: This is a simple function call, no longer needs to be observable
     const updateSidebarItems = () => {
       const setSidebarItems = config.setSidebarItems;
       if (!setSidebarItems) {

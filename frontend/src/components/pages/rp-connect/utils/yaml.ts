@@ -1,7 +1,7 @@
 import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { Document, parseDocument, stringify as yamlStringify } from 'yaml';
+import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
 // import { HANDLED_ARRAY_MERGE_PATHS } from '../types/constants';
@@ -513,4 +513,136 @@ export const getConnectTemplate = ({
   }
 
   return configToYaml(newConfigObject, spec);
+};
+
+// ============================================================================
+// Config Component Parsing (used by pipeline list)
+// ============================================================================
+
+/**
+ * Keys that can appear as siblings to the actual component name in a Connect
+ * component config object (e.g. `label` next to `generate` inside `input:`).
+ */
+const RESERVED_COMPONENT_KEYS = new Set(['label']);
+
+/**
+ * Processors whose configs contain nested child `processors` arrays.
+ * We intentionally do not recurse into these when extracting processor names
+ * for the pipeline list display.
+ */
+export const PROCESSORS_WITH_NESTED_STEPS = [
+  'branch',
+  'catch',
+  'for_each',
+  'parallel',
+  'switch',
+  'try',
+  'while',
+  'workflow',
+] as const;
+
+/** Extract the component name from an object, skipping reserved metadata keys like `label`. */
+const componentName = (obj: unknown): string | undefined => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return;
+  }
+  return Object.keys(obj).find((k) => !RESERVED_COMPONENT_KEYS.has(k));
+};
+
+/** Extract child input names from a multi-input component (broker, sequence). */
+const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
+  // broker/sequence: .inputs[] is an array of input objects
+  if (
+    (inputKey === 'broker' || inputKey === 'sequence') &&
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    'inputs' in value
+  ) {
+    const items = (value as { inputs?: unknown[] }).inputs;
+    if (Array.isArray(items)) {
+      return items.map(componentName).filter((k): k is string => !!k);
+    }
+  }
+
+  return;
+};
+
+/** Extract child output names from a multi-output component (broker, switch, fallback). */
+const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefined => {
+  // broker: broker.outputs[] is an array of output objects
+  if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
+    const items = (value as { outputs?: unknown[] }).outputs;
+    if (Array.isArray(items)) {
+      return items.map(componentName).filter((k): k is string => !!k);
+    }
+  }
+
+  // switch: switch.cases[].output is a single output per case
+  if (outputKey === 'switch' && value && typeof value === 'object' && !Array.isArray(value) && 'cases' in value) {
+    const cases = (value as { cases?: { output?: unknown }[] }).cases;
+    if (Array.isArray(cases)) {
+      return cases.map((c) => componentName(c.output)).filter((k): k is string => !!k);
+    }
+  }
+
+  // fallback: the value itself is an array of output objects
+  if (outputKey === 'fallback' && Array.isArray(value)) {
+    return value.map(componentName).filter((k): k is string => !!k);
+  }
+
+  return;
+};
+
+type ParsedYamlConfig = {
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  pipeline?: { processors?: Record<string, unknown>[] };
+};
+
+type ParsedConfigComponents = {
+  inputs: string[];
+  processors: string[];
+  outputs: string[];
+};
+
+/** Parse a pipeline's configYaml to extract input, processor, and output component names. */
+export const parseConfigComponents = (configYaml: string): ParsedConfigComponents => {
+  const empty: ParsedConfigComponents = { inputs: [], processors: [], outputs: [] };
+  if (!configYaml) {
+    return empty;
+  }
+
+  try {
+    const config = parseYaml(configYaml) as ParsedYamlConfig | null;
+    if (!config) {
+      return empty;
+    }
+
+    const processors = Array.isArray(config.pipeline?.processors)
+      ? config.pipeline.processors.map(componentName).filter((p): p is string => !!p)
+      : [];
+
+    const inputObj = config.input;
+    let inputs: string[] = [];
+    if (inputObj && typeof inputObj === 'object') {
+      const inputKey = componentName(inputObj);
+      if (inputKey) {
+        inputs = parseMultiInputs(inputKey, inputObj[inputKey]) ?? [inputKey];
+      }
+    }
+
+    const outputObj = config.output;
+    let outputs: string[] = [];
+    if (outputObj && typeof outputObj === 'object') {
+      const outputKey = componentName(outputObj);
+      if (outputKey) {
+        outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
+      }
+    }
+
+    return { inputs, processors, outputs };
+  } catch {
+    return empty;
+  }
 };

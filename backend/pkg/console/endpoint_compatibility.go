@@ -153,6 +153,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Method:         "POST",
 			HasRedpandaAPI: false,
 		},
+		{
+			URL:             "/api/schema-registry/contexts",
+			Method:          "GET",
+			RedpandaFeature: redpandaFeatureSchemaRegistryContexts,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
@@ -197,6 +202,12 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// Registry API support
 		if endpointReq.RedpandaFeature == redpandaFeatureSchemaRegistryACL {
 			endpointSupported = s.CheckSchemaRegistryACLSupport(ctx)
+		}
+
+		// Special case for Schema Registry Contexts feature - requires
+		// different detection strategies for Redpanda vs Kafka clusters.
+		if endpointReq.RedpandaFeature == redpandaFeatureSchemaRegistryContexts {
+			endpointSupported = s.CheckSchemaRegistryContextsSupport(ctx)
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{

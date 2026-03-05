@@ -44,7 +44,7 @@ func RunRedpandaConnectorsContainer(ctx context.Context, bootstrapServers []stri
 				"CONNECT_CONFIGURATION":     testConnectConfig,
 				"CONNECT_BOOTSTRAP_SERVERS": strings.Join(bootstrapServers, ","),
 				"CONNECT_GC_LOG_ENABLED":    "false",
-				"CONNECT_HEAP_OPTS":         "-Xms512M -Xmx512M",
+				"CONNECT_HEAP_OPTS":         "-Xms1G -Xmx1G",
 				"CONNECT_LOG_LEVEL":         "info",
 			},
 			// Use HTTP health check instead of log-based wait for better reliability

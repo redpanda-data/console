@@ -4,7 +4,8 @@ import { AnimatePresence, motion, type Transition } from 'motion/react';
 import { Tooltip as TooltipPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn, type SharedProps } from '../lib/utils';
+import { usePortalContainer } from '../lib/use-portal-container';
+import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
 type TooltipContextType = {
   isOpen: boolean;
@@ -76,10 +77,10 @@ function TooltipTrigger({ testId, ...props }: TooltipTriggerProps) {
 }
 
 type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Content> &
-  SharedProps & {
+  SharedProps &
+  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
     transition?: Transition;
     arrow?: boolean;
-    container?: Element;
   };
 
 function TooltipContent({
@@ -91,20 +92,28 @@ function TooltipContent({
   children,
   testId,
   container,
+  onOpenAutoFocus,
   ...props
 }: TooltipContentProps) {
   const { isOpen } = useTooltip();
   const initialPosition = getInitialPosition(side);
+  const portalContainer = usePortalContainer();
 
   return (
     <AnimatePresence>
       {isOpen ? (
-        <TooltipPrimitive.Portal container={container} data-slot="tooltip-portal" forceMount>
-          <TooltipPrimitive.Content className="z-50" forceMount sideOffset={sideOffset} {...props}>
+        <TooltipPrimitive.Portal container={container ?? portalContainer} data-slot="tooltip-portal" forceMount>
+          <TooltipPrimitive.Content
+            className="z-50"
+            forceMount
+            sideOffset={sideOffset}
+            {...(onOpenAutoFocus && { onOpenAutoFocus })}
+            {...props}
+          >
             <motion.div
               animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
               className={cn(
-                'relative w-fit origin-(--radix-tooltip-content-transform-origin) text-balance rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm shadow-md',
+                'relative w-fit origin-(--radix-tooltip-content-transform-origin) text-balance rounded-md bg-primary px-3 py-1.5 text-inverse text-sm shadow-md',
                 className
               )}
               data-slot="tooltip-content"

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/redpanda-data/common-go/rpsr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
@@ -43,19 +44,47 @@ type SchemaRegistrySubject struct {
 	IsSoftDeleted bool   `json:"isSoftDeleted"`
 }
 
-// GetSchemaRegistryMode retrieves the schema registry mode.
-func (s *Service) GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error) {
+// GetSchemaRegistryMode retrieves the schema registry mode. The global mode
+// can be retrieved by using an empty subject.
+func (s *Service) GetSchemaRegistryMode(ctx context.Context, subject string) (*SchemaRegistryMode, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	modeResult := srClient.Mode(ctx)
+	modeResult := srClient.Mode(ctx, subject)
 	mode := modeResult[0]
 	if err := mode.Err; err != nil {
 		return nil, fmt.Errorf("failed to get mode: %w", err)
 	}
 	return &SchemaRegistryMode{Mode: mode.Mode.String()}, nil
+}
+
+// PutSchemaRegistryMode sets the mode for the given subject or globally if
+// subject is empty.
+func (s *Service) PutSchemaRegistryMode(ctx context.Context, mode sr.Mode, subject string) (*SchemaRegistryMode, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	modeResult := srClient.SetMode(ctx, mode, subject)
+	result := modeResult[0]
+	if err := result.Err; err != nil {
+		return nil, fmt.Errorf("failed to set mode: %w", err)
+	}
+	return &SchemaRegistryMode{Mode: result.Mode.String()}, nil
+}
+
+// DeleteSchemaRegistrySubjectMode deletes the subject's or context's mode override.
+func (s *Service) DeleteSchemaRegistrySubjectMode(ctx context.Context, subject string) error {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return err
+	}
+	modeResult := srClient.ResetMode(ctx, subject)
+	result := modeResult[0]
+	return result.Err
 }
 
 // GetSchemaRegistryConfig returns the schema registry config which currently
@@ -106,8 +135,9 @@ func (s *Service) DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject
 }
 
 // GetSchemaRegistrySubjects returns a list of all register subjects. The list includes
-// soft-deleted subjects.
-func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error) {
+// soft-deleted subjects. If subjectPrefix is non-empty, only subjects matching
+// the prefix are returned (supports context-aware filtering, e.g. ":.prod:").
+func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix string) ([]SchemaRegistrySubject, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
 		return nil, err
@@ -116,9 +146,18 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 	subjects := make(map[string]struct{})
 	subjectsWithDeleted := make(map[string]struct{})
 
+	var prefixParams []sr.Param
+	if subjectPrefix != "" {
+		prefixParams = append(prefixParams, sr.SubjectPrefix(subjectPrefix))
+	}
+
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.Go(func() error {
-		res, err := srClient.Subjects(grpCtx)
+		callCtx := grpCtx
+		if len(prefixParams) > 0 {
+			callCtx = sr.WithParams(grpCtx, prefixParams...)
+		}
+		res, err := srClient.Subjects(callCtx)
 		if err != nil {
 			return err
 		}
@@ -128,7 +167,8 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 		return nil
 	})
 	grp.Go(func() error {
-		res, err := srClient.Subjects(sr.WithParams(grpCtx, sr.ShowDeleted))
+		params := append([]sr.Param{sr.ShowDeleted}, prefixParams...)
+		res, err := srClient.Subjects(sr.WithParams(grpCtx, params...))
 		if err != nil {
 			return err
 		}
@@ -745,14 +785,18 @@ type SchemaVersion struct {
 	Version int    `json:"version"`
 }
 
-// GetSchemaUsagesByID registers a new schema for the given subject in the schema registry.
-func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error) {
+// GetSchemaUsagesByID returns all subject-versions that use a given schema ID.
+func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int, subject string) ([]SchemaVersion, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := srClient.SchemaUsagesByID(ctx, schemaID)
+	callCtx := ctx
+	if subject != "" {
+		callCtx = sr.WithParams(ctx, sr.Subject(subject))
+	}
+	res, err := srClient.SchemaUsagesByID(callCtx, schemaID)
 	if err != nil {
 		return nil, err
 	}
@@ -800,6 +844,71 @@ func (s *Service) CheckSchemaRegistryACLSupport(ctx context.Context) bool {
 		return true
 	}
 	return true
+}
+
+// CheckSchemaRegistryContextsSupport checks if the Schema Registry supports
+// the Contexts feature. For Redpanda clusters with Admin API, it checks the
+// cluster config. For Kafka clusters, it probes the /contexts endpoint.
+// Redpanda clusters without Admin API default to false, users must configure
+// the Admin API for reliable detection until v26.2
+func (s *Service) CheckSchemaRegistryContextsSupport(ctx context.Context) bool {
+	if !s.cfg.SchemaRegistry.Enabled {
+		return false
+	}
+
+	// For Redpanda clusters with Admin API, check the cluster config.
+	// Per the RFC, probing /contexts is not enough for Redpanda because
+	// the endpoint returns 200 even when qualified subjects are not enabled.
+	if s.cfg.Redpanda.AdminAPI.Enabled {
+		adminAPICl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+		if err != nil {
+			return false
+		}
+		return s.checkRedpandaFeature(ctx, adminAPICl, redpandaFeatureSchemaRegistryContexts)
+	}
+
+	// If Admin API is not configured, check if this is a Redpanda cluster
+	// by inspecting the Kafka Metadata cluster ID. Redpanda cluster IDs
+	// always start with "redpanda.".
+	// For Redpanda without Admin API, we cannot reliably detect the feature,
+	// so we default to false; users must configure Admin API.
+	if s.isRedpandaCluster(ctx) {
+		return false
+	}
+
+	// For Kafka/non-Redpanda clusters, probe the /contexts endpoint.
+	// A 404 means the SR does not support contexts.
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return false
+	}
+
+	var contexts []string
+	err = srClient.Do(ctx, http.MethodGet, "/contexts", nil, &contexts)
+	if err != nil {
+		var se *sr.ResponseError
+		if errors.As(err, &se) && se.StatusCode == http.StatusNotFound {
+			return false
+		}
+		// Non-404 errors (auth, network), the endpoint likely exists
+		return true
+	}
+	return true
+}
+
+// isRedpandaCluster checks if the connected cluster is Redpanda by inspecting
+// the Kafka Metadata cluster ID. Redpanda cluster IDs start with "redpanda.".
+func (s *Service) isRedpandaCluster(ctx context.Context) bool {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return false
+	}
+	req := kmsg.NewMetadataRequest()
+	res, err := req.RequestWith(ctx, cl)
+	if err != nil {
+		return false
+	}
+	return res.ClusterID != nil && strings.HasPrefix(*res.ClusterID, "redpanda.")
 }
 
 // ListSRACLs lists Schema Registry ACLs based on the provided filter

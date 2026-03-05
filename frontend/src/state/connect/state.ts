@@ -880,7 +880,7 @@ export class ConnectorPropertiesStore {
             | string[];
         }
 
-        if (p.definition.type === DataType.Password && !!this.secrets) {
+        if (p.definition.type === DataType.Password && !!this.secrets && p.value.visible) {
           const secret = this.secrets.getSecret(property.name);
           secret.extractSecretId(String(property.value));
 

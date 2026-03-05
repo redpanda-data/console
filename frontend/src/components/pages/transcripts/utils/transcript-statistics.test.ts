@@ -9,10 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import type { TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { Trace, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
+import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import { describe, expect, it } from 'vitest';
 
 import {
+  calculateTranscriptStatistics,
   calculateVisibleWindow,
   groupTranscriptsByDate,
   isIncompleteTranscript,
@@ -31,6 +33,185 @@ const createMockTranscript = (data: { transcriptId: string; startTimeMs?: number
     spanCount: 0,
     errorCount: 0,
   }) as TraceSummary;
+
+/**
+ * Helper to create a mock Span with the given attributes.
+ * Attributes use stringValue by default (matching real OTel JSON transport).
+ */
+const createMockSpan = (name: string, attributes: Array<{ key: string; value: string }>): Span =>
+  ({
+    spanId: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+    parentSpanId: new Uint8Array(8),
+    traceId: new Uint8Array(16),
+    name,
+    startTimeUnixNano: BigInt(0),
+    endTimeUnixNano: BigInt(0),
+    attributes: attributes.map((a) => ({
+      key: a.key,
+      value: { value: { case: 'stringValue' as const, value: a.value } },
+    })),
+    status: undefined,
+  }) as Span;
+
+const createMockTrace = (spans: Span[]): Trace => ({ spans, summary: undefined }) as unknown as Trace;
+
+describe('calculateTranscriptStatistics', () => {
+  it('returns zeros for undefined trace', () => {
+    expect(calculateTranscriptStatistics(undefined)).toEqual({
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalTokens: 0,
+      llmCallCount: 0,
+      toolCallCount: 0,
+    });
+  });
+
+  it('returns zeros for trace with no spans', () => {
+    expect(calculateTranscriptStatistics(createMockTrace([]))).toEqual({
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalTokens: 0,
+      llmCallCount: 0,
+      toolCallCount: 0,
+    });
+  });
+
+  it('counts LLM span identified by gen_ai.operation.name=chat', () => {
+    const llmSpan = createMockSpan('chat gemini-3-flash-preview', [
+      { key: 'gen_ai.operation.name', value: 'chat' },
+      { key: 'gen_ai.request.model', value: 'gemini-3-flash-preview' },
+      { key: 'gen_ai.usage.input_tokens', value: '407' },
+      { key: 'gen_ai.usage.output_tokens', value: '198' },
+    ]);
+    const result = calculateTranscriptStatistics(createMockTrace([llmSpan]));
+    expect(result.llmCallCount).toBe(1);
+    expect(result.toolCallCount).toBe(0);
+  });
+
+  it('does not count agent span as LLM call even with gen_ai.request.model', () => {
+    // This is the exact scenario from trace 0c69890c65e3933fc5d4b86cd3f5a2ea:
+    // The agent span has gen_ai.request.model but should NOT be counted as an LLM call.
+    const agentSpan = createMockSpan('invoke_agent Johannes test', [
+      { key: 'gen_ai.operation.name', value: 'invoke_agent' },
+      { key: 'gen_ai.agent.name', value: 'Johannes test' },
+      { key: 'gen_ai.request.model', value: 'gemini-3-flash-preview' },
+      { key: 'gen_ai.provider.name', value: 'google' },
+      { key: 'gen_ai.usage.input_tokens', value: '407' },
+      { key: 'gen_ai.usage.output_tokens', value: '198' },
+    ]);
+    const result = calculateTranscriptStatistics(createMockTrace([agentSpan]));
+    expect(result.llmCallCount).toBe(0);
+    expect(result.toolCallCount).toBe(0);
+  });
+
+  it('counts correctly for real-world trace with agent + LLM + HTTP spans', () => {
+    // Reconstructed from trace 0c69890c65e3933fc5d4b86cd3f5a2ea
+    const httpClientSpan = createMockSpan('HTTP POST', [
+      { key: 'http.request.method', value: 'POST' },
+      { key: 'http.response.status_code', value: '200' },
+    ]);
+    const gatewayServerSpan = createMockSpan('POST /v1beta/models/gemini-3-flash-preview:streamGenerateContent', [
+      { key: 'aigw.backend.id', value: 'gateways/abc/backend-pools/def' },
+      { key: 'http.response.status_code', value: '200' },
+    ]);
+    const httpClientSpan2 = createMockSpan('HTTP POST', [
+      { key: 'http.request.method', value: 'POST' },
+      { key: 'http.response.status_code', value: '200' },
+    ]);
+    const llmSpan = createMockSpan('chat gemini-3-flash-preview', [
+      { key: 'gen_ai.operation.name', value: 'chat' },
+      { key: 'gen_ai.request.model', value: 'gemini-3-flash-preview' },
+      { key: 'gen_ai.provider.name', value: 'google' },
+      { key: 'gen_ai.input.messages', value: '[{"role":"user","parts":[{"type":"text","content":"hi"}]}]' },
+      { key: 'gen_ai.usage.input_tokens', value: '407' },
+      { key: 'gen_ai.usage.output_tokens', value: '198' },
+    ]);
+    const agentSpan = createMockSpan('invoke_agent Johannes test', [
+      { key: 'gen_ai.operation.name', value: 'invoke_agent' },
+      { key: 'gen_ai.agent.name', value: 'Johannes test' },
+      { key: 'gen_ai.request.model', value: 'gemini-3-flash-preview' },
+      { key: 'gen_ai.provider.name', value: 'google' },
+      { key: 'gen_ai.usage.input_tokens', value: '407' },
+      { key: 'gen_ai.usage.output_tokens', value: '198' },
+    ]);
+    const rootServerSpan = createMockSpan('ai-agent-http-server', [
+      { key: 'http.request.method', value: 'POST' },
+      { key: 'http.response.status_code', value: '200' },
+    ]);
+
+    const trace = createMockTrace([
+      httpClientSpan,
+      gatewayServerSpan,
+      httpClientSpan2,
+      llmSpan,
+      agentSpan,
+      rootServerSpan,
+    ]);
+    const result = calculateTranscriptStatistics(trace);
+
+    expect(result.llmCallCount).toBe(1);
+    expect(result.toolCallCount).toBe(0);
+  });
+
+  it('counts tool spans correctly', () => {
+    const toolSpan = createMockSpan('execute_tool search', [
+      { key: 'gen_ai.operation.name', value: 'execute_tool' },
+      { key: 'gen_ai.tool.name', value: 'search' },
+      { key: 'gen_ai.tool.call.id', value: 'call_123' },
+    ]);
+    const result = calculateTranscriptStatistics(createMockTrace([toolSpan]));
+    expect(result.llmCallCount).toBe(0);
+    expect(result.toolCallCount).toBe(1);
+  });
+
+  it('counts multiple LLM and tool spans', () => {
+    const llm1 = createMockSpan('chat gpt-4', [
+      { key: 'gen_ai.operation.name', value: 'chat' },
+      { key: 'gen_ai.request.model', value: 'gpt-4' },
+    ]);
+    const llm2 = createMockSpan('chat claude-3', [
+      { key: 'gen_ai.operation.name', value: 'chat' },
+      { key: 'gen_ai.request.model', value: 'claude-3' },
+    ]);
+    const tool1 = createMockSpan('execute_tool fetch', [
+      { key: 'gen_ai.operation.name', value: 'execute_tool' },
+      { key: 'gen_ai.tool.name', value: 'fetch' },
+    ]);
+
+    const result = calculateTranscriptStatistics(createMockTrace([llm1, tool1, llm2]));
+    expect(result.llmCallCount).toBe(2);
+    expect(result.toolCallCount).toBe(1);
+  });
+
+  it('does not count plain HTTP spans as LLM or tool', () => {
+    const httpSpan = createMockSpan('HTTP GET /api/data', [
+      { key: 'http.request.method', value: 'GET' },
+      { key: 'http.response.status_code', value: '200' },
+    ]);
+    const result = calculateTranscriptStatistics(createMockTrace([httpSpan]));
+    expect(result.llmCallCount).toBe(0);
+    expect(result.toolCallCount).toBe(0);
+  });
+
+  it('classifies span with gen_ai.system but no operation.name as LLM only if it has prompt/completion attributes', () => {
+    // A span with only gen_ai.system should NOT be counted as LLM
+    // (it could be an agent or other gen_ai span)
+    const spanWithSystemOnly = createMockSpan('some-span', [
+      { key: 'gen_ai.system', value: 'openai' },
+      { key: 'gen_ai.request.model', value: 'gpt-4' },
+    ]);
+    const result = calculateTranscriptStatistics(createMockTrace([spanWithSystemOnly]));
+    expect(result.llmCallCount).toBe(0);
+
+    // But if it also has gen_ai.prompt, it should be counted
+    const spanWithPrompt = createMockSpan('some-span', [
+      { key: 'gen_ai.system', value: 'openai' },
+      { key: 'gen_ai.prompt', value: 'Hello' },
+    ]);
+    const resultWithPrompt = calculateTranscriptStatistics(createMockTrace([spanWithPrompt]));
+    expect(resultWithPrompt.llmCallCount).toBe(1);
+  });
+});
 
 describe('isIncompleteTranscript', () => {
   it('returns true for undefined rootSpanName', () => {

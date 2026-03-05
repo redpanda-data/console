@@ -634,8 +634,13 @@ func (api *API) routes() *chi.Mux {
 
 				// Schema Registry
 				r.Get("/schema-registry/mode", api.handleGetSchemaRegistryMode())
+				r.Put("/schema-registry/mode", api.handlePutSchemaRegistryMode())
+				r.Get("/schema-registry/mode/{subject}", api.handleGetSchemaRegistrySubjectMode())
+				r.Put("/schema-registry/mode/{subject}", api.handlePutSchemaRegistrySubjectMode())
+				r.Delete("/schema-registry/mode/{subject}", api.handleDeleteSchemaRegistrySubjectMode())
 				r.Get("/schema-registry/config", api.handleGetSchemaRegistryConfig())
 				r.Put("/schema-registry/config", api.handlePutSchemaRegistryConfig())
+				r.Get("/schema-registry/config/{subject}", api.handleGetSchemaRegistrySubjectConfig())
 				r.Put("/schema-registry/config/{subject}", api.handlePutSchemaRegistrySubjectConfig())
 				r.Delete("/schema-registry/config/{subject}", api.handleDeleteSchemaRegistrySubjectConfig())
 				r.Get("/schema-registry/subjects", api.handleGetSchemaSubjects())

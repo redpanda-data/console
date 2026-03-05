@@ -12,10 +12,10 @@ const bannerVariants = cva(
   {
     variants: {
       variant: {
-        secondary: 'bg-secondary text-secondary-foreground',
+        secondary: 'bg-secondary text-inverse',
         accent: 'bg-accent text-accent-foreground',
         muted: 'bg-muted text-muted-foreground',
-        primary: 'bg-primary text-primary-foreground',
+        primary: 'bg-primary text-inverse',
       },
     },
     defaultVariants: {
