@@ -64,6 +64,12 @@ const (
 	// TopicServiceSetPartitionsToTopicsProcedure is the fully-qualified name of the TopicService's
 	// SetPartitionsToTopics RPC.
 	TopicServiceSetPartitionsToTopicsProcedure = "/redpanda.api.dataplane.v1.TopicService/SetPartitionsToTopics"
+	// TopicServiceGetTopicLogDirsProcedure is the fully-qualified name of the TopicService's
+	// GetTopicLogDirs RPC.
+	TopicServiceGetTopicLogDirsProcedure = "/redpanda.api.dataplane.v1.TopicService/GetTopicLogDirs"
+	// TopicServiceGetTopicStorageSummaryProcedure is the fully-qualified name of the TopicService's
+	// GetTopicStorageSummary RPC.
+	TopicServiceGetTopicStorageSummaryProcedure = "/redpanda.api.dataplane.v1.TopicService/GetTopicStorageSummary"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -79,6 +85,8 @@ var (
 	topicServiceSetTopicPartitionsMethodDescriptor        = topicServiceServiceDescriptor.Methods().ByName("SetTopicPartitions")
 	topicServiceAddPartitionsToTopicsMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("AddPartitionsToTopics")
 	topicServiceSetPartitionsToTopicsMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("SetPartitionsToTopics")
+	topicServiceGetTopicLogDirsMethodDescriptor           = topicServiceServiceDescriptor.Methods().ByName("GetTopicLogDirs")
+	topicServiceGetTopicStorageSummaryMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("GetTopicStorageSummary")
 )
 
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1.TopicService service.
@@ -93,6 +101,8 @@ type TopicServiceClient interface {
 	SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error)
 	AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error)
 	SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error)
+	GetTopicLogDirs(context.Context, *connect.Request[v1.GetTopicLogDirsRequest]) (*connect.Response[v1.GetTopicLogDirsResponse], error)
+	GetTopicStorageSummary(context.Context, *connect.Request[v1.GetTopicStorageSummaryRequest]) (*connect.Response[v1.GetTopicStorageSummaryResponse], error)
 }
 
 // NewTopicServiceClient constructs a client for the redpanda.api.dataplane.v1.TopicService service.
@@ -165,6 +175,18 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(topicServiceSetPartitionsToTopicsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getTopicLogDirs: connect.NewClient[v1.GetTopicLogDirsRequest, v1.GetTopicLogDirsResponse](
+			httpClient,
+			baseURL+TopicServiceGetTopicLogDirsProcedure,
+			connect.WithSchema(topicServiceGetTopicLogDirsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getTopicStorageSummary: connect.NewClient[v1.GetTopicStorageSummaryRequest, v1.GetTopicStorageSummaryResponse](
+			httpClient,
+			baseURL+TopicServiceGetTopicStorageSummaryProcedure,
+			connect.WithSchema(topicServiceGetTopicStorageSummaryMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -180,6 +202,8 @@ type topicServiceClient struct {
 	setTopicPartitions        *connect.Client[v1.SetTopicPartitionsRequest, v1.SetTopicPartitionsResponse]
 	addPartitionsToTopics     *connect.Client[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse]
 	setPartitionsToTopics     *connect.Client[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse]
+	getTopicLogDirs           *connect.Client[v1.GetTopicLogDirsRequest, v1.GetTopicLogDirsResponse]
+	getTopicStorageSummary    *connect.Client[v1.GetTopicStorageSummaryRequest, v1.GetTopicStorageSummaryResponse]
 }
 
 // CreateTopic calls redpanda.api.dataplane.v1.TopicService.CreateTopic.
@@ -232,6 +256,16 @@ func (c *topicServiceClient) SetPartitionsToTopics(ctx context.Context, req *con
 	return c.setPartitionsToTopics.CallUnary(ctx, req)
 }
 
+// GetTopicLogDirs calls redpanda.api.dataplane.v1.TopicService.GetTopicLogDirs.
+func (c *topicServiceClient) GetTopicLogDirs(ctx context.Context, req *connect.Request[v1.GetTopicLogDirsRequest]) (*connect.Response[v1.GetTopicLogDirsResponse], error) {
+	return c.getTopicLogDirs.CallUnary(ctx, req)
+}
+
+// GetTopicStorageSummary calls redpanda.api.dataplane.v1.TopicService.GetTopicStorageSummary.
+func (c *topicServiceClient) GetTopicStorageSummary(ctx context.Context, req *connect.Request[v1.GetTopicStorageSummaryRequest]) (*connect.Response[v1.GetTopicStorageSummaryResponse], error) {
+	return c.getTopicStorageSummary.CallUnary(ctx, req)
+}
+
 // TopicServiceHandler is an implementation of the redpanda.api.dataplane.v1.TopicService service.
 type TopicServiceHandler interface {
 	CreateTopic(context.Context, *connect.Request[v1.CreateTopicRequest]) (*connect.Response[v1.CreateTopicResponse], error)
@@ -244,6 +278,8 @@ type TopicServiceHandler interface {
 	SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error)
 	AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error)
 	SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error)
+	GetTopicLogDirs(context.Context, *connect.Request[v1.GetTopicLogDirsRequest]) (*connect.Response[v1.GetTopicLogDirsResponse], error)
+	GetTopicStorageSummary(context.Context, *connect.Request[v1.GetTopicStorageSummaryRequest]) (*connect.Response[v1.GetTopicStorageSummaryResponse], error)
 }
 
 // NewTopicServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -312,6 +348,18 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(topicServiceSetPartitionsToTopicsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	topicServiceGetTopicLogDirsHandler := connect.NewUnaryHandler(
+		TopicServiceGetTopicLogDirsProcedure,
+		svc.GetTopicLogDirs,
+		connect.WithSchema(topicServiceGetTopicLogDirsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	topicServiceGetTopicStorageSummaryHandler := connect.NewUnaryHandler(
+		TopicServiceGetTopicStorageSummaryProcedure,
+		svc.GetTopicStorageSummary,
+		connect.WithSchema(topicServiceGetTopicStorageSummaryMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1.TopicService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TopicServiceCreateTopicProcedure:
@@ -334,6 +382,10 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 			topicServiceAddPartitionsToTopicsHandler.ServeHTTP(w, r)
 		case TopicServiceSetPartitionsToTopicsProcedure:
 			topicServiceSetPartitionsToTopicsHandler.ServeHTTP(w, r)
+		case TopicServiceGetTopicLogDirsProcedure:
+			topicServiceGetTopicLogDirsHandler.ServeHTTP(w, r)
+		case TopicServiceGetTopicStorageSummaryProcedure:
+			topicServiceGetTopicStorageSummaryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -381,4 +433,12 @@ func (UnimplementedTopicServiceHandler) AddPartitionsToTopics(context.Context, *
 
 func (UnimplementedTopicServiceHandler) SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.SetPartitionsToTopics is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) GetTopicLogDirs(context.Context, *connect.Request[v1.GetTopicLogDirsRequest]) (*connect.Response[v1.GetTopicLogDirsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.GetTopicLogDirs is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) GetTopicStorageSummary(context.Context, *connect.Request[v1.GetTopicStorageSummaryRequest]) (*connect.Response[v1.GetTopicStorageSummaryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.GetTopicStorageSummary is not implemented"))
 }

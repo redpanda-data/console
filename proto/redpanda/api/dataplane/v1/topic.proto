@@ -322,6 +322,143 @@ message AddPartitionsToTopicsResponse {
   repeated AlterTopicPartitionStatus statuses = 1;
 }
 
+// GetTopicLogDirs
+
+message GetTopicLogDirsRequest {
+  // Topic names to get log dirs for. Required, 1-100 items.
+  repeated string topic_names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 100
+    },
+    (buf.validate.field).repeated.items = {
+      string: {
+        min_len: 1
+        max_len: 249
+        pattern: "^[a-zA-Z0-9._\\-]*$"
+      }
+    }
+  ];
+}
+
+message GetTopicLogDirsResponse {
+  repeated TopicLogDirs topics = 1;
+}
+
+message TopicLogDirs {
+  enum DataStatus {
+    DATA_STATUS_UNSPECIFIED = 0;
+    // All replica log dirs were reported successfully.
+    DATA_STATUS_COMPLETE = 1;
+    // Some replica log dirs are missing; sizes may be underreported.
+    DATA_STATUS_PARTIAL = 2;
+  }
+
+  string topic_name = 1;
+  int64 total_size_bytes = 2;
+  repeated PartitionLogDir partitions = 3;
+  repeated ReplicaError replica_errors = 4;
+  // Indicates the completeness of the log dir data for this topic.
+  DataStatus data_status = 5;
+}
+
+message PartitionLogDir {
+  int32 partition_id = 1;
+  // Deduplicated total size across all replicas.
+  int64 size_bytes = 2;
+  int32 leader = 3;
+  repeated int32 replicas = 4;
+  repeated ReplicaLogDir replica_log_dirs = 5;
+}
+
+message ReplicaLogDir {
+  int32 broker_id = 1;
+  string dir = 2;
+  int64 size_bytes = 3;
+  int64 offset_lag = 4;
+}
+
+message ReplicaError {
+  int32 broker_id = 1;
+  string error = 2;
+}
+
+// GetTopicStorageSummary
+
+message GetTopicStorageSummaryRequest {
+  // Topic names to get storage summaries for. Required, 1-100 items.
+  repeated string topic_names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 100
+    },
+    (buf.validate.field).repeated.items = {
+      string: {
+        min_len: 1
+        max_len: 249
+        pattern: "^[a-zA-Z0-9._\\-]*$"
+      }
+    }
+  ];
+}
+
+message GetTopicStorageSummaryResponse {
+  // Overall response status indicating data completeness.
+  ResponseStatus status = 1;
+  repeated TopicStorageSummary topics = 2;
+  // Total number of brokers in the cluster.
+  int32 total_brokers = 3;
+  // Number of brokers that responded to the log dirs request.
+  int32 responding_brokers = 4;
+
+  enum ResponseStatus {
+    RESPONSE_STATUS_UNSPECIFIED = 0;
+    RESPONSE_STATUS_SUCCESS = 1;
+    RESPONSE_STATUS_PARTIAL_SUCCESS = 2;
+    RESPONSE_STATUS_INSUFFICIENT_DATA = 3;
+    RESPONSE_STATUS_FAILED = 4;
+  }
+}
+
+message TopicStorageSummary {
+  string name = 1;
+  // Storage metrics for this topic. Absent if data is unavailable.
+  optional StorageMetrics storage = 2;
+  optional int32 partition_count = 3;
+  optional int32 replication_factor = 4;
+  // Indicates the quality/completeness of the data for this topic.
+  DataQuality quality = 5;
+  // Details about missing data from specific brokers.
+  repeated MissingDataInfo missing_data = 6;
+
+  message StorageMetrics {
+    // Total bytes including all replicas.
+    int64 total_bytes_with_replication = 1;
+    // Total bytes counting each partition only once (leader's view).
+    int64 total_bytes_without_replication = 2;
+    // Bytes stored in local log directories.
+    int64 local_storage_bytes = 3;
+    // Bytes stored in remote/tiered storage.
+    int64 remote_storage_bytes = 4;
+  }
+
+  message MissingDataInfo {
+    int32 broker_id = 1;
+    repeated int32 affected_partitions = 2;
+    string reason = 3;
+  }
+
+  enum DataQuality {
+    DATA_QUALITY_UNSPECIFIED = 0;
+    DATA_QUALITY_COMPLETE = 1;
+    DATA_QUALITY_ESTIMATED = 2;
+    DATA_QUALITY_UNRELIABLE = 3;
+    DATA_QUALITY_UNAVAILABLE = 4;
+  }
+}
+
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Topics"
@@ -625,6 +762,51 @@ service TopicService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+
+  rpc GetTopicLogDirs(GetTopicLogDirsRequest) returns (GetTopicLogDirsResponse) {
+    option (google.api.http) = {get: "/v1/topics/log-dirs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get topic log dirs"
+      description: "Get partition-level log directory information for topics, including per-replica details for operational debugging."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTopicLogDirsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  rpc GetTopicStorageSummary(GetTopicStorageSummaryRequest) returns (GetTopicStorageSummaryResponse) {
+    option (google.api.http) = {
+      post: "/v1/topics/storage-summary"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get topic storage summary"
+      description: "Get aggregated storage metrics for topics, including local vs remote storage breakdown, replication overhead, and data quality indicators."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
       api: API_KAFKA
     };
   }

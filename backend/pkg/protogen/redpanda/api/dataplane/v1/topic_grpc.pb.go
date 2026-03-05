@@ -30,6 +30,8 @@ const (
 	TopicService_SetTopicPartitions_FullMethodName        = "/redpanda.api.dataplane.v1.TopicService/SetTopicPartitions"
 	TopicService_AddPartitionsToTopics_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/AddPartitionsToTopics"
 	TopicService_SetPartitionsToTopics_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/SetPartitionsToTopics"
+	TopicService_GetTopicLogDirs_FullMethodName           = "/redpanda.api.dataplane.v1.TopicService/GetTopicLogDirs"
+	TopicService_GetTopicStorageSummary_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/GetTopicStorageSummary"
 )
 
 // TopicServiceClient is the client API for TopicService service.
@@ -46,6 +48,8 @@ type TopicServiceClient interface {
 	SetTopicPartitions(ctx context.Context, in *SetTopicPartitionsRequest, opts ...grpc.CallOption) (*SetTopicPartitionsResponse, error)
 	AddPartitionsToTopics(ctx context.Context, in *AddPartitionsToTopicsRequest, opts ...grpc.CallOption) (*AddPartitionsToTopicsResponse, error)
 	SetPartitionsToTopics(ctx context.Context, in *SetPartitionsToTopicsRequest, opts ...grpc.CallOption) (*SetPartitionsToTopicsResponse, error)
+	GetTopicLogDirs(ctx context.Context, in *GetTopicLogDirsRequest, opts ...grpc.CallOption) (*GetTopicLogDirsResponse, error)
+	GetTopicStorageSummary(ctx context.Context, in *GetTopicStorageSummaryRequest, opts ...grpc.CallOption) (*GetTopicStorageSummaryResponse, error)
 }
 
 type topicServiceClient struct {
@@ -156,6 +160,26 @@ func (c *topicServiceClient) SetPartitionsToTopics(ctx context.Context, in *SetP
 	return out, nil
 }
 
+func (c *topicServiceClient) GetTopicLogDirs(ctx context.Context, in *GetTopicLogDirsRequest, opts ...grpc.CallOption) (*GetTopicLogDirsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopicLogDirsResponse)
+	err := c.cc.Invoke(ctx, TopicService_GetTopicLogDirs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) GetTopicStorageSummary(ctx context.Context, in *GetTopicStorageSummaryRequest, opts ...grpc.CallOption) (*GetTopicStorageSummaryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopicStorageSummaryResponse)
+	err := c.cc.Invoke(ctx, TopicService_GetTopicStorageSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TopicServiceServer is the server API for TopicService service.
 // All implementations must embed UnimplementedTopicServiceServer
 // for forward compatibility.
@@ -170,6 +194,8 @@ type TopicServiceServer interface {
 	SetTopicPartitions(context.Context, *SetTopicPartitionsRequest) (*SetTopicPartitionsResponse, error)
 	AddPartitionsToTopics(context.Context, *AddPartitionsToTopicsRequest) (*AddPartitionsToTopicsResponse, error)
 	SetPartitionsToTopics(context.Context, *SetPartitionsToTopicsRequest) (*SetPartitionsToTopicsResponse, error)
+	GetTopicLogDirs(context.Context, *GetTopicLogDirsRequest) (*GetTopicLogDirsResponse, error)
+	GetTopicStorageSummary(context.Context, *GetTopicStorageSummaryRequest) (*GetTopicStorageSummaryResponse, error)
 	mustEmbedUnimplementedTopicServiceServer()
 }
 
@@ -209,6 +235,12 @@ func (UnimplementedTopicServiceServer) AddPartitionsToTopics(context.Context, *A
 }
 func (UnimplementedTopicServiceServer) SetPartitionsToTopics(context.Context, *SetPartitionsToTopicsRequest) (*SetPartitionsToTopicsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPartitionsToTopics not implemented")
+}
+func (UnimplementedTopicServiceServer) GetTopicLogDirs(context.Context, *GetTopicLogDirsRequest) (*GetTopicLogDirsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopicLogDirs not implemented")
+}
+func (UnimplementedTopicServiceServer) GetTopicStorageSummary(context.Context, *GetTopicStorageSummaryRequest) (*GetTopicStorageSummaryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopicStorageSummary not implemented")
 }
 func (UnimplementedTopicServiceServer) mustEmbedUnimplementedTopicServiceServer() {}
 func (UnimplementedTopicServiceServer) testEmbeddedByValue()                      {}
@@ -411,6 +443,42 @@ func _TopicService_SetPartitionsToTopics_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TopicService_GetTopicLogDirs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopicLogDirsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).GetTopicLogDirs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_GetTopicLogDirs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).GetTopicLogDirs(ctx, req.(*GetTopicLogDirsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_GetTopicStorageSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopicStorageSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).GetTopicStorageSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_GetTopicStorageSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).GetTopicStorageSummary(ctx, req.(*GetTopicStorageSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TopicService_ServiceDesc is the grpc.ServiceDesc for TopicService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -457,6 +525,14 @@ var TopicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetPartitionsToTopics",
 			Handler:    _TopicService_SetPartitionsToTopics_Handler,
+		},
+		{
+			MethodName: "GetTopicLogDirs",
+			Handler:    _TopicService_GetTopicLogDirs_Handler,
+		},
+		{
+			MethodName: "GetTopicStorageSummary",
+			Handler:    _TopicService_GetTopicStorageSummary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
