@@ -21,7 +21,7 @@ vi.mock('../backend-api', () => ({
   },
 }));
 
-import { ConnectorPropertiesStore } from './state';
+import { ConnectorPropertiesStore, SecretsStore } from './state';
 import { api } from '../backend-api';
 
 function createMockProperty(overrides: {
@@ -216,6 +216,52 @@ describe('ConnectorPropertiesStore', () => {
       // Assert: custom_default_value strings should be applied
       expect(store.propsByName.get('bool.custom.true')?.value).toBe('true');
       expect(store.propsByName.get('bool.custom.false')?.value).toBe('false');
+    });
+  });
+
+  describe('SecretsStore', () => {
+    it('filters out secrets with empty values', () => {
+      const store = new SecretsStore();
+
+      // Create secrets with various values (simulates PASSWORD fields)
+      const passwordSecret = store.getSecret('source.cluster.sasl.password');
+      passwordSecret.value = 'my-password';
+
+      const emptySecret = store.getSecret('source.cluster.ssl.truststore.certificates');
+      // value remains '' (default)
+
+      const nullSecret = store.getSecret('source.cluster.ssl.keystore.key');
+      nullSecret.value = '';
+
+      // Only non-empty secrets should be returned
+      const secrets = store.secrets;
+      expect(secrets.size).toBe(1);
+      expect(secrets.has('source.cluster.sasl.password')).toBe(true);
+      expect(secrets.has('source.cluster.ssl.truststore.certificates')).toBe(false);
+      expect(secrets.has('source.cluster.ssl.keystore.key')).toBe(false);
+    });
+
+    it('returns a new Map each time (safe for async iteration)', () => {
+      const store = new SecretsStore();
+      const secret = store.getSecret('key');
+      secret.value = 'value';
+
+      const map1 = store.secrets;
+      const map2 = store.secrets;
+      expect(map1).not.toBe(map2);
+    });
+
+    it('does not retain previously non-empty secrets that become empty', () => {
+      const store = new SecretsStore();
+      const secret = store.getSecret('key');
+
+      // First: set non-empty value
+      secret.value = 'some-value';
+      expect(store.secrets.size).toBe(1);
+
+      // Then: clear the value
+      secret.value = '';
+      expect(store.secrets.size).toBe(0);
     });
   });
 });
