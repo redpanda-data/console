@@ -19,102 +19,79 @@ import {
   isMultiValue,
   Select,
 } from '@redpanda-data/ui';
-import { observer, useLocalObservable } from 'mobx-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { api } from '../../../../../state/backend-api';
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/expandable-text';
 
-export const TopicInput = observer((p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
-  const state = useLocalObservable(() => {
-    const props = new Map(p.properties.map((prop) => [prop.name, prop]));
-    const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
-    const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
+export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
+  const propertiesMap = useMemo(() => new Map(p.properties.map((prop) => [prop.name, prop])), [p.properties]);
+  const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
+  const [selected, setSelected] = useState(() => (topicsRegex?.value ? 'topics.regex' : 'topics'));
 
+  useEffect(() => {
     api.refreshTopics();
+  }, []);
 
-    return {
-      properties: props,
-      _selected: initialSelection,
-      get property() {
-        // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-        return this.properties.get(this._selected)!;
-      },
-      get isRegex() {
-        return this._selected === 'topics.regex';
-      },
-      setSelectedProp(input: string) {
-        this.property.value = '';
-        this._selected = input;
-      },
+  const property = propertiesMap.get(selected);
+  const isRegex = selected === 'topics.regex';
 
-      get matchingTopics() {
-        const allTopics = api.topics?.map((x) => x.topicName);
-        if (!allTopics) {
-          return [];
-        }
+  const setSelectedProp = (input: string) => {
+    if (property) {
+      property.value = '';
+    }
+    setSelected(input);
+  };
 
-        if (this.isRegex) {
-          const regex = new RegExp(String(this.property.value));
-          return allTopics.filter((t) => regex.test(t));
-        }
-        const validTopics = String(this.property.value).split(',');
-        return allTopics.filter((t) => validTopics.includes(t));
-      },
-    };
-  });
-
-  if (!state.property) {
+  if (!property) {
     return null;
   }
 
-  const showErrors = state.property.errors.length > 0;
-  const errors = showErrors ? state.property.errors : state.property.lastErrors;
-  const errorToShow = showErrors ? errors[state.property.currentErrorIndex % errors.length] : undefined;
+  const showErrors = property.errors.length > 0;
+  const errors = showErrors ? property.errors : property.lastErrors;
+  const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
   const cycleError = showErrors
     ? () => {
-        state.property.currentErrorIndex += 1;
+        property.currentErrorIndex += 1;
       }
     : undefined;
 
   return (
     <Grid gap="10" templateColumns="1fr">
       <FormControl position="relative">
-        {state.properties.has('topics.regex') && (
-          <Checkbox
-            isChecked={state.isRegex}
-            onChange={(e) => state.setSelectedProp(e.target.checked ? 'topics.regex' : 'topics')}
-          >
+        {propertiesMap.has('topics.regex') && (
+          <Checkbox isChecked={isRegex} onChange={(e) => setSelectedProp(e.target.checked ? 'topics.regex' : 'topics')}>
             Use regular expressions
           </Checkbox>
         )}
 
         <FormHelperText mb={15}>
-          <ExpandableText maxChars={60}>{state.property.entry.definition.documentation}</ExpandableText>
+          <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
         </FormHelperText>
 
         {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
-        {state.isRegex || p.connectorType === 'source' ? (
+        {isRegex || p.connectorType === 'source' ? (
           <Input
             autoComplete="off"
             onChange={(e) => {
-              state.property.value = e.target.value;
+              property.value = e.target.value;
             }}
             spellCheck={false}
-            value={String(state.property.value)}
+            value={String(property.value)}
           />
         ) : (
           <Select
             isMulti
             onChange={(v) => {
               if (isMultiValue(v)) {
-                state.property.value = v.map(({ value }) => value)?.join(',') ?? [];
+                property.value = v.map(({ value }) => value)?.join(',') ?? [];
               }
             }}
             options={api.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
             value={
-              state.property.value
-                ? state.property.value
+              property.value
+                ? property.value
                     ?.toString()
                     .split(',')
                     .map((val) => ({
@@ -135,4 +112,4 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
             </Box> */}
     </Grid>
   );
-});
+};
