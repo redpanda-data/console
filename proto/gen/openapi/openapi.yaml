@@ -867,6 +867,21 @@ components:
           title: Name of newly-created user
           type: string
       type: object
+    DataQuality:
+      enum:
+        - DATA_QUALITY_COMPLETE
+        - DATA_QUALITY_ESTIMATED
+        - DATA_QUALITY_UNRELIABLE
+        - DATA_QUALITY_UNAVAILABLE
+      type: string
+    DataStatus:
+      description: |2-
+         - DATA_STATUS_COMPLETE: All replica log dirs were reported successfully.
+         - DATA_STATUS_PARTIAL: Some replica log dirs are missing; sizes may be underreported.
+      enum:
+        - DATA_STATUS_COMPLETE
+        - DATA_STATUS_PARTIAL
+      type: string
     DeleteACLsRequest.Filter:
       properties:
         host:
@@ -1291,6 +1306,38 @@ components:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
+      type: object
+    GetTopicLogDirsResponse:
+      properties:
+        topics:
+          items:
+            $ref: '#/components/schemas/TopicLogDirs'
+          type: array
+      type: object
+    GetTopicStorageSummaryRequest:
+      properties:
+        topic_names:
+          description: Topic names to get storage summaries for. Required, 1-100 items.
+          items:
+            type: string
+          type: array
+      type: object
+    GetTopicStorageSummaryResponse:
+      properties:
+        responding_brokers:
+          description: Number of brokers that responded to the log dirs request.
+          format: int32
+          type: integer
+        status:
+          $ref: '#/components/schemas/ResponseStatus'
+        topics:
+          items:
+            $ref: '#/components/schemas/TopicStorageSummary'
+          type: array
+        total_brokers:
+          description: Total number of brokers in the cluster.
+          format: int32
+          type: integer
       type: object
     GetTransformResponse:
       properties:
@@ -2090,6 +2137,19 @@ components:
         resource_type:
           $ref: '#/components/schemas/ResourceType'
       type: object
+    MissingDataInfo:
+      properties:
+        affected_partitions:
+          items:
+            format: int32
+            type: integer
+          type: array
+        broker_id:
+          format: int32
+          type: integer
+        reason:
+          type: string
+      type: object
     MountTask:
       properties:
         id:
@@ -2198,6 +2258,28 @@ components:
           items:
             $ref: '#/components/schemas/ParamDefinition'
           type: array
+      type: object
+    PartitionLogDir:
+      properties:
+        leader:
+          format: int32
+          type: integer
+        partition_id:
+          format: int32
+          type: integer
+        replica_log_dirs:
+          items:
+            $ref: '#/components/schemas/ReplicaLogDir'
+          type: array
+        replicas:
+          items:
+            format: int32
+            type: integer
+          type: array
+        size_bytes:
+          description: Deduplicated total size across all replicas.
+          format: int64
+          type: string
       type: object
     PartitionStatus:
       enum:
@@ -2573,6 +2655,28 @@ components:
             type: integer
           type: array
       type: object
+    ReplicaError:
+      properties:
+        broker_id:
+          format: int32
+          type: integer
+        error:
+          type: string
+      type: object
+    ReplicaLogDir:
+      properties:
+        broker_id:
+          format: int32
+          type: integer
+        dir:
+          type: string
+        offset_lag:
+          format: int64
+          type: string
+        size_bytes:
+          format: int64
+          type: string
+      type: object
     Request:
       properties:
         api_key:
@@ -2680,6 +2784,13 @@ components:
         - memory_shares
         - cpu_shares
       type: object
+    ResponseStatus:
+      enum:
+        - RESPONSE_STATUS_SUCCESS
+        - RESPONSE_STATUS_PARTIAL_SUCCESS
+        - RESPONSE_STATUS_INSUFFICIENT_DATA
+        - RESPONSE_STATUS_FAILED
+      type: string
     Role:
       description: Role defines a role in the system.
       properties:
@@ -3062,6 +3173,25 @@ components:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
       type: object
+    StorageMetrics:
+      properties:
+        local_storage_bytes:
+          description: Bytes stored in local log directories.
+          format: int64
+          type: string
+        remote_storage_bytes:
+          description: Bytes stored in remote/tiered storage.
+          format: int64
+          type: string
+        total_bytes_with_replication:
+          description: Total bytes including all replicas.
+          format: int64
+          type: string
+        total_bytes_without_replication:
+          description: Total bytes counting each partition only once (leader's view).
+          format: int64
+          type: string
+      type: object
     SuccessfulEntity:
       properties:
         entity_name:
@@ -3185,6 +3315,24 @@ components:
           type: string
         topic_name:
           description: Topic name.
+          type: string
+      type: object
+    TopicLogDirs:
+      properties:
+        data_status:
+          $ref: '#/components/schemas/DataStatus'
+        partitions:
+          items:
+            $ref: '#/components/schemas/PartitionLogDir'
+          type: array
+        replica_errors:
+          items:
+            $ref: '#/components/schemas/ReplicaError'
+          type: array
+        topic_name:
+          type: string
+        total_size_bytes:
+          format: int64
           type: string
       type: object
     TopicMetadataSyncOptions:
@@ -3314,6 +3462,28 @@ components:
           title: Timestamp of the last time the source partition information was updated
           type: string
       title: Topic partition information
+      type: object
+    TopicStorageSummary:
+      properties:
+        missing_data:
+          description: Details about missing data from specific brokers.
+          items:
+            $ref: '#/components/schemas/MissingDataInfo'
+          type: array
+        name:
+          type: string
+        partition_count:
+          format: int32
+          nullable: true
+          type: integer
+        quality:
+          $ref: '#/components/schemas/DataQuality'
+        replication_factor:
+          format: int32
+          nullable: true
+          type: integer
+        storage:
+          $ref: '#/components/schemas/StorageMetrics'
       type: object
     TransformMetadata:
       properties:
@@ -7450,6 +7620,85 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Set topic partitions
+      tags:
+        - Topics
+  /v1/topics/log-dirs:
+    get:
+      description: Get partition-level log directory information for topics, including per-replica details for operational debugging.
+      operationId: TopicService_GetTopicLogDirs
+      parameters:
+        - description: Topic names to get log dirs for. Required, 1-100 items.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicLogDirsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get topic log dirs
+      tags:
+        - Topics
+  /v1/topics/storage-summary:
+    post:
+      description: Get aggregated storage metrics for topics, including local vs remote storage breakdown, replication overhead, and data quality indicators.
+      operationId: TopicService_GetTopicStorageSummary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTopicStorageSummaryRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicStorageSummaryResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get topic storage summary
       tags:
         - Topics
   /v1/topics/{topic_name}:

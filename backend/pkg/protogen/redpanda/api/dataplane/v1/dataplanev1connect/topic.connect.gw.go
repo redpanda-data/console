@@ -27,6 +27,8 @@ type TopicServiceGatewayServer struct {
 	setTopicPartitions        connect_gateway.UnaryHandler[v1.SetTopicPartitionsRequest, v1.SetTopicPartitionsResponse]
 	addPartitionsToTopics     connect_gateway.UnaryHandler[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse]
 	setPartitionsToTopics     connect_gateway.UnaryHandler[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse]
+	getTopicLogDirs           connect_gateway.UnaryHandler[v1.GetTopicLogDirsRequest, v1.GetTopicLogDirsResponse]
+	getTopicStorageSummary    connect_gateway.UnaryHandler[v1.GetTopicStorageSummaryRequest, v1.GetTopicStorageSummaryResponse]
 }
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
@@ -43,6 +45,8 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		setTopicPartitions:        connect_gateway.NewUnaryHandler(TopicServiceSetTopicPartitionsProcedure, svc.SetTopicPartitions, opts...),
 		addPartitionsToTopics:     connect_gateway.NewUnaryHandler(TopicServiceAddPartitionsToTopicsProcedure, svc.AddPartitionsToTopics, opts...),
 		setPartitionsToTopics:     connect_gateway.NewUnaryHandler(TopicServiceSetPartitionsToTopicsProcedure, svc.SetPartitionsToTopics, opts...),
+		getTopicLogDirs:           connect_gateway.NewUnaryHandler(TopicServiceGetTopicLogDirsProcedure, svc.GetTopicLogDirs, opts...),
+		getTopicStorageSummary:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicStorageSummaryProcedure, svc.GetTopicStorageSummary, opts...),
 	}
 }
 
@@ -84,6 +88,14 @@ func (s *TopicServiceGatewayServer) AddPartitionsToTopics(ctx context.Context, r
 
 func (s *TopicServiceGatewayServer) SetPartitionsToTopics(ctx context.Context, req *v1.SetPartitionsToTopicsRequest) (*v1.SetPartitionsToTopicsResponse, error) {
 	return s.setPartitionsToTopics(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) GetTopicLogDirs(ctx context.Context, req *v1.GetTopicLogDirsRequest) (*v1.GetTopicLogDirsResponse, error) {
+	return s.getTopicLogDirs(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) GetTopicStorageSummary(ctx context.Context, req *v1.GetTopicStorageSummaryRequest) (*v1.GetTopicStorageSummaryResponse, error) {
+	return s.getTopicStorageSummary(ctx, req)
 }
 
 // RegisterTopicServiceHandlerGatewayServer registers the Connect handlers for the TopicService

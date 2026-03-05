@@ -2,8 +2,8 @@
 // @generated from file redpanda/api/dataplane/v1/topic.proto (package redpanda.api.dataplane.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../../../../google/api/annotations_pb";
 import { file_protoc_gen_openapiv2_options_annotations } from "../../../../protoc-gen-openapiv2/options/annotations_pb";
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1/topic.proto.
  */
 export const file_redpanda_api_dataplane_v1_topic: GenFile = /*@__PURE__*/
-  fileDesc("CiVyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL3RvcGljLnByb3RvEhlyZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxIsoCCgVUb3BpYxrAAgoNQ29uZmlndXJhdGlvbhIMCgRuYW1lGAEgASgJEjMKBHR5cGUYAiABKA4yJS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNvbmZpZ1R5cGUSEgoFdmFsdWUYAyABKAlIAIgBARI3CgZzb3VyY2UYBCABKA4yJy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNvbmZpZ1NvdXJjZRIRCglyZWFkX29ubHkYBSABKAgSEQoJc2Vuc2l0aXZlGAYgASgIEkEKD2NvbmZpZ19zeW5vbnltcxgHIAMoCzIoLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ29uZmlnU3lub255bRIaCg1kb2N1bWVudGF0aW9uGAggASgJSAGIAQFCCAoGX3ZhbHVlQhAKDl9kb2N1bWVudGF0aW9uIoMFChJDcmVhdGVUb3BpY1JlcXVlc3QSSgoFdG9waWMYASABKAsyMy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVxdWVzdC5Ub3BpY0IGukgDyAEBEhUKDXZhbGlkYXRlX29ubHkYAiABKAgaiQQKBVRvcGljEi8KBG5hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJBIuCg9wYXJ0aXRpb25fY291bnQYAiABKAVCELpIDRoLKP///////////wFIAIgBARIzChJyZXBsaWNhdGlvbl9mYWN0b3IYAyABKAVCErpIDxoNGAUo////////////AUgBiAEBEmIKE3JlcGxpY2FfYXNzaWdubWVudHMYBCADKAsyRS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVxdWVzdC5Ub3BpYy5SZXBsaWNhQXNzaWdubWVudBJLCgdjb25maWdzGAUgAygLMjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVUb3BpY1JlcXVlc3QuVG9waWMuQ29uZmlnGk4KBkNvbmZpZxImCgRuYW1lGAEgASgJQhi6SBVyExABGP8BMgxeW2EtejAtOS5dKyQSEgoFdmFsdWUYAiABKAlIAIgBAUIICgZfdmFsdWUaPgoRUmVwbGljYUFzc2lnbm1lbnQSFAoMcGFydGl0aW9uX2lkGAEgASgFEhMKC3JlcGxpY2FfaWRzGAIgAygFQhIKEF9wYXJ0aXRpb25fY291bnRCFQoTX3JlcGxpY2F0aW9uX2ZhY3RvciJeChNDcmVhdGVUb3BpY1Jlc3BvbnNlEhIKCnRvcGljX25hbWUYASABKAkSFwoPcGFydGl0aW9uX2NvdW50GAIgASgFEhoKEnJlcGxpY2F0aW9uX2ZhY3RvchgDIAEoBSLNAgoRTGlzdFRvcGljc1JlcXVlc3QSQwoGZmlsdGVyGAEgASgLMjMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0VG9waWNzUmVxdWVzdC5GaWx0ZXISnwEKCXBhZ2Vfc2l6ZRgCIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgDIAEoCRo9CgZGaWx0ZXISMwoNbmFtZV9jb250YWlucxgBIAEoCUIcukgZchcY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCLQAQoSTGlzdFRvcGljc1Jlc3BvbnNlEkMKBnRvcGljcxgBIAMoCzIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFRvcGljc1Jlc3BvbnNlLlRvcGljEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRpcCgVUb3BpYxIMCgRuYW1lGAEgASgJEhAKCGludGVybmFsGAIgASgIEhcKD3BhcnRpdGlvbl9jb3VudBgDIAEoBRIaChJyZXBsaWNhdGlvbl9mYWN0b3IYBCABKAUiSwoSRGVsZXRlVG9waWNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCIVChNEZWxldGVUb3BpY1Jlc3BvbnNlIlYKHUdldFRvcGljQ29uZmlndXJhdGlvbnNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCJoCh5HZXRUb3BpY0NvbmZpZ3VyYXRpb25zUmVzcG9uc2USRgoOY29uZmlndXJhdGlvbnMYASADKAsyLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlRvcGljLkNvbmZpZ3VyYXRpb24i9QIKIFVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJBJ0Cg5jb25maWd1cmF0aW9ucxgCIAMoCzJPLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlVG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QuVXBkYXRlQ29uZmlndXJhdGlvbkILukgIyAEBkgECCAEaowEKE1VwZGF0ZUNvbmZpZ3VyYXRpb24SGwoEbmFtZRgBIAEoCUINukgKyAEBcgUQARj5ARISCgV2YWx1ZRgCIAEoCUgAiAEBElEKCW9wZXJhdGlvbhgDIAEoDjIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ29uZmlnQWx0ZXJPcGVyYXRpb25CDbpICsgBAYIBBBABIABCCAoGX3ZhbHVlImsKIVVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnNSZXNwb25zZRJGCg5jb25maWd1cmF0aW9ucxgBIAMoCzIuLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVG9waWMuQ29uZmlndXJhdGlvbiLWAQodU2V0VG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QSEgoKdG9waWNfbmFtZRgBIAEoCRJhCg5jb25maWd1cmF0aW9ucxgCIAMoCzJJLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0VG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QuU2V0Q29uZmlndXJhdGlvbho+ChBTZXRDb25maWd1cmF0aW9uEgwKBG5hbWUYASABKAkSEgoFdmFsdWUYAiABKAlIAIgBAUIICgZfdmFsdWUiaAoeU2V0VG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlEkYKDmNvbmZpZ3VyYXRpb25zGAEgAygLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Ub3BpYy5Db25maWd1cmF0aW9uIhwKGkFkZFRvcGljUGFydGl0aW9uc1Jlc3BvbnNlIosBChlBZGRUb3BpY1BhcnRpdGlvbnNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJBIgCg9wYXJ0aXRpb25fY291bnQYAiABKAVCB7pIBBoCKAASFQoNdmFsaWRhdGVfb25seRgDIAEoCCKLAQoZU2V0VG9waWNQYXJ0aXRpb25zUmVxdWVzdBI1Cgp0b3BpY19uYW1lGAEgASgJQiG6SB7IAQFyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSIAoPcGFydGl0aW9uX2NvdW50GAIgASgFQge6SAQaAigAEhUKDXZhbGlkYXRlX29ubHkYAyABKAgiHAoaU2V0VG9waWNQYXJ0aXRpb25zUmVzcG9uc2UiTwoZQWx0ZXJUb3BpY1BhcnRpdGlvblN0YXR1cxISCgp0b3BpY19uYW1lGAEgASgJEg8KB3N1Y2Nlc3MYAiABKAgSDQoFZXJyb3IYAyABKAkilgEKHFNldFBhcnRpdGlvbnNUb1RvcGljc1JlcXVlc3QSPQoLdG9waWNfbmFtZXMYASADKAlCKLpIJcgBAZIBHwgBIhtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSIAoPcGFydGl0aW9uX2NvdW50GAIgASgFQge6SAQaAigAEhUKDXZhbGlkYXRlX29ubHkYAyABKAgiZwodU2V0UGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2USRgoIc3RhdHVzZXMYASADKAsyNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFsdGVyVG9waWNQYXJ0aXRpb25TdGF0dXMilgEKHEFkZFBhcnRpdGlvbnNUb1RvcGljc1JlcXVlc3QSPQoLdG9waWNfbmFtZXMYASADKAlCKLpIJcgBAZIBHwgBIhtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSIAoPcGFydGl0aW9uX2NvdW50GAIgASgFQge6SAQaAigAEhUKDXZhbGlkYXRlX29ubHkYAyABKAgiZwodQWRkUGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2USRgoIc3RhdHVzZXMYASADKAsyNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFsdGVyVG9waWNQYXJ0aXRpb25TdGF0dXMyuSIKDFRvcGljU2VydmljZRLFAgoLQ3JlYXRlVG9waWMSLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVxdWVzdBouLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ3JlYXRlVG9waWNSZXNwb25zZSLWAZJBsQESDENyZWF0ZSB0b3BpYxpVQ3JlYXRlIGEgW3RvcGljXShodHRwczovL2RvY3MucmVkcGFuZGEuY29tL3JlZHBhbmRhLWNsb3VkL2dldC1zdGFydGVkL2NyZWF0ZS10b3BpYy8pLkpKCgMyMDESQwoNVG9waWMgY3JlYXRlZBIyCjAaLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVzcG9uc2WKph0ECAIQAYLT5JMCEzoFdG9waWMiCi92MS90b3BpY3MSuAIKCkxpc3RUb3BpY3MSLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RUb3BpY3NSZXF1ZXN0Gi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0VG9waWNzUmVzcG9uc2UizAGSQa4BEgtMaXN0IHRvcGljcxpfTGlzdCB0b3BpY3MsIHdpdGggcGFydGl0aW9uIGNvdW50IGFuZCByZXBsaWNhdGlvbiBmYWN0b3IuIE9wdGlvbmFsOiBmaWx0ZXIgYmFzZWQgb24gdG9waWMgbmFtZS5KPgoDMjAwEjcKAk9LEjEKLxotLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFRvcGljc1Jlc3BvbnNliqYdBAgBEAGC0+STAgwSCi92MS90b3BpY3MSwQIKC0RlbGV0ZVRvcGljEi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVUb3BpY1JlcXVlc3QaLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVRvcGljUmVzcG9uc2Ui0gGSQacBEgxEZWxldGUgdG9waWMaL0RlbGV0ZSB0aGUgS2Fma2EgdG9waWMgd2l0aCB0aGUgcmVxdWVzdGVkIG5hbWUuSiUKAzIwNBIeChpUb3BpYyBkZWxldGVkIHN1Y2Nlc3NmdWxseRIASj8KAzQwNBI4Ch5SZXF1ZXN0ZWQgdG9waWMgZG9lcyBub3QgZXhpc3QSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAIQAYLT5JMCGSoXL3YxL3RvcGljcy97dG9waWNfbmFtZX0SgAMKFkdldFRvcGljQ29uZmlndXJhdGlvbnMSOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFRvcGljQ29uZmlndXJhdGlvbnNSZXF1ZXN0GjkucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5HZXRUb3BpY0NvbmZpZ3VyYXRpb25zUmVzcG9uc2Ui8AGSQbYBEhhHZXQgdG9waWMgY29uZmlndXJhdGlvbnMaIkdldCBrZXktdmFsdWUgY29uZmlncyBmb3IgYSB0b3BpYy5KSgoDMjAwEkMKAk9LEj0KOxo5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0VG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlSioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAEQAYLT5JMCKBImL3YxL3RvcGljcy97dG9waWNfbmFtZX0vY29uZmlndXJhdGlvbnMSqAMKGVVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnMSOy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnNSZXF1ZXN0GjwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5VcGRhdGVUb3BpY0NvbmZpZ3VyYXRpb25zUmVzcG9uc2UijwKSQcUBEhpVcGRhdGUgdG9waWMgY29uZmlndXJhdGlvbhosVXBkYXRlIGEgc3Vic2V0IG9mIHRoZSB0b3BpYyBjb25maWd1cmF0aW9ucy5KTQoDMjAwEkYKAk9LEkAKPho8LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlVG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlSioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAIQAYLT5JMCODoOY29uZmlndXJhdGlvbnMyJi92MS90b3BpY3Mve3RvcGljX25hbWV9L2NvbmZpZ3VyYXRpb25zEpkEChZTZXRUb3BpY0NvbmZpZ3VyYXRpb25zEjgucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5TZXRUb3BpY0NvbmZpZ3VyYXRpb25zUmVxdWVzdBo5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0VG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlIokDkkG/AhIYU2V0IHRvcGljIGNvbmZpZ3VyYXRpb25zGqoBVXBkYXRlIHRoZSBlbnRpcmUgc2V0IG9mIGtleS12YWx1ZSBjb25maWd1cmF0aW9ucyBmb3IgYSB0b3BpYy4gQ29uZmlnIGVudHJpZXMgdGhhdCBhcmUgbm90IHByb3ZpZGVkIGluIHRoZSByZXF1ZXN0IGFyZSByZW1vdmVkIGFuZCB3aWxsIGZhbGwgYmFjayB0byB0aGVpciBkZWZhdWx0IHZhbHVlcy5KSgoDMjAwEkMKAk9LEj0KOxo5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0VG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlSioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAIQAYLT5JMCODoOY29uZmlndXJhdGlvbnMaJi92MS90b3BpY3Mve3RvcGljX25hbWV9L2NvbmZpZ3VyYXRpb25zEr8DChJBZGRUb3BpY1BhcnRpdGlvbnMSNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFkZFRvcGljUGFydGl0aW9uc1JlcXVlc3QaNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFkZFRvcGljUGFydGl0aW9uc1Jlc3BvbnNlIrsCkkGCAhIUQWRkIHRvcGljIHBhcnRpdGlvbnMadkFkZCBwYXJ0aXRpb25zIHRvIGFuIGV4aXN0aW5nIHRvcGljLiBEZXBlbmRpbmcgb24gdGhlIHBhcnRpdGlvbmluZyBzdHJhdGVneSB1c2VkLCB0aGlzIG1heSBpbXBhY3Qgb3JkZXJpbmcgZ3VhcmFudGVlcy5KRgoDMjAwEj8KAk9LEjkKNxo1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQWRkVG9waWNQYXJ0aXRpb25zUmVzcG9uc2VKKgoDNDA0EiMKCU5vdCBGb3VuZBIWChQaEi5nb29nbGUucnBjLlN0YXR1c4qmHQQIAhABgtPkkwInOgEqMiIvdjEvdG9waWNzL3t0b3BpY19uYW1lfS9wYXJ0aXRpb25zEpgEChJTZXRUb3BpY1BhcnRpdGlvbnMSNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFRvcGljUGFydGl0aW9uc1JlcXVlc3QaNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFRvcGljUGFydGl0aW9uc1Jlc3BvbnNlIpQDkkHbAhIUU2V0IHRvcGljIHBhcnRpdGlvbnMazgFTZXQgcGFydGl0aW9ucyB0byBhbiBleGlzdGluZyB0b3BpYy4gTmV3IHZhbHVlIG11c3QgYmUgZXF1YWwgdG8gb3IgbGFyZ2VyIHRoYW4gdGhlIGN1cnJlbnQgY291bnQgb2YgcGFydGl0aW9ucyBpbiB0aGUgdG9waWMuIERlcGVuZGluZyBvbiB0aGUgcGFydGl0aW9uaW5nIHN0cmF0ZWd5IHVzZWQsIHRoaXMgbWF5IGltcGFjdCBvcmRlcmluZyBndWFyYW50ZWVzLkpGCgMyMDASPwoCT0sSOQo3GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5TZXRUb3BpY1BhcnRpdGlvbnNSZXNwb25zZUoqCgM0MDQSIwoJTm90IEZvdW5kEhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgCEAGC0+STAic6ASoaIi92MS90b3BpY3Mve3RvcGljX25hbWV9L3BhcnRpdGlvbnMSvAMKFUFkZFBhcnRpdGlvbnNUb1RvcGljcxI3LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQWRkUGFydGl0aW9uc1RvVG9waWNzUmVxdWVzdBo4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQWRkUGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2UirwKSQYMCEhRBZGQgdG9waWMgcGFydGl0aW9ucxp0QWRkIHBhcnRpdGlvbnMgdG8gZXhpc3RpbmcgdG9waWNzLiBEZXBlbmRpbmcgb24gdGhlIHBhcnRpdGlvbmluZyBzdHJhdGVneSB1c2VkLCB0aGlzIG1heSBpbXBhY3Qgb3JkZXJpbmcgZ3VhcmFudGVlcy5KSQoDMjAwEkIKAk9LEjwKOho4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQWRkUGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2VKKgoDNDA0EiMKCU5vdCBGb3VuZBIWChQaEi5nb29nbGUucnBjLlN0YXR1c4qmHQQIAhABgtPkkwIaOgEqMhUvdjEvdG9waWNzLXBhcnRpdGlvbnMS1QQKFVNldFBhcnRpdGlvbnNUb1RvcGljcxI3LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0UGFydGl0aW9uc1RvVG9waWNzUmVxdWVzdBo4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0UGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2UiyAOSQZwDEhRTZXQgdG9waWMgcGFydGl0aW9ucxqMAlNldCBwYXJ0aXRpb24gY291bnRzIGZvciBleGlzdGluZyB0b3BpY3MuIE5ldyB2YWx1ZSBtdXN0IGJlIGVxdWFsIHRvIG9yIGxhcmdlciB0aGFuIHRoZSBjdXJyZW50IGNvdW50IG9mIHBhcnRpdGlvbnMgaW4gdGhlIHRvcGljLiBBbGwgdG9waWNzIHdpbGwgaGF2ZSB0aGUgc2FtZSBmaW5hbCBjb3VudCBvZiBwYXJ0aXRpb25zLiBEZXBlbmRpbmcgb24gdGhlIHBhcnRpdGlvbmluZyBzdHJhdGVneSB1c2VkLCB0aGlzIG1heSBpbXBhY3Qgb3JkZXJpbmcgZ3VhcmFudGVlcy5KSQoDMjAwEkIKAk9LEjwKOho4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0UGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2VKKgoDNDA0EiMKCU5vdCBGb3VuZBIWChQaEi5nb29nbGUucnBjLlN0YXR1c4qmHQQIAhABgtPkkwIaOgEqGhUvdjEvdG9waWNzLXBhcnRpdGlvbnMaJJJBIQoGVG9waWNzEhdNYW5hZ2UgUmVkcGFuZGEgdG9waWNzLmIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_api_dataplane_v1_common]);
+  fileDesc("CiVyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL3RvcGljLnByb3RvEhlyZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxIsoCCgVUb3BpYxrAAgoNQ29uZmlndXJhdGlvbhIMCgRuYW1lGAEgASgJEjMKBHR5cGUYAiABKA4yJS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNvbmZpZ1R5cGUSEgoFdmFsdWUYAyABKAlIAIgBARI3CgZzb3VyY2UYBCABKA4yJy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNvbmZpZ1NvdXJjZRIRCglyZWFkX29ubHkYBSABKAgSEQoJc2Vuc2l0aXZlGAYgASgIEkEKD2NvbmZpZ19zeW5vbnltcxgHIAMoCzIoLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ29uZmlnU3lub255bRIaCg1kb2N1bWVudGF0aW9uGAggASgJSAGIAQFCCAoGX3ZhbHVlQhAKDl9kb2N1bWVudGF0aW9uIoMFChJDcmVhdGVUb3BpY1JlcXVlc3QSSgoFdG9waWMYASABKAsyMy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVxdWVzdC5Ub3BpY0IGukgDyAEBEhUKDXZhbGlkYXRlX29ubHkYAiABKAgaiQQKBVRvcGljEi8KBG5hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJBIuCg9wYXJ0aXRpb25fY291bnQYAiABKAVCELpIDRoLKP///////////wFIAIgBARIzChJyZXBsaWNhdGlvbl9mYWN0b3IYAyABKAVCErpIDxoNGAUo////////////AUgBiAEBEmIKE3JlcGxpY2FfYXNzaWdubWVudHMYBCADKAsyRS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVxdWVzdC5Ub3BpYy5SZXBsaWNhQXNzaWdubWVudBJLCgdjb25maWdzGAUgAygLMjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVUb3BpY1JlcXVlc3QuVG9waWMuQ29uZmlnGk4KBkNvbmZpZxImCgRuYW1lGAEgASgJQhi6SBVyExABGP8BMgxeW2EtejAtOS5dKyQSEgoFdmFsdWUYAiABKAlIAIgBAUIICgZfdmFsdWUaPgoRUmVwbGljYUFzc2lnbm1lbnQSFAoMcGFydGl0aW9uX2lkGAEgASgFEhMKC3JlcGxpY2FfaWRzGAIgAygFQhIKEF9wYXJ0aXRpb25fY291bnRCFQoTX3JlcGxpY2F0aW9uX2ZhY3RvciJeChNDcmVhdGVUb3BpY1Jlc3BvbnNlEhIKCnRvcGljX25hbWUYASABKAkSFwoPcGFydGl0aW9uX2NvdW50GAIgASgFEhoKEnJlcGxpY2F0aW9uX2ZhY3RvchgDIAEoBSLNAgoRTGlzdFRvcGljc1JlcXVlc3QSQwoGZmlsdGVyGAEgASgLMjMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0VG9waWNzUmVxdWVzdC5GaWx0ZXISnwEKCXBhZ2Vfc2l6ZRgCIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgDIAEoCRo9CgZGaWx0ZXISMwoNbmFtZV9jb250YWlucxgBIAEoCUIcukgZchcY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCLQAQoSTGlzdFRvcGljc1Jlc3BvbnNlEkMKBnRvcGljcxgBIAMoCzIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFRvcGljc1Jlc3BvbnNlLlRvcGljEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRpcCgVUb3BpYxIMCgRuYW1lGAEgASgJEhAKCGludGVybmFsGAIgASgIEhcKD3BhcnRpdGlvbl9jb3VudBgDIAEoBRIaChJyZXBsaWNhdGlvbl9mYWN0b3IYBCABKAUiSwoSRGVsZXRlVG9waWNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCIVChNEZWxldGVUb3BpY1Jlc3BvbnNlIlYKHUdldFRvcGljQ29uZmlndXJhdGlvbnNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCJoCh5HZXRUb3BpY0NvbmZpZ3VyYXRpb25zUmVzcG9uc2USRgoOY29uZmlndXJhdGlvbnMYASADKAsyLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlRvcGljLkNvbmZpZ3VyYXRpb24i9QIKIFVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJBJ0Cg5jb25maWd1cmF0aW9ucxgCIAMoCzJPLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlVG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QuVXBkYXRlQ29uZmlndXJhdGlvbkILukgIyAEBkgECCAEaowEKE1VwZGF0ZUNvbmZpZ3VyYXRpb24SGwoEbmFtZRgBIAEoCUINukgKyAEBcgUQARj5ARISCgV2YWx1ZRgCIAEoCUgAiAEBElEKCW9wZXJhdGlvbhgDIAEoDjIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ29uZmlnQWx0ZXJPcGVyYXRpb25CDbpICsgBAYIBBBABIABCCAoGX3ZhbHVlImsKIVVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnNSZXNwb25zZRJGCg5jb25maWd1cmF0aW9ucxgBIAMoCzIuLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVG9waWMuQ29uZmlndXJhdGlvbiLWAQodU2V0VG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QSEgoKdG9waWNfbmFtZRgBIAEoCRJhCg5jb25maWd1cmF0aW9ucxgCIAMoCzJJLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0VG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QuU2V0Q29uZmlndXJhdGlvbho+ChBTZXRDb25maWd1cmF0aW9uEgwKBG5hbWUYASABKAkSEgoFdmFsdWUYAiABKAlIAIgBAUIICgZfdmFsdWUiaAoeU2V0VG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlEkYKDmNvbmZpZ3VyYXRpb25zGAEgAygLMi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Ub3BpYy5Db25maWd1cmF0aW9uIhwKGkFkZFRvcGljUGFydGl0aW9uc1Jlc3BvbnNlIosBChlBZGRUb3BpY1BhcnRpdGlvbnNSZXF1ZXN0EjUKCnRvcGljX25hbWUYASABKAlCIbpIHsgBAXIZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJBIgCg9wYXJ0aXRpb25fY291bnQYAiABKAVCB7pIBBoCKAASFQoNdmFsaWRhdGVfb25seRgDIAEoCCKLAQoZU2V0VG9waWNQYXJ0aXRpb25zUmVxdWVzdBI1Cgp0b3BpY19uYW1lGAEgASgJQiG6SB7IAQFyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSIAoPcGFydGl0aW9uX2NvdW50GAIgASgFQge6SAQaAigAEhUKDXZhbGlkYXRlX29ubHkYAyABKAgiHAoaU2V0VG9waWNQYXJ0aXRpb25zUmVzcG9uc2UiTwoZQWx0ZXJUb3BpY1BhcnRpdGlvblN0YXR1cxISCgp0b3BpY19uYW1lGAEgASgJEg8KB3N1Y2Nlc3MYAiABKAgSDQoFZXJyb3IYAyABKAkilgEKHFNldFBhcnRpdGlvbnNUb1RvcGljc1JlcXVlc3QSPQoLdG9waWNfbmFtZXMYASADKAlCKLpIJcgBAZIBHwgBIhtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSIAoPcGFydGl0aW9uX2NvdW50GAIgASgFQge6SAQaAigAEhUKDXZhbGlkYXRlX29ubHkYAyABKAgiZwodU2V0UGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2USRgoIc3RhdHVzZXMYASADKAsyNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFsdGVyVG9waWNQYXJ0aXRpb25TdGF0dXMilgEKHEFkZFBhcnRpdGlvbnNUb1RvcGljc1JlcXVlc3QSPQoLdG9waWNfbmFtZXMYASADKAlCKLpIJcgBAZIBHwgBIhtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSIAoPcGFydGl0aW9uX2NvdW50GAIgASgFQge6SAQaAigAEhUKDXZhbGlkYXRlX29ubHkYAyABKAgiZwodQWRkUGFydGl0aW9uc1RvVG9waWNzUmVzcG9uc2USRgoIc3RhdHVzZXMYASADKAsyNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFsdGVyVG9waWNQYXJ0aXRpb25TdGF0dXMiWQoWR2V0VG9waWNMb2dEaXJzUmVxdWVzdBI/Cgt0b3BpY19uYW1lcxgBIAMoCUIqukgnyAEBkgEhCAEQZCIbchkQARj5ATISXlthLXpBLVowLTkuX1wtXSokIlIKF0dldFRvcGljTG9nRGlyc1Jlc3BvbnNlEjcKBnRvcGljcxgBIAMoCzInLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVG9waWNMb2dEaXJzIuQCCgxUb3BpY0xvZ0RpcnMSEgoKdG9waWNfbmFtZRgBIAEoCRIYChB0b3RhbF9zaXplX2J5dGVzGAIgASgDEj4KCnBhcnRpdGlvbnMYAyADKAsyKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlBhcnRpdGlvbkxvZ0RpchI/Cg5yZXBsaWNhX2Vycm9ycxgEIAMoCzInLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVwbGljYUVycm9yEkcKC2RhdGFfc3RhdHVzGAUgASgOMjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Ub3BpY0xvZ0RpcnMuRGF0YVN0YXR1cyJcCgpEYXRhU3RhdHVzEhsKF0RBVEFfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGAoUREFUQV9TVEFUVVNfQ09NUExFVEUQARIXChNEQVRBX1NUQVRVU19QQVJUSUFMEAIioQEKD1BhcnRpdGlvbkxvZ0RpchIUCgxwYXJ0aXRpb25faWQYASABKAUSEgoKc2l6ZV9ieXRlcxgCIAEoAxIOCgZsZWFkZXIYAyABKAUSEAoIcmVwbGljYXMYBCADKAUSQgoQcmVwbGljYV9sb2dfZGlycxgFIAMoCzIoLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVwbGljYUxvZ0RpciJXCg1SZXBsaWNhTG9nRGlyEhEKCWJyb2tlcl9pZBgBIAEoBRILCgNkaXIYAiABKAkSEgoKc2l6ZV9ieXRlcxgDIAEoAxISCgpvZmZzZXRfbGFnGAQgASgDIjAKDFJlcGxpY2FFcnJvchIRCglicm9rZXJfaWQYASABKAUSDQoFZXJyb3IYAiABKAkiYAodR2V0VG9waWNTdG9yYWdlU3VtbWFyeVJlcXVlc3QSPwoLdG9waWNfbmFtZXMYASADKAlCKrpIJ8gBAZIBIQgBEGQiG3IZEAEY+QEyEl5bYS16QS1aMC05Ll9cLV0qJCKmAwoeR2V0VG9waWNTdG9yYWdlU3VtbWFyeVJlc3BvbnNlElgKBnN0YXR1cxgBIAEoDjJILnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0VG9waWNTdG9yYWdlU3VtbWFyeVJlc3BvbnNlLlJlc3BvbnNlU3RhdHVzEj4KBnRvcGljcxgCIAMoCzIuLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVG9waWNTdG9yYWdlU3VtbWFyeRIVCg10b3RhbF9icm9rZXJzGAMgASgFEhoKEnJlc3BvbmRpbmdfYnJva2VycxgEIAEoBSK2AQoOUmVzcG9uc2VTdGF0dXMSHwobUkVTUE9OU0VfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXUkVTUE9OU0VfU1RBVFVTX1NVQ0NFU1MQARIjCh9SRVNQT05TRV9TVEFUVVNfUEFSVElBTF9TVUNDRVNTEAISJQohUkVTUE9OU0VfU1RBVFVTX0lOU1VGRklDSUVOVF9EQVRBEAMSGgoWUkVTUE9OU0VfU1RBVFVTX0ZBSUxFRBAEIqEGChNUb3BpY1N0b3JhZ2VTdW1tYXJ5EgwKBG5hbWUYASABKAkSUwoHc3RvcmFnZRgCIAEoCzI9LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVG9waWNTdG9yYWdlU3VtbWFyeS5TdG9yYWdlTWV0cmljc0gAiAEBEhwKD3BhcnRpdGlvbl9jb3VudBgDIAEoBUgBiAEBEh8KEnJlcGxpY2F0aW9uX2ZhY3RvchgEIAEoBUgCiAEBEksKB3F1YWxpdHkYBSABKA4yOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlRvcGljU3RvcmFnZVN1bW1hcnkuRGF0YVF1YWxpdHkSVAoMbWlzc2luZ19kYXRhGAYgAygLMj4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Ub3BpY1N0b3JhZ2VTdW1tYXJ5Lk1pc3NpbmdEYXRhSW5mbxqaAQoOU3RvcmFnZU1ldHJpY3MSJAocdG90YWxfYnl0ZXNfd2l0aF9yZXBsaWNhdGlvbhgBIAEoAxInCh90b3RhbF9ieXRlc193aXRob3V0X3JlcGxpY2F0aW9uGAIgASgDEhsKE2xvY2FsX3N0b3JhZ2VfYnl0ZXMYAyABKAMSHAoUcmVtb3RlX3N0b3JhZ2VfYnl0ZXMYBCABKAMaUQoPTWlzc2luZ0RhdGFJbmZvEhEKCWJyb2tlcl9pZBgBIAEoBRIbChNhZmZlY3RlZF9wYXJ0aXRpb25zGAIgAygFEg4KBnJlYXNvbhgDIAEoCSKdAQoLRGF0YVF1YWxpdHkSHAoYREFUQV9RVUFMSVRZX1VOU1BFQ0lGSUVEEAASGQoVREFUQV9RVUFMSVRZX0NPTVBMRVRFEAESGgoWREFUQV9RVUFMSVRZX0VTVElNQVRFRBACEhsKF0RBVEFfUVVBTElUWV9VTlJFTElBQkxFEAMSHAoYREFUQV9RVUFMSVRZX1VOQVZBSUxBQkxFEARCCgoIX3N0b3JhZ2VCEgoQX3BhcnRpdGlvbl9jb3VudEIVChNfcmVwbGljYXRpb25fZmFjdG9yMuMoCgxUb3BpY1NlcnZpY2USxQIKC0NyZWF0ZVRvcGljEi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVUb3BpY1JlcXVlc3QaLi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVRvcGljUmVzcG9uc2Ui1gGSQbEBEgxDcmVhdGUgdG9waWMaVUNyZWF0ZSBhIFt0b3BpY10oaHR0cHM6Ly9kb2NzLnJlZHBhbmRhLmNvbS9yZWRwYW5kYS1jbG91ZC9nZXQtc3RhcnRlZC9jcmVhdGUtdG9waWMvKS5KSgoDMjAxEkMKDVRvcGljIGNyZWF0ZWQSMgowGi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVUb3BpY1Jlc3BvbnNliqYdBAgCEAGC0+STAhM6BXRvcGljIgovdjEvdG9waWNzErgCCgpMaXN0VG9waWNzEiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0VG9waWNzUmVxdWVzdBotLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFRvcGljc1Jlc3BvbnNlIswBkkGuARILTGlzdCB0b3BpY3MaX0xpc3QgdG9waWNzLCB3aXRoIHBhcnRpdGlvbiBjb3VudCBhbmQgcmVwbGljYXRpb24gZmFjdG9yLiBPcHRpb25hbDogZmlsdGVyIGJhc2VkIG9uIHRvcGljIG5hbWUuSj4KAzIwMBI3CgJPSxIxCi8aLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RUb3BpY3NSZXNwb25zZYqmHQQIARABgtPkkwIMEgovdjEvdG9waWNzEsECCgtEZWxldGVUb3BpYxItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlVG9waWNSZXF1ZXN0Gi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVUb3BpY1Jlc3BvbnNlItIBkkGnARIMRGVsZXRlIHRvcGljGi9EZWxldGUgdGhlIEthZmthIHRvcGljIHdpdGggdGhlIHJlcXVlc3RlZCBuYW1lLkolCgMyMDQSHgoaVG9waWMgZGVsZXRlZCBzdWNjZXNzZnVsbHkSAEo/CgM0MDQSOAoeUmVxdWVzdGVkIHRvcGljIGRvZXMgbm90IGV4aXN0EhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgCEAGC0+STAhkqFy92MS90b3BpY3Mve3RvcGljX25hbWV9EoADChZHZXRUb3BpY0NvbmZpZ3VyYXRpb25zEjgucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5HZXRUb3BpY0NvbmZpZ3VyYXRpb25zUmVxdWVzdBo5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0VG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlIvABkkG2ARIYR2V0IHRvcGljIGNvbmZpZ3VyYXRpb25zGiJHZXQga2V5LXZhbHVlIGNvbmZpZ3MgZm9yIGEgdG9waWMuSkoKAzIwMBJDCgJPSxI9CjsaOS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFRvcGljQ29uZmlndXJhdGlvbnNSZXNwb25zZUoqCgM0MDQSIwoJTm90IEZvdW5kEhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgBEAGC0+STAigSJi92MS90b3BpY3Mve3RvcGljX25hbWV9L2NvbmZpZ3VyYXRpb25zEqgDChlVcGRhdGVUb3BpY0NvbmZpZ3VyYXRpb25zEjsucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5VcGRhdGVUb3BpY0NvbmZpZ3VyYXRpb25zUmVxdWVzdBo8LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlVG9waWNDb25maWd1cmF0aW9uc1Jlc3BvbnNlIo8CkkHFARIaVXBkYXRlIHRvcGljIGNvbmZpZ3VyYXRpb24aLFVwZGF0ZSBhIHN1YnNldCBvZiB0aGUgdG9waWMgY29uZmlndXJhdGlvbnMuSk0KAzIwMBJGCgJPSxJACj4aPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlVwZGF0ZVRvcGljQ29uZmlndXJhdGlvbnNSZXNwb25zZUoqCgM0MDQSIwoJTm90IEZvdW5kEhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgCEAGC0+STAjg6DmNvbmZpZ3VyYXRpb25zMiYvdjEvdG9waWNzL3t0b3BpY19uYW1lfS9jb25maWd1cmF0aW9ucxKZBAoWU2V0VG9waWNDb25maWd1cmF0aW9ucxI4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0VG9waWNDb25maWd1cmF0aW9uc1JlcXVlc3QaOS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFRvcGljQ29uZmlndXJhdGlvbnNSZXNwb25zZSKJA5JBvwISGFNldCB0b3BpYyBjb25maWd1cmF0aW9ucxqqAVVwZGF0ZSB0aGUgZW50aXJlIHNldCBvZiBrZXktdmFsdWUgY29uZmlndXJhdGlvbnMgZm9yIGEgdG9waWMuIENvbmZpZyBlbnRyaWVzIHRoYXQgYXJlIG5vdCBwcm92aWRlZCBpbiB0aGUgcmVxdWVzdCBhcmUgcmVtb3ZlZCBhbmQgd2lsbCBmYWxsIGJhY2sgdG8gdGhlaXIgZGVmYXVsdCB2YWx1ZXMuSkoKAzIwMBJDCgJPSxI9CjsaOS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFRvcGljQ29uZmlndXJhdGlvbnNSZXNwb25zZUoqCgM0MDQSIwoJTm90IEZvdW5kEhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgCEAGC0+STAjg6DmNvbmZpZ3VyYXRpb25zGiYvdjEvdG9waWNzL3t0b3BpY19uYW1lfS9jb25maWd1cmF0aW9ucxK/AwoSQWRkVG9waWNQYXJ0aXRpb25zEjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BZGRUb3BpY1BhcnRpdGlvbnNSZXF1ZXN0GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BZGRUb3BpY1BhcnRpdGlvbnNSZXNwb25zZSK7ApJBggISFEFkZCB0b3BpYyBwYXJ0aXRpb25zGnZBZGQgcGFydGl0aW9ucyB0byBhbiBleGlzdGluZyB0b3BpYy4gRGVwZW5kaW5nIG9uIHRoZSBwYXJ0aXRpb25pbmcgc3RyYXRlZ3kgdXNlZCwgdGhpcyBtYXkgaW1wYWN0IG9yZGVyaW5nIGd1YXJhbnRlZXMuSkYKAzIwMBI/CgJPSxI5CjcaNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFkZFRvcGljUGFydGl0aW9uc1Jlc3BvbnNlSioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAIQAYLT5JMCJzoBKjIiL3YxL3RvcGljcy97dG9waWNfbmFtZX0vcGFydGl0aW9ucxKYBAoSU2V0VG9waWNQYXJ0aXRpb25zEjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5TZXRUb3BpY1BhcnRpdGlvbnNSZXF1ZXN0GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5TZXRUb3BpY1BhcnRpdGlvbnNSZXNwb25zZSKUA5JB2wISFFNldCB0b3BpYyBwYXJ0aXRpb25zGs4BU2V0IHBhcnRpdGlvbnMgdG8gYW4gZXhpc3RpbmcgdG9waWMuIE5ldyB2YWx1ZSBtdXN0IGJlIGVxdWFsIHRvIG9yIGxhcmdlciB0aGFuIHRoZSBjdXJyZW50IGNvdW50IG9mIHBhcnRpdGlvbnMgaW4gdGhlIHRvcGljLiBEZXBlbmRpbmcgb24gdGhlIHBhcnRpdGlvbmluZyBzdHJhdGVneSB1c2VkLCB0aGlzIG1heSBpbXBhY3Qgb3JkZXJpbmcgZ3VhcmFudGVlcy5KRgoDMjAwEj8KAk9LEjkKNxo1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0VG9waWNQYXJ0aXRpb25zUmVzcG9uc2VKKgoDNDA0EiMKCU5vdCBGb3VuZBIWChQaEi5nb29nbGUucnBjLlN0YXR1c4qmHQQIAhABgtPkkwInOgEqGiIvdjEvdG9waWNzL3t0b3BpY19uYW1lfS9wYXJ0aXRpb25zErwDChVBZGRQYXJ0aXRpb25zVG9Ub3BpY3MSNy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFkZFBhcnRpdGlvbnNUb1RvcGljc1JlcXVlc3QaOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFkZFBhcnRpdGlvbnNUb1RvcGljc1Jlc3BvbnNlIq8CkkGDAhIUQWRkIHRvcGljIHBhcnRpdGlvbnMadEFkZCBwYXJ0aXRpb25zIHRvIGV4aXN0aW5nIHRvcGljcy4gRGVwZW5kaW5nIG9uIHRoZSBwYXJ0aXRpb25pbmcgc3RyYXRlZ3kgdXNlZCwgdGhpcyBtYXkgaW1wYWN0IG9yZGVyaW5nIGd1YXJhbnRlZXMuSkkKAzIwMBJCCgJPSxI8CjoaOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFkZFBhcnRpdGlvbnNUb1RvcGljc1Jlc3BvbnNlSioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAIQAYLT5JMCGjoBKjIVL3YxL3RvcGljcy1wYXJ0aXRpb25zEtUEChVTZXRQYXJ0aXRpb25zVG9Ub3BpY3MSNy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFBhcnRpdGlvbnNUb1RvcGljc1JlcXVlc3QaOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFBhcnRpdGlvbnNUb1RvcGljc1Jlc3BvbnNlIsgDkkGcAxIUU2V0IHRvcGljIHBhcnRpdGlvbnMajAJTZXQgcGFydGl0aW9uIGNvdW50cyBmb3IgZXhpc3RpbmcgdG9waWNzLiBOZXcgdmFsdWUgbXVzdCBiZSBlcXVhbCB0byBvciBsYXJnZXIgdGhhbiB0aGUgY3VycmVudCBjb3VudCBvZiBwYXJ0aXRpb25zIGluIHRoZSB0b3BpYy4gQWxsIHRvcGljcyB3aWxsIGhhdmUgdGhlIHNhbWUgZmluYWwgY291bnQgb2YgcGFydGl0aW9ucy4gRGVwZW5kaW5nIG9uIHRoZSBwYXJ0aXRpb25pbmcgc3RyYXRlZ3kgdXNlZCwgdGhpcyBtYXkgaW1wYWN0IG9yZGVyaW5nIGd1YXJhbnRlZXMuSkkKAzIwMBJCCgJPSxI8CjoaOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFBhcnRpdGlvbnNUb1RvcGljc1Jlc3BvbnNlSioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAIQAYLT5JMCGjoBKhoVL3YxL3RvcGljcy1wYXJ0aXRpb25zEu8CCg9HZXRUb3BpY0xvZ0RpcnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFRvcGljTG9nRGlyc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFRvcGljTG9nRGlyc1Jlc3BvbnNlIvQBkkHNARISR2V0IHRvcGljIGxvZyBkaXJzGnJHZXQgcGFydGl0aW9uLWxldmVsIGxvZyBkaXJlY3RvcnkgaW5mb3JtYXRpb24gZm9yIHRvcGljcywgaW5jbHVkaW5nIHBlci1yZXBsaWNhIGRldGFpbHMgZm9yIG9wZXJhdGlvbmFsIGRlYnVnZ2luZy5KQwoDMjAwEjwKAk9LEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0VG9waWNMb2dEaXJzUmVzcG9uc2WKph0ECAEQAYLT5JMCFRITL3YxL3RvcGljcy9sb2ctZGlycxK1AwoWR2V0VG9waWNTdG9yYWdlU3VtbWFyeRI4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0VG9waWNTdG9yYWdlU3VtbWFyeVJlcXVlc3QaOS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFRvcGljU3RvcmFnZVN1bW1hcnlSZXNwb25zZSKlApJB9AESGUdldCB0b3BpYyBzdG9yYWdlIHN1bW1hcnkaigFHZXQgYWdncmVnYXRlZCBzdG9yYWdlIG1ldHJpY3MgZm9yIHRvcGljcywgaW5jbHVkaW5nIGxvY2FsIHZzIHJlbW90ZSBzdG9yYWdlIGJyZWFrZG93biwgcmVwbGljYXRpb24gb3ZlcmhlYWQsIGFuZCBkYXRhIHF1YWxpdHkgaW5kaWNhdG9ycy5KSgoDMjAwEkMKAk9LEj0KOxo5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0VG9waWNTdG9yYWdlU3VtbWFyeVJlc3BvbnNliqYdBAgBEAGC0+STAh86ASoiGi92MS90b3BpY3Mvc3RvcmFnZS1zdW1tYXJ5GiSSQSEKBlRvcGljcxIXTWFuYWdlIFJlZHBhbmRhIHRvcGljcy5iBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_api_dataplane_v1_common]);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.Topic
@@ -826,6 +826,448 @@ export const AddPartitionsToTopicsResponseSchema: GenMessage<AddPartitionsToTopi
   messageDesc(file_redpanda_api_dataplane_v1_topic, 21);
 
 /**
+ * @generated from message redpanda.api.dataplane.v1.GetTopicLogDirsRequest
+ */
+export type GetTopicLogDirsRequest = Message<"redpanda.api.dataplane.v1.GetTopicLogDirsRequest"> & {
+  /**
+   * Topic names to get log dirs for. Required, 1-100 items.
+   *
+   * @generated from field: repeated string topic_names = 1;
+   */
+  topicNames: string[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.GetTopicLogDirsRequest.
+ * Use `create(GetTopicLogDirsRequestSchema)` to create a new message.
+ */
+export const GetTopicLogDirsRequestSchema: GenMessage<GetTopicLogDirsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 22);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.GetTopicLogDirsResponse
+ */
+export type GetTopicLogDirsResponse = Message<"redpanda.api.dataplane.v1.GetTopicLogDirsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.TopicLogDirs topics = 1;
+   */
+  topics: TopicLogDirs[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.GetTopicLogDirsResponse.
+ * Use `create(GetTopicLogDirsResponseSchema)` to create a new message.
+ */
+export const GetTopicLogDirsResponseSchema: GenMessage<GetTopicLogDirsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 23);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.TopicLogDirs
+ */
+export type TopicLogDirs = Message<"redpanda.api.dataplane.v1.TopicLogDirs"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: int64 total_size_bytes = 2;
+   */
+  totalSizeBytes: bigint;
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.PartitionLogDir partitions = 3;
+   */
+  partitions: PartitionLogDir[];
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.ReplicaError replica_errors = 4;
+   */
+  replicaErrors: ReplicaError[];
+
+  /**
+   * Indicates the completeness of the log dir data for this topic.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.TopicLogDirs.DataStatus data_status = 5;
+   */
+  dataStatus: TopicLogDirs_DataStatus;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.TopicLogDirs.
+ * Use `create(TopicLogDirsSchema)` to create a new message.
+ */
+export const TopicLogDirsSchema: GenMessage<TopicLogDirs> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 24);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.TopicLogDirs.DataStatus
+ */
+export enum TopicLogDirs_DataStatus {
+  /**
+   * @generated from enum value: DATA_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * All replica log dirs were reported successfully.
+   *
+   * @generated from enum value: DATA_STATUS_COMPLETE = 1;
+   */
+  COMPLETE = 1,
+
+  /**
+   * Some replica log dirs are missing; sizes may be underreported.
+   *
+   * @generated from enum value: DATA_STATUS_PARTIAL = 2;
+   */
+  PARTIAL = 2,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.TopicLogDirs.DataStatus.
+ */
+export const TopicLogDirs_DataStatusSchema: GenEnum<TopicLogDirs_DataStatus> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_topic, 24, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.PartitionLogDir
+ */
+export type PartitionLogDir = Message<"redpanda.api.dataplane.v1.PartitionLogDir"> & {
+  /**
+   * @generated from field: int32 partition_id = 1;
+   */
+  partitionId: number;
+
+  /**
+   * Deduplicated total size across all replicas.
+   *
+   * @generated from field: int64 size_bytes = 2;
+   */
+  sizeBytes: bigint;
+
+  /**
+   * @generated from field: int32 leader = 3;
+   */
+  leader: number;
+
+  /**
+   * @generated from field: repeated int32 replicas = 4;
+   */
+  replicas: number[];
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.ReplicaLogDir replica_log_dirs = 5;
+   */
+  replicaLogDirs: ReplicaLogDir[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.PartitionLogDir.
+ * Use `create(PartitionLogDirSchema)` to create a new message.
+ */
+export const PartitionLogDirSchema: GenMessage<PartitionLogDir> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 25);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ReplicaLogDir
+ */
+export type ReplicaLogDir = Message<"redpanda.api.dataplane.v1.ReplicaLogDir"> & {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId: number;
+
+  /**
+   * @generated from field: string dir = 2;
+   */
+  dir: string;
+
+  /**
+   * @generated from field: int64 size_bytes = 3;
+   */
+  sizeBytes: bigint;
+
+  /**
+   * @generated from field: int64 offset_lag = 4;
+   */
+  offsetLag: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ReplicaLogDir.
+ * Use `create(ReplicaLogDirSchema)` to create a new message.
+ */
+export const ReplicaLogDirSchema: GenMessage<ReplicaLogDir> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 26);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ReplicaError
+ */
+export type ReplicaError = Message<"redpanda.api.dataplane.v1.ReplicaError"> & {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId: number;
+
+  /**
+   * @generated from field: string error = 2;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ReplicaError.
+ * Use `create(ReplicaErrorSchema)` to create a new message.
+ */
+export const ReplicaErrorSchema: GenMessage<ReplicaError> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 27);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.GetTopicStorageSummaryRequest
+ */
+export type GetTopicStorageSummaryRequest = Message<"redpanda.api.dataplane.v1.GetTopicStorageSummaryRequest"> & {
+  /**
+   * Topic names to get storage summaries for. Required, 1-100 items.
+   *
+   * @generated from field: repeated string topic_names = 1;
+   */
+  topicNames: string[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.GetTopicStorageSummaryRequest.
+ * Use `create(GetTopicStorageSummaryRequestSchema)` to create a new message.
+ */
+export const GetTopicStorageSummaryRequestSchema: GenMessage<GetTopicStorageSummaryRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 28);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse
+ */
+export type GetTopicStorageSummaryResponse = Message<"redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse"> & {
+  /**
+   * Overall response status indicating data completeness.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse.ResponseStatus status = 1;
+   */
+  status: GetTopicStorageSummaryResponse_ResponseStatus;
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.TopicStorageSummary topics = 2;
+   */
+  topics: TopicStorageSummary[];
+
+  /**
+   * Total number of brokers in the cluster.
+   *
+   * @generated from field: int32 total_brokers = 3;
+   */
+  totalBrokers: number;
+
+  /**
+   * Number of brokers that responded to the log dirs request.
+   *
+   * @generated from field: int32 responding_brokers = 4;
+   */
+  respondingBrokers: number;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse.
+ * Use `create(GetTopicStorageSummaryResponseSchema)` to create a new message.
+ */
+export const GetTopicStorageSummaryResponseSchema: GenMessage<GetTopicStorageSummaryResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 29);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse.ResponseStatus
+ */
+export enum GetTopicStorageSummaryResponse_ResponseStatus {
+  /**
+   * @generated from enum value: RESPONSE_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: RESPONSE_STATUS_SUCCESS = 1;
+   */
+  SUCCESS = 1,
+
+  /**
+   * @generated from enum value: RESPONSE_STATUS_PARTIAL_SUCCESS = 2;
+   */
+  PARTIAL_SUCCESS = 2,
+
+  /**
+   * @generated from enum value: RESPONSE_STATUS_INSUFFICIENT_DATA = 3;
+   */
+  INSUFFICIENT_DATA = 3,
+
+  /**
+   * @generated from enum value: RESPONSE_STATUS_FAILED = 4;
+   */
+  FAILED = 4,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.GetTopicStorageSummaryResponse.ResponseStatus.
+ */
+export const GetTopicStorageSummaryResponse_ResponseStatusSchema: GenEnum<GetTopicStorageSummaryResponse_ResponseStatus> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_topic, 29, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.TopicStorageSummary
+ */
+export type TopicStorageSummary = Message<"redpanda.api.dataplane.v1.TopicStorageSummary"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Storage metrics for this topic. Absent if data is unavailable.
+   *
+   * @generated from field: optional redpanda.api.dataplane.v1.TopicStorageSummary.StorageMetrics storage = 2;
+   */
+  storage?: TopicStorageSummary_StorageMetrics;
+
+  /**
+   * @generated from field: optional int32 partition_count = 3;
+   */
+  partitionCount?: number;
+
+  /**
+   * @generated from field: optional int32 replication_factor = 4;
+   */
+  replicationFactor?: number;
+
+  /**
+   * Indicates the quality/completeness of the data for this topic.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.TopicStorageSummary.DataQuality quality = 5;
+   */
+  quality: TopicStorageSummary_DataQuality;
+
+  /**
+   * Details about missing data from specific brokers.
+   *
+   * @generated from field: repeated redpanda.api.dataplane.v1.TopicStorageSummary.MissingDataInfo missing_data = 6;
+   */
+  missingData: TopicStorageSummary_MissingDataInfo[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.TopicStorageSummary.
+ * Use `create(TopicStorageSummarySchema)` to create a new message.
+ */
+export const TopicStorageSummarySchema: GenMessage<TopicStorageSummary> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 30);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.TopicStorageSummary.StorageMetrics
+ */
+export type TopicStorageSummary_StorageMetrics = Message<"redpanda.api.dataplane.v1.TopicStorageSummary.StorageMetrics"> & {
+  /**
+   * Total bytes including all replicas.
+   *
+   * @generated from field: int64 total_bytes_with_replication = 1;
+   */
+  totalBytesWithReplication: bigint;
+
+  /**
+   * Total bytes counting each partition only once (leader's view).
+   *
+   * @generated from field: int64 total_bytes_without_replication = 2;
+   */
+  totalBytesWithoutReplication: bigint;
+
+  /**
+   * Bytes stored in local log directories.
+   *
+   * @generated from field: int64 local_storage_bytes = 3;
+   */
+  localStorageBytes: bigint;
+
+  /**
+   * Bytes stored in remote/tiered storage.
+   *
+   * @generated from field: int64 remote_storage_bytes = 4;
+   */
+  remoteStorageBytes: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.TopicStorageSummary.StorageMetrics.
+ * Use `create(TopicStorageSummary_StorageMetricsSchema)` to create a new message.
+ */
+export const TopicStorageSummary_StorageMetricsSchema: GenMessage<TopicStorageSummary_StorageMetrics> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 30, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.TopicStorageSummary.MissingDataInfo
+ */
+export type TopicStorageSummary_MissingDataInfo = Message<"redpanda.api.dataplane.v1.TopicStorageSummary.MissingDataInfo"> & {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId: number;
+
+  /**
+   * @generated from field: repeated int32 affected_partitions = 2;
+   */
+  affectedPartitions: number[];
+
+  /**
+   * @generated from field: string reason = 3;
+   */
+  reason: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.TopicStorageSummary.MissingDataInfo.
+ * Use `create(TopicStorageSummary_MissingDataInfoSchema)` to create a new message.
+ */
+export const TopicStorageSummary_MissingDataInfoSchema: GenMessage<TopicStorageSummary_MissingDataInfo> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_topic, 30, 1);
+
+/**
+ * @generated from enum redpanda.api.dataplane.v1.TopicStorageSummary.DataQuality
+ */
+export enum TopicStorageSummary_DataQuality {
+  /**
+   * @generated from enum value: DATA_QUALITY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DATA_QUALITY_COMPLETE = 1;
+   */
+  COMPLETE = 1,
+
+  /**
+   * @generated from enum value: DATA_QUALITY_ESTIMATED = 2;
+   */
+  ESTIMATED = 2,
+
+  /**
+   * @generated from enum value: DATA_QUALITY_UNRELIABLE = 3;
+   */
+  UNRELIABLE = 3,
+
+  /**
+   * @generated from enum value: DATA_QUALITY_UNAVAILABLE = 4;
+   */
+  UNAVAILABLE = 4,
+}
+
+/**
+ * Describes the enum redpanda.api.dataplane.v1.TopicStorageSummary.DataQuality.
+ */
+export const TopicStorageSummary_DataQualitySchema: GenEnum<TopicStorageSummary_DataQuality> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_dataplane_v1_topic, 30, 0);
+
+/**
  * @generated from service redpanda.api.dataplane.v1.TopicService
  */
 export const TopicService: GenService<{
@@ -908,6 +1350,22 @@ export const TopicService: GenService<{
     methodKind: "unary";
     input: typeof SetPartitionsToTopicsRequestSchema;
     output: typeof SetPartitionsToTopicsResponseSchema;
+  },
+  /**
+   * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicLogDirs
+   */
+  getTopicLogDirs: {
+    methodKind: "unary";
+    input: typeof GetTopicLogDirsRequestSchema;
+    output: typeof GetTopicLogDirsResponseSchema;
+  },
+  /**
+   * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicStorageSummary
+   */
+  getTopicStorageSummary: {
+    methodKind: "unary";
+    input: typeof GetTopicStorageSummaryRequestSchema;
+    output: typeof GetTopicStorageSummaryResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_dataplane_v1_topic, 0);
