@@ -4,7 +4,7 @@ import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
-import { generateDefaultValue, schemaToConfig } from './schema';
+import { checkRequired, generateDefaultValue, SENTINEL_REQUIRED_FIELD, schemaToConfig } from './schema';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 vi.mock('zustand');
@@ -14,9 +14,8 @@ describe('generateDefaultValue', () => {
     sessionStorage.clear();
   });
 
-  describe('Critical connection fields for Redpanda components', () => {
+  describe('SASL visibility for Redpanda components', () => {
     test('SASL shown for Redpanda components when wizard user data exists', () => {
-      // Set wizard user data to make SASL visible
       onboardingWizardStore.setUserData({
         username: 'testuser',
         saslMechanism: 'SCRAM-SHA-256',
@@ -40,7 +39,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
       });
@@ -48,12 +46,10 @@ describe('generateDefaultValue', () => {
       expect(result).toBeDefined();
       expect((result as Record<string, unknown>).mechanism).toBe('SCRAM-SHA-256');
 
-      // Clean up
       onboardingWizardStore.setUserData({ username: '', consumerGroup: '' });
     });
 
     test('SASL NOT shown for Redpanda components without wizard user data', () => {
-      // Ensure no wizard user data
       onboardingWizardStore.setUserData({ username: '', consumerGroup: '' });
 
       const spec = {
@@ -73,7 +69,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
       });
@@ -81,7 +76,7 @@ describe('generateDefaultValue', () => {
       expect(result).toBeUndefined();
     });
 
-    test('critical fields NOT shown for non-Redpanda components', () => {
+    test('SASL NOT shown for non-Redpanda components', () => {
       const spec = {
         name: 'sasl',
         type: 'object',
@@ -99,7 +94,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'http',
       });
@@ -120,7 +114,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
       });
@@ -128,7 +121,7 @@ describe('generateDefaultValue', () => {
       expect(result).toBeUndefined();
     });
 
-    test('optional fields are hidden when showOptionalFields=false', () => {
+    test('optional non-advanced fields are shown by default', () => {
       const spec = {
         name: 'optional_field',
         type: 'string',
@@ -139,12 +132,11 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
-        showAdvancedFields: true,
+        showAdvancedFields: false,
         componentName: 'http',
       });
 
-      expect(result).toBeUndefined();
+      expect(result).toBe('value');
     });
 
     test('required non-advanced fields are shown', () => {
@@ -158,7 +150,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'http',
       });
@@ -186,7 +177,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
@@ -203,7 +193,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
@@ -211,28 +200,26 @@ describe('generateDefaultValue', () => {
       expect(result).toEqual(['example']);
     });
 
-    test('topics array field without wizard data generates array with empty string', () => {
-      // Clear wizard data to test default behavior
+    test('topics array field without wizard data returns sentinel for required field', () => {
       onboardingWizardStore.setTopicData({ topicName: undefined });
 
       const spec = {
         name: 'topics',
         type: 'string',
         kind: 'array',
-        defaultValue: '', // Empty default should still generate array structure
+        comment: undefined,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
 
-      expect(result).toEqual(['']); // Array with empty string, not just empty string
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
     });
 
-    test('populates user/password fields as secret references', () => {
+    test('populates user/password fields as secret references in SASL context', () => {
       const userSpec = {
         name: 'user',
         type: 'string',
@@ -241,18 +228,36 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(userSpec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
+        parentName: 'sasl',
       });
 
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(result).toBe('${secrets.KAFKA_USER_ADMIN}');
+    });
+
+    test('password in non-SASL context (client_certs) does NOT get SASL secret injection', () => {
+      const passwordSpec = {
+        name: 'password',
+        type: 'string',
+        kind: 'scalar',
+        defaultValue: '',
+      };
+
+      const result = generateDefaultValue(passwordSpec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'kafka',
+        parentName: 'client_certs',
+      });
+
+      // Should NOT inject SASL password — just return the default empty string
+      expect(result).toBe('');
     });
   });
 
   describe('Comment generation', () => {
-    test('required fields get "Required" comment', () => {
+    test('required fields get descriptive comment', () => {
       const spec = {
         name: 'required_field',
         type: 'string',
@@ -261,123 +266,86 @@ describe('generateDefaultValue', () => {
         comment: undefined,
       };
 
-      generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
+      const result = generateDefaultValue(spec as RawFieldSpec, {
         showAdvancedFields: false,
         componentName: 'kafka',
       });
 
-      expect(spec.comment).toBe('Required');
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string, must be manually set');
     });
 
-    test('topics field gets conditional requirement comment', () => {
+    test('required string field with real default does NOT get "Required" comment', () => {
       const spec = {
-        name: 'topics',
-        type: 'string',
-        kind: 'array',
-        defaultValue: '',
-        comment: undefined,
-      };
-
-      generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
-        showAdvancedFields: false,
-        componentName: 'redpanda',
-      });
-
-      expect(spec.comment).toBe('Required if regexp_topics and regexp_topics_include are not configured');
-    });
-
-    test('regexp_topics_include gets conditional requirement comment', () => {
-      const spec = {
-        name: 'regexp_topics_include',
-        type: 'string',
-        kind: 'array',
-        defaultValue: '',
-        comment: undefined,
-      };
-
-      generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
-        showAdvancedFields: false,
-        componentName: 'redpanda',
-      });
-
-      expect(spec.comment).toBe('Required if topics is not configured');
-    });
-
-    test('required fields with defaults get "Required (default: ...)" comment', () => {
-      const spec = {
-        name: 'required_field',
+        name: 'interval',
         type: 'string',
         kind: 'scalar',
-        defaultValue: 'my-default',
+        defaultValue: '1s',
         optional: false,
         comment: undefined,
       };
 
       generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
-        componentName: 'kafka',
+        componentName: 'generate',
       });
 
-      expect(spec.comment).toBe('Required (default: "my-default")');
+      expect(spec.comment).toBeUndefined();
     });
 
-    test('optional fields get "Optional" comment', () => {
+    test('required string field with empty default returns sentinel', () => {
       const spec = {
-        name: 'optional_field',
+        name: 'mapping',
         type: 'string',
         kind: 'scalar',
-        optional: true,
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'generate',
+      });
+
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string, must be manually set');
+    });
+
+    test('required int field with empty-string default does NOT get "Required" comment', () => {
+      const spec = {
+        name: 'batch_size',
+        type: 'int',
+        kind: 'scalar',
+        defaultValue: '',
+        optional: false,
         comment: undefined,
       };
 
       generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: true,
         showAdvancedFields: false,
-        componentName: 'kafka',
+        componentName: 'generate',
       });
 
-      expect(spec.comment).toBe('Optional');
+      expect(spec.comment).toBeUndefined();
     });
 
-    test('optional fields with defaults get "Optional (default: ...)" comment', () => {
+    test('required bool field with empty-string default does NOT get "Required" comment', () => {
       const spec = {
-        name: 'optional_field',
-        type: 'string',
+        name: 'auto_replay_nacks',
+        type: 'bool',
         kind: 'scalar',
-        defaultValue: 'my-default',
-        optional: true,
+        defaultValue: '',
+        optional: false,
         comment: undefined,
       };
 
       generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: true,
         showAdvancedFields: false,
-        componentName: 'kafka',
+        componentName: 'redpanda',
       });
 
-      expect(spec.comment).toBe('Optional (default: "my-default")');
-    });
-
-    test('critical fields get special comments even when optional', () => {
-      const spec = {
-        name: 'topics',
-        type: 'string',
-        kind: 'array',
-        optional: true,
-        comment: undefined,
-      };
-
-      generateDefaultValue(spec as unknown as RawFieldSpec, {
-        showOptionalFields: false,
-        showAdvancedFields: false,
-        componentName: 'kafka',
-      });
-
-      expect(spec.comment).toBe('Required if regexp_topics and regexp_topics_include are not configured');
+      expect(spec.comment).toBeUndefined();
     });
   });
 
@@ -395,13 +363,12 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
         parentName: 'schema_registry',
       });
 
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(result).toBe('${REDPANDA_SCHEMA_REGISTRY_URL}');
     });
 
@@ -414,13 +381,64 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
         parentName: 'sasl',
       });
 
       expect(result).toBe('SCRAM-SHA-256');
+    });
+
+    test('TLS returns { enabled: true } for Redpanda components', () => {
+      const spec = {
+        name: 'tls',
+        type: 'object',
+        kind: 'scalar',
+        optional: true,
+        advanced: true,
+        children: [
+          {
+            name: 'enabled',
+            type: 'bool',
+            kind: 'scalar',
+            defaultValue: 'false',
+          },
+          {
+            name: 'client_certs',
+            type: 'object',
+            kind: 'array',
+            optional: true,
+            children: [{ name: 'password', type: 'string', kind: 'scalar', defaultValue: '' }],
+          },
+        ],
+      };
+
+      const result = generateDefaultValue(spec as unknown as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'kafka',
+      });
+
+      // Should return { enabled: true } directly, not recurse into children
+      expect(result).toEqual({ enabled: true });
+    });
+
+    test('TLS does NOT return { enabled: true } for non-Redpanda components', () => {
+      const spec = {
+        name: 'tls',
+        type: 'object',
+        kind: 'scalar',
+        optional: true,
+        advanced: true,
+        children: [{ name: 'enabled', type: 'bool', kind: 'scalar', defaultValue: 'false' }],
+      };
+
+      // Non-Redpanda component: TLS is advanced, so hidden
+      const result = generateDefaultValue(spec as unknown as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'http_client',
+      });
+
+      expect(result).toBeUndefined();
     });
   });
 
@@ -465,17 +483,88 @@ describe('generateDefaultValue', () => {
       } as unknown as RawFieldSpec;
 
       const result = generateDefaultValue(saslSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'kafka',
       }) as Record<string, unknown>;
 
       expect(result).toBeDefined();
       expect(result.mechanism).toBe('SCRAM-SHA-256');
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(result.user).toBe('${secrets.KAFKA_USER_ADMIN}');
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(result.password).toBe('${secrets.KAFKA_PASSWORD_ADMIN}');
+    });
+  });
+
+  describe('Map and empty-default handling', () => {
+    test('map field with empty default generates empty object', () => {
+      const spec = {
+        name: 'headers',
+        type: 'string',
+        kind: 'map',
+        defaultValue: '',
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'http_client',
+      });
+
+      expect(result).toEqual({});
+    });
+
+    test('required map field without default returns sentinel', () => {
+      const spec = {
+        name: 'metadata',
+        type: 'string',
+        kind: 'map',
+      } as unknown as RawFieldSpec;
+
+      const result = generateDefaultValue(spec, {
+        showAdvancedFields: false,
+        componentName: 'http_client',
+      });
+
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - key-value map, must be manually set');
+    });
+
+    test('int field with empty-string default falls through to kind-based generation', () => {
+      const spec = {
+        name: 'batch_size',
+        type: 'int',
+        kind: 'scalar',
+        defaultValue: '',
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'generate',
+      });
+
+      // Empty string default for int should NOT produce Number("") = 0 from default
+      // Instead, falls through to kind-based generation which produces 0
+      expect(result).toBe(0);
+      expect(typeof result).toBe('number');
+    });
+
+    test('bool field with empty-string default falls through to kind-based generation', () => {
+      const spec = {
+        name: 'some_flag',
+        type: 'bool',
+        kind: 'scalar',
+        defaultValue: '',
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'http_client',
+      });
+
+      // Empty string for bool should NOT produce "" === "true" = false from default
+      // Falls through to kind-based generation which produces false
+      expect(result).toBe(false);
+      expect(typeof result).toBe('boolean');
     });
   });
 
@@ -489,38 +578,47 @@ describe('generateDefaultValue', () => {
       });
     });
 
-    test('kafka output shows required and critical fields, hides optional/advanced', () => {
+    test('kafka output shows required, optional non-advanced, and critical fields', () => {
       const kafkaOutput = mockComponents.kafkaOutput;
 
-      const result = schemaToConfig(kafkaOutput, false, false);
+      const result = schemaToConfig(kafkaOutput, false);
       const config = result?.config as Record<string, any>;
       const outputConfig = config?.output?.kafka;
 
       expect(outputConfig).toBeDefined();
 
-      // Required fields shown
+      // Required fields: topic populated by wizard, addresses is required array → sentinel
       expect(outputConfig.topic).toBe('example');
-      expect(outputConfig.addresses).toBeDefined();
+      expect(outputConfig.addresses).toBe(SENTINEL_REQUIRED_FIELD);
 
-      // Critical connection fields shown with wizard data
+      // SASL shown with wizard data
       expect(outputConfig.sasl).toBeDefined();
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(outputConfig.sasl.user).toBe('${secrets.KAFKA_USER_ADMIN}');
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(outputConfig.sasl.password).toBe('${secrets.KAFKA_PASSWORD_ADMIN}');
 
-      // Optional and advanced fields hidden
-      expect(outputConfig.batching).toBeUndefined();
-      // key is now a critical field for all REDPANDA_TOPIC_AND_USER_COMPONENTS (kafka included)
+      // Optional non-advanced fields now shown (new behavior)
       expect(outputConfig.key).toBe('');
+      expect(outputConfig.partitioner).toBe('fnv1a_hash');
+      expect(outputConfig.compression).toBe('none');
+      expect(outputConfig.batching).toBeDefined();
+      expect(outputConfig.metadata).toBeDefined();
+      expect(outputConfig.backoff).toBeDefined();
+
+      // TLS returns { enabled: true } for Redpanda component
+      expect(outputConfig.tls).toEqual({ enabled: true });
+
+      // Advanced fields hidden
       expect(outputConfig.client_id).toBeUndefined();
+      expect(outputConfig.rack_id).toBeUndefined();
       expect(outputConfig.sasl.access_token).toBeUndefined();
     });
 
     test('redpanda input with wizard data populates topics and SASL', () => {
       const redpandaInput = mockComponents.redpandaInput;
 
-      const result = schemaToConfig(redpandaInput, false, false);
+      const result = schemaToConfig(redpandaInput, false);
       const config = result?.config as Record<string, any>;
       const inputConfig = config?.input?.redpanda;
 
@@ -528,66 +626,113 @@ describe('generateDefaultValue', () => {
       expect(inputConfig.topics).toEqual(['example']);
       expect(inputConfig.seed_brokers).toBeDefined();
 
+      // Optional non-advanced consumer_group shown
+      expect(inputConfig.consumer_group).toBeDefined();
+
       // SASL array format for redpanda components
       expect(Array.isArray(inputConfig.sasl)).toBe(true);
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: This is a literal string for configuration templates, not a TypeScript template literal
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal config template string
       expect(inputConfig.sasl[0].username).toBe('${secrets.KAFKA_USER_ADMIN}');
     });
   });
 
-  describe('Redpanda input critical fields', () => {
-    test('seed_brokers is shown as array for redpanda input', () => {
+  describe('Non-Redpanda component integration (real schema shapes)', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    test('generate input: implicitly required field → sentinel, fields with defaults → values', () => {
+      const result = schemaToConfig(mockComponents.generateInput, false);
+      const config = result?.config as Record<string, any>;
+      const inputConfig = config?.input?.generate;
+
+      expect(inputConfig).toBeDefined();
+
+      // Pattern 1: implicitly required (no optional, no defaultValue) → sentinel
+      expect(inputConfig.mapping).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // Pattern 3: has default → returns converted default
+      expect(inputConfig.interval).toBe('1s');
+      expect(inputConfig.count).toBe(0);
+      expect(inputConfig.batch_size).toBe(1);
+      expect(inputConfig.auto_replay_nacks).toBe(true);
+    });
+
+    test('http_client input: required, optional, and advanced field classification', () => {
+      const result = schemaToConfig(mockComponents.httpClientInput, false);
+      const config = result?.config as Record<string, any>;
+      const inputConfig = config?.input?.http_client;
+
+      expect(inputConfig).toBeDefined();
+
+      // Pattern 1: implicitly required scalar string → sentinel
+      expect(inputConfig.url).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // Pattern 3: has default → returns default
+      expect(inputConfig.verb).toBe('GET');
+
+      // Pattern 1: implicitly required map (no optional, no default) → sentinel
+      expect(inputConfig.headers).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // Pattern 2: explicitly optional + advanced → hidden
+      expect(inputConfig.metadata).toBeUndefined();
+
+      // Explicitly optional + non-advanced + no default → shown with kind-based fallback
+      expect(inputConfig.stream_scanner).toBe('');
+    });
+
+    test('generate input includes label field for input type', () => {
+      const result = schemaToConfig(mockComponents.generateInput, false);
+      const config = result?.config as Record<string, any>;
+
+      expect(config?.input?.label).toBe('');
+    });
+
+    test('http_client with showAdvancedFields=true reveals advanced optional fields', () => {
+      const result = schemaToConfig(mockComponents.httpClientInput, true);
+      const config = result?.config as Record<string, any>;
+      const inputConfig = config?.input?.http_client;
+
+      expect(inputConfig).toBeDefined();
+
+      // Advanced optional metadata now visible
+      expect(inputConfig.metadata).toBeDefined();
+    });
+  });
+
+  describe('Redpanda input fields', () => {
+    test('seed_brokers with empty default returns sentinel for required array', () => {
       const spec = {
         name: 'seed_brokers',
         type: 'string',
         kind: 'array',
-        defaultValue: '',
+        comment: undefined,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
 
-      expect(result).toEqual(['']);
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
     });
 
-    test('regexp_topics is shown as array for redpanda input', () => {
+    test('regexp_topics with empty default returns sentinel for required array', () => {
       const spec = {
         name: 'regexp_topics',
         type: 'string',
         kind: 'array',
-        defaultValue: '',
+        comment: undefined,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
 
-      expect(result).toEqual(['']);
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    test('regexp_topics_include is shown as array for redpanda input', () => {
-      const spec = {
-        name: 'regexp_topics_include',
-        type: 'string',
-        kind: 'array',
-        defaultValue: '',
-      };
-
-      const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
-        showAdvancedFields: false,
-        componentName: 'redpanda',
-      });
-
-      expect(result).toEqual(['']);
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
     });
 
     test('auto_replay_nacks defaults to boolean true', () => {
@@ -599,7 +744,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
@@ -617,7 +761,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
@@ -645,7 +788,7 @@ describe('generateDefaultValue', () => {
         }),
       };
 
-      const result = schemaToConfig(mockRedpandaInputComponent, false, false);
+      const result = schemaToConfig(mockRedpandaInputComponent, false);
       const config = result?.config as Record<string, any>;
 
       expect(config?.input?.label).toBe('');
@@ -671,7 +814,7 @@ describe('generateDefaultValue', () => {
         }),
       };
 
-      const result = schemaToConfig(mockKafkaOutputComponent, false, false);
+      const result = schemaToConfig(mockKafkaOutputComponent, false);
       const config = result?.config as Record<string, any>;
 
       expect(config?.output?.label).toBe('');
@@ -687,7 +830,6 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
@@ -696,7 +838,7 @@ describe('generateDefaultValue', () => {
       expect(typeof result).toBe('number');
     });
 
-    test('key and partition shown for redpanda output, hidden for non-REDPANDA components', () => {
+    test('optional non-advanced key field shown for ALL components', () => {
       const keySpec = {
         name: 'key',
         type: 'string',
@@ -705,41 +847,31 @@ describe('generateDefaultValue', () => {
         optional: true,
       };
 
-      // Redpanda - should show (REDPANDA_TOPIC_AND_USER_COMPONENTS + critical field)
+      // Redpanda component
       const redpandaResult = generateDefaultValue(keySpec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
       expect(redpandaResult).toBe('');
 
-      // Kafka - should show (REDPANDA_TOPIC_AND_USER_COMPONENTS + critical field)
-      const kafkaResult = generateDefaultValue(keySpec as RawFieldSpec, {
-        showOptionalFields: false,
-        showAdvancedFields: false,
-        componentName: 'kafka',
-      });
-      expect(kafkaResult).toBe('');
-
-      // http_client - should be hidden (not in REDPANDA_TOPIC_AND_USER_COMPONENTS)
+      // Non-Redpanda component — optional non-advanced fields now shown for all
       const httpResult = generateDefaultValue(keySpec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'http_client',
       });
-      expect(httpResult).toBeUndefined();
+      expect(httpResult).toBe('');
     });
 
-    test('regexp_topics generates array even with empty default', () => {
+    test('optional array field with empty default still generates placeholder array', () => {
       const spec = {
         name: 'regexp_topics',
         type: 'string',
         kind: 'array',
         defaultValue: '',
+        optional: true,
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
@@ -748,7 +880,7 @@ describe('generateDefaultValue', () => {
       expect(Array.isArray(result)).toBe(true);
     });
 
-    test('auto_replay_nacks with string "true" converts to boolean true', () => {
+    test('auto_replay_nacks with string "true" converts to boolean true (no Required comment)', () => {
       const spec = {
         name: 'auto_replay_nacks',
         type: 'bool',
@@ -759,17 +891,17 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
 
       expect(result).toBe(true);
       expect(typeof result).toBe('boolean');
-      expect(spec.comment).toBe('Required (default: true)');
+      // Has a meaningful default ("true" → true), so NOT Required
+      expect(spec.comment).toBeUndefined();
     });
 
-    test('max_in_flight with string "256" converts to number 256', () => {
+    test('max_in_flight with string "256" converts to number 256 (no Required comment)', () => {
       const spec = {
         name: 'max_in_flight',
         type: 'int',
@@ -780,53 +912,233 @@ describe('generateDefaultValue', () => {
       };
 
       const result = generateDefaultValue(spec as RawFieldSpec, {
-        showOptionalFields: false,
         showAdvancedFields: false,
         componentName: 'redpanda',
       });
 
       expect(result).toBe(256);
       expect(typeof result).toBe('number');
-      expect(spec.comment).toBe('Required (default: 256)');
+      // Has a meaningful default ("256" → 256), so NOT Required
+      expect(spec.comment).toBeUndefined();
+    });
+  });
+
+  describe('Ancestor-optional propagation', () => {
+    test('redpanda output metadata children are not marked required (parent optional)', () => {
+      const result = schemaToConfig(mockComponents.redpandaOutput, false);
+      const config = result?.config as Record<string, any>;
+      const outputConfig = config?.output?.redpanda;
+
+      expect(outputConfig).toBeDefined();
+
+      // topic IS required (no optional ancestor, empty string default for string scalar)
+      expect(outputConfig.topic).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // metadata children are NOT required (parent metadata is optional)
+      expect(outputConfig.metadata).toBeDefined();
+      expect(outputConfig.metadata.include_prefixes).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.metadata.include_patterns).not.toBe(SENTINEL_REQUIRED_FIELD);
+
+      // They should generate array placeholder values instead
+      expect(Array.isArray(outputConfig.metadata.include_prefixes)).toBe(true);
+      expect(Array.isArray(outputConfig.metadata.include_patterns)).toBe(true);
     });
 
-    test('critical fields only affect visibility for fields that exist in schema', () => {
-      // Mock a component that doesn't have the 'max_in_flight' field in its schema
-      const mockComponentWithoutMaxInFlight: ConnectComponentSpec = {
-        name: 'http_client',
-        type: 'output',
-        status: ComponentStatus.STABLE,
-        summary: 'Test',
-        description: '',
-        categories: [],
-        version: '',
-        examples: [],
-        footnotes: '',
-        $typeName: 'redpanda.api.dataplane.v1.ComponentSpec',
-        config: create(FieldSpecSchema, {
-          name: 'root',
-          type: 'object',
-          kind: 'scalar',
-          children: [
-            // Only has url field, no max_in_flight
-            create(FieldSpecSchema, {
-              name: 'url',
-              type: 'string',
-              kind: 'scalar',
-              defaultValue: '',
-            }),
-          ],
-        }),
+    test('array field under optional parent generates array value, not sentinel', () => {
+      const spec = {
+        name: 'include_prefixes',
+        type: 'string',
+        kind: 'array',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
       };
 
-      const result = schemaToConfig(mockComponentWithoutMaxInFlight, false, false);
-      const config = result?.config as Record<string, any>;
-      const outputConfig = config?.output?.http_client;
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'redpanda',
+        ancestorOptional: true,
+      });
 
-      // Should only have the fields that exist in the schema
-      expect(outputConfig?.url).toBe('');
-      // max_in_flight should NOT be added even though it's in REDPANDA_CRITICAL_FIELDS
-      expect(outputConfig?.max_in_flight).toBeUndefined();
+      // Should NOT be sentinel — ancestor is optional
+      expect(result).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(Array.isArray(result)).toBe(true);
+      expect(spec.comment).toBeUndefined();
     });
+
+    test('array field without optional ancestor remains sentinel', () => {
+      const spec = {
+        name: 'addresses',
+        type: 'string',
+        kind: 'array',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'kafka',
+        ancestorOptional: false,
+      });
+
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string list, must be manually set');
+    });
+
+    test('non-string type under non-optional ancestor is not required (proto default loss)', () => {
+      const spec = {
+        name: 'max_retries',
+        type: 'int',
+        kind: 'scalar',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'test',
+      });
+
+      // int with empty default — backend dropped the real default, so not required
+      expect(result).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(result).toBe(0);
+    });
+
+    test('redpanda_migrator: non-scalar children of optional parent are not required, scalar grandchildren are', () => {
+      const result = schemaToConfig(mockComponents.redpandaMigratorOutput, false);
+      const config = result?.config as Record<string, any>;
+      const outputConfig = config?.output?.redpanda_migrator;
+
+      expect(outputConfig).toBeDefined();
+
+      // Top-level: topic and seed_brokers are required
+      expect(outputConfig.topic).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.seed_brokers).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // schema_registry is optional but shown (non-advanced)
+      expect(outputConfig.schema_registry).toBeDefined();
+
+      // url is wizard-populated for redpanda components (contextual variable),
+      // so it doesn't reach checkRequired. Test scalar-under-optional via basic_auth.username instead.
+      // basic_auth.username: scalar string grandchild through non-optional intermediary → sentinel
+      expect(outputConfig.schema_registry.basic_auth.username).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.schema_registry.basic_auth.password).toBe(SENTINEL_REQUIRED_FIELD);
+
+      // metadata.include_prefixes: array child of optional metadata → NOT required
+      // (non-scalar kind, proto likely lost the [] default)
+      expect(outputConfig.metadata).toBeDefined();
+      expect(outputConfig.metadata.include_prefixes).not.toBe(SENTINEL_REQUIRED_FIELD);
+      expect(Array.isArray(outputConfig.metadata.include_prefixes)).toBe(true);
+    });
+
+    test('grandchild through non-optional intermediary is required (schema_registry → basic_auth → username)', () => {
+      const result = schemaToConfig(mockComponents.redpandaMigratorOutput, false);
+      const config = result?.config as Record<string, any>;
+      const outputConfig = config?.output?.redpanda_migrator;
+
+      expect(outputConfig.schema_registry).toBeDefined();
+      expect(outputConfig.schema_registry.basic_auth).toBeDefined();
+
+      // basic_auth is NOT optional, so its children follow normal required rules.
+      // ancestorOptional does NOT propagate through non-optional basic_auth.
+      // username and password are string scalars with empty defaults → sentinel
+      expect(outputConfig.schema_registry.basic_auth.username).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(outputConfig.schema_registry.basic_auth.password).toBe(SENTINEL_REQUIRED_FIELD);
+    });
+
+    test('scalar field under optional parent is still required (ancestorOptional only suppresses non-scalar)', () => {
+      const spec = {
+        name: 'url',
+        type: 'string',
+        kind: 'scalar',
+        defaultValue: '',
+        optional: false,
+        comment: undefined,
+      };
+
+      const result = generateDefaultValue(spec as RawFieldSpec, {
+        showAdvancedFields: false,
+        componentName: 'test',
+        ancestorOptional: true,
+      });
+
+      // Scalar string with empty default is genuinely required, even under optional parent
+      expect(result).toBe(SENTINEL_REQUIRED_FIELD);
+      expect(spec.comment).toBe('Required - string, must be manually set');
+    });
+  });
+});
+
+describe('checkRequired', () => {
+  test('explicitly optional field is not required', () => {
+    expect(checkRequired({ optional: true, type: 'string', kind: 'scalar' } as RawFieldSpec)).toBe(false);
+  });
+
+  test('non-scalar field with optional ancestor is not required (proto lost collection default)', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'array' } as RawFieldSpec, true)).toBe(false);
+    expect(checkRequired({ optional: false, type: 'string', kind: 'map' } as RawFieldSpec, true)).toBe(false);
+  });
+
+  test('scalar field with optional ancestor is still required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'scalar' } as RawFieldSpec, true)).toBe(true);
+  });
+
+  test('field with non-empty default is not required', () => {
+    expect(
+      checkRequired({ optional: false, type: 'string', kind: 'scalar', defaultValue: 'hello' } as RawFieldSpec)
+    ).toBe(false);
+  });
+
+  test('non-string type is not required (proto drops non-string defaults)', () => {
+    expect(checkRequired({ optional: false, type: 'int', kind: 'scalar' } as RawFieldSpec)).toBe(false);
+    expect(checkRequired({ optional: false, type: 'bool', kind: 'scalar' } as RawFieldSpec)).toBe(false);
+  });
+
+  test('string scalar leaf without default is required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'scalar' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('string array leaf without default is required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'array' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('string map leaf without default is required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'map' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('field with undefined optional but defined defaultValue is not required', () => {
+    expect(checkRequired({ type: 'string', kind: 'map', defaultValue: '' } as RawFieldSpec)).toBe(false);
+  });
+
+  test('field with undefined optional and undefined defaultValue is required', () => {
+    expect(checkRequired({ type: 'string', kind: 'scalar' } as RawFieldSpec)).toBe(true);
+  });
+
+  test('advanced non-scalar field is not required', () => {
+    expect(checkRequired({ optional: false, type: 'string', kind: 'array', advanced: true } as RawFieldSpec)).toBe(
+      false
+    );
+  });
+
+  test('object with required child is required', () => {
+    const spec = {
+      optional: false,
+      type: 'string',
+      kind: 'scalar',
+      children: [{ optional: false, type: 'string', kind: 'scalar' } as RawFieldSpec],
+    } as RawFieldSpec;
+    expect(checkRequired(spec)).toBe(true);
+  });
+
+  test('object with all optional children is not required', () => {
+    const spec = {
+      optional: false,
+      type: 'string',
+      kind: 'scalar',
+      children: [{ optional: true, type: 'string', kind: 'scalar' } as RawFieldSpec],
+    } as RawFieldSpec;
+    expect(checkRequired(spec)).toBe(false);
   });
 });
