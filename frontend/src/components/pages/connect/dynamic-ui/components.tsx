@@ -30,7 +30,10 @@ export type ConfigPageProps = {
 export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context }: ConfigPageProps) => {
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
-  useEffect(() => connectorStore.subscribe(() => forceUpdate()), [connectorStore]);
+  useEffect(() => {
+    const unsubscribe = connectorStore.subscribe(() => forceUpdate());
+    return () => unsubscribe();
+  }, [connectorStore]);
 
   if (connectorStore.error) {
     return (
