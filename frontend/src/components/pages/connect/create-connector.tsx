@@ -269,9 +269,12 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
   const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(activeCluster));
   const { isOpen: isCreatingModalOpen, onOpen: openCreatingModal, onClose: closeCreatingModal } = useDisclosure();
 
+  const [isStoreInitialized, setIsStoreInitialized] = useState(connectClusterStore.isInitialized);
+
   useEffect(() => {
     const init = async () => {
       await connectClusterStore.setup();
+      setIsStoreInitialized(true);
     };
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     init().catch(console.error);
@@ -493,7 +496,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
   const isLast = () => currentStep === steps.length - 1;
 
-  if (!connectClusterStore.isInitialized) {
+  if (!isStoreInitialized) {
     return <Skeleton height={4} mt={5} noOfLines={20} />;
   }
 
