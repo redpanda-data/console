@@ -29,6 +29,8 @@ import {
 } from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+import { EditIcon } from 'components/icons';
+import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 
@@ -174,7 +176,45 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         <SmallStat title="Format">{subject.type}</SmallStat>
         <Divider height="2ch" orientation="vertical" />
 
-        <SmallStat title="Compatibility">{subject.compatibility}</SmallStat>
+        <SmallStat title="Mode">
+          <Flex alignItems="center" gap="1">
+            {subject.mode}
+            {canManageSchemaRegistry !== false && (
+              <RegistryButton
+                data-testid="schema-details-edit-mode-icon"
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/edit-mode',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+                size="icon-xs"
+                variant="secondary-ghost"
+              >
+                <EditIcon />
+              </RegistryButton>
+            )}
+          </Flex>
+        </SmallStat>
+        <Divider height="2ch" orientation="vertical" />
+
+        <SmallStat title="Compatibility">
+          <Flex alignItems="center" gap="1">
+            {subject.compatibility}
+            {canManageSchemaRegistry !== false && (
+              <EditIcon
+                className="size-3.5 cursor-pointer text-gray-400 hover:text-gray-600"
+                data-testid="schema-details-edit-compatibility-icon"
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/edit-compatibility',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+              />
+            )}
+          </Flex>
+        </SmallStat>
         <Divider height="2ch" orientation="vertical" />
 
         <SmallStat title="Active Versions">
@@ -184,21 +224,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
       {/* Buttons */}
       <Flex gap="2">
-        <Button
-          data-testid="schema-details-edit-compatibility-btn"
-          disabledReason={
-            canManageSchemaRegistry === false ? "You don't have the 'canManageSchemaRegistry' permission" : undefined
-          }
-          onClick={() =>
-            navigate({
-              to: '/schema-registry/subjects/$subjectName/edit-compatibility',
-              params: { subjectName: subjectNameEncoded },
-            })
-          }
-          variant="outline"
-        >
-          Edit compatibility
-        </Button>
         <Button
           data-testid="schema-details-add-version-btn"
           disabledReason={canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined}
