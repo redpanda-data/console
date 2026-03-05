@@ -12,10 +12,18 @@
 import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon } from 'components/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from 'react-beautiful-dnd';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
+
+// Keep stable reference to the latest onChange so useEffect doesn't re-run on every render
+// but still calls the most recent version of the callback.
+const useLatestRef = <T,>(value: T) => {
+  const ref = useRef(value);
+  ref.current = value;
+  return ref;
+};
 
 type ItemProps = {
   item: { id: string };
@@ -92,12 +100,11 @@ export function CommaSeparatedStringList(props: {
   );
   const [newEntry, setNewEntry] = useState<string | null>(null);
   const [newEntryError, setNewEntryError] = useState<string | null>(null);
+  const onChangeRef = useLatestRef(props.onChange);
 
-  // Call onChange whenever data changes (equivalent to the original autorun)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: props.onChange is intentionally excluded to match original autorun behavior
   useEffect(() => {
-    props.onChange(data.map((x) => x.id).join(','));
-  }, [data]);
+    onChangeRef.current(data.map((x) => x.id).join(','));
+  }, [data, onChangeRef]);
 
   const updateItem = (index: number, newId: string) => {
     setData((prev) => prev.map((item, i) => (i === index ? { id: newId } : item)));

@@ -40,7 +40,7 @@ import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/k
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { appGlobal } from './state/app-global';
-import { api } from './state/backend-api';
+import { api, useApiStore } from './state/backend-api';
 import { useUIStateStore } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 import { getEmbeddedAvailableRoutes } from './utils/route-utils';
@@ -346,11 +346,14 @@ setTimeout(() => {
       setSidebarItems(sidebarItems);
     };
 
-    // Call once on initialization
+    // Call once on initialization; also re-call whenever endpointCompatibility
+    // becomes available (it starts null and is populated after the first API fetch).
     updateSidebarItems();
-
-    // If routes can change dynamically, you can subscribe to relevant state changes
-    // For now, we just call it once since routes are static
+    useApiStore.subscribe((state, prev) => {
+      if (state.endpointCompatibility !== prev.endpointCompatibility) {
+        updateSidebarItems();
+      }
+    });
   } catch (error) {
     // Ignore errors in test environments where stores might not be properly initialized
     // This setTimeout runs globally when config.ts is imported

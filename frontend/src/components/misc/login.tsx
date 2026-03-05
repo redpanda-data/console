@@ -48,7 +48,7 @@ import {
   SASLMechanism,
 } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { appGlobal } from '../../state/app-global';
-import { uiState } from '../../state/ui-state';
+import { uiState, useUIStateStore } from '../../state/ui-state';
 
 const authenticationApiClient = {
   async refreshAuthenticationMethods(): Promise<{ methods: AuthenticationMethod[]; error: ConnectError | null }> {
@@ -206,6 +206,7 @@ const LoginPage = () => {
   const searchParams = new URLSearchParams(searchStr);
   const [methods, setMethods] = useState<AuthenticationMethod[]>([]);
   const [methodsError, setMethodsError] = useState<ConnectError | null>(null);
+  const loginError = useUIStateStore((s) => s.loginError);
 
   useEffect(() => {
     authenticationApiClient.refreshAuthenticationMethods().then(({ methods: m, error }) => {
@@ -217,7 +218,7 @@ const LoginPage = () => {
   return (
     <Flex minHeight="100vh" width="full">
       <Modal
-        isOpen={uiState.loginError !== null}
+        isOpen={loginError !== null}
         onClose={() => {
           uiState.loginError = null;
         }}
@@ -226,7 +227,7 @@ const LoginPage = () => {
         <ModalContent>
           <ModalHeader>Access Denied</ModalHeader>
           <ModalBody>
-            <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
+            <Text whiteSpace="pre-wrap">{loginError}</Text>
           </ModalBody>
           <ModalFooter gap={2}>
             <Button

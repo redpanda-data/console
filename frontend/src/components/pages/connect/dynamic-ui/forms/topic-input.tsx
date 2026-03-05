@@ -51,14 +51,12 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
     return null;
   }
 
+  const [currentErrorIndex, setCurrentErrorIndex] = useState(0);
+
   const showErrors = property.errors.length > 0;
   const errors = showErrors ? property.errors : property.lastErrors;
-  const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
-  const cycleError = showErrors
-    ? () => {
-        property.currentErrorIndex += 1;
-      }
-    : undefined;
+  const errorToShow = showErrors ? errors[currentErrorIndex % errors.length] : undefined;
+  const cycleError = showErrors ? () => setCurrentErrorIndex((i) => i + 1) : undefined;
 
   return (
     <Grid gap="10" templateColumns="1fr">
