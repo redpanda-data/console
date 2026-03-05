@@ -722,6 +722,7 @@ export class ConnectorPropertiesStore {
     }
 
     this.initPending = false;
+    this.notifyChange();
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code

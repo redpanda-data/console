@@ -10,8 +10,7 @@
  */
 
 import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
-import { useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 
 import { ConnectorStepComponent } from './connector-step';
 import { isEmbedded } from '../../../../config';
@@ -28,7 +27,13 @@ export type ConfigPageProps = {
   context: 'CREATE' | 'EDIT';
 };
 
-export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore, context }: ConfigPageProps) => {
+export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context }: ConfigPageProps) => {
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+
+  useEffect(() => {
+    return connectorStore.subscribe(() => forceUpdate());
+  }, [connectorStore]);
+
   if (connectorStore.error) {
     return (
       <div>
@@ -64,6 +69,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
           name="settingsMode"
           onChange={(x) => {
             connectorStore.viewMode = x;
+            forceUpdate();
           }}
           options={[
             { value: 'form', label: <Box mx="4">Form</Box> },
@@ -79,6 +85,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
             isChecked={connectorStore.showAdvancedOptions}
             onChange={(s) => {
               connectorStore.showAdvancedOptions = s.target.checked;
+              forceUpdate();
             }}
           >
             Show advanced options
@@ -103,7 +110,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
       )}
     </>
   );
-});
+};
 
 function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; context: 'CREATE' | 'EDIT' }) {
   const connectorStore = p.connectorStore;
