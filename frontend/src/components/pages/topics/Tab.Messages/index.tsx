@@ -1008,7 +1008,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 onCopyValue={onCopyValue}
               />
             ),
-            [onCopyKey, onCopyValue, onLoadLargeMessage, onSetDownloadMessages, topicName],
+            [onCopyKey, onCopyValue, onLoadLargeMessage, onSetDownloadMessages],
           )}
         />
         <Button
