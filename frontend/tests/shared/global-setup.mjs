@@ -37,7 +37,7 @@ async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const { stdout } = await execAsync(
-        `curl -s -m 5 -o /dev/null -w "%{http_code}" http://localhost:${port}/ || echo "0"`
+        `curl -4 -s -m 5 -o /dev/null -w "%{http_code}" http://localhost:${port}/ || echo "0"`
       );
       const statusCode = Number.parseInt(stdout.trim(), 10);
       if (statusCode > 0 && statusCode < 500) {
@@ -130,13 +130,37 @@ async function verifyRedpandaServices(state, ports) {
   console.log('Waiting for Redpanda services to initialize...');
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  // Check services are ready
-  console.log(`Checking if Admin API is ready (port ${ports.redpandaAdmin})...`);
-  await waitForPort(ports.redpandaAdmin, 60, 2000);
+  // Check Admin API via docker exec (avoids macOS Docker Desktop port-forwarding latency)
+  // The health check already verified Redpanda is healthy; this confirms the admin HTTP API responds.
+  console.log('Checking if Admin API is ready...');
+  for (let i = 0; i < 30; i++) {
+    try {
+      await execAsync(`docker exec ${state.redpandaId} rpk cluster health`);
+      break;
+    } catch {
+      if ((i + 1) % 5 === 0) {
+        console.log(`  Still waiting for Admin API... (attempt ${i + 1}/30)`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
   console.log('✓ Admin API is ready');
 
-  console.log(`Checking if Schema Registry is ready (port ${ports.redpandaSchemaRegistry})...`);
-  await waitForPort(ports.redpandaSchemaRegistry, 60, 2000);
+  // Check Schema Registry from inside the container to avoid macOS port-forwarding latency
+  console.log('Checking if Schema Registry is ready...');
+  for (let i = 0; i < 30; i++) {
+    try {
+      await execAsync(
+        `docker exec ${state.redpandaId} curl -s -m 3 -o /dev/null -w "%{http_code}" http://localhost:18081/subjects`
+      );
+      break;
+    } catch {
+      if ((i + 1) % 5 === 0) {
+        console.log(`  Still waiting for Schema Registry... (attempt ${i + 1}/30)`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
   console.log('✓ Schema Registry is ready');
 
   // Verify SASL authentication is working
@@ -190,17 +214,29 @@ schemaRegistry:
 
 async function createKafkaConnectTopics(state) {
   console.log('Pre-creating Kafka Connect internal topics...');
-  const connectTopics = [
-    '_internal_connectors_offsets',
-    '_internal_connectors_configs',
-    '_internal_connectors_status',
-    '__redpanda.connectors_logs',
-  ];
 
-  for (const topic of connectTopics) {
+  // Kafka Connect internal storage topics must have cleanup.policy=compact
+  const compactTopics = ['_internal_connectors_offsets', '_internal_connectors_configs', '_internal_connectors_status'];
+  // Log topic uses default delete policy
+  const deleteTopics = ['__redpanda.connectors_logs'];
+
+  const saslFlags = '-X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-SHA-256';
+
+  for (const topic of compactTopics) {
     try {
       await execAsync(
-        `docker exec ${state.redpandaId} rpk topic create ${topic} --replicas 1 --partitions 1 -X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-SHA-256`
+        `docker exec ${state.redpandaId} rpk topic create ${topic} --replicas 1 --partitions 1 --topic-config cleanup.policy=compact ${saslFlags}`
+      );
+      console.log(`  ✓ Created topic: ${topic} (compact)`);
+    } catch (_error) {
+      console.log(`  - Topic ${topic} already exists or creation skipped`);
+    }
+  }
+
+  for (const topic of deleteTopics) {
+    try {
+      await execAsync(
+        `docker exec ${state.redpandaId} rpk topic create ${topic} --replicas 1 --partitions 1 ${saslFlags}`
       );
       console.log(`  ✓ Created topic: ${topic}`);
     } catch (_error) {
@@ -211,6 +247,15 @@ async function createKafkaConnectTopics(state) {
 
 async function startKafkaConnect(network, state, ports) {
   console.log('Starting Kafka Connect container...');
+
+  // Write SASL password to a temp file so it can be mounted into the container.
+  // The Redpanda Connectors image reads the password from a file at
+  // /opt/kafka/connect-password/${CONNECT_SASL_PASSWORD_FILE} — passing SASL
+  // settings via CONNECT_CONFIGURATION doesn't work because the config generator
+  // appends security.protocol=PLAINTEXT after the user-provided config, overriding it.
+  const passwordFile = resolve(__dirname, '.connect-sasl-password.tmp');
+  writeFileSync(passwordFile, 'very-secret');
+
   const connectConfig = `
 key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
 value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
@@ -224,18 +269,6 @@ status.storage.replication.factor=1
 offset.flush.interval.ms=1000
 producer.linger.ms=50
 producer.batch.size=131072
-security.protocol=SASL_PLAINTEXT
-sasl.mechanism=SCRAM-SHA-256
-sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="e2euser" password="very-secret";
-consumer.security.protocol=SASL_PLAINTEXT
-consumer.sasl.mechanism=SCRAM-SHA-256
-consumer.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="e2euser" password="very-secret";
-producer.security.protocol=SASL_PLAINTEXT
-producer.sasl.mechanism=SCRAM-SHA-256
-producer.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="e2euser" password="very-secret";
-admin.security.protocol=SASL_PLAINTEXT
-admin.sasl.mechanism=SCRAM-SHA-256
-admin.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="e2euser" password="very-secret";
 topic.creation.enable=false
 `;
 
@@ -246,26 +279,53 @@ topic.creation.enable=false
       .withNetwork(network)
       .withNetworkAliases('connect')
       .withExposedPorts({ container: 8083, host: ports.kafkaConnect })
+      .withBindMounts([
+        {
+          source: passwordFile,
+          target: '/opt/kafka/connect-password/e2e-password',
+          mode: 'ro',
+        },
+      ])
       .withEnvironment({
         CONNECT_CONFIGURATION: connectConfig,
         CONNECT_BOOTSTRAP_SERVERS: 'redpanda:9092',
+        CONNECT_SASL_MECHANISM: 'SCRAM-SHA-256',
+        CONNECT_SASL_USERNAME: 'e2euser',
+        CONNECT_SASL_PASSWORD_FILE: 'e2e-password',
         CONNECT_GC_LOG_ENABLED: 'false',
         CONNECT_HEAP_OPTS: '-Xms512M -Xmx512M',
         CONNECT_LOG_LEVEL: 'info',
         CONNECT_TOPIC_LOG_ENABLED: 'true',
       })
-      .withWaitStrategy(Wait.forListeningPorts())
-      .withStartupTimeout(120_000)
+      // Use log-based wait: avoids IPv4/IPv6 port-forwarding issues on macOS Docker Desktop.
+      // Kafka Connect prints "REST resources initialized" when the HTTP API is ready.
+      .withWaitStrategy(Wait.forLogMessage(/.*REST resources initialized.*/i))
+      .withStartupTimeout(300_000)
       .start();
 
     state.connectId = connect.getId();
     state.connectContainer = connect;
     console.log(`✓ Kafka Connect container started: ${state.connectId}`);
 
-    // Verify it's responding
+    // Verify it's responding via docker exec (avoids macOS Docker Desktop port-forwarding latency)
     console.log('Verifying Kafka Connect API...');
+    for (let i = 0; i < 30; i++) {
+      try {
+        await execAsync(
+          `docker exec ${state.redpandaId} curl -s -m 5 -o /dev/null -w "%{http_code}" http://connect:8083/`
+        );
+        break;
+      } catch {
+        if ((i + 1) % 5 === 0) console.log(`  Still waiting for Kafka Connect API... (attempt ${i + 1}/30)`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+    console.log('✓ Kafka Connect API ready (internal)');
+
+    // Also wait for the host port to be forwarded (needed for tests that POST directly to the API)
+    console.log(`Waiting for Kafka Connect host port ${ports.kafkaConnect}...`);
     await waitForPort(ports.kafkaConnect, 60, 2000);
-    console.log('✓ Kafka Connect API ready');
+    console.log(`✓ Kafka Connect host port ${ports.kafkaConnect} ready`);
   } catch (error) {
     console.log('⚠ Kafka Connect failed to start (connector tests may fail)');
     console.log(`  Error: ${error.message}`);
@@ -285,6 +345,13 @@ topic.creation.enable=false
       }
     } else {
       console.log('  Container failed to start - no logs available');
+    }
+  } finally {
+    // Clean up temp password file
+    try {
+      await execAsync(`rm -f "${passwordFile}"`);
+    } catch {
+      // ignore cleanup errors
     }
   }
 }
@@ -556,11 +623,25 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
       console.log(logs);
     }
 
-    // Now wait for port to be ready
-    console.log(`Waiting for port ${ports.backend} to be ready...`);
-    console.log('Testing connection with curl...');
+    // Wait for backend via docker exec (avoids macOS Docker Desktop port-forwarding latency)
+    console.log('Waiting for backend to be ready (internal port 3000)...');
+    for (let i = 0; i < 90; i++) {
+      try {
+        await execAsync(
+          `docker exec ${state.redpandaId} curl -s -m 5 -o /dev/null -w "%{http_code}" http://console-backend:3000/`
+        );
+        break;
+      } catch {
+        if ((i + 1) % 10 === 0) console.log(`  Still waiting for backend... (attempt ${i + 1}/90)`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+    console.log('✓ Backend ready (internal)');
+
+    // Also wait for host port to be forwarded (browser navigates to localhost:port)
+    console.log(`Waiting for backend host port ${ports.backend}...`);
     await waitForPort(ports.backend, 90, 2000);
-    console.log(`✓ Port ${ports.backend} is ready`);
+    console.log(`✓ Backend host port ${ports.backend} ready`);
   } catch (error) {
     console.error('Failed to start backend container:', error.message);
 
@@ -827,6 +908,7 @@ export default async function globalSetup(config = {}) {
   const configFile = config?.metadata?.configFile ?? 'console.config.yaml';
   const isEnterprise = config?.metadata?.isEnterprise ?? false;
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
+  const needsConnect = config?.metadata?.needsConnect ?? false;
 
   // Load ports from variant's config/variant.json
   const variantConfig = loadVariantConfig(variantName);
@@ -868,7 +950,9 @@ export default async function globalSetup(config = {}) {
     await verifyRedpandaServices(state, ports);
     await startOwlShop(network, state);
     await createKafkaConnectTopics(state);
-    // await startKafkaConnect(network, state, ports);
+    if (needsConnect) {
+      await startKafkaConnect(network, state, ports);
+    }
 
     // Start destination cluster for shadowlink if needed
     if (isEnterprise && needsShadowlink) {
@@ -921,13 +1005,7 @@ export default async function globalSetup(config = {}) {
       await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
     }
 
-    // Wait for services to be ready
-    console.log('Waiting for backend to be ready...');
-    await waitForPort(ports.backend, 60, 1000);
     console.log('Backend is ready');
-
-    console.log('Waiting for frontend to be ready...');
-    await waitForPort(ports.backend, 60, 1000);
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {

@@ -22,7 +22,10 @@ export const getRpkCloudEnvironment = () => {
   if (window.location.hostname.includes('preprod')) {
     return 'preprod';
   }
-  if (window.location.hostname.includes('cloud.redpanda.com')) {
+  if (
+    window.location.hostname.includes('cloud.redpanda.com') ||
+    window.location.hostname.includes('cloudv2.redpanda.com')
+  ) {
     return 'production';
   }
 

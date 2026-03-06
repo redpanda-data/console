@@ -11,7 +11,7 @@
 
 import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 import { isEmbedded } from '../../../config';
@@ -108,17 +108,25 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
 const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; connectors: ClusterConnectorInfo[] }) => {
   const [filteredResults, setFilteredResults] = useState<ClusterConnectorInfo[]>([]);
+  const [searchText, setSearchText] = useState(uiSettings.connectorsList.quickSearch);
 
-  const isFilterMatch = (filter: string, item: ClusterConnectorInfo): boolean => {
+  const dataSource = useCallback(() => connectors, [connectors]);
+
+  const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo): boolean => {
     try {
-      const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i');
+      const quickSearchRegExp = new RegExp(filter, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
     } catch (_e) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
-  };
+  }, []);
+
+  const onQueryChanged = useCallback((filterText: string) => {
+    setSearchText(filterText);
+    uiSettings.connectorsList.quickSearch = filterText;
+  }, []);
 
   return (
     <div>
@@ -130,13 +138,12 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
 
       <Box my={5}>
         <SearchBar<ClusterConnectorInfo>
-          dataSource={() => connectors}
-          filterText={uiSettings.connectorsList.quickSearch}
+          dataSource={dataSource}
+          filterText={searchText}
           isFilterMatch={isFilterMatch}
           onFilteredDataChanged={setFilteredResults}
-          onQueryChanged={(filterText) => {
-            uiSettings.connectorsList.quickSearch = filterText;
-          }}
+          onQueryChanged={onQueryChanged
+          }
           placeholderText="Enter search term/regex"
         />
       </Box>
@@ -149,8 +156,8 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
             cell: ({ row: { original } }) => (
               <Link
                 params={{
-                  clusterName: encodeURIComponent(clusterName),
-                  connector: encodeURIComponent(original.name),
+                  clusterName,
+                  connector: original.name,
                 }}
                 to="/connect-clusters/$clusterName/$connector"
               >

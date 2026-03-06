@@ -33,7 +33,7 @@ import {
 } from "components/ui/secret/secret-selector";
 import type { Scope } from "protogen/redpanda/api/dataplane/v1/secret_pb";
 import { useEffect, useMemo } from "react";
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 import { useListModelProvidersQuery } from "react-query/api/ai-gateway/model-providers";
 import { useListModelsQuery } from "react-query/api/ai-gateway/models";
 
@@ -71,8 +71,18 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   isLoadingGateways = false,
   availableGateways = [],
 }) => {
-  const selectedProvider = form.watch(fieldNames.provider) as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
-  const selectedGatewayId = fieldNames.gatewayId ? form.watch(fieldNames.gatewayId) : undefined;
+  // useWatch provides reliable cross-component re-renders when form values change via setValue,
+  // unlike form.watch which can miss updates in Module Federation environments.
+  const watchedValues = useWatch({
+    control: form.control,
+    name: [fieldNames.provider, fieldNames.gatewayId ?? fieldNames.provider],
+  });
+  const maxIterations = useWatch({
+    control: form.control,
+    name: fieldNames.maxIterations,
+  });
+  const selectedProvider = watchedValues[0] as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
+  const selectedGatewayId = fieldNames.gatewayId ? watchedValues[1] as string | undefined : undefined;
   const isUsingGateway = hasGatewayDeployed && !!selectedGatewayId;
 
   // Fetch providers and models from AI Gateway when using gateway
@@ -437,7 +447,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 					<div className="flex items-center justify-between">
 						<FieldLabel htmlFor="maxIterations">Max Iterations</FieldLabel>
 						<Text className="font-medium text-sm">
-							{form.watch(fieldNames.maxIterations)}
+							{maxIterations}
 						</Text>
 					</div>
 					<Controller

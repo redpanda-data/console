@@ -15,7 +15,7 @@ import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
-import { Component, type FunctionComponent, useState } from 'react';
+import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 
 import {
@@ -261,6 +261,7 @@ class TabClusters extends Component {
             cell: ({ row: { original } }) => <ConnectorsColumn observable={original} />,
           },
           {
+            id: 'tasks',
             accessorKey: 'connectors',
             size: 150,
             header: 'Tasks',
@@ -281,30 +282,38 @@ interface ConnectorType extends ClusterConnectorInfo {
 
 const TabConnectors = () => {
   const clusters = api.connectConnectors?.clusters;
-  const allConnectors: ConnectorType[] =
-    clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
+  const allConnectors: ConnectorType[] = useMemo(
+    () => clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [],
+    [clusters]
+  );
 
   const [filteredResults, setFilteredResults] = useState<ConnectorType[]>([]);
+  const [searchText, setSearchText] = useState(uiSettings.clusterOverview.connectorsList.quickSearch);
 
-  const isFilterMatch = (filter: string, item: ConnectorType): boolean => {
+  const dataSource = useCallback(() => allConnectors, [allConnectors]);
+
+  const isFilterMatch = useCallback((filter: string, item: ConnectorType): boolean => {
     try {
-      const quickSearchRegExp = new RegExp(uiSettings.clusterOverview.connectorsList.quickSearch, 'i');
+      const quickSearchRegExp = new RegExp(filter, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
     } catch (_e) {
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
-  };
+  }, []);
+
+  const onQueryChanged = useCallback((x: string) => {
+    setSearchText(x);
+    uiSettings.clusterOverview.connectorsList.quickSearch = x;
+  }, []);
 
   return (
     <Box>
       <SearchBar<ConnectorType>
-        dataSource={() => allConnectors}
-        filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
+        dataSource={dataSource}
+        filterText={searchText}
         isFilterMatch={isFilterMatch}
         onFilteredDataChanged={setFilteredResults}
-        onQueryChanged={(x) => {
-          uiSettings.clusterOverview.connectorsList.quickSearch = x;
-        }}
+        onQueryChanged={onQueryChanged}
         placeholderText="Enter search term/regex"
       />
       <DataTable<ConnectorType>

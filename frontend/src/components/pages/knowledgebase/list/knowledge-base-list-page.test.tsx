@@ -378,4 +378,55 @@ describe('KnowledgeBaseList', () => {
       expect(screen.queryByText('Second KB')).not.toBeInTheDocument();
     });
   });
+
+  test('should update pagination footer and disable next button on the last page', async () => {
+    const user = userEvent.setup();
+    const knowledgeBases = Array.from({ length: 25 }, (_, index) =>
+      create(KnowledgeBaseSchema, {
+        id: `kb-${index + 1}`,
+        displayName: `Knowledge Base ${index + 1}`,
+        description: `Description ${index + 1}`,
+        tags: {},
+      })
+    );
+
+    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
+      knowledgeBases,
+      nextPageToken: '',
+    });
+
+    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, listKnowledgeBasesMock);
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 1 of 3')).toBeVisible();
+    });
+
+    const previousButton = screen.getByRole('button', { name: 'Previous Page' });
+    const nextButton = screen.getByRole('button', { name: 'Next Page' });
+
+    expect(previousButton).toBeDisabled();
+    expect(nextButton).toBeEnabled();
+
+    await user.click(nextButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 2 of 3')).toBeVisible();
+    });
+
+    expect(screen.getByRole('button', { name: 'Previous Page' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Next Page' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 3 of 3')).toBeVisible();
+    });
+
+    expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+  });
 });

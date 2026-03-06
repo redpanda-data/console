@@ -84,41 +84,9 @@ output:
       const { config } = result;
       const yaml = configToYaml(config, spec);
 
-      expect(yaml).toContain('required_field:');
-      expect(yaml).toContain('# Required');
-    });
-
-    test('should add comments to optional fields with defaults', () => {
-      const spec = {
-        name: 'test_output',
-        type: 'output',
-        plugin: false,
-        config: {
-          name: 'root',
-          type: 'object',
-          kind: 'scalar',
-          children: [
-            {
-              name: 'optional_field',
-              type: 'string',
-              kind: 'scalar',
-              optional: true,
-              defaultValue: 'default_value',
-            },
-          ],
-        },
-      } as unknown as ConnectComponentSpec;
-
-      const result = schemaToConfig(spec, true);
-      if (!result) {
-        throw new Error('Failed to generate config');
-      }
-
-      const { config } = result;
-      const yaml = configToYaml(config, spec);
-
-      expect(yaml).toContain('optional_field:');
-      expect(yaml).toContain('# Optional (default: "default_value")');
+      // Sentinel is converted to comment-only line (no key-value pair)
+      expect(yaml).not.toMatch(/^\s*required_field:/m);
+      expect(yaml).toContain('# required_field: Required - string, must be manually set');
     });
 
     test('should add comments to critical connection fields', () => {
@@ -136,9 +104,11 @@ output:
       const { config } = result;
       const yaml = configToYaml(config, kafkaSpec);
 
-      // Critical fields like topic should have comments
-      expect(yaml).toContain('topic:');
-      expect(yaml).toContain('# Required');
+      // Scalar required fields become comment-only lines
+      expect(yaml).toContain('# topic: Required - string, must be manually set');
+      // Required array fields with empty-string default also become comment-only lines
+      expect(yaml).toContain('# addresses: Required - string list, must be manually set');
+      expect(yaml).not.toMatch(/^\s*addresses:/m);
     });
 
     test('should not add comments to parent objects but should add to arrays', () => {
@@ -162,19 +132,58 @@ output:
 
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];
-        // tls: line itself should just be "tls:" without inline comment (it's a parent object)
-        expect(tlsLine.trim()).toBe('tls: {}');
+        // For Redpanda components, TLS now renders as a parent object with enabled: true
+        // tls: line should not have an inline comment
+        expect(tlsLine.trim()).not.toContain('#');
       }
 
-      // But critical array fields SHOULD get inline comments
-      // kafka output has 'addresses' which is a critical array field
-      const addressesLine = lines.find((line) => line.includes('addresses:'));
-      if (addressesLine) {
-        // Arrays should have inline comments (not the parent object)
-        expect(addressesLine).toContain('addresses:');
-        // Note: addresses might be on its own line with array items below,
-        // so we just verify the field exists and the array structure is present
+      // Required array fields with empty-string default also become comment-only lines
+      expect(yaml).toContain('# addresses: Required - string list, must be manually set');
+      expect(yaml).not.toMatch(/^\s*addresses:/m);
+    });
+
+    test('should add comments to redpanda_common component (input type path)', () => {
+      const redpandaCommonSpec = mockComponents.redpandaCommonInput;
+
+      if (!redpandaCommonSpec) {
+        throw new Error('redpanda_common input not found');
       }
+
+      const result = schemaToConfig(redpandaCommonSpec, false);
+      if (!result) {
+        throw new Error('Failed to generate redpanda_common config');
+      }
+
+      const { config, spec } = result;
+      const yaml = configToYaml(config, spec);
+
+      // redpanda_common uses [componentSpec.type, componentName] path
+      expect(yaml).toContain('input:');
+      expect(yaml).toContain('redpanda_common:');
+      // Required array field should become comment-only
+      expect(yaml).toContain('# topics: Required - string list, must be manually set');
+    });
+
+    test('should not comment out metadata children when parent is optional (ancestor-optional)', () => {
+      const redpandaOutputSpec = mockComponents.redpandaOutput;
+
+      const result = schemaToConfig(redpandaOutputSpec, false);
+      if (!result) {
+        throw new Error('Failed to generate redpanda output config');
+      }
+
+      const { config, spec } = result;
+      const yaml = configToYaml(config, spec);
+
+      // topic IS required (no optional ancestor) → commented out
+      expect(yaml).toContain('# topic: Required - string, must be manually set');
+
+      // metadata children are NOT required (parent metadata is optional)
+      // They should appear as normal YAML keys, not as comment-only lines
+      expect(yaml).toMatch(/^\s+include_prefixes:/m);
+      expect(yaml).toMatch(/^\s+include_patterns:/m);
+      expect(yaml).not.toContain('# include_prefixes: Required');
+      expect(yaml).not.toContain('# include_patterns: Required');
     });
 
     test('should preserve existing comments and add comments to merged component', () => {
@@ -194,7 +203,6 @@ output:
         connectionType: 'output',
         components: Object.values(mockComponents),
         existingYaml: inputYaml,
-        showOptionalFields: false,
       });
 
       // Should preserve existing input comments
@@ -204,9 +212,8 @@ output:
       expect(mergedYaml).toContain('output:');
       expect(mergedYaml).toContain('kafka:');
 
-      // Should add comments to the newly merged output (critical fields)
-      expect(mergedYaml).toContain('topic:');
-      expect(mergedYaml).toContain('# Required');
+      // Required fields become comment-only lines in merged output
+      expect(mergedYaml).toContain('# topic: Required - string, must be manually set');
     });
   });
 });

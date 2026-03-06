@@ -1747,7 +1747,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           {/* Normal pagination */}
           {!continuousPaginationEnabled && filteredMessages.length > 0 && (
             <div className="pt-2">
-              <DataTablePagination table={table} />
+              <DataTablePagination
+                pagination={{
+                  canNextPage: table.getCanNextPage(),
+                  canPreviousPage: table.getCanPreviousPage(),
+                  pageCount: table.getPageCount(),
+                  pageIndex: paginationParams.pageIndex,
+                  pageSize: paginationParams.pageSize,
+                }}
+                table={table}
+              />
             </div>
           )}
 

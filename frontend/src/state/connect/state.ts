@@ -174,14 +174,9 @@ export class ConnectClusterStore {
         }
 
         for (const [key, secret] of secrets.secrets) {
-          // Validate secret key
-          if (!key || key.trim() === '') {
-            throw new Error('Secret key is empty. Each secret must have a valid key identifier.');
-          }
-
-          // Validate secret value
-          if (!secret.value || secret.value.trim() === '') {
-            throw new Error(`Secret value for key "${key}" is empty. Please provide a value for this secret.`);
+          // Skip secrets with empty keys or values (optional PASSWORD fields the user didn't fill)
+          if (!key || key.trim() === '' || !secret.value || secret.value.trim() === '') {
+            continue;
           }
 
           // Validate serialized secret data
@@ -362,7 +357,6 @@ export type ConnectorClusterFeatures = {
 
 export class SecretsStore {
   _data = new Map<string, Secret>();
-  _secrets = new Map<string, Secret>();
 
   getSecret(key: string) {
     let secret = this._data.get(key);
@@ -381,13 +375,13 @@ export class SecretsStore {
   }
 
   get secrets() {
-    for (const [key, value] of this._data) {
-      if (value.value !== '' && value.value !== null) {
-        this._secrets.set(key, value);
+    const result = new Map<string, Secret>();
+    for (const [key, secret] of this._data) {
+      if (secret.value && secret.value.trim() !== '') {
+        result.set(key, secret);
       }
     }
-
-    return this._secrets;
+    return result;
   }
 }
 
@@ -511,16 +505,23 @@ export class ConnectorPropertiesStore {
     this.initConfig().catch(console.error);
   }
 
+  version = 0;
+
   private notifyChange() {
+    this.version += 1;
     for (const listener of this.changeListeners) {
       listener();
     }
   }
 
-  subscribe(listener: () => void) {
+  subscribe(listener: () => void): () => void {
     this.changeListeners.add(listener);
-    return () => this.changeListeners.delete(listener);
+    return () => {
+      this.changeListeners.delete(listener);
+    };
   }
+
+  getVersion = () => this.version;
 
   createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]): PropertyGroup {
     const self = this;
@@ -823,6 +824,7 @@ export class ConnectorPropertiesStore {
           p.lastErrorValue = p.value;
         }
       }
+      this.notifyChange();
     } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error validating config', err);

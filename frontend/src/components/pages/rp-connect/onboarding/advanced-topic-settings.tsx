@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { memo, useMemo } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
+import { type UseFormReturn, useWatch } from 'react-hook-form';
 
 import type { AddTopicFormData } from '../types/wizard';
 import {
@@ -109,7 +109,10 @@ type RetentionInputGroupProps = {
 
 const RetentionInputGroup = memo<RetentionInputGroupProps>(
   ({ form, isExistingTopic, disabled = false, label, valueField, unitField, units, onChange }) => {
-    const unitValue = form.watch(unitField as 'retentionTimeUnit' | 'retentionSizeUnit');
+    const unitValue = useWatch({
+      control: form.control,
+      name: unitField as 'retentionTimeUnit' | 'retentionSizeUnit',
+    });
     const isRetentionDisabled = isRetentionUnitDisabled(unitValue) || isExistingTopic || disabled;
 
     return (

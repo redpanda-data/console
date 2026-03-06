@@ -377,30 +377,43 @@ export function DataTableFacetedFilter<TData, TValue>({
   );
 }
 
+type DataTablePaginationState = {
+  canNextPage: boolean;
+  canPreviousPage: boolean;
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+};
+
 interface DataTablePaginationProps<TData> {
+  pagination: DataTablePaginationState;
   table: Table<TData>;
   testId?: string;
 }
 
-export function DataTablePagination<TData>({ table, testId }: DataTablePaginationProps<TData>) {
+export function DataTablePagination<TData>({ pagination, table, testId }: DataTablePaginationProps<TData>) {
+  // Pass pagination primitives from the page so this footer still rerenders
+  // when React Compiler keeps the table instance identity stable.
+  const { canNextPage, canPreviousPage, pageCount, pageIndex, pageSize } = pagination;
+
   return (
     <div className="flex items-center justify-end px-2" data-testid={testId}>
       <div className="flex items-center space-x-6 lg:space-x-8">
-        {table.getPageCount() > 0 && (
+        {pageCount > 0 && (
           <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            Page {pageIndex + 1} of {pageCount}
           </div>
         )}
         <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">Rows per page</p>
           <Select
-            value={`${table.getState().pagination.pageSize}`}
+            value={`${pageSize}`}
             onValueChange={(value) => {
               table.setPageSize(Number(value));
             }}
           >
             <SelectTrigger className="h-8 w-[70px]">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
+              <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
               {[10, 20, 25, 30, 40, 50].map((pageSize) => (
@@ -417,7 +430,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             size="icon"
             className="hidden size-8 lg:flex"
             onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
+            disabled={!canPreviousPage}
             aria-label="First Page"
           >
             <span className="sr-only">Go to first page</span>
@@ -428,7 +441,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             size="icon"
             className="size-8"
             onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            disabled={!canPreviousPage}
             aria-label="Previous Page"
           >
             <span className="sr-only">Go to previous page</span>
@@ -439,7 +452,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             size="icon"
             className="size-8"
             onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            disabled={!canNextPage}
             aria-label="Next Page"
           >
             <span className="sr-only">Go to next page</span>
@@ -449,8 +462,8 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
             variant="outline"
             size="icon"
             className="hidden size-8 lg:flex"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
+            onClick={() => table.setPageIndex(pageCount - 1)}
+            disabled={!canNextPage}
             aria-label="Last Page"
           >
             <span className="sr-only">Go to last page</span>

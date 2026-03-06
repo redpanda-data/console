@@ -19,6 +19,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
   type SortingState,
   useReactTable,
   type VisibilityState,
@@ -157,6 +158,7 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState('');
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   // Transform results for table
   const transformedResults = useMemo(
@@ -203,6 +205,7 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    onPaginationChange: setPagination,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
@@ -216,16 +219,12 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
         topic.includes(search) || documentName.includes(search) || chunkId.includes(search) || content.includes(search)
       );
     },
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       globalFilter,
+      pagination,
     },
   });
 
@@ -289,7 +288,16 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
           })()}
         </TableBody>
       </Table>
-      <DataTablePagination table={table} />
+      <DataTablePagination
+        pagination={{
+          canNextPage: table.getCanNextPage(),
+          canPreviousPage: table.getCanPreviousPage(),
+          pageCount: table.getPageCount(),
+          pageIndex: pagination.pageIndex,
+          pageSize: pagination.pageSize,
+        }}
+        table={table}
+      />
     </div>
   );
 };

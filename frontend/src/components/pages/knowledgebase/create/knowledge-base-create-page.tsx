@@ -37,7 +37,7 @@ import {
   KnowledgeBaseCreateSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { useEffect, useMemo } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -69,8 +69,14 @@ export const KnowledgeBaseCreatePage = () => {
   });
 
   // Watch form values for dynamic updates
-  const embeddingProvider = form.watch('embeddingProvider');
-  const rerankerEnabled = form.watch('rerankerEnabled');
+  const embeddingProvider = useWatch({
+    control: form.control,
+    name: 'embeddingProvider',
+  });
+  const rerankerEnabled = useWatch({
+    control: form.control,
+    name: 'rerankerEnabled',
+  });
 
   // Tags field array
   const {

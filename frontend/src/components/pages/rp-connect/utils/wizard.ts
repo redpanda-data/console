@@ -1,13 +1,9 @@
 import { toast } from 'sonner';
-import {
-  onboardingWizardStore,
-  useOnboardingWizardDataStore,
-  useOnboardingYamlContentStore,
-} from 'state/onboarding-wizard-store';
+import { useOnboardingWizardDataStore, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
 
 import { getConnectTemplate } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
-import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import type { ConnectComponentSpec } from '../types/schema';
 import type { StepSubmissionResult } from '../types/wizard';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
@@ -66,7 +62,6 @@ export const regenerateYamlForTopicUserComponents = (components: ConnectComponen
           connectionName: wizardData.input.connectionName,
           connectionType: wizardData.input.connectionType,
           components,
-          showOptionalFields: false,
           existingYaml: yamlContent,
         }) || yamlContent;
     }
@@ -77,7 +72,6 @@ export const regenerateYamlForTopicUserComponents = (components: ConnectComponen
           connectionName: wizardData.output.connectionName,
           connectionType: wizardData.output.connectionType,
           components,
-          showOptionalFields: false,
           existingYaml: yamlContent,
         }) || yamlContent;
     }
@@ -117,15 +111,6 @@ export const isPasswordField = (fieldName: string): boolean => fieldName.toLower
 export const isConsumerGroupField = (fieldName: string): boolean => fieldName.toLowerCase() === 'consumer_group';
 
 /**
- * Checks if a field should be prepopulated with REDPANDA_BROKERS contextual variable
- * Matches: 'seed_brokers', 'addresses', 'brokers'
- */
-export const isBrokerField = (fieldName: string): boolean => {
-  const normalized = fieldName.toLowerCase();
-  return normalized === 'seed_brokers' || normalized === 'addresses' || normalized === 'brokers';
-};
-
-/**
  * Checks if a field is schema_registry.url that should use REDPANDA_SCHEMA_REGISTRY_URL
  * Requires checking both field name and parent context
  */
@@ -133,41 +118,4 @@ export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string)
   const isUrl = fieldName.toLowerCase() === 'url';
   const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';
   return isUrl && !!parentIsSchemaRegistry;
-};
-
-/**
- * Checks if a RawFieldSpec or its children have wizard-relevant fields
- * Used to determine if advanced/optional fields should be shown
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export const hasWizardRelevantFields = (spec: RawFieldSpec, componentName?: string): boolean => {
-  if (!(componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
-    return false;
-  }
-
-  const topicData = onboardingWizardStore.getTopicData();
-  const userData = onboardingWizardStore.getUserData();
-
-  if (spec.name && isTopicField(spec.name) && topicData?.topicName) {
-    return true;
-  }
-  if (spec.name && isUserField(spec.name) && userData?.username) {
-    return true;
-  }
-  if (spec.name && isPasswordField(spec.name) && userData?.username) {
-    return true;
-  }
-  if (spec.name && isConsumerGroupField(spec.name) && userData?.consumerGroup) {
-    return true;
-  }
-
-  if (spec.children && spec.children.length > 0) {
-    for (const child of spec.children) {
-      if (hasWizardRelevantFields(child, componentName)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
 };

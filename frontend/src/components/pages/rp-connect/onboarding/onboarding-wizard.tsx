@@ -179,7 +179,6 @@ export const ConnectOnboardingWizard = ({
             connectionName,
             connectionType,
             components,
-            showOptionalFields: false,
             existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
           });
 
@@ -229,7 +228,6 @@ export const ConnectOnboardingWizard = ({
             connectionName,
             connectionType,
             components,
-            showOptionalFields: false,
             existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
           });
 

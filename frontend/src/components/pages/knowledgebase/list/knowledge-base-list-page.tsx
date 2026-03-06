@@ -23,6 +23,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type PaginationState,
   type SortingState,
   type Table as TanstackTable,
   useReactTable,
@@ -353,6 +354,7 @@ export const KnowledgeBaseListPage = () => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
   const [rowSelection, setRowSelection] = React.useState({});
 
   const {
@@ -456,17 +458,14 @@ export const KnowledgeBaseListPage = () => {
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    onPaginationChange: setPagination,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      pagination,
       rowSelection,
     },
   });
@@ -554,7 +553,16 @@ export const KnowledgeBaseListPage = () => {
           })()}
         </TableBody>
       </Table>
-      <DataTablePagination table={table} />
+      <DataTablePagination
+        pagination={{
+          canNextPage: table.getCanNextPage(),
+          canPreviousPage: table.getCanPreviousPage(),
+          pageCount: table.getPageCount(),
+          pageIndex: pagination.pageIndex,
+          pageSize: pagination.pageSize,
+        }}
+        table={table}
+      />
     </div>
   );
 };
