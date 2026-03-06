@@ -534,6 +534,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const [fetchError, setFetchError] = useState<Error | null>(null);
   const [downloadMessages, setDownloadMessages] = useState<TopicMessage[] | null>(null);
+  const topicName = props.topic.topicName;
 
   // Search controls state
   const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
@@ -999,6 +1000,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const totalPages = Math.max(1, hasMoreData ? loadedPages + 1 : loadedPages);
   const boundedLocalPageIndex = Math.min(localPageIndex, totalPages - 1);
   const isOnUnloadedPage = boundedLocalPageIndex >= loadedPages && hasMoreData;
+  const onLoadLargeMessage = useCallback(
+    (targetTopicName: string, messagePartitionID: number, offset: number) =>
+      loadLargeMessage({
+        topicName: targetTopicName,
+        messagePartitionID,
+        offset,
+        setMessages,
+        keyDeserializer,
+        valueDeserializer,
+      }),
+    [keyDeserializer, setMessages, valueDeserializer]
+  );
+  const onSetDownloadMessages = useCallback((nextMessages: TopicMessage[]) => {
+    setDownloadMessages(nextMessages);
+  }, []);
+  const handleCopyKey = useCallback((msg: TopicMessage) => onCopyKey(msg, toast), [toast]);
+  const handleCopyValue = useCallback((msg: TopicMessage) => onCopyValue(msg, toast), [toast]);
 
   const paginationParams = {
     pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedLocalPageIndex,
@@ -1717,22 +1735,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         <TableRow>
                           <TableCell className="p-0" colSpan={row.getVisibleCells().length}>
                             <ExpandedMessage
-                              loadLargeMessage={() =>
-                                loadLargeMessage({
-                                  topicName: props.topic.topicName,
-                                  messagePartitionID: row.original.partitionID,
-                                  offset: row.original.offset,
-                                  setMessages,
-                                  keyDeserializer,
-                                  valueDeserializer,
-                                })
-                              }
                               msg={row.original}
-                              onCopyKey={(msg) => onCopyKey(msg, toast)}
-                              onCopyValue={(msg) => onCopyValue(msg, toast)}
-                              onDownloadRecord={() => {
-                                setDownloadMessages([row.original]);
-                              }}
+                              onCopyKey={handleCopyKey}
+                              onCopyValue={handleCopyValue}
+                              onLoadLargeMessage={onLoadLargeMessage}
+                              onSetDownloadMessages={onSetDownloadMessages}
+                              topicName={topicName}
                             />
                           </TableCell>
                         </TableRow>

@@ -11,12 +11,84 @@
 
 import { Box } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef } from 'react';
 
-import KowlEditor from './kowl-editor';
+import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
 
 export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
-  const str = typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<IStandaloneCodeEditor | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const lastSizeRef = useRef({ width: 0, height: 0 });
+  const str = useMemo(
+    () => (typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4)),
+    [props.srcObj]
+  );
+
+  const scheduleLayout = useCallback(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+    }
+
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+
+      const editor = editorRef.current;
+      const container = containerRef.current;
+      if (!editor || !container) {
+        return;
+      }
+
+      const { width, height } = container.getBoundingClientRect();
+      if (width === 0 || height === 0) {
+        return;
+      }
+
+      const nextSize = {
+        width: Math.floor(width),
+        height: Math.floor(height),
+      };
+
+      if (nextSize.width === lastSizeRef.current.width && nextSize.height === lastSizeRef.current.height) {
+        return;
+      }
+
+      lastSizeRef.current = nextSize;
+      editor.layout(nextSize);
+    });
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    scheduleLayout();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', scheduleLayout);
+
+      return () => {
+        window.removeEventListener('resize', scheduleLayout);
+        if (frameRef.current !== null) {
+          cancelAnimationFrame(frameRef.current);
+        }
+      };
+    }
+
+    const observer = new ResizeObserver(() => {
+      scheduleLayout();
+    });
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [scheduleLayout]);
 
   return (
     <Box
@@ -27,18 +99,17 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
       position="relative"
       style={props.style}
     >
-      {/*
-         We have a problem in Safari with Monaco editor, when used with automaticLayout: true, which is a default,
-         it causes an infinite loop in Safari. It recalculates in a wrong way, changes the dimensions of a parent
-         and that triggers ResizeObserver again (see the internal implementation).
-         We tried to play with overflow, boxSizing, even manually using ResizeObserver.
-         Changing the parent to absolutely positioned element works around the issue for now.
-         */}
-      <Box h="full" position="absolute" w="full">
+      <Box h="full" position="absolute" ref={containerRef} w="full">
         <KowlEditor
           language="json"
+          onMount={(editor) => {
+            editorRef.current = editor;
+            lastSizeRef.current = { width: 0, height: 0 };
+            scheduleLayout();
+          }}
           options={{
             readOnly: true,
+            domReadOnly: true,
             // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
             // Issue: wordWrap: 'on' + 40KB single-line strings = blank content appears during scroll
             // Solution: Wrap at fixed column to break long lines into manageable chunks
@@ -47,9 +118,28 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
             wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
             stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
             maxTokenizationLineLength: 20_000, // Syntax highlighting limit
-            folding: false, // Unnecessary for read-only
+            automaticLayout: false,
+            folding: false,
+            showFoldingControls: 'never',
+            lineNumbers: 'off',
+            renderLineHighlight: 'none',
+            renderValidationDecorations: 'off',
+            hover: { enabled: false },
+            links: false,
+            matchBrackets: 'never',
+            stickyScroll: { enabled: false },
+            guides: {
+              indentation: false,
+              highlightActiveIndentation: false,
+              bracketPairs: false,
+              bracketPairsHorizontal: false,
+              highlightActiveBracketPair: false,
+            },
+            unicodeHighlight: {
+              ambiguousCharacters: false,
+              invisibleCharacters: false,
+            },
             scrollBeyondLastLine: false,
-            // automaticLayout: false // too much lag on chrome
           }}
           value={str}
         />

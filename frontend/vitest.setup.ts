@@ -4,6 +4,36 @@ import './tests/mock-document';
 import './tests/mock-react-select';
 
 window.scrollTo = vi.fn();
+Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  writable: true,
+  value: vi.fn().mockReturnValue({
+    fillStyle: '',
+    clearRect: vi.fn(),
+    fillRect: vi.fn(),
+    getImageData: vi.fn(),
+    putImageData: vi.fn(),
+    createImageData: vi.fn(),
+    setTransform: vi.fn(),
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    fillText: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    closePath: vi.fn(),
+    stroke: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    rotate: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    measureText: vi.fn().mockReturnValue({ width: 0 }),
+    transform: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+  }),
+});
 
 // Mock ResizeObserver - not available in jsdom but required by RadixUI components
 // (Switch, Tabs, etc.) that use @radix-ui/react-use-size internally
