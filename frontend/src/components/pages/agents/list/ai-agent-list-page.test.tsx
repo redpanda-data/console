@@ -75,6 +75,27 @@ const TYPE_DELETE_REGEX = /type "delete" to confirm/i;
 const DELETE_BUTTON_REGEX = /^delete$/i;
 const LOADING_AGENTS_REGEX = /loading ai agents/i;
 
+const createAIAgentsTransport = (options: {
+  listAIAgentsMock: ReturnType<typeof vi.fn>;
+  listMCPServersMock?: ReturnType<typeof vi.fn>;
+  deleteAIAgentMock?: ReturnType<typeof vi.fn>;
+  startAIAgentMock?: ReturnType<typeof vi.fn>;
+  stopAIAgentMock?: ReturnType<typeof vi.fn>;
+}) =>
+  createRouterTransport(({ rpc }) => {
+    rpc(listAIAgents, options.listAIAgentsMock);
+    rpc(listMCPServers, options.listMCPServersMock ?? vi.fn().mockReturnValue(create(ListMCPServersResponseSchema, {})));
+    if (options.deleteAIAgentMock) {
+      rpc(deleteAIAgent, options.deleteAIAgentMock);
+    }
+    if (options.startAIAgentMock) {
+      rpc(startAIAgent, options.startAIAgentMock);
+    }
+    if (options.stopAIAgentMock) {
+      rpc(stopAIAgent, options.stopAIAgentMock);
+    }
+  });
+
 describe('AIAgentsListPage', () => {
   test('should list all AI agents', async () => {
     const agent1 = create(AIAgentSchema, {
@@ -154,10 +175,7 @@ describe('AIAgentsListPage', () => {
     const listAIAgentsMock = vi.fn().mockReturnValue(listAIAgentsResponse);
     const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, listAIAgentsMock);
-      rpc(listMCPServers, listMCPServersMock);
-    });
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
@@ -215,11 +233,7 @@ describe('AIAgentsListPage', () => {
     const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
     const deleteAIAgentMock = vi.fn().mockReturnValue(create(DeleteAIAgentResponseSchema, {}));
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, listAIAgentsMock);
-      rpc(listMCPServers, listMCPServersMock);
-      rpc(deleteAIAgent, deleteAIAgentMock);
-    });
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock, deleteAIAgentMock });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
@@ -305,11 +319,7 @@ describe('AIAgentsListPage', () => {
       })
     );
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, listAIAgentsMock);
-      rpc(listMCPServers, listMCPServersMock);
-      rpc(stopAIAgent, stopAIAgentMock);
-    });
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock, stopAIAgentMock });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
@@ -386,11 +396,7 @@ describe('AIAgentsListPage', () => {
       })
     );
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, listAIAgentsMock);
-      rpc(listMCPServers, listMCPServersMock);
-      rpc(startAIAgent, startAIAgentMock);
-    });
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock, startAIAgentMock });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
@@ -446,10 +452,7 @@ describe('AIAgentsListPage', () => {
       })
     );
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, listAIAgentsMock);
-      rpc(listMCPServers, listMCPServersMock);
-    });
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
@@ -474,10 +477,7 @@ describe('AIAgentsListPage', () => {
     const listAIAgentsMock = vi.fn().mockReturnValue(listAIAgentsResponse);
     const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, listAIAgentsMock);
-      rpc(listMCPServers, listMCPServersMock);
-    });
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
 
@@ -559,5 +559,71 @@ describe('AIAgentsListPage', () => {
       expect(screen.getByText('Alpha Agent')).toBeVisible();
       expect(screen.queryByText('Beta Agent')).not.toBeInTheDocument();
     });
+  });
+
+  test('should update pagination footer and disable next button on the last page', async () => {
+    const user = userEvent.setup();
+    const aiAgents = Array.from({ length: 25 }, (_, index) =>
+      create(AIAgentSchema, {
+        id: `agent-${index + 1}`,
+        displayName: `Test Agent ${index + 1}`,
+        description: `Description ${index + 1}`,
+        state: AIAgent_State.RUNNING,
+        provider: {
+          provider: {
+            case: 'openai',
+            value: {
+              apiKey: `secret-${index + 1}`,
+            },
+          },
+        },
+        model: 'gpt-4',
+        systemPrompt: 'You are helpful',
+        mcpServers: {},
+        tags: {},
+      })
+    );
+
+    const listAIAgentsResponse = create(ListAIAgentsResponseSchema, {
+      aiAgents,
+      nextPageToken: '',
+    });
+
+    const listMCPServersResponse = create(ListMCPServersResponseSchema, {
+      mcpServers: [],
+      nextPageToken: '',
+    });
+
+    const listAIAgentsMock = vi.fn().mockReturnValue(listAIAgentsResponse);
+    const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock });
+
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 1 of 3')).toBeVisible();
+    });
+
+    const previousButton = screen.getByRole('button', { name: 'Previous Page' });
+    const nextButton = screen.getByRole('button', { name: 'Next Page' });
+
+    expect(previousButton).toBeDisabled();
+    expect(nextButton).toBeEnabled();
+
+    await user.click(nextButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 2 of 3')).toBeVisible();
+    });
+
+    expect(screen.getByRole('button', { name: 'Previous Page' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Next Page' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 3 of 3')).toBeVisible();
+    });
+
+    expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
   });
 });

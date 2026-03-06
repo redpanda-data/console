@@ -51,7 +51,7 @@ import {
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
@@ -126,8 +126,14 @@ export const AIAgentCreatePage = () => {
   });
 
   // Track the display name to auto-generate service account name
-  const displayName = form.watch('displayName');
-  const serviceAccountName = form.watch('serviceAccountName');
+  const displayName = useWatch({
+    control: form.control,
+    name: 'displayName',
+  });
+  const serviceAccountName = useWatch({
+    control: form.control,
+    name: 'serviceAccountName',
+  });
 
   // Auto-generate service account name when agent name changes
   useEffect(() => {
@@ -173,7 +179,10 @@ export const AIAgentCreatePage = () => {
   }, [secretsData]);
 
   // Auto-detect and prefill API key secret based on provider
-  const selectedProvider = form.watch('provider');
+  const selectedProvider = useWatch({
+    control: form.control,
+    name: 'provider',
+  });
   useEffect(() => {
     // Only auto-select if the field is currently empty
     if (form.getValues('apiKeySecret')) {
@@ -524,7 +533,7 @@ export const AIAgentCreatePage = () => {
                     isLoadingGateways={isLoadingGateways}
                     mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
-                    showBaseUrl={form.watch('provider') === 'openaiCompatible'}
+                    showBaseUrl={selectedProvider === 'openaiCompatible'}
                     showMaxIterations={true}
                   />
                 </CardContent>
