@@ -9,21 +9,28 @@
  */
 
 import { useMemo } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
+import { type UseFormReturn, useWatch } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
 
 export function useMetadataValidation(form: UseFormReturn<FormValues>) {
-  const formValues = form.watch();
+  const displayName = useWatch({
+    control: form.control,
+    name: 'displayName',
+  });
+  const resourcesTier = useWatch({
+    control: form.control,
+    name: 'resourcesTier',
+  });
 
   const isMetadataComplete = useMemo(() => {
     // Check displayName (required)
-    if (!formValues.displayName?.trim()) {
+    if (!displayName?.trim()) {
       return false;
     }
 
     // Check resourcesTier (required)
-    if (!formValues.resourcesTier?.trim()) {
+    if (!resourcesTier?.trim()) {
       return false;
     }
 
@@ -38,8 +45,8 @@ export function useMetadataValidation(form: UseFormReturn<FormValues>) {
 
     return !hasMetadataErrors;
   }, [
-    formValues.displayName,
-    formValues.resourcesTier,
+    displayName,
+    resourcesTier,
     form.formState.errors.displayName,
     form.formState.errors.description,
     form.formState.errors.resourcesTier,

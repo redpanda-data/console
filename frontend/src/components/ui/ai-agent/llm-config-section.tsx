@@ -77,6 +77,10 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
     control: form.control,
     name: [fieldNames.provider, fieldNames.gatewayId ?? fieldNames.provider],
   });
+  const maxIterations = useWatch({
+    control: form.control,
+    name: fieldNames.maxIterations,
+  });
   const selectedProvider = watchedValues[0] as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
   const selectedGatewayId = fieldNames.gatewayId ? watchedValues[1] as string | undefined : undefined;
   const isUsingGateway = hasGatewayDeployed && !!selectedGatewayId;
@@ -443,7 +447,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 					<div className="flex items-center justify-between">
 						<FieldLabel htmlFor="maxIterations">Max Iterations</FieldLabel>
 						<Text className="font-medium text-sm">
-							{form.watch(fieldNames.maxIterations)}
+							{maxIterations}
 						</Text>
 					</div>
 					<Controller
