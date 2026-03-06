@@ -13,6 +13,11 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# For enterprise workspace builds, go.work references .e2e-workspace/console-oss-backend/
+# which was temporarily copied into the build context by global-setup.mjs.
+# Run a second go mod download to fetch any additional workspace module deps.
+RUN if [ -f "go.work" ]; then go mod download; fi
+
 # Build the binary (works for both OSS and Enterprise structure)
 # OSS: cmd/api/main.go, Enterprise: cmd/main.go
 RUN if [ -d "/app/cmd/api" ]; then \

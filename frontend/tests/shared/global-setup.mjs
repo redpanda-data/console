@@ -418,6 +418,51 @@ async function buildBackendImage(isEnterprise) {
     const dockerfilePath = resolve(__dirname, 'Dockerfile.backend');
     const tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
 
+    // For enterprise workspace builds (go.work exists), the workspace references
+    // modules outside the backend/ directory (e.g., ../console-oss/backend).
+    // We copy those into the build context and rewrite go.work to use local paths.
+    const isWorkspaceBuild = isEnterprise && existsSync(join(backendDir, 'go.work'));
+    const workspaceDir = join(backendDir, '.e2e-workspace');
+
+    if (isWorkspaceBuild) {
+      console.log('Workspace build detected (go.work found)');
+      const goWorkContent = readFileSync(join(backendDir, 'go.work'), 'utf-8');
+
+      // Parse workspace module paths (skip "." which is the backend itself)
+      const useRegex = /^\s+(\S+)\s*$/gm;
+      const rewrittenPaths = [];
+      let match;
+      while ((match = useRegex.exec(goWorkContent)) !== null) {
+        const modulePath = match[1];
+        if (modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')') continue;
+
+        // Resolve the actual path relative to backendDir
+        const absModulePath = resolve(backendDir, modulePath);
+        if (!existsSync(absModulePath)) {
+          console.warn(`  Workspace module not found: ${absModulePath}, skipping`);
+          continue;
+        }
+
+        // Create a sanitized directory name
+        const localName = modulePath.replace(/[./]/g, '-').replace(/^-+|-+$/g, '');
+        const destPath = join(workspaceDir, localName);
+
+        console.log(`  Copying workspace module: ${modulePath} -> .e2e-workspace/${localName}`);
+        await execAsync(`mkdir -p "${destPath}" && cp -r "${absModulePath}"/* "${destPath}"/`);
+        rewrittenPaths.push({ original: modulePath, local: `.e2e-workspace/${localName}` });
+      }
+
+      // Rewrite go.work to use local paths
+      if (rewrittenPaths.length > 0) {
+        let newGoWork = goWorkContent;
+        for (const { original, local } of rewrittenPaths) {
+          newGoWork = newGoWork.replace(original, local);
+        }
+        writeFileSync(join(backendDir, 'go.work'), newGoWork);
+        console.log('  ✓ Rewrote go.work with local paths');
+      }
+    }
+
     console.log('Building Docker image with testcontainers...');
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
 
@@ -429,8 +474,11 @@ async function buildBackendImage(isEnterprise) {
         .build(imageTag, { deleteOnExit: false });
       console.log('✓ Backend image built');
     } finally {
-      // Clean up temporary Dockerfile
+      // Clean up temporary Dockerfile and workspace directory
       await execAsync(`rm -f "${tempDockerfile}"`).catch(() => {});
+      if (isWorkspaceBuild) {
+        await execAsync(`rm -rf "${workspaceDir}"`).catch(() => {});
+      }
     }
 
     return imageTag;
