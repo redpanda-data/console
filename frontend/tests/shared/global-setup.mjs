@@ -146,8 +146,21 @@ async function verifyRedpandaServices(state, ports) {
   }
   console.log('✓ Admin API is ready');
 
-  console.log(`Checking if Schema Registry is ready (port ${ports.redpandaSchemaRegistry})...`);
-  await waitForPort(ports.redpandaSchemaRegistry, 60, 2000);
+  // Check Schema Registry from inside the container to avoid macOS port-forwarding latency
+  console.log('Checking if Schema Registry is ready...');
+  for (let i = 0; i < 30; i++) {
+    try {
+      await execAsync(
+        `docker exec ${state.redpandaId} curl -s -m 3 -o /dev/null -w "%{http_code}" http://localhost:18081/subjects`
+      );
+      break;
+    } catch {
+      if ((i + 1) % 5 === 0) {
+        console.log(`  Still waiting for Schema Registry... (attempt ${i + 1}/30)`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
   console.log('✓ Schema Registry is ready');
 
   // Verify SASL authentication is working
@@ -284,7 +297,9 @@ topic.creation.enable=false
         CONNECT_LOG_LEVEL: 'info',
         CONNECT_TOPIC_LOG_ENABLED: 'true',
       })
-      .withWaitStrategy(Wait.forHttp('/', 8083).forStatusCode(200).withReadTimeout(5000))
+      // Use log-based wait: avoids IPv4/IPv6 port-forwarding issues on macOS Docker Desktop.
+      // Kafka Connect prints "REST resources initialized" when the HTTP API is ready.
+      .withWaitStrategy(Wait.forLogMessage(/.*REST resources initialized.*/i))
       .withStartupTimeout(300_000)
       .start();
 
@@ -292,10 +307,25 @@ topic.creation.enable=false
     state.connectContainer = connect;
     console.log(`✓ Kafka Connect container started: ${state.connectId}`);
 
-    // Verify it's responding
+    // Verify it's responding via docker exec (avoids macOS Docker Desktop port-forwarding latency)
     console.log('Verifying Kafka Connect API...');
+    for (let i = 0; i < 30; i++) {
+      try {
+        await execAsync(
+          `docker exec ${state.redpandaId} curl -s -m 5 -o /dev/null -w "%{http_code}" http://connect:8083/`
+        );
+        break;
+      } catch {
+        if ((i + 1) % 5 === 0) console.log(`  Still waiting for Kafka Connect API... (attempt ${i + 1}/30)`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+    console.log('✓ Kafka Connect API ready (internal)');
+
+    // Also wait for the host port to be forwarded (needed for tests that POST directly to the API)
+    console.log(`Waiting for Kafka Connect host port ${ports.kafkaConnect}...`);
     await waitForPort(ports.kafkaConnect, 60, 2000);
-    console.log('✓ Kafka Connect API ready');
+    console.log(`✓ Kafka Connect host port ${ports.kafkaConnect} ready`);
   } catch (error) {
     console.log('⚠ Kafka Connect failed to start (connector tests may fail)');
     console.log(`  Error: ${error.message}`);
@@ -593,11 +623,25 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
       console.log(logs);
     }
 
-    // Now wait for port to be ready
-    console.log(`Waiting for port ${ports.backend} to be ready...`);
-    console.log('Testing connection with curl...');
+    // Wait for backend via docker exec (avoids macOS Docker Desktop port-forwarding latency)
+    console.log('Waiting for backend to be ready (internal port 3000)...');
+    for (let i = 0; i < 90; i++) {
+      try {
+        await execAsync(
+          `docker exec ${state.redpandaId} curl -s -m 5 -o /dev/null -w "%{http_code}" http://console-backend:3000/`
+        );
+        break;
+      } catch {
+        if ((i + 1) % 10 === 0) console.log(`  Still waiting for backend... (attempt ${i + 1}/90)`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+    console.log('✓ Backend ready (internal)');
+
+    // Also wait for host port to be forwarded (browser navigates to localhost:port)
+    console.log(`Waiting for backend host port ${ports.backend}...`);
     await waitForPort(ports.backend, 90, 2000);
-    console.log(`✓ Port ${ports.backend} is ready`);
+    console.log(`✓ Backend host port ${ports.backend} ready`);
   } catch (error) {
     console.error('Failed to start backend container:', error.message);
 
@@ -961,13 +1005,7 @@ export default async function globalSetup(config = {}) {
       await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
     }
 
-    // Wait for services to be ready
-    console.log('Waiting for backend to be ready...');
-    await waitForPort(ports.backend, 60, 1000);
     console.log('Backend is ready');
-
-    console.log('Waiting for frontend to be ready...');
-    await waitForPort(ports.backend, 60, 1000);
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {
