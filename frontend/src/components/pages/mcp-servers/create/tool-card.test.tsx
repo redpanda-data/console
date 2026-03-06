@@ -39,8 +39,7 @@ beforeAll(() => {
   }
 });
 
-const CACHE_DESCRIPTION =
-  'Cache is a key/value store used for data deduplication, joins, and temporary storage.';
+const CACHE_DESCRIPTION = 'Cache is a key/value store used for data deduplication, joins, and temporary storage.';
 const HTTP_TEMPLATE_DESCRIPTION = 'Fetch data from HTTP endpoints';
 const MEMORY_CACHE_TEMPLATE_DESCRIPTION = 'In-memory cache for storing user data, configuration, and temporary values';
 
