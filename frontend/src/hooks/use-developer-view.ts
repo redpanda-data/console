@@ -1,9 +1,10 @@
 import { useKey, useLocalStorage } from '@redpanda-data/ui';
+import { IsDev } from 'utils/env';
 
 const useDeveloperView = (): boolean => {
   const [developerView, setDeveloperView] = useLocalStorage('dv', false);
   useKey('?', () => {
-    if (import.meta.env.DEV) {
+    if (IsDev) {
       setDeveloperView(!developerView);
     }
   });
@@ -22,7 +23,7 @@ export const runDeveloperView = (): boolean => {
     console.error(error);
   }
 
-  if (import.meta.env.DEV) {
+  if (IsDev) {
     const onDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === '?') {
         window.localStorage.setItem('dv', JSON.stringify(!developerView));
