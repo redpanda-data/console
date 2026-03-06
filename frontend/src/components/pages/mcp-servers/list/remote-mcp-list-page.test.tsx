@@ -55,6 +55,25 @@ const TYPE_DELETE_REGEX = /type "delete" to confirm/i;
 const DELETE_BUTTON_REGEX = /^delete$/i;
 const LOADING_SERVERS_REGEX = /loading mcp servers/i;
 
+const createMCPServersTransport = (options: {
+  listMCPServersMock: ReturnType<typeof vi.fn>;
+  deleteMCPServerMock?: ReturnType<typeof vi.fn>;
+  startMCPServerMock?: ReturnType<typeof vi.fn>;
+  stopMCPServerMock?: ReturnType<typeof vi.fn>;
+}) =>
+  createRouterTransport(({ rpc }) => {
+    rpc(listMCPServers, options.listMCPServersMock);
+    if (options.deleteMCPServerMock) {
+      rpc(deleteMCPServer, options.deleteMCPServerMock);
+    }
+    if (options.startMCPServerMock) {
+      rpc(startMCPServer, options.startMCPServerMock);
+    }
+    if (options.stopMCPServerMock) {
+      rpc(stopMCPServer, options.stopMCPServerMock);
+    }
+  });
+
 describe('RemoteMCPListPage', () => {
   test('should list all MCP servers', async () => {
     const server1 = create(MCPServerSchema, {
@@ -90,9 +109,7 @@ describe('RemoteMCPListPage', () => {
 
     const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listMCPServers, listMCPServersMock);
-    });
+    const transport = createMCPServersTransport({ listMCPServersMock });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
@@ -134,10 +151,7 @@ describe('RemoteMCPListPage', () => {
     const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
     const deleteMCPServerMock = vi.fn().mockReturnValue(create(DeleteMCPServerResponseSchema, {}));
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listMCPServers, listMCPServersMock);
-      rpc(deleteMCPServer, deleteMCPServerMock);
-    });
+    const transport = createMCPServersTransport({ listMCPServersMock, deleteMCPServerMock });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
@@ -211,10 +225,7 @@ describe('RemoteMCPListPage', () => {
       })
     );
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listMCPServers, listMCPServersMock);
-      rpc(stopMCPServer, stopMCPServerMock);
-    });
+    const transport = createMCPServersTransport({ listMCPServersMock, stopMCPServerMock });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
@@ -279,10 +290,7 @@ describe('RemoteMCPListPage', () => {
       })
     );
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listMCPServers, listMCPServersMock);
-      rpc(startMCPServer, startMCPServerMock);
-    });
+    const transport = createMCPServersTransport({ listMCPServersMock, startMCPServerMock });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
@@ -331,9 +339,7 @@ describe('RemoteMCPListPage', () => {
         })
     );
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listMCPServers, listMCPServersMock);
-    });
+    const transport = createMCPServersTransport({ listMCPServersMock });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
@@ -352,14 +358,66 @@ describe('RemoteMCPListPage', () => {
 
     const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
 
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listMCPServers, listMCPServersMock);
-    });
+    const transport = createMCPServersTransport({ listMCPServersMock });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
 
     await waitFor(() => {
       expect(screen.getByText('No MCP servers found.')).toBeVisible();
     });
+  });
+
+  test('should update pagination footer and disable next button on the last page', async () => {
+    const user = userEvent.setup();
+    const mcpServers = Array.from({ length: 25 }, (_, index) =>
+      create(MCPServerSchema, {
+        id: `server-${index + 1}`,
+        displayName: `Test Server ${index + 1}`,
+        url: `http://localhost:${8080 + index}`,
+        state: MCPServer_State.RUNNING,
+        tools: {
+          [`test-tool-${index + 1}`]: {
+            componentType: 1,
+            configYaml: `test: config-${index + 1}`,
+          },
+        },
+      })
+    );
+
+    const listMCPServersResponse = create(ListMCPServersResponseSchema, {
+      mcpServers,
+      nextPageToken: '',
+    });
+
+    const listMCPServersMock = vi.fn().mockReturnValue(listMCPServersResponse);
+    const transport = createMCPServersTransport({ listMCPServersMock });
+
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 1 of 3')).toBeVisible();
+    });
+
+    const previousButton = screen.getByRole('button', { name: 'Previous Page' });
+    const nextButton = screen.getByRole('button', { name: 'Next Page' });
+
+    expect(previousButton).toBeDisabled();
+    expect(nextButton).toBeEnabled();
+
+    await user.click(nextButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 2 of 3')).toBeVisible();
+    });
+
+    expect(screen.getByRole('button', { name: 'Previous Page' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Next Page' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page 3 of 3')).toBeVisible();
+    });
+
+    expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
   });
 });

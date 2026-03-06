@@ -620,7 +620,16 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      <DataTablePagination table={table} />
+      <DataTablePagination
+        pagination={{
+          canNextPage: table.getCanNextPage(),
+          canPreviousPage: table.getCanPreviousPage(),
+          pageCount: table.getPageCount(),
+          pageIndex: table.getState().pagination.pageIndex,
+          pageSize: table.getState().pagination.pageSize,
+        }}
+        table={table}
+      />
     </div>
   );
 };
