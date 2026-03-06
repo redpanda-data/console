@@ -25,3 +25,5 @@ func (c *GitAuthSSH) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
 	f.StringVar(&c.PrivateKey, prefix+"git.ssh.private-key", "", "Private key for Git authentication")
 	f.StringVar(&c.Passphrase, prefix+"git.ssh.passphrase", "", "Passphrase to decrypt private key")
 }
+
+
