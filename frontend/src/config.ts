@@ -23,7 +23,6 @@ import {
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
-import { autorun } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
