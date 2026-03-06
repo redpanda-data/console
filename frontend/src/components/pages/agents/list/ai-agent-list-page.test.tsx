@@ -84,7 +84,10 @@ const createAIAgentsTransport = (options: {
 }) =>
   createRouterTransport(({ rpc }) => {
     rpc(listAIAgents, options.listAIAgentsMock);
-    rpc(listMCPServers, options.listMCPServersMock ?? vi.fn().mockReturnValue(create(ListMCPServersResponseSchema, {})));
+    rpc(
+      listMCPServers,
+      options.listMCPServersMock ?? vi.fn().mockReturnValue(create(ListMCPServersResponseSchema, {}))
+    );
     if (options.deleteAIAgentMock) {
       rpc(deleteAIAgent, options.deleteAIAgentMock);
     }
