@@ -202,8 +202,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           <Flex alignItems="center" gap="1">
             {subject.compatibility}
             {canManageSchemaRegistry !== false && (
-              <EditIcon
-                className="size-3.5 cursor-pointer text-gray-400 hover:text-gray-600"
+              <RegistryButton
                 data-testid="schema-details-edit-compatibility-icon"
                 onClick={() =>
                   navigate({
@@ -211,7 +210,11 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                     params: { subjectName: subjectNameEncoded },
                   })
                 }
-              />
+                size="icon-xs"
+                variant="secondary-ghost"
+              >
+                <EditIcon />
+              </RegistryButton>
             )}
           </Flex>
         </SmallStat>
