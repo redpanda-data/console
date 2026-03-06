@@ -14,6 +14,32 @@ import { observer } from 'mobx-react';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef } from 'react';
 import KowlEditor, { type IStandaloneCodeEditor } from './KowlEditor';
 
+const READ_ONLY_EDITOR_OPTIONS = {
+  readOnly: true,
+  domReadOnly: true,
+  automaticLayout: false,
+  folding: false,
+  showFoldingControls: 'never',
+  lineNumbers: 'off',
+  renderLineHighlight: 'none',
+  renderValidationDecorations: 'off',
+  hover: { enabled: false },
+  links: false,
+  matchBrackets: 'never',
+  stickyScroll: { enabled: false },
+  guides: {
+    indentation: false,
+    highlightActiveIndentation: false,
+    bracketPairs: false,
+    bracketPairsHorizontal: false,
+    highlightActiveBracketPair: false,
+  },
+  unicodeHighlight: {
+    ambiguousCharacters: false,
+    invisibleCharacters: false,
+  },
+} as const;
+
 export const KowlJsonView = observer(
   (props: {
     srcObj: object | string | null | undefined;
@@ -52,6 +78,15 @@ export const KowlJsonView = observer(
         editor.layout(nextSize);
       });
     }, []);
+
+    const handleMount = useCallback(
+      (editor: IStandaloneCodeEditor) => {
+        editorRef.current = editor;
+        lastSizeRef.current = { width: 0, height: 0 };
+        scheduleLayout();
+      },
+      [scheduleLayout],
+    );
 
     useEffect(() => {
       const container = containerRef.current;
@@ -92,36 +127,8 @@ export const KowlJsonView = observer(
           <KowlEditor
             value={str}
             language="json"
-            onMount={(editor) => {
-              editorRef.current = editor;
-              lastSizeRef.current = { width: 0, height: 0 };
-              scheduleLayout();
-            }}
-            options={{
-              readOnly: true,
-              domReadOnly: true,
-              automaticLayout: false,
-              folding: false,
-              showFoldingControls: 'never',
-              lineNumbers: 'off',
-              renderLineHighlight: 'none',
-              renderValidationDecorations: 'off',
-              hover: { enabled: false },
-              links: false,
-              matchBrackets: 'never',
-              stickyScroll: { enabled: false },
-              guides: {
-                indentation: false,
-                highlightActiveIndentation: false,
-                bracketPairs: false,
-                bracketPairsHorizontal: false,
-                highlightActiveBracketPair: false,
-              },
-              unicodeHighlight: {
-                ambiguousCharacters: false,
-                invisibleCharacters: false,
-              },
-            }}
+            onMount={handleMount}
+            options={READ_ONLY_EDITOR_OPTIONS}
           />
         </Box>
       </Box>

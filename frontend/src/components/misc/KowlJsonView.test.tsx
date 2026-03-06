@@ -124,7 +124,9 @@ describe('KowlJsonView', () => {
       resizeCallback?.([] as ResizeObserverEntry[], {} as ResizeObserver);
     });
 
-    expect(editorLayoutSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(editorLayoutSpy).toHaveBeenCalledTimes(1);
+    });
 
     currentSize = { width: 800, height: 480 };
 
