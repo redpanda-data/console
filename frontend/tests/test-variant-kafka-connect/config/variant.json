@@ -1,5 +1,5 @@
 {
-  "name": "console-connect",
+  "name": "kafka-connect",
   "displayName": "Console OSS with Kafka Connect",
   "isEnterprise": false,
   "needsShadowlink": false,

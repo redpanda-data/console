@@ -40,9 +40,9 @@ const config = defineConfig({
 
   /* Custom metadata for setup/teardown */
   metadata: {
-    variant: 'console-connect',
-    variantName: 'console-connect',
-    configFile: 'console-connect.config.yaml',
+    variant: 'kafka-connect',
+    variantName: 'kafka-connect',
+    configFile: 'kafka-connect.config.yaml',
     isEnterprise: false,
     needsShadowlink: false,
     needsConnect: true,
