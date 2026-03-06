@@ -337,7 +337,8 @@ export type GroupAction = 'all' | (typeof GroupActions)[number];
 
 export type GroupDescription = {
   groupId: string; // name of the group
-  state: string; // Dead, Initializing, Rebalancing, Stable
+  groupType: string; // "classic" or "consumer" (KIP-848)
+  state: string; // Dead, Initializing, Rebalancing, Stable, Assigning, Reconciling
   protocol: string;
   protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
   members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
