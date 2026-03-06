@@ -418,15 +418,17 @@ async function buildBackendImage(isEnterprise) {
     const dockerfilePath = resolve(__dirname, 'Dockerfile.backend');
     const tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
 
-    console.log('Building Docker image with testcontainers...');
+    console.log('Building Docker image...');
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
 
     try {
-      await GenericContainer.fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
-        .withBuildArgs({
-          BUILDKIT_INLINE_CACHE: '1',
-        })
-        .build(imageTag, { deleteOnExit: false });
+      const { stdout: buildOutput, stderr: buildStderr } = await execAsync(
+        `docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t "${imageTag}" -f "${tempDockerfile}" "${backendDir}" 2>&1`
+      ).catch((err) => {
+        // execAsync throws on non-zero exit; capture stdout/stderr from error
+        throw new Error(`Docker build failed:\n${err.stdout ?? ''}\n${err.stderr ?? ''}\n${err.message}`);
+      });
+      console.log(buildOutput || buildStderr || '');
       console.log('✓ Backend image built');
     } finally {
       // Clean up temporary Dockerfile
