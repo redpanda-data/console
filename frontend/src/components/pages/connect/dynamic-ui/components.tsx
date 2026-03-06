@@ -10,8 +10,7 @@
  */
 
 import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
-import { useState } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 
 import { ConnectorStepComponent } from './connector-step';
 import { isEmbedded } from '../../../../config';
@@ -28,7 +27,13 @@ export type ConfigPageProps = {
   context: 'CREATE' | 'EDIT';
 };
 
-export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore, context }: ConfigPageProps) => {
+export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context }: ConfigPageProps) => {
+  const subscribe = useCallback((cb: () => void) => connectorStore.subscribe(cb), [connectorStore]);
+  useSyncExternalStore(subscribe, connectorStore.getVersion);
+
+  const [viewMode, setViewMode] = useState<'form' | 'json'>(connectorStore.viewMode);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(connectorStore.showAdvancedOptions);
+
   if (connectorStore.error) {
     return (
       <div>
@@ -64,21 +69,23 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
           name="settingsMode"
           onChange={(x) => {
             connectorStore.viewMode = x;
+            setViewMode(x as 'form' | 'json');
           }}
           options={[
             { value: 'form', label: <Box mx="4">Form</Box> },
             { value: 'json', label: <Box mx="4">JSON</Box> },
           ]}
-          value={connectorStore.viewMode}
+          value={viewMode}
         />
       </Box>
 
-      {connectorStore.viewMode === 'form' ? (
+      {viewMode === 'form' ? (
         <>
           <Switch
-            isChecked={connectorStore.showAdvancedOptions}
+            isChecked={showAdvancedOptions}
             onChange={(s) => {
               connectorStore.showAdvancedOptions = s.target.checked;
+              setShowAdvancedOptions(s.target.checked);
             }}
           >
             Show advanced options
@@ -91,7 +98,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
               context={context}
               groups={groups}
               key={step.stepIndex}
-              showAdvancedOptions={connectorStore.showAdvancedOptions}
+              showAdvancedOptions={showAdvancedOptions}
               step={step}
             />
           ))}
@@ -103,7 +110,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
       )}
     </>
   );
-});
+};
 
 function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; context: 'CREATE' | 'EDIT' }) {
   const connectorStore = p.connectorStore;
