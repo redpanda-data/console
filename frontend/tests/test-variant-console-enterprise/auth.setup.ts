@@ -21,8 +21,33 @@ async function dismissErrorModalIfPresent(page: Page): Promise<void> {
   }
 }
 
+/**
+ * Navigates to the login page and waits for the username input to be visible.
+ * Retries with page reload if the form doesn't appear (backend may not be fully ready yet).
+ */
+async function navigateToLoginPage(page: Page): Promise<void> {
+  // Navigate directly to /login to avoid redirect timing issues from /
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+
+  // Wait for login form with reload retry (backend auth system may need a moment)
+  const usernameInput = page.getByTestId('auth-username-input');
+  const maxAttempts = 5;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const isVisible = await usernameInput.isVisible({ timeout: 8000 }).catch(() => false);
+    if (isVisible) {
+      return;
+    }
+
+    if (attempt < maxAttempts) {
+      // Reload the page and try again — the backend auth system may still be initializing
+      await page.reload({ waitUntil: 'domcontentloaded' });
+    }
+  }
+}
+
 setup('authenticate', async ({ page }) => {
-  await page.goto('/', { waitUntil: 'networkidle' });
+  await navigateToLoginPage(page);
 
   // Wait for login form to be visible
   await page.getByTestId('auth-username-input').waitFor({ state: 'visible', timeout: 30_000 });
