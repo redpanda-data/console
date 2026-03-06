@@ -35,23 +35,41 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
 
 type ExpandedMessageProps = {
   msg: TopicMessage;
-  topicName: string;
-  onLoadLargeMessage: (topicName: string, partitionID: number, offset: number) => Promise<void>;
+  loadLargeMessage?: () => Promise<void>;
+  onDownloadRecord?: () => void;
+  topicName?: string;
+  onLoadLargeMessage?: (topicName: string, partitionID: number, offset: number) => Promise<void>;
   onSetDownloadMessages?: (messages: TopicMessage[]) => void;
   onCopyKey?: (original: TopicMessage) => void;
   onCopyValue?: (original: TopicMessage) => void;
 };
 
 export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
-  ({ msg, topicName, onLoadLargeMessage, onSetDownloadMessages, onCopyKey, onCopyValue }) => {
+  ({
+    msg,
+    loadLargeMessage,
+    onDownloadRecord,
+    topicName,
+    onLoadLargeMessage,
+    onSetDownloadMessages,
+    onCopyKey,
+    onCopyValue,
+  }) => {
     const bg = useColorModeValue('gray.50', 'gray.600');
-    const loadLargeMessage = useCallback(
-      () => onLoadLargeMessage(topicName, msg.partitionID, msg.offset),
-      [msg.offset, msg.partitionID, onLoadLargeMessage, topicName]
+    const handleLoadLargeMessage = useCallback(
+      () =>
+        onLoadLargeMessage && topicName !== undefined
+          ? onLoadLargeMessage(topicName, msg.partitionID, msg.offset)
+          : (loadLargeMessage?.() ?? Promise.resolve()),
+      [loadLargeMessage, msg.offset, msg.partitionID, onLoadLargeMessage, topicName]
     );
-    const onDownloadRecord = useCallback(() => {
-      onSetDownloadMessages?.([msg]);
-    }, [msg, onSetDownloadMessages]);
+    const handleDownloadRecord = useCallback(() => {
+      if (onSetDownloadMessages) {
+        onSetDownloadMessages([msg]);
+        return;
+      }
+      onDownloadRecord?.();
+    }, [msg, onDownloadRecord, onSetDownloadMessages]);
     const handleCopyKey = useCallback(() => {
       onCopyKey?.(msg);
     }, [msg, onCopyKey]);
@@ -77,8 +95,8 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
               component: (
                 <Box>
                   <TroubleshootReportViewer payload={msg.key} />
-                  <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.key} />
-                  <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
+                  <PayloadComponent loadLargeMessage={handleLoadLargeMessage} payload={msg.key} />
+                  <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
                     {onCopyKey ? (
                       <Button isDisabled={msg.key.isPayloadNull} onClick={handleCopyKey} variant="outline">
                         Copy Key
@@ -98,8 +116,8 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
               component: (
                 <Box>
                   <TroubleshootReportViewer payload={msg.value} />
-                  <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.value} />
-                  <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
+                  <PayloadComponent loadLargeMessage={handleLoadLargeMessage} payload={msg.value} />
+                  <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
                     {onCopyValue ? (
                       <Button isDisabled={msg.value.isPayloadNull} onClick={handleCopyValue} variant="outline">
                         Copy Value
@@ -118,7 +136,9 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
               component: (
                 <Box>
                   <MessageHeaders msg={msg} />
-                  {onSetDownloadMessages ? <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} /> : null}
+                  {onSetDownloadMessages || onDownloadRecord ? (
+                    <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord} />
+                  ) : null}
                 </Box>
               ),
             },

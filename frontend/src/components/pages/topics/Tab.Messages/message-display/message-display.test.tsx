@@ -14,13 +14,11 @@ vi.mock('@redpanda-data/ui', async () => {
     Box: Div,
     Flex: Div,
     Text: Div,
-    Button: React.forwardRef<HTMLButtonElement, Record<string, unknown>>(
-      ({ children, isDisabled, ...props }, ref) => (
-        <button ref={ref} disabled={Boolean(isDisabled)} {...props}>
-          {children}
-        </button>
-      )
-    ),
+    Button: React.forwardRef<HTMLButtonElement, Record<string, unknown>>(({ children, isDisabled, ...props }, ref) => (
+      <button disabled={Boolean(isDisabled)} ref={ref} {...props}>
+        {children}
+      </button>
+    )),
     Tabs: ({ defaultIndex = 0, items }: { defaultIndex?: number; items: Array<{ component: React.ReactNode }> }) => (
       <div>{items[defaultIndex]?.component}</div>
     ),
@@ -29,10 +27,10 @@ vi.mock('@redpanda-data/ui', async () => {
   };
 });
 
-import { CompressionType, type Payload, type TopicMessage } from '../../../../../state/rest-interfaces';
 import { ExpandedMessage } from './expanded-message';
 import { MessageKeyPreview } from './message-key-preview';
 import { MessagePreview } from './message-preview';
+import { CompressionType, type Payload, type TopicMessage } from '../../../../../state/rest-interfaces';
 
 const { kowlJsonViewSpy } = vi.hoisted(() => ({
   kowlJsonViewSpy: vi.fn(),

@@ -35,7 +35,7 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
 
       const editor = editorRef.current;
       const container = containerRef.current;
-      if (!editor || !container) {
+      if (!(editor && container)) {
         return;
       }
 
