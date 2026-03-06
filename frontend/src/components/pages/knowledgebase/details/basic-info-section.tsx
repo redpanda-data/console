@@ -39,9 +39,12 @@ type BasicInfoSectionProps = {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSave: () => Promise<void>;
-  formHasChanges: boolean;
+  isDirty: boolean;
   isUpdating: boolean;
 };
+
+const tagsToArray = (tags: Record<string, string> | undefined) =>
+  tags && typeof tags === 'object' ? Object.entries(tags).map(([key, value]) => ({ key, value })) : [];
 
 const hasDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
   const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
@@ -60,23 +63,22 @@ export const BasicInfoSection = ({
   onStartEdit,
   onCancelEdit,
   onSave,
-  formHasChanges,
+  isDirty,
   isUpdating,
 }: BasicInfoSectionProps) => {
   const { control, setValue } = useFormContext<KnowledgeBaseUpdateForm>();
 
   // Store editable tags in local state, independent from form state
-  const [editableTags, setEditableTags] = React.useState<Array<{ key: string; value: string }>>([]);
+  const [editableTags, setEditableTags] = React.useState<Array<{ key: string; value: string }>>(() =>
+    tagsToArray(knowledgeBase.tags)
+  );
 
-  // Initialize editableTags from knowledgeBase.tags when component mounts or knowledgeBase changes
-  useEffect(() => {
-    if (knowledgeBase.tags && typeof knowledgeBase.tags === 'object') {
-      const newTagsArray = Object.entries(knowledgeBase.tags).map(([key, value]) => ({ key, value }));
-      setEditableTags(newTagsArray);
-    } else {
-      setEditableTags([]);
-    }
-  }, [knowledgeBase]);
+  // Reset editableTags when knowledgeBase changes (sync during render, not in effect)
+  const [prevKnowledgeBase, setPrevKnowledgeBase] = React.useState(knowledgeBase);
+  if (prevKnowledgeBase !== knowledgeBase) {
+    setPrevKnowledgeBase(knowledgeBase);
+    setEditableTags(tagsToArray(knowledgeBase.tags));
+  }
 
   // Serialize editableTags to form state whenever they change
   // Only include tags with both key and value filled
@@ -102,7 +104,7 @@ export const BasicInfoSection = ({
           <div className="flex gap-2">
             {isEditMode ? (
               <>
-                <Button disabled={!formHasChanges || isUpdating} onClick={onSave} variant="primary">
+                <Button disabled={!isDirty || isUpdating} onClick={onSave} variant="primary">
                   <Save className="h-4 w-4" />
                   Save Changes
                 </Button>

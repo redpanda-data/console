@@ -220,7 +220,6 @@ export const KnowledgeBaseDetailsPage = () => {
 
   // Local state
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formHasChanges, setFormHasChanges] = useState(false);
   const prevEditModeRef = useRef(isEditMode);
 
   // Fetch knowledge base data
@@ -274,13 +273,6 @@ export const KnowledgeBaseDetailsPage = () => {
   // Subscribe to form changes by accessing isDirty during render
   const { isDirty } = form.formState;
 
-  // Sync isDirty to formHasChanges (adjusting state during render instead of useEffect)
-  const [prevIsDirty, setPrevIsDirty] = useState(isDirty);
-  if (isDirty !== prevIsDirty) {
-    setPrevIsDirty(isDirty);
-    setFormHasChanges(isDirty);
-  }
-
   const generateUpdateMask = useCallback((): string[] => {
     const updateMask: string[] = [];
     const dirtyFields = form.formState.dirtyFields;
@@ -309,12 +301,10 @@ export const KnowledgeBaseDetailsPage = () => {
   // Handlers
   const handleStartEdit = () => {
     setIsEditMode(true);
-    setFormHasChanges(false);
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    setFormHasChanges(false);
     refreshFormData();
   };
 
@@ -374,7 +364,6 @@ export const KnowledgeBaseDetailsPage = () => {
           toast.success('Knowledge base updated successfully');
           refetchKnowledgeBase();
           setIsEditMode(false);
-          setFormHasChanges(false);
           form.reset(updatedKnowledgeBase, { keepValues: true });
           resolve();
         },
@@ -488,7 +477,7 @@ export const KnowledgeBaseDetailsPage = () => {
 
           <TabsContent value="configuration">
             <KnowledgeBaseConfigurationTab
-              formHasChanges={formHasChanges}
+              isDirty={isDirty}
               isEditMode={isEditMode}
               isUpdating={isUpdating}
               knowledgeBase={knowledgeBase}
