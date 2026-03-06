@@ -113,7 +113,7 @@ export const MessageKeyPreview = observer(
           return text;
         }
         // Normal display (json, no filters). Reuse the cached JSON string.
-        text = cullText((msg.keyJson as string | undefined) ?? JSON.stringify(key.payload), 44);
+        text = cullText(msg.keyJson, 44);
       }
 
       return (

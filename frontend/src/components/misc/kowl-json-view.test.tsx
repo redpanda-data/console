@@ -88,7 +88,7 @@ describe('KowlJsonView', () => {
     if (originalResizeObserver) {
       globalThis.ResizeObserver = originalResizeObserver;
     } else {
-      delete (globalThis as typeof globalThis & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+      (globalThis as typeof globalThis & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver = undefined;
     }
   });
 
@@ -143,7 +143,9 @@ describe('KowlJsonView', () => {
       resizeCallback?.([] as ResizeObserverEntry[], {} as ResizeObserver);
     });
 
-    expect(editorLayoutSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(editorLayoutSpy).toHaveBeenCalledTimes(1);
+    });
 
     currentSize = { width: 800, height: 480 };
 

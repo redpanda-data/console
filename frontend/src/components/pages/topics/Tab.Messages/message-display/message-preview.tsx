@@ -92,7 +92,7 @@ export const MessagePreview = observer(
           return text;
         }
         // Normal display (json, no filters). Reuse the cached JSON string.
-        text = cullText((msg.valueJson as string | undefined) ?? JSON.stringify(value.payload), 300);
+        text = cullText(msg.valueJson, 300);
       }
 
       return (

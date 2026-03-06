@@ -15,6 +15,41 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef } from 'rea
 
 import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
 
+const READ_ONLY_EDITOR_OPTIONS = {
+  readOnly: true,
+  domReadOnly: true,
+  // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
+  // Issue: wordWrap: 'on' + 40KB single-line strings = blank content appears during scroll
+  // Solution: Wrap at fixed column to break long lines into manageable chunks
+  wordWrap: 'wordWrapColumn',
+  wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
+  wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
+  stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
+  maxTokenizationLineLength: 20_000, // Syntax highlighting limit
+  automaticLayout: false,
+  folding: false,
+  showFoldingControls: 'never',
+  lineNumbers: 'off',
+  renderLineHighlight: 'none',
+  renderValidationDecorations: 'off',
+  hover: { enabled: false },
+  links: false,
+  matchBrackets: 'never',
+  stickyScroll: { enabled: false },
+  guides: {
+    indentation: false,
+    highlightActiveIndentation: false,
+    bracketPairs: false,
+    bracketPairsHorizontal: false,
+    highlightActiveBracketPair: false,
+  },
+  unicodeHighlight: {
+    ambiguousCharacters: false,
+    invisibleCharacters: false,
+  },
+  scrollBeyondLastLine: false,
+} as const;
+
 export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
@@ -58,6 +93,15 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
     });
   }, []);
 
+  const handleMount = useCallback(
+    (editor: IStandaloneCodeEditor) => {
+      editorRef.current = editor;
+      lastSizeRef.current = { width: 0, height: 0 };
+      scheduleLayout();
+    },
+    [scheduleLayout]
+  );
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
@@ -77,13 +121,11 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
       };
     }
 
-    const observer = new ResizeObserver(() => {
-      scheduleLayout();
-    });
-    observer.observe(container);
+    const resizeObserver = new ResizeObserver(scheduleLayout);
+    resizeObserver.observe(container);
 
     return () => {
-      observer.disconnect();
+      resizeObserver.disconnect();
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
       }
@@ -100,49 +142,7 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
       style={props.style}
     >
       <Box h="full" position="absolute" ref={containerRef} w="full">
-        <KowlEditor
-          language="json"
-          onMount={(editor) => {
-            editorRef.current = editor;
-            lastSizeRef.current = { width: 0, height: 0 };
-            scheduleLayout();
-          }}
-          options={{
-            readOnly: true,
-            domReadOnly: true,
-            // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
-            // Issue: wordWrap: 'on' + 40KB single-line strings = blank content appears during scroll
-            // Solution: Wrap at fixed column to break long lines into manageable chunks
-            wordWrap: 'wordWrapColumn',
-            wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
-            wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
-            stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
-            maxTokenizationLineLength: 20_000, // Syntax highlighting limit
-            automaticLayout: false,
-            folding: false,
-            showFoldingControls: 'never',
-            lineNumbers: 'off',
-            renderLineHighlight: 'none',
-            renderValidationDecorations: 'off',
-            hover: { enabled: false },
-            links: false,
-            matchBrackets: 'never',
-            stickyScroll: { enabled: false },
-            guides: {
-              indentation: false,
-              highlightActiveIndentation: false,
-              bracketPairs: false,
-              bracketPairsHorizontal: false,
-              highlightActiveBracketPair: false,
-            },
-            unicodeHighlight: {
-              ambiguousCharacters: false,
-              invisibleCharacters: false,
-            },
-            scrollBeyondLastLine: false,
-          }}
-          value={str}
-        />
+        <KowlEditor language="json" onMount={handleMount} options={READ_ONLY_EDITOR_OPTIONS} value={str} />
       </Box>
     </Box>
   );

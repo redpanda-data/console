@@ -169,4 +169,39 @@ describe('topic message rendering', () => {
 
     expect(kowlJsonViewSpy).toHaveBeenCalledTimes(1);
   });
+
+  test('rerenders expanded object payloads when the message prop changes', () => {
+    const props = {
+      topicName: 'market-data',
+      onLoadLargeMessage: vi.fn().mockResolvedValue(undefined),
+      onSetDownloadMessages: vi.fn(),
+      onCopyKey: vi.fn(),
+      onCopyValue: vi.fn(),
+    };
+    const firstMessage = buildMessage({
+      value: buildPayload({
+        payload: { marketName: 'BAKU STOCK EXCHANGE' },
+        encoding: 'json',
+        size: 32,
+      }),
+      valueJson: 'cached value preview',
+    });
+    const secondMessage = buildMessage({
+      offset: 43,
+      value: buildPayload({
+        payload: { marketName: 'NASDAQ DUBAI' },
+        encoding: 'json',
+        size: 24,
+      }),
+      valueJson: 'cached value preview 2',
+    });
+
+    const { rerender } = render(<ExpandedMessage {...props} msg={firstMessage} />);
+
+    expect(kowlJsonViewSpy).toHaveBeenCalledTimes(1);
+
+    rerender(<ExpandedMessage {...props} msg={secondMessage} />);
+
+    expect(kowlJsonViewSpy).toHaveBeenCalledTimes(2);
+  });
 });
