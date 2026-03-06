@@ -13,6 +13,10 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Disable Go workspace — the go.work file may reference sibling dirs that
+# don't exist in the Docker build context. go.mod has the proper versioned deps.
+ENV GOWORK=off
+
 # Build the binary (works for both OSS and Enterprise structure)
 # OSS: cmd/api/main.go, Enterprise: cmd/main.go
 RUN if [ -d "/app/cmd/api" ]; then \
