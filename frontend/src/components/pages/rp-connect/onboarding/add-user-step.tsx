@@ -43,7 +43,7 @@ import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_conn
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
@@ -132,10 +132,22 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       },
     });
 
-    const watchedUsername = form.watch('username');
-    const watchedSpecialCharacters = form.watch('specialCharactersEnabled');
-    const watchedPasswordLength = form.watch('passwordLength');
-    const watchedConsumerGroup = form.watch('consumerGroup');
+    const watchedUsername = useWatch({
+      control: form.control,
+      name: 'username',
+    });
+    const watchedSpecialCharacters = useWatch({
+      control: form.control,
+      name: 'specialCharactersEnabled',
+    });
+    const watchedPasswordLength = useWatch({
+      control: form.control,
+      name: 'passwordLength',
+    });
+    const watchedConsumerGroup = useWatch({
+      control: form.control,
+      name: 'consumerGroup',
+    });
 
     const existingUserSelected = useMemo(() => {
       // Only check if the CURRENT form username matches an existing user

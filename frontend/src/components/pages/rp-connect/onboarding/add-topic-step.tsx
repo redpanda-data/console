@@ -23,7 +23,7 @@ import type { MotionProps } from 'motion/react';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
@@ -94,7 +94,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       defaultValues,
     });
 
-    const watchedTopicName = form.watch('topicName');
+    const watchedTopicName = useWatch({
+      control: form.control,
+      name: 'topicName',
+    });
 
     // Notify parent when validity changes
     useEffect(() => {

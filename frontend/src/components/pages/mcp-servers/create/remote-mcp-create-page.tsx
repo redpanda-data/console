@@ -29,7 +29,7 @@ import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -96,8 +96,14 @@ export const RemoteMCPCreatePage: React.FC = () => {
   });
 
   // Track the display name to auto-generate service account name
-  const displayName = form.watch('displayName');
-  const serviceAccountName = form.watch('serviceAccountName');
+  const displayName = useWatch({
+    control: form.control,
+    name: 'displayName',
+  });
+  const serviceAccountName = useWatch({
+    control: form.control,
+    name: 'serviceAccountName',
+  });
 
   // Auto-generate service account name when MCP server name changes
   useEffect(() => {
@@ -307,8 +313,6 @@ export const RemoteMCPCreatePage: React.FC = () => {
       };
     }
 
-    let serviceAccountConfig: ReturnType<typeof create<typeof MCPServer_ServiceAccountSchema>> | undefined;
-
     // NOTE: Service account and secret are created before MCP server creation.
     // If server creation fails, these resources will not be automatically cleaned up.
     // This matches the AI agents implementation pattern.
@@ -322,7 +326,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     // Add system-generated service account tags
     addServiceAccountTags(tagsMap, serviceAccountId, secretName);
 
-    serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
+    const serviceAccountConfig = create(MCPServer_ServiceAccountSchema, {
       clientId: `\${secrets.${secretName}.client_id}`,
       clientSecret: `\${secrets.${secretName}.client_secret}`,
     });
