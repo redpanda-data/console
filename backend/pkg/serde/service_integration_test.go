@@ -27,12 +27,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/twmb/avro"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
+	"github.com/twmb/avro"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -2600,7 +2600,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
 				_, err := orderSchema.Decode(b, v.(*OrderRecord))
-			return err
+				return err
 			}),
 		)
 
@@ -2788,7 +2788,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
 				_, err := simpleSchema.Decode(b, v.(*SimpleRecord))
-			return err
+				return err
 			}),
 		)
 

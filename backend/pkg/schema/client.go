@@ -28,8 +28,8 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
-	"github.com/twmb/avro"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/twmb/avro"
 	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/twmb/go-cache/cache"
 	"google.golang.org/protobuf/reflect/protoreflect"

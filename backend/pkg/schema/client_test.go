@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/twmb/avro"
 	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/stretchr/testify/suite"
+	"github.com/twmb/avro"
 	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/twmb/franz-go/pkg/sr/srfake"
 

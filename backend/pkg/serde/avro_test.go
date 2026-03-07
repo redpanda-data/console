@@ -16,9 +16,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/twmb/avro"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/avro"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 
@@ -350,7 +350,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
 				_, err := avroSchema.Decode(b, v.(*SimpleRecord))
-			return err
+				return err
 			}),
 		)
 
@@ -375,7 +375,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
 				_, err := avroSchema.Decode(b, v.(*SimpleRecord))
-			return err
+				return err
 			}),
 		)
 
@@ -409,7 +409,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
 				_, err := avroSchema.Decode(b, v.(*SimpleRecord))
-			return err
+				return err
 			}),
 		)
 
