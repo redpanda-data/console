@@ -168,7 +168,7 @@ export const useLegacyListACLsQuery = (
   });
 
   const allRetrievedACLs =
-    legacyListACLsResult.data?.aclResources.map((aclResource) =>
+    legacyListACLsResult.data?.aclResources?.map((aclResource) =>
       create(ListACLsResponse_ResourceSchema, {
         resourceType: getACLResourceTypeLegacy(aclResource.resourceType),
         resourceName: aclResource.resourceName,
@@ -329,6 +329,7 @@ export const useLegacyCreateACLMutation = () => {
   const queryClient = useQueryClient();
 
   return useTanstackMutation({
+    retry: false,
     mutationFn: async (request: CreateACLRequest) => {
       const legacyRequestBody = {
         resourceType: getACLResourceType(request.resourceType),
@@ -362,6 +363,13 @@ export const useLegacyCreateACLMutation = () => {
         }),
         exact: false,
       });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'finite',
+        }),
+        exact: false,
+      });
 
       return data;
     },
@@ -370,6 +378,13 @@ export const useLegacyCreateACLMutation = () => {
         queryKey: createConnectQueryKey({
           schema: ACLService.method.listACLs,
           cardinality: 'infinite',
+        }),
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'finite',
         }),
         exact: false,
       });
@@ -392,12 +407,21 @@ export const useCreateACLMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createACL, {
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: ACLService.method.listACLs,
           cardinality: 'infinite',
         }),
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'finite',
+        }),
+        exact: false,
       });
     },
     onError: (error) =>
@@ -457,6 +481,14 @@ const useInvalidateAclsList = () => {
         schema: ACLService.method.listACLs,
         cardinality: 'finite',
       }),
+      exact: false,
+    });
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: ACLService.method.listACLs,
+        cardinality: 'infinite',
+      }),
+      exact: false,
     });
   };
 
@@ -470,6 +502,7 @@ export const useDeleteAclMutation = (
 ) => {
   const { invalid } = useInvalidateAclsList();
   return useMutation(deleteACLs, {
+    retry: false,
     onSettled: async (_, error) => {
       if (!error) {
         await invalid();

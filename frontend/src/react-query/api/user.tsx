@@ -12,7 +12,12 @@ import {
   SASLMechanism,
   UserService,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { createUser, listUsers, updateUser } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
+import {
+  createUser,
+  deleteUser,
+  listUsers,
+  updateUser,
+} from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import queryClient from 'query-client';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
@@ -122,6 +127,7 @@ export const useCreateUserMutation = () => {
   const qc = useQueryClient();
 
   return useMutation(createUser, {
+    retry: false,
     onSuccess: async () => {
       await qc.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -140,10 +146,34 @@ export const useCreateUserMutation = () => {
   });
 };
 
+export const useDeleteUserMutation = () => {
+  const qc = useQueryClient();
+
+  return useMutation(deleteUser, {
+    retry: false,
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'user',
+      }),
+  });
+};
+
 export const useUpdateUserMutationWithToast = () => {
   const qc = useQueryClient();
 
   return useMutation(updateUser, {
+    retry: false,
     onSuccess: async () => {
       await qc.invalidateQueries({
         queryKey: createConnectQueryKey({

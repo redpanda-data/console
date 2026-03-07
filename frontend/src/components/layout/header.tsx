@@ -163,18 +163,6 @@ function useShouldShowRefresh() {
   const connectWizardPagesMatch = matchRoute({ to: '/rp-connect/wizard' });
   const getStartedApiMatch = matchRoute({ to: '/get-started/api' });
 
-  // matches acls
-  const aclCreateMatch = matchRoute({ to: '/security/acls/create' });
-  const aclUpdateMatch = matchRoute({ to: '/security/acls/$aclName/update' });
-  const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
-  const isACLRelated = aclCreateMatch || aclUpdateMatch || aclDetailMatch;
-
-  // matches roles
-  const roleCreateMatch = matchRoute({ to: '/security/roles/create' });
-  const roleUpdateMatch = matchRoute({ to: '/security/roles/$roleName/update' });
-  const roleDetailMatch = matchRoute({ to: '/security/roles/$roleName/details' });
-  const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
-
   if (connectClusterMatch && connectClusterMatch.connector === 'create-connector') {
     return false;
   }
@@ -185,12 +173,6 @@ function useShouldShowRefresh() {
     return false;
   }
   if (secretsMatch) {
-    return false;
-  }
-  if (isACLRelated) {
-    return false;
-  }
-  if (isRoleRelated) {
     return false;
   }
   if (connectWizardPagesMatch) {

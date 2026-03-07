@@ -10,16 +10,16 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
-import { SecurityPage, type SecurityTab } from 'components/pages/security/security-page';
+import { RoleDetailPage } from 'components/pages/security/role-detail-page';
 
-export const Route = createFileRoute('/security/$tab')({
+export const Route = createFileRoute('/security/roles/$roleName')({
   staticData: {
-    title: 'Security',
+    title: 'Role Details',
   },
-  component: SecurityTabWrapper,
+  component: RoleDetailWrapper,
 });
 
-function SecurityTabWrapper() {
-  const { tab } = useParams({ from: '/security/$tab' });
-  return <SecurityPage tab={tab as SecurityTab} />;
+function RoleDetailWrapper() {
+  const { roleName } = useParams({ from: '/security/roles/$roleName' });
+  return <RoleDetailPage roleName={decodeURIComponent(roleName)} />;
 }

@@ -82,6 +82,7 @@ export const useCreateRoleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createRole, {
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -115,6 +116,7 @@ export const useDeleteRoleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteRole, {
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -137,6 +139,7 @@ export const useUpdateRoleMembershipMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(updateRoleMembership, {
+    retry: false,
     onSuccess: async () => {
       // Invalidate both role lists and role member lists
       await queryClient.invalidateQueries({
