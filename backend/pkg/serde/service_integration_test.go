@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hamba/avro/v2"
+	"github.com/twmb/avro"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -2596,10 +2596,11 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			ssOrder.ID,
 			&OrderRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(orderSchema, v.(*OrderRecord))
+				return orderSchema.Encode(v.(*OrderRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(orderSchema, b, v.(*OrderRecord))
+				_, err := orderSchema.Decode(b, v.(*OrderRecord))
+			return err
 			}),
 		)
 
@@ -2783,10 +2784,11 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			ss.ID,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(simpleSchema, v.(*SimpleRecord))
+				return simpleSchema.Encode(v.(*SimpleRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(simpleSchema, b, v.(*SimpleRecord))
+				_, err := simpleSchema.Decode(b, v.(*SimpleRecord))
+			return err
 			}),
 		)
 
@@ -4337,10 +4339,11 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			ssOrder.ID,
 			&OrderRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(orderSchema, v.(*OrderRecord))
+				return orderSchema.Encode(v.(*OrderRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(orderSchema, b, v.(*OrderRecord))
+				_, err := orderSchema.Decode(b, v.(*OrderRecord))
+			return err
 			}),
 		)
 
