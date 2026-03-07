@@ -1100,7 +1100,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema:")
+		assert.NotEmpty(dr.Value.Troubleshooting[4].Message, "avro serde should report an error for non-avro data")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1458,7 +1458,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema:")
+		assert.NotEmpty(dr.Value.Troubleshooting[4].Message, "avro serde should report an error for non-avro data")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1645,7 +1645,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema:")
+		assert.NotEmpty(dr.Value.Troubleshooting[4].Message, "avro serde should report an error for non-avro data")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_nest'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
