@@ -28,6 +28,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   minimap: {
     enabled: false,
   },
+  fixedOverflowWidgets: true,
   roundedSelection: false,
   padding: {
     top: 8,
@@ -78,6 +79,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const monacoRef = useRef<Monaco | null>(null);
   const yamlRef = useRef<MonacoYaml | null>(null);
+  const hasMountedRef = useRef(false);
 
   // Build Monaco YAML options with schema from props or fallback
   const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => {
@@ -103,17 +105,17 @@ export const YamlEditor = (props: YamlEditorProps) => {
     return defaultFallbackSchema;
   }, [schema]);
 
-  // Reconfigure Monaco YAML when schema changes
+  // Reconfigure Monaco YAML only for subsequent schema changes (not initial mount)
   useEffect(() => {
-    if (monacoRef.current) {
-      // Dispose previous YAML configuration
-      if (yamlRef.current) {
-        yamlRef.current.dispose();
-      }
-
-      // Create new YAML configuration with updated schema
-      yamlRef.current = configureMonacoYaml(monacoRef.current, monacoYamlOptions);
+    if (!hasMountedRef.current || !monacoRef.current) {
+      return;
     }
+
+    if (yamlRef.current) {
+      yamlRef.current.dispose();
+    }
+
+    yamlRef.current = configureMonacoYaml(monacoRef.current, monacoYamlOptions);
   }, [monacoYamlOptions]);
 
   // Cleanup on unmount
@@ -127,13 +129,15 @@ export const YamlEditor = (props: YamlEditorProps) => {
 
   return (
     <Editor
-      onMount={(_, monaco) => {
+      beforeMount={(monaco) => {
         monacoRef.current = monaco;
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+        hasMountedRef.current = true;
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       options={options}
+      path="pipeline.yaml"
       wrapperProps={{
         style: {
           minWidth: 0,
