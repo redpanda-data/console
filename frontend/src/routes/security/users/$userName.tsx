@@ -10,17 +10,16 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
+import { UserDetailPage } from 'components/pages/security/user-detail-page';
 
-import UserDetailsPage from '../../../../components/pages/acls/user-details';
-
-export const Route = createFileRoute('/security/users/$userName/details')({
+export const Route = createFileRoute('/security/users/$userName')({
   staticData: {
     title: 'User Details',
   },
-  component: UserDetailsWrapper,
+  component: UserDetailWrapper,
 });
 
-function UserDetailsWrapper() {
-  const { userName } = useParams({ from: '/security/users/$userName/details' });
-  return <UserDetailsPage userName={userName} />;
+function UserDetailWrapper() {
+  const { userName } = useParams({ from: '/security/users/$userName' });
+  return <UserDetailPage userName={decodeURIComponent(userName)} />;
 }

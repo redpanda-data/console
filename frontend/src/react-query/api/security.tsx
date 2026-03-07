@@ -84,6 +84,7 @@ export const useCreateRoleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createRole, {
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -117,6 +118,7 @@ export const useDeleteRoleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteRole, {
+    retry: false,
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -147,6 +149,7 @@ export const useUpdateRoleMembershipMutation = () => {
   } as const;
 
   return useMutation(updateRoleMembership, {
+    retry: false,
     onMutate: async (variables) => {
       // Cancel in-flight fetches so they don't overwrite the optimistic data
       await queryClient.cancelQueries(listRoleMembersQueryFilter);
