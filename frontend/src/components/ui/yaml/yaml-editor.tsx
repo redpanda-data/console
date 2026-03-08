@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
+import Editor, { type EditorProps } from '@monaco-editor/react';
 import 'monaco-editor';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
@@ -58,64 +58,53 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   },
 } as const;
 
-const defaultFallbackSchema: MonacoYamlOptions = {
-  enableSchemaRequest: false,
-  format: true,
-  completion: true,
-  validate: true,
-  schemas: [
-    {
-      fileMatch: ['**/*.yaml', '**/*.yml'],
-      schema: {
-        type: 'object',
+function buildMonacoYamlOptions(
+  schema?: YamlEditorProps['schema'],
+): MonacoYamlOptions {
+  const schemaUri = 'https://redpanda.com/connect-schema.json';
+  const inlineSchema =
+    schema?.definitions || schema?.properties
+      ? {
+          type: 'object' as const,
+          ...(schema.definitions && { definitions: schema.definitions }),
+          ...(schema.properties && { properties: schema.properties }),
+        }
+      : { type: 'object' as const };
+
+  return {
+    enableSchemaRequest: false,
+    format: true,
+    completion: true,
+    validate: true,
+    schemas: [
+      {
+        fileMatch: ['**/*.yaml', '**/*.yml'],
+        schema: inlineSchema,
+        uri: schemaUri,
       },
-      uri: 'http://example.com/yaml-schema.json',
-    },
-  ],
-};
+    ],
+  };
+}
 
 export const YamlEditor = (props: YamlEditorProps) => {
   const { options: givenOptions, schema, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const monacoRef = useRef<Monaco | null>(null);
   const yamlRef = useRef<MonacoYaml | null>(null);
-  const hasMountedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
-  // Build Monaco YAML options with schema from props or fallback
-  const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => {
-    if (schema?.definitions || schema?.properties) {
-      return {
-        enableSchemaRequest: false,
-        format: true,
-        completion: true,
-        validate: true,
-        schemas: [
-          {
-            fileMatch: ['**/*.yaml', '**/*.yml'],
-            schema: {
-              type: 'object',
-              ...(schema.definitions && { definitions: schema.definitions }),
-              ...(schema.properties && { properties: schema.properties }),
-            },
-            uri: 'https://redpanda-connect-schema.json',
-          },
-        ],
-      };
-    }
-    return defaultFallbackSchema;
-  }, [schema]);
+  const monacoYamlOptions = useMemo<MonacoYamlOptions>(
+    () => buildMonacoYamlOptions(schema),
+    [schema],
+  );
 
-  // Reconfigure Monaco YAML only for subsequent schema changes (not initial mount)
+  // Update Monaco YAML when schema changes after initial mount
   useEffect(() => {
-    if (!hasMountedRef.current || !monacoRef.current) {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       return;
     }
 
-    if (yamlRef.current) {
-      yamlRef.current.dispose();
-    }
-
-    yamlRef.current = configureMonacoYaml(monacoRef.current, monacoYamlOptions);
+    yamlRef.current?.update(monacoYamlOptions);
   }, [monacoYamlOptions]);
 
   // Cleanup on unmount
@@ -130,9 +119,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
   return (
     <Editor
       beforeMount={(monaco) => {
-        monacoRef.current = monaco;
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
-        hasMountedRef.current = true;
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
