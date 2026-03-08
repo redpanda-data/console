@@ -142,8 +142,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
           filterText={searchText}
           isFilterMatch={isFilterMatch}
           onFilteredDataChanged={setFilteredResults}
-          onQueryChanged={onQueryChanged
-          }
+          onQueryChanged={onQueryChanged}
           placeholderText="Enter search term/regex"
         />
       </Box>
