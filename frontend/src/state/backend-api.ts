@@ -2048,12 +2048,20 @@ const _apiCreator = (set: any, get: any) => ({
     }
 
     await Promise.all([
-      client.listEnterpriseFeatures({}).then((enterpriseFeaturesResponse) => {
-        set({
-          enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
-          licenseViolation: enterpriseFeaturesResponse.violation,
-        });
-      }),
+      client
+        .listEnterpriseFeatures({})
+        .then((enterpriseFeaturesResponse) => {
+          set({
+            enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
+            licenseViolation: enterpriseFeaturesResponse.violation,
+          });
+        })
+        .catch((err) => {
+          const errorText = err instanceof Error ? err.message : String(err);
+
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log(`error listing enterprise features: ${errorText}`);
+        }),
       client
         .listLicenses({})
         .then((licensesResponse) => {
