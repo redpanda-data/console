@@ -72,30 +72,33 @@ test.describe('Kafka Connect Wizard', () => {
 });
 
 test.describe('Kafka Connect Connector Lifecycle', () => {
-  // Give the describe block (including beforeAll) more time in CI
-  test.describe.configure({ timeout: 120_000 });
+  // Run sequentially — delete must happen last, and give more time in CI
+  test.describe.configure({ timeout: 120_000, mode: 'serial' });
 
   test.beforeAll(async ({ request }) => {
     const base = 'http://127.0.0.1:18283';
-    await request.delete(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => {});
 
-    // Retry the POST a few times in case Kafka Connect is briefly unavailable
-    let lastError: Error | undefined;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const res = await request.post(`${base}/connectors`, {
-          data: HEARTBEAT_CONFIG,
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 30_000,
-        });
-        if (res.ok()) return;
-        lastError = new Error(`Failed to create connector: ${res.status()} ${await res.text()}`);
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 3000));
-      }
-    }
-    throw lastError;
+    // Delete any existing connector and wait for it to be fully removed
+    await request.delete(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => {});
+    await expect
+      .poll(
+        async () => {
+          const res = await request.get(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => null);
+          return res?.status() ?? 404;
+        },
+        { timeout: 10_000, intervals: [1000] }
+      )
+      .toBe(404);
+
+    // Retry the POST in case Kafka Connect is briefly unavailable
+    await expect(async () => {
+      const res = await request.post(`${base}/connectors`, {
+        data: HEARTBEAT_CONFIG,
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30_000,
+      });
+      expect(res.ok() || res.status() === 409).toBe(true);
+    }).toPass({ timeout: 30_000, intervals: [3000] });
   });
 
   test.afterAll(async ({ request }) => {

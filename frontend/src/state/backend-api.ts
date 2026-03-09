@@ -120,7 +120,7 @@ import {
   type UserData,
   WrappedApiError,
 } from './rest-interfaces';
-import { Features } from './supported-features';
+import { Features, useSupportedFeaturesStore } from './supported-features';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './ui-state';
 import { config as appConfig, isEmbedded } from '../config';
@@ -1015,6 +1015,7 @@ const apiStore = {
         return null;
       }
       this.endpointCompatibility = r.endpointCompatibility;
+      useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
       return r;
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage

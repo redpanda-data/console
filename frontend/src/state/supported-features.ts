@@ -18,7 +18,7 @@
 
 import { create } from 'zustand';
 
-import { api } from './backend-api';
+import type { EndpointCompatibility } from './rest-interfaces';
 
 export type FeatureEntry = {
   endpoint: string;
@@ -82,40 +82,55 @@ export class Feature {
   };
 }
 
-export function isSupported(f: FeatureEntry): boolean {
-  const c = api.endpointCompatibility;
+/**
+ * Compute whether a feature is supported given endpoint compatibility data.
+ * Pure function — no side effects.
+ */
+function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { supported: boolean; error?: string } {
   if (!c) {
-    // c could be null, because the call to /api/console/endpoints failed or is not responded yet,
-    // in that case those endpoints should be considered unsupported
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
       case Feature.TracingService.endpoint:
       case Feature.GetQuotas.endpoint:
-        return false;
+        return { supported: false };
       default:
-        return true;
+        return { supported: true };
     }
   }
 
   for (const e of c.endpoints) {
     if (e.method === f.method && e.endpoint === f.endpoint) {
-      return e.isSupported;
+      return { supported: e.isSupported };
     }
   }
 
-  // Special handling for services that may be completely absent from the backend response.
-  // SecurityService: absent in community version
-  if (f.endpoint.includes('.SecurityService')) {
-    return false;
+  if (
+    f.endpoint.includes('.SecurityService') ||
+    f.endpoint.includes('.SecretService') ||
+    f.endpoint.includes('.MCPServerService')
+  ) {
+    return { supported: false };
   }
 
-  useSupportedFeaturesStore
-    .getState()
-    .addFeatureError(
-      `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`
-    );
-  return false;
+  return {
+    supported: false,
+    error: `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`,
+  };
+}
+
+/**
+ * Check if a feature is supported. Reads from the Zustand store.
+ * For reactive usage in React components, prefer using the store selector directly:
+ *   useSupportedFeaturesStore((s) => s.schemaRegistryACLApi)
+ */
+export function isSupported(f: FeatureEntry): boolean {
+  const state = useSupportedFeaturesStore.getState();
+  const result = computeSupported(f, state.endpointCompatibility);
+  if (result.error) {
+    state.addFeatureError(result.error);
+  }
+  return result.supported;
 }
 
 /**
@@ -126,100 +141,87 @@ export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
 
+/** Compute all feature flags from endpoint compatibility data */
+function computeAllFeatures(c: EndpointCompatibility | null) {
+  const errors: string[] = [];
+  const compute = (f: FeatureEntry) => {
+    const result = computeSupported(f, c);
+    if (result.error) {
+      errors.push(result.error);
+    }
+    return result.supported;
+  };
+
+  return {
+    clusterConfig: compute(Feature.ClusterConfig),
+    consumerGroups: compute(Feature.ConsumerGroups),
+    getReassignments: compute(Feature.GetReassignments),
+    patchReassignments: compute(Feature.PatchReassignments),
+    patchGroup: compute(Feature.PatchGroup),
+    deleteGroup: compute(Feature.DeleteGroup),
+    deleteGroupOffsets: compute(Feature.DeleteGroupOffsets),
+    deleteRecords: compute(Feature.DeleteRecords),
+    getQuotas: compute(Feature.GetQuotas),
+    createUser: compute(Feature.CreateUser),
+    deleteUser: compute(Feature.DeleteUser),
+    rolesApi: compute(Feature.SecurityService),
+    pipelinesApi: compute(Feature.PipelineService),
+    debugBundle: compute(Feature.DebugBundleService),
+    rpcnSecretsApi: compute(Feature.SecretService),
+    remoteMcpApi: compute(Feature.RemoteMcpService),
+    schemaRegistryACLApi: compute(Feature.SchemaRegistryACLApi),
+    shadowLinkService: compute(Feature.ShadowLinkService),
+    tracingService: compute(Feature.TracingService),
+    featureErrors: errors,
+  };
+}
+
 type SupportedFeaturesStore = {
   // State
+  endpointCompatibility: EndpointCompatibility | null;
   featureErrors: string[];
 
-  // Computed getters (accessed as properties)
-  get clusterConfig(): boolean;
-  get consumerGroups(): boolean;
-  get getReassignments(): boolean;
-  get patchReassignments(): boolean;
-  get patchGroup(): boolean;
-  get deleteGroup(): boolean;
-  get deleteGroupOffsets(): boolean;
-  get deleteRecords(): boolean;
-  get getQuotas(): boolean;
-  get createUser(): boolean;
-  get deleteUser(): boolean;
-  get rolesApi(): boolean;
-  get pipelinesApi(): boolean;
-  get debugBundle(): boolean;
-  get rpcnSecretsApi(): boolean;
-  get remoteMcpApi(): boolean;
-  get schemaRegistryACLApi(): boolean;
-  get shadowLinkService(): boolean;
-  get tracingService(): boolean;
+  // Feature flags (recomputed when endpointCompatibility changes)
+  clusterConfig: boolean;
+  consumerGroups: boolean;
+  getReassignments: boolean;
+  patchReassignments: boolean;
+  patchGroup: boolean;
+  deleteGroup: boolean;
+  deleteGroupOffsets: boolean;
+  deleteRecords: boolean;
+  getQuotas: boolean;
+  createUser: boolean;
+  deleteUser: boolean;
+  rolesApi: boolean;
+  pipelinesApi: boolean;
+  debugBundle: boolean;
+  rpcnSecretsApi: boolean;
+  remoteMcpApi: boolean;
+  schemaRegistryACLApi: boolean;
+  shadowLinkService: boolean;
+  tracingService: boolean;
 
   // Actions
+  setEndpointCompatibility: (ec: EndpointCompatibility) => void;
   addFeatureError: (error: string) => void;
   clearFeatureErrors: () => void;
 };
 
+const initialFeatures = computeAllFeatures(null);
+
 export const useSupportedFeaturesStore = create<SupportedFeaturesStore>((set) => ({
   // Initial state
-  featureErrors: [],
-
-  // Computed getters
-  get clusterConfig() {
-    return isSupported(Feature.ClusterConfig);
-  },
-  get consumerGroups() {
-    return isSupported(Feature.ConsumerGroups);
-  },
-  get getReassignments() {
-    return isSupported(Feature.GetReassignments);
-  },
-  get patchReassignments() {
-    return isSupported(Feature.PatchReassignments);
-  },
-  get patchGroup() {
-    return isSupported(Feature.PatchGroup);
-  },
-  get deleteGroup() {
-    return isSupported(Feature.DeleteGroup);
-  },
-  get deleteGroupOffsets() {
-    return isSupported(Feature.DeleteGroupOffsets);
-  },
-  get deleteRecords() {
-    return isSupported(Feature.DeleteRecords);
-  },
-  get getQuotas() {
-    return isSupported(Feature.GetQuotas);
-  },
-  get createUser() {
-    return isSupported(Feature.CreateUser);
-  },
-  get deleteUser() {
-    return isSupported(Feature.DeleteUser);
-  },
-  get rolesApi() {
-    return isSupported(Feature.SecurityService);
-  },
-  get pipelinesApi() {
-    return isSupported(Feature.PipelineService);
-  },
-  get debugBundle() {
-    return isSupported(Feature.DebugBundleService);
-  },
-  get rpcnSecretsApi() {
-    return isSupported(Feature.SecretService);
-  },
-  get remoteMcpApi() {
-    return isSupported(Feature.RemoteMcpService);
-  },
-  get schemaRegistryACLApi() {
-    return isSupported(Feature.SchemaRegistryACLApi);
-  },
-  get shadowLinkService() {
-    return isSupported(Feature.ShadowLinkService);
-  },
-  get tracingService() {
-    return isSupported(Feature.TracingService);
-  },
+  endpointCompatibility: null,
+  ...initialFeatures,
 
   // Actions
+  setEndpointCompatibility: (ec: EndpointCompatibility) =>
+    set({
+      endpointCompatibility: ec,
+      ...computeAllFeatures(ec),
+    }),
+
   addFeatureError: (error: string) =>
     set((state) => ({
       featureErrors: [...state.featureErrors, error],

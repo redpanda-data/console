@@ -50,7 +50,7 @@ import {
   SASLMechanism,
 } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { appGlobal } from '../../state/app-global';
-import { uiState } from '../../state/ui-state';
+import { useUIStateStore } from '../../state/ui-state';
 
 const authenticationApi = observable({
   methods: [] as AuthenticationMethod[],
@@ -220,6 +220,8 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
 const LoginPage = observer(() => {
   const { searchStr } = useLocation();
   const searchParams = new URLSearchParams(searchStr);
+  const loginError = useUIStateStore((s) => s.loginError);
+  const setLoginError = useUIStateStore((s) => s.setLoginError);
 
   useEffect(() => {
     authenticationApi.refreshAuthenticationMethods();
@@ -228,22 +230,22 @@ const LoginPage = observer(() => {
   return (
     <Flex minHeight="100vh" width="full">
       <Modal
-        isOpen={uiState.loginError !== null}
+        isOpen={loginError !== null}
         onClose={() => {
-          uiState.loginError = null;
+          setLoginError(null);
         }}
       >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Access Denied</ModalHeader>
           <ModalBody>
-            <Text whiteSpace="pre-wrap">{uiState.loginError}</Text>
+            <Text whiteSpace="pre-wrap">{loginError}</Text>
           </ModalBody>
           <ModalFooter gap={2}>
             <Button
               data-testid="login-error__ok-button"
               onClick={() => {
-                uiState.loginError = null;
+                setLoginError(null);
               }}
             >
               OK
