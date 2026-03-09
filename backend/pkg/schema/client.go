@@ -329,30 +329,34 @@ func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema
 
 // parseAvroReferences recursively fetches and parses all schema references
 // into the cache so they are available when parsing the parent schema.
-// The visited set prevents re-parsing references that are shared across
-// multiple schemas in the dependency graph (e.g. A→C, B→C).
-func (c *CachedClient) parseAvroReferences(ctx context.Context, cache *avro.SchemaCache, schema sr.Schema, visited map[string]bool) error {
+// The stack only guards against reference cycles; duplicate parses across
+// shared subgraphs are handled by the avro.SchemaCache itself.
+func (c *CachedClient) parseAvroReferences(ctx context.Context, cache *avro.SchemaCache, schema sr.Schema, stack map[string]bool) error {
 	for _, ref := range schema.References {
 		refKey := fmt.Sprintf("%s:%d", ref.Subject, ref.Version)
-		if visited[refKey] {
-			continue
+		if stack[refKey] {
+			return fmt.Errorf("circular avro schema reference detected for subject %q version %d", ref.Subject, ref.Version)
 		}
-		visited[refKey] = true
+		stack[refKey] = true
 
 		schemaRef, err := c.SchemaByVersion(ctx, ref.Subject, ref.Version)
 		if err != nil {
+			delete(stack, refKey)
 			return err
 		}
 		if len(schemaRef.References) > 0 {
-			if err := c.parseAvroReferences(ctx, cache, schemaRef.Schema, visited); err != nil {
+			if err := c.parseAvroReferences(ctx, cache, schemaRef.Schema, stack); err != nil {
+				delete(stack, refKey)
 				return fmt.Errorf("failed to parse schema reference (subject: %q, version %d): %w",
 					ref.Subject, ref.Version, err)
 			}
 		}
 		if _, err := cache.Parse(schemaRef.Schema.Schema); err != nil {
+			delete(stack, refKey)
 			return fmt.Errorf("failed to parse schema reference (subject: %q, version %d): %w",
 				ref.Subject, ref.Version, err)
 		}
+		delete(stack, refKey)
 	}
 	return nil
 }

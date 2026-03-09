@@ -211,6 +211,57 @@ func (s *TestCachedClientSuite) TestAvroSchemaWithoutReferencesNotCachedCausesBu
 	s.NotNil(resultB)
 }
 
+func (s *TestCachedClientSuite) TestAvroSchemaWithDiamondReferences() {
+	leafSchema := sr.Schema{
+		Schema: `{"type": "record", "name": "Leaf", "fields": [{"name": "value", "type": "string"}]}`,
+	}
+	leftSchema := sr.Schema{
+		Schema: `{"type": "record", "name": "Left", "fields": [{"name": "leaf", "type": "Leaf"}]}`,
+		References: []sr.SchemaReference{
+			{
+				Name:    "Leaf",
+				Subject: "leaf-schema",
+				Version: 1,
+			},
+		},
+	}
+	rightSchema := sr.Schema{
+		Schema: `{"type": "record", "name": "Right", "fields": [{"name": "leaf", "type": "Leaf"}]}`,
+		References: []sr.SchemaReference{
+			{
+				Name:    "Leaf",
+				Subject: "leaf-schema",
+				Version: 1,
+			},
+		},
+	}
+	rootSchema := sr.Schema{
+		Schema: `{"type": "record", "name": "Root", "fields": [{"name": "left", "type": "Left"}, {"name": "right", "type": "Right"}]}`,
+		References: []sr.SchemaReference{
+			{
+				Name:    "Left",
+				Subject: "left-schema",
+				Version: 1,
+			},
+			{
+				Name:    "Right",
+				Subject: "right-schema",
+				Version: 1,
+			},
+		},
+	}
+
+	s.mockRegistry.SeedSchema("leaf-schema", 1, 1, leafSchema)
+	s.mockRegistry.SeedSchema("left-schema", 1, 2, leftSchema)
+	s.mockRegistry.SeedSchema("right-schema", 1, 3, rightSchema)
+	s.mockRegistry.SeedSchema("root-schema", 1, 4, rootSchema)
+
+	result, err := s.cachedClient.ParseAvroSchemaWithReferences(getTenantContext(s.namespace), rootSchema)
+
+	s.NoError(err)
+	s.NotNil(result)
+}
+
 // TestCircularReferenceHandling verifies that circular references in schemas
 // are properly detected and handled gracefully without causing infinite recursion.
 func (s *TestCachedClientSuite) TestCircularReferenceHandling() {

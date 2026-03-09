@@ -456,6 +456,10 @@ github.com/tklauser/numcpus v0.11.0 h1:nSTwhKH5e1dMNsCdVBukSZrURJRoHbSEQjdEbY+9R
 github.com/tklauser/numcpus v0.11.0/go.mod h1:z+LwcLq54uWZTX0u/bGobaV34u6V7KNlTZejzM6/3MQ=
 github.com/twmb/avro v0.0.0-20260305054525-f3dd43409fe5 h1:ksjBqwrNktvKMqtEofWo/SKcRhDRMXwX5TpcDUBuSgI=
 github.com/twmb/avro v0.0.0-20260305054525-f3dd43409fe5/go.mod h1:by7R2J8LxFEZsjRy8p7pHRfZn1f0hXVFrOkMfqz4W98=
+github.com/twmb/avro v0.0.0-20260309172832-eb3226758892 h1:zzwa7bXAl5tw7SIWLPtXW3Ha8KIYlkmL/TZ9yj4gT2g=
+github.com/twmb/avro v0.0.0-20260309172832-eb3226758892/go.mod h1:by7R2J8LxFEZsjRy8p7pHRfZn1f0hXVFrOkMfqz4W98=
+github.com/twmb/avro v0.0.0-20260309175047-d7654541b56b h1:EQTjds/YKQwtZ4949KKls3zybI9MernRUqg7EmYcMV8=
+github.com/twmb/avro v0.0.0-20260309175047-d7654541b56b/go.mod h1:by7R2J8LxFEZsjRy8p7pHRfZn1f0hXVFrOkMfqz4W98=
 github.com/twmb/franz-go v1.7.0/go.mod h1:PMze0jNfNghhih2XHbkmTFykbMF5sJqmNJB31DOOzro=
 github.com/twmb/franz-go v1.20.6 h1:TpQTt4QcixJ1cHEmQGPOERvTzo99s8jAutmS7rbSD6w=
 github.com/twmb/franz-go v1.20.6/go.mod h1:u+FzH2sInp7b9HNVv2cZN8AxdXy6y/AQ1Bkptu4c0FM=
