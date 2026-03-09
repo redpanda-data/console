@@ -21,7 +21,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Features } from 'state/supported-features';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
   type AclRulesProps,
@@ -735,7 +735,7 @@ export default function CreateACL({
   edit,
   principalType,
 }: CreateACLProps) {
-  const schemaRegistryEnabled = Features.schemaRegistryACLApi;
+  const schemaRegistryEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
   const [principalError, setPrincipalError] = useState<string>('');
   const [sharedConfig, setSharedConfig] = useState({
     principal: propSharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
