@@ -194,28 +194,40 @@
   --color-white-alpha-900: rgba(255, 255, 255, 0.92);
 
   /* Indigo Alpha */
+  --color-indigo-alpha-50: rgba(99, 102, 241, 0.02);
   --color-indigo-alpha-100: rgba(99, 102, 241, 0.04);
   --color-indigo-alpha-200: rgba(99, 102, 241, 0.08);
   --color-indigo-alpha-300: rgba(99, 102, 241, 0.12);
   --color-indigo-alpha-400: rgba(99, 102, 241, 0.24);
   --color-indigo-alpha-500: rgba(99, 102, 241, 0.36);
   --color-indigo-alpha-600: rgba(99, 102, 241, 0.48);
+  --color-indigo-alpha-700: rgba(68, 76, 231, 0.64);
+  --color-indigo-alpha-800: rgba(68, 76, 231, 0.8);
+  --color-indigo-alpha-900: rgba(68, 76, 231, 0.92);
 
   /* Primary Brand Alpha */
+  --color-primary-brand-alpha-50: rgba(215, 61, 35, 0.02);
   --color-primary-brand-alpha-100: rgba(215, 61, 35, 0.04);
   --color-primary-brand-alpha-200: rgba(215, 61, 35, 0.08);
   --color-primary-brand-alpha-300: rgba(215, 61, 35, 0.12);
   --color-primary-brand-alpha-400: rgba(215, 61, 35, 0.24);
   --color-primary-brand-alpha-500: rgba(215, 61, 35, 0.36);
   --color-primary-brand-alpha-600: rgba(215, 61, 35, 0.48);
+  --color-primary-brand-alpha-700: rgba(226, 67, 40, 0.64);
+  --color-primary-brand-alpha-800: rgba(226, 67, 40, 0.8);
+  --color-primary-brand-alpha-900: rgba(226, 67, 40, 0.92);
 
   /* Dark Blue Alpha */
+  --color-dark-blue-alpha-50: rgba(37, 99, 235, 0.02);
   --color-dark-blue-alpha-100: rgba(37, 99, 235, 0.04);
   --color-dark-blue-alpha-200: rgba(37, 99, 235, 0.08);
   --color-dark-blue-alpha-300: rgba(37, 99, 235, 0.12);
   --color-dark-blue-alpha-400: rgba(37, 99, 235, 0.24);
   --color-dark-blue-alpha-500: rgba(37, 99, 235, 0.36);
   --color-dark-blue-alpha-600: rgba(37, 99, 235, 0.48);
+  --color-dark-blue-alpha-700: rgba(45, 58, 83, 0.64);
+  --color-dark-blue-alpha-800: rgba(45, 58, 83, 0.8);
+  --color-dark-blue-alpha-900: rgba(45, 58, 83, 0.92);
 
   /* Red Alpha */
   --color-red-alpha-100: rgba(220, 38, 38, 0.04);
@@ -224,6 +236,9 @@
   --color-red-alpha-400: rgba(220, 38, 38, 0.24);
   --color-red-alpha-500: rgba(220, 38, 38, 0.36);
   --color-red-alpha-600: rgba(220, 38, 38, 0.48);
+  --color-red-alpha-700: rgba(217, 45, 32, 0.64);
+  --color-red-alpha-800: rgba(217, 45, 32, 0.8);
+  --color-red-alpha-900: rgba(217, 45, 32, 0.92);
 
   /* Blue Alpha */
   --color-blue-alpha-100: rgba(69, 173, 232, 0.04);
@@ -232,6 +247,9 @@
   --color-blue-alpha-400: rgba(69, 173, 232, 0.24);
   --color-blue-alpha-500: rgba(69, 173, 232, 0.36);
   --color-blue-alpha-600: rgba(69, 173, 232, 0.48);
+  --color-blue-alpha-700: rgba(69, 173, 232, 0.64);
+  --color-blue-alpha-800: rgba(69, 173, 232, 0.8);
+  --color-blue-alpha-900: rgba(69, 173, 232, 0.92);
 
   /* Green Alpha */
   --color-green-alpha-100: rgba(22, 163, 74, 0.04);
@@ -240,6 +258,9 @@
   --color-green-alpha-400: rgba(22, 163, 74, 0.24);
   --color-green-alpha-500: rgba(22, 163, 74, 0.36);
   --color-green-alpha-600: rgba(22, 163, 74, 0.48);
+  --color-green-alpha-700: rgba(22, 163, 74, 0.64);
+  --color-green-alpha-800: rgba(22, 163, 74, 0.8);
+  --color-green-alpha-900: rgba(22, 163, 74, 0.92);
 
   /* Yellow Alpha */
   --color-yellow-alpha-100: rgba(234, 170, 8, 0.04);
@@ -248,6 +269,9 @@
   --color-yellow-alpha-400: rgba(234, 170, 8, 0.24);
   --color-yellow-alpha-500: rgba(234, 170, 8, 0.36);
   --color-yellow-alpha-600: rgba(234, 170, 8, 0.48);
+  --color-yellow-alpha-700: rgba(234, 170, 8, 0.64);
+  --color-yellow-alpha-800: rgba(234, 170, 8, 0.8);
+  --color-yellow-alpha-900: rgba(234, 170, 8, 0.92);
 
   /* ===================================================================
      SEMANTIC COLORS (Light Mode Defaults)
@@ -278,13 +302,13 @@
   --color-background-brand-strong: var(--color-primary-brand-700);
 
   /* Background - Semantic */
-  --color-background-success-subtle: var(--color-green-50);
+  --color-background-success-subtle: var(--color-green-100);
   --color-background-success-strong: var(--color-green-500);
-  --color-background-warning-subtle: var(--color-orange-50);
+  --color-background-warning-subtle: var(--color-orange-100);
   --color-background-warning-strong: var(--color-orange-700);
-  --color-background-error-subtle: var(--color-red-50);
+  --color-background-error-subtle: var(--color-red-100);
   --color-background-error-strong: var(--color-red-600);
-  --color-background-informative-subtle: var(--color-blue-50);
+  --color-background-informative-subtle: var(--color-blue-100);
   --color-background-informative-strong: var(--color-blue-600);
 
   /* Text Hierarchy (generates text-strong, text-subtle, etc.) */
@@ -318,38 +342,39 @@
 
   /* Primary (Indigo - UI actions) */
   --color-primary: var(--color-indigo-600);
-  --color-primary-foreground: var(--color-grey-white);
+  --color-primary-foreground: var(--color-indigo-800);
   --color-primary-subtle: var(--color-indigo-alpha-100);
 
   /* Secondary (dark-blue - for secondary surfaces/buttons) */
   --color-secondary: var(--color-dark-blue-600);
-  --color-secondary-foreground: var(--color-grey-white);
+  --color-secondary-foreground: var(--color-dark-blue-800);
   --color-secondary-subtle: var(--color-dark-blue-alpha-100);
 
   /* Accent */
   --color-accent: var(--color-indigo-100);
-  --color-accent-foreground: var(--color-grey-900);
+  --color-accent-foreground: var(--color-indigo-800);
   --color-accent-subtle: var(--color-indigo-alpha-100);
 
   /* Brand (Redpanda Red) */
   --color-brand: var(--color-primary-brand-600);
-  --color-brand-foreground: var(--color-grey-white);
+  --color-brand-foreground: var(--color-primary-brand-800);
   --color-brand-subtle: var(--color-primary-brand-alpha-100);
 
   /* Destructive/Error */
   --color-destructive: var(--color-red-600);
-  --color-destructive-foreground: var(--color-grey-white);
+  --color-error: var(--color-red-600);
+  --color-destructive-foreground: var(--color-red-800);
   --color-destructive-subtle: var(--color-red-alpha-100);
 
   /* Status Colors */
   --color-success: var(--color-green-600);
-  --color-success-foreground: var(--color-grey-white);
+  --color-success-foreground: var(--color-green-800);
   --color-success-subtle: var(--color-green-alpha-100);
-  --color-warning: var(--color-orange-500);
-  --color-warning-foreground: var(--color-grey-900);
+  --color-warning: var(--color-orange-600);
+  --color-warning-foreground: var(--color-orange-900);
   --color-warning-subtle: var(--color-orange-alpha-100);
   --color-info: var(--color-blue-600);
-  --color-info-foreground: var(--color-grey-white);
+  --color-info-foreground: var(--color-blue-800);
   --color-info-subtle: var(--color-blue-alpha-100);
   --color-neutral: var(--color-grey-600);
   --color-neutral-foreground: var(--color-grey-white);
@@ -364,6 +389,12 @@
   --color-border-strong: var(--color-grey-300);
   --color-input: var(--color-grey-300);
   --color-ring: var(--color-primary-600);
+
+  /* Divider Colors - Light Mode */
+  --color-divider-default: var(--color-grey-200);
+  --color-divider-subtle: var(--color-grey-100);
+  --color-divider-strong: var(--color-grey-300);
+  --color-divider-invert: var(--color-black-alpha-100);
 
   /* Charts */
   --color-chart-1: var(--color-indigo-500);
@@ -397,8 +428,8 @@
   /* Surface Base */
   --color-surface-default: var(--color-grey-white);
   --color-surface-default-hover: var(--color-grey-100);
-  --color-surface-subtle: var(--color-grey-50);
-  --color-surface-subtle-hover: var(--color-grey-100);
+  --color-surface-subtle: var(--color-grey-100);
+  --color-surface-subtle-hover: var(--color-grey-200);
   --color-surface-strong: var(--color-grey-200);
   --color-surface-strong-hover: var(--color-grey-300);
 
@@ -407,24 +438,24 @@
   --color-surface-primary-hover: var(--color-indigo-700);
   --color-surface-primary-pressed: var(--color-indigo-800);
   --color-surface-primary-disabled: var(--color-grey-400);
-  --color-surface-primary-subtle: var(--color-indigo-alpha-50);
-  --color-surface-primary-subtle-hover: var(--color-indigo-alpha-100);
+  --color-surface-primary-subtle: var(--color-indigo-alpha-100);
+  --color-surface-primary-subtle-hover: var(--color-indigo-alpha-200);
 
   /* Surface Secondary */
   --color-surface-secondary: var(--color-dark-blue-600);
   --color-surface-secondary-hover: var(--color-dark-blue-800);
   --color-surface-secondary-pressed: var(--color-dark-blue-900);
   --color-surface-secondary-disabled: var(--color-grey-400);
-  --color-surface-secondary-subtle: var(--color-dark-blue-alpha-50);
-  --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-100);
+  --color-surface-secondary-subtle: var(--color-dark-blue-alpha-100);
+  --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-200);
 
   /* Surface Brand (4 states) */
   --color-surface-brand: var(--color-primary-brand-600);
   --color-surface-brand-hover: var(--color-primary-brand-700);
   --color-surface-brand-pressed: var(--color-primary-brand-800);
   --color-surface-brand-disabled: var(--color-grey-400);
-  --color-surface-brand-subtle: var(--color-primary-brand-alpha-50);
-  --color-surface-brand-subtle-hover: var(--color-primary-brand-alpha-100);
+  --color-surface-brand-subtle: var(--color-primary-brand-alpha-100);
+  --color-surface-brand-subtle-hover: var(--color-primary-brand-alpha-200);
 
   /* Surface Inverse (4 states) */
   --color-surface-inverse: var(--color-grey-white);
@@ -451,9 +482,9 @@
   --color-surface-error-disabled: var(--color-grey-400);
 
   /* Surface Warning (4 states) */
-  --color-surface-warning: var(--color-orange-400);
-  --color-surface-warning-hover: var(--color-orange-500);
-  --color-surface-warning-pressed: var(--color-orange-600);
+  --color-surface-warning: var(--color-orange-600);
+  --color-surface-warning-hover: var(--color-orange-700);
+  --color-surface-warning-pressed: var(--color-orange-800);
   --color-surface-warning-disabled: var(--color-grey-400);
 
   /* Surface Success (4 states) */
@@ -461,16 +492,16 @@
   --color-surface-success-hover: var(--color-green-700);
   --color-surface-success-pressed: var(--color-green-800);
   --color-surface-success-disabled: var(--color-grey-400);
-  --color-surface-success-subtle: var(--color-green-50);
-  --color-surface-success-subtle-hover: var(--color-green-100);
+  --color-surface-success-subtle: var(--color-green-100);
+  --color-surface-success-subtle-hover: var(--color-green-200);
 
   /* Surface Informative (4 states) */
   --color-surface-informative: var(--color-blue-600);
   --color-surface-informative-hover: var(--color-blue-700);
   --color-surface-informative-pressed: var(--color-blue-800);
   --color-surface-informative-disabled: var(--color-grey-400);
-  --color-surface-informative-subtle: var(--color-blue-50);
-  --color-surface-informative-subtle-hover: var(--color-blue-100);
+  --color-surface-informative-subtle: var(--color-blue-100);
+  --color-surface-informative-subtle-hover: var(--color-blue-200);
 
   /* ===================================================================
      OPACITY/ALPHA SEMANTIC COLORS (Light Mode)
@@ -688,9 +719,9 @@
   --color-popover-foreground: var(--color-grey-200);
 
   /* Background - Basic (Dark Mode) */
-  --color-background-strong: var(--color-grey-900);
+  --color-background-strong: var(--color-grey-700);
   --color-background-base: var(--color-grey-800);
-  --color-background-subtle: #1e2a3a;
+  --color-background-subtle: var(--color-grey-900);
 
   /* Background - Inverse (Dark Mode) */
   --color-background-inverse-subtle: var(--color-grey-400);
@@ -700,18 +731,18 @@
   --color-background-disabled: var(--color-grey-800);
 
   /* Background - Brand (Dark Mode) */
-  --color-background-brand-subtle: var(--color-primary-brand-alpha-200);
-  --color-background-brand-strong: var(--color-primary-brand-500);
+  --color-background-brand-subtle: var(--color-primary-brand-900);
+  --color-background-brand-strong: var(--color-primary-brand-600);
 
   /* Background - Semantic (Dark Mode) */
-  --color-background-success-subtle: #14532d;
-  --color-background-success-strong: var(--color-green-400);
-  --color-background-warning-subtle: #78350f;
-  --color-background-warning-strong: var(--color-orange-300);
-  --color-background-error-subtle: #7f1d1d;
-  --color-background-error-strong: var(--color-red-400);
-  --color-background-informative-subtle: #1e3a8a;
-  --color-background-informative-strong: var(--color-blue-400);
+  --color-background-success-subtle: var(--color-green-900);
+  --color-background-success-strong: var(--color-green-500);
+  --color-background-warning-subtle: var(--color-orange-900);
+  --color-background-warning-strong: var(--color-orange-500);
+  --color-background-error-subtle: var(--color-red-900);
+  --color-background-error-strong: var(--color-red-500);
+  --color-background-informative-subtle: var(--color-blue-900);
+  --color-background-informative-strong: var(--color-blue-500);
 
   /* Text Hierarchy */
   --color-strong: var(--color-grey-100);
@@ -738,12 +769,12 @@
 
   /* Primary */
   --color-primary: var(--color-indigo-500);
-  --color-primary-foreground: var(--color-grey-900);
+  --color-primary-foreground: var(--color-indigo-200);
   --color-primary-subtle: var(--color-indigo-alpha-200);
 
   /* Secondary */
   --color-secondary: var(--color-dark-blue-400);
-  --color-secondary-foreground: var(--color-grey-900);
+  --color-secondary-foreground: var(--color-dark-blue-200);
   --color-secondary-subtle: var(--color-dark-blue-alpha-200);
 
   /* Muted */
@@ -752,40 +783,40 @@
 
   /* Accent */
   --color-accent: var(--color-indigo-alpha-300);
-  --color-accent-foreground: var(--color-grey-100);
+  --color-accent-foreground: var(--color-indigo-200);
   --color-accent-subtle: var(--color-indigo-alpha-200);
 
   /* Brand */
   --color-brand: var(--color-primary-brand-500);
-  --color-brand-foreground: var(--color-grey-900);
+  --color-brand-foreground: var(--color-primary-brand-200);
   --color-brand-subtle: var(--color-primary-brand-alpha-200);
 
   /* Destructive */
   --color-destructive: var(--color-red-500);
-  --color-destructive-foreground: var(--color-grey-900);
+  --color-destructive-foreground: var(--color-red-200);
   --color-destructive-subtle: var(--color-red-alpha-200);
 
   /* Status Colors */
   --color-success: var(--color-green-500);
-  --color-success-foreground: var(--color-grey-900);
+  --color-success-foreground: var(--color-green-200);
   --color-success-subtle: var(--color-green-alpha-200);
-  --color-warning: var(--color-orange-400);
-  --color-warning-foreground: var(--color-grey-900);
+  --color-warning: var(--color-orange-500);
+  --color-warning-foreground: var(--color-orange-200);
   --color-warning-subtle: var(--color-orange-50);
-  --color-info: var(--color-blue-400);
-  --color-info-foreground: var(--color-grey-900);
+  --color-info: var(--color-blue-500);
+  --color-info-foreground: var(--color-blue-200);
   --color-info-subtle: var(--color-blue-alpha-200);
   --color-neutral: var(--color-grey-500);
-  --color-neutral-foreground: var(--color-grey-900);
+  --color-neutral-foreground: var(--color-grey-200);
 
   /* Informative */
   --color-informative: var(--color-blue-400);
-  --color-informative-foreground: var(--color-grey-900);
+  --color-informative-foreground: var(--color-blue-200);
 
   /* Border, Input, Ring */
+  --color-border-subtle: var(--color-grey-600);
   --color-border: var(--color-grey-700);
-  --color-border-subtle: var(--color-grey-800);
-  --color-border-strong: var(--color-grey-600);
+  --color-border-strong: var(--color-grey-800);
   --color-input: var(--color-grey-600);
   --color-ring: var(--color-grey-white);
 
@@ -813,6 +844,8 @@
   --color-selected-foreground: var(--color-indigo-800);
 
   /* Surface Interactive - Dark Mode */
+  --color-surface-default: var(--color-grey-900);
+  --color-surface-default-hover: var(--color-grey-800);
   --color-surface-subtle-hover: var(--color-grey-700);
   --color-surface-strong-hover: var(--color-grey-600);
 
@@ -833,12 +866,12 @@
   --color-surface-secondary-subtle-hover: var(--color-dark-blue-alpha-300);
 
   /* Surface Brand (4 states) */
-  --color-surface-brand: var(--color-primary-brand-alpha-200);
-  --color-surface-brand-hover: var(--color-primary-brand-alpha-300);
-  --color-surface-brand-pressed: var(--color-primary-brand-alpha-400);
+  --color-surface-brand: var(--color-primary-brand-500);
+  --color-surface-brand-hover: var(--color-primary-brand-400);
+  --color-surface-brand-pressed: var(--color-primary-brand-300);
   --color-surface-brand-disabled: var(--color-grey-600);
-  --color-surface-brand-strong: var(--color-primary-brand-500);
-  --color-surface-brand-strong-hover: var(--color-primary-brand-400);
+  --color-surface-brand-subtle: var(--color-primary-brand-alpha-200);
+  --color-surface-brand-subtle-hover: var(--color-primary-brand-alpha-300);
 
   /* Surface Inverse (4 states) */
   --color-surface-inverse: var(--color-grey-100);
@@ -958,6 +991,8 @@
   --color-outline-primary-hover: var(--color-indigo-400);
   --color-outline-primary-pressed: var(--color-indigo-300);
   --color-outline-primary-disabled: var(--color-grey-700);
+  --color-outline-primary-subtle: var(--color-indigo-600);
+  --color-outline-primary-subtle-hover: var(--color-indigo-500);
 
   /* Outline - Secondary (Dark Mode) */
   --color-outline-secondary: var(--color-dark-blue-400);
@@ -988,21 +1023,25 @@
   --color-outline-error: var(--color-red-500);
   --color-outline-error-hover: var(--color-red-400);
   --color-outline-error-pressed: var(--color-red-300);
+  --color-outline-error-disabled: var(--color-grey-700);
 
   /* Outline - Warning (Dark Mode) */
   --color-outline-warning: var(--color-orange-500);
   --color-outline-warning-hover: var(--color-orange-400);
   --color-outline-warning-pressed: var(--color-orange-300);
+  --color-outline-warning-disabled: var(--color-grey-700);
 
   /* Outline - Informative (Dark Mode) */
   --color-outline-informative: var(--color-blue-500);
   --color-outline-informative-hover: var(--color-blue-400);
   --color-outline-informative-pressed: var(--color-blue-300);
+  --color-outline-informative-disabled: var(--color-grey-700);
 
   /* Outline - Success (Dark Mode) */
   --color-outline-success: var(--color-green-500);
   --color-outline-success-hover: var(--color-green-400);
   --color-outline-success-pressed: var(--color-green-300);
+  --color-outline-success-disabled: var(--color-grey-700);
 
   /* Opacity Colors - Dark Mode */
   --color-opacity-dark-subtle: var(--color-black-alpha-200);

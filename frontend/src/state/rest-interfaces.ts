@@ -1501,6 +1501,7 @@ export type SchemaRegistrySubjectDetails = {
   name: string;
   type: SchemaTypeType;
   compatibility: 'DEFAULT' | SchemaRegistryCompatibilityMode;
+  mode: string;
   versions: SchemaRegistrySubjectDetailsVersion[];
   latestActiveVersion: number;
   schemas: SchemaRegistryVersionedSchema[];
