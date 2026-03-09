@@ -123,6 +123,43 @@ export const useSchemaDetailsQuery = (subjectName?: string, options?: { enabled?
     enabled: options?.enabled !== false && subjectName !== '',
   });
 
+export type SchemaRegistryMode = 'READWRITE' | 'READONLY' | 'IMPORT';
+
+export const useUpdateGlobalModeMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation<{ mode: string }, Error, SchemaRegistryMode>({
+    mutationFn: async (mode: SchemaRegistryMode) => {
+      const response = await fetch(`${config.restBasePath}/schema-registry/mode`, {
+        method: 'PUT',
+        headers: {
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mode }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update global mode');
+      }
+
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'mode'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'global mode',
+      });
+    },
+  });
+};
+
 export const useUpdateGlobalCompatibilityMutation = () => {
   const queryClient = useQueryClient();
 
@@ -214,6 +251,60 @@ export const useUpdateSubjectCompatibilityMutation = () => {
         error: connectError,
         action: 'update',
         entity: 'subject compatibility mode',
+      });
+    },
+  });
+};
+
+export const useUpdateSubjectModeMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation<{ mode: string }, Error, { subjectName: string; mode: 'DEFAULT' | SchemaRegistryMode }>({
+    mutationFn: async ({ subjectName, mode }) => {
+      if (mode === 'DEFAULT') {
+        const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(subjectName)}`, {
+          method: 'DELETE',
+          headers: {
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Failed to reset subject mode to default');
+        }
+
+        return response.json();
+      }
+
+      const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(subjectName)}`, {
+        method: 'PUT',
+        headers: {
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mode }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update subject mode');
+      }
+
+      return response.json();
+    },
+    onSuccess: async (_, { subjectName }) => {
+      await queryClient.invalidateQueries({
+        queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+        exact: false,
+      });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'subject mode',
       });
     },
   });

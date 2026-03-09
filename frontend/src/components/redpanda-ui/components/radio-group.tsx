@@ -54,12 +54,7 @@ type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item>
     transition?: Transition;
   };
 
-function RadioGroupItem({
-  className,
-  transition = { type: 'spring', stiffness: 200, damping: 16 },
-  testId,
-  ...props
-}: RadioGroupItemProps) {
+function RadioGroupItem({ className, transition = { duration: 0.15 }, testId, ...props }: RadioGroupItemProps) {
   return (
     <RadioGroupPrimitive.Item asChild {...props}>
       <motion.button

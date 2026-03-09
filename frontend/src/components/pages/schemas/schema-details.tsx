@@ -29,6 +29,8 @@ import {
 } from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+import { EditIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 
@@ -52,7 +54,7 @@ import {
 } from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
-import { Button, DefaultSkeleton, Label } from '../../../utils/tsx-utils';
+import { DefaultSkeleton, Label, Button as LegacyButton } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeURIComponentPercents } from '../../../utils/utils';
 import { KowlDiffEditor } from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
@@ -171,7 +173,48 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         <SmallStat title="Format">{subject.type}</SmallStat>
         <Divider height="2ch" orientation="vertical" />
 
-        <SmallStat title="Compatibility">{subject.compatibility}</SmallStat>
+        <SmallStat title="Mode">
+          <Flex alignItems="center" gap="1">
+            {subject.mode}
+            {canManageSchemaRegistry !== false && (
+              <Button
+                data-testid="schema-details-edit-mode-icon"
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/edit-mode',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+                size="icon-xs"
+                variant="secondary-ghost"
+              >
+                <EditIcon />
+              </Button>
+            )}
+          </Flex>
+        </SmallStat>
+        <Divider height="2ch" orientation="vertical" />
+
+        <SmallStat title="Compatibility">
+          <Flex alignItems="center" gap="1">
+            {subject.compatibility}
+            {canManageSchemaRegistry !== false && (
+              <Button
+                data-testid="schema-details-edit-compatibility-icon"
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/edit-compatibility',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+                size="icon-xs"
+                variant="secondary-ghost"
+              >
+                <EditIcon />
+              </Button>
+            )}
+          </Flex>
+        </SmallStat>
         <Divider height="2ch" orientation="vertical" />
 
         <SmallStat title="Active Versions">
@@ -181,22 +224,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
       {/* Buttons */}
       <Flex gap="2">
-        <Button
-          data-testid="schema-details-edit-compatibility-btn"
-          disabledReason={
-            canManageSchemaRegistry === false ? "You don't have the 'canManageSchemaRegistry' permission" : undefined
-          }
-          onClick={() =>
-            navigate({
-              to: '/schema-registry/subjects/$subjectName/edit-compatibility',
-              params: { subjectName: subjectNameEncoded },
-            })
-          }
-          variant="outline"
-        >
-          Edit compatibility
-        </Button>
-        <Button
+        <LegacyButton
           data-testid="schema-details-add-version-btn"
           disabledReason={canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined}
           onClick={() =>
@@ -208,15 +236,15 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           variant="outline"
         >
           Add new version
-        </Button>
-        <Button
+        </LegacyButton>
+        <LegacyButton
           data-testid="schema-details-delete-subject-btn"
           disabledReason={canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined}
           onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
           variant="outline"
         >
           Delete subject
-        </Button>
+        </LegacyButton>
       </Flex>
 
       {/* Definition / Diff */}
@@ -476,7 +504,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
 
           {schema.isSoftDeleted ? (
             <>
-              <Button
+              <LegacyButton
                 data-testid="schema-definition-permanent-delete-btn"
                 disabledReason={
                   canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
@@ -486,9 +514,9 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
                 variant="outline"
               >
                 Permanent delete
-              </Button>
+              </LegacyButton>
 
-              <Button
+              <LegacyButton
                 data-testid="schema-definition-recover-btn"
                 disabledReason={
                   canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
@@ -497,10 +525,10 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
                 variant="outline"
               >
                 Recover
-              </Button>
+              </LegacyButton>
             </>
           ) : (
-            <Button
+            <LegacyButton
               data-testid="schema-definition-delete-version-btn"
               disabledReason={
                 canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
@@ -510,7 +538,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
               variant="outline"
             >
               Delete
-            </Button>
+            </LegacyButton>
           )}
         </Flex>
 

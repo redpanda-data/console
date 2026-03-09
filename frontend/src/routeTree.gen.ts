@@ -35,6 +35,7 @@ import { Route as TransformsTransformNameRouteImport } from './routes/transforms
 import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create';
 import { Route as SecurityTabRouteImport } from './routes/security/$tab';
 import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
+import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
 import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility';
 import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create';
 import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard';
@@ -70,6 +71,7 @@ import { Route as SecurityRolesRoleNameUpdateRouteImport } from './routes/securi
 import { Route as SecurityRolesRoleNameDetailsRouteImport } from './routes/security/roles/$roleName/details';
 import { Route as SecurityAclsAclNameUpdateRouteImport } from './routes/security/acls/$aclName/update';
 import { Route as SecurityAclsAclNameDetailsRouteImport } from './routes/security/acls/$aclName/details';
+import { Route as SchemaRegistrySubjectsSubjectNameEditModeRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-mode';
 import { Route as SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-compatibility';
 import { Route as SchemaRegistrySubjectsSubjectNameAddVersionRouteImport } from './routes/schema-registry/subjects/$subjectName/add-version';
 import { Route as RpConnectSecretsSecretIdEditRouteImport } from './routes/rp-connect/secrets/$secretId/edit';
@@ -203,6 +205,11 @@ const SecurityTabRoute = SecurityTabRouteImport.update({
 const SecretsCreateRoute = SecretsCreateRouteImport.update({
   id: '/secrets/create',
   path: '/secrets/create',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const SchemaRegistryEditModeRoute = SchemaRegistryEditModeRouteImport.update({
+  id: '/schema-registry/edit-mode',
+  path: '/schema-registry/edit-mode',
   getParentRoute: () => rootRouteImport,
 } as any);
 const SchemaRegistryEditCompatibilityRoute =
@@ -394,6 +401,12 @@ const SecurityAclsAclNameDetailsRoute =
     path: '/security/acls/$aclName/details',
     getParentRoute: () => rootRouteImport,
   } as any);
+const SchemaRegistrySubjectsSubjectNameEditModeRoute =
+  SchemaRegistrySubjectsSubjectNameEditModeRouteImport.update({
+    id: '/schema-registry/subjects/$subjectName/edit-mode',
+    path: '/schema-registry/subjects/$subjectName/edit-mode',
+    getParentRoute: () => rootRouteImport,
+  } as any);
 const SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute =
   SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport.update({
     id: '/schema-registry/subjects/$subjectName/edit-compatibility',
@@ -438,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
@@ -479,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
@@ -505,6 +520,7 @@ export interface FileRoutesByTo {
   '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
@@ -546,6 +562,7 @@ export interface FileRoutesByTo {
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
@@ -573,6 +590,7 @@ export interface FileRoutesById {
   '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
@@ -614,6 +632,7 @@ export interface FileRoutesById {
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
@@ -642,6 +661,7 @@ export interface FileRouteTypes {
     | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
+    | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/security/$tab'
     | '/shadowlinks/create'
@@ -683,6 +703,7 @@ export interface FileRouteTypes {
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
+    | '/schema-registry/subjects/$subjectName/edit-mode'
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
@@ -709,6 +730,7 @@ export interface FileRouteTypes {
     | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
+    | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/security/$tab'
     | '/shadowlinks/create'
@@ -750,6 +772,7 @@ export interface FileRouteTypes {
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
+    | '/schema-registry/subjects/$subjectName/edit-mode'
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
@@ -776,6 +799,7 @@ export interface FileRouteTypes {
     | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
+    | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/security/$tab'
     | '/shadowlinks/create'
@@ -817,6 +841,7 @@ export interface FileRouteTypes {
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
+    | '/schema-registry/subjects/$subjectName/edit-mode'
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
@@ -844,6 +869,7 @@ export interface RootRouteChildren {
   RpConnectWizardRoute: typeof RpConnectWizardRoute;
   SchemaRegistryCreateRoute: typeof SchemaRegistryCreateRoute;
   SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute;
+  SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute;
   SecretsCreateRoute: typeof SecretsCreateRoute;
   SecurityTabRoute: typeof SecurityTabRoute;
   ShadowlinksCreateRoute: typeof ShadowlinksCreateRoute;
@@ -885,6 +911,7 @@ export interface RootRouteChildren {
   RpConnectSecretsSecretIdEditRoute: typeof RpConnectSecretsSecretIdEditRoute;
   SchemaRegistrySubjectsSubjectNameAddVersionRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  SchemaRegistrySubjectsSubjectNameEditModeRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
   SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
   SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
@@ -1075,6 +1102,13 @@ declare module '@tanstack/react-router' {
       path: '/secrets/create';
       fullPath: '/secrets/create';
       preLoaderRoute: typeof SecretsCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/schema-registry/edit-mode': {
+      id: '/schema-registry/edit-mode';
+      path: '/schema-registry/edit-mode';
+      fullPath: '/schema-registry/edit-mode';
+      preLoaderRoute: typeof SchemaRegistryEditModeRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/schema-registry/edit-compatibility': {
@@ -1322,6 +1356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityAclsAclNameDetailsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/schema-registry/subjects/$subjectName/edit-mode': {
+      id: '/schema-registry/subjects/$subjectName/edit-mode';
+      path: '/schema-registry/subjects/$subjectName/edit-mode';
+      fullPath: '/schema-registry/subjects/$subjectName/edit-mode';
+      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/subjects/$subjectName/edit-compatibility': {
       id: '/schema-registry/subjects/$subjectName/edit-compatibility';
       path: '/schema-registry/subjects/$subjectName/edit-compatibility';
@@ -1372,6 +1413,7 @@ const rootRouteChildren: RootRouteChildren = {
   RpConnectWizardRoute: RpConnectWizardRoute,
   SchemaRegistryCreateRoute: SchemaRegistryCreateRoute,
   SchemaRegistryEditCompatibilityRoute: SchemaRegistryEditCompatibilityRoute,
+  SchemaRegistryEditModeRoute: SchemaRegistryEditModeRoute,
   SecretsCreateRoute: SecretsCreateRoute,
   SecurityTabRoute: SecurityTabRoute,
   ShadowlinksCreateRoute: ShadowlinksCreateRoute,
@@ -1419,6 +1461,8 @@ const rootRouteChildren: RootRouteChildren = {
     SchemaRegistrySubjectsSubjectNameAddVersionRoute,
   SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute:
     SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute,
+  SchemaRegistrySubjectsSubjectNameEditModeRoute:
+    SchemaRegistrySubjectsSubjectNameEditModeRoute,
   SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
   SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
   SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
