@@ -372,7 +372,12 @@ const KafkaConnectorMain = ({
         )}
         onOk={async (_connectorName) => {
           await connectClusterStore.deleteConnector(connectorName);
-          await refreshData(true);
+        }}
+        onSuccess={() => {
+          // Navigate after the success toast has been queued.
+          // Refreshing before navigation would cause the connector to disappear
+          // from the store, unmounting this component before the toast renders.
+          // The cluster-list page refreshes on its own when it mounts.
           appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
         }}
         successMessage={(c) => (

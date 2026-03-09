@@ -570,6 +570,7 @@ type ConfirmModalProps<T> = {
   successMessage: (target: T) => JSX.Element; // "x done successfully"
 
   onOk: (target: T) => Promise<void>;
+  onSuccess?: (target: T) => void; // called after the success toast; use for navigation
 };
 
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
@@ -626,6 +627,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
     });
 
     cancel();
+    props.onSuccess?.(successTarget);
   };
 
   const onOk = async () => {
