@@ -48,7 +48,7 @@ import {
   SASLMechanism,
 } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { appGlobal } from '../../state/app-global';
-import { uiState, useUIStateStore } from '../../state/ui-state';
+import { useUIStateStore } from '../../state/ui-state';
 
 const authenticationApiClient = {
   async refreshAuthenticationMethods(): Promise<{ methods: AuthenticationMethod[]; error: ConnectError | null }> {
@@ -207,6 +207,7 @@ const LoginPage = () => {
   const [methods, setMethods] = useState<AuthenticationMethod[]>([]);
   const [methodsError, setMethodsError] = useState<ConnectError | null>(null);
   const loginError = useUIStateStore((s) => s.loginError);
+  const setLoginError = useUIStateStore((s) => s.setLoginError);
 
   useEffect(() => {
     authenticationApiClient.refreshAuthenticationMethods().then(({ methods: m, error }) => {
@@ -220,7 +221,7 @@ const LoginPage = () => {
       <Modal
         isOpen={loginError !== null}
         onClose={() => {
-          uiState.loginError = null;
+          setLoginError(null);
         }}
       >
         <ModalOverlay />
@@ -233,7 +234,7 @@ const LoginPage = () => {
             <Button
               data-testid="login-error__ok-button"
               onClick={() => {
-                uiState.loginError = null;
+                setLoginError(null);
               }}
             >
               OK

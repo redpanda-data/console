@@ -84,8 +84,16 @@ export function discoverVariants(options = {}) {
  * @returns {object|null}
  */
 export function getVariant(name) {
-  const variants = discoverVariants();
-  return variants.find((v) => v.name === name) || null;
+  // First check all variants (including unrunnable) to give better error messages
+  const allVariants = discoverVariants({ includeUnrunnable: true });
+  const variant = allVariants.find((v) => v.name === name);
+
+  if (variant && !variant.canRun) {
+    console.error(`Variant "${name}" found but cannot run: ${variant.skipReason}`);
+    process.exit(1);
+  }
+
+  return variant || null;
 }
 
 /**

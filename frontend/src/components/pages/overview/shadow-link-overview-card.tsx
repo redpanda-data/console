@@ -17,7 +17,7 @@ import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/c
 import React, { type FC, useMemo } from 'react';
 import { useGetShadowLinkQuery, useListShadowLinksQuery } from 'react-query/api/shadowlink';
 
-import { Feature, isSupported } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { ShadowLinkDiagram } from '../shadowlinks/details/shadow-link-diagram';
 import { ShadowLinkMetrics } from '../shadowlinks/details/shadow-link-metrics';
 
@@ -66,11 +66,8 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
 
 // Functional component to fetch and display shadow link data
 export const ShadowLinkSection: FC = () => {
-  const {
-    data: shadowLinksData,
-    isLoading,
-    error,
-  } = useListShadowLinksQuery({}, { enabled: isSupported(Feature.ShadowLinkService) });
+  const shadowLinkEnabled = useSupportedFeaturesStore((s) => s.shadowLinkService);
+  const { data: shadowLinksData, isLoading, error } = useListShadowLinksQuery({}, { enabled: shadowLinkEnabled });
 
   // Don't render if error, loading, or no shadow link exists
   const shadowLinks = shadowLinksData?.shadowLinks || [];
