@@ -14,8 +14,9 @@ import { useQuery } from '@connectrpc/connect-query';
 
 import { ListQuotasRequestSchema } from '../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { listQuotas } from '../protogen/redpanda/api/dataplane/v1/quota-QuotaService_connectquery';
+import { MAX_PAGE_SIZE } from '../react-query/react-query.utils';
 
-const request = create(ListQuotasRequestSchema, { pageSize: 1000 });
+const request = create(ListQuotasRequestSchema, { pageSize: MAX_PAGE_SIZE });
 
 export const useListQuotas = () =>
   useQuery(listQuotas, request, {

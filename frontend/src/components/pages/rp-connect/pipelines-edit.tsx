@@ -73,7 +73,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   const [tasks, setTasks] = useState(cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS);
   const [editorContent, setEditorContent] = useState(pipeline.configYaml);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [tags] = useState(pipeline.tags);
+  const tags = pipeline.tags;
   const [serviceAccount] = useState<Pipeline_ServiceAccount | undefined>(pipeline.serviceAccount);
 
   const toast = useToast();
@@ -112,7 +112,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
         if (retUnits && tasks !== retUnits) {
           toast({
-            status: 'warning',
+            status: 'info',
             duration: 6000,
             isClosable: false,
             title: `Pipeline has been resized to use ${retUnits} compute units`,
