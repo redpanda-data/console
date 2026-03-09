@@ -738,6 +738,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
     const hasKeyTags = uiState.topicSettings.previewTags.count((x) => x.isActive && x.searchInMessageKey) > 0;
+    const topicName = this.props.topic.topicName;
 
     const onCopyValue = useCallback(
       (original: TopicMessage) => {
@@ -768,6 +769,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       },
       [toast],
     );
+
+    const onLoadLargeMessage = useCallback(
+      (targetTopicName: string, partitionID: number, offset: number) =>
+        this.loadLargeMessage(targetTopicName, partitionID, offset),
+      [],
+    );
+
+    const onSetDownloadMessages = useCallback((messages: TopicMessage[]) => {
+      this.downloadMessages = messages;
+    }, []);
 
     const isValueDeserializerActive =
       uiState.topicSettings.searchParams.valueDeserializer !== null &&
@@ -990,17 +1001,14 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             ({ row: { original } }: { row: { original: TopicMessage } }) => (
               <ExpandedMessage
                 msg={original}
-                loadLargeMessage={() =>
-                  this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
-                }
-                onDownloadRecord={() => {
-                  this.downloadMessages = [original];
-                }}
+                topicName={topicName}
+                onLoadLargeMessage={onLoadLargeMessage}
+                onSetDownloadMessages={onSetDownloadMessages}
                 onCopyKey={onCopyKey}
                 onCopyValue={onCopyValue}
               />
             ),
-            [onCopyKey, onCopyValue],
+            [onCopyKey, onCopyValue, onLoadLargeMessage, onSetDownloadMessages],
           )}
         />
         <Button
@@ -1315,7 +1323,7 @@ class SaveMessagesDialog extends Component<{
 }
 
 @observer
-class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: () => PreviewTagV2[] }> {
+export class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: () => PreviewTagV2[] }> {
   render() {
     const msg = this.props.msg;
     const key = msg.key;
@@ -1364,8 +1372,8 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
           );
           return text;
         }
-        // Normal display (json, no filters). Just stringify the whole object
-        text = cullText(JSON.stringify(key.payload), 44);
+        // Normal display (json, no filters). Reuse the cached JSON string.
+        text = cullText(msg.keyJson ?? JSON.stringify(key.payload), 44);
       }
 
       return (
@@ -1475,8 +1483,8 @@ export class MessagePreview extends Component<{
           );
           return text;
         }
-        // Normal display (json, no filters). Just stringify the whole object
-        text = cullText(JSON.stringify(value.payload), 300);
+        // Normal display (json, no filters). Reuse the cached JSON string.
+        text = cullText(msg.valueJson ?? JSON.stringify(value.payload), 300);
       }
 
       return (
@@ -1511,82 +1519,123 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
   </Flex>
 );
 
-export const ExpandedMessage: FC<{
+type ExpandedMessageProps = {
   msg: TopicMessage;
-  loadLargeMessage: () => Promise<void>;
+  loadLargeMessage?: () => Promise<void>;
   onDownloadRecord?: () => void;
+  topicName?: string;
+  onLoadLargeMessage?: (topicName: string, partitionID: number, offset: number) => Promise<void>;
+  onSetDownloadMessages?: (messages: TopicMessage[]) => void;
   onCopyKey?: (original: TopicMessage) => void;
   onCopyValue?: (original: TopicMessage) => void;
-}> = ({ msg, loadLargeMessage, onDownloadRecord, onCopyKey, onCopyValue }) => {
-  const bg = useColorModeValue('gray.50', 'gray.600');
-
-  return (
-    <Box bg={bg} py={6} px={10}>
-      <MessageMetaData msg={msg} />
-      <RpTabs
-        variant="fitted"
-        isFitted
-        defaultIndex={1}
-        items={[
-          {
-            key: 'key',
-            name: (
-              <Box minWidth="6rem">
-                {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
-              </Box>
-            ),
-            isDisabled: msg.key == null || msg.key.size === 0,
-            component: (
-              <Box>
-                <TroubleshootReportViewer payload={msg.key} />
-                <PayloadComponent payload={msg.key} loadLargeMessage={loadLargeMessage} />
-                <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyKey && (
-                    <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>
-                      Copy Key
-                    </Button>
-                  )}
-                </ExpandedMessageFooter>
-              </Box>
-            ),
-          },
-          {
-            key: 'value',
-            name: (
-              <Box minWidth="6rem">
-                {msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}
-              </Box>
-            ),
-            component: (
-              <Box>
-                <TroubleshootReportViewer payload={msg.value} />
-                <PayloadComponent payload={msg.value} loadLargeMessage={loadLargeMessage} />
-                <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
-                  {onCopyValue && (
-                    <Button variant="outline" onClick={() => onCopyValue(msg)} isDisabled={msg.value.isPayloadNull}>
-                      Copy Value
-                    </Button>
-                  )}
-                </ExpandedMessageFooter>
-              </Box>
-            ),
-          },
-          {
-            key: 'headers',
-            name: <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>,
-            isDisabled: msg.headers.length === 0,
-            component: (
-              <Box>
-                <MessageHeaders msg={msg} />
-                {onDownloadRecord && <ExpandedMessageFooter onDownloadRecord={onDownloadRecord} />}
-              </Box>
-            ),
-          },
-        ]}
-      />
-    </Box>
-  );
 };
+
+export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
+  ({
+    msg,
+    loadLargeMessage,
+    onDownloadRecord,
+    topicName,
+    onLoadLargeMessage,
+    onSetDownloadMessages,
+    onCopyKey,
+    onCopyValue,
+  }) => {
+    const bg = useColorModeValue('gray.50', 'gray.600');
+    const handleLoadLargeMessage = useCallback(
+      () =>
+        onLoadLargeMessage && topicName !== undefined
+          ? onLoadLargeMessage(topicName, msg.partitionID, msg.offset)
+          : (loadLargeMessage?.() ?? Promise.resolve()),
+      [loadLargeMessage, msg.offset, msg.partitionID, onLoadLargeMessage, topicName],
+    );
+    const handleDownloadRecord = useCallback(() => {
+      if (onSetDownloadMessages) {
+        onSetDownloadMessages([msg]);
+        return;
+      }
+      onDownloadRecord?.();
+    }, [msg, onDownloadRecord, onSetDownloadMessages]);
+    const handleCopyKey = useCallback(() => {
+      onCopyKey?.(msg);
+    }, [msg, onCopyKey]);
+    const handleCopyValue = useCallback(() => {
+      onCopyValue?.(msg);
+    }, [msg, onCopyValue]);
+
+    return (
+      <Box bg={bg} py={6} px={10}>
+        <MessageMetaData msg={msg} />
+        <RpTabs
+          variant="fitted"
+          isFitted
+          defaultIndex={1}
+          items={[
+            {
+              key: 'key',
+              name: (
+                <Box minWidth="6rem">
+                  {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
+                </Box>
+              ),
+              isDisabled: msg.key == null || msg.key.size === 0,
+              component: (
+                <Box>
+                  <TroubleshootReportViewer payload={msg.key} />
+                  <PayloadComponent payload={msg.key} loadLargeMessage={handleLoadLargeMessage} />
+                  <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
+                    {onCopyKey && (
+                      <Button variant="outline" onClick={handleCopyKey} isDisabled={msg.key.isPayloadNull}>
+                        Copy Key
+                      </Button>
+                    )}
+                  </ExpandedMessageFooter>
+                </Box>
+              ),
+            },
+            {
+              key: 'value',
+              name: (
+                <Box minWidth="6rem">
+                  {msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}
+                </Box>
+              ),
+              component: (
+                <Box>
+                  <TroubleshootReportViewer payload={msg.value} />
+                  <PayloadComponent payload={msg.value} loadLargeMessage={handleLoadLargeMessage} />
+                  <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
+                    {onCopyValue && (
+                      <Button variant="outline" onClick={handleCopyValue} isDisabled={msg.value.isPayloadNull}>
+                        Copy Value
+                      </Button>
+                    )}
+                  </ExpandedMessageFooter>
+                </Box>
+              ),
+            },
+            {
+              key: 'headers',
+              name: (
+                <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>
+              ),
+              isDisabled: msg.headers.length === 0,
+              component: (
+                <Box>
+                  <MessageHeaders msg={msg} />
+                  {(onSetDownloadMessages || onDownloadRecord) && (
+                    <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord} />
+                  )}
+                </Box>
+              ),
+            },
+          ]}
+        />
+      </Box>
+    );
+  },
+);
+ExpandedMessage.displayName = 'ExpandedMessage';
 
 const PayloadComponent = observer(
   (p: {
