@@ -151,7 +151,7 @@ function refreshTopicData(topicName: string, force: boolean) {
     api.refreshTopicConsumers(topicName, force);
   }
 
-  // partitions are always required to display message count in the statistics bar
+  // partitions are required for the Partitions tab
   api.refreshPartitionsForTopic(topicName, force);
 
   // configuration is always required for the statistics bar
@@ -189,11 +189,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 
   render() {
-    // Touch observables so PageComponent's Reaction tracks them and triggers re-renders
-    // when async data arrives (TopicDetailsContent is a functional component child
-    // that reads api.* outside the MobX tracking context).
-    void api.topics;
-    void api.topicConfig.get(this.props.topicName);
     return <TopicDetailsContent topicName={this.props.topicName} />;
   }
 }
