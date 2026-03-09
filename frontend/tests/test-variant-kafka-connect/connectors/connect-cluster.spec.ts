@@ -73,7 +73,7 @@ test.describe('Kafka Connect Wizard', () => {
 
 test.describe('Kafka Connect Connector Lifecycle', () => {
   // Give the describe block (including beforeAll) more time in CI
-  test.describe.configure({ timeout: 120_000 });
+  test.describe.configure({ mode: 'serial', timeout: 120_000 });
 
   test.beforeAll(async ({ request }) => {
     const base = 'http://127.0.0.1:18283';
@@ -127,7 +127,7 @@ test.describe('Kafka Connect Connector Lifecycle', () => {
     await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
     await page.getByRole('button', { name: 'Yes' }).click();
     // After deletion the app navigates back to the cluster list
-    await page.waitForURL(`**/connect-clusters/${CLUSTER}`, { timeout: 30_000 });
+    await page.waitForURL(`**/connect-clusters/${CLUSTER}`, { timeout: 15_000 });
     await expect(page.getByText(CONNECTOR_NAME)).not.toBeVisible();
   });
 });

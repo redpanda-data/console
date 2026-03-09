@@ -22,7 +22,6 @@ import {
   DataType,
   PropertyImportance,
   PropertyWidth,
-  WrappedApiError,
 } from '../rest-interfaces';
 
 // Regex for validating secret strings
@@ -228,15 +227,7 @@ export class ConnectClusterStore {
     const connectorState = this.getConnectorStore(connectorName);
     const secrets = connectorState?.secrets;
 
-    try {
-      await api.deleteConnector(this.clusterName, connectorName);
-    } catch (err) {
-      // 404 means the connector is already gone — treat as success
-      const is404 =
-        (err instanceof WrappedApiError && err.statusCode === 404) ||
-        (err instanceof Error && err.message.startsWith('404'));
-      if (!is404) throw err;
-    }
+    await api.deleteConnector(this.clusterName, connectorName);
 
     if (secrets) {
       await Promise.all(
