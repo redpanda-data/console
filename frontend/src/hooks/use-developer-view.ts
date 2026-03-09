@@ -1,12 +1,22 @@
-import { useKey, useLocalStorage } from '@redpanda-data/ui';
+import { useLocalStorage } from '@redpanda-data/ui';
+import { useEffect } from 'react';
 
 const useDeveloperView = (): boolean => {
   const [developerView, setDeveloperView] = useLocalStorage('dv', false);
-  useKey('?', () => {
-    if (process.env.NODE_ENV !== 'production') {
-      setDeveloperView(!developerView);
-    }
-  });
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === '?') {
+        setDeveloperView((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [setDeveloperView]);
+
   return developerView;
 };
 
