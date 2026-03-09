@@ -423,6 +423,26 @@ func (api *API) handleDeleteSchemaRegistrySubjectMode() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetSchemaRegistryContexts() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		contexts, err := api.ConsoleSvc.GetSchemaRegistryContexts(r.Context())
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve contexts from the schema registry: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, contexts)
+	}
+}
+
 func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()
