@@ -105,6 +105,7 @@ type SchemaRegistryServicer interface {
 	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema, params CreateSchemaRequestParams) (*CreateSchemaResponse, error)
 	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version int, schema sr.Schema) (*SchemaRegistrySchemaValidation, error)
 	GetSchemaUsagesByID(ctx context.Context, schemaID int, subject string) ([]SchemaVersion, error)
+	GetSchemaRegistryContexts(ctx context.Context) ([]string, error)
 
 	// Custom Redpanda-only methods for managing ACLs within the schema registry.
 
