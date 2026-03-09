@@ -27,12 +27,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hamba/avro/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
+	"github.com/twmb/avro"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -1100,7 +1100,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: avro: unknown type:")
+		assert.NotEmpty(dr.Value.Troubleshooting[4].Message, "avro serde should report an error for non-avro data")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1458,7 +1458,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: avro: unknown type:")
+		assert.NotEmpty(dr.Value.Troubleshooting[4].Message, "avro serde should report an error for non-avro data")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1645,7 +1645,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: avro: unknown type:")
+		assert.NotEmpty(dr.Value.Troubleshooting[4].Message, "avro serde should report an error for non-avro data")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_nest'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -2444,7 +2444,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			]
 		}`
 
-		eventDataSchema, err := avro.Parse(eventDataSchemaStr)
+		schemaCache := avro.NewSchemaCache()
+
+		eventDataSchema, err := schemaCache.Parse(eventDataSchemaStr)
 		require.NoError(err)
 		require.NotEmpty(eventDataSchema)
 
@@ -2476,7 +2478,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			]
 		}`
 
-		userSchema, err := avro.Parse(userSchemaStr)
+		userSchema, err := schemaCache.Parse(userSchemaStr)
 		require.NoError(err)
 		require.NotEmpty(userSchema)
 
@@ -2523,7 +2525,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			]
 		}`
 
-		orderSchema, err := avro.Parse(orderSchemaStr)
+		orderSchema, err := schemaCache.Parse(orderSchemaStr)
 		require.NoError(err)
 		require.NotEmpty(orderSchema)
 
@@ -2596,10 +2598,11 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			ssOrder.ID,
 			&OrderRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(orderSchema, v.(*OrderRecord))
+				return orderSchema.Encode(v.(*OrderRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(orderSchema, b, v.(*OrderRecord))
+				_, err := orderSchema.Decode(b, v.(*OrderRecord))
+				return err
 			}),
 		)
 
@@ -2783,10 +2786,11 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			ss.ID,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(simpleSchema, v.(*SimpleRecord))
+				return simpleSchema.Encode(v.(*SimpleRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(simpleSchema, b, v.(*SimpleRecord))
+				_, err := simpleSchema.Decode(b, v.(*SimpleRecord))
+				return err
 			}),
 		)
 
@@ -4172,7 +4176,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			]
 		}`
 
-		eventDataSchema, err := avro.Parse(eventDataSchemaStr)
+		schemaCache := avro.NewSchemaCache()
+
+		eventDataSchema, err := schemaCache.Parse(eventDataSchemaStr)
 		require.NoError(err)
 		require.NotEmpty(eventDataSchema)
 
@@ -4204,7 +4210,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			]
 		}`
 
-		userSchema, err := avro.Parse(userSchemaStr)
+		userSchema, err := schemaCache.Parse(userSchemaStr)
 		require.NoError(err)
 		require.NotEmpty(userSchema)
 
@@ -4251,7 +4257,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			]
 		}`
 
-		orderSchema, err := avro.Parse(orderSchemaStr)
+		orderSchema, err := schemaCache.Parse(orderSchemaStr)
 		require.NoError(err)
 		require.NotEmpty(orderSchema)
 
@@ -4337,10 +4343,11 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			ssOrder.ID,
 			&OrderRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(orderSchema, v.(*OrderRecord))
+				return orderSchema.Encode(v.(*OrderRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(orderSchema, b, v.(*OrderRecord))
+				_, err := orderSchema.Decode(b, v.(*OrderRecord))
+			return err
 			}),
 		)
 

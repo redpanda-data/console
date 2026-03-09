@@ -16,9 +16,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hamba/avro/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/avro"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 
@@ -95,10 +95,11 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		3000,
 		&SimpleRecord{},
 		sr.EncodeFn(func(v any) ([]byte, error) {
-			return avro.Marshal(avroSchema, v.(*SimpleRecord))
+			return avroSchema.Encode(v.(*SimpleRecord))
 		}),
 		sr.DecodeFn(func(b []byte, v any) error {
-			return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+			_, err := avroSchema.Decode(b, v.(*SimpleRecord))
+			return err
 		}),
 	)
 
@@ -107,10 +108,11 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 		1001,
 		&SimpleRecord{},
 		sr.EncodeFn(func(v any) ([]byte, error) {
-			return avro.Marshal(avroSchema, v.(*SimpleRecord))
+			return avroSchema.Encode(v.(*SimpleRecord))
 		}),
 		sr.DecodeFn(func(b []byte, v any) error {
-			return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+			_, err := avroSchema.Decode(b, v.(*SimpleRecord))
+			return err
 		}),
 	)
 
@@ -161,11 +163,11 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
 
-				data, err := avro.Marshal(avroSchema, obj)
+				data, err := avroSchema.Encode(obj)
 				require.NoError(t, err)
 
 				out := SimpleRecord{}
-				err = avro.Unmarshal(avroSchema, data, &out)
+				_, err = avroSchema.Decode(data, &out)
 				require.NoError(t, err)
 
 				assert.Equal(t, int64(27), out.A)
@@ -344,10 +346,11 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			2000,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(avroSchema, v.(*SimpleRecord))
+				return avroSchema.Encode(v.(*SimpleRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+				_, err := avroSchema.Decode(b, v.(*SimpleRecord))
+				return err
 			}),
 		)
 
@@ -368,10 +371,11 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			2000,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(avroSchema, v.(*SimpleRecord))
+				return avroSchema.Encode(v.(*SimpleRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+				_, err := avroSchema.Decode(b, v.(*SimpleRecord))
+				return err
 			}),
 		)
 
@@ -389,7 +393,9 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(t.Context(), `{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(2000))
 		require.Error(t, err)
-		assert.Equal(t, `deserializing avro json: cannot decode textual record "org.hamba.avro.simple": cannot decode textual map: cannot determine codec: "p"`, err.Error())
+		assert.ErrorContains(t, err, "failed to serialize avro:")
+		assert.ErrorContains(t, err, "field a")
+		assert.ErrorContains(t, err, "missing key")
 		assert.Nil(t, b)
 	})
 
@@ -401,10 +407,11 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			2000,
 			&SimpleRecord{},
 			sr.EncodeFn(func(v any) ([]byte, error) {
-				return avro.Marshal(avroSchema, v.(*SimpleRecord))
+				return avroSchema.Encode(v.(*SimpleRecord))
 			}),
 			sr.DecodeFn(func(b []byte, v any) error {
-				return avro.Unmarshal(avroSchema, b, v.(*SimpleRecord))
+				_, err := avroSchema.Decode(b, v.(*SimpleRecord))
+				return err
 			}),
 		)
 
