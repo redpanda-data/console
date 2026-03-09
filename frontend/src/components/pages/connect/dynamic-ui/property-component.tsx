@@ -57,6 +57,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             name={p.name}
             onChange={(e) => {
               p.value = e;
+              p.notifyChange();
             }}
             options={options}
             value={String(v || def.default_value)}
@@ -73,6 +74,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             <SingleSelect
               onChange={(e) => {
                 p.value = e;
+                p.notifyChange();
               }}
               options={options}
               value={v}
@@ -87,6 +89,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             isDisabled={props.property.isDisabled}
             onChange={(e) => {
               p.value = e.target.value;
+              p.notifyChange();
             }}
             spellCheck={false}
             value={String(v)}
@@ -101,6 +104,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         <SecretInput
           onChange={(e) => {
             p.value = e;
+            p.notifyChange();
           }}
           updating={p.crud === 'update'}
           value={String(v ?? '')}
@@ -116,6 +120,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         <NumberInput
           onChange={(e) => {
             p.value = e;
+            p.notifyChange();
           }}
           value={Number(v)}
         />
@@ -128,6 +133,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           isChecked={Boolean(v)}
           onChange={(e) => {
             p.value = e.target.checked;
+            p.notifyChange();
           }}
         />
       );
@@ -140,6 +146,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             defaultValue={String(v)}
             onChange={(x) => {
               p.value = x;
+              p.notifyChange();
             }}
           />
         );
@@ -149,6 +156,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             defaultValue={def.default_value ?? undefined}
             onChange={(e) => {
               p.value = e.target.value;
+              p.notifyChange();
             }}
             value={String(v)}
           />
@@ -162,6 +170,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           defaultValue={def.default_value ?? undefined}
           onChange={(e) => {
             p.value = e.target.value;
+            p.notifyChange();
           }}
           value={String(v)}
         />
