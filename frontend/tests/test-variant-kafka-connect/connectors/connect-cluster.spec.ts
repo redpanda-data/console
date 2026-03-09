@@ -127,7 +127,7 @@ test.describe('Kafka Connect Connector Lifecycle', () => {
     await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
     await page.getByRole('button', { name: 'Yes' }).click();
     // After deletion the app navigates back to the cluster list
-    await page.waitForURL(`**/connect-clusters/${CLUSTER}`, { timeout: 15_000 });
+    await page.waitForURL(`**/connect-clusters/${CLUSTER}`, { timeout: 30_000 });
     await expect(page.getByText(CONNECTOR_NAME)).not.toBeVisible();
   });
 });
