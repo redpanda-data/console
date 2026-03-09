@@ -878,6 +878,15 @@ func (s *Service) CheckSchemaRegistryACLSupport(ctx context.Context) bool {
 	return true
 }
 
+// GetSchemaRegistryContexts returns all contexts available in the schema registry.
+func (s *Service) GetSchemaRegistryContexts(ctx context.Context) ([]string, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return srClient.Contexts(ctx)
+}
+
 // CheckSchemaRegistryContextsSupport checks if the Schema Registry supports
 // the Contexts feature. For Redpanda clusters with Admin API, it checks the
 // cluster config. For Kafka clusters, it probes the /contexts endpoint.
@@ -915,8 +924,7 @@ func (s *Service) CheckSchemaRegistryContextsSupport(ctx context.Context) bool {
 		return false
 	}
 
-	var contexts []string
-	err = srClient.Do(ctx, http.MethodGet, "/contexts", nil, &contexts)
+	_, err = srClient.Contexts(ctx)
 	if err != nil {
 		var se *sr.ResponseError
 		if errors.As(err, &se) && se.StatusCode == http.StatusNotFound {
