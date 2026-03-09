@@ -21,6 +21,7 @@ import {
 } from 'components/redpanda-ui/components/choicebox';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -200,9 +201,9 @@ function EditSchemaMode({
   return (
     <div className="flex gap-16">
       <div className="flex-1">
-        <p data-testid="edit-mode-description">
+        <Text data-testid="edit-mode-description">
           Mode controls whether the Schema Registry accepts new schema registrations and under what conditions.
-        </p>
+        </Text>
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
@@ -250,10 +251,10 @@ function EditSchemaMode({
 
       {subjectName && schema && (
         <div className="flex-1">
-          <p className="whitespace-pre-wrap break-words font-bold text-lg" data-testid="edit-mode-subject-name">
+          <Text className="whitespace-pre-wrap break-words font-bold text-lg" data-testid="edit-mode-subject-name">
             {subjectName}
-          </p>
-          <p className="mt-8 mb-4 font-bold text-lg">Schema</p>
+          </Text>
+          <Text className="mt-8 mb-4 font-bold text-lg">Schema</Text>
           <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
         </div>
       )}
