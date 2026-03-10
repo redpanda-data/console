@@ -61,7 +61,7 @@ type PayloadRenderData =
   | { type: 'rawBytesUnavailable' }
   | { type: 'controlChars'; content: string }
   | { type: 'primitive'; content: string }
-  | { type: 'json'; content: unknown }
+  | { type: 'json'; content: string | object | null | undefined }
   | { type: 'error'; content: string };
 
 function preparePayloadData(payload: Payload): PayloadRenderData {
