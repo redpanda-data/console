@@ -26,21 +26,21 @@ jobs:
       - name: Run React Doctor (PR diff mode)
         id: react_doctor_pr
         if: github.event_name == 'pull_request'
-        continue-on-error: true # TODO: remove once react-doctor warnings are resolved
+        continue-on-error: true # Compiler rules report 'use no memo' files; enforced at build
         uses: millionco/react-doctor@main
         with:
           directory: frontend
           diff: master
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          fail-on: error
+          fail-on: warning
       - name: Run React Doctor (push full scan)
         id: react_doctor_push
         if: github.event_name == 'push'
-        continue-on-error: true # TODO: remove once react-doctor warnings are resolved
+        continue-on-error: true # Compiler rules report 'use no memo' files; enforced at build
         uses: millionco/react-doctor@main
         with:
           directory: frontend
-          fail-on: error
+          fail-on: warning
       - name: Publish React Doctor score
         if: always()
         shell: bash
