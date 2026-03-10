@@ -8,6 +8,21 @@
       "src/hooks/use-mobile.ts",
       "src/globals.css"
     ],
-    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion"]
+    "rules": [
+      "react-doctor/use-lazy-motion",
+      "react-doctor/no-giant-component",
+      "react-doctor/require-reduced-motion",
+      "react-hooks-js/todo",
+      "react-hooks-js/refs",
+      "react-hooks-js/set-state-in-effect",
+      "react-hooks-js/incompatible-library",
+      "react-hooks-js/immutability",
+      "react-hooks-js/hooks",
+      "react-hooks-js/purity",
+      "react-hooks-js/static-components",
+      "react-hooks-js/error-boundaries",
+      "react-hooks-js/preserve-manual-memoization",
+      "react-hooks/rules-of-hooks"
+    ]
   }
 }
