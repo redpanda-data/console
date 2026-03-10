@@ -299,7 +299,7 @@ export const AclPrincipalGroupEditor = (p: {
                 <Flex flexDirection="column" gap={4}>
                   {group.topicAcls.map((t, i) => (
                     <ResourceACLsEditor
-                      key={`topic-${t.selector}-${i}`}
+                      key={t._key}
                       onChange={(updated) =>
                         setGroup(
                           (prev) =>
@@ -336,7 +336,7 @@ export const AclPrincipalGroupEditor = (p: {
                 <Flex flexDirection="column" gap={4}>
                   {group.consumerGroupAcls.map((t, i) => (
                     <ResourceACLsEditor
-                      key={`consumer-group-${t.selector}-${i}`}
+                      key={t._key}
                       onChange={(updated) =>
                         setGroup((prev) => ({
                           ...prev,
@@ -378,7 +378,7 @@ export const AclPrincipalGroupEditor = (p: {
                 <Flex flexDirection="column" gap={4}>
                   {group.transactionalIdAcls.map((t, i) => (
                     <ResourceACLsEditor
-                      key={`transactional-id-${t.selector}-${i}`}
+                      key={t._key}
                       onChange={(updated) =>
                         setGroup((prev) => ({
                           ...prev,
