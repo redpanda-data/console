@@ -1,6 +1,7 @@
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { defineConfig, loadEnv } from '@rsbuild/core';
 import { pluginBabel } from '@rsbuild/plugin-babel';
+import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
@@ -8,7 +9,6 @@ import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
-import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
 import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
@@ -35,6 +35,9 @@ export default defineConfig({
     pluginYaml(),
     pluginModuleFederation({
       ...moduleFederationConfig,
+    }),
+    pluginNodePolyfill({
+      globals: { process: true },
     }),
   ],
   dev: {
@@ -128,9 +131,6 @@ export default defineConfig({
           generatedRouteTree: './src/routeTree.gen.ts',
           quoteStyle: 'single',
           semicolons: true,
-        }),
-        new NodePolyfillPlugin({
-          additionalAliases: ['process'],
         }),
         new MonacoWebpackPlugin({
           languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf'],

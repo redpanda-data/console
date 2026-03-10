@@ -41,7 +41,9 @@
     "prepare": "lefthook install"
   },
   "overrides": {
-    "elliptic": "^6.6.1"
+    "elliptic": "^6.6.1",
+    "dompurify": "^3.2.5",
+    "prismjs": "^1.30.0"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.10",
@@ -103,7 +105,6 @@
     "monaco-yaml": "^5.4.0",
     "motion": "^12.23.24",
     "nanoid": "^5.1.6",
-    "node-polyfill-webpack-plugin": "^4.1.0",
     "nuqs": "^2.6.0",
     "pretty-bytes": "^5.6.0",
     "pretty-ms": "^7.0.1",
@@ -124,7 +125,6 @@
     "recharts": "2.15.4",
     "remark-emoji": "^5.0.2",
     "remark-gfm": "^4.0.1",
-    "remark-prism": "^1.3.6",
     "shiki": "^3.15.0",
     "sonner": "^2.0.7",
     "stacktrace-js": "^2.0.2",
@@ -148,6 +148,7 @@
     "@rollup/plugin-yaml": "^4.1.2",
     "@rsbuild/core": "^1.7.3",
     "@rsbuild/plugin-babel": "^1.1.1",
+    "@rsbuild/plugin-node-polyfill": "^1.4.4",
     "@rsbuild/plugin-react": "^1.4.5",
     "@rsbuild/plugin-sass": "1.4.0",
     "@rsbuild/plugin-svgr": "^1.3.0",
