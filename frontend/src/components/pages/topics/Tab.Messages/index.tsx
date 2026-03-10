@@ -749,7 +749,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           lastLoadMoreRef.current = { pageIndex: 0, total: result.length };
         }
         setSearchPhase(null);
-        setElapsedMs(endTime - startTime);
+        setElapsedMs(() => endTime - startTime);
         setBytesConsumed(search.bytesConsumed);
         setTotalMessagesConsumed(search.totalMessagesConsumed);
 
@@ -1250,7 +1250,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const newState = typeof updater === 'function' ? updater(paginationParams) : updater;
       uiState.topicSettings.searchParams.pageSize = newState.pageSize;
       if (continuousPaginationEnabled) {
-        setPageIndex(windowStartPage + newState.pageIndex);
+        setPageIndex(() => windowStartPage + newState.pageIndex);
       } else {
         setPageIndex(newState.pageIndex);
       }
@@ -1829,7 +1829,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   <RegistryButton
                     className="size-8"
                     disabled={boundedLocalPageIndex >= loadedPages - 1 && !hasMoreData}
-                    onClick={() => setPageIndex(pageIndex + 1)}
+                    onClick={() => setPageIndex((prev) => (prev ?? 0) + 1)}
                     size="icon"
                     variant="outline"
                   >

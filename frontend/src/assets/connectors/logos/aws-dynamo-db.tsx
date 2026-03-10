@@ -14,8 +14,8 @@ export const AWSDynamoDbLogo = (props: React.SVGProps<SVGSVGElement>) => (
     <title>AWS DynamoDB</title>
     <defs>
       <linearGradient id="linearGradient-1" x1="0%" x2="100%" y1="100%" y2="0%">
-        <stop offset="0%" stop-color="#2E27AD" />
-        <stop offset="100%" stop-color="#527FFF" />
+        <stop offset="0%" stopColor="#2E27AD" />
+        <stop offset="100%" stopColor="#527FFF" />
       </linearGradient>
     </defs>
     <g>

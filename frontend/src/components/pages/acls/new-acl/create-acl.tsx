@@ -568,7 +568,7 @@ const SharedConfiguration = ({
   const [principalType, setPrincipalType] = useState(
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
-  const [hostType, setHostType] = useState<HostType>(stringToHostType(sharedConfig.host));
+  const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
 
   return (
     <Card size={'full'}>

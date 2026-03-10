@@ -13,7 +13,7 @@ import { formatPipelineError } from '../errors';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-const returnSecretTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
+const returnToSecretsTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
 const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 class RpConnectSecretCreate extends PageComponent {
@@ -62,7 +62,7 @@ const RpConnectSecretCreateContent = () => {
   const cancel = () => {
     setSecret('');
     setId('');
-    appGlobal.historyPush(returnSecretTab);
+    appGlobal.historyPush(returnToSecretsTab);
   };
 
   const createSecret = () => {
@@ -85,7 +85,7 @@ const RpConnectSecretCreateContent = () => {
           title: 'Secret created',
         });
         pipelinesApi.refreshPipelines(true);
-        appGlobal.historyPush(returnSecretTab);
+        appGlobal.historyPush(returnToSecretsTab);
       })
       .catch((err) => {
         toast({

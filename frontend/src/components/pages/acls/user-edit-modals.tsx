@@ -41,7 +41,7 @@ type ChangePasswordModalProps = {
 
 export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePasswordModalProps) => {
   const toast = useToast();
-  const [password, setPassword] = useState(generatePassword(30, false));
+  const [password, setPassword] = useState(() => generatePassword(30, false));
   const [mechanism, setMechanism] = useState<SASLMechanism>();
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
   const isValidPassword = password && password.length >= 4 && password.length <= 64;

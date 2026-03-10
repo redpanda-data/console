@@ -13,8 +13,8 @@ export const MicrosoftazureLogo = (props: React.SVGProps<SVGSVGElement>) => (
         y1="145.31"
         y2="65.43"
       >
-        <stop offset="0" stop-color="#114a8b" />
-        <stop offset="1" stop-color="#0669bc" />
+        <stop offset="0" stopColor="#114a8b" />
+        <stop offset="1" stopColor="#0669bc" />
       </linearGradient>
       <linearGradient
         gradientTransform="matrix(1 0 0 -1 1075 158)"
@@ -25,11 +25,11 @@ export const MicrosoftazureLogo = (props: React.SVGProps<SVGSVGElement>) => (
         y1="108.08"
         y2="105.97"
       >
-        <stop offset="0" stop-opacity=".3" />
-        <stop offset=".07" stop-opacity=".2" />
-        <stop offset=".32" stop-opacity=".1" />
-        <stop offset=".62" stop-opacity=".05" />
-        <stop offset="1" stop-opacity="0" />
+        <stop offset="0" stopOpacity=".3" />
+        <stop offset=".07" stopOpacity=".2" />
+        <stop offset=".32" stopOpacity=".1" />
+        <stop offset=".62" stopOpacity=".05" />
+        <stop offset="1" stopOpacity="0" />
       </linearGradient>
       <linearGradient
         gradientTransform="matrix(1 0 0 -1 1075 158)"
@@ -40,8 +40,8 @@ export const MicrosoftazureLogo = (props: React.SVGProps<SVGSVGElement>) => (
         y1="147.64"
         y2="68.56"
       >
-        <stop offset="0" stop-color="#3ccbf4" />
-        <stop offset="1" stop-color="#2892df" />
+        <stop offset="0" stopColor="#3ccbf4" />
+        <stop offset="1" stopColor="#2892df" />
       </linearGradient>
     </defs>
     <path
