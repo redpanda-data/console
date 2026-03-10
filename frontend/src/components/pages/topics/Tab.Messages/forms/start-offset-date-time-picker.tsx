@@ -26,9 +26,7 @@ export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartO
 
   // Use ref to avoid onChange in useEffect dependencies (it changes every render)
   const onChangeRef = useRef(onChange);
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  });
+  onChangeRef.current = onChange;
 
   // Stable fallback timestamp to avoid Date.now() changes causing re-renders
   const [initialTimestamp] = useState(() => Date.now());
