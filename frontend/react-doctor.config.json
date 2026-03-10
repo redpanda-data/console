@@ -22,7 +22,14 @@
       "react-hooks-js/static-components",
       "react-hooks-js/error-boundaries",
       "react-hooks-js/preserve-manual-memoization",
-      "react-hooks/rules-of-hooks"
+      "react-hooks/rules-of-hooks",
+      "react-doctor/prefer-dynamic-import",
+      "react-doctor/prefer-useReducer",
+      "react-doctor/no-prevent-default",
+      "react-doctor/no-derived-useState",
+      "react-doctor/no-render-in-render",
+      "react-doctor/no-cascading-set-state",
+      "react-doctor/no-effect-event-handler"
     ]
   }
 }

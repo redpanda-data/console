@@ -355,9 +355,9 @@ const createColumns = ({
             </List>
           )}
         >
-          {inputs.map((i) => (
-            <Badge key={i} variant="neutral-inverted">
-              {i}
+          {inputs.map((input) => (
+            <Badge key={input} variant="neutral-inverted">
+              {input}
             </Badge>
           ))}
         </BadgeGroup>

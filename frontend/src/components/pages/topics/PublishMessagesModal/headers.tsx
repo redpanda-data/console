@@ -14,6 +14,7 @@ import { Button, Input } from '@redpanda-data/ui';
 import { PlusIcon, TrashIcon } from 'components/icons';
 
 type Header = {
+  id: string;
   key: string;
   value: string;
 };
@@ -39,7 +40,7 @@ const HeadersEditor = (p: Props): JSX.Element => (
           <HeaderComp
             header={h}
             index={i}
-            key={`header-${h.key}-${h.value}-${i}`}
+            key={h.id}
             onDelete={() => p.onChange(p.items.filter((_, idx) => idx !== i))}
             onUpdate={(updated) => p.onChange(p.items.map((item, idx) => (idx === i ? updated : item)))}
           />
@@ -48,7 +49,7 @@ const HeadersEditor = (p: Props): JSX.Element => (
     </table>
     <Button
       onClick={() => {
-        p.onChange([...p.items, { key: '', value: '' }]);
+        p.onChange([...p.items, { id: crypto.randomUUID(), key: '', value: '' }]);
       }}
       variant="outline"
       width="100%"

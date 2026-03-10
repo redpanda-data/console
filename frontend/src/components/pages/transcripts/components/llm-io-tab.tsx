@@ -94,7 +94,7 @@ const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
 );
 
 // Component: Display a single history message
-const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, index }) => {
+const HistoryMessageItem: FC<{ message: Message }> = ({ message }) => {
   const Icon = getMessageIcon(message.role);
   const messageType = getMessageType(message.role);
   const isJson = messageType === 'tool' && tryParseJson(message.content).success;
@@ -103,7 +103,7 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
   const hasContent = message.content.length > 0;
 
   return (
-    <ContentPanel className="space-y-1" key={`history-${message.role}-${message.content.slice(0, 50)}-${index}`}>
+    <ContentPanel className="space-y-1">
       {/* Role header */}
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 text-muted-foreground" />
@@ -651,12 +651,8 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
         </CollapsibleTrigger>
         {hasConversationHistory ? (
           <CollapsibleContent className="space-y-2 pt-2">
-            {visibleHistoryMessages.map((message, idx) => (
-              <HistoryMessageItem
-                index={idx}
-                key={`history-${message.role}-${message.content.slice(0, 50)}-${idx}`}
-                message={message}
-              />
+            {visibleHistoryMessages.map((message) => (
+              <HistoryMessageItem key={`history-${message.role}-${message.content.slice(0, 50)}`} message={message} />
             ))}
           </CollapsibleContent>
         ) : null}
