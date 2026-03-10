@@ -622,7 +622,7 @@ export const TranscriptActivityChartSkeleton: FC = () => (
             {SKELETON_BAR_HEIGHTS.map((height, i) => (
               <Skeleton
                 className="min-w-[4px] flex-1 rounded-t-sm"
-                key={`bar-${i}-${height}`}
+                key={`bar-${height}-${i}`}
                 style={{ height: height * 4 }}
                 width="fit"
               />

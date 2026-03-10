@@ -103,7 +103,7 @@ const HistoryMessageItem: FC<{ message: Message; index: number }> = ({ message, 
   const hasContent = message.content.length > 0;
 
   return (
-    <ContentPanel className="space-y-1" key={`history-${message.role}-${index}`}>
+    <ContentPanel className="space-y-1" key={`history-${message.role}-${message.content.slice(0, 50)}-${index}`}>
       {/* Role header */}
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 text-muted-foreground" />
@@ -652,7 +652,11 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
         {hasConversationHistory ? (
           <CollapsibleContent className="space-y-2 pt-2">
             {visibleHistoryMessages.map((message, idx) => (
-              <HistoryMessageItem index={idx} key={`history-${message.role}-${idx}`} message={message} />
+              <HistoryMessageItem
+                index={idx}
+                key={`history-${message.role}-${message.content.slice(0, 50)}-${idx}`}
+                message={message}
+              />
             ))}
           </CollapsibleContent>
         ) : null}

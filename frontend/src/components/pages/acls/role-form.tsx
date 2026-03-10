@@ -99,6 +99,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
     <Box>
       <form
         onSubmit={async (e) => {
+          // SPA - no server action needed
           e.preventDefault();
           try {
             setIsLoading(true);
@@ -244,7 +245,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
             <Heading>Topics</Heading>
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
-                key={`topic-${topicACL.selector}-${index}`}
+                key={topicACL._key}
                 onChange={(updated) =>
                   setFormState((prev) => ({
                     ...prev,
@@ -279,7 +280,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
             <Heading>Consumer Groups</Heading>
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
-                key={`consumer-group-${acl.selector}-${index}`}
+                key={acl._key}
                 onChange={(updated) =>
                   setFormState((prev) => ({
                     ...prev,
@@ -319,7 +320,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
             <Heading>Transactional IDs</Heading>
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
-                key={`transactional-id-${acl.selector}-${index}`}
+                key={acl._key}
                 onChange={(updated) =>
                   setFormState((prev) => ({
                     ...prev,

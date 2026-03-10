@@ -452,8 +452,7 @@ export const AIAgentCardTab = () => {
                 displayCard.skills.length > 0 && (
                   <div className="space-y-4">
                     {displayCard.skills.map((skill, index) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key
-                      <div className="rounded-lg border p-4" key={`skill-${index}`}>
+                      <div className="rounded-lg border p-4" key={skill.id || `skill-${skill.name}-${index}`}>
                         <div className="mb-4 flex items-start justify-between">
                           <div className="flex-1">
                             <Text className="font-medium">{skill.name || `Skill ${index + 1}`}</Text>

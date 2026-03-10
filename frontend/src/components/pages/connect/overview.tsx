@@ -238,13 +238,17 @@ class TabClusters extends Component {
               }
 
               return (
-                // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
-                // biome-ignore lint/a11y/noNoninteractiveElementInteractions: legacy MobX pattern
-                // biome-ignore lint/a11y/useKeyWithClickEvents: legacy MobX pattern
                 <span
                   className="hoverLink"
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`);
+                    }
+                  }}
+                  role="button"
                   style={{ display: 'inline-block', width: '100%' }}
+                  tabIndex={0}
                 >
                   {r.clusterName}
                 </span>
@@ -326,9 +330,6 @@ const TabConnectors = () => {
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
               <Tooltip hasArrow={true} label={original.name} placement="top">
-                {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
-                {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: legacy MobX pattern */}
-                {/** biome-ignore lint/a11y/useKeyWithClickEvents: legacy MobX pattern */}
                 <span
                   className="hoverLink"
                   onClick={() =>
@@ -336,7 +337,16 @@ const TabConnectors = () => {
                       `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
                     )
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      appGlobal.historyPush(
+                        `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
+                      );
+                    }
+                  }}
+                  role="button"
                   style={{ display: 'inline-block', width: '100%' }}
+                  tabIndex={0}
                 >
                   {original.name}
                 </span>

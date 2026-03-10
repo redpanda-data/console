@@ -224,8 +224,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
 
       await Promise.allSettled(promises);
       // TODO: Until we haven't migrated everything from mobx is better to not remove this
-      await rolesApi.refreshRoles();
-      await rolesApi.refreshRoleMembers();
+      await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
 
       toast({
         status: 'success',

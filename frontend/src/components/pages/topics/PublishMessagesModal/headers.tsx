@@ -39,7 +39,7 @@ const HeadersEditor = (p: Props): JSX.Element => (
           <HeaderComp
             header={h}
             index={i}
-            key={String(i)}
+            key={`header-${h.key}-${h.value}-${i}`}
             onDelete={() => p.onChange(p.items.filter((_, idx) => idx !== i))}
             onUpdate={(updated) => p.onChange(p.items.map((item, idx) => (idx === i ? updated : item)))}
           />

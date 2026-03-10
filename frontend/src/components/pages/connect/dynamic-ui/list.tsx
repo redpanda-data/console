@@ -205,7 +205,7 @@ export function List<T extends { id: string }>(props: {
           {(droppableProvided, _droppableSnapshot) => (
             <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
               {list.map((tag, index) => (
-                <Draggable draggableId={String(index)} index={index} key={String(index)}>
+                <Draggable draggableId={String(index)} index={index} key={tag.id}>
                   {(draggableProvided, _draggableSnapshot) => (
                     <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                       <div className="draggableItem">

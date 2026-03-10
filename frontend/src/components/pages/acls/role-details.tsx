@@ -29,9 +29,12 @@ async function refreshRoleData(force: boolean) {
   if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
     return;
   }
-  await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
-  await rolesApi.refreshRoles();
-  await rolesApi.refreshRoleMembers();
+  await Promise.allSettled([
+    api.refreshAcls(AclRequestDefault, force),
+    api.refreshServiceAccounts(),
+    rolesApi.refreshRoles(),
+    rolesApi.refreshRoleMembers(),
+  ]);
 }
 
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {
@@ -69,8 +72,7 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
     setIsDeleting(true);
     try {
       await rolesApi.deleteRole(roleName, true);
-      await rolesApi.refreshRoles();
-      await rolesApi.refreshRoleMembers();
+      await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
     } finally {
       setIsDeleting(false);
     }

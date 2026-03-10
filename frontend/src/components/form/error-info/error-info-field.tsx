@@ -31,8 +31,8 @@ export const ErrorInfoField = ({ field }: ErrorInfoFieldProps) => {
   return (
     <FormErrorMessage>
       <UnorderedList>
-        {filteredErrors.map((error, index) => (
-          <ListItem key={`${field.name}-${index}`}>
+        {filteredErrors.map((error) => (
+          <ListItem key={`${field.name}-${error.message}`}>
             <Text>{error.message}</Text>
           </ListItem>
         ))}

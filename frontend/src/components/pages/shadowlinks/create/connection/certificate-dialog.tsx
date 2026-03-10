@@ -68,7 +68,7 @@ export function CertificateDialog({
   const [pemContent, setPemContent] = useState(existingValue?.pemContent ?? '');
   const [fileName, setFileName] = useState(existingValue?.fileName ?? '');
 
-  // Reset state when dialog opens based on whether we're adding or editing
+  // Tracks previous isOpen value to detect open/close transitions (not derived state)
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   if (isOpen && !prevIsOpen) {
     if (existingValue) {

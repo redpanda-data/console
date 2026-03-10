@@ -346,12 +346,13 @@ const SchemaPageButtons = (p: {
                 })
                 .finally(() => setCreating(false));
 
-              await api.refreshSchemaDetails(subjectName, true);
-
-              // Invalidate React Query cache so details page shows latest data
-              await queryClient.invalidateQueries({
-                queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
-              });
+              await Promise.all([
+                api.refreshSchemaDetails(subjectName, true),
+                // Invalidate React Query cache so details page shows latest data
+                queryClient.invalidateQueries({
+                  queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+                }),
+              ]);
 
               // success: navigate to details with "latest" so it picks up the new version
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
@@ -652,7 +653,7 @@ const ReferencesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: Se
   const refs = p.state.references;
 
   const renderRow = (ref: (typeof refs)[number], index: number) => (
-    <Flex alignItems="flex-end" gap="4" key={index}>
+    <Flex alignItems="flex-end" gap="4" key={`ref-${ref.name}-${ref.subject}-${index}`}>
       <FormField label="Schema reference">
         <Input
           data-testid={`schema-create-reference-name-input-${index}`}
@@ -761,7 +762,7 @@ const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateCh
   const props = p.state.metadataProperties;
 
   const renderRow = (prop: { key: string; value: string }, index: number) => (
-    <Flex alignItems="flex-end" gap="4" key={index}>
+    <Flex alignItems="flex-end" gap="4" key={`prop-${prop.key}-${prop.value}-${index}`}>
       <FormField label="Key">
         <Input
           data-testid={`schema-create-metadata-key-input-${index}`}
