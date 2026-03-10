@@ -30,7 +30,6 @@ import {
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
@@ -90,12 +89,10 @@ export const SecretEditPage = () => {
   }, [secret, form]);
 
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = 'Edit Secret';
-      uiState.pageBreadcrumbs.pop();
-      uiState.pageBreadcrumbs.push({ title: 'Secrets Store', linkTo: '/secrets' });
-      uiState.pageBreadcrumbs.push({ title: 'Edit', linkTo: `/secrets/${id}/edit` });
-    });
+    uiState.pageTitle = 'Edit Secret';
+    uiState.pageBreadcrumbs.pop();
+    uiState.pageBreadcrumbs.push({ title: 'Secrets Store', linkTo: '/secrets' });
+    uiState.pageBreadcrumbs.push({ title: 'Edit', linkTo: `/secrets/${id}/edit` });
   }, [id]);
 
   const onSubmit = async (values: SecretUpdateFormValues) => {

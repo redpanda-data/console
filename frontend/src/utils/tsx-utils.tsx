@@ -27,13 +27,11 @@ import {
 } from '@redpanda-data/ui';
 import { CopyIcon, DownloadIcon, HelpIcon, InfoIcon } from 'components/icons';
 import { motion } from 'framer-motion';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { Component, type CSSProperties, type ReactNode, useState } from 'react';
+import React, { Component, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
-import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
+import { prettyMilliseconds, simpleUniqueId } from './utils';
 import colors from '../colors';
 import type { TimestampDisplayFormat } from '../state/ui';
 
@@ -71,30 +69,34 @@ export function numberToThousandsString(n: number): JSX.Element {
   return <>{result}</>;
 }
 
-@observer
-export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; format: TimestampDisplayFormat }> {
-  render() {
-    const { unixEpochMillisecond: ts, format } = this.props;
-    if (format === 'relative') {
-      // biome-ignore lint/correctness/useHookAtTopLevel: part of TimestampDisplay implementation
-      DebugTimerStore.Instance.useSeconds();
-    }
+export function TimestampDisplay({
+  unixEpochMillisecond: ts,
+  format,
+}: {
+  unixEpochMillisecond: number;
+  format: TimestampDisplayFormat;
+}) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (format !== 'relative') return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [format]);
 
-    switch (format) {
-      case 'unixTimestamp':
-        return new Date(ts).toUTCString();
-      case 'onlyDate':
-        return new Date(ts).toLocaleDateString();
-      case 'onlyTime':
-        return new Date(ts).toLocaleTimeString();
-      case 'unixMillis':
-        return ts.toString();
-      case 'relative':
-        return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
-      default:
-        // format 'default' -> locale datetime
-        return new Date(ts).toLocaleString();
-    }
+  switch (format) {
+    case 'unixTimestamp':
+      return new Date(ts).toUTCString();
+    case 'onlyDate':
+      return new Date(ts).toLocaleDateString();
+    case 'onlyTime':
+      return new Date(ts).toLocaleTimeString();
+    case 'unixMillis':
+      return ts.toString();
+    case 'relative':
+      return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
+    default:
+      // format 'default' -> locale datetime
+      return new Date(ts).toLocaleString();
   }
 }
 
@@ -432,33 +434,26 @@ const { ToastContainer, toast } = createStandaloneToast({
   },
 });
 
-@observer
-export class StatusIndicator extends Component<StatusIndicatorProps> {
+export class StatusIndicator extends Component<StatusIndicatorProps, { showWaitingText: boolean }> {
   toastRef: ToastId | null = null;
 
   timerHandle: NodeJS.Timeout;
   lastUpdateTimestamp: number;
-  @observable showWaitingText: boolean;
 
-  // used to fetch 'showWaitingText' (so mobx triggers a re-render).
-  // we could just store the value in a local as well, but that might be opimized out.
-  mobxSink: unknown | undefined;
+  state = { showWaitingText: false };
 
   constructor(p: StatusIndicatorProps) {
     super(p);
 
     // Periodically check if we got any new messages. If not, show a different text after some time
     this.lastUpdateTimestamp = Date.now();
-    this.showWaitingText = false;
     const waitMessageDelay = 3000;
     this.timerHandle = setInterval(() => {
       const age = Date.now() - this.lastUpdateTimestamp;
       if (age > waitMessageDelay) {
-        this.showWaitingText = true;
+        this.setState({ showWaitingText: true });
       }
     }, 300);
-
-    makeObservable(this);
   }
 
   componentDidMount() {
@@ -479,8 +474,8 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     this.lastPropsJson = curJson;
 
     this.lastUpdateTimestamp = Date.now();
-    if (this.showWaitingText) {
-      this.showWaitingText = false;
+    if (this.state.showWaitingText) {
+      this.setState({ showWaitingText: false });
     }
 
     this.customRender();
@@ -505,7 +500,9 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
           />
         </Box>
         <Flex fontSize="sm" fontWeight="bold">
-          <div>{this.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}</div>
+          <div>
+            {this.state.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}
+          </div>
           <Text ml="auto" pl="2em">
             {this.props.progressText}
           </Text>
@@ -538,8 +535,6 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
   }
 
   render() {
-    // workaround to propagate the update (timer -> mobx -> re-render)
-    this.mobxSink = this.showWaitingText;
     return <ToastContainer />;
   }
 }

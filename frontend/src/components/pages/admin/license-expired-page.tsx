@@ -1,6 +1,5 @@
 import { Avatars, Box, Flex, Image, Text, VStack } from '@redpanda-data/ui';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { observer } from 'mobx-react';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -29,7 +28,6 @@ function formatEnabledFeatures(features: { name: string; enabled: boolean }[]): 
   return `${enabledFeatures.slice(0, -1).join(', ')}, and ${enabledFeatures.at(-1)}`;
 }
 
-@observer
 export default class LicenseExpiredPage extends PageComponent {
   initPage(): void {
     this.refreshData();

@@ -10,7 +10,6 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
@@ -183,13 +182,11 @@ export const APIConnectWizard = () => {
   }, [navigate, resetApiWizardStore]);
 
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = 'Connect to your cluster';
-      uiState.pageBreadcrumbs = [
-        { title: 'Cluster Overview', linkTo: '/overview' },
-        { title: 'Connect to your cluster', linkTo: '' },
-      ];
-    });
+    uiState.pageTitle = 'Connect to your cluster';
+    uiState.pageBreadcrumbs = [
+      { title: 'Cluster Overview', linkTo: '/overview' },
+      { title: 'Connect to your cluster', linkTo: '' },
+    ];
   }, []);
 
   useEffect(() => {

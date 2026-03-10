@@ -10,11 +10,10 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import { observer } from 'mobx-react';
 
 import { api } from '../../../../../state/backend-api';
 
-export const MessageSchema = observer((p: { schemaId: number }) => {
+export const MessageSchema = (p: { schemaId: number }) => {
   const subjects = api.schemaUsagesById.get(p.schemaId);
   if (!subjects || subjects.length === 0) {
     api.refreshSchemaUsagesById(p.schemaId);
@@ -31,4 +30,4 @@ export const MessageSchema = observer((p: { schemaId: number }) => {
       {s.subject} (version {s.version})
     </Link>
   );
-});
+};

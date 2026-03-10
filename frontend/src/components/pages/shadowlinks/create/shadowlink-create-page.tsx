@@ -17,7 +17,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { runInAction } from 'mobx';
 import {
   ACLFilterSchema,
   AuthenticationConfigurationSchema,
@@ -69,13 +68,11 @@ const { Stepper } = defineStepper(
 
 // Update page title using uiState pattern
 export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Create shadow link';
-    uiState.pageBreadcrumbs = [
-      { title: 'Shadow Links', linkTo: '/shadowlinks' },
-      { title: 'Create', linkTo: '/shadowlinks/create' },
-    ];
-  });
+  uiState.pageTitle = 'Create shadow link';
+  uiState.pageBreadcrumbs = [
+    { title: 'Shadow Links', linkTo: '/shadowlinks' },
+    { title: 'Create', linkTo: '/shadowlinks/create' },
+  ];
 };
 
 /**

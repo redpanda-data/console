@@ -11,8 +11,6 @@
 
 import { Checkbox, DataTable } from '@redpanda-data/ui';
 import type { Row } from '@tanstack/react-table';
-import { transaction } from 'mobx';
-import { observer } from 'mobx-react';
 import { Component } from 'react';
 
 import { SelectionInfoBar } from './components/statistics-bar';
@@ -21,15 +19,16 @@ import { api } from '../../../state/backend-api';
 import type { Broker } from '../../../state/rest-interfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
 
-@observer
 export class StepSelectBrokers extends Component<{
   selectedBrokerIds: number[];
+  onSelectionChange: (newIds: number[]) => void;
   partitionSelection: PartitionSelection;
 }> {
   brokers: Broker[];
 
   constructor(props: {
     selectedBrokerIds: number[];
+    onSelectionChange: (newIds: number[]) => void;
     partitionSelection: PartitionSelection;
   }) {
     super(props);
@@ -41,7 +40,7 @@ export class StepSelectBrokers extends Component<{
       return <div>Error: no brokers available</div>;
     }
 
-    const selectedBrokers = this.props.selectedBrokerIds;
+    const { selectedBrokerIds, onSelectionChange } = this.props;
 
     return (
       <>
@@ -59,8 +58,8 @@ export class StepSelectBrokers extends Component<{
           columns={[
             {
               id: 'check',
-              header: observer(() => {
-                const selectedSet = new Set<number>(selectedBrokers);
+              header: () => {
+                const selectedSet = new Set<number>(selectedBrokerIds);
                 const allIdsSet = new Set<number>(this.brokers.map(({ brokerId }) => brokerId));
                 const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
                 return (
@@ -69,32 +68,29 @@ export class StepSelectBrokers extends Component<{
                     isIndeterminate={!allIsSelected && selectedSet.size > 0}
                     onChange={() => {
                       if (allIsSelected) {
-                        selectedBrokers.splice(0);
+                        onSelectionChange([]);
                       } else {
-                        transaction(() => {
-                          selectedBrokers.splice(0);
-                          for (const broker of this.brokers) {
-                            selectedBrokers.push(broker.brokerId);
-                          }
-                        });
+                        onSelectionChange(this.brokers.map((b) => b.brokerId));
                       }
                     }}
                   />
                 );
-              }),
-              cell: observer(({ row: { original: broker } }: { row: Row<Broker> }) => {
-                const checked = selectedBrokers.includes(broker.brokerId);
+              },
+              cell: ({ row: { original: broker } }: { row: Row<Broker> }) => {
+                const checked = selectedBrokerIds.includes(broker.brokerId);
                 return (
                   <Checkbox
                     isChecked={checked}
-                    onChange={() =>
-                      selectedBrokers.includes(broker.brokerId)
-                        ? selectedBrokers.remove(broker.brokerId)
-                        : selectedBrokers.push(broker.brokerId)
-                    }
+                    onChange={() => {
+                      if (checked) {
+                        onSelectionChange(selectedBrokerIds.filter((id) => id !== broker.brokerId));
+                      } else {
+                        onSelectionChange([...selectedBrokerIds, broker.brokerId]);
+                      }
+                    }}
                   />
                 );
-              }),
+              },
             },
             { header: 'ID', accessorKey: 'brokerId' },
             { header: 'Broker Address', size: Number.POSITIVE_INFINITY, accessorKey: 'address' },

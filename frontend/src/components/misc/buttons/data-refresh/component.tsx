@@ -1,8 +1,3 @@
-import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
-import { PauseIcon, PlayIcon, RefreshIcon } from 'components/icons';
-import { autorun, observable } from 'mobx';
-import { observer } from 'mobx-react';
-
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -14,83 +9,73 @@ import { observer } from 'mobx-react';
  * by the Apache License, Version 2.0
  */
 
+import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
+import { PauseIcon, PlayIcon, RefreshIcon } from 'components/icons';
+import { useEffect, useRef, useState } from 'react';
+
 import { appGlobal } from '../../../../state/app-global';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backend-api';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 
-const autoRefresh = observable(
-  {
-    active: false,
-    timerId: undefined as ReturnType<typeof setInterval> | undefined,
-    maxRequestCount: 0,
+export const DataRefreshButton = () => {
+  const [isActive, setIsActive] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [activeRequests, setActiveRequests] = useState(0);
+  const [maxRequestCount, setMaxRequestCount] = useState(0);
+
+  const stateRef = useRef({
+    isActive: false,
     nextRefresh: Number.POSITIVE_INFINITY,
-    remainingSeconds: 0,
+    maxRequestCount: 0,
+  });
 
-    get currentTime() {
-      return Date.now();
-    },
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentRequests = api.activeRequests.length;
 
-    toggleAutorefresh() {
-      this.active = !this.active;
-      if (this.active) {
-        // Start
-        this.scheduleNextRefresh();
-        this.timerId = setInterval(this.updateAutorefresh, 150);
+      // Track max request count
+      if (currentRequests === 0) {
+        stateRef.current.maxRequestCount = 0;
+      } else if (currentRequests > stateRef.current.maxRequestCount) {
+        stateRef.current.maxRequestCount = currentRequests;
+      }
+      setActiveRequests(currentRequests);
+      setMaxRequestCount(stateRef.current.maxRequestCount);
+
+      if (!stateRef.current.isActive) return;
+
+      if (currentRequests > 0) {
+        // Active requests — delay the next refresh
+        stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+        return;
+      }
+
+      const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
+      if (timeUntilRefresh > 0) {
+        setRemainingSeconds(Math.ceil(timeUntilRefresh / 1000));
       } else {
-        // Stop
-        clearInterval(this.timerId);
+        stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
         appGlobal.onRefresh();
       }
-    },
+    }, 150);
 
-    updateAutorefresh() {
-      const timeUntilRefresh = this.nextRefresh - this.currentTime;
+    return () => clearInterval(interval);
+  }, []);
 
-      if (api.activeRequests.length > 0) {
-        // There are active requests, delay the next refresh / reset the timer
-        this.scheduleNextRefresh();
-        return;
-      }
-
-      if (timeUntilRefresh > 0) {
-        // Still some time left, only update visual timer
-        this.remainingSeconds = Math.ceil(timeUntilRefresh / 1000);
-        return;
-      }
-
-      // The timer has expired
-      // Refresh now and schedule the next refresh...
-      this.scheduleNextRefresh();
+  const toggleAutorefresh = () => {
+    const newActive = !stateRef.current.isActive;
+    stateRef.current.isActive = newActive;
+    if (newActive) {
+      stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+    } else {
       appGlobal.onRefresh();
-    },
+    }
+    setIsActive(newActive);
+  };
 
-    scheduleNextRefresh() {
-      this.nextRefresh = this.currentTime + uiSettings.autoRefreshIntervalSecs * 1000;
-    },
-  },
-  undefined,
-  { autoBind: true }
-);
+  const countStr = maxRequestCount > 1 ? `${maxRequestCount - activeRequests} / ${maxRequestCount}` : '';
 
-autorun(() => {
-  const currentRequests = api.activeRequests.length;
-  if (currentRequests === 0) {
-    autoRefresh.maxRequestCount = 0;
-  }
-  if (currentRequests > autoRefresh.maxRequestCount) {
-    autoRefresh.maxRequestCount = currentRequests;
-  }
-});
-
-export const DataRefreshButton = observer(() => {
-  // Track how many requests we've sent in total
-  const countStr =
-    autoRefresh.maxRequestCount > 1
-      ? `${autoRefresh.maxRequestCount - api.activeRequests.length} / ${autoRefresh.maxRequestCount}`
-      : '';
-
-  // maybe we need to use the same 'no vertical expansion' trick:
   return (
     <div className="flex items-center gap-1">
       <Box>
@@ -108,8 +93,8 @@ export const DataRefreshButton = observer(() => {
         >
           <IconButton
             aria-label="Auth Refresh"
-            icon={autoRefresh.active ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-            onClick={autoRefresh.toggleAutorefresh}
+            icon={isActive ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
+            onClick={toggleAutorefresh}
             p={0}
             size="xs"
             variant="ghost"
@@ -117,7 +102,7 @@ export const DataRefreshButton = observer(() => {
         </Popover>
       </Box>
       <Flex alignItems="center" flexDirection="column">
-        {autoRefresh.active || api.activeRequests.length > 0 ? (
+        {isActive || activeRequests > 0 ? (
           <Spinner color="red.500" ml={2} size="sm" speed="0.3s" />
         ) : (
           <Popover
@@ -145,13 +130,11 @@ export const DataRefreshButton = observer(() => {
         )}
       </Flex>
       <Text fontSize="sm" ml={4} userSelect="none">
-        {autoRefresh.active && api.activeRequests.length === 0 && (
-          <>Refreshing in {autoRefresh.remainingSeconds} secs</>
-        )}
-        {api.activeRequests.length > 0 && <>Fetching data... {countStr}</>}
+        {isActive && activeRequests === 0 && <>Refreshing in {remainingSeconds} secs</>}
+        {activeRequests > 0 && <>Fetching data... {countStr}</>}
       </Text>
     </div>
   );
-});
+};
 
 export default DataRefreshButton;

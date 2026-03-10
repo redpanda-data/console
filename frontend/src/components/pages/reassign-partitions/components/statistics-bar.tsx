@@ -9,105 +9,32 @@
  * by the Apache License, Version 2.0
  */
 
-import { computed, makeObservable } from 'mobx';
-import { observer } from 'mobx-react';
-import { Component } from 'react';
-
 import { api } from '../../../../state/backend-api';
 import type { Broker, Partition } from '../../../../state/rest-interfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';
 import type { PartitionSelection } from '../reassign-partitions';
 
-@observer
-export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection; margin?: string }> {
-  constructor(p: { partitionSelection: PartitionSelection; margin?: string }) {
-    super(p);
-    makeObservable(this);
+export function SelectionInfoBar(props: { partitionSelection: PartitionSelection; margin?: string }) {
+  if (api.topicPartitions === null) {
+    return null;
   }
 
-  render() {
-    if (api.topicPartitions === null) {
-      return null;
+  const selectedPartitions: { topic: string; partitions: Partition[] }[] = [];
+  for (const [topic, partitions] of api.topicPartitions) {
+    if (partitions === null) {
+      continue;
     }
-
-    const allSelectedPartitions = this.selectedPartitions.flatMap((p) => p.partitions);
-    const partitionCountLeaders = allSelectedPartitions.length; // every partition has a leader
-    const totalPartitionsCount = allSelectedPartitions.sum((t) => t.replicas.length);
-
-    const brokers = this.involvedBrokers;
-
-    const data = [
-      { title: 'Leader Partitions', value: partitionCountLeaders },
-      { title: 'Total Partitions', value: totalPartitionsCount },
-      // {
-      //     title: 'Partitions', value: <span style={{ display: 'inline-flex', gap: '1em' }}>
-      //         <span>
-      //             <span>{partitionCountLeaders}</span>
-      //             <span> leaders</span>
-      //         </span>
-      //         <span>
-      //             <span>{totalPartitionsCount}</span>
-      //             <span> total</span>
-      //         </span>
-      //     </span>
-      // },
-
-      { title: 'Involved Topics', value: this.selectedPartitions.length },
-      { title: 'Involved Brokers', value: brokers?.length ?? '...' },
-      { title: 'Involved Racks', value: brokers?.map((b) => b.rack).distinct().length ?? '...' },
-      {
-        title: 'Size',
-        value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
-      },
-    ];
-
-    return (
-      <div style={{ margin: this.props.margin }}>
-        <h4>Current Selection</h4>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'nowrap',
-            gap: '3em',
-            fontFamily: 'Open Sans',
-            color: 'hsl(0deg, 0%, 30%)',
-            fontSize: '1.1em',
-          }}
-        >
-          {data.map((item) => (
-            <div key={item.title}>
-              <div style={{ fontSize: '.8em', opacity: 0.6, paddingBottom: '.5em' }}>{item.title}</div>
-              <div style={{}}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    if (props.partitionSelection[topic] === null) {
+      continue;
+    }
+    const relevantPartitions = partitions.filter((p) => props.partitionSelection[topic].includes(p.id));
+    selectedPartitions.push({ topic, partitions: relevantPartitions });
   }
 
-  @computed get selectedPartitions(): { topic: string; partitions: Partition[] }[] {
-    const ar: { topic: string; partitions: Partition[] }[] = [];
-    for (const [topic, partitions] of api.topicPartitions) {
-      if (partitions === null) {
-        continue;
-      }
-      if (this.props.partitionSelection[topic] === null) {
-        continue;
-      }
-      const relevantPartitions = partitions.filter((p) => this.props.partitionSelection[topic].includes(p.id));
-      ar.push({ topic, partitions: relevantPartitions });
-    }
-    return ar;
-  }
-
-  @computed get involvedBrokers(): Broker[] | null {
-    if (api.clusterInfo === null) {
-      return null;
-    }
+  let involvedBrokers: Broker[] | null = null;
+  if (api.clusterInfo !== null) {
     const brokerIds = new Set<number>();
-
-    // Find IDs of all involved brokers
-    for (const t of this.selectedPartitions) {
+    for (const t of selectedPartitions) {
       for (const p of t.partitions) {
         brokerIds.add(p.leader);
         for (const id of p.replicas) {
@@ -115,8 +42,45 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
         }
       }
     }
-
-    // Translate to Broker info
-    return api.clusterInfo.brokers.filter((b) => brokerIds.has(b.brokerId));
+    involvedBrokers = api.clusterInfo.brokers.filter((b) => brokerIds.has(b.brokerId));
   }
+
+  const allSelectedPartitions = selectedPartitions.flatMap((p) => p.partitions);
+  const partitionCountLeaders = allSelectedPartitions.length;
+  const totalPartitionsCount = allSelectedPartitions.sum((t) => t.replicas.length);
+
+  const data = [
+    { title: 'Leader Partitions', value: partitionCountLeaders },
+    { title: 'Total Partitions', value: totalPartitionsCount },
+    { title: 'Involved Topics', value: selectedPartitions.length },
+    { title: 'Involved Brokers', value: involvedBrokers?.length ?? '...' },
+    { title: 'Involved Racks', value: involvedBrokers?.map((b) => b.rack).distinct().length ?? '...' },
+    {
+      title: 'Size',
+      value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
+    },
+  ];
+
+  return (
+    <div style={{ margin: props.margin }}>
+      <h4>Current Selection</h4>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          gap: '3em',
+          fontFamily: 'Open Sans',
+          color: 'hsl(0deg, 0%, 30%)',
+          fontSize: '1.1em',
+        }}
+      >
+        {data.map((item) => (
+          <div key={item.title}>
+            <div style={{ fontSize: '.8em', opacity: 0.6, paddingBottom: '.5em' }}>{item.title}</div>
+            <div style={{}}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

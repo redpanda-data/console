@@ -9,9 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { makeAutoObservable } from 'mobx';
 import React from 'react';
 
+import {
+  useApiStore,
+  useKnowledgebaseStore,
+  usePipelinesStore,
+  useRolesStore,
+  useRpcnSecretManagerStore,
+  useTransformsStore,
+} from '../../state/backend-api';
 import { type BreadcrumbOptions, uiState } from '../../state/ui-state';
 
 //
@@ -23,9 +30,6 @@ export type NoRouteParams = {};
 export type PageProps<TRouteParams = NoRouteParams> = TRouteParams & { matchedPath: string };
 
 export class PageInitHelper {
-  constructor() {
-    makeAutoObservable(this);
-  }
   set title(title: string) {
     uiState.pageTitle = title;
   }
@@ -34,12 +38,38 @@ export class PageInitHelper {
   }
 }
 export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {
+  private _storeUnsubscribers: Array<() => void> = [];
+
   constructor(props: Readonly<PageProps<TRouteParams>>) {
     super(props);
 
     uiState.pageBreadcrumbs = [];
 
     this.initPage(new PageInitHelper());
+  }
+
+  componentDidMount() {
+    // Subscribe to all Zustand stores that pages read from via api.*, rolesApi.*, etc.
+    // Each store change triggers a re-render so pages see fresh data.
+    const update = () => this.forceUpdate();
+    this._storeUnsubscribers = [
+      useApiStore.subscribe(update),
+      useRolesStore.subscribe(update),
+      usePipelinesStore.subscribe(update),
+      useKnowledgebaseStore.subscribe(update),
+      useRpcnSecretManagerStore.subscribe(update),
+      useTransformsStore.subscribe(update),
+    ];
+    // Force a re-render to catch any store updates that arrived before this subscription was set up
+    // (e.g. fast API responses from initPage's constructor-time calls)
+    this.forceUpdate();
+  }
+
+  componentWillUnmount() {
+    for (const unsub of this._storeUnsubscribers) {
+      unsub();
+    }
+    this._storeUnsubscribers = [];
   }
 
   abstract initPage(p: PageInitHelper): void;

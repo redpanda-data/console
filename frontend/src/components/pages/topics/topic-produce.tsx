@@ -18,8 +18,6 @@ import {
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
-import { computed } from 'mobx';
-import { observer } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 
@@ -127,7 +125,7 @@ type Inputs = {
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => {
+const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const toast = useToast();
 
   const {
@@ -206,7 +204,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       value: value.number as CompressionType,
     }));
 
-  const availablePartitions = computed(() => {
+  const availablePartitions = (() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
 
     const count = api.topics?.first((t) => t.topicName === topicName)?.partitionCount;
@@ -225,7 +223,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     }
 
     return partitions;
-  });
+  })();
 
   useEffect(() => {
     // Fetch schema subjects list if not already loaded
@@ -370,7 +368,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 control={control}
                 name="partition"
                 render={({ field: { onChange, value } }) => (
-                  <SingleSelect<number> onChange={onChange} options={availablePartitions.get()} value={value} />
+                  <SingleSelect<number> onChange={onChange} options={availablePartitions} value={value} />
                 )}
               />
             </Label>
@@ -672,9 +670,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       </Grid>
     </form>
   );
-});
+};
 
-@observer
 export class TopicProducePage extends PageComponent<{ topicName: string }> {
   initPage(p: PageInitHelper): void {
     const topicName = this.props.topicName;

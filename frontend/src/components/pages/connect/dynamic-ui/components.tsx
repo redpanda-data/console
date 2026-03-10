@@ -33,7 +33,6 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
 
   const [viewMode, setViewMode] = useState<'form' | 'json'>(connectorStore.viewMode);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(connectorStore.showAdvancedOptions);
-
   if (connectorStore.error) {
     return (
       <div>

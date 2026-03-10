@@ -36,7 +36,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
-import { runInAction } from 'mobx';
 import React, { useEffect, useState } from 'react';
 
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
@@ -92,20 +91,18 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   // Update page title and breadcrumbs
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = subjectNameRaw;
-      uiState.pageBreadcrumbs = [
-        { title: 'Schema Registry', linkTo: '/schema-registry' },
-        {
-          title: subjectNameRaw,
-          linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`,
-          options: {
-            canBeTruncated: true,
-            canBeCopied: true,
-          },
+    uiState.pageTitle = subjectNameRaw;
+    uiState.pageBreadcrumbs = [
+      { title: 'Schema Registry', linkTo: '/schema-registry' },
+      {
+        title: subjectNameRaw,
+        linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`,
+        options: {
+          canBeTruncated: true,
+          canBeCopied: true,
         },
-      ];
-    });
+      },
+    ];
   }, [subjectNameRaw, version]);
 
   // Set version in query params if not present

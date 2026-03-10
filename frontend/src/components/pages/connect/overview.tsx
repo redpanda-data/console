@@ -15,7 +15,6 @@ import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
-import { observer } from 'mobx-react';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 
@@ -96,7 +95,6 @@ const WrapKafkaConnectOverview: FunctionComponent<{
   );
 };
 
-@observer
 class KafkaConnectOverview extends PageComponent<{
   defaultView: string;
   isKafkaConnectEnabled: boolean;
@@ -213,7 +211,6 @@ class KafkaConnectOverview extends PageComponent<{
 
 export default WrapKafkaConnectOverview;
 
-@observer
 class TabClusters extends Component {
   render() {
     const clusters = api.connectConnectors?.clusters;
@@ -283,7 +280,7 @@ interface ConnectorType extends ClusterConnectorInfo {
   cluster: ClusterConnectors;
 }
 
-const TabConnectors = observer(() => {
+const TabConnectors = () => {
   const clusters = api.connectConnectors?.clusters;
   const allConnectors: ConnectorType[] = useMemo(
     () => clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [],
@@ -376,7 +373,7 @@ const TabConnectors = observer(() => {
       />
     </Box>
   );
-});
+};
 
 interface TaskType extends ClusterConnectorTaskInfo {
   connector: ConnectorType;
@@ -384,7 +381,6 @@ interface TaskType extends ClusterConnectorTaskInfo {
   connectorName: string;
 }
 
-@observer
 class TabTasks extends Component {
   render() {
     const clusters = api.connectConnectors?.clusters;
@@ -448,7 +444,7 @@ class TabTasks extends Component {
 }
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
-export const TabKafkaConnect = observer((_p: {}) => {
+export const TabKafkaConnect = (_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
   if (api.connectConnectorsError) {
@@ -470,7 +466,7 @@ export const TabKafkaConnect = observer((_p: {}) => {
       </Section>
     </Stack>
   );
-});
+};
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 const connectTabs: Tab[] = [

@@ -23,7 +23,6 @@ import {
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
-import { autorun } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
@@ -41,7 +40,7 @@ import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/k
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { appGlobal } from './state/app-global';
-import { api } from './state/backend-api';
+import { api, useApiStore } from './state/backend-api';
 import { useUIStateStore } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 import { getEmbeddedAvailableRoutes } from './utils/route-utils';
@@ -345,11 +344,14 @@ setTimeout(() => {
       setSidebarItems(sidebarItems);
     };
 
-    // Reactively emit sidebar items when endpoint compatibility becomes available.
-    // In embedded mode, endpointCompatibility loads asynchronously after setup(),
-    // so autorun ensures items are emitted once the data is ready.
-    // Disposer intentionally not captured — this reaction lives for the app's lifetime.
-    autorun(updateSidebarItems);
+    // Call once on initialization; also re-call whenever endpointCompatibility
+    // becomes available (it starts null and is populated after the first API fetch).
+    updateSidebarItems();
+    useApiStore.subscribe((state, prev) => {
+      if (state.endpointCompatibility !== prev.endpointCompatibility) {
+        updateSidebarItems();
+      }
+    });
   } catch (error) {
     // Ignore errors in test environments where stores might not be properly initialized
     // This setTimeout runs globally when config.ts is imported

@@ -205,7 +205,12 @@ export function CreateTopicModalContent({ state }: Props) {
         {!isServerless() && (
           <div>
             <h4 style={{ fontSize: '13px' }}>Additional Configuration</h4>
-            <KeyValuePairEditor entries={state.additionalConfig} />
+            <KeyValuePairEditor
+              entries={state.additionalConfig}
+              onChange={(entries) => {
+                state.additionalConfig = entries;
+              }}
+            />
           </div>
         )}
       </div>
@@ -479,16 +484,21 @@ function RetentionSizeSelect(p: {
   );
 }
 
-const KeyValuePairEditor = (p: { entries: TopicConfigEntry[] }) => (
+const KeyValuePairEditor = (p: { entries: TopicConfigEntry[]; onChange: (entries: TopicConfigEntry[]) => void }) => (
   <div className="keyValuePairEditor">
     {p.entries.map((x, i) => (
-      <KeyValuePair entries={p.entries} entry={x} key={String(i)} />
+      <KeyValuePair
+        entry={x}
+        key={String(i)}
+        onRemove={() => p.onChange(p.entries.filter((_, idx) => idx !== i))}
+        onUpdate={(updated) => p.onChange(p.entries.map((e, idx) => (idx === i ? updated : e)))}
+      />
     ))}
 
     <Button
       className="addButton"
       onClick={() => {
-        p.entries.push({ name: '', value: '' });
+        p.onChange([...p.entries, { name: '', value: '' }]);
       }}
       size="sm"
       variant="outline"
@@ -499,14 +509,18 @@ const KeyValuePairEditor = (p: { entries: TopicConfigEntry[] }) => (
   </div>
 );
 
-const KeyValuePair = (p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry }) => {
+const KeyValuePair = (p: {
+  entry: TopicConfigEntry;
+  onUpdate: (updated: TopicConfigEntry) => void;
+  onRemove: () => void;
+}) => {
   const { entry } = p;
 
   return (
     <Box className="inputGroup" display="flex" width="100%">
       <Input
         onChange={(e) => {
-          entry.name = e.target.value;
+          p.onUpdate({ ...entry, name: e.target.value });
         }}
         placeholder="Property Name..."
         spellCheck={false}
@@ -515,7 +529,7 @@ const KeyValuePair = (p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry 
       />
       <Input
         onChange={(e) => {
-          p.entry.value = e.target.value;
+          p.onUpdate({ ...entry, value: e.target.value });
         }}
         placeholder="Property Value..."
         spellCheck={false}
@@ -526,7 +540,7 @@ const KeyValuePair = (p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry 
         className="iconButton deleteButton"
         onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
           event.stopPropagation();
-          p.entries.remove(p.entry);
+          p.onRemove();
         }}
         variant="outline"
       >

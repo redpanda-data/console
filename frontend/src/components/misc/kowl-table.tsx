@@ -10,30 +10,19 @@
  */
 
 import { Box, Input } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 
-// sorter:  SorterResult<T>|SorterResult<T>[]
-//
-// export interface SorterResult<RecordType> {
-//     column?: ColumnType<RecordType>;
-//     order?: SortOrder;
-//     field?: Key | readonly Key[];
-//     columnKey?: Key;
-// }
-//
-//
-// When defining sorter:
-//   sorter: { compare: (a, b) => a.chinese - b.chinese, multiple: 3, }
-// 'multiple' defines priority (sorters are evaluated in ascending order, so sorters with lower 'multiple' come first)
-
-@observer
 export class SearchTitle extends Component<{
   title: string;
   observableFilterOpen: { filterOpen: boolean };
   observableSettings: { quickSearch: string };
 }> {
   inputRef = React.createRef<HTMLInputElement>(); // reference to input, used to focus it
+
+  state = {
+    filterOpen: false,
+    quickSearch: '',
+  };
 
   constructor(p: {
     title: string;
@@ -49,7 +38,7 @@ export class SearchTitle extends Component<{
   render() {
     const props = this.props;
 
-    if (!props.observableFilterOpen.filterOpen) {
+    if (!this.state.filterOpen) {
       return this.props.title;
     }
 
@@ -60,7 +49,7 @@ export class SearchTitle extends Component<{
 
     return (
       <span>
-        {!props.observableFilterOpen.filterOpen && <span>{this.props.title}</span>}
+        {!this.state.filterOpen && <span>{this.props.title}</span>}
         <Box
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -81,6 +70,7 @@ export class SearchTitle extends Component<{
               if (focusInside) {
                 // Most likely a click on the "clear" button
                 props.observableSettings.quickSearch = '';
+                this.setState({ quickSearch: '' });
                 this.hideSearchBar();
               } else {
                 setTimeout(this.hideSearchBar);
@@ -88,12 +78,13 @@ export class SearchTitle extends Component<{
             }}
             onChange={(e) => {
               props.observableSettings.quickSearch = e.target.value;
+              this.setState({ quickSearch: e.target.value });
             }}
             onKeyDown={this.onKeyDown}
             placeholder="Enter search term/regex"
             ref={this.inputRef}
             spellCheck={false}
-            value={props.observableSettings.quickSearch}
+            value={this.state.quickSearch}
           />
         </Box>
       </span>
@@ -106,6 +97,7 @@ export class SearchTitle extends Component<{
 
   hideSearchBar() {
     this.props.observableFilterOpen.filterOpen = false;
+    this.setState({ filterOpen: false });
   }
 
   onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

@@ -10,40 +10,20 @@
  */
 
 import { Box, DateTimeInput } from '@redpanda-data/ui';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import { Component } from 'react';
+import { useState } from 'react';
 
-@observer
-export class KowlTimePicker extends Component<{
-  valueUtcMs: number;
-  onChange: (utcMs: number) => void;
-  disabled?: boolean;
-}> {
-  @observable isLocalTimeMode = false;
-  @observable timestampUtcMs: number = Date.now();
+export function KowlTimePicker(props: { valueUtcMs: number; onChange: (utcMs: number) => void; disabled?: boolean }) {
+  const [timestampUtcMs, setTimestampUtcMs] = useState(props.valueUtcMs);
 
-  constructor(p: {
-    valueUtcMs: number;
-    onChange: (utcMs: number) => void;
-    disabled?: boolean;
-  }) {
-    super(p);
-    this.timestampUtcMs = this.props.valueUtcMs;
-    makeObservable(this);
-  }
-
-  render() {
-    return (
-      <Box maxW={300}>
-        <DateTimeInput
-          onChange={(value) => {
-            this.timestampUtcMs = value;
-            this.props.onChange(this.timestampUtcMs);
-          }}
-          value={this.timestampUtcMs}
-        />
-      </Box>
-    );
-  }
+  return (
+    <Box maxW={300}>
+      <DateTimeInput
+        onChange={(value) => {
+          setTimestampUtcMs(value);
+          props.onChange(value);
+        }}
+        value={timestampUtcMs}
+      />
+    </Box>
+  );
 }

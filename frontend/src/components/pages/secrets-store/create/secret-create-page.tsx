@@ -27,7 +27,6 @@ import {
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
@@ -61,12 +60,10 @@ export const SecretCreatePage = () => {
   });
 
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = 'Create Secret';
-      uiState.pageBreadcrumbs.pop();
-      uiState.pageBreadcrumbs.push({ title: 'Secrets Store', linkTo: '/secrets' });
-      uiState.pageBreadcrumbs.push({ title: 'Create', linkTo: '/secrets/create' });
-    });
+    uiState.pageTitle = 'Create Secret';
+    uiState.pageBreadcrumbs.pop();
+    uiState.pageBreadcrumbs.push({ title: 'Secrets Store', linkTo: '/secrets' });
+    uiState.pageBreadcrumbs.push({ title: 'Create', linkTo: '/secrets/create' });
   }, []);
 
   const onSubmit = async (values: SecretCreateFormValues) => {

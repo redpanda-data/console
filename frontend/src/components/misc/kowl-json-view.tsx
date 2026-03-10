@@ -10,7 +10,6 @@
  */
 
 import { Box } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
@@ -50,7 +49,7 @@ const READ_ONLY_EDITOR_OPTIONS = {
   scrollBeyondLastLine: false,
 } as const;
 
-export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
+export const KowlJsonView = (props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -146,4 +145,4 @@ export const KowlJsonView = observer((props: { srcObj: object | string | null | 
       </Box>
     </Box>
   );
-});
+};

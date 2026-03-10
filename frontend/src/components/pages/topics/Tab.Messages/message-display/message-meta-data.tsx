@@ -10,7 +10,6 @@
  */
 
 import { Flex, Text } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import React from 'react';
 
 import { MessageSchema } from './message-schema';
@@ -18,7 +17,7 @@ import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { numberToThousandsString } from '../../../../../utils/tsx-utils';
 import { prettyBytes, titleCase } from '../../../../../utils/utils';
 
-export const MessageMetaData = observer((props: { msg: TopicMessage }) => {
+export const MessageMetaData = (props: { msg: TopicMessage }) => {
   const msg = props.msg;
   const data: { [k: string]: React.ReactNode } = {
     Partition: msg.partitionID,
@@ -50,4 +49,4 @@ export const MessageMetaData = observer((props: { msg: TopicMessage }) => {
       ))}
     </Flex>
   );
-});
+};

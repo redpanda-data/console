@@ -41,7 +41,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, CircleUser, Link, Loader2, Server, Waypoints, X } from 'lucide-react';
-import { runInAction } from 'mobx';
 import {
   ListSecretsFilterSchema,
   ListSecretsRequestSchema,
@@ -58,14 +57,12 @@ import { SecretScopeBadge } from './secret-scope-badge';
 import { SecretsStoreActionsCell } from './secrets-store-actions';
 
 export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Secrets Store';
-    uiState.pageBreadcrumbs.pop();
-    uiState.pageBreadcrumbs.push({
-      title: 'Secrets Store',
-      linkTo: '/secrets',
-      heading: 'Secrets Store',
-    });
+  uiState.pageTitle = 'Secrets Store';
+  uiState.pageBreadcrumbs.pop();
+  uiState.pageBreadcrumbs.push({
+    title: 'Secrets Store',
+    linkTo: '/secrets',
+    heading: 'Secrets Store',
   });
 };
 

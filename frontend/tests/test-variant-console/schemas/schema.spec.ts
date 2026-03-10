@@ -221,8 +221,8 @@ test.describe('Schema Registry E2E Tests', () => {
 
       // Verify format selection is always available
       const formatRadio = page.getByTestId('schema-create-format-radio');
-      await expect(formatRadio.getByText('AVRO')).toBeVisible();
-      await expect(formatRadio.getByText('PROTOBUF')).toBeVisible();
+      await expect(formatRadio.getByText('Avro')).toBeVisible();
+      await expect(formatRadio.getByText('Protobuf')).toBeVisible();
       await expect(formatRadio.getByText('JSON')).toBeVisible();
     });
 

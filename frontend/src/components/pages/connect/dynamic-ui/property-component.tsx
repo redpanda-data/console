@@ -10,7 +10,6 @@
  */
 
 import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 
 import { ErrorWrapper } from './forms/error-wrapper';
 import { SecretInput } from './forms/secret-input';
@@ -20,7 +19,7 @@ import { PropertyWidth } from '../../../../state/rest-interfaces';
 import { SingleSelect } from '../../../misc/select';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export const PropertyComponent = observer((props: { property: Property }) => {
+export const PropertyComponent = (props: { property: Property }) => {
   const p = props.property;
   const def = p.entry.definition;
   const metadata = p.entry.metadata;
@@ -58,6 +57,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             name={p.name}
             onChange={(e) => {
               p.value = e;
+              p.notifyChange();
             }}
             options={options}
             value={String(v || def.default_value)}
@@ -74,6 +74,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             <SingleSelect
               onChange={(e) => {
                 p.value = e;
+                p.notifyChange();
               }}
               options={options}
               value={v}
@@ -88,6 +89,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             isDisabled={props.property.isDisabled}
             onChange={(e) => {
               p.value = e.target.value;
+              p.notifyChange();
             }}
             spellCheck={false}
             value={String(v)}
@@ -102,6 +104,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         <SecretInput
           onChange={(e) => {
             p.value = e;
+            p.notifyChange();
           }}
           updating={p.crud === 'update'}
           value={String(v ?? '')}
@@ -117,6 +120,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         <NumberInput
           onChange={(e) => {
             p.value = e;
+            p.notifyChange();
           }}
           value={Number(v)}
         />
@@ -129,6 +133,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
           isChecked={Boolean(v)}
           onChange={(e) => {
             p.value = e.target.checked;
+            p.notifyChange();
           }}
         />
       );
@@ -141,6 +146,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             defaultValue={String(v)}
             onChange={(x) => {
               p.value = x;
+              p.notifyChange();
             }}
           />
         );
@@ -150,6 +156,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             defaultValue={def.default_value ?? undefined}
             onChange={(e) => {
               p.value = e.target.value;
+              p.notifyChange();
             }}
             value={String(v)}
           />
@@ -163,6 +170,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
           defaultValue={def.default_value ?? undefined}
           onChange={(e) => {
             p.value = e.target.value;
+            p.notifyChange();
           }}
           value={String(v)}
         />
@@ -177,7 +185,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
       {inputComp}
     </Box>
   );
-});
+};
 
 const inputSizeToClass = {
   [PropertyWidth.None]: 'none',

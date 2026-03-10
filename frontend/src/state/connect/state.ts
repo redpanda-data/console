@@ -507,7 +507,7 @@ export class ConnectorPropertiesStore {
 
   version = 0;
 
-  private notifyChange() {
+  notifyChange() {
     this.version += 1;
     for (const listener of this.changeListeners) {
       listener();
@@ -871,6 +871,7 @@ export class ConnectorPropertiesStore {
           propertyGroup: undefined as unknown as PropertyGroup,
           crud: this.crud,
           isDisabled: undefined,
+          notifyChange: () => this.notifyChange(),
         };
 
         if (this.appliedConfig?.[name]) {
@@ -949,4 +950,5 @@ export type Property = {
   propertyGroup: PropertyGroup;
   crud: 'create' | 'update';
   isDisabled: boolean | undefined;
+  notifyChange: () => void;
 };

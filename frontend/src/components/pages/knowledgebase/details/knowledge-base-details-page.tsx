@@ -28,7 +28,6 @@ import {
 } from 'components/ui/consumer-group/consumer-group-status';
 import { ConsumerLag } from 'components/ui/consumer-group/consumer-lag';
 import { CircleHelp, Search, Settings } from 'lucide-react';
-import { runInAction } from 'mobx';
 import {
   type KnowledgeBase,
   type KnowledgeBaseUpdate,
@@ -70,17 +69,15 @@ type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
 };
 
 export const updatePageTitle = (knowledgebaseId?: string) => {
-  runInAction(() => {
-    uiState.pageTitle = knowledgebaseId ? `Knowledge Base - ${knowledgebaseId}` : 'Knowledge Base Details';
-    uiState.pageBreadcrumbs = [
-      { title: 'Knowledge Bases', linkTo: '/knowledgebases' },
-      {
-        title: knowledgebaseId || 'Details',
-        linkTo: '',
-        heading: knowledgebaseId || 'Knowledge Base Details',
-      },
-    ];
-  });
+  uiState.pageTitle = knowledgebaseId ? `Knowledge Base - ${knowledgebaseId}` : 'Knowledge Base Details';
+  uiState.pageBreadcrumbs = [
+    { title: 'Knowledge Bases', linkTo: '/knowledgebases' },
+    {
+      title: knowledgebaseId || 'Details',
+      linkTo: '',
+      heading: knowledgebaseId || 'Knowledge Base Details',
+    },
+  ];
 };
 
 export type KnowledgeBaseEditTabsRef = {

@@ -68,12 +68,7 @@ declare global {
 
     /**
      * Replace the content with the given data.
-     * Intended to be used with mobx observable arrays, where setting the whole
-     * array (even with identical contents) would notify all observers.
-     *
-     * This function instead computes the difference and adds/removes them.
-     *
-     * It is strongly reccomended to wrap calls to this in a mobx transaction() or similar.
+     * This function computes the difference and adds/removes elements in-place.
      */
     updateWith<T>(this: T[], newData: T[]): { removed: number; added: number };
 

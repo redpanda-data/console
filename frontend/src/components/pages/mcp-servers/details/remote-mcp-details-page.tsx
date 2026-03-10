@@ -15,7 +15,6 @@ const routeApi = getRouteApi('/mcp-servers/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { AlertCircle, Link, Loader2, Logs, Search, Settings } from 'lucide-react';
-import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { uiState } from 'state/ui-state';
@@ -27,13 +26,11 @@ import { RemoteMCPInspectorTab } from './remote-mcp-inspector-tab';
 import { RemoteMCPLogsTab } from './remote-mcp-logs-tab';
 
 export const updatePageTitle = (serverName?: string) => {
-  runInAction(() => {
-    uiState.pageTitle = serverName ? `Remote MCP - ${serverName}` : 'Remote MCP Details';
-    uiState.pageBreadcrumbs = [
-      { title: 'Remote MCP', linkTo: '/mcp-servers' },
-      { title: serverName || 'Details', linkTo: '', heading: serverName || 'Remote MCP Details' },
-    ];
-  });
+  uiState.pageTitle = serverName ? `Remote MCP - ${serverName}` : 'Remote MCP Details';
+  uiState.pageBreadcrumbs = [
+    { title: 'Remote MCP', linkTo: '/mcp-servers' },
+    { title: serverName || 'Details', linkTo: '', heading: serverName || 'Remote MCP Details' },
+  ];
 };
 
 export const RemoteMCPDetailsPage = () => {

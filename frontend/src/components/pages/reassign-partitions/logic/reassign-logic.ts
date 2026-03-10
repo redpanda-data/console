@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { untracked } from 'mobx';
-
 import type { Broker, BrokerConfig, Partition, Topic } from '../../../../state/rest-interfaces';
 import { toJson } from '../../../../utils/json-utils';
 
@@ -154,12 +152,7 @@ function computeReassignments(
   return resultAssignments;
 }
 
-const untrackedCompute = (
-  apiData: ApiData,
-  selectedTopicPartitions: TopicPartitions[],
-  targetBrokers: Broker[]
-): TopicAssignments => untracked(() => computeReassignments(apiData, selectedTopicPartitions, targetBrokers));
-export { untrackedCompute as computeReassignments };
+export { computeReassignments };
 
 // Compute, for the partitions of a single topic, to which brokers their replicas should be assigned to.
 function computeTopicAssignments(

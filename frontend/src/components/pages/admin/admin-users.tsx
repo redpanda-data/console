@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { Component } from 'react';
+import { useState } from 'react';
 
 import { api } from '../../../state/backend-api';
 import type { UserDetails } from '../../../state/rest-interfaces';
@@ -18,102 +17,91 @@ import { MotionDiv } from '../../../utils/animation-props';
 import '../../../utils/array-extensions';
 import { Accordion, Box, DataTable, Flex, SearchField, Text, Tooltip } from '@redpanda-data/ui';
 import { UserCircleIcon } from 'components/icons';
-import { makeObservable, observable } from 'mobx';
 
 import { RoleComponent } from './admin-roles';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 
-@observer
-export class AdminUsers extends Component<Record<string, never>> {
-  @observable quickSearch = '';
+export const AdminUsers = () => {
+  const [quickSearch, setQuickSearch] = useState('');
 
-  constructor(p: Record<string, never>) {
-    super(p);
-    makeObservable(this);
+  if (!api.adminInfo) {
+    return DefaultSkeleton;
   }
 
-  render() {
-    if (!api.adminInfo) {
-      return DefaultSkeleton;
-    }
+  let users = api.adminInfo.users;
 
-    let users = api.adminInfo.users;
+  try {
+    const quickSearchRegExp = new RegExp(quickSearch, 'i');
+    users = users.filter(
+      (u) => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)
+    );
+  } catch (_e) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.warn('Invalid expression');
+  }
 
-    try {
-      const quickSearchRegExp = new RegExp(this.quickSearch, 'i');
-      users = users.filter(
-        (u) => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)
-      );
-    } catch (_e) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.warn('Invalid expression');
-    }
-
-    const table = (
-      <DataTable<UserDetails>
-        columns={[
-          {
-            size: 1,
-            header: 'Identifier',
-            accessorKey: 'internalIdentifier',
-            cell: ({ row }) => {
-              if (row.original.internalIdentifier === api.userData?.displayName) {
-                return (
-                  <Flex gap={2}>
-                    <Tooltip hasArrow label="You are currently logged in as this user" placement="top">
-                      <Box>
-                        <UserCircleIcon color="#ff9e3a" size={16} />
-                      </Box>
-                    </Tooltip>{' '}
-                    <Text>{row.original.internalIdentifier}</Text>
-                  </Flex>
-                );
-              }
-              return row.original.internalIdentifier;
-            },
+  const table = (
+    <DataTable<UserDetails>
+      columns={[
+        {
+          size: 1,
+          header: 'Identifier',
+          accessorKey: 'internalIdentifier',
+          cell: ({ row }) => {
+            if (row.original.internalIdentifier === api.userData?.displayName) {
+              return (
+                <Flex gap={2}>
+                  <Tooltip hasArrow label="You are currently logged in as this user" placement="top">
+                    <Box>
+                      <UserCircleIcon color="#ff9e3a" size={16} />
+                    </Box>
+                  </Tooltip>{' '}
+                  <Text>{row.original.internalIdentifier}</Text>
+                </Flex>
+              );
+            }
+            return row.original.internalIdentifier;
           },
-          { size: 1, header: 'OAuthUserID', accessorKey: 'oauthUserId' },
-          {
-            size: 1,
-            header: 'Roles',
-            accessorKey: 'roles',
-            cell: ({ row: { original: user } }) => user.grantedRoles.map((r) => r.role.name).join(', '),
-          }, // can't sort
-          { size: Number.POSITIVE_INFINITY, header: 'Login', accessorKey: 'loginProvider' },
-        ]}
-        data={users}
-        expandRowByClick
-        pagination
-        sorting
-        subComponent={({ row: { original: user } }) => (
-          <Box px={10} py={6}>
-            <Accordion
-              defaultIndex={0}
-              items={user.grantedRoles.map((r) => ({
-                heading: r.role.name,
-                description: <RoleComponent grantedBy={r.grantedBy} role={r.role} />,
-              }))}
-            />
-          </Box>
-        )}
-      />
-    );
-
-    return (
-      <MotionDiv>
-        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
-          <SearchField
-            placeholderText="Enter search term/regex"
-            searchText={this.quickSearch}
-            setSearchText={(x) => {
-              this.quickSearch = x;
-            }}
-            width="300px"
+        },
+        { size: 1, header: 'OAuthUserID', accessorKey: 'oauthUserId' },
+        {
+          size: 1,
+          header: 'Roles',
+          accessorKey: 'roles',
+          cell: ({ row: { original: user } }) => user.grantedRoles.map((r) => r.role.name).join(', '),
+        }, // can't sort
+        { size: Number.POSITIVE_INFINITY, header: 'Login', accessorKey: 'loginProvider' },
+      ]}
+      data={users}
+      expandRowByClick
+      pagination
+      sorting
+      subComponent={({ row: { original: user } }) => (
+        <Box px={10} py={6}>
+          <Accordion
+            defaultIndex={0}
+            items={user.grantedRoles.map((r) => ({
+              heading: r.role.name,
+              description: <RoleComponent grantedBy={r.grantedBy} role={r.role} />,
+            }))}
           />
-        </div>
+        </Box>
+      )}
+    />
+  );
 
-        {table}
-      </MotionDiv>
-    );
-  }
-}
+  return (
+    <MotionDiv>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
+        <SearchField
+          placeholderText="Enter search term/regex"
+          searchText={quickSearch}
+          setSearchText={setQuickSearch}
+          width="300px"
+        />
+      </div>
+
+      {table}
+    </MotionDiv>
+  );
+};

@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
+import { useEffect, useState } from 'react';
 
 import { principalGroupsView } from './models';
 import { RoleForm } from './role-form';
@@ -19,76 +18,74 @@ import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
-import { PageComponent, type PageInitHelper, type PageProps } from '../page';
+import { PageComponent, type PageInitHelper } from '../page';
 
-@observer
-class RoleEditPage extends PageComponent<{ roleName: string }> {
-  @observable allDataLoaded = false;
-  @observable roleName = '';
-
-  constructor(p: Readonly<PageProps<{ roleName: string }>>) {
-    super(p);
-    makeObservable(this);
-    this.roleName = decodeURIComponent(this.props.roleName);
+async function refreshEditData(force: boolean) {
+  if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
+    return;
   }
 
+  await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
+
+  await rolesApi.refreshRoles();
+  await rolesApi.refreshRoleMembers();
+}
+
+class RoleEditPage extends PageComponent<{ roleName: string }> {
   initPage(p: PageInitHelper): void {
+    const roleName = decodeURIComponent(this.props.roleName);
     p.title = 'Edit role';
     p.addBreadcrumb('Access Control', '/security');
     p.addBreadcrumb('Roles', '/security/roles');
-    p.addBreadcrumb(
-      decodeURIComponent(this.props.roleName),
-      `/security/roles/${encodeURIComponent(this.props.roleName)}`
-    );
+    p.addBreadcrumb(roleName, `/security/roles/${encodeURIComponent(this.props.roleName)}`);
 
     // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-    this.refreshData(true).catch(console.error);
+    refreshEditData(true).catch(console.error);
     // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
-  }
-
-  async refreshData(force: boolean) {
-    if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
-      return;
-    }
-
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
-
-    await rolesApi.refreshRoles();
-    await rolesApi.refreshRoleMembers();
-
-    this.allDataLoaded = true;
+    appGlobal.onRefresh = () => refreshEditData(true).catch(console.error);
   }
 
   render() {
-    // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-    // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
-    if (!this.allDataLoaded) {
-      return DefaultSkeleton;
-    }
-
-    const aclPrincipalGroup = principalGroupsView.principalGroups.find(
-      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.props.roleName
-    );
-
-    const principals = rolesApi.roleMembers.get(this.props.roleName);
-
-    return (
-      <PageContent>
-        <RoleForm
-          initialData={{
-            roleName: this.roleName,
-            topicACLs: aclPrincipalGroup?.topicAcls ?? [],
-            consumerGroupsACLs: aclPrincipalGroup?.consumerGroupAcls ?? [],
-            clusterACLs: aclPrincipalGroup?.clusterAcls,
-            transactionalIDACLs: aclPrincipalGroup?.transactionalIdAcls ?? [],
-            host: aclPrincipalGroup?.host ?? '',
-            principals: principals ?? [],
-          }}
-        />
-      </PageContent>
-    );
+    return <RoleEditPageContent roleName={this.props.roleName} />;
   }
 }
+
+const RoleEditPageContent = ({ roleName: encodedRoleName }: { roleName: string }) => {
+  const roleName = decodeURIComponent(encodedRoleName);
+  const [allDataLoaded, setAllDataLoaded] = useState(false);
+
+  useEffect(() => {
+    refreshEditData(true)
+      .then(() => setAllDataLoaded(true))
+      // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
+      .catch(console.error);
+  }, []);
+
+  if (!allDataLoaded) {
+    return DefaultSkeleton;
+  }
+
+  const aclPrincipalGroup = principalGroupsView.principalGroups.find(
+    ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === roleName
+  );
+
+  const principals = rolesApi.roleMembers.get(roleName);
+
+  return (
+    <PageContent>
+      <RoleForm
+        initialData={{
+          roleName,
+          topicACLs: aclPrincipalGroup?.topicAcls ?? [],
+          consumerGroupsACLs: aclPrincipalGroup?.consumerGroupAcls ?? [],
+          clusterACLs: aclPrincipalGroup?.clusterAcls,
+          transactionalIDACLs: aclPrincipalGroup?.transactionalIdAcls ?? [],
+          host: aclPrincipalGroup?.host ?? '',
+          principals: principals ?? [],
+        }}
+      />
+    </PageContent>
+  );
+};
 
 export default RoleEditPage;

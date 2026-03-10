@@ -11,7 +11,6 @@
 
 import { Flex } from '@redpanda-data/ui';
 import { CheckIcon, CloseIcon, MinusIcon } from 'components/icons';
-import { observer } from 'mobx-react';
 import type { CSSProperties, FC, ReactElement, ReactNode } from 'react';
 
 import { AclOperation, type AclOperationType, type AclStrPermission } from '../../../state/rest-interfaces';
@@ -34,47 +33,45 @@ const OptionContent: FC<{
   </Flex>
 );
 
-export const Operation = observer(
-  (p: {
-    operation: string | AclOperationType;
-    value: AclStrPermission;
-    disabled?: boolean;
-    onChange: (v: AclStrPermission) => void;
-    style?: CSSProperties;
-  }) => {
-    const disabled = p.disabled ?? false;
+export const Operation = (p: {
+  operation: string | AclOperationType;
+  value: AclStrPermission;
+  disabled?: boolean;
+  onChange: (v: AclStrPermission) => void;
+  style?: CSSProperties;
+}) => {
+  const disabled = p.disabled ?? false;
 
-    const operationName =
-      typeof p.operation === 'string'
-        ? p.operation
-        : Object.keys(AclOperation).find((key) => AclOperation[key as keyof typeof AclOperation] === p.operation) ||
-          'Unknown';
+  const operationName =
+    typeof p.operation === 'string'
+      ? p.operation
+      : Object.keys(AclOperation).find((key) => AclOperation[key as keyof typeof AclOperation] === p.operation) ||
+        'Unknown';
 
-    return (
-      <Label text={operationName}>
-        <SingleSelect<AclStrPermission>
-          components={{
-            DropdownIndicator: null,
-          }}
-          isDisabled={disabled}
-          onChange={p.onChange}
-          options={[
-            {
-              value: 'Any',
-              label: <OptionContent icon={icons.minus}>Not set</OptionContent>,
-            },
-            {
-              value: 'Allow',
-              label: <OptionContent icon={icons.check}>Allow</OptionContent>,
-            },
-            {
-              value: 'Deny',
-              label: <OptionContent icon={icons.cross}>Deny</OptionContent>,
-            },
-          ]}
-          value={p.value}
-        />
-      </Label>
-    );
-  }
-);
+  return (
+    <Label text={operationName}>
+      <SingleSelect<AclStrPermission>
+        components={{
+          DropdownIndicator: null,
+        }}
+        isDisabled={disabled}
+        onChange={p.onChange}
+        options={[
+          {
+            value: 'Any',
+            label: <OptionContent icon={icons.minus}>Not set</OptionContent>,
+          },
+          {
+            value: 'Allow',
+            label: <OptionContent icon={icons.check}>Allow</OptionContent>,
+          },
+          {
+            value: 'Deny',
+            label: <OptionContent icon={icons.cross}>Deny</OptionContent>,
+          },
+        ]}
+        value={p.value}
+      />
+    </Label>
+  );
+};

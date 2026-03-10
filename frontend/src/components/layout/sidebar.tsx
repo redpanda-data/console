@@ -34,15 +34,15 @@ import {
   useSidebar,
 } from 'components/redpanda-ui/components/sidebar';
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide-react';
-import { observer } from 'mobx-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
+import { useStore } from 'zustand';
 
 import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
 import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { api } from '../../state/backend-api';
+import { api, useApiStore } from '../../state/backend-api';
 import { AppFeatures } from '../../utils/env';
 import { getUserInitials } from '../../utils/string';
 import { UserPreferencesDialog } from '../misc/user-preferences';
@@ -81,9 +81,10 @@ function SidebarCollapseToggle() {
   );
 }
 
-const UserProfile = observer(() => {
+const UserProfile = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const { state, isMobile, setOpenMobile } = useSidebar();
+  useStore(useApiStore, (s) => s.userData); // re-render when userData changes
 
   useEffect(() => {
     api.refreshUserData().catch(() => {
@@ -178,7 +179,7 @@ const UserProfile = observer(() => {
       <UserPreferencesDialog isOpen={preferencesOpen} onClose={() => setPreferencesOpen(false)} />
     </>
   );
-});
+};
 
 type NavItemProps = {
   item: SidebarGroupedItems['items'][number];
@@ -220,7 +221,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
   );
 }
 
-const SidebarNavigation = observer(() => {
+const SidebarNavigation = () => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const groupedItems = createGroupedSidebarItems();
@@ -250,7 +251,7 @@ const SidebarNavigation = observer(() => {
       ))}
     </nav>
   );
-});
+};
 
 export function AppSidebar() {
   return (

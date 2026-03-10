@@ -9,11 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-
 import KowlEditor from '../../../misc/kowl-editor';
 
-export const DebugEditor = observer((p: { observable: { jsonText: string } }) => {
+export const DebugEditor = (p: { observable: { jsonText: string } }) => {
   const obs = p.observable;
 
   return (
@@ -34,4 +32,4 @@ export const DebugEditor = observer((p: { observable: { jsonText: string } }) =>
       />
     </div>
   );
-});
+};

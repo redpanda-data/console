@@ -10,8 +10,6 @@
  */
 
 import { Box, DataTable, Empty } from '@redpanda-data/ui';
-import { makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import { Component } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
@@ -41,24 +39,12 @@ export type TopicWithMoves = {
   selectedPartitions: PartitionWithMoves[];
 };
 
-@observer
 export class StepReview extends Component<{
   partitionSelection: PartitionSelection;
   topicsWithMoves: TopicWithMoves[];
   assignments: PartitionReassignmentRequest;
   reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
-  @observable unused = 0;
-  constructor(p: {
-    partitionSelection: PartitionSelection;
-    topicsWithMoves: TopicWithMoves[];
-    assignments: PartitionReassignmentRequest;
-    reassignPartitions: ReassignPartitions;
-  }) {
-    super(p);
-    makeObservable(this);
-  }
-
   render() {
     if (!api.topics) {
       return DefaultSkeleton;
@@ -265,40 +251,36 @@ export class StepReview extends Component<{
   }
 }
 
-const ReviewPartitionTable = observer(
-  (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
-    <Box py={2} width="full">
-      <DataTable<Partition>
-        columns={[
-          {
-            header: 'Partition',
-            accessorKey: 'id',
+const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
+  <Box py={2} width="full">
+    <DataTable<Partition>
+      columns={[
+        {
+          header: 'Partition',
+          accessorKey: 'id',
+        },
+        {
+          header: 'Brokers Before',
+          cell: ({ row: { original: partition } }) => (
+            <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
+          ),
+        },
+        {
+          header: 'Brokers After',
+          cell: ({ row: { original: partition } }) => {
+            const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
+            if (
+              partitionAssignments === null ||
+              partitionAssignments === undefined ||
+              partitionAssignments.replicas === null
+            ) {
+              return '??';
+            }
+            return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />;
           },
-          {
-            header: 'Brokers Before',
-            cell: ({ row: { original: partition } }) => (
-              <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
-            ),
-          },
-          {
-            header: 'Brokers After',
-            cell: ({ row: { original: partition } }) => {
-              const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
-              if (
-                partitionAssignments === null ||
-                partitionAssignments === undefined ||
-                partitionAssignments.replicas === null
-              ) {
-                return '??';
-              }
-              return (
-                <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />
-              );
-            },
-          },
-        ]}
-        data={props.topicPartitions}
-      />
-    </Box>
-  )
+        },
+      ]}
+      data={props.topicPartitions}
+    />
+  </Box>
 );

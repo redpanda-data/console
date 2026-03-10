@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
 
 import { api } from '../../../state/backend-api';
@@ -20,7 +19,6 @@ import { Box, DataTable } from '@redpanda-data/ui';
 import { RoleBindingComponent } from './admin-role-bindings';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsx-utils';
 
-@observer
 export class AdminRoles extends Component<Record<string, never>> {
   render() {
     if (!api.adminInfo) {

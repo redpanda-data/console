@@ -11,7 +11,6 @@
 
 import { Box, Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
 import { WarningIcon } from 'components/icons';
-import { observer } from 'mobx-react';
 import type { FC, ReactElement } from 'react';
 
 import ErrorResult from './error-result';
@@ -22,7 +21,7 @@ function isWrappedApiError(error: unknown): error is WrappedApiError {
   return error !== null && typeof error === 'object' && 'statusCode' in error;
 }
 
-export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children }) => {
+export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
   if (api.errors.length === 0) {
     return children;
   }
@@ -60,7 +59,7 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children
       </Section>
     </>
   );
-});
+};
 
 function formatError(err: unknown): string {
   if (err instanceof Error && err.message) {

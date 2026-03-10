@@ -10,7 +10,6 @@
  */
 
 import type { SortingState } from '@tanstack/react-table';
-import { runInAction } from 'mobx';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
@@ -163,13 +162,8 @@ const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicS
  * This ensures that changes made via Zustand are persisted by MobX's autorun mechanism.
  */
 const syncPerTopicSettingsToMobX = (state: TopicSettingsStore) => {
-  // Wrap in runInAction to satisfy MobX strict mode
-  runInAction(() => {
-    // Update MobX store's perTopicSettings array
-    // MobX will track this change and trigger its autorun to save to localStorage
-    // Type assertion is safe here because TopicSettings matches TopicDetailsSettings structure
-    uiSettings.perTopicSettings = state.perTopicSettings as unknown as TopicDetailsSettings[];
-  });
+  // Type assertion is safe here because TopicSettings matches TopicDetailsSettings structure
+  uiSettings.perTopicSettings = state.perTopicSettings as unknown as TopicDetailsSettings[];
 };
 
 export const useTopicSettingsStore = create<TopicSettingsStore>()(

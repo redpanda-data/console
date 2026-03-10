@@ -12,8 +12,6 @@
 import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import type { Row } from '@tanstack/react-table';
 import { WarningIcon } from 'components/icons';
-import { computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
-import { observer } from 'mobx-react';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
 
@@ -33,19 +31,17 @@ export type TopicWithPartitions = Topic & {
   activeReassignments: PartitionReassignmentsPartition[];
 };
 
-@observer
 export class StepSelectPartitions extends Component<{
   partitionSelection: PartitionSelection;
+  onPartitionSelectionChange: (newSelection: PartitionSelection) => void;
   throttledTopics: string[];
 }> {
-  autorunHandle: IReactionDisposer | undefined = undefined;
-  @observable filterOpen = false; // topic name searchbar
-
-  @observable selectedBrokerFilters: (string | number)[] | null = null;
+  filterOpen = false; // topic name searchbar
 
   constructor(props: {
     selectedTopicPartitions: PartitionSelection;
     partitionSelection: PartitionSelection;
+    onPartitionSelectionChange: (newSelection: PartitionSelection) => void;
     throttledTopics: string[];
   }) {
     super(props);
@@ -55,14 +51,6 @@ export class StepSelectPartitions extends Component<{
     this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
     this.getTopicCheckState = this.getTopicCheckState.bind(this);
     this.getRowKey = this.getRowKey.bind(this);
-    makeObservable(this);
-  }
-
-  componentWillUnmount() {
-    if (this.autorunHandle) {
-      this.autorunHandle();
-      this.autorunHandle = undefined;
-    }
   }
 
   render() {
@@ -83,7 +71,7 @@ export class StepSelectPartitions extends Component<{
             {
               id: 'check',
               header: '',
-              cell: observer(({ row }: { row: Row<TopicWithPartitions> }) => {
+              cell: ({ row }: { row: Row<TopicWithPartitions> }) => {
                 const { checked, indeterminate } = this.getTopicCheckState(row.original.topicName);
                 return (
                   <Checkbox
@@ -92,7 +80,7 @@ export class StepSelectPartitions extends Component<{
                     onChange={() => this.setTopicSelection(row.original, !checked)}
                   />
                 );
-              }),
+              },
             },
             {
               id: 'topicName',
@@ -200,16 +188,24 @@ export class StepSelectPartitions extends Component<{
   }
 
   setTopicSelection(topic: TopicWithPartitions, isSelected: boolean) {
-    transaction(() => {
-      for (const p of topic.partitions) {
-        const selected = isSelected && !p.hasErrors;
-        this.setSelection(topic.topicName, p.id, selected);
+    const newSelection = { ...this.props.partitionSelection };
+    const topicPartitions: number[] = [];
+    for (const p of topic.partitions) {
+      if (isSelected && !p.hasErrors) {
+        topicPartitions.push(p.id);
       }
-    });
+    }
+    if (topicPartitions.length === 0) {
+      delete newSelection[topic.topicName];
+    } else {
+      newSelection[topic.topicName] = topicPartitions;
+    }
+    this.props.onPartitionSelectionChange(newSelection);
   }
 
   setSelection(topic: string, partition: number, isSelected: boolean) {
-    const partitions = this.props.partitionSelection[topic] ?? [];
+    const newSelection = { ...this.props.partitionSelection };
+    const partitions = [...(newSelection[topic] ?? [])];
 
     if (isSelected) {
       partitions.pushDistinct(partition);
@@ -218,10 +214,12 @@ export class StepSelectPartitions extends Component<{
     }
 
     if (partitions.length === 0) {
-      delete this.props.partitionSelection[topic];
+      delete newSelection[topic];
     } else {
-      this.props.partitionSelection[topic] = partitions;
+      newSelection[topic] = partitions;
     }
+
+    this.props.onPartitionSelectionChange(newSelection);
   }
 
   getSelectedPartitions(topic: string) {
@@ -263,7 +261,7 @@ export class StepSelectPartitions extends Component<{
     return { checked: false, indeterminate: true };
   }
 
-  @computed get topicPartitions(): TopicWithPartitions[] {
+  get topicPartitions(): TopicWithPartitions[] {
     if (api.topics === null) {
       return [];
     }
@@ -279,7 +277,7 @@ export class StepSelectPartitions extends Component<{
       .filter((t) => t.activeReassignments.length === 0);
   }
 
-  @computed get inProgress() {
+  get inProgress() {
     const current = api.partitionReassignments ?? [];
     return current.toMap(
       (x) => x.topicName,
@@ -288,7 +286,6 @@ export class StepSelectPartitions extends Component<{
   }
 }
 
-@observer
 export class SelectPartitionTable extends Component<{
   topic: Topic;
   topicPartitions: Partition[];
@@ -302,7 +299,7 @@ export class SelectPartitionTable extends Component<{
         columns={[
           {
             header: 'Check',
-            cell: observer(({ row: { original: partition } }: { row: Row<Partition> }) => {
+            cell: ({ row: { original: partition } }: { row: Row<Partition> }) => {
               const isSelected = this.props.getSelectedPartitions().includes(partition.id);
               return (
                 <Checkbox
@@ -312,7 +309,7 @@ export class SelectPartitionTable extends Component<{
                   }}
                 />
               );
-            }),
+            },
           },
           {
             header: 'Partition',
@@ -321,13 +318,12 @@ export class SelectPartitionTable extends Component<{
           },
           {
             header: 'Brokers',
-            cell: observer(({ row: { original: partition } }: { row: Row<Partition> }) =>
+            cell: ({ row: { original: partition } }: { row: Row<Partition> }) =>
               partition.replicas ? (
                 <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
               ) : (
                 renderPartitionError(partition)
-              )
-            ),
+              ),
           },
           {
             header: 'Size',

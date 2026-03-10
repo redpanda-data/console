@@ -10,14 +10,13 @@
  */
 
 import { Box, DataTable } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import { Ellipsis, toSafeString } from '../../../../../utils/tsx-utils';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
 import { renderEmptyIcon } from '../common/empty-icon';
 
-export const MessageHeaders = observer((props: { msg: TopicMessage }) => {
+export const MessageHeaders = (props: { msg: TopicMessage }) => {
   return (
     <div className="messageHeaders">
       <div>
@@ -93,4 +92,4 @@ export const MessageHeaders = observer((props: { msg: TopicMessage }) => {
       </div>
     </div>
   );
-});
+};

@@ -12,166 +12,151 @@
 import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon } from 'components/icons';
-import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import { Component, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from 'react-beautiful-dnd';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
 
-@observer
-export class CommaSeparatedStringList extends Component<{
-  defaultValue: string;
-  // renderItem: (item: string, index: number, ar: string[]) => JSX.Element,
-  onChange: (list: string) => void;
+// Keep stable reference to the latest onChange so useEffect doesn't re-run on every render
+// but still calls the most recent version of the callback.
+const useLatestRef = <T,>(value: T) => {
+  const ref = useRef(value);
+  ref.current = value;
+  return ref;
+};
 
+type ItemProps = {
+  item: { id: string };
+  index: number;
+  allItems: { id: string }[];
+  onUpdate: (newId: string) => void;
+  onDelete: () => void;
+};
+
+const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element => {
+  const [hasFocus, setHasFocus] = useState(false);
+  const [valuePending, setValuePending] = useState('');
+
+  return (
+    <>
+      {/* Input */}
+      <Tooltip hasArrow={true} isOpen={hasFocus} label="[Enter] confirm, [ESC] cancel" placement="top">
+        <Input
+          className="ghostInput"
+          onBlur={() => {
+            setHasFocus(false);
+          }}
+          onChange={(e) => setValuePending(e.target.value)}
+          onFocus={() => {
+            setValuePending(item.id);
+            setHasFocus(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              // can we rename that entry?
+              if (allItems.some((x) => x.id === valuePending)) {
+                // no, already exists
+                e.stopPropagation();
+                return;
+              }
+
+              if (VALID_NAME_REGEX.test(valuePending) === false) {
+                // no, invalid characters
+                e.stopPropagation();
+                return;
+              }
+
+              onUpdate(valuePending);
+              (e.target as HTMLElement).blur();
+            } else if (e.key === 'Escape') {
+              (e.target as HTMLElement).blur();
+            }
+          }}
+          size="sm"
+          spellCheck={false}
+          style={{ flexGrow: 1, flexBasis: '400px' }}
+          value={hasFocus ? valuePending : item.id}
+        />
+      </Tooltip>
+
+      {/* Delete */}
+      <button className="deleteButton" onClick={onDelete} type="button">
+        <CloseIcon />
+      </button>
+    </>
+  );
+};
+
+export function CommaSeparatedStringList(props: {
+  defaultValue: string;
+  onChange: (list: string) => void;
   locale?: {
     addInputPlaceholder?: string;
     addButtonText?: string;
   };
-}> {
-  @observable data: { id: string }[];
-  @observable newEntry: string | null = null;
-  @observable newEntryError: string | null = null;
+}) {
+  const [data, setData] = useState<{ id: string }[]>(() =>
+    props.defaultValue ? props.defaultValue.split(',').map((x) => ({ id: x.trim() })) : []
+  );
+  const [newEntry, setNewEntry] = useState<string | null>(null);
+  const [newEntryError, setNewEntryError] = useState<string | null>(null);
+  const onChangeRef = useLatestRef(props.onChange);
 
-  reactionDisposer: IReactionDisposer | undefined;
+  useEffect(() => {
+    onChangeRef.current(data.map((x) => x.id).join(','));
+  }, [data, onChangeRef]);
 
-  constructor(p: {
-    defaultValue: string;
-    onChange: (value: string) => void;
-    title?: string;
-    addButtonText?: string;
-  }) {
-    super(p);
-    makeObservable(this);
+  const updateItem = (index: number, newId: string) => {
+    setData((prev) => prev.map((item, i) => (i === index ? { id: newId } : item)));
+  };
 
-    if (!this.data) {
-      this.data = this.props.defaultValue ? this.props.defaultValue.split(',').map((x) => ({ id: x.trim() })) : [];
-    }
+  const deleteItem = (index: number) => {
+    setData((prev) => prev.filter((_, i) => i !== index));
+  };
 
-    this.reactionDisposer = autorun(() => {
-      const list = this.commaSeperatedList;
-      this.props.onChange(list);
+  const reorderItems = (from: number, to: number) => {
+    setData((prev) => {
+      const next = [...prev];
+      arrayMoveMutable(next, from, to);
+      return next;
     });
-  }
+  };
 
-  componentWillUnmount() {
-    this.reactionDisposer?.();
-  }
-
-  @computed get commaSeperatedList(): string {
-    const str = this.data.map((x) => x.id).join(',');
-    return str;
-  }
-
-  render() {
-    return (
-      <div className="stringList" style={{ maxWidth: '500px' }}>
-        <this.AddButton />
-        <List observableAr={this.data} renderItem={(item, index) => <this.Item index={index} item={item} />} />
-      </div>
-    );
-  }
-
-  Item = observer((props: { item: { id: string }; index: number }): JSX.Element => {
-    const { item, index } = props;
-
-    const [hasFocus, setHasFocus] = useState(false);
-    const [valuePending, setValuePending] = useState('');
-
-    return (
-      <>
-        {/* Input */}
-        <Tooltip hasArrow={true} isOpen={hasFocus} label="[Enter] confirm, [ESC] cancel" placement="top">
-          <Input
-            className="ghostInput"
-            onBlur={() => {
-              setHasFocus(false);
-            }}
-            onChange={(e) => setValuePending(e.target.value)}
-            onFocus={() => {
-              setValuePending(item.id);
-              setHasFocus(true);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                // can we rename that entry?
-                if (this.data.any((x) => x.id === valuePending)) {
-                  // no, already exists
-                  e.stopPropagation();
-                  return;
-                }
-
-                if (VALID_NAME_REGEX.test(valuePending) === false) {
-                  // no, invalid characters
-                  e.stopPropagation();
-                  return;
-                }
-
-                item.id = valuePending;
-                (e.target as HTMLElement).blur();
-              } else if (e.key === 'Escape') {
-                (e.target as HTMLElement).blur();
-              }
-            }}
-            size="sm"
-            spellCheck={false}
-            style={{ flexGrow: 1, flexBasis: '400px' }}
-            value={hasFocus ? valuePending : item.id}
-          />
-        </Tooltip>
-
-        {/* Delete */}
-        <button
-          className="deleteButton"
-          onClick={() => {
-            this.data.splice(index, 1);
-          }}
-          type="button"
-        >
-          <CloseIcon />
-        </button>
-      </>
-    );
-  });
-
-  AddButton = observer(() => {
-    return (
+  return (
+    <div className="stringList" style={{ maxWidth: '500px' }}>
       <div className="createEntryRow">
-        <div className={`inputWrapper${this.newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
+        <div className={`inputWrapper${newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
           <Input
             onChange={(e) => {
-              this.newEntry = e.target.value;
+              const value = e.target.value;
+              setNewEntry(value);
+              setNewEntryError(null);
 
-              this.newEntryError = null;
-
-              if (!this.newEntry) {
+              if (!value) {
                 return;
               }
 
-              if (this.data.any((x) => x.id === this.newEntry)) {
-                this.newEntryError = 'Entry already exists';
-              }
-
-              if (VALID_NAME_REGEX.test(this.newEntry) === false) {
-                this.newEntryError = 'Name is not valid (only letters, digits, underscore)';
+              if (data.some((x) => x.id === value)) {
+                setNewEntryError('Entry already exists');
+              } else if (VALID_NAME_REGEX.test(value) === false) {
+                setNewEntryError('Name is not valid (only letters, digits, underscore)');
               }
             }}
-            placeholder={this.props.locale?.addInputPlaceholder ?? 'Enter a name...'}
+            placeholder={props.locale?.addInputPlaceholder ?? 'Enter a name...'}
             spellCheck={false}
             style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
-            value={this.newEntry ?? ''}
+            value={newEntry ?? ''}
           />
 
-          <div className="validationFeedback">{this.newEntryError ?? null}</div>
+          <div className="validationFeedback">{newEntryError ?? null}</div>
         </div>
 
         <Button
-          disabled={this.newEntryError !== null || !this.newEntry || this.newEntry.trim().length === 0}
+          disabled={newEntryError !== null || !newEntry || newEntry.trim().length === 0}
           onClick={() => {
-            // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-            this.data.push({ id: this.newEntry! });
-            this.newEntry = null;
+            if (!newEntry) return;
+            setData((prev) => [...prev, { id: newEntry }]);
+            setNewEntry(null);
           }}
           style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
           variant="solid"
@@ -179,51 +164,63 @@ export class CommaSeparatedStringList extends Component<{
           Add
         </Button>
       </div>
-    );
-  });
+
+      <List
+        items={data}
+        onReorder={reorderItems}
+        renderItem={(item, index) => (
+          <Item
+            allItems={data}
+            index={index}
+            item={item}
+            onDelete={() => deleteItem(index)}
+            onUpdate={(newId) => updateItem(index, newId)}
+          />
+        )}
+      />
+    </div>
+  );
 }
 
-@observer
-export class List<T extends { id: string }> extends Component<{
-  observableAr: T[];
+export function List<T extends { id: string }>(props: {
+  items: T[];
   renderItem: (item: T, index: number) => JSX.Element;
-}> {
-  render() {
-    const { observableAr: list, renderItem } = this.props;
+  onReorder: (from: number, to: number) => void;
+}) {
+  const { items: list, renderItem, onReorder } = props;
 
-    const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) {
-        return;
-      }
-      arrayMoveMutable(this.props.observableAr, result.source.index, result.destination.index);
-    };
+  const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
+    if (!result.destination) {
+      return;
+    }
+    onReorder(result.source.index, result.destination.index);
+  };
 
-    return (
-      <div className="reorderableList">
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="droppable" ignoreContainerClipping={false}>
-            {(droppableProvided, _droppableSnapshot) => (
-              <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
-                {list.map((tag, index) => (
-                  <Draggable draggableId={String(index)} index={index} key={String(index)}>
-                    {(draggableProvided, _draggableSnapshot) => (
-                      <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
-                        <div className="draggableItem">
-                          <div className="dragHandle" {...draggableProvided.dragHandleProps}>
-                            <MenuIcon />
-                          </div>
-                          {renderItem(tag, index)}
+  return (
+    <div className="reorderableList">
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="droppable" ignoreContainerClipping={false}>
+          {(droppableProvided, _droppableSnapshot) => (
+            <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
+              {list.map((tag, index) => (
+                <Draggable draggableId={String(index)} index={index} key={String(index)}>
+                  {(draggableProvided, _draggableSnapshot) => (
+                    <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
+                      <div className="draggableItem">
+                        <div className="dragHandle" {...draggableProvided.dragHandleProps}>
+                          <MenuIcon />
                         </div>
+                        {renderItem(tag, index)}
                       </div>
-                    )}
-                  </Draggable>
-                ))}
-                {droppableProvided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      </div>
-    );
-  }
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {droppableProvided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
+  );
 }

@@ -75,6 +75,8 @@ test.describe('Topic List - Basic Operations', () => {
     await test.step('Apply and clear search filter', async () => {
       // Apply search filter
       await topicPage.searchTopics('non-matching-search-term');
+      await page.waitForTimeout(1000);
+
       await topicPage.verifyTopicNotInList(topicName);
 
       // Clear search filter

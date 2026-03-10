@@ -9,10 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 
-@observer
 export class IndeterminateCheckbox extends Component<{
   originalCheckbox: React.ReactNode;
   getCheckState: () => { checked: boolean; indeterminate: boolean };

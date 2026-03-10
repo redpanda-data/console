@@ -35,8 +35,6 @@ import {
   UnorderedList,
 } from '@redpanda-data/ui';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
-import { action, autorun, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
-import { observer } from 'mobx-react';
 import { Component } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
@@ -87,7 +85,20 @@ const { ToastContainer, toast } = createStandaloneToast({
   },
 });
 
-@observer
+type EditOffsetsModalState = {
+  page: 0 | 1;
+  selectedOption: EditOptions;
+  selectedTopic: string | null;
+  selectedPartition: number | null;
+  timestampUtcMs: number;
+  offsetShiftByValue: number;
+  offsetShiftByValueAsString: string;
+  selectedGroup: string | undefined;
+  otherGroupCopyMode: 'all' | 'onlyExisting';
+  isLoadingTimestamps: boolean;
+  isApplyingEdit: boolean;
+};
+
 export class EditOffsetsModal extends Component<{
   group: GroupDescription;
   offsets: GroupOffset[] | null;
@@ -95,43 +106,32 @@ export class EditOffsetsModal extends Component<{
   initialTopic: string | null;
   initialPartition: number | null;
 }> {
-  lastOffsets: GroupOffset[];
+  lastOffsets!: GroupOffset[];
   lastVisible = false;
   offsetsByTopic: {
     topicName: string;
     items: GroupOffset[];
   }[] = [];
-  autorunDisposer: IReactionDisposer | null = null;
 
-  @observable page: 0 | 1 = 0;
-  @observable selectedOption: EditOptions = 'startOffset';
-  @observable selectedTopic: string | null = null;
-  @observable selectedPartition: number | null = null;
-  @observable timestampUtcMs: number = Date.now();
-  @observable offsetShiftByValue = 0;
-  @observable offsetShiftByValueAsString = '0';
-
-  @observable otherConsumerGroups: GroupDescription[] = [];
-  @observable selectedGroup: string | undefined = undefined;
-  @observable otherGroupCopyMode: 'all' | 'onlyExisting' = 'onlyExisting';
-
-  @observable isLoadingTimestamps = false;
-  @observable isApplyingEdit = false;
-
-  constructor(p: {
-    group: GroupDescription;
-    offsets: GroupOffset[] | null;
-    onClose: () => void;
-    initialTopic: string | null;
-    initialPartition: number | null;
-  }) {
-    super(p);
-    makeObservable(this);
-  }
+  state: EditOffsetsModalState = {
+    page: 0,
+    selectedOption: 'startOffset',
+    selectedTopic: null,
+    selectedPartition: null,
+    timestampUtcMs: Date.now(),
+    offsetShiftByValue: 0,
+    offsetShiftByValueAsString: '0',
+    selectedGroup: undefined,
+    otherGroupCopyMode: 'onlyExisting',
+    isLoadingTimestamps: false,
+    isApplyingEdit: false,
+  };
 
   componentDidMount() {
-    this.selectedTopic = this.props.initialTopic;
-    this.selectedPartition = this.props.initialPartition;
+    this.setState({
+      selectedTopic: this.props.initialTopic,
+      selectedPartition: this.props.initialPartition,
+    });
   }
 
   render() {
@@ -172,7 +172,7 @@ export class EditOffsetsModal extends Component<{
 
               {/* Content */}
               <div style={{ marginTop: '2em' }}>
-                {this.page === 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}
+                {this.state.page === 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}
               </div>
             </ModalBody>
             <ModalFooter gap={2}>{this.footer()}</ModalFooter>
@@ -184,6 +184,7 @@ export class EditOffsetsModal extends Component<{
 
   page1() {
     const topicChoices = this.props.offsets?.groupInto((x) => x.topicName).map((x) => x.key) ?? [];
+    const otherConsumerGroups = [...api.consumerGroups.values()].filter((g) => g.groupId !== this.props.group.groupId);
 
     return (
       <Flex flexDirection="column" gap={4}>
@@ -191,9 +192,9 @@ export class EditOffsetsModal extends Component<{
           <Box>
             <FormLabel>Topic</FormLabel>
             <SingleSelect<string | null>
-              onChange={action((v) => {
-                this.selectedTopic = v;
-              })}
+              onChange={(v) => {
+                this.setState({ selectedTopic: v });
+              }}
               options={[
                 {
                   value: null,
@@ -204,39 +205,39 @@ export class EditOffsetsModal extends Component<{
                   label: x,
                 })),
               ]}
-              value={this.selectedTopic}
+              value={this.state.selectedTopic}
             />
           </Box>
-          {this.selectedTopic !== null && (
+          {this.state.selectedTopic !== null && (
             <Box>
               <FormLabel>Partition</FormLabel>
               <SingleSelect
-                onChange={action((v: number | null) => {
-                  this.selectedPartition = v;
-                })}
+                onChange={(v: number | null) => {
+                  this.setState({ selectedPartition: v });
+                }}
                 options={[
                   {
                     value: null,
                     label: 'All Partitions',
                   },
                   ...(this.props.offsets
-                    ?.filter((x) => x.topicName === this.selectedTopic)
+                    ?.filter((x) => x.topicName === this.state.selectedTopic)
                     ?.sort((a, b) => a.partitionId - b.partitionId)
                     ?.map((x: GroupOffset) => ({
                       value: x.partitionId,
                       label: x.partitionId.toString(),
                     })) ?? []),
                 ]}
-                value={this.selectedPartition}
+                value={this.state.selectedPartition}
               />
             </Box>
           )}
           <Box>
             <FormLabel>Strategy</FormLabel>
             <SingleSelect
-              isDisabled={this.isLoadingTimestamps}
+              isDisabled={this.state.isLoadingTimestamps}
               onChange={(v) => {
-                this.selectedOption = v as EditOptions;
+                this.setState({ selectedOption: v as EditOptions });
               }}
               options={[
                 {
@@ -260,7 +261,7 @@ export class EditOffsetsModal extends Component<{
                   label: 'Other Consumer Group',
                 },
               ]}
-              value={this.selectedOption}
+              value={this.state.selectedOption}
             />
           </Box>
         </Flex>
@@ -275,47 +276,45 @@ export class EditOffsetsModal extends Component<{
                 otherGroup: 'Copy offsets from another (inactive) consumer group',
                 shiftBy: 'Adjust offsets by a specified positive or negative value.',
               } as Record<EditOptions, string>
-            )[this.selectedOption]
+            )[this.state.selectedOption]
           }
         </Text>
 
-        {this.selectedOption === 'time' && (
+        {this.state.selectedOption === 'time' && (
           <Box mt={2}>
             <FormLabel>Timestamp</FormLabel>
             <KowlTimePicker
-              disabled={this.isLoadingTimestamps}
+              disabled={this.state.isLoadingTimestamps}
               onChange={(t) => {
-                this.timestampUtcMs = t;
+                this.setState({ timestampUtcMs: t });
               }}
-              valueUtcMs={this.timestampUtcMs}
+              valueUtcMs={this.state.timestampUtcMs}
             />
           </Box>
         )}
 
-        {this.selectedOption === 'shiftBy' && (
+        {this.state.selectedOption === 'shiftBy' && (
           <Box mt={2}>
             <FormLabel>Shift by</FormLabel>
             <NumberInput
               onBlur={() => {
-                if (Number.isNaN(this.offsetShiftByValue)) {
-                  this.offsetShiftByValueAsString = '0';
-                  this.offsetShiftByValue = 0;
+                if (Number.isNaN(this.state.offsetShiftByValue)) {
+                  this.setState({ offsetShiftByValueAsString: '0', offsetShiftByValue: 0 });
                 }
               }}
               onChange={(valueAsString, valueAsNumber) => {
                 // entering '-' or '.' without any digits will set the value to -Number.MAX_SAFE_INTEGER
                 // we want to prevent this and set the value to 0 instead in onBlur
                 if (valueAsNumber !== -Number.MAX_SAFE_INTEGER) {
-                  this.offsetShiftByValueAsString = valueAsString;
-                  this.offsetShiftByValue = valueAsNumber;
+                  this.setState({ offsetShiftByValueAsString: valueAsString, offsetShiftByValue: valueAsNumber });
                 }
               }}
-              value={this.offsetShiftByValueAsString}
+              value={this.state.offsetShiftByValueAsString}
             />
           </Box>
         )}
 
-        {this.selectedOption === 'otherGroup' && (
+        {this.state.selectedOption === 'otherGroup' && (
           <Box mt={2}>
             <div
               style={{
@@ -327,18 +326,18 @@ export class EditOffsetsModal extends Component<{
               }}
             >
               <SingleSelect
-                isDisabled={this.isLoadingTimestamps}
+                isDisabled={this.state.isLoadingTimestamps}
                 onChange={(x) => {
-                  this.selectedGroup = x;
+                  this.setState({ selectedGroup: x });
                 }}
-                options={this.otherConsumerGroups.map((g) => ({ value: g.groupId, label: g.groupId }))}
-                value={this.selectedGroup}
+                options={otherConsumerGroups.map((g) => ({ value: g.groupId, label: g.groupId }))}
+                value={this.state.selectedGroup}
               />
 
               <Radio
-                isChecked={this.otherGroupCopyMode === 'onlyExisting'}
+                isChecked={this.state.otherGroupCopyMode === 'onlyExisting'}
                 onClick={() => {
-                  this.otherGroupCopyMode = 'onlyExisting';
+                  this.setState({ otherGroupCopyMode: 'onlyExisting' });
                 }}
                 value="onlyExisting"
               >
@@ -351,9 +350,9 @@ export class EditOffsetsModal extends Component<{
               </Radio>
 
               <Radio
-                isChecked={this.otherGroupCopyMode === 'all'}
+                isChecked={this.state.otherGroupCopyMode === 'all'}
                 onClick={() => {
-                  this.otherGroupCopyMode = 'all';
+                  this.setState({ otherGroupCopyMode: 'all' });
                 }}
                 value="all"
               >
@@ -377,7 +376,7 @@ export class EditOffsetsModal extends Component<{
         <Accordion
           defaultIndex={0}
           items={this.offsetsByTopic
-            .filter(({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic)
+            .filter(({ topicName }) => this.state.selectedTopic === null || topicName === this.state.selectedTopic)
             .map(({ topicName, items }) => ({
               heading: (
                 <Flex alignItems="center" fontWeight={600} gap={1} whiteSpace="nowrap">
@@ -427,7 +426,7 @@ export class EditOffsetsModal extends Component<{
                       id: 'offsetAfter',
                       size: Number.POSITIVE_INFINITY,
                       cell: ({ row: { original } }) => (
-                        <ColAfter record={original} selectedTime={this.timestampUtcMs} />
+                        <ColAfter record={original} selectedTime={this.state.timestampUtcMs} />
                       ),
                     },
                   ]}
@@ -444,7 +443,6 @@ export class EditOffsetsModal extends Component<{
     );
   }
 
-  @action
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 54, refactor later
   setPage(page: 0 | 1) {
     if (page === 1) {
@@ -452,7 +450,7 @@ export class EditOffsetsModal extends Component<{
       if (this.props.offsets === null) {
         return;
       }
-      const op = this.selectedOption;
+      const op = this.state.selectedOption;
 
       // reset all newOffset
       for (const x of this.props.offsets) {
@@ -461,7 +459,7 @@ export class EditOffsetsModal extends Component<{
 
       // filter selected offsets to be edited
       const selectedOffsets = this.props.offsets.filter(
-        (x) => this.selectedPartition === null || x.partitionId === this.selectedPartition
+        (x) => this.state.selectedPartition === null || x.partitionId === this.state.selectedPartition
       );
 
       if (op === 'startOffset') {
@@ -477,14 +475,11 @@ export class EditOffsetsModal extends Component<{
       } else if (op === 'shiftBy') {
         for (const x of selectedOffsets) {
           if (x.offset) {
-            x.newOffset = x.offset + this.offsetShiftByValue;
+            x.newOffset = x.offset + this.state.offsetShiftByValue;
           }
         }
       } else if (op === 'time') {
         // Time
-        // for (const x of this.props.offsets) {
-        //   x.newOffset = new Date(this.timestampUtcMs) as any;
-        // }
         for (const x of selectedOffsets) {
           x.newOffset = 'fetching offsets...' as string & number;
         }
@@ -501,7 +496,7 @@ export class EditOffsetsModal extends Component<{
 
           let offsetsForTimestamp: TopicOffset[];
           try {
-            offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(requiredTopics, this.timestampUtcMs);
+            offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(requiredTopics, this.state.timestampUtcMs);
             toast.update(toastRef, {
               status: 'success',
               duration: 2000,
@@ -512,7 +507,7 @@ export class EditOffsetsModal extends Component<{
               'Failed to fetch offsets for timestamp',
               <span>
                 Could not lookup offsets for given timestamp{' '}
-                <span className="codeBox">{new Date(this.timestampUtcMs).toUTCString()}</span>.
+                <span className="codeBox">{new Date(this.state.timestampUtcMs).toUTCString()}</span>.
               </span>,
               toJson({ errors: err, request: requiredTopics }, 4)
             );
@@ -530,11 +525,13 @@ export class EditOffsetsModal extends Component<{
               ?.partitions.first((p) => p.partitionId === x.partitionId);
             x.newOffset = responseOffset;
           }
+          // Trigger re-render so ColAfter sees updated newOffset values
+          this.forceUpdate();
         });
       } else {
         // Other group
         // Lookup offsets from the other group
-        const other = api.consumerGroups.get(this.selectedGroup ?? '');
+        const other = api.consumerGroups.get(this.state.selectedGroup ?? '');
         if (other) {
           // Helper functions
           const getOffset = (topicName: string, partitionId: number): number | undefined =>
@@ -554,7 +551,7 @@ export class EditOffsetsModal extends Component<{
 
           //
           // Extend our offsets with any offsets that our group currently doesn't have
-          if (this.otherGroupCopyMode === 'all') {
+          if (this.state.otherGroupCopyMode === 'all') {
             const otherFlat = other.topicOffsets.flatMap((x) =>
               x.partitionOffsets.flatMap((p) => ({
                 topicName: x.topic,
@@ -579,27 +576,27 @@ export class EditOffsetsModal extends Component<{
             'Consumer group not found',
             null,
             <span>
-              Could not find a consumer group named <span className="codeBox">{this.selectedGroup}</span> to compute new
-              offsets.
+              Could not find a consumer group named <span className="codeBox">{this.state.selectedGroup}</span> to
+              compute new offsets.
             </span>
           );
         }
       }
     }
 
-    this.page = page;
+    this.setState({ page });
   }
 
   footer() {
-    const disableContinue = this.selectedOption === 'otherGroup' && !this.selectedGroup;
-    const disableNav = this.isApplyingEdit || this.isLoadingTimestamps;
+    const disableContinue = this.state.selectedOption === 'otherGroup' && !this.state.selectedGroup;
+    const disableNav = this.state.isApplyingEdit || this.state.isLoadingTimestamps;
 
-    if (this.page === 0) {
+    if (this.state.page === 0) {
       return (
         <Flex gap={2}>
           <Button
             isDisabled={disableContinue || disableNav}
-            isLoading={this.isLoadingTimestamps}
+            isLoading={this.state.isLoadingTimestamps}
             key="next"
             onClick={() => this.setPage(1)}
             variant="solid"
@@ -666,37 +663,24 @@ export class EditOffsetsModal extends Component<{
         const topics = this.props.group.topicOffsets.map((x) => x.topic).distinct();
         api.refreshPartitions(topics, true);
 
-        this.autorunDisposer = autorun(() => {
-          this.otherConsumerGroups = [...api.consumerGroups.values()].filter(
-            (g) => g.groupId !== this.props.group.groupId
-          );
-        });
-
         // reset settings
-        transaction(() => {
-          this.setPage(0);
-          this.selectedOption = 'startOffset';
-        });
+        this.setState({ page: 0, selectedOption: 'startOffset' });
       });
-    } else if (this.autorunDisposer) {
-      this.autorunDisposer();
-      this.autorunDisposer = null;
     }
 
     this.lastVisible = visible;
   }
 
-  @action
   async onApplyEdit() {
     const group = this.props.group;
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     const offsets = this.props.offsets!.filter(
       ({ topicName, partitionId }) =>
-        (this.selectedTopic === null || topicName === this.selectedTopic) &&
-        (this.selectedPartition === null || partitionId === this.selectedPartition)
+        (this.state.selectedTopic === null || topicName === this.state.selectedTopic) &&
+        (this.state.selectedPartition === null || partitionId === this.state.selectedPartition)
     );
 
-    this.isApplyingEdit = true;
+    this.setState({ isApplyingEdit: true });
     const toastMsg = 'Applying offsets';
     const toastRef = toast({
       status: 'loading',
@@ -739,14 +723,13 @@ export class EditOffsetsModal extends Component<{
         toJson(err, 4)
       );
     } finally {
-      this.isApplyingEdit = false;
+      this.setState({ isApplyingEdit: false });
       api.refreshConsumerGroup(this.props.group.groupId, true);
       this.props.onClose();
     }
   }
 }
 
-@observer
 class ColAfter extends Component<{
   selectedTime?: number;
   record: GroupOffset;
@@ -875,7 +858,6 @@ export type GroupDeletingMode = 'group' | 'topic' | 'partition';
 //     - user clicks 'delete' on the topic
 //     - dialog would show "you want to delete ALL offsets for this group"
 //       which is technically correct, but might give the impression of deleting more than he wanted
-@observer
 export class DeleteOffsetsModal extends Component<{
   group: GroupDescription;
   mode: GroupDeletingMode;
@@ -884,7 +866,7 @@ export class DeleteOffsetsModal extends Component<{
   onInit: () => void;
   disabledReason?: string;
 }> {
-  lastOffsets: GroupOffset[];
+  lastOffsets!: GroupOffset[];
 
   render() {
     const { group, mode } = this.props;
@@ -1089,7 +1071,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
 
   // filter undefined partitions
   for (const t of topicOffsets) {
-    t.partitions.removeAll((p) => p.offset === null);
+    t.partitions = t.partitions.filter((p) => p.offset != null);
   }
 
   // assert type:
@@ -1103,9 +1085,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
   }[];
 
   // filter topics with zero partitions
-  cleanOffsets.removeAll((t) => t.partitions.length === 0);
-
-  return cleanOffsets;
+  return cleanOffsets.filter((t) => t.partitions.length > 0);
 }
 
 function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsetsTopic[] {
@@ -1119,7 +1099,5 @@ function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsets
     }));
 
   // filter topics with zero partitions
-  topicOffsets.removeAll((t) => t.partitions.length === 0);
-
-  return topicOffsets;
+  return topicOffsets.filter((t) => t.partitions.length > 0);
 }

@@ -11,7 +11,6 @@
 
 import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { observer } from 'mobx-react';
 import { useCallback, useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
@@ -26,7 +25,6 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
-@observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   placeholder = 5;
 

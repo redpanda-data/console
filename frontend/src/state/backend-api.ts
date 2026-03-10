@@ -27,9 +27,9 @@ import JSONBigIntFactory from 'json-bigint';
 
 const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
 
-import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
+import { createStore as zustandCreate } from 'zustand/vanilla';
 
 import { appGlobal } from './app-global';
 import {
@@ -298,6 +298,8 @@ function processVersionInfo(headers: Headers) {
   } catch {} // Catch malformed json (old versions where info is not sent as json yet)
 }
 
+const _activeRequests: CacheEntry[] = [];
+
 const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
 class CacheEntry {
   url: string;
@@ -330,14 +332,14 @@ class CacheEntry {
       })
       .finally(() => {
         this.lastRequestDurationMs = this.timeSinceRequestStarted.value;
-        const index = api.activeRequests.indexOf(this);
+        const index = _activeRequests.indexOf(this);
         if (index > -1) {
-          api.activeRequests.splice(index, 1);
+          _activeRequests.splice(index, 1);
         }
         this.isPending = false;
       });
 
-    api.activeRequests.push(this);
+    _activeRequests.push(this);
   }
 
   error: unknown | null = null;
@@ -414,7 +416,7 @@ export async function handleExpiredLicenseError(r: Response) {
 //
 // BackendAPI
 //
-const apiStore = {
+const _apiCreator = (set: any, get: any) => ({
   // Data
   endpointCompatibility: null as EndpointCompatibility | null,
 
@@ -493,18 +495,18 @@ const apiStore = {
 
   async logout() {
     await appConfig.fetch('./auth/logout');
-    this.userData = null;
+    set({ userData: null });
   },
   async refreshUserData() {
     // Prevent duplicate concurrent requests to avoid redirect loops
-    if (this.isUserDataFetchInProgress) {
+    if (get().isUserDataFetchInProgress) {
       return;
     }
-    this.isUserDataFetchInProgress = true;
+    set({ isUserDataFetchInProgress: true });
 
     const client = appConfig.authenticationClient;
     if (!client) {
-      this.isUserDataFetchInProgress = false;
+      set({ isUserDataFetchInProgress: false });
       throw new Error('security client is not initialized');
     }
 
@@ -512,37 +514,39 @@ const apiStore = {
       .getIdentity({})
       .then((r: GetIdentityResponse) => {
         // Clear any previous error on success
-        this.userDataError = null;
-        api.userData = {
-          displayName: r.displayName,
-          avatarUrl: r.avatarUrl,
-          authenticationMethod: r.authenticationMethod,
+        set({ userDataError: null });
+        set({
+          userData: {
+            displayName: r.displayName,
+            avatarUrl: r.avatarUrl,
+            authenticationMethod: r.authenticationMethod,
 
-          canListAcls: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE),
-          canListQuotas: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
-          canPatchConfigs: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS),
-          canReassignPartitions:
-            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS) &&
-            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
-          canCreateRoles:
-            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER) &&
-            r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
-          canViewPermissionsList:
-            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE) &&
-            r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
+            canListAcls: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE),
+            canListQuotas: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+            canPatchConfigs: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS),
+            canReassignPartitions:
+              r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS) &&
+              r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+            canCreateRoles:
+              r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER) &&
+              r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+            canViewPermissionsList:
+              r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE) &&
+              r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
 
-          canManageLicense: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_LICENSE),
-          canManageUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
-          canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
-          canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
-          canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
-          canViewSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.READ),
-          canListTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
-          canCreateTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
-          canDeleteTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
-          canViewDebugBundle: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_DEBUG_BUNDLE),
-          canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
-        } as UserData;
+            canManageLicense: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_LICENSE),
+            canManageUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
+            canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
+            canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
+            canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
+            canViewSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.READ),
+            canListTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+            canCreateTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+            canDeleteTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+            canViewDebugBundle: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_DEBUG_BUNDLE),
+            canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+          } as UserData,
+        });
 
         // Track user in analytics after successful authentication
         if (r.displayName) {
@@ -591,45 +595,47 @@ const apiStore = {
       })
       .catch((err) => {
         // Clear previous error
-        this.userDataError = null;
+        set({ userDataError: null });
 
         if (isEmbedded()) {
           // Create a mocked empty userData with all permissions set to false
-          this.userData = {
-            displayName: '',
-            avatarUrl: '',
-            authenticationMethod: AuthenticationMethod.UNSPECIFIED,
-            canListAcls: false,
-            canListQuotas: false,
-            canPatchConfigs: false,
-            canReassignPartitions: false,
-            canCreateRoles: false,
-            canViewPermissionsList: false,
-            canManageLicense: false,
-            canManageUsers: false,
-            canCreateSchemas: false,
-            canDeleteSchemas: false,
-            canManageSchemaRegistry: false,
-            canViewSchemas: false,
-            canListTransforms: false,
-            canCreateTransforms: false,
-            canDeleteTransforms: false,
-            canViewDebugBundle: false,
-            canViewConsoleUsers: false,
-          };
+          set({
+            userData: {
+              displayName: '',
+              avatarUrl: '',
+              authenticationMethod: AuthenticationMethod.UNSPECIFIED,
+              canListAcls: false,
+              canListQuotas: false,
+              canPatchConfigs: false,
+              canReassignPartitions: false,
+              canCreateRoles: false,
+              canViewPermissionsList: false,
+              canManageLicense: false,
+              canManageUsers: false,
+              canCreateSchemas: false,
+              canDeleteSchemas: false,
+              canManageSchemaRegistry: false,
+              canViewSchemas: false,
+              canListTransforms: false,
+              canCreateTransforms: false,
+              canDeleteTransforms: false,
+              canViewDebugBundle: false,
+              canViewConsoleUsers: false,
+            },
+          });
           return;
         }
 
         // Authentication failure (401) - redirect to login
         if (err.code === Code.Unauthenticated) {
-          this.userData = null;
+          set({ userData: null });
           appGlobal.historyPush('/login');
           return;
         }
 
         // Permission denied (403) - redirect with error info
         if (err.code === Code.PermissionDenied) {
-          this.userData = null;
+          set({ userData: null });
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
           appGlobal.historyPush(`/login?error_code=permission_denied&oidc_subject=${subject}`);
@@ -639,10 +645,10 @@ const apiStore = {
         // Transient errors (5xx: Unavailable, DeadlineExceeded, Internal, Unknown)
         // Do NOT redirect to login - this causes infinite loops
         // Keep userData as undefined and store error for UI to display
-        this.userDataError = err;
+        set({ userDataError: err });
       })
       .finally(() => {
-        this.isUserDataFetchInProgress = false;
+        set({ isUserDataFetchInProgress: false });
         addHeapEventProperties({
           'Product Name': 'Console',
           Platform: api.isRedpanda ? 'Redpanda' : 'Kafka',
@@ -653,11 +659,10 @@ const apiStore = {
       });
   },
 
-  // Make currently running requests observable
-  activeRequests: [] as CacheEntry[],
-
   // Fetch errors
   errors: [] as unknown[],
+
+  _msgSearchVersion: 0,
 
   refreshTopics(force?: boolean) {
     cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
@@ -677,7 +682,7 @@ const apiStore = {
                         */
         }
       }
-      this.topics = v?.topics;
+      set({ topics: v?.topics });
     }, addError);
   },
 
@@ -687,12 +692,16 @@ const apiStore = {
       force
     ).then((v) => {
       if (!v) {
-        this.topicConfig.delete(topicName);
+        set((s: any) => {
+          const m = new Map(s.topicConfig);
+          m.delete(topicName);
+          return { topicConfig: m };
+        });
         return;
       }
 
       if (v.topicDescription.error) {
-        this.topicConfig.set(topicName, v.topicDescription);
+        set((s: any) => ({ topicConfig: new Map(s.topicConfig).set(topicName, v.topicDescription) }));
         return;
       }
 
@@ -701,7 +710,7 @@ const apiStore = {
       // we need 'type' on synonyms as well for filtering
       const topicDescription = v.topicDescription;
       prepareSynonyms(topicDescription.configEntries);
-      this.topicConfig.set(topicName, topicDescription);
+      set((s: any) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
     }, addError); // 403 -> null
     return promise as Promise<void>;
   },
@@ -724,7 +733,7 @@ const apiStore = {
     ).then((v) => {
       const text = v.documentation.markdown === null ? null : decodeBase64(v.documentation.markdown);
       v.documentation.text = text;
-      this.topicDocumentation.set(topicName, v.documentation);
+      set((s: any) => ({ topicDocumentation: new Map(s.topicDocumentation).set(topicName, v.documentation) }));
     }, addError);
   },
 
@@ -739,28 +748,32 @@ const apiStore = {
     const partitions =
       partitionId !== undefined
         ? [{ partitionId, offset }]
-        : this.topicPartitions?.get(topicName)?.map((partition) => ({ partitionId: partition.id, offset }));
+        : get()
+            .topicPartitions?.get(topicName)
+            ?.map((partition: Partition) => ({ partitionId: partition.id, offset }));
 
     if (!partitions || partitions.length === 0) {
       addError(new Error(`Topic ${topicName} doesn't have partitions.`));
       return;
     }
 
-    return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
+    return get().deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
   },
 
   deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
-    const partitions = this.topicPartitions?.get(topicName)?.map(({ waterMarkHigh, id }) => ({
-      partitionId: id,
-      offset: waterMarkHigh,
-    }));
+    const partitions = get()
+      .topicPartitions?.get(topicName)
+      ?.map(({ waterMarkHigh, id }: Partition) => ({
+        partitionId: id,
+        offset: waterMarkHigh,
+      }));
 
     if (!partitions || partitions.length === 0) {
       addError(new Error(`Topic ${topicName} doesn't have partitions.`));
       return;
     }
 
-    return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
+    return get().deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
   },
 
   deleteTopicRecordsFromMultiplePartitionOffsetPairs(
@@ -790,12 +803,14 @@ const apiStore = {
         return;
       }
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
-      transaction(() => {
+      {
         const errors: {
           topicName: string;
           partitionErrors: { partitionId: number; error: string }[];
           waterMarkErrors: { partitionId: number; error: string }[];
         }[] = [];
+
+        const newTopicPartitions = new Map(get().topicPartitions);
 
         for (const t of response.topics) {
           if (t.error !== null) {
@@ -838,7 +853,7 @@ const apiStore = {
           }
 
           // Set partition
-          this.topicPartitions.set(t.topicName, t.partitions);
+          newTopicPartitions.set(t.topicName, t.partitions);
 
           if (partitionErrors.length === 0 && waterMarkErrors.length === 0) {
             // no op - no errors to track
@@ -850,7 +865,9 @@ const apiStore = {
             });
           }
         }
-      });
+
+        set({ topicPartitions: newTopicPartitions });
+      }
     }, addError);
   },
 
@@ -894,12 +911,22 @@ const apiStore = {
 
           if (partitionErrors.length === 0 && waterMarksErrors.length === 0) {
             // Set partitions
-            this.topicPartitionErrors.delete(topicName);
-            this.topicWatermarksErrors.delete(topicName);
-            this.topicPartitions.set(topicName, response.partitions);
+            set((s: any) => {
+              const tpe = new Map(s.topicPartitionErrors);
+              tpe.delete(topicName);
+              const twe = new Map(s.topicWatermarksErrors);
+              twe.delete(topicName);
+              return {
+                topicPartitionErrors: tpe,
+                topicWatermarksErrors: twe,
+                topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions),
+              };
+            });
           } else {
-            this.topicPartitionErrors.set(topicName, partitionErrors);
-            this.topicWatermarksErrors.set(topicName, waterMarksErrors);
+            set((s: any) => ({
+              topicPartitionErrors: new Map(s.topicPartitionErrors).set(topicName, partitionErrors),
+              topicWatermarksErrors: new Map(s.topicWatermarksErrors).set(topicName, waterMarksErrors),
+            }));
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error(
               `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`
@@ -907,7 +934,7 @@ const apiStore = {
           }
         } else {
           // Set null to indicate that we're not allowed to see the partitions
-          this.topicPartitions.set(topicName, null);
+          set((s: any) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, null) }));
           return;
         }
 
@@ -937,7 +964,7 @@ const apiStore = {
         }
 
         // Set partitions
-        this.topicPartitions.set(topicName, response.partitions);
+        set((s: any) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions) }));
 
         if (partitionErrors > 0 || waterMarkErrors > 0) {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -946,20 +973,6 @@ const apiStore = {
           );
         }
       }, addError);
-  },
-
-  get getTopicPartitionArray() {
-    const result: string[] = [];
-
-    this.topicPartitions.forEach((partitions, topicName) => {
-      if (partitions !== null) {
-        for (const partition of partitions) {
-          result.push(`${topicName}/${partition.id}`);
-        }
-      }
-    });
-
-    return result;
   },
 
   refreshTopicAcls(topicName: string, force?: boolean) {
@@ -974,7 +987,7 @@ const apiStore = {
         if (v) {
           normalizeAcls(v.aclResources);
         }
-        this.topicAcls.set(topicName, v);
+        set((s: any) => ({ topicAcls: new Map(s.topicAcls).set(topicName, v) }));
       })
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       .catch(console.error);
@@ -984,7 +997,10 @@ const apiStore = {
     cachedApiRequest<GetTopicConsumersResponse>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/consumers`,
       force
-    ).then((v) => this.topicConsumers.set(topicName, v.topicConsumers), addError);
+    ).then(
+      (v) => set((s: any) => ({ topicConsumers: new Map(s.topicConsumers).set(topicName, v.topicConsumers) })),
+      addError
+    );
   },
 
   async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
@@ -993,9 +1009,9 @@ const apiStore = {
       (v) => {
         if (v) {
           normalizeAcls(v.aclResources);
-          this.ACLs = v;
+          set({ ACLs: v });
         } else {
-          this.ACLs = null;
+          set({ ACLs: null });
         }
       },
       addError
@@ -1004,7 +1020,7 @@ const apiStore = {
 
   refreshQuotas(force?: boolean) {
     cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then((v) => {
-      this.Quotas = v ?? null;
+      set({ Quotas: v ?? null });
     }, addError);
   },
 
@@ -1014,7 +1030,7 @@ const apiStore = {
       if (!r) {
         return null;
       }
-      this.endpointCompatibility = r.endpointCompatibility;
+      set({ endpointCompatibility: r.endpointCompatibility });
       useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
       return r;
     } catch (err) {
@@ -1033,7 +1049,7 @@ const apiStore = {
 
     const requests: Promise<unknown>[] = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
-        this.clusterOverview.kafkaAuthorizerError = e;
+        set((s: any) => ({ clusterOverview: { ...s.clusterOverview, kafkaAuthorizerError: e } }));
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
@@ -1082,34 +1098,28 @@ const apiStore = {
       schemaRegistryResponse = null, // Default to null in case it wasn't requested
     ] = responses;
 
-    this.clusterOverview = {
-      ...this.clusterOverview,
-      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-      kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse as any,
-      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-      console: consoleInfoResponse as any,
-      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-      kafka: kafkaResponse as any,
-      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-      redpanda: redpandaResponse as any,
-      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-      schemaRegistry: schemaRegistryResponse as any,
-      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-      kafkaConnect: kafkaConnectResponse as any,
-    };
-  },
-
-  get isRedpanda() {
-    return this.clusterOverview?.kafka?.distribution === KafkaDistribution.REDPANDA;
-  },
-
-  get isAdminApiConfigured() {
-    return this.clusterOverview?.redpanda !== null;
+    set((s: any) => ({
+      clusterOverview: {
+        ...s.clusterOverview,
+        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+        kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse as any,
+        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+        console: consoleInfoResponse as any,
+        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+        kafka: kafkaResponse as any,
+        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+        redpanda: redpandaResponse as any,
+        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+        schemaRegistry: schemaRegistryResponse as any,
+        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+        kafkaConnect: kafkaConnectResponse as any,
+      },
+    }));
   },
 
   refreshBrokers(force?: boolean) {
     cachedApiRequest<BrokerWithConfigAndStorage[]>(`${appConfig.restBasePath}/brokers`, force).then((v) => {
-      this.brokers = v;
+      set({ brokers: v });
     }, addError);
   },
 
@@ -1117,29 +1127,22 @@ const apiStore = {
     cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
       if (v?.clusterInfo !== null && v?.clusterInfo !== undefined) {
         // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-        transaction(() => {
-          // add 'type' to each synonym entry
-          for (const broker of v.clusterInfo.brokers) {
-            if (broker.config && !broker.config.error) {
-              prepareSynonyms(broker.config.configs ?? []);
-            }
+        // add 'type' to each synonym entry
+        for (const broker of v.clusterInfo.brokers) {
+          if (broker.config && !broker.config.error) {
+            prepareSynonyms(broker.config.configs ?? []);
           }
+        }
 
-          // don't assign if the value didn't change
-          // we'd re-trigger all observers!
-          // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
-          if (!comparer.structural(this.clusterInfo, v.clusterInfo)) {
-            this.clusterInfo = v.clusterInfo;
+        const newBrokerConfigs = new Map(get().brokerConfigs);
+        for (const b of v.clusterInfo.brokers) {
+          if (b.config.error) {
+            newBrokerConfigs.set(b.brokerId, b.config.error);
+          } else {
+            newBrokerConfigs.set(b.brokerId, b.config.configs ?? []);
           }
-
-          for (const b of v.clusterInfo.brokers) {
-            if (b.config.error) {
-              this.brokerConfigs.set(b.brokerId, b.config.error);
-            } else {
-              this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
-            }
-          }
-        });
+        }
+        set({ clusterInfo: v.clusterInfo, brokerConfigs: newBrokerConfigs });
       }
     }, addError);
   },
@@ -1148,10 +1151,10 @@ const apiStore = {
     cachedApiRequest<BrokerConfigResponse>(`${appConfig.restBasePath}/brokers/${brokerId}/config`, force)
       .then((v) => {
         prepareSynonyms(v.brokerConfigs);
-        this.brokerConfigs.set(brokerId, v.brokerConfigs);
+        set((s: any) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, v.brokerConfigs) }));
       })
       .catch((err) => {
-        this.brokerConfigs.set(brokerId, String(err));
+        set((s: any) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, String(err)) }));
       });
   },
 
@@ -1161,7 +1164,7 @@ const apiStore = {
       force
     ).then((v) => {
       addFrontendFieldsForConsumerGroup(v.consumerGroup);
-      this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
+      set((s: any) => ({ consumerGroups: new Map(s.consumerGroups).set(v.consumerGroup.groupId, v.consumerGroup) }));
     }, addError);
   },
 
@@ -1172,12 +1175,7 @@ const apiStore = {
           addFrontendFieldsForConsumerGroup(g);
         }
 
-        transaction(() => {
-          this.consumerGroups.clear();
-          for (const g of v.consumerGroups) {
-            this.consumerGroups.set(g.groupId, g);
-          }
-        });
+        set({ consumerGroups: new Map(v.consumerGroups.map((g) => [g.groupId, g])) });
       }
     }, addError);
   },
@@ -1194,7 +1192,7 @@ const apiStore = {
         if (v) {
           normalizeAcls(v.aclResources);
         }
-        this.consumerGroupAcls.set(groupName, v);
+        set((s: any) => ({ consumerGroupAcls: new Map(s.consumerGroupAcls).set(groupName, v) }));
       })
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       .catch(console.error);
@@ -1254,7 +1252,7 @@ const apiStore = {
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force).then((info) => {
       if (info === null) {
-        this.adminInfo = null;
+        set({ adminInfo: null });
         return;
       }
 
@@ -1303,7 +1301,7 @@ const apiStore = {
         }
       }
 
-      this.adminInfo = info;
+      set({ adminInfo: info });
     }, addError);
   },
 
@@ -1317,15 +1315,13 @@ const apiStore = {
     return rq
       .then((r) => {
         if (r.isConfigured === false) {
-          this.schemaOverviewIsConfigured = false;
-          this.schemaMode = null;
+          set({ schemaOverviewIsConfigured: false, schemaMode: null });
         } else {
-          this.schemaOverviewIsConfigured = true;
-          this.schemaMode = r.mode;
+          set({ schemaOverviewIsConfigured: true, schemaMode: r.mode });
         }
       })
       .catch((err) => {
-        this.schemaMode = 'Unknown';
+        set({ schemaMode: 'Unknown' });
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('failed to request schema mode', err);
       });
@@ -1341,11 +1337,9 @@ const apiStore = {
     return rq
       .then((r) => {
         if (r.isConfigured === false) {
-          this.schemaOverviewIsConfigured = false;
-          this.schemaCompatibility = null;
+          set({ schemaOverviewIsConfigured: false, schemaCompatibility: null });
         } else {
-          this.schemaOverviewIsConfigured = true;
-          this.schemaCompatibility = r.compatibility;
+          set({ schemaOverviewIsConfigured: true, schemaCompatibility: r.compatibility });
         }
       })
       .catch(addError);
@@ -1356,7 +1350,7 @@ const apiStore = {
       (subjects) => {
         // could also be a "not configured" response
         if (Array.isArray(subjects)) {
-          this.schemaSubjects = subjects;
+          set({ schemaSubjects: subjects });
         }
       },
       addError
@@ -1371,11 +1365,11 @@ const apiStore = {
       .then((types) => {
         // could also be a "not configured" response
         if (types.schemaTypes) {
-          this.schemaTypes = types.schemaTypes;
+          set({ schemaTypes: types.schemaTypes });
         }
       })
       .catch((err) => {
-        this.schemaTypes = undefined;
+        set({ schemaTypes: undefined });
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('failed to request schema type', err);
       });
@@ -1392,7 +1386,7 @@ const apiStore = {
 
     return rq
       .then((details) => {
-        this.schemaDetails.set(subjectName, details);
+        set((s: any) => ({ schemaDetails: new Map(s.schemaDetails).set(subjectName, details) }));
       })
       .catch(addError);
   },
@@ -1420,15 +1414,14 @@ const apiStore = {
           cleanedReferences.push(ref);
         }
 
-        let subjectVersions = this.schemaReferencedBy.get(subjectName);
-        if (!subjectVersions) {
-          subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
-          if (subjectVersions) {
-            this.schemaReferencedBy.set(subjectName, subjectVersions);
-          }
-        }
-
-        subjectVersions?.set(version, cleanedReferences);
+        set((s: any) => {
+          const newOuterMap = new Map(s.schemaReferencedBy as Map<string, Map<number, SchemaReferencedByEntry[]>>);
+          const existingInner = newOuterMap.get(subjectName);
+          const newInnerMap = new Map<number, SchemaReferencedByEntry[]>(existingInner);
+          newInnerMap.set(version, cleanedReferences);
+          newOuterMap.set(subjectName, newInnerMap);
+          return { schemaReferencedBy: newOuterMap };
+        });
       })
       .catch(() => {
         // no op - error handled elsewhere
@@ -1447,7 +1440,7 @@ const apiStore = {
     ).then(
       (r) => {
         if (isSchemaVersionArray(r)) {
-          this.schemaUsagesById.set(schemaId, r);
+          set((s: any) => ({ schemaUsagesById: new Map(s.schemaUsagesById).set(schemaId, r) }));
         }
       },
       (err) => {
@@ -1562,9 +1555,9 @@ const apiStore = {
       force
     ).then((v) => {
       if (v === null) {
-        this.partitionReassignments = null;
+        set({ partitionReassignments: null });
       } else {
-        this.partitionReassignments = v.topics;
+        set({ partitionReassignments: v.topics });
       }
     }, addError);
   },
@@ -1604,7 +1597,7 @@ const apiStore = {
       });
     }
 
-    return await this.changeConfig(configRequest);
+    return await get().changeConfig(configRequest);
   },
 
   async setThrottledReplicas(
@@ -1641,7 +1634,7 @@ const apiStore = {
       configRequest.resources.push(res);
     }
 
-    return await this.changeConfig(configRequest);
+    return await get().changeConfig(configRequest);
   },
 
   async resetThrottledReplicas(topicNames: string[]): Promise<PatchConfigsResponse> {
@@ -1665,7 +1658,7 @@ const apiStore = {
       });
     }
 
-    return await this.changeConfig(configRequest);
+    return await get().changeConfig(configRequest);
   },
 
   async resetReplicationThrottleRate(brokerIds: number[]): Promise<PatchConfigsResponse> {
@@ -1702,7 +1695,7 @@ const apiStore = {
       });
     }
 
-    return await this.changeConfig(configRequest);
+    return await get().changeConfig(configRequest);
   },
 
   async changeConfig(request: PatchConfigsRequest): Promise<PatchConfigsResponse> {
@@ -1715,7 +1708,7 @@ const apiStore = {
   },
 
   async refreshConnectClusters(): Promise<void> {
-    this.connectConnectorsError = null;
+    set({ connectConnectorsError: null });
     const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/connectors`, {
       method: 'GET',
       headers: [['Content-Type', 'application/json']],
@@ -1725,13 +1718,13 @@ const apiStore = {
       (v) => {
         // backend error
         if (!v) {
-          this.connectConnectors = undefined;
+          set({ connectConnectors: undefined });
           return;
         }
 
         // not configured
         if (!v.clusters) {
-          this.connectConnectors = v;
+          set({ connectConnectors: v });
           return;
         }
 
@@ -1740,10 +1733,10 @@ const apiStore = {
           addFrontendFieldsForConnectCluster(cluster);
         }
 
-        this.connectConnectors = v;
+        set({ connectConnectors: v });
       },
       (error: WrappedApiError) => {
-        this.connectConnectorsError = error;
+        set({ connectConnectorsError: error });
       }
     );
   },
@@ -1770,80 +1763,18 @@ const apiStore = {
       force
     ).then((v) => {
       if (v) {
-        this.connectAdditionalClusterInfo.set(clusterName, v);
+        set((s: any) => ({
+          connectAdditionalClusterInfo: new Map(s.connectAdditionalClusterInfo).set(clusterName, v),
+        }));
       } else {
-        this.connectAdditionalClusterInfo.delete(clusterName);
+        set((s: any) => {
+          const m = new Map(s.connectAdditionalClusterInfo);
+          m.delete(clusterName);
+          return { connectAdditionalClusterInfo: m };
+        });
       }
     }, addError);
   },
-
-  /*
-    Commented out for now!
-    There are some issues with refreshing a single connector:
-        - We might not have the cluster/connector cached (can happen when a user visits the details page directly)
-        - Updating the inner details (e.g. running tasks) won't update the cached total/running tasks in the cluster object
-          which might make things pretty confusing for a user (pausing a connector, then going back to the overview page).
-          One solution would be to update all clusters/connectors, which defeats the purpose of refreshing only one.
-          The real solution would be to not have pre-computed fields.
-
-
-    // Details for one connector
-    async refreshConnectorDetails(clusterName: string, connectorName: string, force?: boolean): Promise<void> {
-
-        const existingCluster = this.connectConnectors?.clusters?.find(x => x.clusterName == clusterName);
-        if (!existingCluster)
-            // if we don't have any info yet, or we don't know about that cluster, we need a full refresh
-            return this.refreshConnectClusters(force);
-
-        return cachedApiRequest<ClusterConnectorInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
-            .then(v => {
-                if (!v) return; // backend error
-
-                const cluster = this.connectConnectors?.clusters?.find(x => x.clusterName == clusterName);
-                if (!cluster) return; // did we forget about the cluster somehow?
-
-                const connector = cluster.connectors.
-
-                // update given clusters
-                runInAction(() => {
-                    const clusters = this.connectConnectors?.clusters;
-                    if (!v.clusters) return; // shouldn't happen: this method shouldn't get called if we don't already have info cached
-                    if (!clusters) return; // shouldn't happen: if we don't have clusters locally we'd have refreshed them
-
-                    for (const updatedCluster of v.clusters) {
-                        addFrontendFieldsForConnectCluster(updatedCluster);
-
-                        const index = clusters.findIndex(x => x.clusterName == updatedCluster.clusterName);
-                        if (index < 0) {
-                            // shouldn't happen, if we don't know the cluster, then how would we have requested new info for it?
-                            clusters.push(updatedCluster);
-                        } else {
-                            // overwrite existing cluster with new data
-                            clusters[index] = updatedCluster;
-                        }
-                    }
-                });
-
-            }, addError);
-    },
-*/
-  /*
-        // All, or for specific cluster
-        refreshConnectors(clusterName?: string, force?: boolean): Promise<void> {
-            const url = clusterName == null
-                ? './api/kafka-connect/connectors'
-                : `${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors`;
-            return cachedApiRequest<KafkaConnectors | null>(url, force)
-                .then(v => {
-                    if (v == null) {
-
-                    }
-                }, addError);
-        },
-
-
-
-    */
 
   async deleteConnector(clusterName: string, connector: string): Promise<void> {
     // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
@@ -2017,20 +1948,20 @@ const apiStore = {
   },
 
   async refreshServiceAccounts(): Promise<void> {
-    this.serviceAccountsLoading = true;
+    set({ serviceAccountsLoading: true });
     const response = await appConfig.fetch(`${appConfig.restBasePath}/users`, {
       method: 'GET',
       headers: [['Content-Type', 'application/json']],
     });
     return parseOrUnwrap<void>(response, null)
       .then((v) => {
-        this.serviceAccounts = v ?? null;
+        set({ serviceAccounts: v ?? null });
       })
       .catch((err: WrappedApiError) => {
-        this.serviceAccountsError = err;
+        set({ serviceAccountsError: err });
       })
       .finally(() => {
-        this.serviceAccountsLoading = false;
+        set({ serviceAccountsLoading: false });
       });
   },
 
@@ -2117,18 +2048,18 @@ const apiStore = {
 
     await Promise.all([
       client.listEnterpriseFeatures({}).then((enterpriseFeaturesResponse) => {
-        this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
-        this.licenseViolation = enterpriseFeaturesResponse.violation;
+        set({
+          enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
+          licenseViolation: enterpriseFeaturesResponse.violation,
+        });
       }),
       client
         .listLicenses({})
         .then((licensesResponse) => {
-          this.licenses = licensesResponse.licenses;
-
-          this.licensesLoaded = 'loaded';
+          set({ licenses: licensesResponse.licenses, licensesLoaded: 'loaded' });
         })
         .catch((err) => {
-          this.licensesLoaded = 'failed';
+          set({ licensesLoaded: 'failed' });
           const errorText = err instanceof Error ? err.message : String(err);
 
           // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -2137,8 +2068,8 @@ const apiStore = {
         }),
     ]);
 
-    if (this.licenses.length > 0) {
-      const license = getLatestExpiringLicense(this.licenses);
+    if (get().licenses.length > 0) {
+      const license = getLatestExpiringLicense(get().licenses);
       if (license !== undefined) {
         addHeapEventProperties({
           BakedInTrial: isBakedInTrial(license),
@@ -2161,7 +2092,7 @@ const apiStore = {
     }
 
     return client.getClusterHealth({}).then((response) => {
-      this.clusterHealth = response;
+      set({ clusterHealth: response });
     });
   },
 
@@ -2176,59 +2107,13 @@ const apiStore = {
     await client
       .getDebugBundleStatus({})
       .then((response) => {
-        this.debugBundleStatuses = response.brokerStatuses;
-        this.hasDebugProcess = response.hasDebugProcess;
+        set({ debugBundleStatuses: response.brokerStatuses, hasDebugProcess: response.hasDebugProcess });
         return response;
       })
       .catch((e) => {
-        this.debugBundleStatuses = [];
+        set({ debugBundleStatuses: [] });
         return e;
       });
-  },
-
-  get isDebugBundleReady() {
-    return api.debugBundleStatuses.length > 0 && !this.isDebugBundleInProgress;
-  },
-
-  get canDownloadDebugBundle() {
-    return (
-      this.isDebugBundleReady &&
-      this.debugBundleStatuses.some(
-        (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS
-      )
-    );
-  },
-
-  get isDebugBundleError() {
-    return (
-      this.isDebugBundleReady &&
-      this.debugBundleStatuses.all(
-        (status) => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR
-      )
-    );
-  },
-
-  get isDebugBundleExpired() {
-    return (
-      this.isDebugBundleReady &&
-      this.debugBundleStatuses.some(
-        (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED
-      )
-    );
-  },
-
-  get isDebugBundleInProgress() {
-    return this.debugBundleStatuses.some(
-      (status) => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
-    );
-  },
-
-  get debugBundleStatus(): DebugBundleStatus | undefined {
-    return this.debugBundleStatuses
-      .filter((status) => status.value.case === 'bundleStatus')
-      .map((x) => x.value.value as DebugBundleStatus)[0];
   },
 
   async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
@@ -2241,7 +2126,7 @@ const apiStore = {
 
     return await client.createDebugBundle(request).finally(() => {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      this.refreshDebugBundleStatuses().catch(console.error);
+      get().refreshDebugBundleStatuses().catch(console.error);
     });
   },
 
@@ -2259,7 +2144,7 @@ const apiStore = {
       })
       .finally(() => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        this.refreshDebugBundleStatuses().catch(console.error);
+        get().refreshDebugBundleStatuses().catch(console.error);
       });
   },
 
@@ -2276,20 +2161,36 @@ const apiStore = {
       })
       .finally(() => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        this.refreshDebugBundleStatuses().catch(console.error);
+        get().refreshDebugBundleStatuses().catch(console.error);
       });
   },
+});
+const useApiStore = zustandCreate(_apiCreator);
+
+type apiStoreType = ReturnType<typeof _apiCreator> & {
+  // Computed properties resolved by the Proxy get handler
+  activeRequests: CacheEntry[];
+  isRedpanda: boolean;
+  isAdminApiConfigured: boolean;
+  getTopicPartitionArray: string[];
+  isDebugBundleReady: boolean;
+  canDownloadDebugBundle: boolean;
+  isDebugBundleError: boolean;
+  isDebugBundleExpired: boolean;
+  isDebugBundleInProgress: boolean;
+  debugBundleStatus: DebugBundleStatus | undefined;
 };
 
 export type RolePrincipal = { name: string; principalType: 'User' };
-export const rolesApi = observable({
+
+const _rolesCreator = (set: any, get: any) => ({
   roles: [] as string[],
   roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
   rolesError: null as ConnectError | null,
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async refreshRoles(): Promise<void> {
-    this.rolesError = null;
+    set({ rolesError: null });
     const client = appConfig.securityClient;
     if (!client) {
       throw new Error('security client is not initialized');
@@ -2301,7 +2202,7 @@ export const rolesApi = observable({
       let nextPageToken = '';
       while (true) {
         const res = await client.listRoles({ request: { pageSize: 500, pageToken: nextPageToken } }).catch((error) => {
-          this.rolesError = error;
+          set({ rolesError: error });
           return null;
         });
 
@@ -2322,7 +2223,7 @@ export const rolesApi = observable({
       }
     }
 
-    this.roles = roles;
+    set({ roles });
   },
 
   async refreshRoleMembers() {
@@ -2334,14 +2235,14 @@ export const rolesApi = observable({
     const rolePromises: Promise<unknown>[] = [];
 
     if (Features.rolesApi) {
-      for (const role of this.roles) {
+      for (const role of get().roles) {
         rolePromises.push(client.getRole({ request: { roleName: role } }));
       }
     }
 
     await Promise.allSettled(rolePromises);
 
-    this.roleMembers.clear();
+    const roleMembers = new Map<string, RolePrincipal[]>();
 
     for (const r of rolePromises) {
       const res = (await r) as { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
@@ -2381,8 +2282,9 @@ export const rolesApi = observable({
         })
         .filterNull();
 
-      this.roleMembers.set(roleName, members);
+      roleMembers.set(roleName, members);
     }
+    set({ roleMembers });
   },
 
   async createRole(name: string) {
@@ -2423,8 +2325,19 @@ export const rolesApi = observable({
     });
   },
 });
+const useRolesStore = zustandCreate(_rolesCreator);
 
-export const pipelinesApi = observable({
+export const rolesApi = new Proxy<ReturnType<typeof _rolesCreator>>({} as ReturnType<typeof _rolesCreator>, {
+  get(_: any, prop: string | symbol) {
+    return (useRolesStore.getState() as any)[prop as string];
+  },
+  set(_: any, prop: string | symbol, value: unknown) {
+    useRolesStore.setState({ [prop as string]: value } as any);
+    return true;
+  },
+});
+
+const _pipelinesCreator = (set: any, _get: any) => ({
   pipelines: undefined as undefined | Pipeline[],
   pipelinesError: null as ConnectError | null,
 
@@ -2435,14 +2348,14 @@ export const pipelinesApi = observable({
     }
 
     const pipelines: Pipeline[] = [];
-    this.pipelinesError = null;
+    set({ pipelinesError: null });
 
     let nextPageToken = '';
     while (true) {
       const res = await client
         .listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } })
         .catch((error: ConnectError) => {
-          this.pipelinesError = error;
+          set({ pipelinesError: error });
         });
       const response = res?.response;
       if (!response) {
@@ -2457,7 +2370,7 @@ export const pipelinesApi = observable({
       nextPageToken = response.nextPageToken;
     }
 
-    this.pipelines = pipelines;
+    set({ pipelines });
   },
 
   async deletePipeline(id: string) {
@@ -2506,8 +2419,22 @@ export const pipelinesApi = observable({
     await client.stopPipeline({ request: { id } });
   },
 });
+const usePipelinesStore = zustandCreate(_pipelinesCreator);
 
-export const knowledgebaseApi = observable({
+export const pipelinesApi = new Proxy<ReturnType<typeof _pipelinesCreator>>(
+  {} as ReturnType<typeof _pipelinesCreator>,
+  {
+    get(_: any, prop: string | symbol) {
+      return (usePipelinesStore.getState() as any)[prop as string];
+    },
+    set(_: any, prop: string | symbol, value: unknown) {
+      usePipelinesStore.setState({ [prop as string]: value } as any);
+      return true;
+    },
+  }
+);
+
+const _knowledgebaseCreator = (set: any, _get: any) => ({
   knowledgeBases: undefined as undefined | KnowledgeBase[],
   knowledgeBasesError: null as ConnectError | null,
 
@@ -2518,14 +2445,14 @@ export const knowledgebaseApi = observable({
     }
 
     const knowledgeBases: KnowledgeBase[] = [];
-    this.knowledgeBasesError = null;
+    set({ knowledgeBasesError: null });
 
     let nextPageToken = '';
     while (true) {
       const res = await client
         .listKnowledgeBases({ pageSize: 10, pageToken: nextPageToken })
         .catch((error: ConnectError) => {
-          this.knowledgeBasesError = error;
+          set({ knowledgeBasesError: error });
           return;
         });
 
@@ -2546,7 +2473,7 @@ export const knowledgebaseApi = observable({
       nextPageToken = response.nextPageToken;
     }
 
-    this.knowledgeBases = knowledgeBases;
+    set({ knowledgeBases });
   },
 
   async deleteKnowledgeBase(id: string) {
@@ -2594,8 +2521,22 @@ export const knowledgebaseApi = observable({
     return response.knowledgeBase;
   },
 });
+const useKnowledgebaseStore = zustandCreate(_knowledgebaseCreator);
 
-export const rpcnSecretManagerApi = observable({
+export const knowledgebaseApi = new Proxy<ReturnType<typeof _knowledgebaseCreator>>(
+  {} as ReturnType<typeof _knowledgebaseCreator>,
+  {
+    get(_: any, prop: string | symbol) {
+      return (useKnowledgebaseStore.getState() as any)[prop as string];
+    },
+    set(_: any, prop: string | symbol, value: unknown) {
+      useKnowledgebaseStore.setState({ [prop as string]: value } as any);
+      return true;
+    },
+  }
+);
+
+const _rpcnSecretManagerCreator = (set: any, get: any) => ({
   secrets: undefined as undefined | Secret[],
   secretsByPipeline: undefined as { secretId: string; pipelines: Pipeline[] }[] | undefined,
   isEnable: true,
@@ -2607,7 +2548,10 @@ export const rpcnSecretManagerApi = observable({
     }
 
     // handle error in order to avoid crash app for this request
-    this.secretsByPipeline = await this.getPipelinesBySecret().catch(() => []);
+    const secretsByPipeline = await get()
+      .getPipelinesBySecret()
+      .catch(() => []);
+    set({ secretsByPipeline });
 
     const secrets: Secret[] = [];
 
@@ -2633,7 +2577,7 @@ export const rpcnSecretManagerApi = observable({
       nextPageToken = response.nextPageToken;
     }
 
-    this.secrets = secrets;
+    set({ secrets });
   },
 
   async delete(secret: DeleteSecretRequest) {
@@ -2671,12 +2615,12 @@ export const rpcnSecretManagerApi = observable({
     });
 
     if (!res.response) {
-      this.isEnable = false;
+      set({ isEnable: false });
       return;
     }
 
     const isEnable = res.response?.scopes.some((scope) => scope === Scope.REDPANDA_CONNECT);
-    this.isEnable = isEnable;
+    set({ isEnable });
     return isEnable;
   },
   async getPipelinesBySecret() {
@@ -2694,8 +2638,22 @@ export const rpcnSecretManagerApi = observable({
     }));
   },
 });
+const useRpcnSecretManagerStore = zustandCreate(_rpcnSecretManagerCreator);
 
-export const transformsApi = observable({
+export const rpcnSecretManagerApi = new Proxy<ReturnType<typeof _rpcnSecretManagerCreator>>(
+  {} as ReturnType<typeof _rpcnSecretManagerCreator>,
+  {
+    get(_: any, prop: string | symbol) {
+      return (useRpcnSecretManagerStore.getState() as any)[prop as string];
+    },
+    set(_: any, prop: string | symbol, value: unknown) {
+      useRpcnSecretManagerStore.setState({ [prop as string]: value } as any);
+      return true;
+    },
+  }
+);
+
+const _transformsCreator = (set: any, _get: any) => ({
   transforms: undefined as undefined | TransformMetadata[],
   transformDetails: new Map<string, TransformMetadata>(),
 
@@ -2728,13 +2686,8 @@ export const transformsApi = observable({
       nextPageToken = r.nextPageToken;
     }
 
-    runInAction(() => {
-      this.transforms = transforms;
-      this.transformDetails.clear();
-      for (const t of transforms) {
-        this.transformDetails.set(t.name, t);
-      }
-    });
+    const transformDetails = new Map(transforms.map((t) => [t.name, t]));
+    set({ transforms, transformDetails });
   },
 
   async refreshTransformDetails(name: string, _force: boolean): Promise<void> {
@@ -2749,11 +2702,12 @@ export const transformsApi = observable({
       throw new Error('got empty response from getTransform');
     }
 
-    if (!r.transform) {
+    const transform = r.transform;
+    if (!transform) {
       return;
     }
 
-    this.transformDetails.set(r.transform.name, r.transform);
+    set((s: any) => ({ transformDetails: new Map(s.transformDetails).set(transform.name, transform) }));
   },
 
   async deleteTransform(name: string) {
@@ -2765,8 +2719,23 @@ export const transformsApi = observable({
     await client.deleteTransform({ request: { name } });
   },
 });
+const useTransformsStore = zustandCreate(_transformsCreator);
+
+export const transformsApi = new Proxy<ReturnType<typeof _transformsCreator>>(
+  {} as ReturnType<typeof _transformsCreator>,
+  {
+    get(_: any, prop: string | symbol) {
+      return (useTransformsStore.getState() as any)[prop as string];
+    },
+    set(_: any, prop: string | symbol, value: unknown) {
+      useTransformsStore.setState({ [prop as string]: value } as any);
+      return true;
+    },
+  }
+);
 
 export function createMessageSearch() {
+  const notify = () => useApiStore.setState((s: any) => ({ _msgSearchVersion: (s._msgSearchVersion ?? 0) + 1 }));
   const messageSearch = {
     // Parameters last passed to 'startMessageSearch'
     searchRequest: null as MessageSearchRequest | null,
@@ -2785,7 +2754,7 @@ export function createMessageSearch() {
     abortController: null as AbortController | null,
 
     // Live view of messages, gets updated as new messages arrive
-    messages: observable([] as TopicMessage[], { deep: false }),
+    messages: [] as TopicMessage[],
 
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
     async startSearch(
@@ -2826,6 +2795,7 @@ export function createMessageSearch() {
       this.totalMessagesConsumed = 0;
       if (!append) {
         this.messages.length = 0;
+        notify();
       }
       this.isLoadingMore = append;
       this.elapsedMs = null;
@@ -2885,6 +2855,7 @@ export function createMessageSearch() {
                 // this.MessageSearchCancelled = msg.isCancelled;
                 this.searchPhase = 'Done';
                 this.searchPhase = null;
+                notify();
                 break;
               case 'error':
                 // error doesn't necessarily mean the whole request is done
@@ -3183,7 +3154,7 @@ export function createMessageSearch() {
     },
   };
 
-  return observable(messageSearch);
+  return messageSearch;
 }
 export type MessageSearch = ReturnType<typeof createMessageSearch>;
 
@@ -3219,26 +3190,15 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
   g.isInUse = g.state.toLowerCase() !== 'empty';
 }
 
-export const brokerMap = computed(
-  () => {
+export const brokerMap = {
+  get(): Map<number, Broker> | null {
     const brokers = api.clusterInfo?.brokers;
-    if (brokers === null) {
-      return null;
-    }
-
     if (!brokers) {
       return null;
     }
-
-    const map = new Map<number, Broker>();
-    for (const b of brokers) {
-      map.set(b.brokerId, b);
-    }
-
-    return map;
+    return new Map(brokers.map((b: Broker) => [b.brokerId, b]));
   },
-  { name: 'brokerMap', equals: comparer.structural }
-);
+};
 
 // 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
 // 2. remove redundant synonym entries (those that have the same source as the root config entry)
@@ -3373,8 +3333,98 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
 }
 
 function addError(err: Error) {
-  api.errors.push(err);
+  useApiStore.setState((s: any) => ({ errors: [...s.errors, err] }));
 }
 
-type apiStoreType = typeof apiStore;
-export const api = observable(apiStore) as apiStoreType;
+export {
+  useApiStore,
+  useRolesStore,
+  usePipelinesStore,
+  useKnowledgebaseStore,
+  useRpcnSecretManagerStore,
+  useTransformsStore,
+};
+
+export const api = new Proxy<apiStoreType>({} as apiStoreType, {
+  get(_: any, prop: string | symbol) {
+    const s = useApiStore.getState();
+    switch (prop as string) {
+      case 'activeRequests':
+        return _activeRequests;
+      case 'isRedpanda':
+        return s.clusterOverview?.kafka?.distribution === KafkaDistribution.REDPANDA;
+      case 'isAdminApiConfigured':
+        return s.clusterOverview?.redpanda !== null;
+      case 'getTopicPartitionArray': {
+        const result: string[] = [];
+        s.topicPartitions.forEach((partitions: any, topicName: string) => {
+          if (partitions !== null) {
+            for (const partition of partitions) {
+              result.push(`${topicName}/${partition.id}`);
+            }
+          }
+        });
+        return result;
+      }
+      case 'isDebugBundleReady':
+        return (
+          s.debugBundleStatuses.length > 0 &&
+          !s.debugBundleStatuses.some(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+          )
+        );
+      case 'canDownloadDebugBundle':
+        return (
+          s.debugBundleStatuses.length > 0 &&
+          !s.debugBundleStatuses.some(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+          ) &&
+          s.debugBundleStatuses.some(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS
+          )
+        );
+      case 'isDebugBundleError':
+        return (
+          s.debugBundleStatuses.length > 0 &&
+          !s.debugBundleStatuses.some(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+          ) &&
+          s.debugBundleStatuses.every(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR
+          )
+        );
+      case 'isDebugBundleExpired':
+        return (
+          s.debugBundleStatuses.length > 0 &&
+          !s.debugBundleStatuses.some(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+          ) &&
+          s.debugBundleStatuses.some(
+            (status: any) =>
+              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED
+          )
+        );
+      case 'isDebugBundleInProgress':
+        return s.debugBundleStatuses.some(
+          (status: any) =>
+            status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+        );
+      case 'debugBundleStatus':
+        return s.debugBundleStatuses
+          .filter((status: any) => status.value.case === 'bundleStatus')
+          .map((x: any) => x.value.value as DebugBundleStatus)[0];
+      default:
+        return (s as any)[prop as string];
+    }
+  },
+  set(_: any, prop: string | symbol, value: unknown) {
+    useApiStore.setState({ [prop as string]: value } as any);
+    return true;
+  },
+});
