@@ -10,7 +10,19 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { createQueryOptions, useTransport } from '@connectrpc/connect-query';
+import { useQueries } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -27,14 +39,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { MoreHorizontal, Pencil, Plus, Search, Shield, Trash2 } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { MoreHorizontal, Pencil, Plus, Search, Shield, Trash2, Users } from 'lucide-react';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import { getRole } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { useMemo, useState } from 'react';
 import { useCreateRoleMutation, useDeleteRoleMutation, useListRolesQuery } from 'react-query/api/security';
 import { toast } from 'sonner';
+
+import { sortByName } from './security-acl-utils';
 
 export function RolesTab() {
   const navigate = useNavigate();
@@ -50,7 +67,19 @@ export function RolesTab() {
   const { mutateAsync: createRole } = useCreateRoleMutation();
   const { mutateAsync: deleteRole } = useDeleteRoleMutation();
 
-  const roles = useMemo(() => rolesData?.roles ?? [], [rolesData]);
+  const roles = useMemo(() => sortByName(rolesData?.roles ?? []), [rolesData]);
+  const transport = useTransport();
+  const roleDetailsQueries = useQueries({
+    queries: roles.map((role) =>
+      createQueryOptions(
+        getRole,
+        {
+          roleName: role.name,
+        },
+        { transport }
+      )
+    ),
+  });
 
   const filteredRoles = useMemo(() => {
     if (!searchQuery) {
@@ -59,6 +88,10 @@ export function RolesTab() {
     const q = searchQuery.toLowerCase();
     return roles.filter((role) => role.name.toLowerCase().includes(q));
   }, [roles, searchQuery]);
+  const memberCountByRole = useMemo(
+    () => new Map(roles.map((role, index) => [role.name, roleDetailsQueries[index]?.data?.members?.length ?? 0])),
+    [roleDetailsQueries, roles]
+  );
 
   const handleCreateRole = async () => {
     const name = newRoleName.trim();
@@ -92,7 +125,7 @@ export function RolesTab() {
     }
     setIsDeleting(true);
     try {
-      await deleteRole({ roleName: deleteConfirmRole.name });
+      await deleteRole({ deleteAcls: true, roleName: deleteConfirmRole.name });
       toast.success(`Role "${deleteConfirmRole.name}" deleted`);
       setDeleteConfirmRole(null);
     } catch (err) {
@@ -109,11 +142,11 @@ export function RolesTab() {
 
   return (
     <div aria-labelledby="roles-tab" id="roles-panel" role="tabpanel">
-      <p className="mb-6 max-w-3xl text-muted-foreground text-sm leading-relaxed">
+      <Text className="max-w-3xl pb-2 text-base leading-6" variant="muted">
         Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents any
         entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC
         identity, or mTLS client).
-      </p>
+      </Text>
 
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -143,10 +176,11 @@ export function RolesTab() {
       {/* Roles Table */}
       <div className="rounded-lg border">
         {filteredRoles.length > 0 ? (
-          <Table>
+          <Table size="lg">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Role name</TableHead>
+                <TableHead className="w-[160px]">Assigned principals</TableHead>
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -159,8 +193,14 @@ export function RolesTab() {
                     <span className="font-medium">{role.name}</span>
                   </TableCell>
                   <TableCell className="py-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="size-3.5 text-muted-foreground" />
+                      <span className="tabular-nums">{memberCountByRole.get(role.name) ?? 0}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-1.5" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuTrigger asChild>
                         <Button className="size-8" size="icon" variant="ghost">
                           <MoreHorizontal className="size-4" />
                           <span className="sr-only">Actions for {role.name}</span>
@@ -174,7 +214,12 @@ export function RolesTab() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
-                          onClick={() => setDeleteConfirmRole({ name: role.name, memberCount: 0 })}
+                          onClick={() =>
+                            setDeleteConfirmRole({
+                              memberCount: memberCountByRole.get(role.name) ?? 0,
+                              name: role.name,
+                            })
+                          }
                         >
                           <Trash2 className="size-4" />
                           Delete role
@@ -187,19 +232,20 @@ export function RolesTab() {
             </TableBody>
           </Table>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-              <Shield className="size-6 text-muted-foreground" />
-            </div>
-            <p className="font-medium">{searchQuery ? 'No roles found' : 'No roles yet'}</p>
-            <p className="mt-1 max-w-xs text-muted-foreground text-sm">
-              {searchQuery
-                ? 'Try adjusting your search query.'
-                : 'Create your first role to group ACLs and assign them to principals.'}
-            </p>
+          <Empty className="py-16">
+            <EmptyMedia variant="icon">
+              <Shield className="size-6" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>{searchQuery ? 'No roles found' : 'No roles yet'}</EmptyTitle>
+              <EmptyDescription>
+                {searchQuery
+                  ? 'Try adjusting your search query.'
+                  : 'Create your first role to group ACLs and assign them to principals.'}
+              </EmptyDescription>
+            </EmptyHeader>
             {!searchQuery && (
               <Button
-                className="mt-4"
                 onClick={() => {
                   setCreateDialogOpen(true);
                   setNewRoleName('');
@@ -210,7 +256,7 @@ export function RolesTab() {
                 Create role
               </Button>
             )}
-          </div>
+          </Empty>
         )}
       </div>
 
@@ -223,13 +269,16 @@ export function RolesTab() {
       {/* Create Role Dialog */}
       <Dialog onOpenChange={(open) => !open && setCreateDialogOpen(false)} open={createDialogOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
+          <DialogHeader spacing="loose">
             <DialogTitle>Create Role</DialogTitle>
             <DialogDescription>Create a new role to group ACLs.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="role-name">Role Name</Label>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="role-name">Role Name</Label>
+                <Text variant="muted">Must not contain whitespace or special characters.</Text>
+              </div>
               <Input
                 autoComplete="off"
                 id="role-name"
@@ -262,29 +311,36 @@ export function RolesTab() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog onOpenChange={(open) => !open && setDeleteConfirmRole(null)} open={Boolean(deleteConfirmRole)}>
-        <DialogContent className="sm:max-w-sm">
-          {deleteConfirmRole && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Delete Role</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete the role{' '}
-                  <span className="font-medium text-foreground">{deleteConfirmRole.name}</span>?
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button onClick={() => setDeleteConfirmRole(null)} variant="outline">
-                  Cancel
-                </Button>
-                <Button disabled={isDeleting} onClick={handleDeleteRole} variant="destructive">
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteConfirmRole(null);
+          }
+        }}
+        open={Boolean(deleteConfirmRole)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete role "{deleteConfirmRole?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the role and remove all its ACL bindings.
+              {Boolean(deleteConfirmRole && deleteConfirmRole.memberCount > 0) &&
+                ` ${deleteConfirmRole?.memberCount} assigned ${
+                  deleteConfirmRole?.memberCount === 1 ? 'principal' : 'principals'
+                } will lose the permissions granted by this role.`}{' '}
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline">Cancel</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild disabled={isDeleting} onClick={handleDeleteRole}>
+              <Button variant="destructive">{isDeleting ? 'Deleting...' : 'Delete Role'}</Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

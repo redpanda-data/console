@@ -11,8 +11,19 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +32,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, Search, Trash2, Users } from 'lucide-react';
 import { runInAction } from 'mobx';
 import {
@@ -37,12 +50,24 @@ import {
   UpdateRoleMembershipRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useEffect, useMemo, useState } from 'react';
-import { useDeleteAclMutation, useGetAclsByPrincipal, useLegacyCreateACLMutation } from 'react-query/api/acl';
-import { useGetRoleQuery, useListRoleMembersQuery, useUpdateRoleMembershipMutation } from 'react-query/api/security';
+import {
+  useDeleteAclMutation,
+  useGetAclsByPrincipal,
+  useLegacyCreateACLMutation,
+  useListACLsQuery,
+} from 'react-query/api/acl';
+import { useGetRoleQuery, useListRolesQuery, useUpdateRoleMembershipMutation } from 'react-query/api/security';
+import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { ACLDialog, type ACLEntry, ACLRemoveDialog, ACLTableSection } from './acl-editor';
+import {
+  buildPrincipalAutocompleteOptions,
+  buildResourceOptionsByType,
+  flattenAclDetails,
+  sortByPrincipal,
+} from './security-acl-utils';
 
 const PRINCIPAL_SEARCH_THRESHOLD = 5;
 
@@ -66,10 +91,10 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
 
   // Fetch role data
   const { data: roleData } = useGetRoleQuery({ roleName });
-
-  // Fetch role members
-  const { data: membersData } = useListRoleMembersQuery({ roleName });
-  const members = useMemo(() => membersData?.members ?? [], [membersData]);
+  const members = useMemo(() => sortByPrincipal(roleData?.members ?? []), [roleData]);
+  const { data: usersData } = useLegacyListUsersQuery();
+  const { data: rolesData } = useListRolesQuery();
+  const { data: allAclsData } = useListACLsQuery();
 
   // Fetch ACLs for this role
   const { data: aclsData } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
@@ -80,18 +105,26 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
 
   // Transform ACLs to display format
-  const acls: ACLEntry[] = useMemo(() => {
-    if (!(aclsData && Array.isArray(aclsData))) {
-      return [];
-    }
-    return aclsData.map((acl: any) => ({
-      resourceType: acl.resourceType || 'Unknown',
-      resourceName: acl.resourceName || '',
-      operation: acl.operation || 'Unknown',
-      permission: acl.permission || 'Allow',
-      host: acl.host || '*',
-    }));
-  }, [aclsData]);
+  const acls: ACLEntry[] = useMemo(() => flattenAclDetails(aclsData), [aclsData]);
+  const principalOptions = useMemo(
+    () =>
+      buildPrincipalAutocompleteOptions({
+        excludePrincipals: members.map((member) => member.principal),
+        principals: [
+          ...members.map((member) => member.principal),
+          ...((allAclsData?.aclResources ?? []).flatMap((resource) =>
+            resource.acls.map((acl) => acl.principal || '').filter(Boolean)
+          ) ?? []),
+        ],
+        roles: rolesData?.roles?.map((role) => role.name) ?? [],
+        users: usersData?.users?.map((user) => user.name) ?? [],
+      }),
+    [allAclsData, members, rolesData, usersData]
+  );
+  const resourceOptionsByType = useMemo(
+    () => buildResourceOptionsByType(allAclsData?.aclResources ?? []),
+    [allAclsData]
+  );
 
   // Filter members by search
   const filteredMembers = useMemo(() => {
@@ -212,7 +245,7 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
         create(CreateACLRequestSchema, {
           resourceType: resourceTypeMap[entry.resourceType] ?? ACL_ResourceType.TOPIC,
           resourceName: entry.resourceName,
-          resourcePatternType: ACL_ResourcePatternType.LITERAL,
+          resourcePatternType: entry.resourcePatternType ?? ACL_ResourcePatternType.LITERAL,
           principal: `RedpandaRole:${roleName}`,
           host: entry.host,
           operation: operationMap[entry.operation] ?? ACL_Operation.ALL,
@@ -250,7 +283,7 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
             host: acl.host,
             operation: operationMap[acl.operation] ?? ACL_Operation.ALL,
             permissionType: permissionMap[acl.permission] ?? ACL_PermissionType.ALLOW,
-            resourcePatternType: ACL_ResourcePatternType.LITERAL,
+            resourcePatternType: acl.resourcePatternType ?? ACL_ResourcePatternType.LITERAL,
           },
         })
       );
@@ -265,7 +298,7 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
   if (!roleData) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground text-sm">Role not found.</p>
+        <Text variant="muted">Role not found.</Text>
         <Button asChild variant="outline">
           <Link params={{ tab: 'roles' }} to="/security/$tab">
             Back to Security
@@ -279,7 +312,9 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
     <>
       <div className="flex flex-col gap-6">
         {/* Page Header */}
-        <p className="text-muted-foreground text-sm">Manage the ACLs and principals assigned to this role.</p>
+        <Text className="max-w-3xl text-base leading-6" variant="muted">
+          Manage the ACLs and principals assigned to this role.
+        </Text>
 
         {/* ACLs Section */}
         <ACLTableSection acls={acls} context="role" onAdd={() => setAclDialogOpen(true)} onRemove={handleRemoveAcl} />
@@ -289,10 +324,12 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="size-4 text-muted-foreground" />
-              <h2 className="font-medium text-sm">Principals</h2>
-              <span className="text-muted-foreground text-xs">
+              <Text as="span" className="font-semibold text-base">
+                Principals
+              </Text>
+              <Text as="span" variant="muted">
                 {members.length} {members.length === 1 ? 'principal' : 'principals'}
-              </span>
+              </Text>
             </div>
             <Button
               onClick={() => {
@@ -300,7 +337,6 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
                 setNewPrincipal('');
                 setPrincipalError(null);
               }}
-              size="sm"
             >
               <Plus className="size-4" />
               Add Principal
@@ -331,61 +367,66 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
                     key={member.principal}
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <Badge className="shrink-0 font-normal text-xs" variant="outline">
+                      <Badge className="shrink-0 font-normal text-sm" variant="outline">
                         {member.principal.split(':')[0] || 'User'}
                       </Badge>
-                      <span className="truncate font-mono text-sm" title={member.principal}>
+                      <span className="truncate font-mono text-base" title={member.principal}>
                         {member.principal.includes(':')
                           ? member.principal.split(':').slice(1).join(':')
                           : member.principal}
                       </span>
                     </div>
                     <Button
-                      className="h-7 shrink-0 px-2 text-muted-foreground hover:text-destructive"
+                      className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
                       onClick={() => setRemovePrincipal(member.principal)}
-                      size="sm"
+                      size="icon"
                       variant="ghost"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-4" />
                       <span className="sr-only">Remove {member.principal}</span>
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="mb-2 size-6 text-muted-foreground" />
-                <p className="font-medium text-sm">
-                  {principalSearch ? 'No principals found' : 'No principals assigned'}
-                </p>
-                <p className="mt-1 text-muted-foreground text-xs">
-                  {principalSearch
-                    ? 'Try adjusting your search query.'
-                    : 'Add principals to grant them the permissions defined by this role.'}
-                </p>
+              <Empty className="py-12">
+                <EmptyMedia variant="icon">
+                  <Users className="size-6" />
+                </EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>{principalSearch ? 'No principals found' : 'No principals assigned'}</EmptyTitle>
+                  <EmptyDescription>
+                    {principalSearch
+                      ? 'Try adjusting your search query.'
+                      : 'Add principals to grant them the permissions defined by this role.'}
+                  </EmptyDescription>
+                </EmptyHeader>
                 {!principalSearch && (
                   <Button
-                    className="mt-3 bg-transparent"
                     onClick={() => {
                       setAddPrincipalDialogOpen(true);
                       setNewPrincipal('');
                       setPrincipalError(null);
                     }}
-                    size="sm"
-                    variant="outline"
                   >
                     <Plus className="size-4" />
                     Add Principal
                   </Button>
                 )}
-              </div>
+              </Empty>
             )}
           </div>
         </div>
       </div>
 
       {/* ACL Create Dialog */}
-      <ACLDialog context="role" onClose={() => setAclDialogOpen(false)} onSave={handleSaveAcl} open={aclDialogOpen} />
+      <ACLDialog
+        context="role"
+        onClose={() => setAclDialogOpen(false)}
+        onSave={handleSaveAcl}
+        open={aclDialogOpen}
+        resourceOptionsByType={resourceOptionsByType}
+      />
 
       {/* ACL Remove Confirmation */}
       <ACLRemoveDialog
@@ -399,34 +440,29 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
       {/* Add Principal Dialog */}
       <Dialog onOpenChange={(open) => !open && setAddPrincipalDialogOpen(false)} open={addPrincipalDialogOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
+          <DialogHeader spacing="loose">
             <DialogTitle>Add Principal</DialogTitle>
             <DialogDescription>Add a principal to this role to grant them its permissions.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Input
-                autoComplete="off"
+              <Combobox
+                autocomplete
                 className="font-mono"
-                onChange={(e) => {
-                  setNewPrincipal(e.target.value);
+                creatable
+                onChange={(value) => {
+                  setNewPrincipal(value);
                   setPrincipalError(null);
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddPrincipal();
-                  }
-                }}
+                options={principalOptions}
                 placeholder="e.g. User:alice"
-                type="text"
                 value={newPrincipal}
               />
-              <p className="text-muted-foreground text-xs">
+              <p className="text-base text-muted-foreground leading-6">
                 Enter a principal in the format <code className="rounded bg-muted px-1 font-mono">Type:name</code> (e.g.
                 User:alice, Group:my-team).
               </p>
-              {Boolean(principalError) && <p className="text-destructive text-sm">{principalError}</p>}
+              {Boolean(principalError) && <p className="text-base text-destructive leading-6">{principalError}</p>}
             </div>
           </div>
           <DialogFooter>
@@ -441,29 +477,31 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
       </Dialog>
 
       {/* Remove Principal Confirmation Dialog */}
-      <Dialog onOpenChange={(open) => !open && setRemovePrincipal(null)} open={Boolean(removePrincipal)}>
-        <DialogContent className="sm:max-w-sm">
-          {removePrincipal && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Remove Principal</DialogTitle>
-                <DialogDescription>
-                  Remove <span className="font-medium text-foreground">{removePrincipal}</span> from this role? They
-                  will lose all permissions granted by this role.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button onClick={() => setRemovePrincipal(null)} variant="outline">
-                  Cancel
-                </Button>
-                <Button disabled={isRemovingPrincipal} onClick={handleRemovePrincipal} variant="destructive">
-                  {isRemovingPrincipal ? 'Removing...' : 'Remove'}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setRemovePrincipal(null);
+          }
+        }}
+        open={Boolean(removePrincipal)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove principal "{removePrincipal}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This principal will lose all permissions granted by this role. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline">Cancel</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild disabled={isRemovingPrincipal} onClick={handleRemovePrincipal}>
+              <Button variant="destructive">{isRemovingPrincipal ? 'Removing...' : 'Remove'}</Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

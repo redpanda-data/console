@@ -8,7 +8,7 @@ import React from 'react';
 import { cn } from '../lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm outline-none transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm outline-none transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -16,7 +16,7 @@ const buttonVariants = cva(
         destructive:
           'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40',
         outline:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+          '!border-outline-primary border text-primary-inverse shadow-xs hover:border-outline-primary-hover hover:bg-primary-alpha-subtle active:border-outline-primary-pressed active:bg-primary-alpha-subtle-default disabled:border-outline-inverse-disabled disabled:text-disabled',
         secondary: 'bg-primary text-inverse shadow-xs hover:bg-primary/90',
         ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
       },
@@ -103,8 +103,6 @@ function CopyButton({
       data-slot="copy-button"
       data-testid={testId}
       onClick={handleCopy}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
       {...props}
     >
       <AnimatePresence mode="wait">

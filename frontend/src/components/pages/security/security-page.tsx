@@ -59,9 +59,9 @@ export function SecurityPage({ tab }: SecurityPageProps) {
 
   return (
     <Tabs className="gap-6" onValueChange={(v) => setActiveTab(v as SecurityTab)} value={activeTab}>
-      <TabsList className="[&>*]:w-auto" variant="underline">
+      <TabsList className="h-11 [&>*]:w-auto" variant="underline">
         {visibleTabs.map((t) => (
-          <TabsTrigger className="w-auto" key={t.id} value={t.id} variant="underline">
+          <TabsTrigger className="w-auto text-base" key={t.id} value={t.id} variant="underline">
             {t.label}
           </TabsTrigger>
         ))}

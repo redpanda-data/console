@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { ACLService } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import {
   type GetRoleRequest,
   GetRoleRequestSchema,
@@ -25,6 +26,53 @@ import {
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+
+const invalidateRolesQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({
+      schema: SecurityService.method.listRoles,
+      cardinality: 'infinite',
+    }),
+    exact: false,
+  });
+};
+
+const invalidateRoleMembersQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({
+      schema: SecurityService.method.listRoleMembers,
+      cardinality: 'infinite',
+    }),
+    exact: false,
+  });
+};
+
+const invalidateRoleDetailQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({
+      schema: SecurityService.method.getRole,
+      cardinality: 'finite',
+    }),
+    exact: false,
+  });
+};
+
+const invalidateAclQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({
+      schema: ACLService.method.listACLs,
+      cardinality: 'finite',
+    }),
+    exact: false,
+  });
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({
+      schema: ACLService.method.listACLs,
+      cardinality: 'infinite',
+    }),
+    exact: false,
+  });
+};
 
 export const useListRolesQuery = (
   input?: MessageInit<ListRolesRequest>,
@@ -84,13 +132,7 @@ export const useCreateRoleMutation = () => {
   return useMutation(createRole, {
     retry: false,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecurityService.method.listRoles,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
+      await invalidateRolesQueries(queryClient);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
@@ -118,13 +160,10 @@ export const useDeleteRoleMutation = () => {
   return useMutation(deleteRole, {
     retry: false,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecurityService.method.listRoles,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
+      await invalidateRolesQueries(queryClient);
+      await invalidateRoleMembersQueries(queryClient);
+      await invalidateRoleDetailQueries(queryClient);
+      await invalidateAclQueries(queryClient);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
@@ -141,22 +180,9 @@ export const useUpdateRoleMembershipMutation = () => {
   return useMutation(updateRoleMembership, {
     retry: false,
     onSuccess: async () => {
-      // Invalidate both role lists and role member lists
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecurityService.method.listRoles,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecurityService.method.listRoleMembers,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
+      await invalidateRolesQueries(queryClient);
+      await invalidateRoleMembersQueries(queryClient);
+      await invalidateRoleDetailQueries(queryClient);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
