@@ -14,7 +14,7 @@ import { Link } from '@tanstack/react-router';
 import { api } from '../../../state/backend-api';
 import '../../../utils/array-extensions';
 import { Box, Button, Flex, Text } from '@redpanda-data/ui';
-import type { FC } from 'react';
+import { type FC, useEffect } from 'react';
 
 import DebugBundleOverview from './debug-bundle-overview';
 import { appGlobal } from '../../../state/app-global';
@@ -42,6 +42,16 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
 }
 
 const AdminPageDebugBundleProgressContent: FC = () => {
+  // Poll for status updates while bundle is in progress
+  useEffect(() => {
+    const interval = setInterval(() => {
+      api.refreshDebugBundleStatuses().catch(() => {
+        // Error handling managed by API layer
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Box>
       <Text data-testid="debug-bundle-description">

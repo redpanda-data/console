@@ -60,6 +60,9 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
       useRpcnSecretManagerStore.subscribe(update),
       useTransformsStore.subscribe(update),
     ];
+    // Force a re-render to catch any store updates that arrived before this subscription was set up
+    // (e.g. fast API responses from initPage's constructor-time calls)
+    this.forceUpdate();
   }
 
   componentWillUnmount() {

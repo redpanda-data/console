@@ -72,6 +72,9 @@ class Overview extends PageComponent {
     api.refreshDebugBundleStatuses().catch(() => {
       // Error handling managed by API layer
     });
+    api.listLicenses().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   render() {
