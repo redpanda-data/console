@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -21,7 +23,7 @@ import { Dropzone } from 'components/redpanda-ui/components/dropzone';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { TLS_MODE, type TLSMode } from '../model';
 
@@ -67,8 +69,8 @@ export function CertificateDialog({
   const [fileName, setFileName] = useState(existingValue?.fileName ?? '');
 
   // Reset state when dialog opens based on whether we're adding or editing
-  const prevIsOpenRef = useRef(isOpen);
-  if (isOpen && !prevIsOpenRef.current) {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen && !prevIsOpen) {
     if (existingValue) {
       // Edit mode: populate with existing values
       setFilePath(existingValue.filePath ?? '');
@@ -81,7 +83,9 @@ export function CertificateDialog({
       setFileName('');
     }
   }
-  prevIsOpenRef.current = isOpen;
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
+  }
 
   const handleFileUpload = useCallback((files: File[]) => {
     if (files.length === 0) {

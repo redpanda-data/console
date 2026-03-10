@@ -1,3 +1,5 @@
+'use no memo';
+
 import { ConnectError } from '@connectrpc/connect';
 import {
   Alert,

@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { DataTable } from '@redpanda-data/ui';
 import { getRouteApi } from '@tanstack/react-router';
 

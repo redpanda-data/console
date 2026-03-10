@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';

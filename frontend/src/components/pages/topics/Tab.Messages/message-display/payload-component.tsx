@@ -125,6 +125,7 @@ export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => 
   const { payload, loadLargeMessage } = p;
   const toast = useToast();
   const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
+  const renderData = useMemo(() => preparePayloadData(payload), [payload]);
 
   if (payload.isPayloadTooLarge) {
     return (
@@ -156,8 +157,6 @@ export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => 
       </Flex>
     );
   }
-
-  const renderData = useMemo(() => preparePayloadData(payload), [payload]);
 
   if (renderData.type === 'null') {
     return <code>null</code>;

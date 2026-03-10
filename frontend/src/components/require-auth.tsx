@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
 

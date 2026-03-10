@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
