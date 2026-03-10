@@ -6,6 +6,7 @@
       "src/components/ai-elements/**",
       "src/hooks/use-mobile.ts",
       "src/globals.css"
-    ]
+    ],
+    "rules": ["react-doctor/use-lazy-motion"]
   }
 }
