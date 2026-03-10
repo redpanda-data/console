@@ -80,6 +80,10 @@ export class Feature {
     endpoint: 'redpanda.api.dataplane.v1alpha3.TracingService',
     method: 'POST',
   };
+  static readonly SchemaRegistryContexts: FeatureEntry = {
+    endpoint: '/api/schema-registry/contexts',
+    method: 'GET',
+  };
 }
 
 /**
@@ -93,6 +97,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
       case Feature.ShadowLinkService.endpoint:
       case Feature.TracingService.endpoint:
       case Feature.GetQuotas.endpoint:
+      case Feature.SchemaRegistryContexts.endpoint:
         return { supported: false };
       default:
         return { supported: true };
@@ -172,6 +177,7 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
     schemaRegistryACLApi: compute(Feature.SchemaRegistryACLApi),
     shadowLinkService: compute(Feature.ShadowLinkService),
     tracingService: compute(Feature.TracingService),
+    schemaRegistryContexts: compute(Feature.SchemaRegistryContexts),
     featureErrors: errors,
   };
 }
@@ -201,6 +207,7 @@ type SupportedFeaturesStore = {
   schemaRegistryACLApi: boolean;
   shadowLinkService: boolean;
   tracingService: boolean;
+  schemaRegistryContexts: boolean;
 
   // Actions
   setEndpointCompatibility: (ec: EndpointCompatibility) => void;
@@ -287,6 +294,9 @@ const Features = {
   },
   get tracingService() {
     return useSupportedFeaturesStore.getState().tracingService;
+  },
+  get schemaRegistryContexts() {
+    return useSupportedFeaturesStore.getState().schemaRegistryContexts;
   },
 };
 
