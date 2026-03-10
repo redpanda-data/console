@@ -49,7 +49,7 @@ const READ_ONLY_EDITOR_OPTIONS = {
   scrollBeyondLastLine: false,
 } as const;
 
-export const KowlJsonView = ((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
+export const KowlJsonView = (props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -145,4 +145,4 @@ export const KowlJsonView = ((props: { srcObj: object | string | null | undefine
       </Box>
     </Box>
   );
-});
+};

@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStore } from '../../../state/backend-api';
 import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
@@ -189,22 +189,24 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 
   render() {
-    return <TopicDetailsContent topicName={this.props.topicName} />;
+    const { topicName } = this.props;
+    // Read api.topics in the class render so PageComponent's forceUpdate() re-evaluates
+    // the loading state when the Zustand store delivers topics data.
+    if (!api.topics) {
+      return DefaultSkeleton;
+    }
+    const topic = api.topics.find((e) => e.topicName === topicName);
+    if (!topic) {
+      return topicNotFound(topicName);
+    }
+    return <TopicDetailsContent topic={topic} topicName={topicName} />;
   }
 }
 
-const TopicDetailsContent = ({ topicName }: { topicName: string }) => {
+const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
+  useSyncExternalStore(useApiStore.subscribe, useApiStore.getState);
+
   const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
-
-  // Derived: topic
-  const topic = api.topics ? (api.topics.find((e) => e.topicName === topicName) ?? null) : undefined;
-
-  if (topic === undefined) {
-    return DefaultSkeleton;
-  }
-  if (topic === null) {
-    return topicNotFound(topicName);
-  }
 
   // Derived: topicConfig
   const config = api.topicConfig.get(topicName);
