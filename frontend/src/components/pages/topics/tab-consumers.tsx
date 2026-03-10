@@ -46,7 +46,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
       ]}
       data={consumers}
       onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-        uiState.topicSettings.consumerPageSize = pageSize;
+        Object.assign(uiState.topicSettings, { consumerPageSize: pageSize });
         editQuery((query) => {
           query.page = String(pageIndex);
           query.pageSize = String(pageSize);
