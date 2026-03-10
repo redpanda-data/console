@@ -10,11 +10,16 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { createQueryOptions, useTransport } from '@connectrpc/connect-query';
+import { useQueries } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { getAclFromAclListResponse } from 'components/pages/acls/new-acl/acl.model';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, ExternalLink, Lock, Plus, Search, Shield, Trash2, X } from 'lucide-react';
 import {
   ACL_Operation,
@@ -23,7 +28,10 @@ import {
   ACL_ResourceType,
   CreateACLRequestSchema,
   DeleteACLsRequestSchema,
+  type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { getRole } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { useMemo, useState } from 'react';
 import {
   getACLOperation,
@@ -31,6 +39,7 @@ import {
   useLegacyCreateACLMutation,
   useListACLsQuery,
 } from 'react-query/api/acl';
+import { useListRolesQuery } from 'react-query/api/security';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { toast } from 'sonner';
 
@@ -38,11 +47,21 @@ import {
   ACLDialog,
   type ACLEntry,
   ACLRemoveDialog,
+  getPatternTypeLabel,
   PRINCIPAL_MAX,
   PrincipalStepDialog,
   RESOURCE_NAME_MAX,
   truncateText,
 } from './acl-editor';
+import {
+  buildPrincipalAutocompleteOptions,
+  buildResourceOptionsByType,
+  flattenAclDetails,
+  getAclResourceTypeLabel,
+  sortAclEntries,
+  sortByName,
+  sortByPrincipal,
+} from './security-acl-utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -75,21 +94,6 @@ function parsePrincipal(principal: string): { type: string; name: string } {
     type: principal.substring(0, colonIndex),
     name: principal.substring(colonIndex + 1),
   };
-}
-
-function getResourceTypeStr(rt: ACL_ResourceType): string {
-  switch (rt) {
-    case ACL_ResourceType.TOPIC:
-      return 'Topic';
-    case ACL_ResourceType.GROUP:
-      return 'Group';
-    case ACL_ResourceType.CLUSTER:
-      return 'Cluster';
-    case ACL_ResourceType.TRANSACTIONAL_ID:
-      return 'TransactionalId';
-    default:
-      return 'Unknown';
-  }
 }
 
 function getOperationStr(op: ACL_Operation): string {
@@ -142,11 +146,57 @@ export function PermissionsTab() {
   // Fetch data
   const { data: usersData } = useLegacyListUsersQuery();
   const { data: aclsData } = useListACLsQuery();
+  const { data: rolesData } = useListRolesQuery();
 
-  const users = useMemo(() => usersData?.users ?? [], [usersData]);
+  const users = useMemo(() => sortByName(usersData?.users ?? []), [usersData]);
   const aclResources = useMemo(() => aclsData?.aclResources ?? [], [aclsData]);
+  const roles = useMemo(() => sortByName(rolesData?.roles ?? []), [rolesData]);
+  const resourceOptionsByType = useMemo(() => buildResourceOptionsByType(aclResources), [aclResources]);
   const { mutateAsync: createACL } = useLegacyCreateACLMutation();
   const { mutateAsync: deleteACL } = useDeleteAclMutation();
+  const transport = useTransport();
+
+  const roleDetailQueries = useQueries({
+    queries: roles.map((role) =>
+      createQueryOptions(
+        getRole,
+        {
+          roleName: role.name,
+        },
+        { transport }
+      )
+    ),
+  });
+
+  const roleAclQueries = useQueries({
+    queries: roles.map((role) => ({
+      ...createQueryOptions(
+        listACLs,
+        {
+          filter: {
+            principal: `RedpandaRole:${role.name}`,
+          },
+        },
+        { transport }
+      ),
+      select: (aclList: ListACLsResponse) => flattenAclDetails(getAclFromAclListResponse(aclList)),
+    })),
+  });
+
+  const principalOptions = useMemo(() => {
+    const aclPrincipals = aclResources
+      .flatMap((resource) => resource.acls.map((acl) => acl.principal || ''))
+      .filter(Boolean);
+    const roleMembershipPrincipals = roleDetailQueries.flatMap((query) =>
+      (query.data?.members ?? []).map((member) => member.principal || '').filter(Boolean)
+    );
+
+    return buildPrincipalAutocompleteOptions({
+      principals: [...aclPrincipals, ...roleMembershipPrincipals],
+      roles: roles.map((role) => role.name),
+      users: users.map((user) => user.name),
+    });
+  }, [aclResources, roleDetailQueries, roles, users]);
 
   // Build principal groups from ACL data
   const allGroups = useMemo(() => {
@@ -181,7 +231,7 @@ export function PermissionsTab() {
         const group = getOrCreate(principal);
         group.directAcls.push({
           principal,
-          resourceType: getResourceTypeStr(resource.resourceType),
+          resourceType: getAclResourceTypeLabel(resource.resourceType) ?? 'Unknown',
           resourceName: resource.resourceName,
           operation: getOperationStr(acl.operation),
           permission: getPermissionStr(acl.permissionType),
@@ -191,15 +241,42 @@ export function PermissionsTab() {
       }
     }
 
+    for (const [index, role] of roles.entries()) {
+      const members = roleDetailQueries[index]?.data?.members ?? [];
+      const inheritedAcls = roleAclQueries[index]?.data ?? [];
+
+      for (const member of members) {
+        const principal = member.principal;
+        if (!principal) {
+          continue;
+        }
+
+        const group = getOrCreate(principal);
+        if (!group.assignedRoles.some((assignedRole) => assignedRole.name === role.name)) {
+          group.assignedRoles.push({ name: role.name });
+        }
+
+        for (const acl of inheritedAcls) {
+          group.inheritedAcls.push({
+            ...acl,
+            roleName: role.name,
+          });
+        }
+      }
+    }
+
     // Compute deny counts
     for (const group of map.values()) {
+      group.assignedRoles = sortByName(group.assignedRoles);
+      group.directAcls = sortAclEntries(group.directAcls);
+      group.inheritedAcls = sortAclEntries(group.inheritedAcls);
       group.denyCount =
         group.directAcls.filter((a) => a.permission === 'Deny').length +
         group.inheritedAcls.filter((a) => a.permission === 'Deny').length;
     }
 
-    return Array.from(map.values()).sort((a, b) => a.principal.localeCompare(b.principal));
-  }, [aclResources, users]);
+    return sortByPrincipal(Array.from(map.values()));
+  }, [aclResources, roleAclQueries, roleDetailQueries, roles, users]);
 
   // Filter groups
   const groups = useMemo(() => {
@@ -290,7 +367,7 @@ export function PermissionsTab() {
         create(CreateACLRequestSchema, {
           resourceType: resourceTypeMap[entry.resourceType] ?? ACL_ResourceType.TOPIC,
           resourceName: entry.resourceName,
-          resourcePatternType: ACL_ResourcePatternType.LITERAL,
+          resourcePatternType: entry.resourcePatternType ?? ACL_ResourcePatternType.LITERAL,
           principal,
           host: entry.host,
           operation: operationMap[entry.operation] ?? ACL_Operation.ALL,
@@ -360,10 +437,10 @@ export function PermissionsTab() {
 
   return (
     <div aria-labelledby="permissions-tab" id="permissions-panel" role="tabpanel">
-      <p className="mb-6 max-w-3xl text-muted-foreground text-sm leading-relaxed">
+      <Text className="max-w-3xl pb-2 text-base leading-6" variant="muted">
         A unified view of all principal permissions across your cluster, including direct ACLs and those inherited from
         role bindings. Inherited ACLs are read-only here and must be edited on the respective role page.
-      </p>
+      </Text>
 
       {/* Toolbar */}
       <div className="mb-4 flex items-center gap-3">
@@ -397,7 +474,7 @@ export function PermissionsTab() {
 
       {/* Grouped list */}
       {groups.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-8">
           {groups.map((group) => (
             <PrincipalGroupCard
               collapsed={collapsed[group.principal] ?? false}
@@ -410,31 +487,33 @@ export function PermissionsTab() {
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Shield className="mb-3 size-8 text-muted-foreground/50" />
-            {allGroups.length === 0 ? (
-              <>
-                <p className="font-medium text-sm">No principals found</p>
-                <p className="mt-1 max-w-sm text-muted-foreground text-xs">
-                  Create ACLs or assign roles to principals to see them here.
-                </p>
-                <Button className="mt-4" onClick={() => handleCreate()} size="sm">
-                  <Plus className="size-4" />
-                  Create ACL
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="font-medium text-sm">No matching principals</p>
-                <p className="mt-1 text-muted-foreground text-xs">Try a different search query.</p>
-                <Button className="mt-3 bg-transparent" onClick={() => setSearchQuery('')} size="sm" variant="outline">
-                  Clear search
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
+        <Empty className="py-16">
+          <EmptyMedia variant="icon">
+            <Shield className="size-6" />
+          </EmptyMedia>
+          {allGroups.length === 0 ? (
+            <>
+              <EmptyHeader>
+                <EmptyTitle>No principals found</EmptyTitle>
+                <EmptyDescription>Create ACLs or assign roles to principals to see them here.</EmptyDescription>
+              </EmptyHeader>
+              <Button onClick={() => handleCreate()}>
+                <Plus className="size-4" />
+                Create ACL
+              </Button>
+            </>
+          ) : (
+            <>
+              <EmptyHeader>
+                <EmptyTitle>No matching principals</EmptyTitle>
+                <EmptyDescription>Try a different search query.</EmptyDescription>
+              </EmptyHeader>
+              <Button onClick={() => setSearchQuery('')} variant="outline">
+                Clear search
+              </Button>
+            </>
+          )}
+        </Empty>
       )}
 
       {/* Table Footer */}
@@ -452,13 +531,20 @@ export function PermissionsTab() {
           onChange={setCreatePrincipal}
           onClose={() => setDialogOpen(false)}
           onContinue={() => setCreateStep('acl')}
+          options={principalOptions}
           value={createPrincipal}
         />
       )}
 
       {/* Create ACL — ACL fields step */}
       {dialogOpen && createStep === 'acl' && (
-        <ACLDialog context="user" onClose={() => setDialogOpen(false)} onSave={handleSave} open />
+        <ACLDialog
+          context="user"
+          onClose={() => setDialogOpen(false)}
+          onSave={handleSave}
+          open
+          resourceOptionsByType={resourceOptionsByType}
+        />
       )}
 
       {/* Remove confirmation */}
@@ -506,15 +592,15 @@ function PrincipalGroupCard({
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         )}
         <div className="min-w-0">
-          <span className="block font-mono font-semibold text-sm" title={group.principal}>
+          <span className="block font-mono font-semibold text-base" title={group.principal}>
             {truncateText(group.principal, PRINCIPAL_MAX)}
           </span>
-          <span className="block text-muted-foreground text-xs">
+          <span className="block text-muted-foreground text-sm">
             {getAclSummaryText(group.directAcls.length, group.inheritedAcls.length)}
           </span>
         </div>
         {group.denyCount > 0 && (
-          <Badge className="shrink-0 font-normal text-xs tabular-nums" variant="destructive">
+          <Badge className="shrink-0 font-normal text-sm tabular-nums" variant="destructive">
             {group.denyCount} deny
           </Badge>
         )}
@@ -550,7 +636,7 @@ function PrincipalGroupCard({
           {hasAcls ? (
             <table className="w-full table-fixed">
               <thead>
-                <tr className="text-left font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+                <tr className="text-left font-medium text-muted-foreground/70 text-sm uppercase tracking-wider">
                   <th className="w-[14%] px-4 py-1.5">Type</th>
                   <th className="w-auto px-4 py-1.5">Resource</th>
                   <th className="w-[11%] px-4 py-1.5">Operation</th>
@@ -575,7 +661,7 @@ function PrincipalGroupCard({
                     <td className="p-0" colSpan={6}>
                       <div className="flex items-center gap-2 bg-muted/50 px-4 py-1.5">
                         <Lock className="size-3 shrink-0 text-muted-foreground/70" />
-                        <span className="font-medium text-[11px] text-muted-foreground/70 uppercase tracking-wider">
+                        <span className="font-medium text-muted-foreground/70 text-sm uppercase tracking-wider">
                           Via {group.assignedRoles.length === 1 ? 'role' : 'roles'}
                         </span>
                         {group.assignedRoles.slice(0, 3).map((role) => (
@@ -586,7 +672,7 @@ function PrincipalGroupCard({
                             to="/security/roles/$roleName"
                           >
                             <Badge
-                              className="font-normal text-[11px] transition-colors hover:bg-accent"
+                              className="font-normal text-sm transition-colors hover:bg-accent-foreground/25"
                               variant="secondary"
                             >
                               {role.name}
@@ -594,9 +680,7 @@ function PrincipalGroupCard({
                           </Link>
                         ))}
                         {group.assignedRoles.length > 3 && (
-                          <span className="text-[11px] text-muted-foreground">
-                            +{group.assignedRoles.length - 3} more
-                          </span>
+                          <span className="text-muted-foreground text-sm">+{group.assignedRoles.length - 3} more</span>
                         )}
                       </div>
                     </td>
@@ -635,7 +719,14 @@ function ACLRow({
   inherited,
   onRemove,
 }: {
-  acl: { resourceType: string; resourceName: string; operation: string; permission: string; host: string };
+  acl: {
+    resourceType: string;
+    resourceName: string;
+    operation: string;
+    permission: string;
+    host: string;
+    resourcePatternType?: number;
+  };
   inherited?: boolean;
   onRemove?: () => void;
 }) {
@@ -643,27 +734,34 @@ function ACLRow({
     <tr className={`border-b last:border-0 ${inherited ? 'bg-muted/10' : ''}`}>
       <td className="px-4 py-1.5">
         <Badge
-          className={`font-normal text-xs ${inherited ? 'border-muted-foreground/20 text-muted-foreground' : ''}`}
+          className={`font-normal text-sm ${inherited ? 'border-muted-foreground/20 text-muted-foreground' : ''}`}
           variant="outline"
         >
           {acl.resourceType}
         </Badge>
       </td>
       <td className="max-w-0 px-4 py-1.5">
-        <span
-          className={`block truncate font-mono text-[13px] ${inherited ? 'text-muted-foreground' : ''}`}
-          title={acl.resourceName}
-        >
-          {truncateText(acl.resourceName, RESOURCE_NAME_MAX)}
+        <span className="flex items-center gap-1.5">
+          <span
+            className={`truncate font-mono text-base ${inherited ? 'text-muted-foreground' : ''}`}
+            title={acl.resourceName}
+          >
+            {truncateText(acl.resourceName, RESOURCE_NAME_MAX)}
+          </span>
+          {Boolean(getPatternTypeLabel(acl.resourcePatternType)) && (
+            <Badge className={`shrink-0 font-normal text-xs ${inherited ? 'opacity-50' : ''}`} variant="secondary">
+              {getPatternTypeLabel(acl.resourcePatternType)}
+            </Badge>
+          )}
         </span>
       </td>
-      <td className={`px-4 py-1.5 text-[13px] ${inherited ? 'text-muted-foreground' : ''}`}>{acl.operation}</td>
+      <td className={`px-4 py-1.5 text-base ${inherited ? 'text-muted-foreground' : ''}`}>{acl.operation}</td>
       <td className="px-4 py-1.5">
-        <span className={`font-medium text-[13px] ${getPermissionColorClass(acl.permission, Boolean(inherited))}`}>
+        <span className={`font-medium text-base ${getPermissionColorClass(acl.permission, Boolean(inherited))}`}>
           {acl.permission}
         </span>
       </td>
-      <td className={`px-4 py-1.5 font-mono text-[13px] ${inherited ? 'text-muted-foreground' : ''}`}>{acl.host}</td>
+      <td className={`px-4 py-1.5 font-mono text-base ${inherited ? 'text-muted-foreground' : ''}`}>{acl.host}</td>
       <td className="px-2 py-1.5">
         {inherited ? (
           <TooltipProvider delayDuration={300}>
@@ -674,7 +772,7 @@ function ACLRow({
                 </div>
               </TooltipTrigger>
               <TooltipContent side="left">
-                <p className="text-xs">Inherited from a role. Edit on the role page.</p>
+                <p className="text-sm">Inherited from a role. Edit on the role page.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

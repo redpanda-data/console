@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   Dialog,
   DialogContent,
@@ -30,9 +31,10 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Check, Copy, RefreshCw } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { RefreshCw } from 'lucide-react';
 import { UpdateUserRequest_UserSchema, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getSASLMechanism, useUpdateUserMutationWithToast } from 'react-query/api/user';
 import { toast } from 'sonner';
 
@@ -51,27 +53,38 @@ interface ChangePasswordDialogProps {
 }
 
 export function ChangePasswordDialog({ open, userName, currentMechanism, onClose }: ChangePasswordDialogProps) {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newPassword, setNewPassword] = useState(() => generatePassword(24, true));
   const [selectedMechanism, setSelectedMechanism] = useState<'SCRAM-SHA-256' | 'SCRAM-SHA-512'>(
     currentMechanism === 'SCRAM-SHA-256' || currentMechanism === 'SCRAM-SHA-512' ? currentMechanism : 'SCRAM-SHA-512'
   );
   const [error, setError] = useState<string | null>(null);
-
   const [includeSpecialChars, setIncludeSpecialChars] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { mutateAsync: updateUser } = useUpdateUserMutationWithToast();
 
   const resetForm = () => {
-    setNewPassword('');
-    setConfirmPassword('');
+    setNewPassword(generatePassword(24, true));
+    setSelectedMechanism(
+      currentMechanism === 'SCRAM-SHA-256' || currentMechanism === 'SCRAM-SHA-512' ? currentMechanism : 'SCRAM-SHA-512'
+    );
     setError(null);
     setIncludeSpecialChars(true);
-    setCopied(false);
     setIsSubmitting(false);
   };
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setNewPassword(generatePassword(24, true));
+    setSelectedMechanism(
+      currentMechanism === 'SCRAM-SHA-256' || currentMechanism === 'SCRAM-SHA-512' ? currentMechanism : 'SCRAM-SHA-512'
+    );
+    setError(null);
+    setIncludeSpecialChars(true);
+    setIsSubmitting(false);
+  }, [currentMechanism, open]);
 
   const handleClose = () => {
     resetForm();
@@ -81,17 +94,7 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
   const handleGenerate = () => {
     const pwd = generatePassword(24, includeSpecialChars);
     setNewPassword(pwd);
-    setConfirmPassword(pwd);
     setError(null);
-    setCopied(false);
-  };
-
-  const handleCopy = async () => {
-    if (newPassword) {
-      await navigator.clipboard.writeText(newPassword);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
   };
 
   const handleSubmit = async () => {
@@ -107,11 +110,6 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
       setError('Password should not exceed 64 characters');
       return;
     }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setError(null);
     setIsSubmitting(true);
 
@@ -138,19 +136,19 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
   return (
     <Dialog onOpenChange={(o) => !o && handleClose()} open={open}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader spacing="loose">
           <DialogTitle>Change Password</DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-1">
               <p>Set a new password for this user.</p>
-              <p className="font-mono text-foreground text-xs">{userName}</p>
+              <p className="font-mono text-base text-foreground">{userName}</p>
             </div>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
           {/* Mechanism Selection */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="mechanism">SASL Mechanism</Label>
             <Select
               onValueChange={(v) => setSelectedMechanism(v as 'SCRAM-SHA-256' | 'SCRAM-SHA-512')}
@@ -165,8 +163,8 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
                 {saslMechanisms.map((mech) => (
                   <SelectItem className="py-2.5" key={mech.id} value={mech.id}>
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-mono text-sm">{mech.name}</span>
-                      <span className="text-muted-foreground text-xs">{mech.description}</span>
+                      <span className="font-mono text-base">{mech.name}</span>
+                      <span className="text-base text-muted-foreground leading-6">{mech.description}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -175,11 +173,11 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
           </div>
 
           {/* New Password */}
-          <div className="space-y-2">
-            <Label htmlFor="new-password">New Password</Label>
-            <p className="text-muted-foreground text-xs">
-              Must be at least 8 characters and should not exceed 64 characters.
-            </p>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="new-password">New Password</Label>
+              <Text variant="muted">Must be at least 8 characters and should not exceed 64 characters.</Text>
+            </div>
             <div className="flex gap-1.5">
               <Input
                 autoComplete="new-password"
@@ -188,7 +186,6 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
                 onChange={(e) => {
                   setNewPassword(e.target.value);
                   setError(null);
-                  setCopied(false);
                 }}
                 placeholder="Enter new password"
                 type="password"
@@ -197,13 +194,7 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      className="h-9 w-9 shrink-0"
-                      onClick={handleGenerate}
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    >
+                    <Button className="size-9" onClick={handleGenerate} size="icon" type="button" variant="outline">
                       <RefreshCw className="size-4" />
                       <span className="sr-only">Generate password</span>
                     </Button>
@@ -211,24 +202,7 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
                   <TooltipContent>Generate password</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      className="h-9 w-9 shrink-0"
-                      disabled={!newPassword}
-                      onClick={handleCopy}
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    >
-                      {copied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-                      <span className="sr-only">Copy password</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{copied ? 'Copied!' : 'Copy password'}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <CopyButton content={newPassword} disabled={!newPassword} size="icon" variant="outline" />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -236,30 +210,13 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
                 id="special-chars"
                 onCheckedChange={(checked) => setIncludeSpecialChars(checked === true)}
               />
-              <Label className="font-normal text-sm" htmlFor="special-chars">
+              <Label className="font-normal text-base" htmlFor="special-chars">
                 Generate with special characters
               </Label>
             </div>
           </div>
 
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm Password</Label>
-            <Input
-              autoComplete="new-password"
-              className="font-mono"
-              id="confirm-password"
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                setError(null);
-              }}
-              placeholder="Confirm new password"
-              type="password"
-              value={confirmPassword}
-            />
-          </div>
-
-          {Boolean(error) && <p className="text-destructive text-sm">{error}</p>}
+          {Boolean(error) && <p className="text-base text-destructive leading-6">{error}</p>}
         </div>
 
         <DialogFooter>

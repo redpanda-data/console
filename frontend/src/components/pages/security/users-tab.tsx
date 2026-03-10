@@ -29,10 +29,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from 'components/redpanda-ui/components/hover-card';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Key, MoreHorizontal, Plus, Search, Trash2, UserCog, Users } from 'lucide-react';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useMemo, useState } from 'react';
@@ -43,6 +45,7 @@ import { Features } from 'state/supported-features';
 
 import { ChangePasswordDialog } from './change-password-dialog';
 import { CreateUserDialog } from './create-user-dialog';
+import { sortAclEntries, sortByName } from './security-acl-utils';
 
 const ACL_HOVER_LIMIT = 8;
 
@@ -83,7 +86,7 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
   const { data: usersData } = useLegacyListUsersQuery();
   const { data: aclsData } = useListACLsQuery();
 
-  const users = useMemo(() => usersData?.users ?? [], [usersData]);
+  const users = useMemo(() => sortByName(usersData?.users ?? []), [usersData]);
 
   // Build a map of user -> ACLs from the ACL list
   const userAclsMap = useMemo(() => {
@@ -106,6 +109,9 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
           });
         }
       }
+    }
+    for (const [userName, acls] of map.entries()) {
+      map.set(userName, sortAclEntries(acls));
     }
     return map;
   }, [aclsData]);
@@ -139,10 +145,10 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
 
   return (
     <div aria-labelledby="users-tab" id="users-panel" role="tabpanel">
-      <p className="mb-6 max-w-3xl text-muted-foreground text-sm leading-relaxed">
+      <Text className="max-w-3xl pb-2 text-base leading-6" variant="muted">
         These users are SASL-SCRAM users managed by your cluster. View the full permissions picture for all identities
         (including OIDC and mTLS) on the Permissions tab.
-      </p>
+      </Text>
 
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -168,7 +174,7 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
       {/* Users Table */}
       <div className="rounded-lg border">
         {filteredUsers.length > 0 ? (
-          <Table className="table-fixed">
+          <Table className="table-fixed" size="lg">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-auto">User</TableHead>
@@ -193,14 +199,14 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
                             <span className="block truncate font-medium">{user.name}</span>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-sm" side="top">
-                            <p className="break-all font-mono text-xs">{user.name}</p>
+                            <p className="break-all font-mono text-sm">{user.name}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </TableCell>
                     <TableCell className="py-1.5">
                       {mechanismLabel ? (
-                        <Badge className="font-mono font-normal text-xs" variant="outline">
+                        <Badge className="font-mono font-normal text-sm" variant="outline">
                           {mechanismLabel}
                         </Badge>
                       ) : (
@@ -254,23 +260,25 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
             </TableBody>
           </Table>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-              <Users className="size-6 text-muted-foreground" />
-            </div>
-            <h3 className="mb-1 font-medium">No users found</h3>
-            <p className="mb-4 max-w-sm text-muted-foreground text-sm">
-              {searchQuery
-                ? `No users matching "${searchQuery}". Try adjusting your search.`
-                : 'Get started by creating your first SASL-SCRAM user.'}
-            </p>
+          <Empty className="py-16">
+            <EmptyMedia variant="icon">
+              <Users className="size-6" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>No users found</EmptyTitle>
+              <EmptyDescription>
+                {searchQuery
+                  ? `No users matching "${searchQuery}". Try adjusting your search.`
+                  : 'Get started by creating your first SASL-SCRAM user.'}
+              </EmptyDescription>
+            </EmptyHeader>
             {!searchQuery && Boolean(Features.createUser) && (
               <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="size-4" />
                 Create user
               </Button>
             )}
-          </div>
+          </Empty>
         )}
       </div>
 
@@ -314,7 +322,9 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel asChild>
+              <Button variant="outline">Cancel</Button>
+            </AlertDialogCancel>
             <AlertDialogAction asChild disabled={isDeletingUser} onClick={handleDeleteUser}>
               <Button variant="destructive">{isDeletingUser ? 'Deleting...' : 'Delete User'}</Button>
             </AlertDialogAction>
@@ -329,7 +339,11 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
 
 function ACLSummary({ acls, principal, onViewAll }: { acls: UserAcl[]; principal: string; onViewAll?: () => void }) {
   if (acls.length === 0) {
-    return <span className="text-muted-foreground text-sm">No ACLs</span>;
+    return (
+      <Text as="span" variant="muted">
+        No ACLs
+      </Text>
+    );
   }
 
   const visibleAcls = acls.slice(0, ACL_HOVER_LIMIT);
@@ -338,18 +352,18 @@ function ACLSummary({ acls, principal, onViewAll }: { acls: UserAcl[]; principal
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <Badge className="cursor-pointer font-normal tabular-nums" variant="outline">
+        <Badge className="cursor-pointer font-normal text-sm tabular-nums" variant="outline">
           {acls.length} {acls.length === 1 ? 'ACL' : 'ACLs'}
         </Badge>
       </HoverCardTrigger>
       <HoverCardContent align="start" className="w-[420px] p-0">
         <div className="border-b px-3 py-2">
-          <p className="text-muted-foreground text-xs">Principal</p>
-          <p className="truncate font-medium font-mono text-sm" title={`User:${principal}`}>
+          <p className="text-muted-foreground text-sm">Principal</p>
+          <p className="truncate font-medium font-mono text-base" title={`User:${principal}`}>
             User:{principal}
           </p>
         </div>
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-left">
               <th className="w-[200px] px-3 py-1.5 font-medium">Resource</th>
@@ -380,7 +394,7 @@ function ACLSummary({ acls, principal, onViewAll }: { acls: UserAcl[]; principal
         </table>
         {remaining > 0 && (
           <div className="border-t bg-muted/30 px-3 py-2 text-center">
-            <button className="text-muted-foreground text-xs hover:text-foreground" onClick={onViewAll} type="button">
+            <button className="text-muted-foreground text-sm hover:text-foreground" onClick={onViewAll} type="button">
               Showing {ACL_HOVER_LIMIT} of {acls.length} ACLs. View all in the Permissions tab.
             </button>
           </div>

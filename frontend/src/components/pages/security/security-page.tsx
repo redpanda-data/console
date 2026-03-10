@@ -11,7 +11,6 @@
 
 import { useNavigate } from '@tanstack/react-router';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { runInAction } from 'mobx';
 import { useEffect } from 'react';
 import { Features } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
@@ -42,13 +41,11 @@ export function SecurityPage({ tab }: SecurityPageProps) {
   const activeTabLabel = tabs.find((t) => t.id === activeTab)?.label ?? 'Users';
 
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = activeTabLabel;
-      uiState.pageBreadcrumbs = [
-        { title: 'Security', linkTo: `/security/${activeTab}` },
-        { title: activeTabLabel, linkTo: `/security/${activeTab}` },
-      ];
-    });
+    uiState.pageTitle = activeTabLabel;
+    uiState.pageBreadcrumbs = [
+      { title: 'Security', linkTo: `/security/${activeTab}` },
+      { title: activeTabLabel, linkTo: `/security/${activeTab}` },
+    ];
   }, [activeTab, activeTabLabel]);
 
   const setActiveTab = (newTab: SecurityTab) => {
@@ -59,9 +56,9 @@ export function SecurityPage({ tab }: SecurityPageProps) {
 
   return (
     <Tabs className="gap-6" onValueChange={(v) => setActiveTab(v as SecurityTab)} value={activeTab}>
-      <TabsList className="[&>*]:w-auto" variant="underline">
+      <TabsList className="h-11 [&>*]:w-auto" variant="underline">
         {visibleTabs.map((t) => (
-          <TabsTrigger className="w-auto" key={t.id} value={t.id} variant="underline">
+          <TabsTrigger className="w-auto text-base" key={t.id} value={t.id} variant="underline">
             {t.label}
           </TabsTrigger>
         ))}

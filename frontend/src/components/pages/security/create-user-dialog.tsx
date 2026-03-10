@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,8 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Check, Copy, Eye, EyeOff, Info, RefreshCw, Shield, UserCog } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { Info, RefreshCw, Shield, UserCog } from 'lucide-react';
 import { CreateUserRequest_UserSchema, CreateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
 import { getSASLMechanism, useCreateUserMutation } from 'react-query/api/user';
@@ -59,6 +61,10 @@ export function generatePassword(length: number, includeSpecial: boolean): strin
   return pwd;
 }
 
+function createGeneratedPassword(includeSpecial: boolean): string {
+  return generatePassword(24, includeSpecial);
+}
+
 interface CreateUserDialogProps {
   open: boolean;
   onClose: () => void;
@@ -68,13 +74,10 @@ interface CreateUserDialogProps {
 export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserDialogProps) {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState(() => createGeneratedPassword(true));
   const [mechanism, setMechanism] = useState<'SCRAM-SHA-256' | 'SCRAM-SHA-512'>('SCRAM-SHA-256');
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const [includeSpecial, setIncludeSpecial] = useState(true);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { mutateAsync: createUserMutation } = useCreateUserMutation();
@@ -82,13 +85,10 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
   const resetForm = () => {
     setStep('form');
     setUsername('');
-    setPassword('');
-    setConfirmPassword('');
+    setPassword(createGeneratedPassword(true));
     setMechanism('SCRAM-SHA-256');
     setError(null);
-    setShowPassword(false);
     setIncludeSpecial(true);
-    setCopiedField(null);
     setIsSubmitting(false);
   };
 
@@ -98,17 +98,9 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
   };
 
   const handleGeneratePassword = () => {
-    const pwd = generatePassword(24, includeSpecial);
+    const pwd = createGeneratedPassword(includeSpecial);
     setPassword(pwd);
-    setConfirmPassword(pwd);
     setError(null);
-    setCopiedField(null);
-  };
-
-  const copyField = async (value: string, field: string) => {
-    await navigator.clipboard.writeText(value);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
   };
 
   const handleCreate = async () => {
@@ -136,11 +128,6 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
       setError('Password should not exceed 64 characters');
       return;
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     setError(null);
     setIsSubmitting(true);
 
@@ -168,18 +155,20 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
       <DialogContent className="sm:max-w-md">
         {step === 'form' ? (
           <>
-            <DialogHeader>
+            <DialogHeader spacing="loose">
               <DialogTitle>Create User</DialogTitle>
               <DialogDescription>Create a new SASL-SCRAM user for your cluster.</DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="space-y-4">
               {/* Username */}
-              <div className="space-y-2">
-                <Label htmlFor="create-username">Username</Label>
-                <p className="text-muted-foreground text-xs">
-                  Must not contain any whitespace. Dots, hyphens, and underscores may be used.
-                </p>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="create-username">Username</Label>
+                  <Text variant="muted">
+                    Must not contain any whitespace. Dots, hyphens, and underscores may be used.
+                  </Text>
+                </div>
                 <Input
                   autoComplete="off"
                   id="create-username"
@@ -194,11 +183,11 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
               </div>
 
               {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="create-password">Password</Label>
-                <p className="text-muted-foreground text-xs">
-                  Must be at least 4 characters and should not exceed 64 characters.
-                </p>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="create-password">Password</Label>
+                  <Text variant="muted">Must be at least 4 characters and should not exceed 64 characters.</Text>
+                </div>
                 <div className="flex gap-1.5">
                   <Input
                     autoComplete="new-password"
@@ -207,7 +196,6 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                     onChange={(e) => {
                       setPassword(e.target.value);
                       setError(null);
-                      setCopiedField(null);
                     }}
                     placeholder="Enter password"
                     type="password"
@@ -217,7 +205,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          className="h-9 w-9 shrink-0"
+                          className="size-9"
                           onClick={handleGeneratePassword}
                           size="icon"
                           type="button"
@@ -230,28 +218,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                       <TooltipContent>Generate password</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          className="h-9 w-9 shrink-0"
-                          disabled={!password}
-                          onClick={() => copyField(password, 'password-form')}
-                          size="icon"
-                          type="button"
-                          variant="outline"
-                        >
-                          {copiedField === 'password-form' ? (
-                            <Check className="size-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="size-4" />
-                          )}
-                          <span className="sr-only">Copy password</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{copiedField === 'password-form' ? 'Copied!' : 'Copy password'}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <CopyButton content={password} disabled={!password} size="icon" variant="outline" />
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -259,31 +226,14 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                     id="create-special-chars"
                     onCheckedChange={(checked) => setIncludeSpecial(checked === true)}
                   />
-                  <Label className="font-normal text-sm" htmlFor="create-special-chars">
+                  <Label className="font-normal text-base" htmlFor="create-special-chars">
                     Generate with special characters
                   </Label>
                 </div>
               </div>
 
-              {/* Confirm Password */}
-              <div className="space-y-2">
-                <Label htmlFor="create-confirm-password">Confirm Password</Label>
-                <Input
-                  autoComplete="new-password"
-                  className="font-mono"
-                  id="create-confirm-password"
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    setError(null);
-                  }}
-                  placeholder="Confirm password"
-                  type="password"
-                  value={confirmPassword}
-                />
-              </div>
-
               {/* SASL Mechanism */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label htmlFor="create-mechanism">SASL Mechanism</Label>
                 <Select onValueChange={(v) => setMechanism(v as 'SCRAM-SHA-256' | 'SCRAM-SHA-512')} value={mechanism}>
                   <SelectTrigger id="create-mechanism">
@@ -295,8 +245,8 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                     {saslMechanisms.map((mech) => (
                       <SelectItem className="py-2.5" key={mech.id} value={mech.id}>
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-sm">{mech.name}</span>
-                          <span className="text-muted-foreground text-xs">{mech.description}</span>
+                          <span className="font-mono text-base">{mech.name}</span>
+                          <span className="text-base text-muted-foreground leading-6">{mech.description}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -304,7 +254,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                 </Select>
               </div>
 
-              {Boolean(error) && <p className="text-destructive text-sm">{error}</p>}
+              {Boolean(error) && <p className="text-base text-destructive leading-6">{error}</p>}
             </div>
 
             <DialogFooter>
@@ -318,12 +268,12 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
           </>
         ) : (
           <>
-            <DialogHeader>
+            <DialogHeader spacing="loose">
               <DialogTitle>User Created</DialogTitle>
               <DialogDescription>The user has been created. Make sure to save the credentials below.</DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="space-y-4">
               <Alert>
                 <Info className="size-4" />
                 <AlertDescription>
@@ -333,78 +283,42 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
 
               {/* Username */}
               <div className="space-y-1">
-                <p className="font-medium text-sm">Username</p>
+                <Text className="font-medium" variant="bodyLarge">
+                  Username
+                </Text>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 break-all rounded-md bg-muted px-3 py-2 font-mono text-sm">{username}</code>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button onClick={() => copyField(username, 'username')} size="icon" variant="outline">
-                          {copiedField === 'username' ? (
-                            <Check className="size-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="size-4" />
-                          )}
-                          <span className="sr-only">Copy username</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{copiedField === 'username' ? 'Copied!' : 'Copy username'}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <code className="flex-1 break-all rounded-md bg-muted px-3 py-2 font-mono text-base">{username}</code>
+                  <CopyButton content={username} size="icon" variant="outline" />
                 </div>
               </div>
 
               {/* Password */}
               <div className="space-y-1">
-                <p className="font-medium text-sm">Password</p>
+                <Text className="font-medium" variant="bodyLarge">
+                  Password
+                </Text>
                 <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <code className="block break-all rounded-md bg-muted px-3 py-2 pr-10 font-mono text-sm">
-                      {showPassword ? password : '\u2022'.repeat(Math.min(password.length, 24))}
-                    </code>
-                    <Button
-                      className="absolute top-0 right-0 h-full px-3 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      <span className="sr-only">{showPassword ? 'Hide' : 'Show'} password</span>
-                    </Button>
-                  </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button onClick={() => copyField(password, 'password-success')} size="icon" variant="outline">
-                          {copiedField === 'password-success' ? (
-                            <Check className="size-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="size-4" />
-                          )}
-                          <span className="sr-only">Copy password</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {copiedField === 'password-success' ? 'Copied!' : 'Copy password'}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Input className="flex-1 font-mono" readOnly type="password" value={password} />
+                  <CopyButton content={password} size="icon" variant="outline" />
                 </div>
               </div>
 
               {/* Mechanism */}
               <div className="space-y-1">
-                <p className="font-medium text-sm">Mechanism</p>
-                <p className="font-mono text-sm">{mechanism}</p>
+                <Text className="font-medium" variant="bodyLarge">
+                  Mechanism
+                </Text>
+                <p className="font-mono text-base">{mechanism}</p>
               </div>
 
               <Separator />
 
               {/* Next steps hint */}
               <div className="rounded-lg border border-dashed p-4">
-                <p className="font-medium text-sm">What's next?</p>
-                <p className="mt-1 text-muted-foreground text-sm">
+                <Text className="font-medium" variant="bodyLarge">
+                  What's next?
+                </Text>
+                <p className="mt-1 text-base text-muted-foreground leading-6">
                   This user has no permissions yet. Assign roles or create ACLs to grant access to cluster resources.
                 </p>
                 <div className="mt-3 flex gap-2">

@@ -23,6 +23,7 @@ import {
 } from 'components/redpanda-ui/components/alert-dialog';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import {
   Select,
   SelectContent,
@@ -31,8 +32,8 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, ChevronRight, Copy, Key, Shield, Trash2 } from 'lucide-react';
-import { runInAction } from 'mobx';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -47,7 +48,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useMemo, useState } from 'react';
-import { useDeleteAclMutation, useGetAclsByPrincipal, useLegacyCreateACLMutation } from 'react-query/api/acl';
+import {
+  useDeleteAclMutation,
+  useGetAclsByPrincipal,
+  useLegacyCreateACLMutation,
+  useListACLsQuery,
+} from 'react-query/api/acl';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from 'react-query/api/security';
 import { useDeleteUserMutation, useLegacyListUsersQuery } from 'react-query/api/user';
 import { toast } from 'sonner';
@@ -56,6 +62,7 @@ import { uiState } from 'state/ui-state';
 
 import { ACLDialog, type ACLEntry, ACLRemoveDialog, ACLTableSection } from './acl-editor';
 import { ChangePasswordDialog } from './change-password-dialog';
+import { buildResourceOptionsByType, compareDisplayText, flattenAclDetails, sortByName } from './security-acl-utils';
 
 function getMechanismLabel(mechanism?: SASLMechanism): string {
   switch (mechanism) {
@@ -79,7 +86,7 @@ function PrincipalCopyField({ value }: { value: string }) {
 
   return (
     <button
-      className="group inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-xs transition-colors hover:bg-muted"
+      className="group inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-sm transition-colors hover:bg-muted"
       onClick={handleCopy}
       title={copied ? 'Copied!' : `Copy: ${value}`}
       type="button"
@@ -113,10 +120,19 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
 
   // Fetch roles
   const { data: rolesData } = useListRolesQuery(undefined, { enabled: Boolean(Features.rolesApi) });
-  const allRoles = useMemo(() => rolesData?.roles ?? [], [rolesData]);
+  const allRoles = useMemo(() => sortByName(rolesData?.roles ?? []), [rolesData]);
+  const { data: assignedRolesData } = useListRolesQuery(
+    {
+      filter: {
+        principal: `User:${userName}`,
+      },
+    },
+    { enabled: Boolean(Features.rolesApi) }
+  );
 
   // Fetch ACLs for this user
   const { data: aclsData } = useGetAclsByPrincipal(`User:${userName}`);
+  const { data: allAclsData } = useListACLsQuery();
 
   // Mutations
   const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
@@ -124,61 +140,29 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMutation, isPending: isDeletingUser } = useDeleteUserMutation();
 
-  // Transform AclDetail[] (from getAclFromAclListResponse) into flat ACLEntry[]
-  const acls: ACLEntry[] = useMemo(() => {
-    if (!(aclsData && Array.isArray(aclsData))) {
-      return [];
-    }
-    const resourceTypeLabels: Record<string, string> = {
-      topic: 'Topic',
-      cluster: 'Cluster',
-      consumerGroup: 'Group',
-      transactionalId: 'TransactionalId',
-      subject: 'Subject',
-      schemaRegistry: 'SchemaRegistry',
-    };
-    const entries: ACLEntry[] = [];
-    for (const detail of aclsData) {
-      const host = detail.sharedConfig?.host || '*';
-      for (const rule of detail.rules ?? []) {
-        for (const [op, perm] of Object.entries(rule.operations ?? {})) {
-          if (perm === 'not-set') {
-            continue;
-          }
-          entries.push({
-            resourceType: resourceTypeLabels[rule.resourceType] ?? rule.resourceType ?? 'Unknown',
-            resourceName: rule.selectorValue || '',
-            operation: op,
-            permission: perm === 'allow' ? 'Allow' : 'Deny',
-            host,
-          });
-        }
-      }
-    }
-    return entries;
-  }, [aclsData]);
-
-  // Find which roles this user belongs to
-  // We check each role's members list
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  // Note: In a real implementation, we'd fetch members for each role
-  // For now, roles will be populated from the role members API
+  const acls: ACLEntry[] = useMemo(() => flattenAclDetails(aclsData), [aclsData]);
+  const resourceOptionsByType = useMemo(
+    () => buildResourceOptionsByType(allAclsData?.aclResources ?? []),
+    [allAclsData]
+  );
+  const userRoles = useMemo(
+    () => [...(assignedRolesData?.roles?.map((role) => role.name) ?? [])].sort(compareDisplayText),
+    [assignedRolesData]
+  );
 
   const mechanismLabel = getMechanismLabel(user?.mechanism);
 
   useEffect(() => {
-    runInAction(() => {
-      uiState.pageTitle = userName;
-      uiState.pageBreadcrumbs = [
-        { title: 'Security', linkTo: '/security' },
-        { title: 'Users', linkTo: '/security/users' },
-        {
-          title: userName,
-          linkTo: `/security/users/${encodeURIComponent(userName)}`,
-          options: { canBeTruncated: true, canBeCopied: true },
-        },
-      ];
-    });
+    uiState.pageTitle = userName;
+    uiState.pageBreadcrumbs = [
+      { title: 'Security', linkTo: '/security' },
+      { title: 'Users', linkTo: '/security/users' },
+      {
+        title: userName,
+        linkTo: `/security/users/${encodeURIComponent(userName)}`,
+        options: { canBeTruncated: true, canBeCopied: true },
+      },
+    ];
   }, [userName]);
 
   const availableToAssign = useMemo(() => allRoles.filter((r) => !userRoles.includes(r.name)), [allRoles, userRoles]);
@@ -193,7 +177,6 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
           remove: [],
         })
       );
-      setUserRoles((prev) => [...prev, roleName]);
       toast.success(`Assigned role "${roleName}"`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to assign role';
@@ -211,7 +194,6 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
           remove: [create(RoleMembershipSchema, { principal: `User:${userName}` })],
         })
       );
-      setUserRoles((prev) => prev.filter((r) => r !== roleName));
       toast.success(`Removed role "${roleName}"`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to remove role';
@@ -249,7 +231,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
         create(CreateACLRequestSchema, {
           resourceType: resourceTypeMap[entry.resourceType] ?? ACL_ResourceType.TOPIC,
           resourceName: entry.resourceName,
-          resourcePatternType: ACL_ResourcePatternType.LITERAL,
+          resourcePatternType: entry.resourcePatternType ?? ACL_ResourcePatternType.LITERAL,
           principal: `User:${userName}`,
           host: entry.host,
           operation: operationMap[entry.operation] ?? ACL_Operation.ALL,
@@ -317,7 +299,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
             host: acl.host,
             operation: operationMap[acl.operation] ?? ACL_Operation.ALL,
             permissionType: permissionMap[acl.permission] ?? ACL_PermissionType.ALLOW,
-            resourcePatternType: ACL_ResourcePatternType.LITERAL,
+            resourcePatternType: acl.resourcePatternType ?? ACL_ResourcePatternType.LITERAL,
           },
         })
       );
@@ -343,7 +325,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground text-sm">User not found.</p>
+        <Text variant="muted">User not found.</Text>
         <Button asChild variant="outline">
           <Link params={{ tab: 'users' }} to="/security/$tab">
             Back to Security
@@ -357,10 +339,12 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
     <>
       <div className="flex flex-col gap-8 pt-2">
         {/* Description */}
-        <p className="text-muted-foreground text-sm">Manage roles, ACLs, and credentials for this user.</p>
+        <Text className="max-w-3xl text-base leading-6" variant="muted">
+          Manage roles, ACLs, and credentials for this user.
+        </Text>
 
         {/* Properties */}
-        <div className="flex items-center gap-3 rounded-md border bg-muted/30 px-4 py-2.5">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Principal</span>
             <PrincipalCopyField value={`User:${userName}`} />
@@ -368,17 +352,21 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Mechanism</span>
-            <Badge className="font-mono font-normal text-xs" variant="outline">
+            <Badge className="font-mono font-normal text-sm" variant="outline">
               {mechanismLabel}
             </Badge>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button onClick={() => setPasswordDialogOpen(true)} size="sm" variant="outline">
+            <Button onClick={() => setPasswordDialogOpen(true)} variant="outline">
               <Key className="size-4" />
               Change Password
             </Button>
             {Boolean(Features.deleteUser) && (
-              <Button onClick={() => setDeleteDialogOpen(true)} size="sm" variant="destructive">
+              <Button
+                className="text-destructive hover:text-destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+                variant="outline"
+              >
                 <Trash2 className="size-4" />
                 Delete User
               </Button>
@@ -392,8 +380,12 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="size-4 text-muted-foreground" />
-                <h2 className="font-medium text-sm">Roles</h2>
-                <span className="text-muted-foreground text-xs">{userRoles.length} assigned</span>
+                <Text as="span" className="font-semibold text-base">
+                  Roles
+                </Text>
+                <Text as="span" variant="muted">
+                  {userRoles.length} assigned
+                </Text>
               </div>
               {availableToAssign.length > 0 ? (
                 <Select onValueChange={handleAssignRole} value="">
@@ -420,20 +412,26 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
                         </Select>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent>No roles available. Create a role first.</TooltipContent>
+                    <TooltipContent>
+                      {allRoles.length === 0
+                        ? 'No roles available. Create a role first.'
+                        : 'All roles are already assigned to this user.'}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
             </div>
 
             {userRoles.length === 0 ? (
-              <div className="rounded-lg border border-dashed py-8 text-center">
-                <Shield className="mx-auto mb-2 size-6 text-muted-foreground" />
-                <p className="font-medium text-sm">No roles assigned</p>
-                <p className="mt-1 text-muted-foreground text-xs">
-                  Assign roles to grant this user predefined sets of permissions.
-                </p>
-              </div>
+              <Empty className="py-8">
+                <EmptyMedia variant="icon">
+                  <Shield className="size-6" />
+                </EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>No roles assigned</EmptyTitle>
+                  <EmptyDescription>Assign roles to grant this user predefined sets of permissions.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <div className="rounded-lg border">
                 {userRoles.map((role, idx) => (
@@ -444,7 +442,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
                     <div className="flex items-center gap-3">
                       <Shield className="size-4 text-muted-foreground" />
                       <Link
-                        className="font-medium text-sm hover:underline"
+                        className="font-medium text-base hover:underline"
                         params={{ roleName: encodeURIComponent(role) }}
                         to="/security/roles/$roleName"
                       >
@@ -453,12 +451,12 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
-                        className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                        className="size-8 text-muted-foreground hover:text-destructive"
                         onClick={() => handleRemoveRole(role)}
-                        size="sm"
+                        size="icon"
                         variant="ghost"
                       >
-                        <Trash2 className="size-3.5" />
+                        <Trash2 className="size-4" />
                         <span className="sr-only">Remove {role}</span>
                       </Button>
                       <Link params={{ roleName: encodeURIComponent(role) }} to="/security/roles/$roleName">
@@ -477,7 +475,13 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
       </div>
 
       {/* ACL Create Dialog */}
-      <ACLDialog context="user" onClose={() => setAclDialogOpen(false)} onSave={handleSaveAcl} open={aclDialogOpen} />
+      <ACLDialog
+        context="user"
+        onClose={() => setAclDialogOpen(false)}
+        onSave={handleSaveAcl}
+        open={aclDialogOpen}
+        resourceOptionsByType={resourceOptionsByType}
+      />
 
       {/* ACL Remove Confirmation */}
       <ACLRemoveDialog
@@ -506,7 +510,9 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel asChild>
+              <Button variant="outline">Cancel</Button>
+            </AlertDialogCancel>
             <AlertDialogAction asChild disabled={isDeletingUser} onClick={handleDeleteUser}>
               <Button variant="destructive">{isDeletingUser ? 'Deleting...' : 'Delete User'}</Button>
             </AlertDialogAction>

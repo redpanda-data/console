@@ -9,8 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -29,8 +41,10 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Info, Plus, Shield, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ACL_ResourcePatternType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { useEffect, useState } from 'react';
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -44,6 +58,13 @@ export function truncateText(text: string, maxLen: number): string {
 export const RESOURCE_NAME_MAX = 64;
 export const PRINCIPAL_MAX = 60;
 
+export function getPatternTypeLabel(type?: number): string | null {
+  if (type === ACL_ResourcePatternType.PREFIXED) {
+    return 'Prefixed';
+  }
+  return null;
+}
+
 // ─── Shared ACL types & constants ────────────────────────────────────────────
 
 export interface ACLEntry {
@@ -52,6 +73,7 @@ export interface ACLEntry {
   operation: string;
   permission: string;
   host: string;
+  resourcePatternType?: number;
 }
 
 const resourceTypes: readonly string[] = ['Topic', 'Group', 'Cluster', 'TransactionalId'];
@@ -109,9 +131,10 @@ interface ACLDialogProps {
   context?: 'role' | 'user';
   onSave: (acl: ACLEntry) => void;
   onClose: () => void;
+  resourceOptionsByType?: Partial<Record<'Cluster' | 'Group' | 'Topic' | 'TransactionalId', ComboboxOption[]>>;
 }
 
-export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialogProps) {
+export function ACLDialog({ open, context = 'role', onSave, onClose, resourceOptionsByType = {} }: ACLDialogProps) {
   const [resourceType, setResourceType] = useState('Topic');
   const [resourceName, setResourceName] = useState('');
   const [operation, setOperation] = useState('All');
@@ -119,6 +142,8 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
   const [host, setHost] = useState('*');
   const [patternType, setPatternType] = useState<PatternType>('Literal');
   const [error, setError] = useState<string | null>(null);
+
+  const resourceOptions = resourceOptionsByType[resourceType as keyof typeof resourceOptionsByType] ?? [];
 
   useEffect(() => {
     if (!open) {
@@ -151,12 +176,19 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
       setError(hostError);
       return;
     }
+    const patternTypeMap: Record<PatternType, ACL_ResourcePatternType> = {
+      Literal: ACL_ResourcePatternType.LITERAL,
+      Prefixed: ACL_ResourcePatternType.PREFIXED,
+      Any: ACL_ResourcePatternType.LITERAL,
+    };
+
     onSave({
       resourceType,
       resourceName: resolvedResourceName,
       operation,
       permission,
       host: host.trim(),
+      resourcePatternType: patternTypeMap[patternType],
     });
   };
 
@@ -165,18 +197,19 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
   return (
     <Dialog onOpenChange={(o) => !o && onClose()} open={open}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader spacing="loose">
           <DialogTitle>Add ACL</DialogTitle>
           <DialogDescription>Define a new access control rule for this {entityLabel}.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
           {/* Resource Type */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Resource Type</Label>
             <Select
               onValueChange={(v) => {
                 setResourceType(v);
+                setResourceName('');
                 const ops = operationsByResourceType[v] || [];
                 if (!ops.includes(operation)) {
                   setOperation(ops[0] || 'All');
@@ -204,7 +237,7 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
 
           {/* Pattern Type — hidden for Cluster */}
           {resourceType !== 'Cluster' && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Pattern Type</Label>
               <div className="flex gap-1 rounded-lg border p-1">
                 {(['Literal', 'Prefixed', 'Any'] as const).map((pt) => (
@@ -228,7 +261,7 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
                   </button>
                 ))}
               </div>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-sm">
                 {patternType === 'Literal' && 'Matches the exact resource name.'}
                 {patternType === 'Prefixed' && 'Matches any resource whose name starts with this prefix.'}
                 {patternType === 'Any' && 'Matches all resources of this type (wildcard).'}
@@ -239,7 +272,7 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
           {resourceType === 'Cluster' && (
             <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
               <Info className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-sm">
                 Cluster ACLs apply to the entire Kafka cluster. No resource name is needed.
               </p>
             </div>
@@ -247,27 +280,27 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
 
           {/* Resource Name — hidden for Cluster and "Any" pattern */}
           {resourceType !== 'Cluster' && patternType !== 'Any' && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="acl-resource-name">
                 {patternType === 'Prefixed' ? 'Resource Name Prefix' : 'Resource Name'}
               </Label>
-              <Input
-                autoComplete="off"
+              <Combobox
+                autocomplete
                 className="font-mono"
-                id="acl-resource-name"
-                onChange={(e) => {
-                  setResourceName(e.target.value);
+                creatable
+                onChange={(value) => {
+                  setResourceName(value);
                   setError(null);
                 }}
+                options={resourceOptions}
                 placeholder={patternType === 'Prefixed' ? 'e.g. com.company.events' : 'e.g. my-topic'}
-                type="text"
                 value={resourceName}
               />
             </div>
           )}
 
           {/* Operation */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Operation</Label>
             <Select onValueChange={setOperation} value={operation}>
               <SelectTrigger>
@@ -284,7 +317,7 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
           </div>
 
           {/* Permission */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>Permission</Label>
             <Select onValueChange={setPermission} value={permission}>
               <SelectTrigger>
@@ -301,12 +334,14 @@ export function ACLDialog({ open, context = 'role', onSave, onClose }: ACLDialog
           </div>
 
           {/* Host */}
-          <div className="space-y-2">
-            <Label htmlFor="acl-host">Host</Label>
-            <p className="text-muted-foreground text-xs">
-              Use <code className="rounded bg-muted px-1 font-mono">*</code> for all hosts, or an exact IP address. CIDR
-              ranges are not supported by the Kafka API.
-            </p>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="acl-host">Host</Label>
+              <p className="text-muted-foreground text-sm">
+                Use <code className="rounded bg-muted px-1 font-mono">*</code> for all hosts, or an exact IP address.
+                CIDR ranges are not supported by the Kafka API.
+              </p>
+            </div>
             <Input
               className="font-mono"
               id="acl-host"
@@ -346,43 +381,39 @@ interface ACLRemoveDialogProps {
 
 export function ACLRemoveDialog({ open, acl, context = 'role', onConfirm, onClose }: ACLRemoveDialogProps) {
   return (
-    <Dialog onOpenChange={(o) => !o && onClose()} open={open}>
-      <DialogContent className="sm:max-w-sm">
+    <AlertDialog onOpenChange={(o) => !o && onClose()} open={open}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove ACL?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {context === 'user'
+              ? 'Remove this access control rule from the user?'
+              : 'Remove this access control rule from the role? Principals assigned to this role will lose this permission.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         {acl && (
-          <>
-            <DialogHeader>
-              <DialogTitle>Remove ACL</DialogTitle>
-              <DialogDescription>
-                {context === 'user'
-                  ? 'Remove this access control rule from the user?'
-                  : 'Remove this access control rule from the role? Principals assigned to this role will lose this permission.'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-2">
-              <div className="rounded-lg border bg-muted/30 px-3 py-2.5 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <Badge className="font-normal text-xs" variant="outline">
-                    {acl.resourceType}
-                  </Badge>
-                  <span className="font-mono">{acl.resourceName}</span>
-                </div>
-                <p className="mt-1 text-muted-foreground text-xs">
-                  {acl.operation} / {acl.permission} / Host: {acl.host}
-                </p>
-              </div>
+          <div className="rounded-lg border bg-muted/30 px-3 py-2.5 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Badge className="font-normal text-sm" variant="outline">
+                {acl.resourceType}
+              </Badge>
+              <span className="font-mono">{acl.resourceName}</span>
             </div>
-            <DialogFooter>
-              <Button onClick={onClose} variant="outline">
-                Cancel
-              </Button>
-              <Button onClick={onConfirm} variant="destructive">
-                Remove
-              </Button>
-            </DialogFooter>
-          </>
+            <p className="mt-1 text-muted-foreground text-sm">
+              {acl.operation} / {acl.permission} / Host: {acl.host}
+            </p>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <Button variant="outline">Cancel</Button>
+          </AlertDialogCancel>
+          <AlertDialogAction asChild onClick={onConfirm}>
+            <Button variant="destructive">Remove</Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -401,19 +432,21 @@ export function ACLTableSection({ acls, context = 'role', onAdd, onRemove }: ACL
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield className="size-4 text-muted-foreground" />
-          <h2 className="font-medium text-sm">ACLs</h2>
-          <span className="text-muted-foreground text-xs">
+          <Text as="span" className="font-semibold text-base">
+            ACLs
+          </Text>
+          <Text as="span" variant="muted">
             {acls.length} {acls.length === 1 ? 'rule' : 'rules'}
-          </span>
+          </Text>
         </div>
-        <Button onClick={onAdd} size="sm">
+        <Button onClick={onAdd}>
           <Plus className="size-4" />
           Add ACL
         </Button>
       </div>
       <div className="overflow-hidden rounded-lg border">
         {acls.length > 0 ? (
-          <Table className="table-fixed">
+          <Table className="table-fixed" size="lg">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-[14%]">Resource Type</TableHead>
@@ -430,24 +463,31 @@ export function ACLTableSection({ acls, context = 'role', onAdd, onRemove }: ACL
               {acls.map((acl, idx) => (
                 <TableRow key={`${acl.resourceType}-${acl.resourceName}-${acl.operation}-${idx}`}>
                   <TableCell className="py-1.5">
-                    <Badge className="font-normal text-xs" variant="outline">
+                    <Badge className="font-normal text-sm" variant="outline">
                       {acl.resourceType}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-0 py-1.5">
-                    <span className="block truncate font-mono text-sm" title={acl.resourceName}>
-                      {truncateText(acl.resourceName, RESOURCE_NAME_MAX)}
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate font-mono text-base" title={acl.resourceName}>
+                        {truncateText(acl.resourceName, RESOURCE_NAME_MAX)}
+                      </span>
+                      {Boolean(getPatternTypeLabel(acl.resourcePatternType)) && (
+                        <Badge className="shrink-0 font-normal text-xs" variant="secondary">
+                          {getPatternTypeLabel(acl.resourcePatternType)}
+                        </Badge>
+                      )}
                     </span>
                   </TableCell>
-                  <TableCell className="py-1.5 text-sm">{acl.operation}</TableCell>
+                  <TableCell className="py-1.5 text-base">{acl.operation}</TableCell>
                   <TableCell className="py-1.5">
                     <span
-                      className={`font-medium text-sm ${acl.permission === 'Allow' ? 'text-emerald-600' : 'text-destructive'}`}
+                      className={`font-medium text-base ${acl.permission === 'Allow' ? 'text-emerald-600' : 'text-destructive'}`}
                     >
                       {acl.permission}
                     </span>
                   </TableCell>
-                  <TableCell className="py-1.5 font-mono text-sm">{acl.host}</TableCell>
+                  <TableCell className="py-1.5 font-mono text-base">{acl.host}</TableCell>
                   <TableCell className="py-1.5">
                     <Button
                       className="size-8 text-muted-foreground hover:text-destructive"
@@ -464,19 +504,23 @@ export function ACLTableSection({ acls, context = 'role', onAdd, onRemove }: ACL
             </TableBody>
           </Table>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Shield className="mb-2 size-6 text-muted-foreground" />
-            <p className="font-medium text-sm">No ACLs defined</p>
-            <p className="mt-1 text-muted-foreground text-xs">
-              {context === 'user'
-                ? 'This user has no direct ACLs. Permissions may be inherited through assigned roles.'
-                : 'Add ACLs to define what this role can access.'}
-            </p>
-            <Button className="mt-3 bg-transparent" onClick={onAdd} size="sm" variant="outline">
+          <Empty className="py-12">
+            <EmptyMedia variant="icon">
+              <Shield className="size-6" />
+            </EmptyMedia>
+            <EmptyHeader>
+              <EmptyTitle>No ACLs defined</EmptyTitle>
+              <EmptyDescription>
+                {context === 'user'
+                  ? 'This user has no direct ACLs. Permissions may be inherited through assigned roles.'
+                  : 'Add ACLs to define what this role can access.'}
+              </EmptyDescription>
+            </EmptyHeader>
+            <Button onClick={onAdd}>
               <Plus className="size-4" />
               Add ACL
             </Button>
-          </div>
+          </Empty>
         )}
       </div>
     </div>
@@ -486,14 +530,14 @@ export function ACLTableSection({ acls, context = 'role', onAdd, onRemove }: ACL
 // ─── Principal step dialog (used by permissions tab) ─────────────────────────
 
 interface PrincipalStepDialogProps {
+  options: ComboboxOption[];
   value: string;
   onChange: (v: string) => void;
   onContinue: () => void;
   onClose: () => void;
 }
 
-export function PrincipalStepDialog({ value, onChange, onContinue, onClose }: PrincipalStepDialogProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+export function PrincipalStepDialog({ options, value, onChange, onContinue, onClose }: PrincipalStepDialogProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = () => {
@@ -512,38 +556,33 @@ export function PrincipalStepDialog({ value, onChange, onContinue, onClose }: Pr
   return (
     <Dialog onOpenChange={(o) => !o && onClose()} open>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader spacing="loose">
           <DialogTitle>Create ACL</DialogTitle>
           <DialogDescription>
             Enter the principal this ACL will apply to, then define the access rule.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="principal-input">Principal</Label>
-            <Input
-              autoComplete="off"
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="principal-input">Principal</Label>
+              <p className="text-muted-foreground text-sm">
+                Type a principal in the format <code className="rounded bg-muted px-1 font-mono">Type:name</code>.
+                Supported types: User, Group, RedpandaRole.
+              </p>
+            </div>
+            <Combobox
+              autocomplete
               className="font-mono"
-              id="principal-input"
-              onChange={(e) => {
-                onChange(e.target.value);
+              creatable
+              onChange={(nextValue) => {
+                onChange(nextValue);
                 setError(null);
               }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
+              options={options}
               placeholder="e.g. User:ben or Group:my-team"
-              ref={inputRef}
-              type="text"
               value={value}
             />
-            <p className="text-muted-foreground text-xs">
-              Type a principal in the format <code className="rounded bg-muted px-1 font-mono">Type:name</code>.
-              Supported types: User, Group, RedpandaRole.
-            </p>
             {Boolean(error) && <p className="text-destructive text-sm">{error}</p>}
           </div>
         </div>
