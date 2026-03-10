@@ -19,7 +19,7 @@ import {
 import { Link } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
 import { type FC, useEffect, useState } from 'react';
-import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, type SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import { setMonacoTheme } from '../../../config';
 import {
@@ -124,6 +124,10 @@ type Inputs = {
   value: PayloadOptions;
 };
 
+const persistCompressionType = (compressionType: CompressionType) => {
+  uiState.topicSettings.produceRecordCompression = compressionType;
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const toast = useToast();
@@ -135,7 +139,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     handleSubmit,
     setError,
     formState: { isSubmitting, errors },
-    watch,
     clearErrors,
   } = useForm<Inputs>({
     defaultValues: {
@@ -158,8 +161,8 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     name: 'headers',
   });
 
-  const keyPayloadOptions = watch('key');
-  const valuePayloadOptions = watch('value');
+  const keyPayloadOptions = useWatch({ control, name: 'key' });
+  const valuePayloadOptions = useWatch({ control, name: 'value' });
 
   const [isKeyExpanded, setKeyExpanded] = useState(false);
   useEffect(() => {
@@ -226,8 +229,8 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   const availableValues = api.schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
 
-  const keySchemaName = watch('key.schemaName');
-  const valueSchemaName = watch('value.schemaName');
+  const keySchemaName = useWatch({ control, name: 'key.schemaName' });
+  const valueSchemaName = useWatch({ control, name: 'value.schemaName' });
 
   // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -236,7 +239,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     req.partitionId = data.partition;
     req.compression = data.compressionType;
 
-    uiState.topicSettings.produceRecordCompression = data.compressionType;
+    persistCompressionType(data.compressionType);
 
     // Headers
     for (const h of data.headers) {
