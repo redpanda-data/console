@@ -5,6 +5,8 @@ on:
     paths:
       - "frontend/**"
       - "backend/**"
+      - "Taskfile.yaml"
+      - "taskfiles/**"
       - '.github/workflows/repository-dispatch.yml'
       - '.github/workflows/backend-lint-test.yml'
       - '.github/workflows/frontend-verify.yml'
