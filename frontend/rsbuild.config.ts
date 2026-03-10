@@ -5,8 +5,8 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
-import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
 import moduleFederationConfig from './module-federation';
 
@@ -22,6 +22,9 @@ export default defineConfig({
     pluginSvgr({ mixedImport: true }),
     pluginSass(),
     pluginYaml(),
+    pluginNodePolyfill({
+      globals: { process: true },
+    }),
   ],
   moduleFederation: {
     options: moduleFederationConfig,
@@ -73,9 +76,6 @@ export default defineConfig({
       config.output.publicPath = 'auto';
 
       const plugins = [
-        new NodePolyfillPlugin({
-          additionalAliases: ['process'],
-        }),
         new MonacoWebpackPlugin({
           languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf'],
           customLanguages: [
