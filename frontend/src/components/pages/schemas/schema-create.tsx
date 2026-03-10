@@ -32,6 +32,7 @@ import { InfoIcon } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
 import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
+import { useSchemaTypesQuery } from '../../../react-query/api/schema-registry';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import {
@@ -453,6 +454,8 @@ const SchemaEditor = (p: {
   mode: 'CREATE' | 'ADD_VERSION';
   onStateChange: SetSchemaState;
 }) => {
+  const { data: schemaTypes } = useSchemaTypesQuery();
+
   useEffect(() => {
     api.refreshSchemaTypes(true);
   }, []);
@@ -468,7 +471,7 @@ const SchemaEditor = (p: {
     { value: 'PROTOBUF', label: 'Protobuf' },
   ];
 
-  if (api.schemaTypes?.includes('JSON')) {
+  if (schemaTypes?.includes('JSON') || api.schemaTypes?.includes('JSON')) {
     formatOptions.push({ value: 'JSON', label: 'JSON' });
   }
 
