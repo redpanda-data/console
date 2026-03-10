@@ -7,9 +7,18 @@ tasks:
       GOLANG_URL_DEFAULT: https://golang.org/dl/go{{.GO_VERSION}}.{{OS}}-{{ARCH}}.tar.gz
       GOLANG_URL: '{{default .GOLANG_URL_DEFAULT .GOLANG_URL}}'
     cmds:
-      - rm -rf {{.GO_BUILD_ROOT}}
-      - mkdir -p '{{.GO_BUILD_ROOT}}'
-      - curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 '{{.GOLANG_URL}}' | tar -xz -C '{{.GO_BUILD_ROOT}}' --strip 1
+      - |
+        # If system Go is already the right version, symlink it instead of downloading
+        if command -v go &>/dev/null && [[ $(go version) == *"go version go{{ .GO_VERSION }}"* ]]; then
+          SYSTEM_GO_ROOT=$(go env GOROOT)
+          rm -rf {{.GO_BUILD_ROOT}}
+          mkdir -p $(dirname {{.GO_BUILD_ROOT}})
+          ln -sf "$SYSTEM_GO_ROOT" {{.GO_BUILD_ROOT}}
+        else
+          rm -rf {{.GO_BUILD_ROOT}}
+          mkdir -p '{{.GO_BUILD_ROOT}}'
+          curl -sSLf --retry 3 --retry-connrefused --retry-delay 2 '{{.GOLANG_URL}}' | tar -xz -C '{{.GO_BUILD_ROOT}}' --strip 1
+        fi
     status:
       - test -f '{{.GO_BUILD_ROOT}}/bin/go'
       - '[[ $({{.GO_BUILD_ROOT}}/bin/go version) == *"go version go{{ .GO_VERSION }}"* ]]'
