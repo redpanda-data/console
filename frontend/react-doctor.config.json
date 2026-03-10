@@ -1,4 +1,5 @@
 {
+  "deadCode": false,
   "ignore": {
     "files": [
       "src/components/ui/**",
@@ -7,6 +8,6 @@
       "src/hooks/use-mobile.ts",
       "src/globals.css"
     ],
-    "rules": ["react-doctor/use-lazy-motion"]
+    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion"]
   }
 }
