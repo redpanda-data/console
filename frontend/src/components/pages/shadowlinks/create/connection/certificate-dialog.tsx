@@ -21,7 +21,7 @@ import { Dropzone } from 'components/redpanda-ui/components/dropzone';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { TLS_MODE, type TLSMode } from '../model';
 
@@ -67,21 +67,21 @@ export function CertificateDialog({
   const [fileName, setFileName] = useState(existingValue?.fileName ?? '');
 
   // Reset state when dialog opens based on whether we're adding or editing
-  useEffect(() => {
-    if (isOpen) {
-      if (existingValue) {
-        // Edit mode: populate with existing values
-        setFilePath(existingValue.filePath ?? '');
-        setPemContent(existingValue.pemContent ?? '');
-        setFileName(existingValue.fileName ?? '');
-      } else {
-        // Add mode: clear all fields
-        setFilePath('');
-        setPemContent('');
-        setFileName('');
-      }
+  const prevIsOpenRef = useRef(isOpen);
+  if (isOpen && !prevIsOpenRef.current) {
+    if (existingValue) {
+      // Edit mode: populate with existing values
+      setFilePath(existingValue.filePath ?? '');
+      setPemContent(existingValue.pemContent ?? '');
+      setFileName(existingValue.fileName ?? '');
+    } else {
+      // Add mode: clear all fields
+      setFilePath('');
+      setPemContent('');
+      setFileName('');
     }
-  }, [isOpen, existingValue]);
+  }
+  prevIsOpenRef.current = isOpen;
 
   const handleFileUpload = useCallback((files: File[]) => {
     if (files.length === 0) {

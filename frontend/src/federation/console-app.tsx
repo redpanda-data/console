@@ -145,6 +145,10 @@ function createFederatedQueryClient() {
   });
 }
 
+const setConfigJwt = (token: string) => {
+  config.jwt = token;
+};
+
 /**
  * Federated Console App component for Module Federation v2.0.
  * This is the main entry point for Cloud UI integration.
@@ -178,7 +182,7 @@ function ConsoleAppInner({
     () =>
       new TokenManager(async () => {
         const token = await getAccessTokenRef.current();
-        config.jwt = token;
+        setConfigJwt(token);
         return token;
       }),
     []

@@ -39,6 +39,7 @@ type ShadowTopicsTableProps = {
 };
 
 const emptyTopics: ShadowTopic[] = [];
+const coreRowModel = getCoreRowModel<ShadowTopic>();
 
 // Reusable loading row component
 const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength: number }) => (
@@ -173,7 +174,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   const table = useReactTable<ShadowTopic>({
     data: topics ?? emptyTopics,
     columns,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: coreRowModel,
   });
 
   const { rows } = table.getRowModel();

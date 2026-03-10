@@ -28,17 +28,15 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 type TopicConsumersProps = { topic: Topic };
 
 export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
-  let consumers = api.topicConsumers.get(topic.topicName);
-  const isLoading = consumers === null;
+  const rawConsumers = api.topicConsumers.get(topic.topicName);
+  const isLoading = rawConsumers === null;
+  const consumers = rawConsumers ?? [];
+
+  const paginationParams = usePaginationParams(consumers.length, uiState.topicSettings.consumerPageSize);
+
   if (isLoading) {
     return DefaultSkeleton;
   }
-  if (!consumers) {
-    consumers = [];
-  }
-
-  // biome-ignore lint/correctness/useHookAtTopLevel: part of TopicConsumers implementation
-  const paginationParams = usePaginationParams(consumers.length, uiState.topicSettings.consumerPageSize);
 
   return (
     <DataTable<TopicConsumer>

@@ -354,7 +354,7 @@ const SpanRow: FC<SpanRowProps> = ({
   const startOffsetMs = Number(span.startTime - timeline.minTime) / 1_000_000;
   const spanTimestamp = new Date(baseTimestamp.getTime() + startOffsetMs);
 
-  const Icon = getIconForServiceName(span.span);
+  const ServiceIcon = getIconForServiceName(span.span);
   const serviceName = getServiceName(span.span);
 
   // Check if this span is selected
@@ -419,7 +419,7 @@ const SpanRow: FC<SpanRowProps> = ({
             className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-muted-foreground"
             variant="outline"
           >
-            <Icon className="mr-1 h-3 w-3 shrink-0" />
+            <ServiceIcon className="mr-1 h-3 w-3 shrink-0" />
             <Small className="truncate" title={serviceName}>
               {serviceName}
             </Small>
@@ -518,25 +518,25 @@ const computeInitialExpandedSpans = (spanTree: SpanNode[]): Set<string> => {
 const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   const [expandedSpans, setExpandedSpans] = useState<Set<string>>(() => computeInitialExpandedSpans(spanTree));
   const hasInitializedRef = useRef(spanTree.length > 0);
+  const prevCollapseAllTriggerRef = useRef(collapseAllTrigger);
 
   // Reset to initial state when collapse all is triggered
-  useEffect(() => {
+  if (collapseAllTrigger !== prevCollapseAllTriggerRef.current) {
+    prevCollapseAllTriggerRef.current = collapseAllTrigger;
     if (collapseAllTrigger > 0 && spanTree.length > 0) {
       setExpandedSpans(computeInitialExpandedSpans(spanTree));
     }
-  }, [collapseAllTrigger, spanTree]);
+  }
 
   // Sync expansion state when spanTree loads (handles async data loading)
-  useEffect(() => {
-    // Only initialize once when spanTree first becomes populated
-    if (!hasInitializedRef.current && spanTree.length > 0) {
-      hasInitializedRef.current = true;
-      const initialSpans = computeInitialExpandedSpans(spanTree);
-      if (initialSpans.size > 0) {
-        setExpandedSpans(initialSpans);
-      }
+  // Only initialize once when spanTree first becomes populated
+  if (!hasInitializedRef.current && spanTree.length > 0) {
+    hasInitializedRef.current = true;
+    const initialSpans = computeInitialExpandedSpans(spanTree);
+    if (initialSpans.size > 0) {
+      setExpandedSpans(initialSpans);
     }
-  }, [spanTree]);
+  }
 
   const toggleSpan = (spanId: string) => {
     setExpandedSpans((prev) => {

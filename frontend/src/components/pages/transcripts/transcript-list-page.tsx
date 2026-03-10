@@ -487,7 +487,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     const ONE_HOUR = 60 * ONE_MINUTE;
     if (isLinkedTraceMode && activeTraceTimeMs) {
       // Cap end time to current time - no point showing future time range
-      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, Date.now());
+      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, nowMs);
       return {
         startTimestamp: timestampFromMs(activeTraceTimeMs - ONE_HOUR),
         endTimestamp: timestampFromMs(endMs),
@@ -742,7 +742,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // Pre-compute chart query times to avoid nested ternaries in JSX
   const chartQueryEndMs =
     isLinkedTraceMode && activeTraceTimeMs
-      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, Date.now())
+      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, nowMs)
       : (jumpedTo?.endMs ?? timestamps.endMs);
   const chartQueryStartMs =
     isLinkedTraceMode && activeTraceTimeMs

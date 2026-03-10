@@ -24,7 +24,7 @@ import {
 import { EditIcon, InfoIcon } from 'components/icons';
 import type { FC } from 'react';
 import { useState } from 'react';
-import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
 
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/create-topic-modal';
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
@@ -72,7 +72,6 @@ const ConfigEditorForm: FC<{
     control,
     handleSubmit,
     formState: { isSubmitting },
-    watch,
   } = useForm<Inputs>({
     defaultValues: {
       valueType: defaultValueType,
@@ -135,7 +134,7 @@ const ConfigEditorForm: FC<{
     }
   };
 
-  const valueType = watch('valueType');
+  const valueType = useWatch({ control, name: 'valueType' });
 
   const SOURCE_PRIORITY_ORDER = [
     'DYNAMIC_TOPIC_CONFIG',

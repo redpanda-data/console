@@ -11,6 +11,10 @@
 
 import KowlEditor from '../../../misc/kowl-editor';
 
+const updateJsonText = (obs: { jsonText: string }, v: string) => {
+  obs.jsonText = v;
+};
+
 export const DebugEditor = (p: { observable: { jsonText: string } }) => {
   const obs = p.observable;
 
@@ -25,7 +29,7 @@ export const DebugEditor = (p: { observable: { jsonText: string } }) => {
             if (!(obs.jsonText || v)) {
               return; // dont replace undefiend with empty (which would trigger our 'autorun')
             }
-            obs.jsonText = v;
+            updateJsonText(obs, v);
           }
         }}
         value={obs.jsonText}
