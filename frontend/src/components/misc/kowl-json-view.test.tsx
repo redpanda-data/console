@@ -25,19 +25,21 @@ const { editorLayoutSpy, editorPropsSpy } = vi.hoisted(() => ({
 vi.mock('./kowl-editor', async () => {
   const React = await import('react');
 
+  const MockKowlEditor = (props: any) => {
+    editorPropsSpy(props);
+
+    React.useEffect(() => {
+      props.onMount?.({
+        layout: editorLayoutSpy,
+      });
+    }, [props.onMount]);
+
+    return <div data-testid="mock-kowl-editor">{props.value}</div>;
+  };
+
   return {
     __esModule: true,
-    default: (props: any) => {
-      editorPropsSpy(props);
-
-      React.useEffect(() => {
-        props.onMount?.({
-          layout: editorLayoutSpy,
-        });
-      }, [props.onMount]);
-
-      return <div data-testid="mock-kowl-editor">{props.value}</div>;
-    },
+    default: MockKowlEditor,
   };
 });
 
