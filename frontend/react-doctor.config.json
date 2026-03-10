@@ -1,4 +1,5 @@
 {
+  "diff": false,
   "deadCode": false,
   "ignore": {
     "files": [
