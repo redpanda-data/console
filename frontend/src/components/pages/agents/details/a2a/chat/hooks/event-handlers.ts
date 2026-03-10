@@ -400,9 +400,15 @@ export const handleArtifactUpdateEvent = (
   }
 
   // Build message with current blocks + active artifact block (if streaming)
+  // IMPORTANT: Clone the active artifact block so React detects the change.
+  // The activeTextBlock is mutated in place during streaming, so pushing the
+  // same object reference causes React to skip re-renders.
   const currentBlocks = [...state.contentBlocks];
   if (state.activeTextBlock && state.activeTextBlock.type === 'artifact') {
-    currentBlocks.push(state.activeTextBlock);
+    currentBlocks.push({
+      ...state.activeTextBlock,
+      parts: state.activeTextBlock.parts.map((p) => ({ ...p })),
+    });
   }
 
   const updatedMessage = buildMessageWithContentBlocks({
