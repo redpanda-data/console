@@ -9,122 +9,152 @@
  * by the Apache License, Version 2.0
  */
 
-import type { EdgeProps } from '@xyflow/react';
-import { Handle, Position } from '@xyflow/react';
+import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
-import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from 'components/ui/base-node';
-import { ArrowRightIcon } from 'lucide-react';
+import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
+import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
+import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { BaseNode } from 'components/ui/base-node';
 
-import type { TreeGroupNodeData, TreeLeafNodeData, TreeSectionNodeData } from '../utils/pipeline-flow-parser';
+const invisibleHandle = '!w-0 !h-0 !border-0 !bg-transparent !min-w-0 !min-h-0';
+const ARROW_GAP = 8;
+const BRANCH_INDENT = 12;
+const SECTION_EDGE_GAP = 20;
 
-// ---------------------------------------------------------------------------
-// TreeSectionNode
-// ---------------------------------------------------------------------------
+const SKELETON_SECTIONS = [
+  { label: 'INPUT', leaves: 1 },
+  { label: 'PROCESSORS', leaves: 2 },
+  { label: 'OUTPUT', leaves: 1 },
+] as const;
 
-export function TreeSectionNode({ data }: { data: TreeSectionNodeData }) {
+type PipelineFlowSkeletonProps = {
+  error?: string;
+};
+
+export function PipelineFlowSkeleton({ error }: PipelineFlowSkeletonProps) {
   return (
-    <div
-      className="rounded-xl border-2 border-border border-dashed bg-muted/30 p-0"
-      style={{ width: '100%', height: '100%' }}
-    >
-      <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-        <Badge variant="secondary">{data.label}</Badge>
+    <div className="relative h-full w-full">
+      {error ? (
+        <Banner variant="accent">
+          <BannerContent>Unable to visualize pipeline.</BannerContent>
+          <BannerClose variant="ghost" />
+        </Banner>
+      ) : null}
+      <div aria-hidden="true" className="pointer-events-none flex flex-col gap-4 p-4 pl-3">
+        {SKELETON_SECTIONS.map((section) => (
+          <div className="flex flex-col gap-2" key={section.label}>
+            <Skeleton className={error ? 'animate-none! opacity-40' : ''} variant="text" width="xs" />
+            {Array.from({ length: section.leaves }, (_, i) => (
+              <Skeleton
+                className={cn('ml-10', error ? 'animate-none! opacity-40' : '')}
+                key={`${section.label}-${i}`}
+                size="lg"
+                variant="rounded"
+                width="md"
+              />
+            ))}
+          </div>
+        ))}
       </div>
-      <Handle className="!bg-transparent !border-0 !w-0 !h-0" id="right" position={Position.Right} type="source" />
-      <Handle className="!bg-transparent !border-0 !w-0 !h-0" id="left" position={Position.Left} type="target" />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// TreeGroupNode
-// ---------------------------------------------------------------------------
+type TreeNodeData = {
+  label: string;
+  labelText?: string;
+  topics?: string[];
+  collapsed?: boolean;
+  collapsible?: boolean;
+  childCount?: number;
+  onToggle?: () => void;
+};
 
-export function TreeGroupNode({ data }: { data: TreeGroupNodeData }) {
+const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
+  <div className="flex h-7 items-center">
+    <Handle className={invisibleHandle} position={Position.Left} type="target" />
+    <span className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">{data.label}</span>
+    <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />
+  </div>
+);
+
+const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
+  <button className="nodrag nopan flex h-7 cursor-pointer items-center text-sm" onClick={data.onToggle} type="button">
+    <Handle className={invisibleHandle} position={Position.Left} type="target" />
+    <span className="font-medium text-foreground">{data.label}</span>
+    <span className="ml-1 text-subtle">{data.collapsed ? '\u25B8' : '\u25BE'}</span>
+    {data.collapsed && data.childCount ? (
+      <CountDot className="ml-1.5" count={data.childCount} size="sm" variant="disabled" />
+    ) : null}
+    {!data.collapsed && <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />}
+  </button>
+);
+
+const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
+  const hasTopics = data.topics && data.topics.length > 0;
+  const isPlaceholder = data.label === 'none';
   return (
-    <BaseNode className="border-dashed bg-muted/40">
-      <BaseNodeHeader className="border-0 py-1">
-        <BaseNodeHeaderTitle className="text-muted-foreground">{data.name}</BaseNodeHeaderTitle>
-        <Badge className="ml-auto" variant="outline">
-          {data.childCount}
-        </Badge>
-      </BaseNodeHeader>
-      <BaseNodeContent className="p-0">{null}</BaseNodeContent>
+    <BaseNode
+      className={cn(
+        'min-w-[120px] px-3 py-1 font-medium transition-colors',
+        isPlaceholder
+          ? 'border-dashed! text-muted-foreground'
+          : 'border-transparent! bg-secondary/5 text-foreground hover:bg-secondary/10'
+      )}
+      tabIndex={-1}
+    >
+      <Handle className={invisibleHandle} position={Position.Left} type="target" />
+      <div className={cn('text-sm', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}>
+        {isPlaceholder ? 'Not configured' : data.label}
+      </div>
+      <div className={cn(data.labelText || (hasTopics && 'mt-2'), 'flex gap-1.5')}>
+        {data.labelText ? (
+          <Badge size="sm" variant="primary-inverted">
+            {data.labelText}
+          </Badge>
+        ) : null}
+        {hasTopics ? (
+          <BadgeGroup maxVisible={1} size="sm" variant="secondary-outline">
+            {data.topics?.map((t) => (
+              <Badge key={t} size="sm" variant="secondary-outline">
+                topic: {t}
+              </Badge>
+            ))}
+          </BadgeGroup>
+        ) : null}
+      </div>
     </BaseNode>
   );
+};
+
+export function TreeEdge({ sourceX, sourceY, targetX, targetY, markerEnd }: EdgeProps) {
+  const path = `M ${sourceX + BRANCH_INDENT} ${sourceY} V ${targetY} H ${targetX - ARROW_GAP}`;
+  return <BaseEdge markerEnd={markerEnd} path={path} style={{ stroke: 'var(--color-border)', strokeWidth: 1 }} />;
 }
 
-// ---------------------------------------------------------------------------
-// TreeLeafNode
-// ---------------------------------------------------------------------------
-
-export function TreeLeafNode({ data }: { data: TreeLeafNodeData }) {
+export function SectionEdge({ sourceX, sourceY, targetY, markerEnd }: EdgeProps) {
+  const path = `M ${sourceX} ${sourceY} V ${targetY - SECTION_EDGE_GAP}`;
   return (
-    <BaseNode>
-      <BaseNodeContent className="flex items-center gap-2 py-2">
-        <span className="truncate font-medium text-xs">{data.name}</span>
-      </BaseNodeContent>
-    </BaseNode>
+    <BaseEdge
+      markerEnd={markerEnd}
+      path={path}
+      style={{
+        stroke: 'var(--color-primary)',
+        strokeWidth: 2,
+      }}
+    />
   );
 }
 
-// ---------------------------------------------------------------------------
-// Edges
-// ---------------------------------------------------------------------------
-
-export function SectionEdge({ id, sourceX, sourceY, targetX, targetY }: EdgeProps) {
-  const midX = (sourceX + targetX) / 2;
-  const path = `M ${sourceX} ${sourceY} C ${midX} ${sourceY}, ${midX} ${targetY}, ${targetX} ${targetY}`;
-
-  return (
-    <g>
-      <path className="stroke-border" d={path} fill="none" id={id} strokeDasharray="6 4" strokeWidth={1.5} />
-      <foreignObject height={20} width={20} x={midX - 10} y={(sourceY + targetY) / 2 - 10}>
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted">
-          <ArrowRightIcon className="h-3 w-3 text-muted-foreground" />
-        </div>
-      </foreignObject>
-    </g>
-  );
-}
-
-export function TreeEdge({ id, sourceX, sourceY, targetX, targetY }: EdgeProps) {
-  const path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-  return <path className="stroke-border" d={path} fill="none" id={id} strokeWidth={1} />;
-}
-
-// ---------------------------------------------------------------------------
-// Skeleton
-// ---------------------------------------------------------------------------
-
-export function PipelineFlowSkeleton() {
-  return (
-    <div className="flex h-full w-full items-center justify-center gap-8 p-6">
-      {['Input', 'Pipeline', 'Output'].map((label) => (
-        <div className="flex flex-col gap-2" key={label}>
-          <Skeleton variant="text" width="sm" />
-          <SkeletonGroup direction="vertical" spacing="sm">
-            <Skeleton className="h-10 w-48" variant="rounded" />
-            <Skeleton className="h-10 w-48" variant="rounded" />
-          </SkeletonGroup>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Node type registry
-// ---------------------------------------------------------------------------
-
-export const pipelineFlowNodeTypes = {
+export const pipelineNodeTypes = {
   treeSection: TreeSectionNode,
   treeGroup: TreeGroupNode,
   treeLeaf: TreeLeafNode,
-} as const;
+};
 
-export const pipelineFlowEdgeTypes = {
-  sectionEdge: SectionEdge,
+export const pipelineEdgeTypes = {
   treeEdge: TreeEdge,
-} as const;
+  sectionEdge: SectionEdge,
+};

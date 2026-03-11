@@ -9,404 +9,656 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Parses a Redpanda Connect pipeline YAML config into a tree of React Flow
- * nodes and edges suitable for rendering as a flow diagram.
- */
-
 import type { Edge, Node } from '@xyflow/react';
+import { MarkerType } from '@xyflow/react';
 import { parse as parseYaml } from 'yaml';
 
 import { firstKey, parseMultiInputs, parseMultiOutputs } from './yaml';
-import { PROCESSORS_WITH_NESTED_STEPS } from '../types/constants';
 
-// ---------------------------------------------------------------------------
+// ============================================================================
 // Types
-// ---------------------------------------------------------------------------
+// ============================================================================
 
-export type SectionKind = 'input' | 'processor' | 'output';
-
-/** A leaf node represents a single component (e.g. kafka, mapping). */
-export type TreeLeaf = {
-  kind: 'leaf';
-  name: string;
-  section: SectionKind;
-  id: string;
-};
-
-/** A group node contains nested children (e.g. broker with child inputs). */
-export type TreeGroup = {
-  kind: 'group';
-  name: string;
-  section: SectionKind;
-  id: string;
-  children: TreeNode[];
-};
-
-/** A section node is a top-level container (input / pipeline / output). */
-export type TreeSection = {
-  kind: 'section';
-  label: string;
-  section: SectionKind;
-  id: string;
-  children: TreeNode[];
-};
-
-export type TreeNode = TreeLeaf | TreeGroup | TreeSection;
-
-// React Flow node data types
-export type TreeSectionNodeData = { label: string; section: SectionKind; collapsed: boolean };
-export type TreeGroupNodeData = { name: string; section: SectionKind; childCount: number };
-export type TreeLeafNodeData = { name: string; section: SectionKind };
-
-// ---------------------------------------------------------------------------
-// YAML → Tree
-// ---------------------------------------------------------------------------
-
-type ParsedConfig = {
+type ParsedYamlConfig = {
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   pipeline?: { processors?: Record<string, unknown>[] };
+  cache_resources?: unknown[];
+  rate_limit_resources?: unknown[];
+  buffer?: Record<string, unknown>;
+  metrics?: Record<string, unknown>;
+  tracer?: Record<string, unknown>;
+  logger?: Record<string, unknown>;
+  redpanda?: Record<string, unknown>;
 };
 
-let idCounter = 0;
-const nextId = (prefix: string) => `${prefix}-${idCounter++}`;
+export type FlowNodeKind = 'section' | 'group' | 'leaf';
 
-/** Reset the id counter (useful for deterministic tests). */
-export const resetIdCounter = () => {
-  idCounter = 0;
+export type PipelineFlowNode = {
+  id: string;
+  kind: FlowNodeKind;
+  label: string;
+  labelText?: string;
+  topics?: string[];
+  section?: 'input' | 'processor' | 'output' | 'resource';
+  parentId?: string;
+  collapsible?: boolean;
 };
 
-function parseInputSection(inputObj: Record<string, unknown>): TreeNode[] {
+type BranchContext = {
+  section: 'input' | 'processor' | 'output';
+  parentId: string;
+  idPrefix: string;
+  depth: number;
+};
+
+// ============================================================================
+// Tree Parser
+// ============================================================================
+
+type GroupSpec = {
+  groupId: string;
+  groupLabel: string;
+  section: 'input' | 'output';
+  sectionId: string;
+};
+
+function buildGroupWithChildren(spec: GroupSpec, childNames: string[]): PipelineFlowNode[] {
+  return [
+    {
+      id: spec.groupId,
+      kind: 'group',
+      label: spec.groupLabel,
+      section: spec.section,
+      parentId: spec.sectionId,
+      collapsible: true,
+    },
+    ...childNames.map(
+      (name, i): PipelineFlowNode => ({
+        id: `${spec.groupId}-${i}`,
+        kind: 'leaf',
+        label: name,
+        section: spec.section,
+        parentId: spec.groupId,
+      })
+    ),
+  ];
+}
+
+function extractLabel(obj: Record<string, unknown>): string | undefined {
+  return typeof obj.label === 'string' && obj.label !== '' ? obj.label : undefined;
+}
+
+function extractTopics(componentConfig: unknown): string[] | undefined {
+  if (!componentConfig || typeof componentConfig !== 'object') {
+    return;
+  }
+  const config = componentConfig as Record<string, unknown>;
+  if (Array.isArray(config.topics)) {
+    const topics = config.topics.filter((t): t is string => typeof t === 'string' && t !== '');
+    return topics.length > 0 ? topics : undefined;
+  }
+  if (typeof config.topic === 'string' && config.topic !== '') {
+    return [config.topic];
+  }
+  return;
+}
+
+function parseInputNodes(inputObj: Record<string, unknown>, sectionId: string): PipelineFlowNode[] {
   const inputKey = firstKey(inputObj);
-  if (!inputKey) return [];
-
-  const value = inputObj[inputKey];
-  const children = parseMultiInputs(inputKey, value);
-
-  if (children && children.length > 0) {
-    return [
-      {
-        kind: 'group',
-        name: inputKey,
-        section: 'input',
-        id: nextId('input-group'),
-        children: children.map((name) => ({
-          kind: 'leaf' as const,
-          name,
-          section: 'input' as const,
-          id: nextId('input'),
-        })),
-      },
-    ];
-  }
-
-  return [{ kind: 'leaf', name: inputKey, section: 'input', id: nextId('input') }];
-}
-
-function parseProcessorNode(proc: Record<string, unknown>): TreeNode {
-  const procKey = firstKey(proc);
-  if (!procKey) return { kind: 'leaf', name: 'unknown', section: 'processor', id: nextId('proc') };
-
-  if ((PROCESSORS_WITH_NESTED_STEPS as readonly string[]).includes(procKey)) {
-    const nested = extractNestedProcessors(procKey, proc[procKey]);
-    if (nested.length > 0) {
-      return {
-        kind: 'group',
-        name: procKey,
-        section: 'processor',
-        id: nextId('proc-group'),
-        children: nested,
-      };
-    }
-  }
-
-  return { kind: 'leaf', name: procKey, section: 'processor', id: nextId('proc') };
-}
-
-function extractNestedProcessors(parentKey: string, value: unknown): TreeNode[] {
-  if (!value) return [];
-
-  // switch: array of cases with optional processors
-  if (parentKey === 'switch' && Array.isArray(value)) {
-    const procs: TreeNode[] = [];
-    for (const c of value) {
-      if (c && typeof c === 'object' && 'processors' in c && Array.isArray(c.processors)) {
-        for (const p of c.processors) {
-          procs.push(parseProcessorNode(p as Record<string, unknown>));
-        }
-      }
-    }
-    return procs;
-  }
-
-  // branch: has request_map, processors, result_map
-  if (parentKey === 'branch' && typeof value === 'object' && !Array.isArray(value)) {
-    const branchVal = value as { processors?: unknown[] };
-    if (Array.isArray(branchVal.processors)) {
-      return branchVal.processors.map((p) => parseProcessorNode(p as Record<string, unknown>));
-    }
+  if (!inputKey) {
     return [];
   }
 
-  // catch, try, for_each, parallel: direct array of processors
+  const childNames = parseMultiInputs(inputKey, inputObj[inputKey]);
+  if (childNames && childNames.length > 0) {
+    return buildGroupWithChildren(
+      { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
+      childNames
+    );
+  }
+
+  const labelText = extractLabel(inputObj);
+  const topics = extractTopics(inputObj[inputKey]);
+  return [{ id: 'input-0', kind: 'leaf', label: inputKey, labelText, topics, section: 'input', parentId: sectionId }];
+}
+
+const BRANCHING_FIELDS = new Set([
+  'while',
+  'workflow',
+  'switch',
+  'catch',
+  'try',
+  'for_each',
+  'parallel',
+  'branch',
+  'cached',
+  'retry',
+  'group_by',
+  'group_by_value',
+  'processors',
+]);
+
+const MAX_BRANCH_DEPTH = 3;
+
+function extractProcessorArray(value: unknown): Record<string, unknown>[] | undefined {
   if (Array.isArray(value)) {
-    return value.map((p) => parseProcessorNode(p as Record<string, unknown>));
+    return value.filter((v) => v && typeof v === 'object') as Record<string, unknown>[];
   }
+  return;
+}
 
-  // while: has `check` and inner `processors` array
-  if (typeof value === 'object' && value !== null && 'processors' in value) {
-    const whileVal = value as { processors?: unknown[] };
-    if (Array.isArray(whileVal.processors)) {
-      return whileVal.processors.map((p) => parseProcessorNode(p as Record<string, unknown>));
+function makeLeaf(name: string, ctx: BranchContext): PipelineFlowNode {
+  return { id: ctx.idPrefix, kind: 'leaf', label: name, section: ctx.section, parentId: ctx.parentId };
+}
+
+function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
+  return {
+    id: ctx.idPrefix,
+    kind: 'group',
+    label: name,
+    section: ctx.section,
+    parentId: ctx.parentId,
+    collapsible: true,
+  };
+}
+
+function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNode[] {
+  const nodes: PipelineFlowNode[] = [];
+  for (const [ci, caseObj] of cases.entries()) {
+    if (!caseObj || typeof caseObj !== 'object') {
+      continue;
+    }
+    const caseRecord = caseObj as Record<string, unknown>;
+    const caseProcs = extractProcessorArray(caseRecord.processors);
+    if (!caseProcs) {
+      continue;
+    }
+    const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
+    const caseLabel = `case ${ci + 1}`;
+    nodes.push({
+      id: caseId,
+      kind: 'group',
+      label: caseLabel,
+      section: ctx.section,
+      parentId: ctx.idPrefix,
+      collapsible: true,
+    });
+    pushProcessorChildren(nodes, caseProcs, { ...ctx, parentId: caseId, idPrefix: caseId });
+  }
+  return nodes;
+}
+
+function parseWorkflowStages(fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
+  if (!fieldValue || typeof fieldValue !== 'object') {
+    return [];
+  }
+  const stages = (fieldValue as Record<string, unknown>).stages;
+  if (!stages || typeof stages !== 'object') {
+    return [];
+  }
+  const nodes: PipelineFlowNode[] = [];
+  for (const [stageName, stageValue] of Object.entries(stages as Record<string, unknown>)) {
+    if (!stageValue || typeof stageValue !== 'object') {
+      continue;
+    }
+    const stageProcs = extractProcessorArray((stageValue as Record<string, unknown>).processors);
+    if (!stageProcs) {
+      continue;
+    }
+    const stageId = `${ctx.idPrefix}-stage-${stageName}`;
+    nodes.push({
+      id: stageId,
+      kind: 'group',
+      label: stageName,
+      section: ctx.section,
+      parentId: ctx.idPrefix,
+      collapsible: true,
+    });
+    pushProcessorChildren(nodes, stageProcs, { ...ctx, parentId: stageId, idPrefix: stageId });
+  }
+  return nodes;
+}
+
+function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, unknown>[], ctx: BranchContext): void {
+  for (const [pi, proc] of procs.entries()) {
+    const procName = firstKey(proc);
+    if (procName) {
+      nodes.push(
+        ...parseComponentWithBranching(procName, proc[procName], {
+          ...ctx,
+          parentId: ctx.parentId,
+          idPrefix: `${ctx.idPrefix}-p${pi}`,
+          depth: ctx.depth + 1,
+        })
+      );
     }
   }
-
-  return [];
 }
 
-function parseProcessorSection(processors: Record<string, unknown>[]): TreeNode[] {
-  return processors.map((proc) => parseProcessorNode(proc));
-}
-
-function parseOutputSection(outputObj: Record<string, unknown>): TreeNode[] {
-  const outputKey = firstKey(outputObj);
-  if (!outputKey) return [];
-
-  const value = outputObj[outputKey];
-  const children = parseMultiOutputs(outputKey, value);
-
-  if (children && children.length > 0) {
-    return [
-      {
-        kind: 'group',
-        name: outputKey,
-        section: 'output',
-        id: nextId('output-group'),
-        children: children.map((name) => ({
-          kind: 'leaf' as const,
-          name,
-          section: 'output' as const,
-          id: nextId('output'),
-        })),
-      },
-    ];
+function parseWrappedProcessor(fieldValue: unknown, ctx: BranchContext, key: string): PipelineFlowNode[] {
+  if (!fieldValue || typeof fieldValue !== 'object') {
+    return [];
   }
-
-  return [{ kind: 'leaf', name: outputKey, section: 'output', id: nextId('output') }];
-}
-
-// ---------------------------------------------------------------------------
-// Public API: parsePipelineFlowTree
-// ---------------------------------------------------------------------------
-
-export type PipelineFlowTree = {
-  sections: TreeSection[];
-};
-
-/** Parse a pipeline YAML string into a tree structure for rendering. */
-export function parsePipelineFlowTree(yamlContent: string): PipelineFlowTree {
-  resetIdCounter();
-
-  const empty: PipelineFlowTree = { sections: [] };
-  if (!yamlContent.trim()) return empty;
-
-  let config: ParsedConfig | null;
-  try {
-    config = parseYaml(yamlContent) as ParsedConfig | null;
-  } catch {
-    return empty;
-  }
-
-  if (!config) return empty;
-
-  const sections: TreeSection[] = [];
-
-  // Input section
-  if (config.input && typeof config.input === 'object') {
-    sections.push({
-      kind: 'section',
-      label: 'Input',
-      section: 'input',
-      id: 'section-input',
-      children: parseInputSection(config.input),
-    });
-  }
-
-  // Processor section
-  if (config.pipeline?.processors && Array.isArray(config.pipeline.processors)) {
-    sections.push({
-      kind: 'section',
-      label: 'Pipeline',
-      section: 'processor',
-      id: 'section-processor',
-      children: parseProcessorSection(config.pipeline.processors),
-    });
-  }
-
-  // Output section
-  if (config.output && typeof config.output === 'object') {
-    sections.push({
-      kind: 'section',
-      label: 'Output',
-      section: 'output',
-      id: 'section-output',
-      children: parseOutputSection(config.output),
-    });
-  }
-
-  return { sections };
-}
-
-// ---------------------------------------------------------------------------
-// Tree → React Flow layout
-// ---------------------------------------------------------------------------
-
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 40;
-const GROUP_PADDING_X = 16;
-const GROUP_PADDING_TOP = 40;
-const GROUP_PADDING_BOTTOM = 16;
-const SECTION_PADDING_X = 16;
-const SECTION_PADDING_TOP = 44;
-const SECTION_PADDING_BOTTOM = 16;
-const GAP_Y = 12;
-const SECTION_GAP_X = 60;
-
-type LayoutResult = {
-  nodes: Node[];
-  edges: Edge[];
-  width: number;
-  height: number;
-};
-
-function layoutLeaf(leaf: TreeLeaf, x: number, y: number): LayoutResult {
-  const node: Node = {
-    id: leaf.id,
-    type: 'treeLeaf',
-    position: { x, y },
-    data: { name: leaf.name, section: leaf.section } satisfies TreeLeafNodeData,
-    style: { width: NODE_WIDTH, height: NODE_HEIGHT },
-  };
-  return { nodes: [node], edges: [], width: NODE_WIDTH, height: NODE_HEIGHT };
-}
-
-function layoutGroup(group: TreeGroup, x: number, y: number): LayoutResult {
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
-
-  let childY = GROUP_PADDING_TOP;
-  let maxChildWidth = 0;
-
-  for (const child of group.children) {
-    const result = layoutChild(child, GROUP_PADDING_X, childY);
-    for (const n of result.nodes) {
-      n.parentId = group.id;
-      n.extent = 'parent';
-      nodes.push(n);
-    }
-    edges.push(...result.edges);
-    childY += result.height + GAP_Y;
-    maxChildWidth = Math.max(maxChildWidth, result.width);
-  }
-
-  const groupWidth = Math.max(NODE_WIDTH, maxChildWidth + GROUP_PADDING_X * 2);
-  const groupHeight = childY - GAP_Y + GROUP_PADDING_BOTTOM;
-
-  const groupNode: Node = {
-    id: group.id,
-    type: 'treeGroup',
-    position: { x, y },
-    data: { name: group.name, section: group.section, childCount: group.children.length } satisfies TreeGroupNodeData,
-    style: { width: groupWidth, height: groupHeight },
-  };
-
-  return { nodes: [groupNode, ...nodes], edges, width: groupWidth, height: groupHeight };
-}
-
-function layoutChild(node: TreeNode, x: number, y: number): LayoutResult {
-  switch (node.kind) {
-    case 'leaf':
-      return layoutLeaf(node, x, y);
-    case 'group':
-      return layoutGroup(node, x, y);
-    case 'section':
-      return layoutSection(node, x, y);
-  }
-}
-
-function layoutSection(section: TreeSection, x: number, y: number): LayoutResult {
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
-
-  let childY = SECTION_PADDING_TOP;
-  let maxChildWidth = 0;
-
-  for (const child of section.children) {
-    const result = layoutChild(child, SECTION_PADDING_X, childY);
-    for (const n of result.nodes) {
-      if (!n.parentId) {
-        n.parentId = section.id;
-        n.extent = 'parent';
-      }
-      nodes.push(n);
-    }
-    edges.push(...result.edges);
-    childY += result.height + GAP_Y;
-    maxChildWidth = Math.max(maxChildWidth, result.width);
-  }
-
-  const sectionWidth = Math.max(NODE_WIDTH, maxChildWidth + SECTION_PADDING_X * 2);
-  const sectionHeight =
-    section.children.length > 0
-      ? childY - GAP_Y + SECTION_PADDING_BOTTOM
-      : SECTION_PADDING_TOP + SECTION_PADDING_BOTTOM;
-
-  const sectionNode: Node = {
-    id: section.id,
-    type: 'treeSection',
-    position: { x, y },
-    data: { label: section.label, section: section.section, collapsed: false } satisfies TreeSectionNodeData,
-    style: { width: sectionWidth, height: sectionHeight },
-  };
-
-  return { nodes: [sectionNode, ...nodes], edges, width: sectionWidth, height: sectionHeight };
-}
-
-/** Connect sections with edges. */
-function connectSections(sections: TreeSection[]): Edge[] {
-  const edges: Edge[] = [];
-  for (let i = 0; i < sections.length - 1; i++) {
-    const source = sections[i];
-    const target = sections[i + 1];
-    if (source && target) {
-      edges.push({
-        id: `section-edge-${source.id}-${target.id}`,
-        source: source.id,
-        target: target.id,
-        type: 'sectionEdge',
+  const wrappedConfig = fieldValue as Record<string, unknown>;
+  for (const [innerKey, innerValue] of Object.entries(wrappedConfig)) {
+    if (
+      innerKey !== 'key' &&
+      innerKey !== 'count' &&
+      innerKey !== 'backoff' &&
+      innerValue &&
+      typeof innerValue === 'object'
+    ) {
+      return parseComponentWithBranching(innerKey, innerValue, {
+        ...ctx,
+        idPrefix: `${ctx.idPrefix}-${key}-inner`,
+        depth: ctx.depth + 1,
       });
     }
   }
-  return edges;
+  return [];
 }
 
-/** Compute full React Flow layout from a PipelineFlowTree. */
-export function computeTreeLayout(tree: PipelineFlowTree): { nodes: Node[]; edges: Edge[] } {
-  if (tree.sections.length === 0) return { nodes: [], edges: [] };
+const PROCESSORS_FIELD_KEYS = new Set(['while', 'branch', 'group_by', 'group_by_value']);
 
-  const allNodes: Node[] = [];
-  const allEdges: Edge[] = [];
-  let x = 0;
+function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
+  if (key === 'switch' && Array.isArray(fieldValue)) {
+    return parseSwitchCases(fieldValue, ctx);
+  }
+  if (key === 'workflow') {
+    return parseWorkflowStages(fieldValue, ctx);
+  }
+  if (PROCESSORS_FIELD_KEYS.has(key) && fieldValue && typeof fieldValue === 'object') {
+    const innerProcs = extractProcessorArray((fieldValue as Record<string, unknown>).processors);
+    if (innerProcs) {
+      const nodes: PipelineFlowNode[] = [];
+      pushProcessorChildren(nodes, innerProcs, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}` });
+      return nodes;
+    }
+    return [];
+  }
+  const procArray = extractProcessorArray(fieldValue);
+  if (procArray) {
+    const nodes: PipelineFlowNode[] = [];
+    pushProcessorChildren(nodes, procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}` });
+    return nodes;
+  }
+  if (key === 'cached' || key === 'retry') {
+    return parseWrappedProcessor(fieldValue, ctx, key);
+  }
+  return [];
+}
 
-  for (const section of tree.sections) {
-    const result = layoutSection(section, x, 0);
-    allNodes.push(...result.nodes);
-    allEdges.push(...result.edges);
-    x += result.width + SECTION_GAP_X;
+function parseBranchingKeys(config: Record<string, unknown>, ctx: BranchContext): PipelineFlowNode[] {
+  const branchingKeys = Object.keys(config).filter((k) => BRANCHING_FIELDS.has(k));
+  if (branchingKeys.length === 0) {
+    return [];
+  }
+  // Children of the group node use ctx.idPrefix as their parentId
+  const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix };
+  return branchingKeys.flatMap((key) => parseBranchingField(key, config[key], childCtx));
+}
+
+function parseDirectArrayBranching(
+  componentName: string,
+  componentValue: unknown[],
+  ctx: BranchContext
+): PipelineFlowNode[] {
+  if (componentName === 'switch') {
+    const caseNodes = parseSwitchCases(componentValue, ctx);
+    if (caseNodes.length > 0) {
+      return [makeGroup(componentName, ctx), ...caseNodes];
+    }
+    return [makeLeaf(componentName, ctx)];
   }
 
-  allEdges.push(...connectSections(tree.sections));
+  const procArray = extractProcessorArray(componentValue);
+  if (procArray && procArray.length > 0) {
+    const nodes: PipelineFlowNode[] = [makeGroup(componentName, ctx)];
+    pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix });
+    return nodes;
+  }
+  return [makeLeaf(componentName, ctx)];
+}
 
-  return { nodes: allNodes, edges: allEdges };
+function parseComponentWithBranching(
+  componentName: string,
+  componentValue: unknown,
+  ctx: BranchContext
+): PipelineFlowNode[] {
+  if (ctx.depth >= MAX_BRANCH_DEPTH || !componentValue || typeof componentValue !== 'object') {
+    return [makeLeaf(componentName, ctx)];
+  }
+
+  if (Array.isArray(componentValue) && BRANCHING_FIELDS.has(componentName)) {
+    return parseDirectArrayBranching(componentName, componentValue, ctx);
+  }
+
+  const config = componentValue as Record<string, unknown>;
+  const childNodes = parseBranchingKeys(config, ctx);
+  if (childNodes.length === 0) {
+    return [makeLeaf(componentName, ctx)];
+  }
+
+  return [makeGroup(componentName, ctx), ...childNodes];
+}
+
+function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: string): PipelineFlowNode[] {
+  return processors.flatMap((proc, i): PipelineFlowNode[] => {
+    const name = firstKey(proc);
+    if (!name) {
+      return [];
+    }
+    const labelText = extractLabel(proc);
+    const ctx: BranchContext = { section: 'processor', parentId: sectionId, idPrefix: `proc-${i}`, depth: 0 };
+    const nodes = parseComponentWithBranching(name, proc[name], ctx);
+    if (labelText && nodes.length > 0) {
+      nodes[0] = { ...nodes[0], labelText };
+    }
+    return nodes;
+  });
+}
+
+const RESOURCE_YAML_KEYS = [
+  'cache_resources',
+  'rate_limit_resources',
+  'buffer',
+  'metrics',
+  'tracer',
+  'logger',
+  'redpanda',
+] as const;
+
+function parseArrayResource(value: unknown[], key: string, sectionId: string): PipelineFlowNode[] {
+  const nodes: PipelineFlowNode[] = [];
+  for (const [i, item] of value.entries()) {
+    if (item && typeof item === 'object') {
+      const itemObj = item as Record<string, unknown>;
+      const itemName = firstKey(itemObj);
+      const labelText = extractLabel(itemObj);
+      nodes.push({
+        id: `resource-${key}-${i}`,
+        kind: 'leaf',
+        label: itemName || key,
+        labelText,
+        section: 'resource',
+        parentId: sectionId,
+      });
+    }
+  }
+  return nodes;
+}
+
+function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): PipelineFlowNode[] {
+  const nodes: PipelineFlowNode[] = [];
+  for (const key of RESOURCE_YAML_KEYS) {
+    const value = config[key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      nodes.push(...parseArrayResource(value, key, sectionId));
+    } else {
+      nodes.push({ id: `resource-${key}`, kind: 'leaf', label: key, section: 'resource', parentId: sectionId });
+    }
+  }
+  return nodes;
+}
+
+function parseOutputNodes(outputObj: Record<string, unknown>, sectionId: string): PipelineFlowNode[] {
+  const outputKey = firstKey(outputObj);
+  if (!outputKey) {
+    return [];
+  }
+
+  const childNames = parseMultiOutputs(outputKey, outputObj[outputKey]);
+  if (childNames && childNames.length > 0) {
+    return buildGroupWithChildren(
+      { groupId: `output-${outputKey}`, groupLabel: outputKey, section: 'output', sectionId },
+      childNames
+    );
+  }
+
+  const labelText = extractLabel(outputObj);
+  const topics = extractTopics(outputObj[outputKey]);
+  return [
+    { id: 'output-0', kind: 'leaf', label: outputKey, labelText, topics, section: 'output', parentId: sectionId },
+  ];
+}
+
+// ============================================================================
+// Section Builders
+// ============================================================================
+
+function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+  const sectionId = 'section-input';
+  nodes.push({ id: sectionId, kind: 'section', label: 'input', section: 'input' });
+  if (config.input && typeof config.input === 'object') {
+    nodes.push(...parseInputNodes(config.input as Record<string, unknown>, sectionId));
+  } else {
+    nodes.push({ id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: sectionId });
+  }
+}
+
+function buildProcessorSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+  if (!(config.pipeline && Array.isArray(config.pipeline.processors))) {
+    return;
+  }
+  const sectionId = 'section-processors';
+  nodes.push({ id: sectionId, kind: 'section', label: 'processors', section: 'processor' });
+  nodes.push(...parseProcessorNodes(config.pipeline.processors as Record<string, unknown>[], sectionId));
+}
+
+function buildResourceSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+  const resourceNodes = parseResourceNodes(config, 'section-resources');
+  if (resourceNodes.length === 0) {
+    return;
+  }
+  const sectionId = 'section-resources';
+  nodes.push({ id: sectionId, kind: 'section', label: 'resources', section: 'resource' });
+  nodes.push(...resourceNodes);
+}
+
+function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+  const sectionId = 'section-output';
+  nodes.push({ id: sectionId, kind: 'section', label: 'output', section: 'output' });
+  if (config.output && typeof config.output === 'object') {
+    nodes.push(...parseOutputNodes(config.output as Record<string, unknown>, sectionId));
+  } else {
+    nodes.push({ id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: sectionId });
+  }
+}
+
+// ============================================================================
+// Public API
+// ============================================================================
+
+export type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
+
+export type ParsePipelineFlowTreeOptions = {
+  /** Prefix all node/edge IDs to avoid collisions when multiple diagrams are mounted. */
+  idPrefix?: string;
+};
+
+const EMPTY_CONFIG_NODES: PipelineFlowNode[] = [
+  { id: 'section-input', kind: 'section', label: 'input', section: 'input' },
+  { id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: 'section-input' },
+  { id: 'section-output', kind: 'section', label: 'output', section: 'output' },
+  { id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: 'section-output' },
+];
+
+function prefixNodeIds(nodes: PipelineFlowNode[], prefix: string): PipelineFlowNode[] {
+  return nodes.map((n) => ({
+    ...n,
+    id: `${prefix}${n.id}`,
+    parentId: n.parentId ? `${prefix}${n.parentId}` : undefined,
+  }));
+}
+
+export function parsePipelineFlowTree(
+  configYaml: string,
+  options?: ParsePipelineFlowTreeOptions
+): ParsePipelineFlowTreeResult {
+  const prefix = options?.idPrefix ? `${options.idPrefix}-` : '';
+
+  if (!configYaml) {
+    return { nodes: prefix ? prefixNodeIds(EMPTY_CONFIG_NODES, prefix) : EMPTY_CONFIG_NODES };
+  }
+
+  try {
+    const config = (parseYaml(configYaml) as ParsedYamlConfig | null) ?? {};
+    const nodes: PipelineFlowNode[] = [];
+
+    buildInputSection(nodes, config);
+    buildProcessorSection(nodes, config);
+    buildResourceSection(nodes, config);
+    buildOutputSection(nodes, config);
+
+    return { nodes: prefix ? prefixNodeIds(nodes, prefix) : nodes };
+  } catch (err) {
+    return { nodes: [], error: err instanceof Error ? err.message : 'Invalid YAML' };
+  }
+}
+
+// ============================================================================
+// Tree Layout Algorithm
+// ============================================================================
+
+const INDENT_X = 40;
+const NODE_H_DEFAULT = 28;
+const NODE_H_LEAF = 36;
+const ROW_GAP = 8;
+const SECTION_GAP = 16;
+const ROOT_X = 8;
+
+const NODE_TYPE_MAP: Record<FlowNodeKind, string> = {
+  section: 'treeSection',
+  group: 'treeGroup',
+  leaf: 'treeLeaf',
+};
+
+type LayoutState = {
+  rfNodes: Node[];
+  rfEdges: Edge[];
+  y: number;
+  childrenMap: Map<string | undefined, PipelineFlowNode[]>;
+  collapsedIds: ReadonlySet<string>;
+};
+
+type RfNodeParams = {
+  node: PipelineFlowNode;
+  depth: number;
+  nodeY: number;
+  isHidden: boolean;
+};
+
+function createRfNode(params: RfNodeParams, state: LayoutState): Node {
+  const { node, depth, nodeY, isHidden } = params;
+  return {
+    id: node.id,
+    type: NODE_TYPE_MAP[node.kind],
+    position: { x: ROOT_X + depth * INDENT_X, y: nodeY },
+    style: {
+      opacity: isHidden ? 0 : 1,
+      pointerEvents: isHidden ? 'none' : undefined,
+      transition: 'transform 200ms ease, opacity 150ms ease',
+    },
+    data: {
+      label: node.label,
+      collapsed: state.collapsedIds.has(node.id),
+      collapsible: node.collapsible ?? false,
+      ...(node.labelText ? { labelText: node.labelText } : {}),
+      ...(node.topics ? { topics: node.topics } : {}),
+      ...(state.collapsedIds.has(node.id) ? { childCount: state.childrenMap.get(node.id)?.length ?? 0 } : {}),
+    },
+  };
+}
+
+function createTreeEdge(parentId: string, node: PipelineFlowNode, isHidden: boolean): Edge {
+  return {
+    id: `e-${parentId}-${node.id}`,
+    source: parentId,
+    target: node.id,
+    type: 'treeEdge',
+    hidden: isHidden,
+    markerEnd: { type: MarkerType.Arrow, width: 16, height: 16, color: 'var(--color-border)' },
+  };
+}
+
+type DfsParams = {
+  node: PipelineFlowNode;
+  depth: number;
+  hiddenByParent: boolean;
+  snapY: number;
+};
+
+function layoutDfs(params: DfsParams, state: LayoutState): void {
+  const { node, depth, hiddenByParent, snapY } = params;
+
+  if (!hiddenByParent && node.kind === 'section' && state.y > 0) {
+    state.y += SECTION_GAP;
+  }
+
+  const nodeY = hiddenByParent ? snapY : state.y;
+  state.rfNodes.push(createRfNode({ node, depth, nodeY, isHidden: hiddenByParent }, state));
+
+  if (node.parentId) {
+    state.rfEdges.push(createTreeEdge(node.parentId, node, hiddenByParent));
+  }
+
+  if (!hiddenByParent) {
+    const nodeH = node.kind === 'leaf' ? NODE_H_LEAF : NODE_H_DEFAULT;
+    state.y += nodeH + ROW_GAP;
+  }
+
+  const children = state.childrenMap.get(node.id);
+  if (children) {
+    const childHidden = hiddenByParent || state.collapsedIds.has(node.id);
+    for (const child of children) {
+      layoutDfs({ node: child, depth: depth + 1, hiddenByParent: childHidden, snapY: nodeY }, state);
+    }
+  }
+}
+
+export function computeTreeLayout(
+  nodes: PipelineFlowNode[],
+  collapsedIds: ReadonlySet<string> = new Set()
+): { rfNodes: Node[]; rfEdges: Edge[]; height: number } {
+  if (nodes.length === 0) {
+    return { rfNodes: [], rfEdges: [], height: 200 };
+  }
+
+  const childrenMap = new Map<string | undefined, PipelineFlowNode[]>();
+  for (const node of nodes) {
+    const siblings = childrenMap.get(node.parentId);
+    if (siblings) {
+      siblings.push(node);
+    } else {
+      childrenMap.set(node.parentId, [node]);
+    }
+  }
+
+  const state: LayoutState = { rfNodes: [], rfEdges: [], y: 0, childrenMap, collapsedIds };
+
+  const roots = childrenMap.get(undefined);
+  if (roots) {
+    for (const root of roots) {
+      layoutDfs({ node: root, depth: 0, hiddenByParent: false, snapY: 0 }, state);
+    }
+  }
+
+  // Add section-to-section edges
+  const sectionNodes = state.rfNodes.filter((n) => n.type === 'treeSection');
+  for (let i = 0; i < sectionNodes.length - 1; i++) {
+    state.rfEdges.push({
+      id: `section-edge-${i}`,
+      source: sectionNodes[i].id,
+      target: sectionNodes[i + 1].id,
+      type: 'sectionEdge',
+      markerEnd: { type: MarkerType.Arrow, width: 14, height: 14, color: 'var(--color-primary)' },
+    });
+  }
+
+  const MIN_HEIGHT = 200;
+  return { rfNodes: state.rfNodes, rfEdges: state.rfEdges, height: Math.max(MIN_HEIGHT, state.y + 8) };
 }
