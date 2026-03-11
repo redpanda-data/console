@@ -21,8 +21,7 @@
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
       "react-doctor/no-render-in-render",
-      "react-doctor/no-cascading-set-state",
-      "react-doctor/no-effect-event-handler"
+      "react-doctor/no-cascading-set-state"
     ]
   }
 }

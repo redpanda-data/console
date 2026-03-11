@@ -72,20 +72,18 @@ export const SecretEditPage = () => {
   });
 
   useEffect(() => {
-    if (secret) {
-      const existingLabels = secret.labels
-        ? Object.entries(secret.labels)
-            .filter(([key, value]) => !(key === 'owner' && value === 'console'))
-            .map(([key, value]) => ({ key, value }))
-        : [];
+    const existingLabels = secret?.labels
+      ? Object.entries(secret.labels)
+          .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+          .map(([key, value]) => ({ key, value }))
+      : [];
 
-      form.reset({
-        id: secret.id,
-        value: '',
-        scopes: secret.scopes,
-        labels: existingLabels.length > 0 ? existingLabels : [],
-      });
-    }
+    form.reset({
+      id: secret?.id ?? '',
+      value: '',
+      scopes: secret?.scopes ?? [],
+      labels: existingLabels,
+    });
   }, [secret, form]);
 
   useEffect(() => {
