@@ -30,7 +30,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
-  type AclPrincipalGroup,
   type ClusterACLs,
   type ConsumerGroupACLs,
   createEmptyClusterAcl,
@@ -40,12 +39,10 @@ import {
   principalGroupsView,
   type TopicACLs,
   type TransactionalIdACLs,
-  unpackPrincipalGroup,
 } from './models';
 import { ResourceACLsEditor } from './principal-group-editor';
 import { appGlobal } from '../../../state/app-global';
 import { api, type RolePrincipal, rolesApi } from '../../../state/backend-api';
-import type { AclStrOperation, AclStrResourceType } from '../../../state/rest-interfaces';
 
 type CreateRoleFormState = {
   roleName: string;
@@ -95,85 +92,83 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
 
   const roleNameAlreadyExist = rolesApi.roles.includes(formState.roleName) && !editMode;
 
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      const usersToRemove = originalUsernames.filter((item) => currentUsernames.indexOf(item) === -1);
+
+      const principalType: AclStrResourceType = 'RedpandaRole';
+
+      if (editMode) {
+        await api.deleteACLs({
+          resourceType: 'Any',
+          resourceName: undefined,
+          principal: `${principalType}:${formState.roleName}`,
+          resourcePatternType: 'Any',
+          operation: 'Any',
+          permissionType: 'Any',
+        });
+      }
+
+      const aclPrincipalGroup: AclPrincipalGroup = {
+        principalType: 'RedpandaRole',
+        principalName: formState.roleName,
+
+        host: formState.host,
+
+        topicAcls: formState.topicACLs,
+        consumerGroupAcls: formState.consumerGroupsACLs,
+        transactionalIdAcls: formState.transactionalIDACLs,
+        clusterAcls: formState.clusterACLs,
+        sourceEntries: [],
+      };
+
+      const newRole = await rolesApi.updateRoleMembership(
+        formState.roleName,
+        formState.principals.map((x) => x.name),
+        usersToRemove,
+        true
+      );
+
+      if (newRole.response) {
+        const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
+
+        for (const aclFlat of unpackedPrincipalGroup) {
+          await api.createACL({
+            host: aclFlat.host,
+            principal: aclFlat.principal,
+            resourceType: aclFlat.resourceType,
+            resourceName: aclFlat.resourceName,
+            resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
+            operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
+            permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
+          });
+        }
+
+        setIsLoading(false);
+        toast({
+          status: 'success',
+          title: `Role ${newRole.response.roleName} successfully ${editMode ? 'updated' : 'created'}`,
+        });
+
+        navigate({ to: `/security/roles/${encodeURIComponent(newRole.response.roleName)}/details` });
+      }
+    } catch (err) {
+      toast({
+        status: 'error',
+        duration: null,
+        isClosable: true,
+        title: `Failed to update role ${formState.roleName}`,
+        description: String(err),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Box>
-      <form
-        onSubmit={async (e) => {
-          // SPA - no server action needed
-          e.preventDefault();
-          try {
-            setIsLoading(true);
-            const usersToRemove = originalUsernames.filter((item) => currentUsernames.indexOf(item) === -1);
-
-            const principalType: AclStrResourceType = 'RedpandaRole';
-
-            if (editMode) {
-              await api.deleteACLs({
-                resourceType: 'Any',
-                resourceName: undefined,
-                principal: `${principalType}:${formState.roleName}`,
-                resourcePatternType: 'Any',
-                operation: 'Any',
-                permissionType: 'Any',
-              });
-            }
-
-            const aclPrincipalGroup: AclPrincipalGroup = {
-              principalType: 'RedpandaRole',
-              principalName: formState.roleName,
-
-              host: formState.host,
-
-              topicAcls: formState.topicACLs,
-              consumerGroupAcls: formState.consumerGroupsACLs,
-              transactionalIdAcls: formState.transactionalIDACLs,
-              clusterAcls: formState.clusterACLs,
-              sourceEntries: [],
-            };
-
-            const newRole = await rolesApi.updateRoleMembership(
-              formState.roleName,
-              formState.principals.map((x) => x.name),
-              usersToRemove,
-              true
-            );
-
-            if (newRole.response) {
-              const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
-
-              for (const aclFlat of unpackedPrincipalGroup) {
-                await api.createACL({
-                  host: aclFlat.host,
-                  principal: aclFlat.principal,
-                  resourceType: aclFlat.resourceType,
-                  resourceName: aclFlat.resourceName,
-                  resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
-                  operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
-                  permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
-                });
-              }
-
-              setIsLoading(false);
-              toast({
-                status: 'success',
-                title: `Role ${newRole.response.roleName} successfully ${editMode ? 'updated' : 'created'}`,
-              });
-
-              navigate({ to: `/security/roles/${encodeURIComponent(newRole.response.roleName)}/details` });
-            }
-          } catch (err) {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: `Failed to update role ${formState.roleName}`,
-              description: String(err),
-            });
-          } finally {
-            setIsLoading(false);
-          }
-        }}
-      >
+      <div>
         <Flex flexDirection="column" gap={10}>
           <Flex flexDirection="row" gap={20}>
             <Box>
@@ -387,7 +382,8 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               isDisabled={roleNameAlreadyExist || !isFormValid}
               isLoading={isLoading}
               loadingText="Editing..."
-              type="submit"
+              onClick={handleSubmit}
+              type="button"
             >
               Update
             </Button>
@@ -396,7 +392,8 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               isDisabled={roleNameAlreadyExist || !isFormValid}
               isLoading={isLoading}
               loadingText="Creating..."
-              type="submit"
+              onClick={handleSubmit}
+              type="button"
             >
               Create
             </Button>
@@ -421,7 +418,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
             </Button>
           )}
         </Flex>
-      </form>
+      </div>
     </Box>
   );
 };

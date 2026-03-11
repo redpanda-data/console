@@ -23,7 +23,6 @@
       "react-hooks-js/static-components",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
-      "react-doctor/no-prevent-default",
       "react-doctor/no-derived-useState",
       "react-doctor/no-render-in-render",
       "react-doctor/no-cascading-set-state",

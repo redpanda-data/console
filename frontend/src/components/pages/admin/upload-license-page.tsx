@@ -31,23 +31,20 @@ const UploadLicenseForm: FC<{
   const [license, setLicense] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  return (
-    <form
-      onSubmit={async (e) => {
-        // SPA - no server action needed
-        e.preventDefault();
+  const handleSubmit = async () => {
+    const content = (showFileUpload ? licenseFile : license) as string;
+    await onUploadLicense(content)
+      .then(() => {
+        onSuccess();
+        api.listLicenses(); // refetch licenses
+      })
+      .catch((err) => {
+        setErrorMessage(err.message);
+      });
+  };
 
-        const content = (showFileUpload ? licenseFile : license) as string;
-        await onUploadLicense(content)
-          .then(() => {
-            onSuccess();
-            api.listLicenses(); // refetch licenses
-          })
-          .catch((err) => {
-            setErrorMessage(err.message);
-          });
-      }}
-    >
+  return (
+    <div>
       <Flex flexDirection="column" gap={2} my={4}>
         {Boolean(showFileUpload) && (
           <Box>
@@ -88,7 +85,7 @@ const UploadLicenseForm: FC<{
           </Alert>
         )}
         <Flex gap={2} mt={2}>
-          <Button data-testid="upload-license" type="submit">
+          <Button data-testid="upload-license" onClick={handleSubmit} type="button">
             Upload
           </Button>
           <Button
@@ -102,7 +99,7 @@ const UploadLicenseForm: FC<{
           </Button>
         </Flex>
       </Flex>
-    </form>
+    </div>
   );
 };
 
