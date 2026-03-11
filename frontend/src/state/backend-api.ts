@@ -23,10 +23,6 @@ import {
   isBakedInTrial,
   prettyLicenseType,
 } from 'components/license/license-utils';
-import JSONBigIntFactory from 'json-bigint';
-
-const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
-
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
 import { createStore as zustandCreate } from 'zustand/vanilla';
