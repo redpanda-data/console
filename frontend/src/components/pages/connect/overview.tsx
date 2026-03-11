@@ -297,7 +297,10 @@ const TabConnectors = () => {
   const isFilterMatch = useCallback((filter: string, item: ConnectorType): boolean => {
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
-      return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
+      const nameMatch = item.name.match(quickSearchRegExp) !== null;
+      const classMatch = item.class.match(quickSearchRegExp) !== null;
+      if (nameMatch) return true;
+      return classMatch;
     } catch (_e) {
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }

@@ -102,61 +102,29 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
     // Clear any previous MCP errors before making a new request
     setMcpError(null);
 
+    let mcpResponse: MCPToolResponse | null = null;
+    let fetchError: unknown = null;
     try {
-      const mcpResponse = (await callMCPTool({
+      mcpResponse = (await callMCPTool({
         serverUrl: knowledgeBase.retrievalApiUrl,
         toolName: 'retrieval',
-        parameters: {
-          query,
-          top_n: topN,
-        },
+        parameters: { query, top_n: topN },
         signal: abortController.signal,
       })) as MCPToolResponse;
-
-      if (!mcpResponse.content || mcpResponse.content.length === 0) {
-        toast.error('Invalid Response', {
-          description: 'No content returned from the retrieval API.',
-        });
-        return;
-      }
-
-      const textContent = mcpResponse.content[0];
-      if (textContent.type !== 'text' || !textContent.text) {
-        toast.error('Invalid Response', {
-          description: 'Expected text content from the retrieval API.',
-        });
-        return;
-      }
-
-      // Try to parse the response - it could be an error or results
-      const parsedResponse = JSON.parse(textContent.text);
-
-      // Check if the response is an MCP error response
-      if (
-        parsedResponse &&
-        typeof parsedResponse === 'object' &&
-        ('error' in parsedResponse || 'details' in parsedResponse)
-      ) {
-        setMcpError(parsedResponse as MCPErrorResponse);
-        setRetrievalResults([]);
-        return;
-      }
-
-      // Otherwise, treat it as successful results
-      if (!Array.isArray(parsedResponse)) {
-        toast.error('Invalid Response', {
-          description: 'Expected array of results from the retrieval API.',
-        });
-        return;
-      }
-
-      setRetrievalResults(parsedResponse);
-      setMcpError(null);
     } catch (error) {
+      fetchError = error;
+    }
+
+    // Clear the abort controller ref when request completes
+    abortControllerRef.current = null;
+
+    if (fetchError !== null) {
       // Don't show toast for cancellation
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMessage !== 'Request was cancelled' && !errorMessage.includes('abort')) {
-        const connectError = ConnectError.from(error);
+      const fetchErrorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+      const isCancelled = fetchErrorMessage === 'Request was cancelled';
+      const isAbort = fetchErrorMessage.includes('abort');
+      if (!(isCancelled || isAbort)) {
+        const connectError = ConnectError.from(fetchError);
         toast.error(
           formatToastErrorMessageGRPC({
             error: connectError,
@@ -165,10 +133,65 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
           })
         );
       }
-    } finally {
-      // Clear the abort controller ref when request completes
-      abortControllerRef.current = null;
+      return;
     }
+
+    const content = mcpResponse?.content;
+    const hasContent = content && content.length > 0;
+    if (!hasContent) {
+      toast.error('Invalid Response', {
+        description: 'No content returned from the retrieval API.',
+      });
+      return;
+    }
+
+    const textContent = content[0];
+    const isTextType = textContent.type !== 'text';
+    const hasText = !textContent.text;
+    if (isTextType || hasText) {
+      toast.error('Invalid Response', {
+        description: 'Expected text content from the retrieval API.',
+      });
+      return;
+    }
+
+    // Try to parse the response - it could be an error or results
+    const rawText = textContent.text ?? '';
+    let parsedResponse: unknown = null;
+    let parseError: unknown = null;
+    try {
+      parsedResponse = JSON.parse(rawText);
+    } catch (error) {
+      parseError = error;
+    }
+
+    if (parseError !== null) {
+      toast.error('Invalid Response', {
+        description: 'Failed to parse response from the retrieval API.',
+      });
+      return;
+    }
+
+    // Check if the response is an MCP error response
+    const isObject = parsedResponse !== null && typeof parsedResponse === 'object';
+    const hasErrorKey = isObject && 'error' in (parsedResponse as object);
+    const hasDetailsKey = isObject && 'details' in (parsedResponse as object);
+    if (hasErrorKey || hasDetailsKey) {
+      setMcpError(parsedResponse as MCPErrorResponse);
+      setRetrievalResults([]);
+      return;
+    }
+
+    // Otherwise, treat it as successful results
+    if (!Array.isArray(parsedResponse)) {
+      toast.error('Invalid Response', {
+        description: 'Expected array of results from the retrieval API.',
+      });
+      return;
+    }
+
+    setRetrievalResults(parsedResponse);
+    setMcpError(null);
   }, [query, knowledgeBase.retrievalApiUrl, topN, callMCPTool]);
 
   return (

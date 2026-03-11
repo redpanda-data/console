@@ -221,19 +221,21 @@ export const ThrottleDialog: FC<{
       status: 'loading',
       description: 'Setting throttle rate...',
     });
-    try {
-      const allBrokers = api.clusterInfo?.brokers.map((b) => b.brokerId);
-      if (!allBrokers) {
-        toast({
-          status: 'error',
-          title: 'Error',
-          description: 'Cluster info not available',
-        });
-        return;
-      }
+    const clusterInfo = api.clusterInfo;
+    const allBrokers = clusterInfo ? clusterInfo.brokers.map((b) => b.brokerId) : null;
+    if (!allBrokers) {
+      toast({
+        status: 'error',
+        title: 'Error',
+        description: 'Cluster info not available',
+      });
+      return;
+    }
 
-      if (newThrottleValue && newThrottleValue > 0) {
-        await api.setReplicationThrottleRate(allBrokers, newThrottleValue);
+    const shouldSet = newThrottleValue !== null && newThrottleValue > 0;
+    try {
+      if (shouldSet) {
+        await api.setReplicationThrottleRate(allBrokers, newThrottleValue as number);
       } else {
         await api.resetReplicationThrottleRate(allBrokers);
       }

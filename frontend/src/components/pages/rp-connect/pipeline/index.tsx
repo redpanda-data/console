@@ -209,7 +209,7 @@ export default function PipelinePage() {
   });
 
   const [yamlContent, setYamlContent] = useState('');
-  const [lintHints, setLintHints] = useState<Record<string, LintHint>>({});
+  const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -254,19 +254,18 @@ export default function PipelinePage() {
     enabled: mode !== 'view',
   });
 
-  useEffect(() => {
-    if (lintResponse) {
-      try {
-        const hints: Record<string, LintHint> = {};
-        for (const [idx, hint] of Object.entries(lintResponse?.lintHints || [])) {
-          hints[`hint_${idx}`] = hint;
-        }
-        setLintHints(hints);
-      } catch (err) {
-        setLintHints(extractLintHintsFromError(err));
-      }
+  // Derive lint hints from response (replaces useEffect + setState)
+  const responseLintHints = useMemo(() => {
+    if (!lintResponse) return {};
+    const hints: Record<string, LintHint> = {};
+    for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
+      hints[`hint_${idx}`] = hint;
     }
+    return hints;
   }, [lintResponse]);
+
+  // Merge response-derived and error-derived lint hints (error hints cleared on next successful response)
+  const lintHints = Object.keys(errorLintHints).length > 0 ? errorLintHints : responseLintHints;
 
   // Initialize form data from pipeline (edit/view)
   useEffect(() => {
@@ -281,8 +280,10 @@ export default function PipelinePage() {
   }, [pipeline, mode, form]);
 
   // Load persisted YAML from Zustand (CREATE mode only)
+  const hasLoadedPersistedYaml = useRef(false);
   useEffect(() => {
-    if (mode === 'create' && persistedYamlContent) {
+    if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
+      hasLoadedPersistedYaml.current = true;
       setYamlContent(persistedYamlContent);
     }
   }, [mode, persistedYamlContent]);
@@ -398,7 +399,7 @@ export default function PipelinePage() {
 
       createMutation(createRequest, {
         onSuccess: (response) => {
-          setLintHints({});
+          setErrorLintHints({});
           clearWizardStore();
           toast.success('Pipeline created');
 
@@ -415,7 +416,7 @@ export default function PipelinePage() {
           }
         },
         onError: (err) => {
-          setLintHints(extractLintHintsFromError(err));
+          setErrorLintHints(extractLintHintsFromError(err));
           toast.error(
             formatToastErrorMessageGRPC({
               error: err,
@@ -451,7 +452,7 @@ export default function PipelinePage() {
 
       updateMutation(updateRequest, {
         onSuccess: (response) => {
-          setLintHints({});
+          setErrorLintHints({});
           toast.success('Pipeline updated');
           const retUnits = cpuToTasks(response.response?.pipeline?.resources?.cpuShares);
           const currentUnits = form.getValues('computeUnits');
@@ -461,7 +462,7 @@ export default function PipelinePage() {
           navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => {
-          setLintHints(extractLintHintsFromError(err));
+          setErrorLintHints(extractLintHintsFromError(err));
           toast.error(
             formatToastErrorMessageGRPC({
               error: err,

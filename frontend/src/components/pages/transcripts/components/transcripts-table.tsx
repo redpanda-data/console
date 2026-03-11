@@ -46,7 +46,7 @@ import {
 import type { MatchedSpanIds, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { ChangeEvent, FC } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
 import {
@@ -357,7 +357,7 @@ const SpanRow: FC<SpanRowProps> = ({
   const startOffsetMs = Number(span.startTime - timeline.minTime) / 1_000_000;
   const spanTimestamp = new Date(baseTimestamp.getTime() + startOffsetMs);
 
-  const Icon = getIconForServiceName(span.span);
+  const serviceIcon = getIconForServiceName(span.span);
   const serviceName = getServiceName(span.span);
 
   // Check if this span is selected
@@ -422,7 +422,7 @@ const SpanRow: FC<SpanRowProps> = ({
             className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-muted-foreground"
             variant="outline"
           >
-            <Icon className="mr-1 h-3 w-3 shrink-0" />
+            {createElement(serviceIcon, { className: 'mr-1 h-3 w-3 shrink-0' })}
             <Small className="truncate" title={serviceName}>
               {serviceName}
             </Small>
@@ -530,8 +530,8 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   }, [collapseAllTrigger, spanTree]);
 
   // Sync expansion state when spanTree loads (handles async data loading)
+  // Only initialize once when spanTree first becomes populated
   useEffect(() => {
-    // Only initialize once when spanTree first becomes populated
     if (!hasInitializedRef.current && spanTree.length > 0) {
       hasInitializedRef.current = true;
       const initialSpans = computeInitialExpandedSpans(spanTree);

@@ -190,38 +190,38 @@ export const AIAgentCardTab = () => {
       return;
     }
 
-    try {
-      const hasData = !!(
-        displayCard.iconUrl ||
-        displayCard.documentationUrl ||
-        displayCard.skills.length > 0 ||
-        displayCard.provider?.organization ||
-        displayCard.provider?.url
-      );
-
-      const agentCard = hasData
-        ? create(AIAgent_AgentCardSchema, {
-            iconUrl: displayCard.iconUrl || undefined,
-            documentationUrl: displayCard.documentationUrl || undefined,
-            provider:
-              displayCard.provider?.organization || displayCard.provider?.url
-                ? create(AIAgent_AgentCard_ProviderSchema, {
-                    organization: displayCard.provider.organization || undefined,
-                    url: displayCard.provider.url || undefined,
-                  })
-                : undefined,
-            skills: displayCard.skills.map((skill) =>
-              create(AIAgent_AgentCard_SkillSchema, {
-                id: skill.id.trim(),
-                name: skill.name.trim(),
-                description: skill.description.trim(),
-                tags: skill.tags.filter((t: string) => t.trim()),
-                examples: skill.examples.filter((e: string) => e.trim()),
+    const provider = displayCard.provider;
+    const hasData = !!(
+      displayCard.iconUrl ||
+      displayCard.documentationUrl ||
+      displayCard.skills.length > 0 ||
+      provider?.organization ||
+      provider?.url
+    );
+    const hasProvider = !!(provider?.organization || provider?.url);
+    const agentCard = hasData
+      ? create(AIAgent_AgentCardSchema, {
+          iconUrl: displayCard.iconUrl || undefined,
+          documentationUrl: displayCard.documentationUrl || undefined,
+          provider: hasProvider
+            ? create(AIAgent_AgentCard_ProviderSchema, {
+                organization: provider?.organization || undefined,
+                url: provider?.url || undefined,
               })
-            ),
-          })
-        : undefined;
+            : undefined,
+          skills: displayCard.skills.map((skill) =>
+            create(AIAgent_AgentCard_SkillSchema, {
+              id: skill.id.trim(),
+              name: skill.name.trim(),
+              description: skill.description.trim(),
+              tags: skill.tags.filter((t: string) => t.trim()),
+              examples: skill.examples.filter((e: string) => e.trim()),
+            })
+          ),
+        })
+      : undefined;
 
+    try {
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,

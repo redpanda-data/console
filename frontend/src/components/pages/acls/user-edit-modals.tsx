@@ -201,26 +201,26 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
     }
     const addedRoles = formattedSelectedRoles.except(originalRoles);
     const removedRoles = originalRoles.except(formattedSelectedRoles);
+    const promises: Promise<UpdateRoleMembershipResponse>[] = [];
+
+    // Remove user from "removedRoles"
+    for (const r of removedRoles) {
+      const membership = create(UpdateRoleMembershipRequestSchema, {
+        roleName: r,
+        remove: [{ principal: userName }],
+      });
+      promises.push(updateRoleMembership(membership));
+    }
+    // Add to newly selected roles
+    for (const r of addedRoles) {
+      const membership = create(UpdateRoleMembershipRequestSchema, {
+        roleName: r,
+        add: [{ principal: userName }],
+      });
+      promises.push(updateRoleMembership(membership));
+    }
+
     try {
-      const promises: Promise<UpdateRoleMembershipResponse>[] = [];
-
-      // Remove user from "removedRoles"
-      for (const r of removedRoles) {
-        const membership = create(UpdateRoleMembershipRequestSchema, {
-          roleName: r,
-          remove: [{ principal: userName }],
-        });
-        promises.push(updateRoleMembership(membership));
-      }
-      // Add to newly selected roles
-      for (const r of addedRoles) {
-        const membership = create(UpdateRoleMembershipRequestSchema, {
-          roleName: r,
-          add: [{ principal: userName }],
-        });
-        promises.push(updateRoleMembership(membership));
-      }
-
       await Promise.allSettled(promises);
       // TODO: Until we haven't migrated everything from mobx is better to not remove this
       await rolesApi.refreshRoles();

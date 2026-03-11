@@ -22,7 +22,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
@@ -744,6 +744,7 @@ export default function CreateACL({
     host: propSharedConfig?.host ?? '*',
   });
 
+  const ruleIdCounter = useRef(2);
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
       {
@@ -781,7 +782,7 @@ export default function CreateACL({
     }
 
     const newRule = {
-      id: Date.now(),
+      id: ruleIdCounter.current++,
       resourceType: defaultResourceType as ResourceType,
       mode: ModeCustom,
       selectorType: ResourcePatternTypeAny,

@@ -429,18 +429,18 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
           throw new ConnectorValidationError(String(e));
         }
 
+        const pluginClass = selectedPlugin?.class ?? '';
+        const parsedConfig = parsedUpdatedConfig ?? undefined;
+        const connectorName = propertiesObject?.name as string;
         try {
           openCreatingModal();
 
-          await connectClusterStore.createConnector(selectedPlugin?.class ?? '', parsedUpdatedConfig ?? undefined);
+          await connectClusterStore.createConnector(pluginClass, parsedConfig);
 
           // Wait a bit for the connector to appear, then navigate to it
           const maxScanTime = 10_000;
           const intervalSec = 100;
           const timer = new TimeSince();
-
-          // Get connector name from the actual config object (works in both form and JSON mode)
-          const connectorName = propertiesObject?.name as string;
 
           while (true) {
             const elapsedTime = timer.value;
@@ -469,7 +469,9 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
             status: 'success',
             description: `Connector ${connectorName} created`,
           });
+          closeCreatingModal();
         } catch (e: unknown) {
+          closeCreatingModal();
           const error = e as { name?: string; message?: string };
           switch (error?.name) {
             case 'ConnectorValidationError':
@@ -483,8 +485,6 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
           }
           setLoading(false);
           return { conditionMet: false };
-        } finally {
-          closeCreatingModal();
         }
         setLoading(false);
         return { conditionMet: true };

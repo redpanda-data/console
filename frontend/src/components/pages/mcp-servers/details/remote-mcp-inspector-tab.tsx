@@ -196,6 +196,67 @@ export const RemoteMCPInspectorTab = () => {
     []
   );
 
+  const validateRequiredFields = (
+    schema: JSONSchemaType | undefined,
+    values: JSONValue
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
+  ): { isValid: boolean; errors: Record<string, string> } => {
+    const errors: Record<string, string> = {};
+
+    if (!(schema?.properties && schema.required)) {
+      return { isValid: true, errors }; // No validation needed if no required fields
+    }
+
+    const parameters = values as Record<string, unknown>;
+
+    // Check each required field
+    for (const requiredField of schema.required) {
+      const value = parameters[requiredField];
+
+      // Check if field is missing or truly empty
+      if (value === undefined || value === null) {
+        errors[requiredField] = 'This field is required';
+        continue;
+      }
+
+      // For strings, allow non-empty values (including placeholder values)
+      if (typeof value === 'string' && value === '') {
+        errors[requiredField] = 'This field is required';
+        continue;
+      }
+
+      // Special validation for topic_name in output components
+      if (requiredField === 'topic_name' && typeof value === 'string' && selectedTool) {
+        const componentType =
+          mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType || getComponentTypeFromToolName(selectedTool);
+
+        if (
+          componentType === MCPServer_Tool_ComponentType.OUTPUT &&
+          topicsData?.topics &&
+          Array.isArray(topicsData.topics)
+        ) {
+          // Validate that the topic_name exists in the available topics
+          const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
+          if (!topicExists) {
+            errors[requiredField] =
+              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+            continue;
+          }
+        }
+      }
+
+      // For arrays, check if they have at least one item when required
+      if (Array.isArray(value) && value.length === 0) {
+        const fieldSchema = schema.properties[requiredField] as JSONSchemaType;
+        if (fieldSchema?.type === 'array') {
+          errors[requiredField] = 'This field is required';
+        }
+      }
+    }
+
+    return { isValid: Object.keys(errors).length === 0, errors };
+  };
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   useEffect(() => {
@@ -303,67 +364,6 @@ export const RemoteMCPInspectorTab = () => {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-  };
-
-  const validateRequiredFields = (
-    schema: JSONSchemaType | undefined,
-    values: JSONValue
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
-  ): { isValid: boolean; errors: Record<string, string> } => {
-    const errors: Record<string, string> = {};
-
-    if (!(schema?.properties && schema.required)) {
-      return { isValid: true, errors }; // No validation needed if no required fields
-    }
-
-    const parameters = values as Record<string, unknown>;
-
-    // Check each required field
-    for (const requiredField of schema.required) {
-      const value = parameters[requiredField];
-
-      // Check if field is missing or truly empty
-      if (value === undefined || value === null) {
-        errors[requiredField] = 'This field is required';
-        continue;
-      }
-
-      // For strings, allow non-empty values (including placeholder values)
-      if (typeof value === 'string' && value === '') {
-        errors[requiredField] = 'This field is required';
-        continue;
-      }
-
-      // Special validation for topic_name in output components
-      if (requiredField === 'topic_name' && typeof value === 'string' && selectedTool) {
-        const componentType =
-          mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType || getComponentTypeFromToolName(selectedTool);
-
-        if (
-          componentType === MCPServer_Tool_ComponentType.OUTPUT &&
-          topicsData?.topics &&
-          Array.isArray(topicsData.topics)
-        ) {
-          // Validate that the topic_name exists in the available topics
-          const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
-          if (!topicExists) {
-            errors[requiredField] =
-              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
-            continue;
-          }
-        }
-      }
-
-      // For arrays, check if they have at least one item when required
-      if (Array.isArray(value) && value.length === 0) {
-        const fieldSchema = schema.properties[requiredField] as JSONSchemaType;
-        if (fieldSchema?.type === 'array') {
-          errors[requiredField] = 'This field is required';
-        }
-      }
-    }
-
-    return { isValid: Object.keys(errors).length === 0, errors };
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic

@@ -18,6 +18,11 @@ import type { Property } from '../../../../state/connect/state';
 import { PropertyWidth } from '../../../../state/rest-interfaces';
 import { SingleSelect } from '../../../misc/select';
 
+const updatePropertyValue = (property: Property, value: Property['value']) => {
+  property.value = value;
+  property.notifyChange();
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const PropertyComponent = (props: { property: Property }) => {
   const p = props.property;
@@ -56,8 +61,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           <RadioGroup
             name={p.name}
             onChange={(e) => {
-              p.value = e;
-              p.notifyChange();
+              updatePropertyValue(p, e);
             }}
             options={options}
             value={String(v || def.default_value)}
@@ -73,8 +77,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           <Box maxWidth={260}>
             <SingleSelect
               onChange={(e) => {
-                p.value = e;
-                p.notifyChange();
+                updatePropertyValue(p, e);
               }}
               options={options}
               value={v}
@@ -88,8 +91,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             defaultValue={def.default_value ?? undefined}
             isDisabled={props.property.isDisabled}
             onChange={(e) => {
-              p.value = e.target.value;
-              p.notifyChange();
+              updatePropertyValue(p, e.target.value);
             }}
             spellCheck={false}
             value={String(v)}
@@ -103,8 +105,7 @@ export const PropertyComponent = (props: { property: Property }) => {
       inputComp = (
         <SecretInput
           onChange={(e) => {
-            p.value = e;
-            p.notifyChange();
+            updatePropertyValue(p, e);
           }}
           updating={p.crud === 'update'}
           value={String(v ?? '')}
@@ -119,8 +120,7 @@ export const PropertyComponent = (props: { property: Property }) => {
       inputComp = (
         <NumberInput
           onChange={(e) => {
-            p.value = e;
-            p.notifyChange();
+            updatePropertyValue(p, e);
           }}
           value={Number(v)}
         />
@@ -132,8 +132,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         <Switch
           isChecked={Boolean(v)}
           onChange={(e) => {
-            p.value = e.target.checked;
-            p.notifyChange();
+            updatePropertyValue(p, e.target.checked);
           }}
         />
       );
@@ -145,8 +144,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           <CommaSeparatedStringList
             defaultValue={String(v)}
             onChange={(x) => {
-              p.value = x;
-              p.notifyChange();
+              updatePropertyValue(p, x);
             }}
           />
         );
@@ -155,8 +153,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           <Input
             defaultValue={def.default_value ?? undefined}
             onChange={(e) => {
-              p.value = e.target.value;
-              p.notifyChange();
+              updatePropertyValue(p, e.target.value);
             }}
             value={String(v)}
           />
@@ -169,8 +166,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         <Input
           defaultValue={def.default_value ?? undefined}
           onChange={(e) => {
-            p.value = e.target.value;
-            p.notifyChange();
+            updatePropertyValue(p, e.target.value);
           }}
           value={String(v)}
         />

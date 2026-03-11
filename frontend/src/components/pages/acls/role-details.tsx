@@ -71,10 +71,12 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
       await rolesApi.deleteRole(roleName, true);
       await rolesApi.refreshRoles();
       await rolesApi.refreshRoleMembers();
-    } finally {
       setIsDeleting(false);
+      appGlobal.historyPush('/security/roles/');
+    } catch (e) {
+      setIsDeleting(false);
+      throw e;
     }
-    appGlobal.historyPush('/security/roles/');
   };
 
   const aclPrincipalGroup = principalGroupsView.principalGroups.find(

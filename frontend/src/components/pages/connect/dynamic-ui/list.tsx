@@ -21,7 +21,9 @@ const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
 // but still calls the most recent version of the callback.
 const useLatestRef = <T,>(value: T) => {
   const ref = useRef(value);
-  ref.current = value;
+  useEffect(() => {
+    ref.current = value;
+  });
   return ref;
 };
 

@@ -224,7 +224,7 @@ const SelectOffsetStep = ({
                 }}
                 role="presentation"
               >
-                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp || Date.now().valueOf()} />
+                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp ?? 0} />
               </div>
             ),
           },
@@ -409,7 +409,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const [step, setStep] = useState<1 | 2>(1);
   const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
   const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
-  const [timestamp, setTimestamp] = useState<number>(Date.now());
+  const [timestamp, setTimestamp] = useState<number>(() => Date.now());
   const [errors, setErrors] = useState<string[]>([]);
 
   const hasErrors = errors.length > 0;

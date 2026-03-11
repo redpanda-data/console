@@ -100,66 +100,38 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          try {
-            setIsLoading(true);
-            const usersToRemove = originalUsernames.filter((item) => currentUsernames.indexOf(item) === -1);
-
-            const principalType: AclStrResourceType = 'RedpandaRole';
-
-            if (editMode) {
-              await api.deleteACLs({
-                resourceType: 'Any',
+          setIsLoading(true);
+          const usersToRemove = originalUsernames.filter((item) => currentUsernames.indexOf(item) === -1);
+          const principalType: AclStrResourceType = 'RedpandaRole';
+          const isEditMode = editMode;
+          const roleName = formState.roleName;
+          const aclPrincipalGroup: AclPrincipalGroup = {
+            principalType: 'RedpandaRole',
+            principalName: roleName,
+            host: formState.host,
+            topicAcls: formState.topicACLs,
+            consumerGroupAcls: formState.consumerGroupsACLs,
+            transactionalIdAcls: formState.transactionalIDACLs,
+            clusterAcls: formState.clusterACLs,
+            sourceEntries: [],
+          };
+          const principalNames = formState.principals.map((x) => x.name);
+          const deleteAclsArgs = isEditMode
+            ? {
+                resourceType: 'Any' as const,
                 resourceName: undefined,
-                principal: `${principalType}:${formState.roleName}`,
-                resourcePatternType: 'Any',
-                operation: 'Any',
-                permissionType: 'Any',
-              });
-            }
-
-            const aclPrincipalGroup: AclPrincipalGroup = {
-              principalType: 'RedpandaRole',
-              principalName: formState.roleName,
-
-              host: formState.host,
-
-              topicAcls: formState.topicACLs,
-              consumerGroupAcls: formState.consumerGroupsACLs,
-              transactionalIdAcls: formState.transactionalIDACLs,
-              clusterAcls: formState.clusterACLs,
-              sourceEntries: [],
-            };
-
-            const newRole = await rolesApi.updateRoleMembership(
-              formState.roleName,
-              formState.principals.map((x) => x.name),
-              usersToRemove,
-              true
-            );
-
-            if (newRole.response) {
-              const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
-
-              for (const aclFlat of unpackedPrincipalGroup) {
-                await api.createACL({
-                  host: aclFlat.host,
-                  principal: aclFlat.principal,
-                  resourceType: aclFlat.resourceType,
-                  resourceName: aclFlat.resourceName,
-                  resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
-                  operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
-                  permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
-                });
+                principal: `${principalType}:${roleName}`,
+                resourcePatternType: 'Any' as const,
+                operation: 'Any' as const,
+                permissionType: 'Any' as const,
               }
-
-              setIsLoading(false);
-              toast({
-                status: 'success',
-                title: `Role ${newRole.response.roleName} successfully ${editMode ? 'updated' : 'created'}`,
-              });
-
-              navigate({ to: `/security/roles/${encodeURIComponent(newRole.response.roleName)}/details` });
-            }
+            : null;
+          const actionLabel = isEditMode ? 'updated' : 'created';
+          const deleteAclsPromise = deleteAclsArgs ? api.deleteACLs(deleteAclsArgs) : Promise.resolve();
+          let newRoleResult: Awaited<ReturnType<typeof rolesApi.updateRoleMembership>> | null = null;
+          try {
+            await deleteAclsPromise;
+            newRoleResult = await rolesApi.updateRoleMembership(roleName, principalNames, usersToRemove, true);
           } catch (err) {
             toast({
               status: 'error',
@@ -168,8 +140,43 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               title: `Failed to update role ${formState.roleName}`,
               description: String(err),
             });
-          } finally {
             setIsLoading(false);
+            return;
+          }
+
+          const roleResponse = newRoleResult ? newRoleResult.response : null;
+          if (roleResponse) {
+            const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
+            const aclCreatePromises = unpackedPrincipalGroup.map((aclFlat) =>
+              api.createACL({
+                host: aclFlat.host,
+                principal: aclFlat.principal,
+                resourceType: aclFlat.resourceType,
+                resourceName: aclFlat.resourceName,
+                resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
+                operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
+                permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
+              })
+            );
+            try {
+              await Promise.all(aclCreatePromises);
+            } catch (err) {
+              toast({
+                status: 'error',
+                duration: null,
+                isClosable: true,
+                title: `Failed to update role ${formState.roleName}`,
+                description: String(err),
+              });
+              setIsLoading(false);
+              return;
+            }
+            setIsLoading(false);
+            toast({
+              status: 'success',
+              title: `Role ${roleResponse.roleName} successfully ${actionLabel}`,
+            });
+            navigate({ to: `/security/roles/${encodeURIComponent(roleResponse.roleName)}/details` });
           }
         }}
       >

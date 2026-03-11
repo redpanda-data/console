@@ -1,4 +1,5 @@
 'use no memo';
+
 import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -256,10 +257,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
             return { success: false };
           }
 
+          const serviceAccountLabel = pipelineName || topicName || 'pipeline';
           try {
-            const result = await serviceAccountSelectorRef.current.createServiceAccount(
-              pipelineName || topicName || 'pipeline'
-            );
+            const result = await serviceAccountSelectorRef.current.createServiceAccount(serviceAccountLabel);
 
             if (!result) {
               return { success: false };
