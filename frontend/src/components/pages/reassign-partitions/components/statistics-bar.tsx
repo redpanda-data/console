@@ -24,7 +24,7 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
     if (partitions === null) {
       continue;
     }
-    if (props.partitionSelection[topic] === null) {
+    if (!props.partitionSelection[topic]) {
       continue;
     }
     const relevantPartitions = partitions.filter((p) => props.partitionSelection[topic].includes(p.id));
