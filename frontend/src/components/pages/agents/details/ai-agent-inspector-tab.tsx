@@ -110,37 +110,55 @@ export const AIAgentInspectorTab = () => {
     setIsLoadingCard(true);
     setCardError(null);
     setCardUrl(null);
-    try {
-      const urls = getAgentCardUrls({ agentUrl: agent.url });
-      const errors: Error[] = [];
+    const urls = getAgentCardUrls({ agentUrl: agent.url });
+    const authHeaders = config.jwt ? { Authorization: `Bearer ${config.jwt}` } : {};
+    const errors: Error[] = [];
+    let cardFetched = false;
 
-      for (const url of urls) {
-        try {
-          const response = await fetch(url, {
-            headers: config.jwt ? { Authorization: `Bearer ${config.jwt}` } : {},
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-
-          const cardData = await response.json();
-          setLiveAgentCard(cardData);
-          setCardUrl(url);
-          return;
-        } catch (error) {
-          errors.push(error as Error);
-        }
+    for (const url of urls) {
+      let fetchError: Error | null = null;
+      let response: Response | null = null;
+      try {
+        response = await fetch(url, { headers: authHeaders });
+      } catch (err) {
+        fetchError = err as Error;
       }
 
-      throw new Error(
-        `Failed to fetch agent card from any URL. Tried: ${urls.join(', ')}. Errors: ${errors.map((e) => e.message).join('; ')}`
-      );
-    } catch (error) {
-      setCardError((error as Error).message);
-    } finally {
-      setIsLoadingCard(false);
+      if (fetchError) {
+        errors.push(fetchError);
+        continue;
+      }
+
+      const ok = response?.ok;
+      if (!ok) {
+        errors.push(new Error(`HTTP ${response?.status}: ${response?.statusText}`));
+        continue;
+      }
+
+      let jsonError: Error | null = null;
+      let cardData: unknown = null;
+      try {
+        cardData = await response.json();
+      } catch (err) {
+        jsonError = err as Error;
+      }
+      if (jsonError) {
+        errors.push(jsonError);
+        continue;
+      }
+      setLiveAgentCard(cardData);
+      setCardUrl(url);
+      cardFetched = true;
+      break;
     }
+
+    if (!cardFetched) {
+      const triedUrls = urls.join(', ');
+      const errorMessages = errors.map((e) => e.message).join('; ');
+      setCardError(`Failed to fetch agent card from any URL. Tried: ${triedUrls}. Errors: ${errorMessages}`);
+    }
+
+    setIsLoadingCard(false);
   };
 
   return (

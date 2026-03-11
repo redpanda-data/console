@@ -217,17 +217,29 @@ const ImportExportTab: FC = () => {
           />
           <Button
             onClick={() => {
+              let parsed: Record<string, unknown> | null = null;
               try {
-                const data = JSON.parse(importCode);
+                parsed = JSON.parse(importCode);
+              } catch (e) {
+                toast({
+                  status: 'error',
+                  description: 'Unable to import settings. See console for more information.',
+                });
+                // biome-ignore lint/suspicious/noConsole: error logging for debugging settings import failures
+                console.error('unable to import settings', { error: e });
+              }
+              if (parsed !== null) {
                 const skipped: string[] = [];
-                for (const k in data) {
-                  if (Reflect.has(uiSettings, k)) {
-                    (uiSettings as Record<string, unknown>)[k] = data[k];
+                for (const k in parsed) {
+                  const hasKey = Reflect.has(uiSettings, k);
+                  if (hasKey) {
+                    (uiSettings as Record<string, unknown>)[k] = parsed[k];
                   } else {
                     skipped.push(k);
                   }
                 }
-                if (skipped.length > 0) {
+                const hasSkipped = skipped.length > 0;
+                if (hasSkipped) {
                   toast({
                     status: 'warning',
                     description: `Some properties were skipped during import:\n${skipped.join(', ')}`,
@@ -239,13 +251,6 @@ const ImportExportTab: FC = () => {
                   });
                 }
                 setImportCode('');
-              } catch (e) {
-                toast({
-                  status: 'error',
-                  description: 'Unable to import settings. See console for more information.',
-                });
-                // biome-ignore lint/suspicious/noConsole: error logging for debugging settings import failures
-                console.error('unable to import settings', { error: e });
               }
             }}
           >

@@ -317,7 +317,6 @@ export const useDeleteSchemaSubjectMutation = () => {
 
   return useTanstackMutation<void, Error, { subjectName: string; permanent: boolean }>({
     mutationFn: async ({ subjectName, permanent }) => {
-      const { api } = await import('state/backend-api');
       await api.deleteSchemaSubject(subjectName, permanent);
     },
     onSuccess: async () => {

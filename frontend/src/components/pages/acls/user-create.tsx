@@ -102,26 +102,14 @@ const UserCreatePage = () => {
   }, []);
 
   const onCreateUser = useCallback(async (): Promise<boolean> => {
+    setIsCreating(true);
+    let success = false;
     try {
-      setIsCreating(true);
       await api.createServiceAccount({
         username,
         password,
         mechanism,
       });
-
-      if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
-        return false;
-      }
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
-
-      const roleAddPromises: Promise<unknown>[] = [];
-      for (const r of selectedRoles) {
-        roleAddPromises.push(rolesApi.updateRoleMembership(r, [username], [], false));
-      }
-      await Promise.allSettled(roleAddPromises);
-
-      setStep('CREATE_USER_CONFIRMATION');
     } catch (err) {
       toast({
         status: 'error',
@@ -130,10 +118,39 @@ const UserCreatePage = () => {
         title: 'Failed to create user',
         description: String(err),
       });
-    } finally {
       setIsCreating(false);
+      return false;
     }
-    return true;
+
+    const userData = api.userData;
+    if (userData) {
+      const cannotListAcls = !userData.canListAcls;
+      if (cannotListAcls) {
+        setIsCreating(false);
+        return false;
+      }
+    }
+
+    const roleAddPromises: Promise<unknown>[] = selectedRoles.map((r) =>
+      rolesApi.updateRoleMembership(r, [username], [], false)
+    );
+
+    try {
+      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
+      await Promise.allSettled(roleAddPromises);
+      setStep('CREATE_USER_CONFIRMATION');
+      success = true;
+    } catch (err) {
+      toast({
+        status: 'error',
+        duration: null,
+        isClosable: true,
+        title: 'Failed to create user',
+        description: String(err),
+      });
+    }
+    setIsCreating(false);
+    return success;
   }, [username, password, mechanism, selectedRoles]);
 
   const onCancel = () => appGlobal.historyPush('/security/users');

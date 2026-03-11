@@ -111,12 +111,13 @@ const ConfigEditorForm: FC<{
       value = customValue;
     }
 
+    const configValue = operation === 'SET' ? String(value) : undefined;
     try {
       await api.changeTopicConfig(targetTopic, [
         {
           key: editedEntry.name,
           op: operation,
-          value: operation === 'SET' ? String(value) : undefined,
+          value: configValue,
         },
       ]);
       toast({

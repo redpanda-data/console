@@ -27,7 +27,10 @@ import { Slider, SliderFilledTrack, SliderMark, SliderThumb, SliderTrack, Toolti
 //    The property will be directly read from / written to.
 //
 type ValueAndChangeCallback = { value: number | null; onChange: (x: number | null) => void };
-type BindableSettings = Pick<typeof uiSettings.reassignment, 'maxReplicationTraffic'>;
+type SettingsCallback = {
+  settings: Pick<typeof uiSettings.reassignment, 'maxReplicationTraffic'>;
+  onSettingsChange: (x: number | null) => void;
+};
 
 const labelStyles = {
   mt: '1',
@@ -36,7 +39,7 @@ const labelStyles = {
   fontSize: 'sm',
 };
 
-export function BandwidthSlider(props: ValueAndChangeCallback | { settings: BindableSettings }) {
+export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback) {
   const [isDragging, setIsDragging] = useState(false);
 
   const getValue = (): number | null => {
@@ -50,7 +53,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | { settings: Bind
     if ('value' in props) {
       props.onChange(x);
     } else {
-      props.settings.maxReplicationTraffic = x;
+      props.onSettingsChange(x);
     }
   };
 
@@ -79,15 +82,10 @@ export function BandwidthSlider(props: ValueAndChangeCallback | { settings: Bind
       mt="6"
       mx="4"
       onChange={(n: number) => {
-        switch (true) {
-          case n < 2.5:
-            setValue(null);
-            return;
-          // case n > 12.5:
-          //     setValue(Number.POSITIVE_INFINITY); return;
-          default:
-            setValue(Math.round(10 ** n.clamp(3, 12)));
-            return;
+        if (n < 2.5) {
+          setValue(null);
+        } else {
+          setValue(Math.round(10 ** n.clamp(3, 12)));
         }
       }}
       onMouseEnter={() => {

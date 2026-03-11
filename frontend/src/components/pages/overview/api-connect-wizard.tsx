@@ -141,31 +141,23 @@ export const APIConnectWizard = () => {
     switch (methods.current.id) {
       case APIWizardStep.ADD_TOPIC: {
         setIsSubmitting(true);
-        try {
-          const result = await addTopicStepRef.current?.triggerSubmit();
-          if (result?.success) {
-            setTopicName(result.data?.topicName);
-          }
-          handleStepResult(result, methods.next);
-        } finally {
-          setIsSubmitting(false);
+        const topicResult = await addTopicStepRef.current?.triggerSubmit().finally(() => setIsSubmitting(false));
+        if (topicResult?.success) {
+          setTopicName(topicResult.data?.topicName);
         }
+        handleStepResult(topicResult, methods.next);
         break;
       }
       case APIWizardStep.ADD_USER: {
         setIsSubmitting(true);
-        try {
-          const result = await addUserStepRef.current?.triggerSubmit();
-          if (result?.success && result.data && 'username' in result.data) {
-            // SASL user data
-            setUsername(result.data.username);
-            setSaslMechanism(result.data.saslMechanism);
-          }
-          // Service account data doesn't set username/saslMechanism
-          handleStepResult(result, methods.next);
-        } finally {
-          setIsSubmitting(false);
+        const userResult = await addUserStepRef.current?.triggerSubmit().finally(() => setIsSubmitting(false));
+        if (userResult?.success && userResult.data && 'username' in userResult.data) {
+          // SASL user data
+          setUsername(userResult.data.username);
+          setSaslMechanism(userResult.data.saslMechanism);
         }
+        // Service account data doesn't set username/saslMechanism
+        handleStepResult(userResult, methods.next);
         break;
       }
       default:
