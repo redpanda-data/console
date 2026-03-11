@@ -61,7 +61,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 function buildMonacoYamlOptions(
   schema?: YamlEditorProps['schema'],
 ): MonacoYamlOptions {
-  const schemaUri = 'https://redpanda.com/connect-schema.json';
+  const schemaUri = 'https://raw.githubusercontent.com/redpanda-data/console/refs/heads/master/frontend/src/assets/rp-connect-schema.json';
   const inlineSchema =
     schema?.definitions || schema?.properties
       ? {
