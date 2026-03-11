@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { Fragment, useEffect, useRef, useState } from 'react';

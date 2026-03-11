@@ -1,3 +1,4 @@
+'use no memo';
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import {

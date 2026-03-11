@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 'use client';
 
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -30,6 +32,7 @@ type TasksTableProps = {
 };
 
 export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProps) => {
+  'use no memo';
   const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
 
   const columns = useMemo(

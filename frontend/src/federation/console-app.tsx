@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 // Array prototype extensions (must be imported early)
 import '../utils/array-extensions';
 

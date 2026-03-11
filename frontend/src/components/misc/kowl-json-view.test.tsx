@@ -1,3 +1,4 @@
+'use no memo';
 import { act, render, waitFor } from '@testing-library/react';
 
 vi.mock('@redpanda-data/ui', async () => {

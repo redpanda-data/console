@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
@@ -350,6 +352,7 @@ export const updatePageTitle = () => {
 };
 
 export const KnowledgeBaseListPage = () => {
+  'use no memo';
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
