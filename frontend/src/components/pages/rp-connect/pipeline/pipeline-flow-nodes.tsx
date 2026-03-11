@@ -103,7 +103,6 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
           ? 'border-dashed! text-muted-foreground'
           : 'border-transparent! bg-secondary/5 text-foreground hover:bg-secondary/10'
       )}
-      tabIndex={-1}
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
       <div className={cn('text-sm', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}>
