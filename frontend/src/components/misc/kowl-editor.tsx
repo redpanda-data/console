@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { DiffEditor, type DiffEditorProps, type EditorProps } from '@monaco-editor/react';
+import type { DiffEditorProps, EditorProps } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
+import { type ComponentType, lazy, Suspense } from 'react';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
@@ -48,18 +49,27 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   renderLineHighlight: 'all',
 } as const;
 
+const LazyEditor = lazy(() =>
+  import('@monaco-editor/react').then((m) => ({ default: m.default as ComponentType<EditorProps> }))
+);
+const LazyDiffEditor = lazy(() =>
+  import('@monaco-editor/react').then((m) => ({ default: m.DiffEditor as ComponentType<DiffEditorProps> }))
+);
+
 export default function KowlEditor(props: KowlEditorProps) {
   const { options: givenOptions, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
-    <Editor
-      defaultValue={''}
-      loading={<LoadingPlaceholder />}
-      options={options}
-      wrapperProps={{ className: 'kowlEditor' }}
-      {...rest}
-    />
+    <Suspense fallback={<LoadingPlaceholder />}>
+      <LazyEditor
+        defaultValue={''}
+        loading={<LoadingPlaceholder />}
+        options={options}
+        wrapperProps={{ className: 'kowlEditor' }}
+        {...rest}
+      />
+    </Suspense>
   );
 }
 
@@ -68,12 +78,14 @@ export function KowlDiffEditor(props: KowlDiffEditorProps) {
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
-    <DiffEditor
-      loading={<LoadingPlaceholder />}
-      options={options}
-      wrapperProps={{ className: 'kowlEditor' }}
-      {...rest}
-    />
+    <Suspense fallback={<LoadingPlaceholder />}>
+      <LazyDiffEditor
+        loading={<LoadingPlaceholder />}
+        options={options}
+        wrapperProps={{ className: 'kowlEditor' }}
+        {...rest}
+      />
+    </Suspense>
   );
 }
 
