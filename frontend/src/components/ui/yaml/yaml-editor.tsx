@@ -18,10 +18,12 @@ import { useEffect, useMemo, useRef } from 'react';
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
+  onEditorMount?: (editorInstance: editor.IStandaloneCodeEditor) => void;
   schema?: {
     definitions?: Record<string, JSONSchema>;
     properties?: Record<string, JSONSchema>;
   };
+  transparentBackground?: boolean;
 };
 
 const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
@@ -74,7 +76,7 @@ const defaultFallbackSchema: MonacoYamlOptions = {
 };
 
 export const YamlEditor = (props: YamlEditorProps) => {
-  const { options: givenOptions, schema, ...rest } = props;
+  const { options: givenOptions, schema, onEditorMount, transparentBackground, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const monacoRef = useRef<Monaco | null>(null);
   const yamlRef = useRef<MonacoYaml | null>(null);
@@ -127,9 +129,28 @@ export const YamlEditor = (props: YamlEditorProps) => {
 
   return (
     <Editor
-      onMount={(_, monaco) => {
+      onMount={(editorInstance, monaco) => {
         monacoRef.current = monaco;
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+
+        if (transparentBackground) {
+          const el = editorInstance.getDomNode() ?? document.documentElement;
+          const resolved = getComputedStyle(el).getPropertyValue('--color-primary-alpha-subtle').trim();
+          const hex = resolvedColorToHex(resolved);
+
+          monaco.editor.defineTheme('yaml-transparent', {
+            base: 'vs',
+            inherit: true,
+            colors: {
+              'editor.background': hex,
+              'editorGutter.background': hex,
+            },
+            rules: [],
+          });
+          monaco.editor.setTheme('yaml-transparent');
+        }
+
+        onEditorMount?.(editorInstance);
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
@@ -149,3 +170,15 @@ export const YamlEditor = (props: YamlEditorProps) => {
 };
 
 const LoadingPlaceholder = () => <div className="editorLoading">Loading Editor...</div>;
+
+function resolvedColorToHex(color: string): string {
+  if (color.startsWith('#')) {
+    return color;
+  }
+  const ctx = document.createElement('canvas').getContext('2d');
+  if (!ctx) {
+    return '#fcfcfc';
+  }
+  ctx.fillStyle = color;
+  return ctx.fillStyle;
+}

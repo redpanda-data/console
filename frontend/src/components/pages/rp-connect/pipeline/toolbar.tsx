@@ -19,10 +19,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { EditableText } from 'components/redpanda-ui/components/editable-text';
 import { Group } from 'components/redpanda-ui/components/group';
+import { Kbd } from 'components/redpanda-ui/components/kbd';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowBigUp,
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Command,
+  Loader2,
+  Pause,
+  Pencil,
+  Play,
+  RotateCcw,
+  Settings,
+} from 'lucide-react';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -50,9 +67,19 @@ type ButtonConfig = {
 };
 
 type ToolbarProps = {
-  pipelineId: string;
+  pipelineId?: string;
   pipelineName?: string;
   pipelineState?: Pipeline_State;
+  mode: 'view' | 'edit' | 'create';
+  onEditConfig?: () => void;
+  onNameChange?: (name: string) => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  onCommandMenu?: () => void;
+  isSaving?: boolean;
+  isLoading?: boolean;
+  nameError?: string;
+  autoFocus?: boolean;
 };
 
 type ButtonConfigFactoryParams = {
@@ -156,127 +183,212 @@ function getPipelineButtonConfig(
   }
 }
 
-export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
-  const navigate = useNavigate();
+export const Toolbar = memo(
+  ({
+    pipelineId,
+    pipelineName,
+    pipelineState,
+    mode,
+    onEditConfig,
+    onNameChange,
+    onSave,
+    onCancel,
+    onCommandMenu,
+    isSaving,
+    isLoading,
+    nameError,
+    autoFocus,
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Toolbar renders multiple conditional UI states
+  }: ToolbarProps) => {
+    const navigate = useNavigate();
 
-  const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
-  const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
+    const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
+    const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
 
-  const handleStart = useCallback(() => {
-    const startRequest = create(StartPipelineRequestSchema, {
-      request: { id: pipelineId },
-    });
+    const handleBack = useCallback(() => {
+      if (onCancel) {
+        onCancel();
+      } else {
+        navigate({ to: '/connect-clusters' });
+      }
+    }, [onCancel, navigate]);
 
-    startMutation(startRequest, {
-      onSuccess: () => {
-        toast.success('Pipeline started');
-      },
-      onError: (err) => {
-        toast.error(
-          formatToastErrorMessageGRPC({
-            error: ConnectError.from(err),
-            action: 'start',
-            entity: 'pipeline',
-          })
+    const handleStart = useCallback(() => {
+      if (!pipelineId) {
+        return;
+      }
+      const startRequest = create(StartPipelineRequestSchema, {
+        request: { id: pipelineId },
+      });
+
+      startMutation(startRequest, {
+        onSuccess: () => {
+          toast.success('Pipeline started');
+        },
+        onError: (err) => {
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'start',
+              entity: 'pipeline',
+            })
+          );
+        },
+      });
+    }, [pipelineId, startMutation]);
+
+    const handleStop = useCallback(() => {
+      if (!pipelineId) {
+        return;
+      }
+      const stopRequest = create(StopPipelineRequestSchema, {
+        request: { id: pipelineId },
+      });
+
+      stopMutation(stopRequest, {
+        onSuccess: () => {
+          toast.success('Pipeline stopped');
+        },
+        onError: (err) => {
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'stop',
+              entity: 'pipeline',
+            })
+          );
+        },
+      });
+    }, [pipelineId, stopMutation]);
+
+    const handleEditClick = useCallback(() => {
+      if (mode === 'view' && pipelineId) {
+        navigate({ to: `/rp-connect/${pipelineId}/edit` });
+      } else {
+        onEditConfig?.();
+      }
+    }, [mode, pipelineId, navigate, onEditConfig]);
+
+    const statusBadge = useMemo(() => pipelineStateToVariant(pipelineState), [pipelineState]);
+    const shouldShowStatusBadge = useMemo(
+      () =>
+        mode === 'view' &&
+        pipelineState !== undefined &&
+        pipelineState !== PipelineState.STARTING &&
+        pipelineState !== PipelineState.STOPPING,
+      [mode, pipelineState]
+    );
+
+    const buttonConfig = useMemo(
+      () =>
+        getPipelineButtonConfig(pipelineState, {
+          handleStart,
+          handleStop,
+          isStartPending,
+          isStopPending,
+        }),
+      [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
+    );
+
+    const renderActionButton = useCallback(() => {
+      if (!buttonConfig) {
+        return null;
+      }
+
+      if (buttonConfig.dropdown) {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                {buttonConfig.icon}
+                {buttonConfig.text}
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {buttonConfig.dropdown.map((option) => (
+                <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
+                  {option.icon}
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
-      },
-    });
-  }, [pipelineId, startMutation]);
+      }
 
-  const handleStop = useCallback(() => {
-    const stopRequest = create(StopPipelineRequestSchema, {
-      request: { id: pipelineId },
-    });
-
-    stopMutation(stopRequest, {
-      onSuccess: () => {
-        toast.success('Pipeline stopped');
-      },
-      onError: (err) => {
-        toast.error(
-          formatToastErrorMessageGRPC({
-            error: ConnectError.from(err),
-            action: 'stop',
-            entity: 'pipeline',
-          })
-        );
-      },
-    });
-  }, [pipelineId, stopMutation]);
-
-  const handleEdit = useCallback(() => {
-    navigate({ to: `/rp-connect/${pipelineId}/edit` });
-  }, [navigate, pipelineId]);
-
-  const statusBadge = useMemo(() => pipelineStateToVariant(pipelineState), [pipelineState]);
-  const shouldShowStatusBadge = useMemo(
-    () =>
-      pipelineState !== undefined &&
-      pipelineState !== PipelineState.STARTING &&
-      pipelineState !== PipelineState.STOPPING,
-    [pipelineState]
-  );
-
-  const buttonConfig = useMemo(
-    () =>
-      getPipelineButtonConfig(pipelineState, {
-        handleStart,
-        handleStop,
-        isStartPending,
-        isStopPending,
-      }),
-    [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
-  );
-
-  const renderActionButton = useCallback(() => {
-    if (!buttonConfig) {
-      return null;
-    }
-
-    if (buttonConfig.dropdown) {
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button>
-              {buttonConfig.icon}
-              {buttonConfig.text}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {buttonConfig.dropdown.map((option) => (
-              <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
-                {option.icon}
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
+          {buttonConfig.text}
+        </Button>
       );
-    }
+    }, [buttonConfig, isStartPending, isStopPending]);
+
+    const isEditable = mode === 'edit' || mode === 'create';
+    const displayName = pipelineName || pipelineId || '';
 
     return (
-      <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
-        {buttonConfig.text}
-      </Button>
+      <div className="mt-5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button onClick={handleBack} size="icon" variant="ghost">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          {isLoading ? (
+            <Skeleton className="h-9 w-48" />
+          ) : isEditable ? (
+            <EditableText
+              as="heading"
+              autoFocus={autoFocus}
+              error={!!nameError}
+              errorMessage={nameError}
+              headingLevel={1}
+              onChange={onNameChange}
+              placeholder="New pipeline"
+              value={displayName}
+            />
+          ) : (
+            <Heading level={1}>{displayName || 'New pipeline'}</Heading>
+          )}
+          {!isLoading && (
+            <Button
+              icon={mode === 'view' ? <Pencil /> : <Settings />}
+              onClick={handleEditClick}
+              size="icon"
+              variant="ghost"
+            />
+          )}
+        </div>
+
+        <div>
+          <Group className="items-center gap-2">
+            {isEditable && onCommandMenu ? (
+              <Button
+                icon={
+                  <Kbd variant="ghost">
+                    <Command />
+                    <ArrowBigUp />P
+                  </Kbd>
+                }
+                onClick={onCommandMenu}
+                variant="outline"
+              >
+                Insert
+              </Button>
+            ) : null}
+            {shouldShowStatusBadge ? <StatusBadge pulsing={statusBadge.pulsing} variant={statusBadge.variant} /> : null}
+            {mode === 'view' && renderActionButton()}
+
+            {(mode === 'edit' || mode === 'create') && (
+              <Button disabled={isSaving} onClick={onSave}>
+                Save
+                {Boolean(isSaving) && <Spinner />}
+              </Button>
+            )}
+          </Group>
+        </div>
+      </div>
     );
-  }, [buttonConfig, isStartPending, isStopPending]);
-
-  return (
-    <div className="mt-5 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
-      </div>
-
-      <div>
-        <Group className="items-center gap-2">
-          {shouldShowStatusBadge ? <StatusBadge pulsing={statusBadge.pulsing} variant={statusBadge.variant} /> : null}
-          {renderActionButton()}
-          <Button icon={<Pencil />} onClick={handleEdit} size="icon" variant="outline" />
-        </Group>
-      </div>
-    </div>
-  );
-});
+  }
+);
 
 Toolbar.displayName = 'Toolbar';

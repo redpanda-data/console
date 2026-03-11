@@ -5,10 +5,10 @@ const routeApi = getRouteApi('/rp-connect/wizard');
 
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { runInAction } from 'mobx';
 import { AnimatePresence } from 'motion/react';
 import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -145,11 +145,13 @@ export const ConnectOnboardingWizard = ({
   });
 
   useEffect(() => {
-    uiState.pageTitle = 'Create Pipeline';
-    uiState.pageBreadcrumbs = [
-      { title: 'Redpanda Connect', linkTo: '/connect-clusters' },
-      { title: 'Create Pipeline', linkTo: '' },
-    ];
+    runInAction(() => {
+      uiState.shouldHidePageHeader = true;
+      uiState.pageBreadcrumbs = [
+        { title: 'Redpanda Connect', linkTo: '/connect-clusters' },
+        { title: 'Create Pipeline', linkTo: '' },
+      ];
+    });
   }, []);
 
   const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {
@@ -430,11 +432,6 @@ export const ConnectOnboardingWizard = ({
                   ),
                   [WizardStep.CREATE_CONFIG]: () => (
                     <Card key="create-config-step" size="full" {...stepMotionProps} animated>
-                      <CardHeader>
-                        <CardTitle>
-                          <Heading level={2}>Create pipeline</Heading>
-                        </CardTitle>
-                      </CardHeader>
                       <CardContent>
                         <PipelinePage />
                       </CardContent>
