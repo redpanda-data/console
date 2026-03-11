@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/common/v1/options.proto";
 import "redpanda/api/dataplane/v1/pipeline.proto";
 
 // Defines the AI Agent resource.
@@ -307,6 +308,10 @@ service AIAgentService {
       required_permission: PERMISSION_EDIT
       api: API_AI_AGENT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "ai-agents"
+      permission: "dataplane_aiagent_create"
+    };
   }
 
   // GetAIAgent gets a specific AI Agent.
@@ -338,6 +343,11 @@ service AIAgentService {
       required_permission: PERMISSION_VIEW
       api: API_AI_AGENT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "ai-agents"
+      id_getter_cel: "request.id"
+      permission: "dataplane_aiagent_get"
+    };
   }
 
   // ListAIAgents implements the list AI agents method which lists the AI agents
@@ -360,6 +370,14 @@ service AIAgentService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_AI_AGENT
+    };
+    option (redpanda.api.common.v1.collection_authorization) = {
+      collection_getter_cel: "response.ai_agents"
+      each: {
+        resource_type: "ai-agents"
+        id_getter_cel: "each.id"
+        permission: "dataplane_aiagent_list"
+      }
     };
   }
 
@@ -385,6 +403,11 @@ service AIAgentService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_AI_AGENT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "ai-agents"
+      id_getter_cel: "request.id"
+      permission: "dataplane_aiagent_update"
     };
   }
 
@@ -414,6 +437,11 @@ service AIAgentService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_AI_AGENT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "ai-agents"
+      id_getter_cel: "request.id"
+      permission: "dataplane_aiagent_delete"
     };
   }
 
@@ -446,6 +474,11 @@ service AIAgentService {
       required_permission: PERMISSION_EDIT
       api: API_AI_AGENT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "ai-agents"
+      id_getter_cel: "request.id"
+      permission: "dataplane_aiagent_delete"
+    };
   }
 
   // StartAIAgent starts a specific AI agent that has been previously stopped.
@@ -476,6 +509,11 @@ service AIAgentService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_AI_AGENT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "ai-agents"
+      id_getter_cel: "request.id"
+      permission: "dataplane_aiagent_create"
     };
   }
 }

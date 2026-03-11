@@ -10,6 +10,7 @@ import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/common/v1/linthint.proto";
+import "redpanda/api/common/v1/options.proto";
 import "redpanda/api/dataplane/v1/pipeline.proto";
 
 // Defines the MCP server resource.
@@ -162,6 +163,10 @@ service MCPServerService {
       required_permission: PERMISSION_EDIT
       api: API_MCP_SERVER
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      permission: "dataplane_mcpserver_create"
+    };
   }
 
   // GetMCPServer gets a specific MCP server.
@@ -193,6 +198,11 @@ service MCPServerService {
       required_permission: PERMISSION_VIEW
       api: API_MCP_SERVER
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      id_getter_cel: "request.id"
+      permission: "dataplane_mcpserver_get"
+    };
   }
 
   // Lists all MCP servers in the Redpanda cluster.
@@ -214,6 +224,14 @@ service MCPServerService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_MCP_SERVER
+    };
+    option (redpanda.api.common.v1.collection_authorization) = {
+      collection_getter_cel: "response.mcp_servers"
+      each: {
+        resource_type: "mcp-servers"
+        id_getter_cel: "each.id"
+        permission: "dataplane_mcpserver_list"
+      }
     };
   }
 
@@ -239,6 +257,11 @@ service MCPServerService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_MCP_SERVER
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      id_getter_cel: "request.id"
+      permission: "dataplane_mcpserver_update"
     };
   }
 
@@ -268,6 +291,11 @@ service MCPServerService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_MCP_SERVER
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      id_getter_cel: "request.id"
+      permission: "dataplane_mcpserver_delete"
     };
   }
 
@@ -300,6 +328,11 @@ service MCPServerService {
       required_permission: PERMISSION_EDIT
       api: API_MCP_SERVER
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      id_getter_cel: "request.id"
+      permission: "dataplane_mcpserver_delete"
+    };
   }
 
   // StartMCPServer starts a specific MCP server that has been previously stopped.
@@ -331,6 +364,11 @@ service MCPServerService {
       required_permission: PERMISSION_EDIT
       api: API_MCP_SERVER
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      id_getter_cel: "request.id"
+      permission: "dataplane_mcpserver_create"
+    };
   }
 
   // Returns the configuration schema for MCP server tools, including available components and processors.
@@ -352,6 +390,10 @@ service MCPServerService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_MCP_SERVER
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      permission: "dataplane_mcpserver_get"
     };
   }
 
@@ -378,6 +420,10 @@ service MCPServerService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "mcp-servers"
+      permission: "dataplane_mcpserver_get"
     };
   }
 }

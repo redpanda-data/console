@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/common/v1/options.proto";
 import "redpanda/api/dataplane/v1/user.proto";
 
 message KnowledgeBase {
@@ -577,6 +578,10 @@ service KnowledgeBaseService {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "knowledge-bases"
+      permission: "dataplane_knowledgebase_create"
+    };
   }
 
   rpc GetKnowledgeBase(GetKnowledgeBaseRequest) returns (GetKnowledgeBaseResponse) {
@@ -585,6 +590,11 @@ service KnowledgeBaseService {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "knowledge-bases"
+      id_getter_cel: "request.id"
+      permission: "dataplane_knowledgebase_get"
+    };
   }
 
   rpc ListKnowledgeBases(ListKnowledgeBasesRequest) returns (ListKnowledgeBasesResponse) {
@@ -592,6 +602,14 @@ service KnowledgeBaseService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.collection_authorization) = {
+      collection_getter_cel: "response.knowledge_bases"
+      each: {
+        resource_type: "knowledge-bases"
+        id_getter_cel: "each.id"
+        permission: "dataplane_knowledgebase_list"
+      }
     };
   }
 
@@ -604,6 +622,11 @@ service KnowledgeBaseService {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "knowledge-bases"
+      id_getter_cel: "request.id"
+      permission: "dataplane_knowledgebase_update"
+    };
   }
 
   rpc DeleteKnowledgeBase(DeleteKnowledgeBaseRequest) returns (DeleteKnowledgeBaseResponse) {
@@ -611,6 +634,11 @@ service KnowledgeBaseService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "knowledge-bases"
+      id_getter_cel: "request.id"
+      permission: "dataplane_knowledgebase_delete"
     };
   }
 }
