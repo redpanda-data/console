@@ -18,7 +18,6 @@
       "src/components/pages/shadowlinks/details/tasks-table.tsx",
       "src/components/pages/rp-connect/pipeline/list.tsx",
       "src/components/pages/topics/Tab.Messages/editor.tsx",
-      "src/components/pages/observability/metric-chart.tsx",
       "src/components/pages/rp-connect/onboarding/add-contextual-variables-card.tsx",
       "src/components/pages/rp-connect/onboarding/add-secrets-card.tsx",
       "src/components/pages/rp-connect/onboarding/create-pipeline-sidebar.tsx",
