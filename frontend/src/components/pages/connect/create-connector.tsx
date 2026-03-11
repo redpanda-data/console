@@ -288,8 +288,6 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
     }
     setConfigState({ stringifiedConfig: v, parsedUpdatedConfig: parsed });
   };
-  const setParsedUpdatedConfig = (v: Record<string, unknown> | null) =>
-    setConfigState((prev) => ({ ...prev, parsedUpdatedConfig: v }));
   const postCondition = parsedUpdatedConfig !== null;
   const [loadingState, setLoadingState] = useState({ loading: false, isStoreInitialized: false });
   const loading = loadingState.loading;

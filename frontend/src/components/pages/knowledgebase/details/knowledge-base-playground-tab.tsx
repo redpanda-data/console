@@ -156,10 +156,11 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
     }
 
     // Try to parse the response - it could be an error or results
+    const rawText = textContent.text ?? '';
     let parsedResponse: unknown = null;
     let parseError: unknown = null;
     try {
-      parsedResponse = JSON.parse(textContent.text);
+      parsedResponse = JSON.parse(rawText);
     } catch (error) {
       parseError = error;
     }

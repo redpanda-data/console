@@ -224,7 +224,7 @@ const SelectOffsetStep = ({
                 }}
                 role="presentation"
               >
-                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp} />
+                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp ?? 0} />
               </div>
             ),
           },

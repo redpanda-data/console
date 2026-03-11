@@ -315,12 +315,12 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     const loadedMessages = await search.startSearch(searchReq);
 
     if (loadedMessages && loadedMessages.length === 1) {
-      setMessages((prev) => {
-        const idx = prev.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
+      setLogState((prev) => {
+        const idx = prev.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (idx === -1) return prev;
-        const updated = [...prev];
+        const updated = [...prev.messages];
         updated[idx] = loadedMessages[0];
-        return updated;
+        return { ...prev, messages: updated };
       });
     } else {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");

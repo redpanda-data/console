@@ -27,7 +27,7 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
-import type { FC } from 'react';
+import { type FC, useState } from 'react';
 
 import type { ColumnList, TimestampDisplayFormat } from '../../../../../state/ui';
 import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';

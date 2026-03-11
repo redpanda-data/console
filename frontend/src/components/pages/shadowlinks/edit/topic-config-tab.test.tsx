@@ -13,7 +13,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from 'components/redpanda-ui/components/form';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 
 import { TopicConfigTab } from './topic-config-tab';

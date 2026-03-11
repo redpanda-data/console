@@ -111,7 +111,7 @@ export const AIAgentInspectorTab = () => {
     setCardError(null);
     setCardUrl(null);
     const urls = getAgentCardUrls({ agentUrl: agent.url });
-    const authHeaders = config.jwt ? { Authorization: `Bearer ${config.jwt}` } : {};
+    const authHeaders: Record<string, string> = config.jwt ? { Authorization: `Bearer ${config.jwt}` } : {};
     const errors: Error[] = [];
     let cardFetched = false;
 
@@ -138,7 +138,7 @@ export const AIAgentInspectorTab = () => {
       let jsonError: Error | null = null;
       let cardData: unknown = null;
       try {
-        cardData = await response.json();
+        cardData = await (response as Response).json();
       } catch (err) {
         jsonError = err as Error;
       }

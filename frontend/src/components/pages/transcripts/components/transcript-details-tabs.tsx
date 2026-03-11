@@ -24,6 +24,7 @@ import { LLMIOTab } from './llm-io-tab';
 import { OverviewTab } from './overview-tab';
 import { RawJSONTab } from './raw-json-tab';
 import { ToolCallTab } from './tool-call-tab';
+import { bytesToHex } from '../utils/hex-utils';
 import { isAgentSpan, isLLMSpan, isToolSpan } from '../utils/span-classifier';
 import { isRootSpan } from '../utils/transcript-statistics';
 

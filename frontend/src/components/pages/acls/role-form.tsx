@@ -30,6 +30,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
+  type AclPrincipalGroup,
   type ClusterACLs,
   type ConsumerGroupACLs,
   createEmptyClusterAcl,
@@ -39,10 +40,12 @@ import {
   principalGroupsView,
   type TopicACLs,
   type TransactionalIdACLs,
+  unpackPrincipalGroup,
 } from './models';
 import { ResourceACLsEditor } from './principal-group-editor';
 import { appGlobal } from '../../../state/app-global';
 import { api, type RolePrincipal, rolesApi } from '../../../state/backend-api';
+import type { AclStrOperation, AclStrResourceType } from '../../../state/rest-interfaces';
 
 type CreateRoleFormState = {
   roleName: string;

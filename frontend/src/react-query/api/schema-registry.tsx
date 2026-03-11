@@ -7,6 +7,7 @@ import {
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import { config } from 'config';
+import { api } from 'state/backend-api';
 import type {
   SchemaRegistryCompatibilityMode,
   SchemaRegistryConfigResponse,

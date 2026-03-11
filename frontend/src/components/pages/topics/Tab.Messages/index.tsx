@@ -259,7 +259,18 @@ type LoadLargeMessageParams = {
   topicName: string;
   messagePartitionID: number;
   offset: number;
-  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>;
+  setSearchState: React.Dispatch<
+    React.SetStateAction<{
+      messages: TopicMessage[];
+      messageSearch: ReturnType<typeof createMessageSearch> | null;
+      totalLoadedCount: number;
+      virtualStartIndex: number;
+      windowStartPage: number;
+      loadMoreFailures: number;
+      forceRefresh: number;
+      loadMorePhase: 'idle' | 'loading' | 'loading-visible';
+    }>
+  >;
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
 };
@@ -268,7 +279,7 @@ async function loadLargeMessage({
   topicName,
   messagePartitionID,
   offset,
-  setMessages,
+  setSearchState,
   keyDeserializer,
   valueDeserializer,
 }: LoadLargeMessageParams) {
@@ -1054,11 +1065,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         topicName: targetTopicName,
         messagePartitionID,
         offset,
-        setMessages,
+        setSearchState,
         keyDeserializer,
         valueDeserializer,
       }),
-    [keyDeserializer, setMessages, valueDeserializer]
+    [keyDeserializer, setSearchState, valueDeserializer]
   );
   const onSetDownloadMessages = useCallback((nextMessages: TopicMessage[]) => {
     setDownloadMessages(nextMessages);
