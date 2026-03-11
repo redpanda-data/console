@@ -38,7 +38,7 @@ const createMockMessage = (): ChatMessage => ({
 
 const makeArtifactEvent = (
   text: string,
-  opts: { append?: boolean; lastChunk?: boolean } = {},
+  opts: { append?: boolean; lastChunk?: boolean } = {}
 ): TaskArtifactUpdateEvent => ({
   kind: 'artifact-update',
   contextId: 'test-context',
@@ -84,7 +84,7 @@ describe('handleStatusUpdateEvent', () => {
     const statusBlocks = state.contentBlocks.filter((b) => b.type === 'task-status-update');
     expect(statusBlocks).toHaveLength(1);
     expect(statusBlocks[0].type === 'task-status-update' && statusBlocks[0].text).toContain(
-      'Artifact created successfully',
+      'Artifact created successfully'
     );
   });
 });
@@ -127,11 +127,9 @@ describe('handleArtifactUpdateEvent', () => {
 
     // Text must accumulate
     expect(block1?.type === 'artifact' && block1.parts[0]?.kind === 'text' && block1.parts[0].text).toBe('Hello');
-    expect(block2?.type === 'artifact' && block2.parts[0]?.kind === 'text' && block2.parts[0].text).toBe(
-      'Hello world',
-    );
+    expect(block2?.type === 'artifact' && block2.parts[0]?.kind === 'text' && block2.parts[0].text).toBe('Hello world');
     expect(block3?.type === 'artifact' && block3.parts[0]?.kind === 'text' && block3.parts[0].text).toBe(
-      'Hello world!',
+      'Hello world!'
     );
   });
 
@@ -147,7 +145,7 @@ describe('handleArtifactUpdateEvent', () => {
       makeArtifactEvent('', { append: true, lastChunk: true }),
       state,
       assistantMessage,
-      onMessageUpdate,
+      onMessageUpdate
     );
 
     // activeTextBlock should be cleared
@@ -156,8 +154,8 @@ describe('handleArtifactUpdateEvent', () => {
     // Artifact should be persisted in contentBlocks with accumulated text
     const artifacts = state.contentBlocks.filter((b) => b.type === 'artifact');
     expect(artifacts).toHaveLength(1);
-    expect(artifacts[0].type === 'artifact' && artifacts[0].parts[0]?.kind === 'text' && artifacts[0].parts[0].text).toBe(
-      'Hello world',
-    );
+    expect(
+      artifacts[0].type === 'artifact' && artifacts[0].parts[0]?.kind === 'text' && artifacts[0].parts[0].text
+    ).toBe('Hello world');
   });
 });

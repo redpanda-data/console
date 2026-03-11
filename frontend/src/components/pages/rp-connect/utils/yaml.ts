@@ -4,6 +4,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
+import { firstKey as componentName, parseMultiInputs, parseMultiOutputs } from './yaml-parsing';
 import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -481,81 +482,9 @@ export const getConnectTemplate = ({
 // ============================================================================
 // Config Component Parsing (used by pipeline list)
 // ============================================================================
-
-/**
- * Keys that can appear as siblings to the actual component name in a Connect
- * component config object (e.g. `label` next to `generate` inside `input:`).
- */
-const RESERVED_COMPONENT_KEYS = new Set(['label']);
-
-/**
- * Processors whose configs contain nested child `processors` arrays.
- * We intentionally do not recurse into these when extracting processor names
- * for the pipeline list display.
- */
-export const PROCESSORS_WITH_NESTED_STEPS = [
-  'branch',
-  'catch',
-  'for_each',
-  'parallel',
-  'switch',
-  'try',
-  'while',
-  'workflow',
-] as const;
-
-/** Extract the component name from an object, skipping reserved metadata keys like `label`. */
-const componentName = (obj: unknown): string | undefined => {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    return;
-  }
-  return Object.keys(obj).find((k) => !RESERVED_COMPONENT_KEYS.has(k));
-};
-
-/** Extract child input names from a multi-input component (broker, sequence). */
-const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
-  // broker/sequence: .inputs[] is an array of input objects
-  if (
-    (inputKey === 'broker' || inputKey === 'sequence') &&
-    value &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    'inputs' in value
-  ) {
-    const items = (value as { inputs?: unknown[] }).inputs;
-    if (Array.isArray(items)) {
-      return items.map(componentName).filter((k): k is string => !!k);
-    }
-  }
-
-  return;
-};
-
-/** Extract child output names from a multi-output component (broker, switch, fallback). */
-const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefined => {
-  // broker: broker.outputs[] is an array of output objects
-  if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
-    const items = (value as { outputs?: unknown[] }).outputs;
-    if (Array.isArray(items)) {
-      return items.map(componentName).filter((k): k is string => !!k);
-    }
-  }
-
-  // switch: switch.cases[].output is a single output per case
-  if (outputKey === 'switch' && value && typeof value === 'object' && !Array.isArray(value) && 'cases' in value) {
-    const cases = (value as { cases?: { output?: unknown }[] }).cases;
-    if (Array.isArray(cases)) {
-      return cases.map((c) => componentName(c.output)).filter((k): k is string => !!k);
-    }
-  }
-
-  // fallback: the value itself is an array of output objects
-  if (outputKey === 'fallback' && Array.isArray(value)) {
-    return value.map(componentName).filter((k): k is string => !!k);
-  }
-
-  return;
-};
+//
+// componentName (aliased from firstKey), parseMultiInputs, parseMultiOutputs,
+// and PROCESSORS_WITH_NESTED_STEPS are imported from yaml-parsing.ts
 
 type ParsedYamlConfig = {
   input?: Record<string, unknown>;
