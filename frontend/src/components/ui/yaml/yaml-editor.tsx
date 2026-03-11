@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
+import Editor, { type EditorProps } from '@monaco-editor/react';
 import 'monaco-editor';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
@@ -28,6 +28,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   minimap: {
     enabled: false,
   },
+  fixedOverflowWidgets: true,
   roundedSelection: false,
   padding: {
     top: 8,
@@ -57,63 +58,53 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   },
 } as const;
 
-const defaultFallbackSchema: MonacoYamlOptions = {
-  enableSchemaRequest: false,
-  format: true,
-  completion: true,
-  validate: true,
-  schemas: [
-    {
-      fileMatch: ['**/*.yaml', '**/*.yml'],
-      schema: {
-        type: 'object',
+function buildMonacoYamlOptions(
+  schema?: YamlEditorProps['schema'],
+): MonacoYamlOptions {
+  const schemaUri = 'https://raw.githubusercontent.com/redpanda-data/console/refs/heads/master/frontend/src/assets/rp-connect-schema.json';
+  const inlineSchema =
+    schema?.definitions || schema?.properties
+      ? {
+          type: 'object' as const,
+          ...(schema.definitions && { definitions: schema.definitions }),
+          ...(schema.properties && { properties: schema.properties }),
+        }
+      : { type: 'object' as const };
+
+  return {
+    enableSchemaRequest: false,
+    format: true,
+    completion: true,
+    validate: true,
+    schemas: [
+      {
+        fileMatch: ['**/*.yaml', '**/*.yml'],
+        schema: inlineSchema,
+        uri: schemaUri,
       },
-      uri: 'http://example.com/yaml-schema.json',
-    },
-  ],
-};
+    ],
+  };
+}
 
 export const YamlEditor = (props: YamlEditorProps) => {
   const { options: givenOptions, schema, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const monacoRef = useRef<Monaco | null>(null);
   const yamlRef = useRef<MonacoYaml | null>(null);
+  const hasInitializedRef = useRef(false);
 
-  // Build Monaco YAML options with schema from props or fallback
-  const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => {
-    if (schema?.definitions || schema?.properties) {
-      return {
-        enableSchemaRequest: false,
-        format: true,
-        completion: true,
-        validate: true,
-        schemas: [
-          {
-            fileMatch: ['**/*.yaml', '**/*.yml'],
-            schema: {
-              type: 'object',
-              ...(schema.definitions && { definitions: schema.definitions }),
-              ...(schema.properties && { properties: schema.properties }),
-            },
-            uri: 'https://redpanda-connect-schema.json',
-          },
-        ],
-      };
-    }
-    return defaultFallbackSchema;
-  }, [schema]);
+  const monacoYamlOptions = useMemo<MonacoYamlOptions>(
+    () => buildMonacoYamlOptions(schema),
+    [schema],
+  );
 
-  // Reconfigure Monaco YAML when schema changes
+  // Update Monaco YAML when schema changes after initial mount
   useEffect(() => {
-    if (monacoRef.current) {
-      // Dispose previous YAML configuration
-      if (yamlRef.current) {
-        yamlRef.current.dispose();
-      }
-
-      // Create new YAML configuration with updated schema
-      yamlRef.current = configureMonacoYaml(monacoRef.current, monacoYamlOptions);
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      return;
     }
+
+    yamlRef.current?.update(monacoYamlOptions);
   }, [monacoYamlOptions]);
 
   // Cleanup on unmount
@@ -127,13 +118,13 @@ export const YamlEditor = (props: YamlEditorProps) => {
 
   return (
     <Editor
-      onMount={(_, monaco) => {
-        monacoRef.current = monaco;
+      beforeMount={(monaco) => {
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       options={options}
+      path="pipeline.yaml"
       wrapperProps={{
         style: {
           minWidth: 0,
