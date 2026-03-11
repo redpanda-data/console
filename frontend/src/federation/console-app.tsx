@@ -168,27 +168,30 @@ function ConsoleAppInner({
   featureFlags,
 }: ConsoleAppProps) {
   const [isInitialized, setIsInitialized] = useState(false);
-  const routerRef = useRef<ReturnType<typeof createRouter<typeof routeTree>> | null>(null);
   // Track last notified path to prevent navigation loops between host and remote
   const lastNotifiedPathRef = useRef<string>(initialPath);
 
   // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);
 
-  // Store getAccessToken in ref so TokenManager always uses latest callback
-  const getAccessTokenRef = useRef(getAccessToken);
-  getAccessTokenRef.current = getAccessToken;
-
-  // Create stable TokenManager instance (uses ref to access latest getAccessToken)
-  const tokenManager = useMemo(
+  // Create stable TokenManager instance with initial getAccessToken
+  const [tokenManager] = useState(
     () =>
       new TokenManager(async () => {
-        const token = await getAccessTokenRef.current();
+        const token = await getAccessToken();
         setConfigJwt(token);
         return token;
-      }),
-    []
+      })
   );
+
+  // Keep TokenManager's callback in sync when getAccessToken prop changes
+  useEffect(() => {
+    tokenManager.setGetAccessToken(async () => {
+      const token = await getAccessToken();
+      setConfigJwt(token);
+      return token;
+    });
+  }, [getAccessToken, tokenManager]);
 
   // Create token refresh interceptor using TokenManager
   const tokenRefreshInterceptor = useMemo(() => createTokenRefreshInterceptor(tokenManager), [tokenManager]);
@@ -250,7 +253,6 @@ function ConsoleAppInner({
       defaultNotFoundComponent: NotFoundPage,
     });
 
-    routerRef.current = r;
     return r;
   }, [initialPath, queryClient, dataplaneTransport]);
 
@@ -279,17 +281,17 @@ function ConsoleAppInner({
 
   // Handle navigation from host via navigateTo prop (browser back/forward)
   useEffect(() => {
-    if (!(navigateTo && isInitialized && routerRef.current)) {
+    if (!(navigateTo && isInitialized && router)) {
       return;
     }
 
-    const currentPath = routerRef.current.state.location.pathname;
+    const currentPath = router.state.location.pathname;
     if (navigateTo !== currentPath) {
       // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      routerRef.current.navigate({ to: navigateTo });
+      router.navigate({ to: navigateTo });
     }
-  }, [navigateTo, isInitialized]);
+  }, [navigateTo, isInitialized, router]);
 
   // Don't render until initialized, don't show anything until then
   if (!isInitialized) {

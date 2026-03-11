@@ -14,7 +14,6 @@
       "react-doctor/use-lazy-motion",
       "react-doctor/no-giant-component",
       "react-doctor/require-reduced-motion",
-      "react-hooks-js/refs",
       "react-hooks-js/set-state-in-effect",
       "react-hooks-js/incompatible-library",
       "react-doctor/prefer-dynamic-import",

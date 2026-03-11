@@ -520,25 +520,25 @@ const computeInitialExpandedSpans = (spanTree: SpanNode[]): Set<string> => {
 const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   const [expandedSpans, setExpandedSpans] = useState<Set<string>>(() => computeInitialExpandedSpans(spanTree));
   const hasInitializedRef = useRef(spanTree.length > 0);
-  const prevCollapseAllTriggerRef = useRef(collapseAllTrigger);
 
   // Reset to initial state when collapse all is triggered
-  if (collapseAllTrigger !== prevCollapseAllTriggerRef.current) {
-    prevCollapseAllTriggerRef.current = collapseAllTrigger;
+  useEffect(() => {
     if (collapseAllTrigger > 0 && spanTree.length > 0) {
       setExpandedSpans(computeInitialExpandedSpans(spanTree));
     }
-  }
+  }, [collapseAllTrigger, spanTree]);
 
   // Sync expansion state when spanTree loads (handles async data loading)
   // Only initialize once when spanTree first becomes populated
-  if (!hasInitializedRef.current && spanTree.length > 0) {
-    hasInitializedRef.current = true;
-    const initialSpans = computeInitialExpandedSpans(spanTree);
-    if (initialSpans.size > 0) {
-      setExpandedSpans(initialSpans);
+  useEffect(() => {
+    if (!hasInitializedRef.current && spanTree.length > 0) {
+      hasInitializedRef.current = true;
+      const initialSpans = computeInitialExpandedSpans(spanTree);
+      if (initialSpans.size > 0) {
+        setExpandedSpans(initialSpans);
+      }
     }
-  }
+  }, [spanTree]);
 
   const toggleSpan = (spanId: string) => {
     setExpandedSpans((prev) => {

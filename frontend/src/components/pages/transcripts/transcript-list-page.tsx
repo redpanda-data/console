@@ -526,14 +526,14 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   });
 
   // Accumulate traces when data changes (during render, not in effect)
-  // Track previous data references to detect when new data arrives
-  const prevTraceData = useRef({
+  // Uses setState-during-render pattern to detect prop changes without ref access
+  const linkedSummary = linkedTraceData?.trace?.summary;
+  const [prevTraceData, setPrevTraceData] = useState({
     data: undefined as typeof data,
     linkedSummary: undefined as TraceSummary | undefined,
   });
-  const linkedSummary = linkedTraceData?.trace?.summary;
-  if (prevTraceData.current.data !== data || prevTraceData.current.linkedSummary !== linkedSummary) {
-    prevTraceData.current = { data, linkedSummary };
+  if (prevTraceData.data !== data || prevTraceData.linkedSummary !== linkedSummary) {
+    setPrevTraceData({ data, linkedSummary });
     if (isLinkedTraceMode) {
       if (linkedSummary) {
         setAccumulatedTraces([linkedSummary]);

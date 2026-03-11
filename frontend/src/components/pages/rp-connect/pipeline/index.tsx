@@ -257,38 +257,36 @@ export default function PipelinePage() {
   // Derive lint hints from response (replaces useEffect + setState)
   const responseLintHints = useMemo(() => {
     if (!lintResponse) return {};
-    try {
-      const hints: Record<string, LintHint> = {};
-      for (const [idx, hint] of Object.entries(lintResponse?.lintHints || [])) {
-        hints[`hint_${idx}`] = hint;
-      }
-      return hints;
-    } catch (err) {
-      return extractLintHintsFromError(err);
+    const hints: Record<string, LintHint> = {};
+    for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
+      hints[`hint_${idx}`] = hint;
     }
+    return hints;
   }, [lintResponse]);
 
   // Merge response-derived and error-derived lint hints (error hints cleared on next successful response)
   const lintHints = Object.keys(errorLintHints).length > 0 ? errorLintHints : responseLintHints;
 
   // Initialize form data from pipeline (edit/view)
-  const prevPipelineRef = useRef(pipeline);
-  if (pipeline && mode !== 'create' && pipeline !== prevPipelineRef.current) {
-    prevPipelineRef.current = pipeline;
-    form.reset({
-      name: pipeline.displayName,
-      description: pipeline.description || '',
-      computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
-    });
-    setYamlContent(pipeline.configYaml);
-  }
+  useEffect(() => {
+    if (pipeline && mode !== 'create') {
+      form.reset({
+        name: pipeline.displayName,
+        description: pipeline.description || '',
+        computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
+      });
+      setYamlContent(pipeline.configYaml);
+    }
+  }, [pipeline, mode, form]);
 
   // Load persisted YAML from Zustand (CREATE mode only)
   const hasLoadedPersistedYaml = useRef(false);
-  if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
-    hasLoadedPersistedYaml.current = true;
-    setYamlContent(persistedYamlContent);
-  }
+  useEffect(() => {
+    if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
+      hasLoadedPersistedYaml.current = true;
+      setYamlContent(persistedYamlContent);
+    }
+  }, [mode, persistedYamlContent]);
 
   // Serverless mode initialization - generate YAML from wizard data on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization

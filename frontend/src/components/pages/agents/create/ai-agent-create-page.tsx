@@ -441,7 +441,12 @@ export const AIAgentCreatePage = () => {
         <Heading level={1}>Create AI Agent</Heading>
       </header>
 
-      <form className="w-full" onSubmit={form.handleSubmit(onSubmit)}>
+      <form
+        className="w-full"
+        onSubmit={(e) => {
+          form.handleSubmit(onSubmit)(e);
+        }}
+      >
         <div className="space-y-4">
           <div className="space-y-4">
             {/* Basic Information and OpenAI Configuration - Side by Side */}
