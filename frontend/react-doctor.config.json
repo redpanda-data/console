@@ -10,7 +10,6 @@
       "src/globals.css",
       "src/components/pages/connect/dynamic-ui/components.tsx",
       "src/components/pages/shadowlinks/details/shadow-topics-table.tsx",
-      "src/components/pages/transcripts/components/transcripts-table.tsx",
       "src/components/pages/topics/Tab.Messages/index.tsx",
       "src/components/pages/shadowlinks/create/configuration/schema-registry-step.test.tsx",
       "src/components/pages/shadowlinks/list/shadowlink-list-page.tsx",
