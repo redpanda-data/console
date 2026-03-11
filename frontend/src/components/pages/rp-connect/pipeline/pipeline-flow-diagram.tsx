@@ -25,7 +25,7 @@ const DEBOUNCE_MS = 300;
 function PipelineFlowDiagramInner({ yamlContent, className }: PipelineFlowDiagramProps) {
   const { fitView } = useReactFlow();
   const [debouncedYaml, setDebouncedYaml] = useState(yamlContent);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Debounce YAML changes

@@ -11,7 +11,7 @@
 
 import type { EdgeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
-import { Badge } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from 'components/ui/base-node';
@@ -25,7 +25,7 @@ const SECTION_COLORS: Record<string, string> = {
   output: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800',
 };
 
-const SECTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
+const SECTION_BADGE_VARIANT: Record<string, BadgeVariant> = {
   input: 'secondary',
   processor: 'secondary',
   output: 'secondary',
@@ -66,7 +66,7 @@ export function TreeGroupNode({ data }: { data: TreeGroupNodeData }) {
           {data.childCount}
         </Badge>
       </BaseNodeHeader>
-      <BaseNodeContent className="p-0" />
+      <BaseNodeContent className="p-0">{null}</BaseNodeContent>
     </BaseNode>
   );
 }
