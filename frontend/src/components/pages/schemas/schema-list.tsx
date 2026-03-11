@@ -29,12 +29,24 @@ import {
 import { Link } from '@tanstack/react-router';
 // Icons
 import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from 'components/redpanda-ui/components/drawer';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // Local modals
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { SchemaContextSelector } from './schema-context-selector';
+import {
+  ALL_CONTEXT_ID,
+  CONTEXT_PREFIX_RE,
+  DEFAULT_CONTEXT_ID,
+  deriveContexts,
+  isNamedContext,
+  parseSubjectContext,
+} from './schema-context-utils';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 // Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
@@ -45,12 +57,14 @@ import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
   useSchemaModeQuery,
+  useSchemaRegistryContextsQuery,
   useSchemaUsagesByIdQuery,
 } from '../../../react-query/api/schema-registry';
 // Global state
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 // Utility components and functions
@@ -59,9 +73,6 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
-import { Button } from '../../redpanda-ui/components/button';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
-import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -83,6 +94,7 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
 };
 
 const SchemaList: FC = () => {
+  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const [isHelpSidebarOpen, setIsHelpSidebarOpen] = useState(false);
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
@@ -97,7 +109,9 @@ const SchemaList: FC = () => {
     parseAsBoolean
   );
 
+  const [selectedContext, setSelectedContext] = useQueryState('context', parseAsString.withDefault(DEFAULT_CONTEXT_ID));
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
+  const { data: contexts } = useSchemaRegistryContextsQuery(schemaRegistryContextsSupported);
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
@@ -118,13 +132,47 @@ const SchemaList: FC = () => {
     refetchSchemas();
   }, [refetchSchemas, refetchMode, refetchCompatibility]);
 
+  const derivedContexts = useMemo(
+    () => (schemaRegistryContextsSupported ? deriveContexts(contexts ?? [], schemaSubjects ?? []) : []),
+    [contexts, schemaSubjects, schemaRegistryContextsSupported]
+  );
+
+  // Reset to default if the selected context no longer exists (e.g. deleted server-side)
+  useEffect(() => {
+    if (derivedContexts.length > 0 && !derivedContexts.some((c) => c.id === selectedContext)) {
+      setSelectedContext(DEFAULT_CONTEXT_ID);
+    }
+  }, [derivedContexts, selectedContext, setSelectedContext]);
+
+  // Use context-specific mode/compat when a named context is selected
+  const { displayMode, displayCompat } = useMemo(() => {
+    const ctx = derivedContexts.find((c) => c.id === selectedContext);
+    const useContextLevel = ctx && isNamedContext(selectedContext) && schemaRegistryContextsSupported;
+    return {
+      displayMode: useContextLevel ? ctx.mode : schemaMode,
+      displayCompat: useContextLevel ? ctx.compatibility : schemaCompatibility,
+    };
+  }, [derivedContexts, selectedContext, schemaRegistryContextsSupported, schemaMode, schemaCompatibility]);
+
   useEffect(() => {
     uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
     appGlobal.onRefresh = () => refreshData();
   }, [refreshData]);
 
+  const isAllContext = schemaRegistryContextsSupported && selectedContext === ALL_CONTEXT_ID;
+
   const filteredSubjects = useMemo(() => {
     let subjects = schemaSubjects ?? [];
+
+    // Filter by context
+    if (schemaRegistryContextsSupported && selectedContext !== ALL_CONTEXT_ID) {
+      if (selectedContext === DEFAULT_CONTEXT_ID) {
+        subjects = subjects.filter((s) => !CONTEXT_PREFIX_RE.test(s.name));
+      } else {
+        const prefix = `:${selectedContext}:`;
+        subjects = subjects.filter((s) => s.name.startsWith(prefix));
+      }
+    }
 
     // Filter by soft-deleted status
     if (!showSoftDeleted) {
@@ -152,7 +200,7 @@ const SchemaList: FC = () => {
     }
 
     return subjects;
-  }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages]);
+  }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages, schemaRegistryContextsSupported, selectedContext]);
 
   if (schemaMode === null) {
     return <SchemaNotConfiguredPage />;
@@ -163,9 +211,9 @@ const SchemaList: FC = () => {
       <ToastContainer />
       {/* Statistics Bar */}
       <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
-        <SmallStat title="Mode">
+        <SmallStat title={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}>
           <Flex alignItems="center" gap="1.5">
-            {schemaMode ?? <Skeleton variant="text" width="sm" />}
+            {displayMode ?? <Skeleton variant="text" width="sm" />}
             <Tooltip
               hasArrow
               isDisabled={api.userData?.canManageSchemaRegistry !== false}
@@ -186,9 +234,15 @@ const SchemaList: FC = () => {
           </Flex>
         </SmallStat>
         <Divider height="2ch" orientation="vertical" />
-        <SmallStat title="Compatibility">
+        <SmallStat
+          title={
+            isNamedContext(selectedContext) && schemaRegistryContextsSupported
+              ? 'Context compatibility'
+              : 'Compatibility'
+          }
+        >
           <Flex alignItems="center" gap="1.5">
-            {schemaCompatibility ?? <Skeleton variant="text" width="sm" />}
+            {displayCompat ?? <Skeleton variant="text" width="sm" />}
             <Tooltip
               hasArrow
               isDisabled={api.userData?.canManageSchemaRegistry !== false}
@@ -210,7 +264,15 @@ const SchemaList: FC = () => {
         </SmallStat>
       </Flex>
 
-      <div className="mb-4 flex items-center gap-2">
+      {schemaRegistryContextsSupported && (
+        <SchemaContextSelector
+          contexts={derivedContexts}
+          onContextChange={setSelectedContext}
+          selectedContext={selectedContext}
+        />
+      )}
+
+      <div className="my-4 flex items-center gap-2">
         <Button
           data-testid="schema-list-create-btn"
           disabled={api.userData?.canCreateSchemas === false}
@@ -329,31 +391,54 @@ const SchemaList: FC = () => {
                     row: {
                       original: { name, isSoftDeleted },
                     },
-                  }) => (
-                    <Box whiteSpace="break-spaces" wordBreak="break-word">
-                      <Flex alignItems="center" gap={2}>
-                        <Link
-                          data-testid="schema-registry-table-name"
-                          params={{ subjectName: encodeURIComponentPercents(name) }}
-                          search={{ version: 'latest' }}
-                          to="/schema-registry/subjects/$subjectName"
-                        >
-                          {name}
-                        </Link>
-                        {Boolean(isSoftDeleted) && (
-                          <Tooltip
-                            hasArrow
-                            label="This subject has been soft-deleted. It can be restored or permanently deleted."
+                  }) => {
+                    const parsed = parseSubjectContext(name);
+                    return (
+                      <Box whiteSpace="break-spaces" wordBreak="break-word">
+                        <Flex alignItems="center" gap={2}>
+                          <Link
+                            data-testid="schema-registry-table-name"
+                            params={{ subjectName: encodeURIComponentPercents(name) }}
+                            search={{ version: 'latest' }}
+                            to="/schema-registry/subjects/$subjectName"
                           >
-                            <Box data-testid="schema-list-soft-deleted-icon">
-                              <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
-                            </Box>
-                          </Tooltip>
-                        )}
-                      </Flex>
-                    </Box>
-                  ),
+                            {isAllContext && parsed.context !== 'default' && (
+                              <span className="text-gray-400">:.{parsed.context}:</span>
+                            )}
+                            {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
+                          </Link>
+                          {isSoftDeleted && (
+                            <Tooltip
+                              hasArrow
+                              label="This subject has been soft-deleted. It can be restored or permanently deleted."
+                            >
+                              <Box data-testid="schema-list-soft-deleted-icon">
+                                <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
+                              </Box>
+                            </Tooltip>
+                          )}
+                        </Flex>
+                      </Box>
+                    );
+                  },
                 },
+                ...(isAllContext
+                  ? [
+                      {
+                        header: 'Context',
+                        id: 'context',
+                        size: 120,
+                        cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
+                          const { context } = parseSubjectContext(row.original.name);
+                          return (
+                            <Badge bg="gray.50" color="gray.700" size="sm" variant="subtle">
+                              {context === 'default' ? 'Default' : `.${context}`}
+                            </Badge>
+                          );
+                        },
+                      },
+                    ]
+                  : []),
                 { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
                 {
                   header: 'Compatibility',
