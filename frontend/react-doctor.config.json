@@ -11,7 +11,6 @@
       "src/components/pages/connect/dynamic-ui/components.tsx",
       "src/components/pages/shadowlinks/details/shadow-topics-table.tsx",
       "src/components/pages/transcripts/components/transcripts-table.tsx",
-      "src/components/pages/knowledgebase/details/knowledge-base-document-list.tsx",
       "src/components/pages/mcp-servers/list/remote-mcp-list-page.tsx",
       "src/components/pages/secrets-store/secrets-store-list-page.tsx",
       "src/components/pages/topics/Tab.Messages/index.tsx",
@@ -20,7 +19,6 @@
       "src/components/pages/shadowlinks/edit/topic-config-tab.test.tsx",
       "src/components/pages/shadowlinks/details/tasks-table.tsx",
       "src/components/pages/agents/list/ai-agent-list-page.tsx",
-      "src/components/pages/knowledgebase/list/knowledge-base-list-page.tsx",
       "src/components/pages/rp-connect/pipeline/list.tsx",
       "src/components/pages/topics/Tab.Messages/editor.tsx",
       "src/components/pages/observability/metric-chart.tsx",
@@ -32,6 +30,6 @@
       "src/components/misc/kowl-editor.tsx",
       "src/components/misc/pipelines-yaml-editor.tsx"
     ],
-    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion"]
+    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion", "react-hooks-js/incompatible-library", "react-doctor/prefer-useReducer"]
   }
 }
