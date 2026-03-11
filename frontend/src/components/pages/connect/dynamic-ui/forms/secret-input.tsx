@@ -37,7 +37,7 @@ export const SecretInput = ({ value, onChange, updating = false }: SecretInputPr
   const initialValueRef = useRef(value);
   const [canEdit, setCanEdit] = useState(!updating);
   // Intentionally seeded from prop: localValue is edited independently during user interaction
-  const [localValue, setLocalValue] = useState(value);
+  const [localValue, setLocalValue] = useState(() => value);
 
   const editButton = (
     <EditButton

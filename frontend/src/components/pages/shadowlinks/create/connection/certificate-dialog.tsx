@@ -69,7 +69,7 @@ export function CertificateDialog({
   const [fileName, setFileName] = useState(existingValue?.fileName ?? '');
 
   // Tracks previous isOpen value to detect open/close transitions (not derived state)
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [prevIsOpen, setPrevIsOpen] = useState(() => isOpen);
   if (isOpen && !prevIsOpen) {
     if (existingValue) {
       // Edit mode: populate with existing values
