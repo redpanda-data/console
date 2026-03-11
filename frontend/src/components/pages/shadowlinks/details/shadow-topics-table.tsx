@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { useNavigate } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -66,6 +68,7 @@ const VirtualizedRows = ({
   isFetching?: boolean;
   columnsLength: number;
 }) => {
+  'use no memo';
   if (virtualRows.length > 0) {
     return (
       <>

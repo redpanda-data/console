@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { durationMs } from '@bufbuild/protobuf/wkt';
 import {
   type ColumnDef,
@@ -346,6 +348,7 @@ const SpanRow: FC<SpanRowProps> = ({
   isMatchedByFilter,
   matchedSpanIds,
 }) => {
+  'use no memo';
   // Calculate relative position within trace using helper functions
   const barStart = calculateOffset(span.startTime, timeline);
   const barWidth = calculateWidth(span.duration, timeline);

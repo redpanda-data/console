@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';

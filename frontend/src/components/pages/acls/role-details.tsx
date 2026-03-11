@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Box, Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';

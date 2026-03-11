@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
@@ -19,6 +21,7 @@ import { getDefaultProperties } from './topic-properties-config';
 import { FormSchema, type FormValues, initialValues } from '../create/model';
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
+  'use no memo';
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,

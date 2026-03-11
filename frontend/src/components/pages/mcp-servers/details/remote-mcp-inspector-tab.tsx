@@ -11,6 +11,7 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: leave for now */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
+'use no memo';
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi } from '@tanstack/react-router';
 

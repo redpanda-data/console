@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
