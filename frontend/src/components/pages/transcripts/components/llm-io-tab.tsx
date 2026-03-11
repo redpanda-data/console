@@ -20,7 +20,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { createElement, useMemo, useState } from 'react';
 import { tryParseJson } from 'utils/json-utils';
 
 import { ContentPanel } from './content-panel';
@@ -95,7 +95,7 @@ const ToolResponseDisplay: FC<{ response: ToolResponse }> = ({ response }) => (
 
 // Component: Display a single history message
 const HistoryMessageItem: FC<{ message: Message }> = ({ message }) => {
-  const Icon = getMessageIcon(message.role);
+  const messageIcon = getMessageIcon(message.role);
   const messageType = getMessageType(message.role);
   const isJson = messageType === 'tool' && tryParseJson(message.content).success;
   const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
@@ -106,7 +106,7 @@ const HistoryMessageItem: FC<{ message: Message }> = ({ message }) => {
     <ContentPanel className="space-y-1">
       {/* Role header */}
       <div className="flex items-center gap-1.5">
-        <Icon className="h-3 w-3 text-muted-foreground" />
+        {createElement(messageIcon, { className: 'h-3 w-3 text-muted-foreground' })}
         <Text className="font-medium capitalize" variant="muted">
           {message.role}
         </Text>
