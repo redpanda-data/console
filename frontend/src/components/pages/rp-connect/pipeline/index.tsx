@@ -530,33 +530,6 @@ export default function PipelinePage() {
     </>
   );
 
-  const renderContent = () => {
-    if (mode === 'create') {
-      return content;
-    }
-
-    if (mode === 'view' && pipeline) {
-      return (
-        <Card size="full">
-          <Tabs defaultValue="configuration">
-            <TabsList>
-              <TabsTrigger value="configuration">Configuration</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-            </TabsList>
-            <TabsContents>
-              <TabsContent value="configuration">{content}</TabsContent>
-              <TabsContent value="logs">
-                <LogsTab pipeline={pipeline} />
-              </TabsContent>
-            </TabsContents>
-          </Tabs>
-        </Card>
-      );
-    }
-
-    return <Card size="full">{content}</Card>;
-  };
-
   return (
     <div>
       {mode === 'edit' && (
@@ -570,7 +543,24 @@ export default function PipelinePage() {
             <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
           )}
 
-          {renderContent()}
+          {mode === 'create' && content}
+          {mode === 'view' && pipeline && (
+            <Card size="full">
+              <Tabs defaultValue="configuration">
+                <TabsList>
+                  <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                  <TabsTrigger value="logs">Logs</TabsTrigger>
+                </TabsList>
+                <TabsContents>
+                  <TabsContent value="configuration">{content}</TabsContent>
+                  <TabsContent value="logs">
+                    <LogsTab pipeline={pipeline} />
+                  </TabsContent>
+                </TabsContents>
+              </Tabs>
+            </Card>
+          )}
+          {mode === 'edit' && <Card size="full">{content}</Card>}
         </div>
         {(mode === 'create' || mode === 'edit') && (
           <CreatePipelineSidebar
