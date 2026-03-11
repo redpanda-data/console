@@ -10,15 +10,16 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card } from 'components/redpanda-ui/components/card';
 import { Form } from 'components/redpanda-ui/components/form';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
@@ -30,6 +31,7 @@ import type { JSONSchema } from 'monaco-yaml';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import {
   CreatePipelineRequestSchema,
+  DeletePipelineRequestSchema,
   UpdatePipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
@@ -46,7 +48,12 @@ import {
   useLintPipelineConfigQuery,
   useListComponentsQuery,
 } from 'react-query/api/connect';
-import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
+import {
+  useCreatePipelineMutation,
+  useDeletePipelineMutation,
+  useGetPipelineQuery,
+  useUpdatePipelineMutation,
+} from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import {
   useOnboardingUserDataStore,
@@ -59,6 +66,7 @@ import { z } from 'zod';
 
 import { Details } from './details';
 import { Toolbar } from './toolbar';
+import { ViewDetails } from './view-details';
 import { extractLintHintsFromError } from '../errors';
 import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
 import { LogsTab } from '../pipelines-details';
@@ -246,6 +254,7 @@ export default function PipelinePage() {
 
   const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
   const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
+  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
 
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
   const { data: lintResponse, isPending: isLinting } = useLintPipelineConfigQuery(debouncedYamlContent, {
@@ -346,6 +355,31 @@ export default function PipelinePage() {
       router.history.back();
     }
   }, [mode, clearWizardStore, navigate, router]);
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      const deleteRequest = create(DeletePipelineRequestSchema, {
+        request: { id },
+      });
+
+      deleteMutation(deleteRequest, {
+        onSuccess: () => {
+          toast.success('Pipeline deleted');
+          navigate({ to: '/connect-clusters' });
+        },
+        onError: (err) => {
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'delete',
+              entity: 'pipeline',
+            })
+          );
+        },
+      });
+    },
+    [deleteMutation, navigate]
+  );
 
   const handleSave = useCallback(async () => {
     // Validate form
@@ -490,7 +524,7 @@ export default function PipelinePage() {
     return <PipelinePageSkeleton mode={mode} />;
   }
 
-  const content = (
+  const editCreateContent = (
     <>
       <Form {...form}>
         <Details pipeline={pipeline} readonly={mode === 'view'} />
@@ -529,46 +563,51 @@ export default function PipelinePage() {
 
   const renderContent = () => {
     if (mode === 'create') {
-      return content;
+      return editCreateContent;
     }
 
     if (mode === 'view' && pipeline) {
       return (
-        <Card size="full">
-          <Tabs defaultValue="configuration">
-            <TabsList>
-              <TabsTrigger value="configuration">Configuration</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-            </TabsList>
-            <TabsContents>
-              <TabsContent value="configuration">{content}</TabsContent>
-              <TabsContent value="logs">
-                <LogsTab pipeline={pipeline} />
-              </TabsContent>
-            </TabsContents>
-          </Tabs>
-        </Card>
+        <div className="flex min-h-0 flex-1 rounded-lg border">
+          <div className="min-w-0 flex-1">
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={40} minSize={10}>
+                <div className="flex h-full flex-col gap-4 overflow-auto bg-primary-alpha-subtle p-4">
+                  <ViewDetails isDeleting={isDeletePending} onDelete={handleDelete} pipeline={pipeline} />
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel collapsible defaultSize={60}>
+                <div className="h-full overflow-y-auto p-4">
+                  <LogsTab pipeline={pipeline} />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        </div>
       );
     }
 
-    return <Card size="full">{content}</Card>;
+    return <Card size="full">{editCreateContent}</Card>;
   };
 
   return (
-    <div>
+    <div className={cn(mode === 'view' && 'flex h-[calc(100dvh-10rem)] flex-col gap-4')}>
       {mode === 'edit' && (
         <div className="mt-12 mb-4">
           <Heading level={1}>Edit pipeline</Heading>
         </div>
       )}
-      <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
-        <div className="flex flex-1 flex-col gap-4">
-          {mode === 'view' && pipelineId && (
-            <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
-          )}
-
-          {renderContent()}
-        </div>
+      {mode === 'view' && pipelineId && (
+        <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+      )}
+      <div
+        className={cn(
+          (mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4',
+          mode === 'view' && 'flex min-h-0 flex-1'
+        )}
+      >
+        <div className={cn('flex flex-1 flex-col gap-4', mode === 'view' && 'min-h-0')}>{renderContent()}</div>
         {(mode === 'create' || mode === 'edit') && (
           <CreatePipelineSidebar
             componentList={componentListResponse?.components}

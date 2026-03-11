@@ -569,6 +569,54 @@ type ParsedConfigComponents = {
   outputs: string[];
 };
 
+// ============================================================================
+// Topic Extraction
+// ============================================================================
+
+function collectTopicsFromValue(value: unknown, topics: Set<string>): void {
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectTopicsFromValue(item, topics);
+    }
+    return;
+  }
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.topic === 'string' && obj.topic !== '') {
+    topics.add(obj.topic);
+  }
+  if (Array.isArray(obj.topics)) {
+    for (const t of obj.topics) {
+      if (typeof t === 'string' && t !== '') {
+        topics.add(t);
+      }
+    }
+  }
+  for (const v of Object.values(obj)) {
+    collectTopicsFromValue(v, topics);
+  }
+}
+
+/** Extract all topic names referenced in a Connect pipeline YAML config. */
+export function extractAllTopics(yamlContent: string): string[] {
+  if (!yamlContent) {
+    return [];
+  }
+  try {
+    const config = parseYaml(yamlContent);
+    if (!config || typeof config !== 'object') {
+      return [];
+    }
+    const topics = new Set<string>();
+    collectTopicsFromValue(config, topics);
+    return [...topics].sort();
+  } catch {
+    return [];
+  }
+}
+
 /** Parse a pipeline's configYaml to extract input, processor, and output component names. */
 export const parseConfigComponents = (configYaml: string): ParsedConfigComponents => {
   const empty: ParsedConfigComponents = { inputs: [], processors: [], outputs: [] };

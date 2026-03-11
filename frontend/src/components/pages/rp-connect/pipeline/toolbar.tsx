@@ -20,11 +20,10 @@ import {
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Group } from 'components/redpanda-ui/components/group';
+import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw, Trash } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw } from 'lucide-react';
 import {
-  DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
@@ -32,7 +31,7 @@ import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ReactNode } from 'react';
 import { memo, useCallback, useMemo } from 'react';
-import { useDeletePipelineMutation, useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
+import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -44,7 +43,7 @@ type DropdownOption = {
 };
 
 type ButtonConfig = {
-  icon: ReactNode;
+  icon?: ReactNode;
   text: string;
   action?: () => void;
   dropdown?: DropdownOption[];
@@ -63,9 +62,27 @@ type ButtonConfigFactoryParams = {
   isStopPending: boolean;
 };
 
+export function pipelineStateToVariant(state?: Pipeline_State): { variant: StatusBadgeVariant; pulsing: boolean } {
+  switch (state) {
+    case PipelineState.RUNNING:
+      return { variant: 'success', pulsing: true };
+    case PipelineState.STARTING:
+      return { variant: 'starting', pulsing: false };
+    case PipelineState.STOPPING:
+      return { variant: 'stopping', pulsing: false };
+    case PipelineState.STOPPED:
+      return { variant: 'disabled', pulsing: false };
+    case PipelineState.ERROR:
+      return { variant: 'error', pulsing: false };
+    case PipelineState.COMPLETED:
+      return { variant: 'success', pulsing: false };
+    default:
+      return { variant: 'info', pulsing: false };
+  }
+}
+
 function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
     text: isStartPending ? 'Starting' : 'Start',
     action: handleStart,
   };
@@ -142,34 +159,8 @@ function getPipelineButtonConfig(
 export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();
 
-  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      const deleteRequest = create(DeletePipelineRequestSchema, {
-        request: { id },
-      });
-
-      deleteMutation(deleteRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters' });
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'delete',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    },
-    [deleteMutation, navigate]
-  );
 
   const handleStart = useCallback(() => {
     const startRequest = create(StartPipelineRequestSchema, {
@@ -217,6 +208,15 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     navigate({ to: `/rp-connect/${pipelineId}/edit` });
   }, [navigate, pipelineId]);
 
+  const statusBadge = useMemo(() => pipelineStateToVariant(pipelineState), [pipelineState]);
+  const shouldShowStatusBadge = useMemo(
+    () =>
+      pipelineState !== undefined &&
+      pipelineState !== PipelineState.STARTING &&
+      pipelineState !== PipelineState.STOPPING,
+    [pipelineState]
+  );
+
   const buttonConfig = useMemo(
     () =>
       getPipelineButtonConfig(pipelineState, {
@@ -237,7 +237,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="min-w-[110px]">
+            <Button>
               {buttonConfig.icon}
               {buttonConfig.text}
               <ChevronDown className="ml-1 h-3 w-3" />
@@ -269,20 +269,10 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
       </div>
 
       <div>
-        <Group className="items-center">
+        <Group className="items-center gap-2">
+          {shouldShowStatusBadge ? <StatusBadge pulsing={statusBadge.pulsing} variant={statusBadge.variant} /> : null}
           {renderActionButton()}
           <Button icon={<Pencil />} onClick={handleEdit} size="icon" variant="outline" />
-          <DeleteResourceAlertDialog
-            buttonIcon={<Trash />}
-            buttonText={undefined}
-            buttonVariant="destructive-outline"
-            isDeleting={isDeletePending}
-            onDelete={handleDelete}
-            resourceId={pipelineId}
-            resourceName={pipelineName || 'this pipeline'}
-            resourceType="Pipeline"
-            triggerVariant="button"
-          />
         </Group>
       </div>
     </div>

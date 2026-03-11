@@ -27,3 +27,6 @@ export const isCloudManagedTagKey = (key: string): boolean =>
   Object.values(CLOUD_MANAGED_TAG_KEYS).includes(
     key as (typeof CLOUD_MANAGED_TAG_KEYS)[keyof typeof CLOUD_MANAGED_TAG_KEYS]
   );
+
+/** Returns true if the tag key is a system tag that should be hidden from users. */
+export const isSystemTag = (key: string): boolean => key.startsWith('__') || isCloudManagedTagKey(key);
