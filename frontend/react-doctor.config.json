@@ -8,13 +8,25 @@
       "src/components/ai-elements/**",
       "src/hooks/use-mobile.ts",
       "src/globals.css",
-      "src/components/pages/connect/dynamic-ui/components.tsx"
+      "src/components/pages/connect/dynamic-ui/components.tsx",
+      "src/components/pages/shadowlinks/details/shadow-topics-table.tsx",
+      "src/components/pages/transcripts/components/transcripts-table.tsx",
+      "src/components/pages/knowledgebase/details/knowledge-base-document-list.tsx",
+      "src/components/pages/mcp-servers/list/remote-mcp-list-page.tsx",
+      "src/components/pages/secrets-store/secrets-store-list-page.tsx",
+      "src/components/pages/topics/Tab.Messages/index.tsx",
+      "src/components/pages/shadowlinks/create/configuration/schema-registry-step.test.tsx",
+      "src/components/pages/shadowlinks/list/shadowlink-list-page.tsx",
+      "src/components/pages/shadowlinks/edit/topic-config-tab.test.tsx",
+      "src/components/pages/shadowlinks/details/tasks-table.tsx",
+      "src/components/pages/agents/list/ai-agent-list-page.tsx",
+      "src/components/pages/knowledgebase/list/knowledge-base-list-page.tsx",
+      "src/components/pages/rp-connect/pipeline/list.tsx"
     ],
     "rules": [
       "react-doctor/use-lazy-motion",
       "react-doctor/no-giant-component",
       "react-doctor/require-reduced-motion",
-      "react-hooks-js/incompatible-library",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
       "react-doctor/no-render-in-render"

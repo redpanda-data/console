@@ -1004,6 +1004,7 @@ export const TranscriptsTable: FC<Props> = ({
   matchedSpans,
   showFullTraces = true,
 }) => {
+  'use no memo';
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
 
   // Auto-expand trace when autoExpandTraceId changes (for linked trace mode)

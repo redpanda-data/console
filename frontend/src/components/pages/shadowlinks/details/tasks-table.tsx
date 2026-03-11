@@ -32,6 +32,7 @@ type TasksTableProps = {
 };
 
 export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProps) => {
+  'use no memo';
   const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
 
   const columns = useMemo(

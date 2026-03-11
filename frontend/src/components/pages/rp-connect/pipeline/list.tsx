@@ -450,6 +450,7 @@ const createColumns = ({
 ];
 
 const PipelineListPageContent = () => {
+  'use no memo';
   const navigate = useNavigate();
   const resetOnboardingWizardStore = useResetOnboardingWizardStore();
 

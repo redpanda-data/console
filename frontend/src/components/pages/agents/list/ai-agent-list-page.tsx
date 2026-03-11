@@ -284,6 +284,7 @@ const AIAgentsListPageContent = ({
 }: {
   deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef>;
 }) => {
+  'use no memo';
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);

@@ -267,6 +267,7 @@ export const updatePageTitle = () => {
 };
 
 const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef> }) => {
+  'use no memo';
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);

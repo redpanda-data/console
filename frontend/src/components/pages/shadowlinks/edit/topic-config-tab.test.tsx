@@ -21,17 +21,19 @@ import { getDefaultProperties } from './topic-properties-config';
 import { FormSchema, type FormValues, initialValues } from '../create/model';
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
+  'use no memo';
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,
     mode: 'onBlur',
   });
+  const formValues = useWatch({ control: form.control });
 
   return (
     <Form {...form}>
       <form>
         <TopicConfigTab />
-        <div data-testid="form-state">{JSON.stringify(form.watch())}</div>
+        <div data-testid="form-state">{JSON.stringify(formValues)}</div>
       </form>
     </Form>
   );

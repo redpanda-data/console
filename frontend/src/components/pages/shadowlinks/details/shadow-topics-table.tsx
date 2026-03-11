@@ -111,6 +111,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   topicNameFilter,
   onTopicNameFilterChange,
 }) => {
+  'use no memo';
   const columnHelper = createColumnHelper<ShadowTopic>();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
