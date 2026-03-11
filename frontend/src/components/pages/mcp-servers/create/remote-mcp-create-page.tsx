@@ -109,22 +109,19 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   // Auto-generate service account name when MCP server name changes
   useEffect(() => {
-    if (displayName) {
-      const generatedName = generateServiceAccountName(displayName, 'mcp');
-      const currentValue = form.getValues('serviceAccountName');
-      const prefix = getServiceAccountNamePrefix('mcp');
-
-      // Only update if the field is empty or matches the previous auto-generated pattern
-      if (!currentValue || currentValue.startsWith(prefix)) {
-        form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
-      }
+    const generatedName = displayName ? generateServiceAccountName(displayName, 'mcp') : '';
+    const currentValue = form.getValues('serviceAccountName');
+    const prefix = getServiceAccountNamePrefix('mcp');
+    const shouldAutoGenerate = generatedName && (!currentValue || currentValue.startsWith(prefix));
+    if (shouldAutoGenerate) {
+      form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
     }
   }, [displayName, form]);
 
   // Clear cached service account when service account name changes
   useEffect(() => {
     if (serviceAccountInfo && serviceAccountName) {
-      setServiceAccountInfo(null);
+      queueMicrotask(() => setServiceAccountInfo(null));
     }
   }, [serviceAccountName, serviceAccountInfo]);
 

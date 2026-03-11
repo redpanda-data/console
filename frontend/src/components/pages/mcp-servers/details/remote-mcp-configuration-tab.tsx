@@ -45,7 +45,7 @@ import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Edit, FileText, Hammer, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   type MCPServer_State,
   MCPServer_Tool_ComponentType,
@@ -98,7 +98,6 @@ export const RemoteMCPConfigurationTab = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
-  const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);
   const [lintHints, setLintHints] = useState<Record<string, Record<string, LintHint>>>({});
   const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
 
@@ -541,11 +540,10 @@ export const RemoteMCPConfigurationTab = () => {
   }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
 
   // Detect secrets in YAML configurations
-  useEffect(() => {
+  const detectedSecrets = React.useMemo(() => {
     const currentData = getCurrentData();
     if (!currentData?.tools) {
-      setDetectedSecrets([]);
-      return;
+      return [];
     }
 
     const allSecretReferences: string[] = [];
@@ -563,8 +561,7 @@ export const RemoteMCPConfigurationTab = () => {
     }
 
     // Get unique secret names
-    const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();
-    setDetectedSecrets(uniqueSecrets);
+    return Array.from(new Set(allSecretReferences)).sort();
   }, [getCurrentData]);
 
   React.useEffect(() => {

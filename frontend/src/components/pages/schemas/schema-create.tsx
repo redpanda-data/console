@@ -228,16 +228,18 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
       ? [...Object.entries(schema.metadata.properties).map(([key, value]) => ({ key, value })), { key: '', value: '' }]
       : [{ key: '', value: '' }];
 
-    setStateData({
-      strategy: 'CUSTOM',
-      userInput: subject.name,
-      keyOrValue: undefined,
-      format: schema.type as 'AVRO' | 'PROTOBUF',
-      schemaText,
-      references: schema.references,
-      normalize: false,
-      metadataProperties,
-    });
+    queueMicrotask(() =>
+      setStateData({
+        strategy: 'CUSTOM',
+        userInput: subject.name,
+        keyOrValue: undefined,
+        format: schema.type as 'AVRO' | 'PROTOBUF',
+        schemaText,
+        references: schema.references,
+        normalize: false,
+        metadataProperties,
+      })
+    );
   }, [subject, stateData]);
 
   if (!subject || stateData === null) return DefaultSkeleton;

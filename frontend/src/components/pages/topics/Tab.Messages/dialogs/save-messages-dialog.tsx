@@ -21,7 +21,7 @@ import {
   ModalOverlay,
   RadioGroup,
 } from '@redpanda-data/ui';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import type { DataColumnKey } from '../../../../../state/ui';
@@ -40,22 +40,11 @@ export const SaveMessagesDialog = ({
   onClose: () => void;
   onRequireRawPayload: () => Promise<TopicMessage[]>;
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [format, setFormat] = useState<'json' | 'csv'>('json');
   const [includeRawContent, setIncludeRawContent] = useState(false);
 
   const count = messages?.length ?? 0;
   const title = count > 1 ? 'Save Messages' : 'Save Message';
-
-  // Keep dialog open after closing it, so it can play its closing animation
-  useEffect(() => {
-    if (count > 0 && !isOpen) {
-      setTimeout(() => setIsOpen(true));
-    }
-    if (isOpen && count === 0) {
-      setTimeout(() => setIsOpen(false));
-    }
-  }, [count, isOpen]);
 
   const cleanPayload = (p: Payload): Payload | undefined => {
     if (!p) {

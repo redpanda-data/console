@@ -194,6 +194,7 @@ export default function PipelinePage() {
   // Zustand store for wizard persistence (CREATE mode only)
   const isServerlessMode = search.serverless === 'true';
   const hasInitializedServerless = useRef(false);
+  const hasLoadedPersistedYaml = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
   const setPersistedYamlContent = useOnboardingYamlContentStore((state) => state.setYamlContent);
   const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
@@ -276,14 +277,15 @@ export default function PipelinePage() {
         description: pipeline.description || '',
         computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
       });
-      setYamlContent(pipeline.configYaml);
+      queueMicrotask(() => setYamlContent(pipeline.configYaml));
     }
   }, [pipeline, mode, form]);
 
   // Load persisted YAML from Zustand (CREATE mode only)
   useEffect(() => {
-    if (mode === 'create' && persistedYamlContent) {
-      setYamlContent(persistedYamlContent);
+    if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
+      hasLoadedPersistedYaml.current = true;
+      queueMicrotask(() => setYamlContent(persistedYamlContent));
     }
   }, [mode, persistedYamlContent]);
 

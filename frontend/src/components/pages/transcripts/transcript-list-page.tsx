@@ -580,8 +580,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     if (hasCompletedInitialMount.current) {
       // After initial mount, only handle exiting linked mode when URL params are cleared
       if (!selectedTraceId && isLinkedTraceMode) {
-        setIsLinkedTraceMode(false);
-        linkedTraceIdRef.current = null;
+        queueMicrotask(() => {
+          setIsLinkedTraceMode(false);
+          linkedTraceIdRef.current = null;
+        });
       }
       return;
     }
@@ -590,8 +592,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     hasCompletedInitialMount.current = true;
     if (selectedTraceId) {
       // Page loaded with traceId in URL - enter linked mode
-      setIsLinkedTraceMode(true);
-      linkedTraceIdRef.current = selectedTraceId;
+      queueMicrotask(() => {
+        setIsLinkedTraceMode(true);
+        linkedTraceIdRef.current = selectedTraceId;
+      });
     }
   }, [selectedTraceId, isLinkedTraceMode]);
 

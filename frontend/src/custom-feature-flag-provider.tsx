@@ -28,7 +28,8 @@ export const CustomFeatureFlagProvider = ({
   children,
   initialFlags = FEATURE_FLAGS,
 }: CustomFeatureFlagProviderProps) => {
-  const [flags, setFlags] = useState<FeatureFlags>(initialFlags);
+  // Intentionally seeded from prop: flags are mutated locally via setFlag and should not re-sync
+  const [flags, setFlags] = useState<FeatureFlags>(() => initialFlags);
 
   const setFlag = useCallback((key: string, value: boolean) => {
     setFlags((prevFlags) => ({
