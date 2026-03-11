@@ -309,7 +309,7 @@ service AIAgentService {
       api: API_AI_AGENT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "ai-agents"
+      resource_type: "aiagents"
       permission: "dataplane_aiagent_create"
     };
   }
@@ -344,7 +344,7 @@ service AIAgentService {
       api: API_AI_AGENT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "ai-agents"
+      resource_type: "aiagents"
       id_getter_cel: "request.id"
       permission: "dataplane_aiagent_get"
     };
@@ -374,7 +374,7 @@ service AIAgentService {
     option (redpanda.api.common.v1.collection_authorization) = {
       collection_getter_cel: "response.ai_agents"
       each: {
-        resource_type: "ai-agents"
+        resource_type: "aiagents"
         id_getter_cel: "each.id"
         permission: "dataplane_aiagent_list"
       }
@@ -405,7 +405,7 @@ service AIAgentService {
       api: API_AI_AGENT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "ai-agents"
+      resource_type: "aiagents"
       id_getter_cel: "request.id"
       permission: "dataplane_aiagent_update"
     };
@@ -439,7 +439,7 @@ service AIAgentService {
       api: API_AI_AGENT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "ai-agents"
+      resource_type: "aiagents"
       id_getter_cel: "request.id"
       permission: "dataplane_aiagent_delete"
     };
@@ -475,7 +475,7 @@ service AIAgentService {
       api: API_AI_AGENT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "ai-agents"
+      resource_type: "aiagents"
       id_getter_cel: "request.id"
       permission: "dataplane_aiagent_delete"
     };
@@ -511,7 +511,7 @@ service AIAgentService {
       api: API_AI_AGENT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "ai-agents"
+      resource_type: "aiagents"
       id_getter_cel: "request.id"
       permission: "dataplane_aiagent_create"
     };

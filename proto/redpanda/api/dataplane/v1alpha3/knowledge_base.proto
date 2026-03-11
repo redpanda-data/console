@@ -579,7 +579,7 @@ service KnowledgeBaseService {
       api: API_REDPANDA_CONNECT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "knowledge-bases"
+      resource_type: "knowledgebases"
       permission: "dataplane_knowledgebase_create"
     };
   }
@@ -591,7 +591,7 @@ service KnowledgeBaseService {
       api: API_REDPANDA_CONNECT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "knowledge-bases"
+      resource_type: "knowledgebases"
       id_getter_cel: "request.id"
       permission: "dataplane_knowledgebase_get"
     };
@@ -606,7 +606,7 @@ service KnowledgeBaseService {
     option (redpanda.api.common.v1.collection_authorization) = {
       collection_getter_cel: "response.knowledge_bases"
       each: {
-        resource_type: "knowledge-bases"
+        resource_type: "knowledgebases"
         id_getter_cel: "each.id"
         permission: "dataplane_knowledgebase_list"
       }
@@ -623,7 +623,7 @@ service KnowledgeBaseService {
       api: API_REDPANDA_CONNECT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "knowledge-bases"
+      resource_type: "knowledgebases"
       id_getter_cel: "request.id"
       permission: "dataplane_knowledgebase_update"
     };
@@ -636,7 +636,7 @@ service KnowledgeBaseService {
       api: API_REDPANDA_CONNECT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "knowledge-bases"
+      resource_type: "knowledgebases"
       id_getter_cel: "request.id"
       permission: "dataplane_knowledgebase_delete"
     };

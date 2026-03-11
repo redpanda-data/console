@@ -147,7 +147,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       permission: "dataplane_mcpserver_create"
     };
   }
@@ -182,7 +182,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       id_getter_cel: "request.id"
       permission: "dataplane_mcpserver_get"
     };
@@ -211,7 +211,7 @@ service MCPServerService {
     option (redpanda.api.common.v1.collection_authorization) = {
       collection_getter_cel: "response.mcp_servers"
       each: {
-        resource_type: "mcp-servers"
+        resource_type: "mcpservers"
         id_getter_cel: "each.id"
         permission: "dataplane_mcpserver_list"
       }
@@ -242,7 +242,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       id_getter_cel: "request.id"
       permission: "dataplane_mcpserver_update"
     };
@@ -276,7 +276,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       id_getter_cel: "request.id"
       permission: "dataplane_mcpserver_delete"
     };
@@ -312,7 +312,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       id_getter_cel: "request.id"
       permission: "dataplane_mcpserver_delete"
     };
@@ -348,7 +348,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       id_getter_cel: "request.id"
       permission: "dataplane_mcpserver_create"
     };
@@ -375,7 +375,7 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       permission: "dataplane_mcpserver_get"
     };
   }
@@ -405,7 +405,7 @@ service MCPServerService {
       api: API_REDPANDA_CONNECT
     };
     option (redpanda.api.common.v1.method_authorization) = {
-      resource_type: "mcp-servers"
+      resource_type: "mcpservers"
       permission: "dataplane_mcpserver_get"
     };
   }
