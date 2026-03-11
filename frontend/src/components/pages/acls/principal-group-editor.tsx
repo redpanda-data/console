@@ -70,10 +70,17 @@ export const AclPrincipalGroupEditor = (p: {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const [isFormValid, setIsFormValid] = useState(true);
-  const [isTopicsValid, setTopicsIsValid] = useState(true);
-  const [isConsumerGroupsValid, setConsumerGroupsIsValid] = useState(true);
-  const [isTransactionalIDValid, setTransactionalIDIsValid] = useState(true);
+  const [validation, setValidation] = useState({
+    isFormValid: true,
+    isTopicsValid: true,
+    isConsumerGroupsValid: true,
+    isTransactionalIDValid: true,
+  });
+  const { isFormValid, isTopicsValid, isConsumerGroupsValid, isTransactionalIDValid } = validation;
+  const setIsFormValid = (v: boolean) => setValidation((prev) => ({ ...prev, isFormValid: v }));
+  const setTopicsIsValid = (v: boolean) => setValidation((prev) => ({ ...prev, isTopicsValid: v }));
+  const setConsumerGroupsIsValid = (v: boolean) => setValidation((prev) => ({ ...prev, isConsumerGroupsValid: v }));
+  const setTransactionalIDIsValid = (v: boolean) => setValidation((prev) => ({ ...prev, isTransactionalIDValid: v }));
 
   const noNameOrNameInUse =
     p.type === 'create' &&

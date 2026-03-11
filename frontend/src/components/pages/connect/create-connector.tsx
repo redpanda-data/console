@@ -249,20 +249,53 @@ type ConnectorWizardProps = {
 
 const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProps) => {
   const toast = useToast();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
-  const [invalidValidationResult, setInvalidValidationResult] = useState<ConnectorValidationResult | null>(null);
-  const [validationFailure, setValidationFailure] = useState<unknown>(null);
-  const [creationFailure, setCreationFailure] = useState<unknown>(null);
-  const [genericFailure, setGenericFailure] = useState<Error | null>(null);
-  const [stringifiedConfig, setStringifiedConfig] = useState<string>('');
-  const [parsedUpdatedConfig, setParsedUpdatedConfig] = useState<Record<string, unknown> | null>(null);
-  const [postCondition, setPostCondition] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(activeCluster));
+  const [wizardState, setWizardState] = useState<{
+    currentStep: number;
+    selectedPlugin: ConnectorPlugin | null;
+    invalidValidationResult: ConnectorValidationResult | null;
+    validationFailure: unknown;
+    creationFailure: unknown;
+    genericFailure: Error | null;
+  }>({
+    currentStep: 0,
+    selectedPlugin: null,
+    invalidValidationResult: null,
+    validationFailure: null,
+    creationFailure: null,
+    genericFailure: null,
+  });
+  const { currentStep, selectedPlugin, invalidValidationResult, validationFailure, creationFailure, genericFailure } =
+    wizardState;
+  const setCurrentStep = (v: number | ((n: number) => number)) =>
+    setWizardState((prev) => ({ ...prev, currentStep: typeof v === 'function' ? v(prev.currentStep) : v }));
+  const setSelectedPlugin = (v: ConnectorPlugin | null) => setWizardState((prev) => ({ ...prev, selectedPlugin: v }));
+  const setInvalidValidationResult = (v: ConnectorValidationResult | null) =>
+    setWizardState((prev) => ({ ...prev, invalidValidationResult: v }));
+  const setValidationFailure = (v: unknown) => setWizardState((prev) => ({ ...prev, validationFailure: v }));
+  const setCreationFailure = (v: unknown) => setWizardState((prev) => ({ ...prev, creationFailure: v }));
+  const setGenericFailure = (v: Error | null) => setWizardState((prev) => ({ ...prev, genericFailure: v }));
+  const [configState, setConfigState] = useState<{
+    stringifiedConfig: string;
+    parsedUpdatedConfig: Record<string, unknown> | null;
+  }>({ stringifiedConfig: '', parsedUpdatedConfig: null });
+  const { stringifiedConfig, parsedUpdatedConfig } = configState;
+  const setStringifiedConfig = (v: string) => {
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = JSON.parse(v);
+    } catch {
+      // keep null
+    }
+    setConfigState({ stringifiedConfig: v, parsedUpdatedConfig: parsed });
+  };
+  const postCondition = parsedUpdatedConfig !== null;
+  const [loadingState, setLoadingState] = useState({ loading: false, isStoreInitialized: false });
+  const loading = loadingState.loading;
+  const isStoreInitialized = loadingState.isStoreInitialized;
+  const setLoading = (v: boolean) => setLoadingState((prev) => ({ ...prev, loading: v }));
+  const setIsStoreInitialized = (v: boolean) => setLoadingState((prev) => ({ ...prev, isStoreInitialized: v }));
+  const [connectClusterStore, setConnectClusterStore] = useState(() => ConnectClusterStore.getInstance(activeCluster));
   const { isOpen: isCreatingModalOpen, onOpen: openCreatingModal, onClose: closeCreatingModal } = useDisclosure();
-
-  const [isStoreInitialized, setIsStoreInitialized] = useState(connectClusterStore.isInitialized);
 
   useEffect(() => {
     const init = async () => {
@@ -276,16 +309,6 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   useEffect(() => {
     setConnectClusterStore(ConnectClusterStore.getInstance(activeCluster));
   }, [activeCluster]);
-
-  useEffect(() => {
-    try {
-      setParsedUpdatedConfig(JSON.parse(stringifiedConfig));
-    } catch (_e) {
-      setParsedUpdatedConfig(null);
-      setPostCondition(false);
-    }
-    setPostCondition(true);
-  }, [stringifiedConfig]);
 
   const clearErrors = () => {
     setCreationFailure(null);

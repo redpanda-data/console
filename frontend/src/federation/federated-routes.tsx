@@ -19,7 +19,7 @@ import AppPageHeader from '../components/layout/header';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
-import { renderErrorModals } from '../components/misc/error-modal';
+import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -87,7 +87,7 @@ function FederatedAppContent() {
 
       <AppFooter />
 
-      {renderErrorModals()}
+      <ErrorModalsRenderer />
     </div>
   );
 }

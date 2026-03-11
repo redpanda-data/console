@@ -68,10 +68,17 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 export default RpConnectPipelinesEdit;
 
 const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pipeline; pipelineId: string }) => {
-  const [displayName, setDisplayName] = useState(pipeline.displayName);
-  const [description, setDescription] = useState(pipeline.description);
-  const [tasks, setTasks] = useState(cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS);
-  const [editorContent, setEditorContent] = useState(pipeline.configYaml);
+  const [formState, setFormState] = useState({
+    displayName: pipeline.displayName,
+    description: pipeline.description,
+    tasks: cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS,
+    editorContent: pipeline.configYaml,
+  });
+  const { displayName, description, tasks, editorContent } = formState;
+  const setDisplayName = (v: string) => setFormState((prev) => ({ ...prev, displayName: v }));
+  const setDescription = (v: string) => setFormState((prev) => ({ ...prev, description: v }));
+  const setTasks = (v: number) => setFormState((prev) => ({ ...prev, tasks: v }));
+  const setEditorContent = (v: string) => setFormState((prev) => ({ ...prev, editorContent: v }));
   const [isUpdating, setIsUpdating] = useState(false);
   const tags = pipeline.tags;
   const [serviceAccount] = useState<Pipeline_ServiceAccount | undefined>(pipeline.serviceAccount);

@@ -139,6 +139,46 @@ function getPipelineButtonConfig(
   }
 }
 
+type ActionButtonProps = {
+  buttonConfig: ButtonConfig | null;
+  isStartPending: boolean;
+  isStopPending: boolean;
+};
+
+function ActionButton({ buttonConfig, isStartPending, isStopPending }: ActionButtonProps) {
+  if (!buttonConfig) {
+    return null;
+  }
+
+  if (buttonConfig.dropdown) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="min-w-[110px]">
+            {buttonConfig.icon}
+            {buttonConfig.text}
+            <ChevronDown className="ml-1 h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {buttonConfig.dropdown.map((option) => (
+            <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
+              {option.icon}
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
+      {buttonConfig.text}
+    </Button>
+  );
+}
+
 export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
   const navigate = useNavigate();
 
@@ -228,40 +268,6 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
     [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
   );
 
-  const renderActionButton = useCallback(() => {
-    if (!buttonConfig) {
-      return null;
-    }
-
-    if (buttonConfig.dropdown) {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="min-w-[110px]">
-              {buttonConfig.icon}
-              {buttonConfig.text}
-              <ChevronDown className="ml-1 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {buttonConfig.dropdown.map((option) => (
-              <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
-                {option.icon}
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
-
-    return (
-      <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
-        {buttonConfig.text}
-      </Button>
-    );
-  }, [buttonConfig, isStartPending, isStopPending]);
-
   return (
     <div className="mt-5 flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -270,7 +276,7 @@ export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: Toolba
 
       <div>
         <Group className="items-center">
-          {renderActionButton()}
+          <ActionButton buttonConfig={buttonConfig} isStartPending={isStartPending} isStopPending={isStopPending} />
           <Button icon={<Pencil />} onClick={handleEdit} size="icon" variant="outline" />
           <DeleteResourceAlertDialog
             buttonIcon={<Trash />}
