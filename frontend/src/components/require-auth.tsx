@@ -12,11 +12,10 @@
 'use no memo';
 
 import type { ReactNode } from 'react';
-import { useStore } from 'zustand';
 
 import { ConnectionErrorUI } from './misc/connection-error-ui';
 import { config as appConfig } from '../config';
-import { api, useApiStore } from '../state/backend-api';
+import { api, useApiStoreHook } from '../state/backend-api';
 import { useSupportedFeaturesStore } from '../state/supported-features';
 import { uiState } from '../state/ui-state';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
@@ -78,7 +77,7 @@ function loginHandling(): JSX.Element | null {
 const RequireAuth = ({ children }: { children: ReactNode }) => {
   // Subscribe to the API store so this component re-renders when userData changes
   // (e.g. from undefined -> null when not authenticated, triggering the login redirect)
-  useStore(useApiStore, (s) => s.userData); // re-render when userData changes
+  useApiStoreHook((s) => s.userData); // re-render when userData changes
 
   const r = loginHandling(); // Complete login, or fetch user if needed
   if (r) {

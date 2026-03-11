@@ -3336,8 +3336,14 @@ function addError(err: Error) {
   useApiStore.setState((s: any) => ({ errors: [...s.errors, err] }));
 }
 
+/** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
+function useApiStoreHook<T>(selector: (state: apiStoreType) => T): T {
+  return useStore(useApiStore, selector);
+}
+
 export {
   useApiStore,
+  useApiStoreHook,
   useRolesStore,
   usePipelinesStore,
   useKnowledgebaseStore,
