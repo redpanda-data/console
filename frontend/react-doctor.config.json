@@ -18,7 +18,6 @@
       "src/components/pages/shadowlinks/list/shadowlink-list-page.tsx",
       "src/components/pages/shadowlinks/edit/topic-config-tab.test.tsx",
       "src/components/pages/shadowlinks/details/tasks-table.tsx",
-      "src/components/pages/agents/list/ai-agent-list-page.tsx",
       "src/components/pages/rp-connect/pipeline/list.tsx",
       "src/components/pages/topics/Tab.Messages/editor.tsx",
       "src/components/pages/observability/metric-chart.tsx",
