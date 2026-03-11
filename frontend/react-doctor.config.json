@@ -21,8 +21,6 @@
       "react-hooks-js/hooks",
       "react-hooks-js/purity",
       "react-hooks-js/static-components",
-      "react-hooks-js/error-boundaries",
-      "react-hooks-js/preserve-manual-memoization",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
       "react-doctor/no-prevent-default",
