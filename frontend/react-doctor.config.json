@@ -7,7 +7,8 @@
       "src/components/redpanda-ui/**",
       "src/components/ai-elements/**",
       "src/hooks/use-mobile.ts",
-      "src/globals.css"
+      "src/globals.css",
+      "src/components/pages/connect/dynamic-ui/components.tsx"
     ],
     "rules": [
       "react-doctor/use-lazy-motion",
@@ -17,7 +18,6 @@
       "react-hooks-js/refs",
       "react-hooks-js/set-state-in-effect",
       "react-hooks-js/incompatible-library",
-      "react-hooks-js/immutability",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
       "react-doctor/no-render-in-render",
