@@ -5,10 +5,6 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-react-doctor.yml"
-  pull_request:
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-react-doctor.yml"
 jobs:
   react-doctor:
     timeout-minutes: 5
