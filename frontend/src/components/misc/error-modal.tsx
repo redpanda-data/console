@@ -164,7 +164,7 @@ const afterClose = (key: number) => {
   notifySubscribers();
 };
 
-function ErrorModalsRenderer() {
+export function ErrorModalsRenderer() {
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   useEffect(() => {

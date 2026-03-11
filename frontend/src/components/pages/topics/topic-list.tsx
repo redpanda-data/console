@@ -239,7 +239,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                     params={{ topicName: encodeURIComponent(topic.topicName) }}
                     to="/topics/$topicName"
                   >
-                    {renderName(topic)}
+                    <TopicName topic={topic} />
                   </Link>
                   {!!leaderLessPartitions && (
                     <Tooltip
@@ -339,7 +339,7 @@ const iconClosedEye = (
   </span>
 );
 
-const renderName = (topic: Topic) => {
+const TopicName = ({ topic }: { topic: Topic }) => {
   const actions = topic.allowedActions;
 
   if (!actions || actions[0] === 'all') {

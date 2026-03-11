@@ -32,11 +32,6 @@
       "src/components/misc/kowl-editor.tsx",
       "src/components/misc/pipelines-yaml-editor.tsx"
     ],
-    "rules": [
-      "react-doctor/use-lazy-motion",
-      "react-doctor/no-giant-component",
-      "react-doctor/require-reduced-motion",
-      "react-doctor/no-render-in-render"
-    ]
+    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion"]
   }
 }

@@ -184,6 +184,16 @@ export function CommaSeparatedStringList(props: {
   );
 }
 
+type ListItemRendererProps<T extends { id: string }> = {
+  item: T;
+  index: number;
+  renderItem: (item: T, index: number) => JSX.Element;
+};
+
+function ListItemRenderer<T extends { id: string }>({ item, index, renderItem }: ListItemRendererProps<T>) {
+  return renderItem(item, index);
+}
+
 export function List<T extends { id: string }>(props: {
   items: T[];
   renderItem: (item: T, index: number) => JSX.Element;
@@ -212,7 +222,7 @@ export function List<T extends { id: string }>(props: {
                         <div className="dragHandle" {...draggableProvided.dragHandleProps}>
                           <MenuIcon />
                         </div>
-                        {renderItem(tag, index)}
+                        <ListItemRenderer index={index} item={tag} renderItem={renderItem} />
                       </div>
                     </div>
                   )}
