@@ -61,11 +61,15 @@ vi.mock('./token-manager', () => ({
     private getToken: () => Promise<string>;
     refresh = vi.fn();
     reset = vi.fn();
+    setGetAccessToken = vi.fn();
     isRefreshing = false;
 
     constructor(getToken: () => Promise<string>) {
       this.getToken = getToken;
       this.refresh.mockImplementation(() => this.getToken());
+      this.setGetAccessToken.mockImplementation((fn: () => Promise<string>) => {
+        this.getToken = fn;
+      });
     }
   },
 }));
