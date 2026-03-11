@@ -19,7 +19,6 @@
       "react-hooks-js/incompatible-library",
       "react-hooks-js/immutability",
       "react-hooks-js/hooks",
-      "react-hooks-js/purity",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
       "react-doctor/no-render-in-render",

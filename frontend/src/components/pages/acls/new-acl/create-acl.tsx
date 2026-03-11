@@ -745,6 +745,7 @@ export default function CreateACL({
     host: propSharedConfig?.host ?? '*',
   });
 
+  const ruleIdCounter = useRef(2);
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
       {
@@ -782,7 +783,7 @@ export default function CreateACL({
     }
 
     const newRule = {
-      id: Date.now(),
+      id: ruleIdCounter.current++,
       resourceType: defaultResourceType as ResourceType,
       mode: ModeCustom,
       selectorType: ResourcePatternTypeAny,
