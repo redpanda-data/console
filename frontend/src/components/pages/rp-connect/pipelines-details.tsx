@@ -13,7 +13,9 @@ import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
+import { RefreshCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -40,6 +42,7 @@ import {
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
+import { isFilterMatch } from '../../../utils/message-table-helpers';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -259,7 +262,7 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-export const LogsTab = (p: { pipeline: Pipeline }) => {
+export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; variant?: 'ghost' | 'card' }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
@@ -276,7 +279,7 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     searchRef.current = search;
     setMessages([]);
     setIsComplete(false);
-    executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
+    executeMessageSearch(search, topicName, pipeline.id).finally(() => {
       setIsComplete(true);
       setMessages([...search.messages]);
     });
@@ -361,13 +364,13 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     <>
       <Box my="1rem">The logs below are for the last five hours.</Box>
 
-      <Section minWidth="800px">
-        <Flex mb="6">
+      <Section borderColor={variant === 'ghost' ? 'transparent' : undefined} minWidth="800px" overflowY="auto">
+        <div className="mb-6 flex items-center justify-between gap-2">
           <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
-          <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
-            Refresh logs
-          </Button>
-        </Flex>
+          <RegistryButton onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">
+            <RefreshCcw />
+          </RegistryButton>
+        </div>
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
@@ -396,20 +399,6 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     </>
   );
 };
-
-function isFilterMatch(str: string, m: TopicMessage) {
-  const lowerStr = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  if (m.keyJson?.toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  if (m.valueJson?.toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  return false;
-}
 
 function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
   const filterCode: string = `return key == "${pipelineId}";`;
