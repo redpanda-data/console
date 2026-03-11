@@ -8,18 +8,7 @@
       "src/components/ai-elements/**",
       "src/hooks/use-mobile.ts",
       "src/globals.css",
-      "src/components/pages/connect/dynamic-ui/components.tsx",
-      "src/components/pages/shadowlinks/details/shadow-topics-table.tsx",
-      "src/components/pages/topics/Tab.Messages/index.tsx",
-      "src/components/pages/rp-connect/pipeline/list.tsx",
-      "src/components/pages/topics/Tab.Messages/editor.tsx",
-      "src/components/pages/rp-connect/onboarding/add-contextual-variables-card.tsx",
-      "src/components/pages/rp-connect/onboarding/add-secrets-card.tsx",
-      "src/components/pages/rp-connect/onboarding/create-pipeline-sidebar.tsx",
-      "src/components/pages/rp-connect/pipelines-create.tsx",
-      "src/components/pages/rp-connect/pipeline/index.tsx",
-      "src/components/misc/kowl-editor.tsx",
-      "src/components/misc/pipelines-yaml-editor.tsx"
+      "src/components/pages/connect/dynamic-ui/components.tsx"
     ],
     "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion", "react-hooks-js/incompatible-library", "react-doctor/prefer-useReducer", "react-doctor/prefer-dynamic-import"]
   }
