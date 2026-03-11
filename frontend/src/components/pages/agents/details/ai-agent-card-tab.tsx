@@ -100,6 +100,41 @@ type AgentCard = {
   }>;
 };
 
+type SkillFieldProps = {
+  skill: AgentCard['skills'][number];
+  index: number;
+  field: 'id' | 'name' | 'description';
+  onUpdate: (index: number, field: 'id' | 'name' | 'description', value: string) => void;
+};
+
+const SKILL_PLACEHOLDERS = {
+  id: 'e.g., redpanda-cluster-info',
+  name: 'e.g., Redpanda Cluster Information',
+  description: 'Describe what this skill does...',
+} as const;
+
+function SkillField({ skill, index, field, onUpdate }: SkillFieldProps) {
+  if (field === 'description') {
+    return (
+      <Textarea
+        id={`skill-${field}-${index}`}
+        onChange={(e) => onUpdate(index, field, e.target.value)}
+        placeholder={SKILL_PLACEHOLDERS[field]}
+        rows={3}
+        value={skill[field]}
+      />
+    );
+  }
+  return (
+    <Input
+      id={`skill-${field}-${index}`}
+      onChange={(e) => onUpdate(index, field, e.target.value)}
+      placeholder={SKILL_PLACEHOLDERS[field]}
+      value={skill[field]}
+    />
+  );
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Agent card tab contains CRUD operations for agent card configuration with layout complexity
 export const AIAgentCardTab = () => {
   const { id } = routeApi.useParams();
@@ -269,38 +304,6 @@ export const AIAgentCardTab = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setEditedCard(null);
-  };
-
-  const renderSkillField = (
-    skill: AgentCard['skills'][number],
-    index: number,
-    field: 'id' | 'name' | 'description'
-  ) => {
-    const placeholders = {
-      id: 'e.g., redpanda-cluster-info',
-      name: 'e.g., Redpanda Cluster Information',
-      description: 'Describe what this skill does...',
-    };
-
-    if (field === 'description') {
-      return (
-        <Textarea
-          id={`skill-${field}-${index}`}
-          onChange={(e) => updateSkill(index, field, e.target.value)}
-          placeholder={placeholders[field]}
-          rows={3}
-          value={skill[field]}
-        />
-      );
-    }
-    return (
-      <Input
-        id={`skill-${field}-${index}`}
-        onChange={(e) => updateSkill(index, field, e.target.value)}
-        placeholder={placeholders[field]}
-        value={skill[field]}
-      />
-    );
   };
 
   return (
@@ -474,20 +477,20 @@ export const AIAgentCardTab = () => {
                                   <Label htmlFor={`skill-id-${index}`}>
                                     Skill ID <span className="text-red-500">*</span>
                                   </Label>
-                                  {renderSkillField(skill, index, 'id')}
+                                  <SkillField field="id" index={index} onUpdate={updateSkill} skill={skill} />
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor={`skill-name-${index}`}>
                                     Skill Name <span className="text-red-500">*</span>
                                   </Label>
-                                  {renderSkillField(skill, index, 'name')}
+                                  <SkillField field="name" index={index} onUpdate={updateSkill} skill={skill} />
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor={`skill-description-${index}`}>
                                   Description <span className="text-red-500">*</span>
                                 </Label>
-                                {renderSkillField(skill, index, 'description')}
+                                <SkillField field="description" index={index} onUpdate={updateSkill} skill={skill} />
                               </div>
                               <div className="space-y-2">
                                 <Label>Tags</Label>

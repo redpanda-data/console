@@ -25,7 +25,7 @@ import { SidebarLayout } from '../components/layout/sidebar';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
-import { renderErrorModals } from '../components/misc/error-modal';
+import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
@@ -101,7 +101,7 @@ function AppContent() {
 
         {/* Currently disabled, read todo comment on UpdatePopup */}
         {/* <UpdatePopup /> */}
-        {renderErrorModals()}
+        <ErrorModalsRenderer />
 
         {/* Toaster for notifications */}
         <Toaster />

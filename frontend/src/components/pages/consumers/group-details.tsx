@@ -117,11 +117,25 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
 }
 
 const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps) => {
-  const [edittingOffsets, setEdittingOffsets] = useState<GroupOffset[] | null>(null);
-  const [editedTopic, setEditedTopic] = useState<string | null>(null);
-  const [editedPartition, setEditedPartition] = useState<number | null>(null);
-  const [deletingMode, setDeletingMode] = useState<GroupDeletingMode>('group');
-  const [deletingOffsets, setDeletingOffsets] = useState<GroupOffset[] | null>(null);
+  const [editState, setEditState] = useState<{
+    offsets: GroupOffset[] | null;
+    topic: string | null;
+    partition: number | null;
+  }>({ offsets: null, topic: null, partition: null });
+  const edittingOffsets = editState.offsets;
+  const editedTopic = editState.topic;
+  const editedPartition = editState.partition;
+  const setEdittingOffsets = (v: GroupOffset[] | null) => setEditState((prev) => ({ ...prev, offsets: v }));
+  const setEditedTopic = (v: string | null) => setEditState((prev) => ({ ...prev, topic: v }));
+  const setEditedPartition = (v: number | null) => setEditState((prev) => ({ ...prev, partition: v }));
+  const [deletingState, setDeletingState] = useState<{ mode: GroupDeletingMode; offsets: GroupOffset[] | null }>({
+    mode: 'group',
+    offsets: null,
+  });
+  const deletingMode = deletingState.mode;
+  const deletingOffsets = deletingState.offsets;
+  const setDeletingMode = (v: GroupDeletingMode) => setDeletingState((prev) => ({ ...prev, mode: v }));
+  const setDeletingOffsets = (v: GroupOffset[] | null) => setDeletingState((prev) => ({ ...prev, offsets: v }));
   const [quickSearch, setQuickSearch] = useState(search?.q ?? '');
   const [showWithLagOnly, setShowWithLagOnly] = useState(search?.withLag ?? false);
 
