@@ -96,11 +96,14 @@ export const RemoteMCPConfigurationTab = () => {
   });
   const { data: secretsData } = useListSecretsQuery();
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [uiState, setUiState] = useState({ isEditing: false, isExpandedDialogOpen: false });
+  const isEditing = uiState.isEditing;
+  const isExpandedDialogOpen = uiState.isExpandedDialogOpen;
+  const setIsEditing = (v: boolean) => setUiState((prev) => ({ ...prev, isEditing: v }));
+  const setIsExpandedDialogOpen = (v: boolean) => setUiState((prev) => ({ ...prev, isExpandedDialogOpen: v }));
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const [lintHints, setLintHints] = useState<Record<string, Record<string, LintHint>>>({});
-  const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
 
   const getResourceTierFromServer = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {

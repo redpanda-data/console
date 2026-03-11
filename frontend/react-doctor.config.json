@@ -36,7 +36,6 @@
       "react-doctor/use-lazy-motion",
       "react-doctor/no-giant-component",
       "react-doctor/require-reduced-motion",
-      "react-doctor/prefer-useReducer",
       "react-doctor/no-render-in-render"
     ]
   }

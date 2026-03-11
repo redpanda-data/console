@@ -65,13 +65,23 @@ const { ToastContainer, toast } = createStandaloneToast({
 });
 
 const UserCreatePage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(() => generatePassword(30, false));
-  const [mechanism, setMechanism] = useState<SaslMechanism>('SCRAM-SHA-256');
-  const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
+  const [formState, setFormState] = useState({
+    username: '',
+    password: generatePassword(30, false),
+    mechanism: 'SCRAM-SHA-256' as SaslMechanism,
+    generateWithSpecialChars: false,
+    selectedRoles: [] as string[],
+  });
   const [step, setStep] = useState<'CREATE_USER' | 'CREATE_USER_CONFIRMATION'>('CREATE_USER');
   const [isCreating, setIsCreating] = useState(false);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
+  const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
+  const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
+  const setPassword = (v: string) => setFormState((prev) => ({ ...prev, password: v }));
+  const setMechanism = (v: SaslMechanism) => setFormState((prev) => ({ ...prev, mechanism: v }));
+  const setGenerateWithSpecialChars = (v: boolean) =>
+    setFormState((prev) => ({ ...prev, generateWithSpecialChars: v }));
+  const setSelectedRoles = (v: string[]) => setFormState((prev) => ({ ...prev, selectedRoles: v }));
 
   const { data: usersData } = useLegacyListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];

@@ -329,8 +329,14 @@ export const AIAgentConfigurationTab = () => {
   const { data: secretsData } = useListSecretsQuery();
   const { data: gatewaysData } = useListGatewaysQuery();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
+  const [editState, setEditState] = useState<{ isEditing: boolean; editedAgentData: LocalAIAgent | null }>({
+    isEditing: false,
+    editedAgentData: null,
+  });
+  const isEditing = editState.isEditing;
+  const editedAgentData = editState.editedAgentData;
+  const setIsEditing = (v: boolean) => setEditState((prev) => ({ ...prev, isEditing: v }));
+  const setEditedAgentData = (v: LocalAIAgent | null) => setEditState((prev) => ({ ...prev, editedAgentData: v }));
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
   const [systemPromptMode, setSystemPromptMode] = useState<MarkdownEditorMode>('editor');
   const [subagentPromptModes, setSubagentPromptModes] = useState<Record<number, MarkdownEditorMode>>({});
