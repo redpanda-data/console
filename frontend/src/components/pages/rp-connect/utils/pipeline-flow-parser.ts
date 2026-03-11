@@ -17,7 +17,8 @@
 import type { Edge, Node } from '@xyflow/react';
 import { parse as parseYaml } from 'yaml';
 
-import { firstKey, PROCESSORS_WITH_NESTED_STEPS, parseMultiInputs, parseMultiOutputs } from './yaml-parsing';
+import { firstKey, parseMultiInputs, parseMultiOutputs } from './yaml';
+import { PROCESSORS_WITH_NESTED_STEPS } from '../types/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -408,49 +409,4 @@ export function computeTreeLayout(tree: PipelineFlowTree): { nodes: Node[]; edge
   allEdges.push(...connectSections(tree.sections));
 
   return { nodes: allNodes, edges: allEdges };
-}
-
-// ---------------------------------------------------------------------------
-// Topic extraction (for connectors display)
-// ---------------------------------------------------------------------------
-
-/** Extract all referenced topic names from input/output configs. */
-export function extractAllTopics(yamlContent: string): string[] {
-  if (!yamlContent.trim()) return [];
-
-  let config: Record<string, unknown>;
-  try {
-    config = parseYaml(yamlContent) as Record<string, unknown>;
-  } catch {
-    return [];
-  }
-
-  if (!config) return [];
-
-  const topics = new Set<string>();
-
-  function walkForTopics(obj: unknown): void {
-    if (!obj || typeof obj !== 'object') return;
-
-    if (Array.isArray(obj)) {
-      for (const item of obj) walkForTopics(item);
-      return;
-    }
-
-    const record = obj as Record<string, unknown>;
-    for (const [key, value] of Object.entries(record)) {
-      if ((key === 'topic' || key === 'topics') && typeof value === 'string' && value) {
-        topics.add(value);
-      } else if (key === 'topics' && Array.isArray(value)) {
-        for (const t of value) {
-          if (typeof t === 'string' && t) topics.add(t);
-        }
-      } else {
-        walkForTopics(value);
-      }
-    }
-  }
-
-  walkForTopics(config);
-  return [...topics];
 }

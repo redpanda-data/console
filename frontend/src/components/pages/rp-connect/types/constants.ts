@@ -89,3 +89,19 @@ export const stepMotionProps: MotionProps = {
 };
 
 export type PipelineMode = 'create' | 'edit' | 'view';
+
+/**
+ * Processors whose configs contain nested child `processors` arrays.
+ * We intentionally do not recurse into these when extracting processor names
+ * for the pipeline list display.
+ */
+export const PROCESSORS_WITH_NESTED_STEPS = [
+  'branch',
+  'catch',
+  'for_each',
+  'parallel',
+  'switch',
+  'try',
+  'while',
+  'workflow',
+] as const;

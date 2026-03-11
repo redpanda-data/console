@@ -4,8 +4,65 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
-import { firstKey as componentName, parseMultiInputs, parseMultiOutputs } from './yaml-parsing';
 import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
+
+// ============================================================================
+// Shared pure YAML helpers (moved from yaml-parsing.ts)
+// ============================================================================
+
+/** Keys that appear as siblings to the actual component name (e.g. `label`). */
+const RESERVED_COMPONENT_KEYS = new Set(['label']);
+
+/** Extract the component name from an object, skipping reserved metadata keys like `label`. */
+export const firstKey = (obj: unknown): string | undefined => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return;
+  }
+  return Object.keys(obj).find((k) => !RESERVED_COMPONENT_KEYS.has(k));
+};
+
+/** Alias used within this file. */
+const componentName = firstKey;
+
+/** Extract child input names from a multi-input component (broker, sequence). */
+export const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
+  if (
+    (inputKey === 'broker' || inputKey === 'sequence') &&
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    'inputs' in value
+  ) {
+    const items = (value as { inputs?: unknown[] }).inputs;
+    if (Array.isArray(items)) {
+      return items.map(firstKey).filter((k): k is string => !!k);
+    }
+  }
+  return;
+};
+
+/** Extract child output names from a multi-output component (broker, switch, fallback). */
+export const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefined => {
+  if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
+    const items = (value as { outputs?: unknown[] }).outputs;
+    if (Array.isArray(items)) {
+      return items.map(firstKey).filter((k): k is string => !!k);
+    }
+  }
+
+  if (outputKey === 'switch' && value && typeof value === 'object' && !Array.isArray(value) && 'cases' in value) {
+    const cases = (value as { cases?: { output?: unknown }[] }).cases;
+    if (Array.isArray(cases)) {
+      return cases.map((c) => firstKey(c.output)).filter((k): k is string => !!k);
+    }
+  }
+
+  if (outputKey === 'fallback' && Array.isArray(value)) {
+    return value.map(firstKey).filter((k): k is string => !!k);
+  }
+
+  return;
+};
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const processorsNode = doc.getIn(['pipeline', 'processors']) as { toJSON?: () => unknown } | undefined;
@@ -324,7 +381,7 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
     return;
   }
 
-  const componentName = componentSpec.name;
+  const specName = componentSpec.name;
   let configPath: string[] = [];
 
   switch (componentSpec.type) {
@@ -333,19 +390,19 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
     case 'buffer':
     case 'metrics':
     case 'tracer':
-      configPath = [componentSpec.type, componentName];
+      configPath = [componentSpec.type, specName];
       break;
     case 'processor':
-      configPath = ['pipeline', 'processors', '0', componentName];
+      configPath = ['pipeline', 'processors', '0', specName];
       break;
     case 'cache':
     case 'rate_limit': {
       const resourceKey = componentSpec.type === 'cache' ? 'cache_resources' : 'rate_limit_resources';
-      configPath = [resourceKey, '0', componentName];
+      configPath = [resourceKey, '0', specName];
       break;
     }
     case 'scanner':
-      configPath = [componentName];
+      configPath = [specName];
       break;
     default:
       return;
@@ -482,9 +539,6 @@ export const getConnectTemplate = ({
 // ============================================================================
 // Config Component Parsing (used by pipeline list)
 // ============================================================================
-//
-// componentName (aliased from firstKey), parseMultiInputs, parseMultiOutputs,
-// and PROCESSORS_WITH_NESTED_STEPS are imported from yaml-parsing.ts
 
 type ParsedYamlConfig = {
   input?: Record<string, unknown>;
@@ -538,3 +592,59 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
     return empty;
   }
 };
+
+// ============================================================================
+// Topic extraction (for connectors display)
+// ============================================================================
+
+/** Extract all referenced topic names from input/output configs. */
+export function extractAllTopics(yamlContent: string): string[] {
+  if (!yamlContent.trim()) {
+    return [];
+  }
+
+  let config: Record<string, unknown>;
+  try {
+    config = parseYaml(yamlContent) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+
+  if (!config) {
+    return [];
+  }
+
+  const topics = new Set<string>();
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive tree walker
+  function walkForTopics(obj: unknown): void {
+    if (!obj || typeof obj !== 'object') {
+      return;
+    }
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        walkForTopics(item);
+      }
+      return;
+    }
+
+    const record = obj as Record<string, unknown>;
+    for (const [key, value] of Object.entries(record)) {
+      if ((key === 'topic' || key === 'topics') && typeof value === 'string' && value) {
+        topics.add(value);
+      } else if (key === 'topics' && Array.isArray(value)) {
+        for (const t of value) {
+          if (typeof t === 'string' && t) {
+            topics.add(t);
+          }
+        }
+      } else {
+        walkForTopics(value);
+      }
+    }
+  }
+
+  walkForTopics(config);
+  return [...topics];
+}
