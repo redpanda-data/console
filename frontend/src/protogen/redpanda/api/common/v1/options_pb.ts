@@ -2,20 +2,159 @@
 // @generated from file redpanda/api/common/v1/options.proto (package redpanda.api.common.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenExtension, GenFile } from "@bufbuild/protobuf/codegenv1";
-import { extDesc, fileDesc } from "@bufbuild/protobuf/codegenv1";
+import type { GenExtension, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
+import { extDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
 import type { MethodOptions } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
+import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file redpanda/api/common/v1/options.proto.
  */
 export const file_redpanda_api_common_v1_options: GenFile = /*@__PURE__*/
-  fileDesc("CiRyZWRwYW5kYS9hcGkvY29tbW9uL3YxL29wdGlvbnMucHJvdG8SFnJlZHBhbmRhLmFwaS5jb21tb24udjE6UAoTcmVxdWlyZWRfcGVybWlzc2lvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGPd3IAMoCVIScmVxdWlyZWRQZXJtaXNzaW9uQllaV2J1Zi5idWlsZC9nZW4vZ28vcmVkcGFuZGFkYXRhL2NvbW1vbi9wcm90b2NvbGJ1ZmZlcnMvZ28vcmVkcGFuZGEvYXBpL2NvbW1vbi92MTtjb21tb252MWIGcHJvdG8z", [file_google_protobuf_descriptor]);
+  fileDesc("CiRyZWRwYW5kYS9hcGkvY29tbW9uL3YxL29wdGlvbnMucHJvdG8SFnJlZHBhbmRhLmFwaS5jb21tb24udjEiZQoTTWV0aG9kQXV0aG9yaXphdGlvbhIVCg1yZXNvdXJjZV90eXBlGAEgASgJEhUKDWlkX2dldHRlcl9jZWwYAiABKAkSEgoKcGVybWlzc2lvbhgDIAEoCRIMCgRza2lwGAQgASgIInMKF0NvbGxlY3Rpb25BdXRob3JpemF0aW9uEh0KFWNvbGxlY3Rpb25fZ2V0dGVyX2NlbBgBIAEoCRI5CgRlYWNoGAIgASgLMisucmVkcGFuZGEuYXBpLmNvbW1vbi52MS5NZXRob2RBdXRob3JpemF0aW9uOlAKE3JlcXVpcmVkX3Blcm1pc3Npb24SHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxj3dyADKAlSEnJlcXVpcmVkUGVybWlzc2lvbjp/ChRtZXRob2RfYXV0aG9yaXphdGlvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGPt3IAEoCzIrLnJlZHBhbmRhLmFwaS5jb21tb24udjEuTWV0aG9kQXV0aG9yaXphdGlvblITbWV0aG9kQXV0aG9yaXphdGlvbjqLAQoYY29sbGVjdGlvbl9hdXRob3JpemF0aW9uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMY/HcgASgLMi8ucmVkcGFuZGEuYXBpLmNvbW1vbi52MS5Db2xsZWN0aW9uQXV0aG9yaXphdGlvblIXY29sbGVjdGlvbkF1dGhvcml6YXRpb25CWVpXYnVmLmJ1aWxkL2dlbi9nby9yZWRwYW5kYWRhdGEvY29tbW9uL3Byb3RvY29sYnVmZmVycy9nby9yZWRwYW5kYS9hcGkvY29tbW9uL3YxO2NvbW1vbnYxYgZwcm90bzM", [file_google_protobuf_descriptor]);
 
 /**
+ * MethodAuthorization defines the authorization requirements for a single-resource RPC.
+ *
+ * @generated from message redpanda.api.common.v1.MethodAuthorization
+ */
+export type MethodAuthorization = Message<"redpanda.api.common.v1.MethodAuthorization"> & {
+  /**
+   * resource_type is the type segment appended to the base resource path,
+   * e.g. "pipelines", "aiagents", "mcpservers", "knowledgebases".
+   *
+   * @generated from field: string resource_type = 1;
+   */
+  resourceType: string;
+
+  /**
+   * id_getter_cel is a CEL expression to extract the resource ID from the request.
+   * Available variables:
+   *   - request: the request proto message
+   *
+   * e.g. "request.id", "request.pipeline.name", "request.name"
+   * Empty string means the permission applies at the base resource level
+   * (no sub-resource scoping).
+   *
+   * @generated from field: string id_getter_cel = 2;
+   */
+  idGetterCel: string;
+
+  /**
+   * permission is the permission name to check.
+   *
+   * e.g. "dataplane_pipeline_create", "dataplane_aiagent_get"
+   *
+   * @generated from field: string permission = 3;
+   */
+  permission: string;
+
+  /**
+   * skip exempts this method from authorization. The interceptor passes
+   * through without any permission check. Use for RPCs that must remain
+   * open (e.g. health checks on the same gRPC server).
+   *
+   * e.g.:
+   *   option (redpanda.api.common.v1.method_authorization) = { skip: true };
+   *
+   * @generated from field: bool skip = 4;
+   */
+  skip: boolean;
+};
+
+/**
+ * Describes the message redpanda.api.common.v1.MethodAuthorization.
+ * Use `create(MethodAuthorizationSchema)` to create a new message.
+ */
+export const MethodAuthorizationSchema: GenMessage<MethodAuthorization> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_common_v1_options, 0);
+
+/**
+ * CollectionAuthorization defines authorization for list RPCs returning collections.
+ *
+ * @generated from message redpanda.api.common.v1.CollectionAuthorization
+ */
+export type CollectionAuthorization = Message<"redpanda.api.common.v1.CollectionAuthorization"> & {
+  /**
+   * collection_getter_cel is a CEL expression to extract the collection
+   * from the response message.
+   *
+   * e.g. "response.pipelines", "response.agents"
+   *
+   * @generated from field: string collection_getter_cel = 1;
+   */
+  collectionGetterCel: string;
+
+  /**
+   * each defines the permission check applied to each element in the collection.
+   *
+   * @generated from field: redpanda.api.common.v1.MethodAuthorization each = 2;
+   */
+  each?: MethodAuthorization;
+};
+
+/**
+ * Describes the message redpanda.api.common.v1.CollectionAuthorization.
+ * Use `create(CollectionAuthorizationSchema)` to create a new message.
+ */
+export const CollectionAuthorizationSchema: GenMessage<CollectionAuthorization> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_common_v1_options, 1);
+
+/**
+ * required_permission is a simple permission string required to call this method.
+ * Use this for methods that don't need per-resource scoping.
+ *
+ * e.g.:
+ *   option (redpanda.api.common.v1.required_permission) = "dataplane_pipeline_create";
+ *
  * @generated from extension: repeated string required_permission = 15351;
  */
 export const required_permission: GenExtension<MethodOptions, string[]> = /*@__PURE__*/
   extDesc(file_redpanda_api_common_v1_options, 0);
+
+/**
+ * method_authorization defines the permission and resource extraction
+ * for single-resource RPCs (create, get, update, delete, start, stop).
+ * Can also be used to skip authorization entirely via the skip field.
+ *
+ * When used together with collection_authorization on the same RPC,
+ * the interceptor performs BOTH a pre-call permission check (using this
+ * annotation) AND post-call per-item filtering (using collection_authorization).
+ *
+ * e.g.:
+ *   option (redpanda.api.common.v1.method_authorization) = {
+ *     resource_type: "pipelines",
+ *     id_getter_cel: "request.pipeline.id",
+ *     permission: "dataplane_pipeline_create"
+ *   };
+ *
+ * @generated from extension: redpanda.api.common.v1.MethodAuthorization method_authorization = 15355;
+ */
+export const method_authorization: GenExtension<MethodOptions, MethodAuthorization> = /*@__PURE__*/
+  extDesc(file_redpanda_api_common_v1_options, 1);
+
+/**
+ * collection_authorization defines per-item filtering for list RPCs that
+ * return collections of resources. After the handler runs, items the
+ * principal lacks permission for are removed from the response.
+ *
+ * When used alone, the pre-call permission check is skipped — the principal
+ * may only have permission on specific resources, not at the parent level.
+ * When used together with method_authorization, the pre-call check also runs.
+ *
+ * e.g.:
+ *   option (redpanda.api.common.v1.collection_authorization) = {
+ *     collection_getter_cel: "response.pipelines",
+ *     each: {
+ *       resource_type: "pipelines",
+ *       id_getter_cel: "each.id",
+ *       permission: "dataplane_pipeline_list"
+ *     }
+ *   };
+ *
+ * @generated from extension: redpanda.api.common.v1.CollectionAuthorization collection_authorization = 15356;
+ */
+export const collection_authorization: GenExtension<MethodOptions, CollectionAuthorization> = /*@__PURE__*/
+  extDesc(file_redpanda_api_common_v1_options, 2);
 
