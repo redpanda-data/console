@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
 import { schemaToConfig } from './schema';
-import { configToYaml, getConnectTemplate, mergeConnectConfigs, parseConfigComponents } from './yaml';
+import { configToYaml, extractAllTopics, getConnectTemplate, mergeConnectConfigs, parseConfigComponents } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
 describe('yaml utils for creating connect configs', () => {
@@ -1039,6 +1039,66 @@ output:
       expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
       expect(result.processors).toEqual(['mapping', 'log']);
       expect(result.outputs).toEqual(['kafka', 'http_client']);
+    });
+  });
+
+  describe('extractAllTopics', () => {
+    test('returns empty for empty string', () => {
+      expect(extractAllTopics('')).toEqual([]);
+    });
+
+    test('returns empty for invalid YAML', () => {
+      expect(extractAllTopics('{{not valid')).toEqual([]);
+    });
+
+    test('extracts topic from kafka input', () => {
+      const yaml = `
+input:
+  kafka:
+    addresses: [localhost:9092]
+    topics:
+      - events
+      - orders
+`;
+      expect(extractAllTopics(yaml)).toEqual(['events', 'orders']);
+    });
+
+    test('extracts topic from kafka output', () => {
+      const yaml = `
+output:
+  kafka:
+    addresses: [localhost:9092]
+    topic: processed_events
+`;
+      expect(extractAllTopics(yaml)).toEqual(['processed_events']);
+    });
+
+    test('extracts topics from multiple components', () => {
+      const yaml = `
+input:
+  kafka:
+    topics:
+      - input_topic
+output:
+  kafka:
+    topic: output_topic
+`;
+      const topics = extractAllTopics(yaml);
+      expect(topics).toContain('input_topic');
+      expect(topics).toContain('output_topic');
+    });
+
+    test('deduplicates topics', () => {
+      const yaml = `
+input:
+  kafka:
+    topics:
+      - shared_topic
+output:
+  kafka:
+    topic: shared_topic
+`;
+      expect(extractAllTopics(yaml)).toEqual(['shared_topic']);
     });
   });
 });
