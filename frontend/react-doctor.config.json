@@ -25,6 +25,6 @@
       "src/components/misc/kowl-editor.tsx",
       "src/components/misc/pipelines-yaml-editor.tsx"
     ],
-    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion", "react-hooks-js/incompatible-library", "react-doctor/prefer-useReducer"]
+    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion", "react-hooks-js/incompatible-library", "react-doctor/prefer-useReducer", "react-doctor/prefer-dynamic-import"]
   }
 }
