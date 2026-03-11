@@ -279,7 +279,7 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setLogState({ messages: [], isComplete: false });
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
     executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
       setLogState({ messages: [...search.messages], isComplete: true });
     });

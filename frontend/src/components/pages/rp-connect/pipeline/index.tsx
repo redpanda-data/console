@@ -275,7 +275,7 @@ export default function PipelinePage() {
         description: pipeline.description || '',
         computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
       });
-      setYamlContent(pipeline.configYaml);
+      queueMicrotask(() => setYamlContent(pipeline.configYaml));
     }
   }, [pipeline, mode, form]);
 
@@ -284,7 +284,7 @@ export default function PipelinePage() {
   useEffect(() => {
     if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
       hasLoadedPersistedYaml.current = true;
-      setYamlContent(persistedYamlContent);
+      queueMicrotask(() => setYamlContent(persistedYamlContent));
     }
   }, [mode, persistedYamlContent]);
 

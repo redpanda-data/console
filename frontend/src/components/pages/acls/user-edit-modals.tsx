@@ -188,7 +188,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
 
   useEffect(() => {
     if (!isLoading && selectedRoles === undefined) {
-      setSelectedRoles([...originalRoles]);
+      queueMicrotask(() => setSelectedRoles([...originalRoles]));
     }
   }, [originalRoles, isLoading, selectedRoles]);
 

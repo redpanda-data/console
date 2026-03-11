@@ -337,19 +337,15 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   }, [versionNumber, requestedVersionExists, fallbackVersion, toast, navigate]);
 
   // When URL is "latest", sync selectedVersion with the actual latest version from data
-  useEffect(() => {
-    if (queryVersion === 'latest' && fallbackVersion && selectedVersion !== fallbackVersion) {
-      setSelectedVersion(fallbackVersion);
-    }
-  }, [queryVersion, fallbackVersion, selectedVersion]);
+  if (queryVersion === 'latest' && fallbackVersion && selectedVersion !== fallbackVersion) {
+    setSelectedVersion(fallbackVersion);
+  }
 
   const schema = subjectData.schemas.first((x) => x.version === selectedVersion);
 
-  useEffect(() => {
-    if (!schema && selectedVersion !== defaultVersion) {
-      setSelectedVersion(defaultVersion);
-    }
-  }, [schema, selectedVersion, defaultVersion]);
+  if (!schema && selectedVersion !== defaultVersion) {
+    setSelectedVersion(defaultVersion);
+  }
 
   if (!schema) {
     return null;
@@ -589,17 +585,13 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
   const schemaLeft = subject.schemas.first((x) => x.version === selectedVersionLeft);
   const schemaRight = subject.schemas.first((x) => x.version === selectedVersionRight);
 
-  useEffect(() => {
-    if (!schemaLeft) {
-      setSelectedVersionLeft(subject.versions[0]?.version ?? 1);
-    }
-  }, [schemaLeft, subject.versions]);
+  if (!schemaLeft) {
+    setSelectedVersionLeft(subject.versions[0]?.version ?? 1);
+  }
 
-  useEffect(() => {
-    if (!schemaRight) {
-      setSelectedVersionRight(subject.versions[0]?.version ?? 1);
-    }
-  }, [schemaRight, subject.versions]);
+  if (!schemaRight) {
+    setSelectedVersionRight(subject.versions[0]?.version ?? 1);
+  }
 
   if (!(schemaLeft && schemaRight)) {
     return null;

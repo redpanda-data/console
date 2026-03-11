@@ -524,7 +524,7 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   // Reset to initial state when collapse all is triggered
   useEffect(() => {
     if (collapseAllTrigger > 0 && spanTree.length > 0) {
-      setExpandedSpans(computeInitialExpandedSpans(spanTree));
+      queueMicrotask(() => setExpandedSpans(computeInitialExpandedSpans(spanTree)));
     }
   }, [collapseAllTrigger, spanTree]);
 
@@ -535,7 +535,7 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
       hasInitializedRef.current = true;
       const initialSpans = computeInitialExpandedSpans(spanTree);
       if (initialSpans.size > 0) {
-        setExpandedSpans(initialSpans);
+        queueMicrotask(() => setExpandedSpans(initialSpans));
       }
     }
   }, [spanTree]);

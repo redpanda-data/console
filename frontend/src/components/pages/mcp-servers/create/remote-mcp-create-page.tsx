@@ -120,7 +120,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
   // Clear cached service account when service account name changes
   useEffect(() => {
     if (serviceAccountInfo && serviceAccountName) {
-      setServiceAccountInfo(null);
+      queueMicrotask(() => setServiceAccountInfo(null));
     }
   }, [serviceAccountName, serviceAccountInfo]);
 

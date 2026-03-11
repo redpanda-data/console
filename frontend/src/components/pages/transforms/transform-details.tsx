@@ -205,7 +205,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setLogState({ messages: [], isComplete: false });
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
     executeMessageSearch(search, topicName, p.transform.name).finally(() => {
       setLogState({ messages: [...search.messages], isComplete: true });
     });

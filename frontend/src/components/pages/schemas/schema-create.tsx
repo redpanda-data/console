@@ -235,16 +235,18 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
         ]
       : [{ id: crypto.randomUUID(), key: '', value: '' }];
 
-    setStateData({
-      strategy: 'CUSTOM',
-      userInput: subject.name,
-      keyOrValue: undefined,
-      format: schema.type as 'AVRO' | 'PROTOBUF',
-      schemaText,
-      references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID() })),
-      normalize: false,
-      metadataProperties,
-    });
+    queueMicrotask(() =>
+      setStateData({
+        strategy: 'CUSTOM',
+        userInput: subject.name,
+        keyOrValue: undefined,
+        format: schema.type as 'AVRO' | 'PROTOBUF',
+        schemaText,
+        references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID() })),
+        normalize: false,
+        metadataProperties,
+      })
+    );
   }, [subject, stateData]);
 
   if (!subject || stateData === null) return DefaultSkeleton;

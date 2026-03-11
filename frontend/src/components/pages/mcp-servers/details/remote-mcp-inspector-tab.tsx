@@ -188,8 +188,10 @@ export const RemoteMCPInspectorTab = () => {
     if (!selectedTool && mcpServerTools?.tools && mcpServerTools.tools.length === 1) {
       const singleTool = mcpServerTools.tools[0];
       const initialData = initializeFormData(singleTool.inputSchema as JSONSchemaType);
-      setToolFormState({ selectedTool: singleTool.name, toolParameters: initialData, validationErrors: {} });
-      resetMCPServerToolCall();
+      queueMicrotask(() => {
+        setToolFormState({ selectedTool: singleTool.name, toolParameters: initialData, validationErrors: {} });
+        resetMCPServerToolCall();
+      });
     }
   }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
 
@@ -314,14 +316,16 @@ export const RemoteMCPInspectorTab = () => {
           updatedParams.topic_name = availableTopic;
         }
 
-        setToolParameters(updatedParams);
+        queueMicrotask(() => {
+          setToolParameters(updatedParams);
 
-        // Also trigger validation
-        const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
-        if (selectedToolData) {
-          const validation = validateRequiredFields(selectedToolData.inputSchema as JSONSchemaType, updatedParams);
-          setValidationErrors(validation.errors);
-        }
+          // Also trigger validation
+          const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
+          if (selectedToolData) {
+            const validation = validateRequiredFields(selectedToolData.inputSchema as JSONSchemaType, updatedParams);
+            setValidationErrors(validation.errors);
+          }
+        });
       }
     }
   }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);

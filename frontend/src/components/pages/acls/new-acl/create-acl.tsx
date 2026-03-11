@@ -771,7 +771,7 @@ export default function CreateACL({
 
   useEffect(() => {
     if (parsePrincipal(sharedConfig.principal).type) {
-      setPrincipalError('');
+      queueMicrotask(() => setPrincipalError(''));
     }
   }, [sharedConfig.principal]);
 

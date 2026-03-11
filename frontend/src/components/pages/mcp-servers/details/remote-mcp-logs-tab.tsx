@@ -118,7 +118,7 @@ export const RemoteMCPLogsTab = () => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setLogState({ messages: [], isComplete: false, error: null });
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false, error: null }));
     let searchError: string | null = null;
     executeMessageSearch(search, REMOTE_MCP_LOGS_TOPIC, id)
       .catch((x) => {
