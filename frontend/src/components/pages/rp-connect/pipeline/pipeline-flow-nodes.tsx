@@ -11,25 +11,12 @@
 
 import type { EdgeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
-import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from 'components/ui/base-node';
 import { ArrowRightIcon } from 'lucide-react';
 
 import type { TreeGroupNodeData, TreeLeafNodeData, TreeSectionNodeData } from '../utils/pipeline-flow-parser';
-
-const SECTION_COLORS: Record<string, string> = {
-  input: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800',
-  processor: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800',
-  output: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800',
-};
-
-const SECTION_BADGE_VARIANT: Record<string, BadgeVariant> = {
-  input: 'secondary',
-  processor: 'secondary',
-  output: 'secondary',
-};
 
 // ---------------------------------------------------------------------------
 // TreeSectionNode
@@ -38,14 +25,11 @@ const SECTION_BADGE_VARIANT: Record<string, BadgeVariant> = {
 export function TreeSectionNode({ data }: { data: TreeSectionNodeData }) {
   return (
     <div
-      className={cn(
-        'rounded-xl border-2 border-dashed p-0',
-        SECTION_COLORS[data.section] ?? 'border-border bg-muted/30'
-      )}
+      className="rounded-xl border-2 border-border border-dashed bg-muted/30 p-0"
       style={{ width: '100%', height: '100%' }}
     >
       <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-        <Badge variant={SECTION_BADGE_VARIANT[data.section] ?? 'outline'}>{data.label}</Badge>
+        <Badge variant="secondary">{data.label}</Badge>
       </div>
       <Handle className="!bg-transparent !border-0 !w-0 !h-0" id="right" position={Position.Right} type="source" />
       <Handle className="!bg-transparent !border-0 !w-0 !h-0" id="left" position={Position.Left} type="target" />
