@@ -16,7 +16,6 @@ import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Fragment, useMemo } from 'react';
-import { useStore } from 'zustand';
 
 import { isEmbedded } from '../../config';
 import { api, useApiStore } from '../../state/backend-api';
@@ -71,7 +70,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
 }
 
 function AppPageHeader() {
-  useStore(useApiStore, (s) => s.userData); // re-render when userData changes
+  useApiStore((s) => s.userData); // re-render when userData changes
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();

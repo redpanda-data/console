@@ -18,7 +18,6 @@
       "react-hooks-js/set-state-in-effect",
       "react-hooks-js/incompatible-library",
       "react-hooks-js/immutability",
-      "react-hooks-js/hooks",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",
       "react-doctor/no-render-in-render",
