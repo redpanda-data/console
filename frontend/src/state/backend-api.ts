@@ -3338,7 +3338,7 @@ function addError(err: Error) {
 }
 
 /** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
-function useApiStoreHook<T>(selector: (state: apiStoreType) => T): T {
+function useApiStoreHook<T>(selector: (state: ReturnType<typeof _apiCreator>) => T): T {
   return useStore(useApiStore, selector);
 }
 
