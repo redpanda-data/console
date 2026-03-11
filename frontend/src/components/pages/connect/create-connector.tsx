@@ -257,7 +257,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   const [genericFailure, setGenericFailure] = useState<Error | null>(null);
   const [stringifiedConfig, setStringifiedConfig] = useState<string>('');
   const [parsedUpdatedConfig, setParsedUpdatedConfig] = useState<Record<string, unknown> | null>(null);
-  const [postCondition, setPostCondition] = useState<boolean>(false);
+  const postCondition = parsedUpdatedConfig !== null;
   const [loading, setLoading] = useState<boolean>(false);
   const [connectClusterStore, setConnectClusterStore] = useState(() => ConnectClusterStore.getInstance(activeCluster));
   const { isOpen: isCreatingModalOpen, onOpen: openCreatingModal, onClose: closeCreatingModal } = useDisclosure();
@@ -282,9 +282,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
       setParsedUpdatedConfig(JSON.parse(stringifiedConfig));
     } catch (_e) {
       setParsedUpdatedConfig(null);
-      setPostCondition(false);
     }
-    setPostCondition(true);
   }, [stringifiedConfig]);
 
   const clearErrors = () => {

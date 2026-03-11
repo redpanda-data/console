@@ -24,9 +24,13 @@ export default function NurturePanel() {
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
   const MODEL_NAME = `console-nurture-panel-${platform}`;
 
-  const [content, setContent] = useState<BuilderContent | null>(null);
-  const [isLoading, setIsLoading] = useState(!embedded);
-  const [hasError, setHasError] = useState(false);
+  const [fetchState, setFetchState] = useState<{
+    content: BuilderContent | null;
+    isLoading: boolean;
+    hasError: boolean;
+  }>({ content: null, isLoading: !embedded, hasError: false });
+
+  const { content, isLoading, hasError } = fetchState;
 
   useEffect(() => {
     if (embedded) {
@@ -42,16 +46,10 @@ export default function NurturePanel() {
       },
     })
       .then((fetchedContent) => {
-        if (fetchedContent) {
-          setContent(fetchedContent);
-        }
-        setHasError(false);
+        setFetchState({ content: fetchedContent ?? null, isLoading: false, hasError: false });
       })
       .catch(() => {
-        setHasError(true);
-      })
-      .finally(() => {
-        setIsLoading(false);
+        setFetchState((prev) => ({ ...prev, isLoading: false, hasError: true }));
       });
   }, [platform, MODEL_NAME, embedded]);
 

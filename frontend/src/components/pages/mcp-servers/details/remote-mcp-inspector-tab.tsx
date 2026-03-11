@@ -148,9 +148,16 @@ const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = routeApi.useParams();
-  const [selectedTool, setSelectedTool] = useState<string>('');
-  const [toolParameters, setToolParameters] = useState<JSONValue>({});
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [toolFormState, setToolFormState] = useState<{
+    selectedTool: string;
+    toolParameters: JSONValue;
+    validationErrors: Record<string, string>;
+  }>({ selectedTool: '', toolParameters: {}, validationErrors: {} });
+  const { selectedTool, toolParameters, validationErrors } = toolFormState;
+  const setSelectedTool = (value: string) => setToolFormState((prev) => ({ ...prev, selectedTool: value }));
+  const setToolParameters = (value: JSONValue) => setToolFormState((prev) => ({ ...prev, toolParameters: value }));
+  const setValidationErrors = (value: Record<string, string>) =>
+    setToolFormState((prev) => ({ ...prev, validationErrors: value }));
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -180,11 +187,9 @@ export const RemoteMCPInspectorTab = () => {
   useEffect(() => {
     if (!selectedTool && mcpServerTools?.tools && mcpServerTools.tools.length === 1) {
       const singleTool = mcpServerTools.tools[0];
-      setSelectedTool(singleTool.name);
       const initialData = initializeFormData(singleTool.inputSchema as JSONSchemaType);
-      setToolParameters(initialData);
+      setToolFormState({ selectedTool: singleTool.name, toolParameters: initialData, validationErrors: {} });
       resetMCPServerToolCall();
-      setValidationErrors({});
     }
   }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
 

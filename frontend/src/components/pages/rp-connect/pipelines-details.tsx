@@ -265,8 +265,11 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
+    messages: [],
+    isComplete: false,
+  });
+  const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -276,11 +279,9 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setMessages([]);
-    setIsComplete(false);
+    setLogState({ messages: [], isComplete: false });
     executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
-      setIsComplete(true);
-      setMessages([...search.messages]);
+      setLogState({ messages: [...search.messages], isComplete: true });
     });
     return () => {
       search.stopSearch();
@@ -291,7 +292,7 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setMessages([...search.messages]);
+        setLogState((prev) => ({ ...prev, messages: [...search.messages] }));
       }
     }, 200);
     return () => clearInterval(interval);
