@@ -58,8 +58,8 @@ export class RoleComponent extends Component<{ role: Role; grantedBy?: RoleBindi
         <div>
           <div className="roleTitle">Role Permissions</div>
           <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>
-            {role.permissions.map((p, index) => (
-              <PermissionComponent key={`${p.resourceName}-${index}`} permission={p} />
+            {role.permissions.map((p) => (
+              <PermissionComponent key={`${p.resourceName}-${p.resourceId}`} permission={p} />
             ))}
           </div>
         </div>
@@ -89,8 +89,9 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
     const p = this.props.permission;
     const rows: [ReactNode, ReactNode][] = [
       [
-        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
-        <span className="resourceLabel">Resource</span>,
+        <span className="resourceLabel" key="resource-label">
+          Resource
+        </span>,
         <span className="codeBox resourceName" key={p.resourceName}>
           {p.resourceName}
         </span>,
@@ -98,8 +99,9 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
     ];
     if (p.allowedActions.length > 0) {
       rows.push([
-        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
-        <span className="resourceLabelSub">Actions</span>,
+        <span className="resourceLabelSub" key="actions-label">
+          Actions
+        </span>,
         stringsToBoxes(p.allowedActions, null, 'permissionsList'),
       ]);
     }
@@ -110,15 +112,17 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
       !(p.includes[0] === '^.*$')
     ) {
       rows.push([
-        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
-        <span className="resourceLabelSub">Includes</span>,
+        <span className="resourceLabelSub" key="includes-label">
+          Includes
+        </span>,
         stringsToBoxes(p.includes, joinerOr, 'permissionRegex'),
       ]);
     }
     if (p.excludes.length > 0) {
       rows.push([
-        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
-        <span className="resourceLabelSub">Excludes</span>,
+        <span className="resourceLabelSub" key="excludes-label">
+          Excludes
+        </span>,
         stringsToBoxes(p.excludes, joinerOr, 'permissionRegex'),
       ]);
     }

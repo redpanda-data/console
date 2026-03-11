@@ -21,7 +21,9 @@ const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
 // but still calls the most recent version of the callback.
 const useLatestRef = <T,>(value: T) => {
   const ref = useRef(value);
-  ref.current = value;
+  useEffect(() => {
+    ref.current = value;
+  });
   return ref;
 };
 
@@ -203,7 +205,7 @@ export function List<T extends { id: string }>(props: {
           {(droppableProvided, _droppableSnapshot) => (
             <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
               {list.map((tag, index) => (
-                <Draggable draggableId={String(index)} index={index} key={String(index)}>
+                <Draggable draggableId={String(index)} index={index} key={tag.id}>
                   {(draggableProvided, _draggableSnapshot) => (
                     <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                       <div className="draggableItem">

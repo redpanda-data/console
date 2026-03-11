@@ -153,7 +153,6 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
   isLoading,
   knowledgebaseId,
 }) => {
-  'use no memo';
   const navigate = useNavigate();
 
   // TanStack Table state

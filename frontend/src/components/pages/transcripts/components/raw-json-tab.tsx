@@ -23,21 +23,23 @@ type Props = {
   span: Span;
 };
 
-export const RawJSONTab: FC<Props> = ({ span }) => {
-  const jsonString = useMemo(() => {
-    try {
-      const jsonObj = toJson(SpanSchema, span);
-      // Verify the JSON is valid before stringifying
-      if (jsonObj === null || jsonObj === undefined) {
-        return 'null';
-      }
-      // Convert base64 bytes fields (traceId, spanId, parentSpanId) to hex format
-      const converted = convertBytesFieldsToHex(jsonObj);
-      return JSON.stringify(converted, null, 2);
-    } catch {
-      return JSON.stringify({ error: 'Failed to serialize span data' }, null, 2);
+function serializeSpanToJson(span: Span): string {
+  try {
+    const jsonObj = toJson(SpanSchema, span);
+    // Verify the JSON is valid before stringifying
+    if (jsonObj === null || jsonObj === undefined) {
+      return 'null';
     }
-  }, [span]);
+    // Convert base64 bytes fields (traceId, spanId, parentSpanId) to hex format
+    const converted = convertBytesFieldsToHex(jsonObj);
+    return JSON.stringify(converted, null, 2);
+  } catch {
+    return JSON.stringify({ error: 'Failed to serialize span data' }, null, 2);
+  }
+}
+
+export const RawJSONTab: FC<Props> = ({ span }) => {
+  const jsonString = useMemo(() => serializeSpanToJson(span), [span]);
 
   return (
     <div className="space-y-4 p-3">

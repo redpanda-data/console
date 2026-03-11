@@ -1,6 +1,7 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
+
 'use no memo';
 
-/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Card,
@@ -570,7 +571,7 @@ const SharedConfiguration = ({
   const [principalType, setPrincipalType] = useState(
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
-  const [hostType, setHostType] = useState<HostType>(stringToHostType(sharedConfig.host));
+  const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
 
   return (
     <Card size={'full'}>

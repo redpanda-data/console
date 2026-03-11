@@ -594,8 +594,37 @@ export const TranscriptActivityChart: FC<Props> = ({
 };
 
 /** Bar heights for skeleton - varies to mimic real histogram appearance */
-const SKELETON_BAR_HEIGHTS = [
-  6, 10, 8, 12, 9, 14, 11, 7, 5, 8, 10, 6, 9, 13, 7, 11, 8, 6, 10, 12, 7, 9, 14, 8, 6, 11, 10, 7, 9, 12,
+const SKELETON_BARS = [
+  { key: 'sb-0', h: 6 },
+  { key: 'sb-1', h: 10 },
+  { key: 'sb-2', h: 8 },
+  { key: 'sb-3', h: 12 },
+  { key: 'sb-4', h: 9 },
+  { key: 'sb-5', h: 14 },
+  { key: 'sb-6', h: 11 },
+  { key: 'sb-7', h: 7 },
+  { key: 'sb-8', h: 5 },
+  { key: 'sb-9', h: 8 },
+  { key: 'sb-10', h: 10 },
+  { key: 'sb-11', h: 6 },
+  { key: 'sb-12', h: 9 },
+  { key: 'sb-13', h: 13 },
+  { key: 'sb-14', h: 7 },
+  { key: 'sb-15', h: 11 },
+  { key: 'sb-16', h: 8 },
+  { key: 'sb-17', h: 6 },
+  { key: 'sb-18', h: 10 },
+  { key: 'sb-19', h: 12 },
+  { key: 'sb-20', h: 7 },
+  { key: 'sb-21', h: 9 },
+  { key: 'sb-22', h: 14 },
+  { key: 'sb-23', h: 8 },
+  { key: 'sb-24', h: 6 },
+  { key: 'sb-25', h: 11 },
+  { key: 'sb-26', h: 10 },
+  { key: 'sb-27', h: 7 },
+  { key: 'sb-28', h: 9 },
+  { key: 'sb-29', h: 12 },
 ];
 
 /** Loading skeleton that matches the chart structure to prevent layout shift */
@@ -619,11 +648,11 @@ export const TranscriptActivityChartSkeleton: FC = () => (
         {/* Bars container - wrapper provides width constraint */}
         <div className="relative flex-1">
           <div className="relative flex h-16 items-end gap-px">
-            {SKELETON_BAR_HEIGHTS.map((height, i) => (
+            {SKELETON_BARS.map((bar) => (
               <Skeleton
                 className="min-w-[4px] flex-1 rounded-t-sm"
-                key={`bar-${i}-${height}`}
-                style={{ height: height * 4 }}
+                key={bar.key}
+                style={{ height: bar.h * 4 }}
                 width="fit"
               />
             ))}

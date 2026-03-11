@@ -44,12 +44,6 @@
       "react-doctor/no-cascading-set-state",
       "react-doctor/no-render-in-render",
       "react-doctor/no-derived-state-effect",
-      "react-doctor/no-array-index-as-key",
-      "react-doctor/no-secrets-in-client-code",
-      "react-doctor/no-usememo-simple-expression",
-      "react-doctor/async-parallel",
-      "react-doctor/rerender-lazy-state-init",
-      "react-doctor/rerender-memo-with-default-value",
       "react-hooks-js/incompatible-library",
       "react-hooks-js/static-components",
       "react-hooks-js/purity",
@@ -58,14 +52,7 @@
       "react-hooks-js/todo",
       "react-hooks-js/refs",
       "react-hooks-js/set-state-in-effect",
-      "react-hooks-js/error-boundaries",
-      "react-hooks-js/preserve-manual-memoization",
-      "react-hooks/rules-of-hooks",
-      "react/jsx-key",
-      "react/no-unknown-property",
-      "jsx-a11y/click-events-have-key-events",
-      "jsx-a11y/no-autofocus",
-      "jsx-a11y/no-static-element-interactions"
+      "react-hooks-js/error-boundaries"
     ]
   }
 }

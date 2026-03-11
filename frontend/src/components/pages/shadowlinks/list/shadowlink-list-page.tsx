@@ -106,7 +106,6 @@ export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
 ];
 
 export const ShadowLinkListPage = () => {
-  'use no memo';
   const navigate = useNavigate();
 
   // React Query hooks

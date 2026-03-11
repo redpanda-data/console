@@ -26,7 +26,6 @@ const TestWrapper = ({
   defaultValues?: FormValues;
   onFormChange?: (values: FormValues) => void;
 }) => {
-  'use no memo';
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,

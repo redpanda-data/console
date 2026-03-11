@@ -259,7 +259,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   const [parsedUpdatedConfig, setParsedUpdatedConfig] = useState<Record<string, unknown> | null>(null);
   const [postCondition, setPostCondition] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(activeCluster));
+  const [connectClusterStore, setConnectClusterStore] = useState(() => ConnectClusterStore.getInstance(activeCluster));
   const { isOpen: isCreatingModalOpen, onOpen: openCreatingModal, onClose: closeCreatingModal } = useDisclosure();
 
   const [isStoreInitialized, setIsStoreInitialized] = useState(connectClusterStore.isInitialized);

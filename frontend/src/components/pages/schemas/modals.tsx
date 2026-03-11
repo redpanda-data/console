@@ -77,7 +77,7 @@ const ExplicitConfirmModal = (p: {
 
           <Box mt="4">
             To confirm, enter "delete":
-            <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
+            <Input onChange={(e) => setConfirmBoxText(e.target.value)} />
           </Box>
         </ModalBody>
 

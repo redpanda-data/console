@@ -66,9 +66,9 @@ type SchemaEditorStateData = {
   keyOrValue: 'KEY' | 'VALUE' | undefined;
   format: 'AVRO' | 'PROTOBUF' | 'JSON';
   schemaText: string;
-  references: { name: string; subject: string; version: number }[];
+  references: { id: string; name: string; subject: string; version: number }[];
   normalize: boolean;
-  metadataProperties: { key: string; value: string }[];
+  metadataProperties: { id: string; key: string; value: string }[];
 };
 
 type SchemaEditorStateHelper = SchemaEditorStateData & {
@@ -86,9 +86,9 @@ function createInitialSchemaState(): SchemaEditorStateData {
     keyOrValue: undefined,
     format: 'AVRO',
     schemaText: exampleSchema.AVRO,
-    references: [{ name: '', subject: '', version: 1 }],
+    references: [{ id: crypto.randomUUID(), name: '', subject: '', version: 1 }],
     normalize: false,
-    metadataProperties: [{ key: '', value: '' }],
+    metadataProperties: [{ id: crypto.randomUUID(), key: '', value: '' }],
   };
 }
 
@@ -224,9 +224,16 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
         ? JSON.stringify(JSON.parse(schema.schema), undefined, 4)
         : schema.schema;
 
-    const metadataProperties: { key: string; value: string }[] = schema.metadata?.properties
-      ? [...Object.entries(schema.metadata.properties).map(([key, value]) => ({ key, value })), { key: '', value: '' }]
-      : [{ key: '', value: '' }];
+    const metadataProperties: SchemaEditorStateData['metadataProperties'] = schema.metadata?.properties
+      ? [
+          ...Object.entries(schema.metadata.properties).map(([key, value]) => ({
+            id: crypto.randomUUID(),
+            key,
+            value,
+          })),
+          { id: crypto.randomUUID(), key: '', value: '' },
+        ]
+      : [{ id: crypto.randomUUID(), key: '', value: '' }];
 
     setStateData({
       strategy: 'CUSTOM',
@@ -234,7 +241,7 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
       keyOrValue: undefined,
       format: schema.type as 'AVRO' | 'PROTOBUF',
       schemaText,
-      references: schema.references,
+      references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID() })),
       normalize: false,
       metadataProperties,
     });
@@ -346,12 +353,13 @@ const SchemaPageButtons = (p: {
                 })
                 .finally(() => setCreating(false));
 
-              await api.refreshSchemaDetails(subjectName, true);
-
-              // Invalidate React Query cache so details page shows latest data
-              await queryClient.invalidateQueries({
-                queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
-              });
+              await Promise.all([
+                api.refreshSchemaDetails(subjectName, true),
+                // Invalidate React Query cache so details page shows latest data
+                queryClient.invalidateQueries({
+                  queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+                }),
+              ]);
 
               // success: navigate to details with "latest" so it picks up the new version
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
@@ -652,7 +660,7 @@ const ReferencesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: Se
   const refs = p.state.references;
 
   const renderRow = (ref: (typeof refs)[number], index: number) => (
-    <Flex alignItems="flex-end" gap="4" key={index}>
+    <Flex alignItems="flex-end" gap="4" key={ref.id}>
       <FormField label="Schema reference">
         <Input
           data-testid={`schema-create-reference-name-input-${index}`}
@@ -744,7 +752,7 @@ const ReferencesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: Se
         onClick={() => {
           p.onStateChange((prev) => ({
             ...prev,
-            references: [...prev.references, { name: '', subject: '', version: 1 }],
+            references: [...prev.references, { id: crypto.randomUUID(), name: '', subject: '', version: 1 }],
           }));
         }}
         size="sm"
@@ -760,8 +768,8 @@ const ReferencesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: Se
 const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: SetSchemaState }) => {
   const props = p.state.metadataProperties;
 
-  const renderRow = (prop: { key: string; value: string }, index: number) => (
-    <Flex alignItems="flex-end" gap="4" key={index}>
+  const renderRow = (prop: SchemaEditorStateData['metadataProperties'][number], index: number) => (
+    <Flex alignItems="flex-end" gap="4" key={prop.id}>
       <FormField label="Key">
         <Input
           data-testid={`schema-create-metadata-key-input-${index}`}
@@ -816,7 +824,7 @@ const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateCh
         onClick={() => {
           p.onStateChange((prev) => ({
             ...prev,
-            metadataProperties: [...prev.metadataProperties, { key: '', value: '' }],
+            metadataProperties: [...prev.metadataProperties, { id: crypto.randomUUID(), key: '', value: '' }],
           }));
         }}
         size="sm"

@@ -14,7 +14,7 @@ import { fromDataplaneShadowLink } from 'components/pages/shadowlinks/mappers/da
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
-import React, { type FC, useMemo } from 'react';
+import React, { type FC } from 'react';
 import { useGetShadowLinkQuery, useListShadowLinksQuery } from 'react-query/api/shadowlink';
 
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
@@ -32,10 +32,9 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
   const { data: fullShadowLinkData } = useGetShadowLinkQuery({ name: shadowLink.name });
 
   // Convert to unified model for child components
-  const unifiedShadowLink = useMemo(
-    () => (fullShadowLinkData?.shadowLink ? fromDataplaneShadowLink(fullShadowLinkData.shadowLink) : undefined),
-    [fullShadowLinkData?.shadowLink]
-  );
+  const unifiedShadowLink = fullShadowLinkData?.shadowLink
+    ? fromDataplaneShadowLink(fullShadowLinkData.shadowLink)
+    : undefined;
 
   return (
     <Card size="full" testId="shadow-link-overview-card">

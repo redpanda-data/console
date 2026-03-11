@@ -10,7 +10,6 @@
  */
 
 import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
-import 'monaco-editor';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useCallback, useEffect, useState } from 'react';

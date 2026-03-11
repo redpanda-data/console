@@ -247,7 +247,6 @@ function SecretsStoreDataTableToolbar({ table }: { table: TanstackTable<SecretTa
 }
 
 export const SecretsStoreListPage = () => {
-  'use no memo';
   const navigate = useNavigate();
 
   const [sorting, setSorting] = React.useState<SortingState>([]);

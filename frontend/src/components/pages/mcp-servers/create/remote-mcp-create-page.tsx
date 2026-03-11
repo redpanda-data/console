@@ -9,7 +9,6 @@
  */
 
 'use no memo';
-
 'use client';
 
 import { create } from '@bufbuild/protobuf';

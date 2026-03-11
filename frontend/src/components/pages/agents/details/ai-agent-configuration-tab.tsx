@@ -1087,8 +1087,7 @@ export const AIAgentConfigurationTab = () => {
                       );
 
                       return (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for subagent items
-                        <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
+                        <AccordionItem key={`subagent-${subagent.name || index}`} value={`subagent-${index}`}>
                           <AccordionTrigger>
                             <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
                           </AccordionTrigger>

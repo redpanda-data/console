@@ -489,7 +489,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     const ONE_HOUR = 60 * ONE_MINUTE;
     if (isLinkedTraceMode && activeTraceTimeMs) {
       // Cap end time to current time - no point showing future time range
-      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, Date.now());
+      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, nowMs);
       return {
         startTimestamp: timestampFromMs(activeTraceTimeMs - ONE_HOUR),
         endTimestamp: timestampFromMs(endMs),
@@ -525,26 +525,24 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     filter: histogramFilter,
   });
 
-  // Accumulate traces when data changes
-  // Note: Don't include currentPageToken in deps - it changes before data arrives,
-  // which would cause the effect to re-run with stale data and duplicate traces
-  // biome-ignore lint/correctness/useExhaustiveDependencies: currentPageToken is intentionally excluded - see comment above
-  useEffect(() => {
-    // In linked mode, get trace summary from GetTrace response
+  // Accumulate traces when data changes (during render, not in effect)
+  // Track previous data references to detect when new data arrives
+  const prevTraceData = useRef({
+    data: undefined as typeof data,
+    linkedSummary: undefined as TraceSummary | undefined,
+  });
+  const linkedSummary = linkedTraceData?.trace?.summary;
+  if (prevTraceData.current.data !== data || prevTraceData.current.linkedSummary !== linkedSummary) {
+    prevTraceData.current = { data, linkedSummary };
     if (isLinkedTraceMode) {
-      if (linkedTraceData?.trace?.summary) {
-        setAccumulatedTraces([linkedTraceData.trace.summary]);
+      if (linkedSummary) {
+        setAccumulatedTraces([linkedSummary]);
       }
-      return;
+    } else if (data?.traces) {
+      setAccumulatedTraces((prev) => (currentPageToken === '' ? data.traces : [...prev, ...data.traces]));
+      setIsLoadingMore(false);
     }
-
-    // Normal mode: accumulate from ListTraces response
-    if (!data?.traces) {
-      return;
-    }
-    setAccumulatedTraces((prev) => (currentPageToken === '' ? data.traces : [...prev, ...data.traces]));
-    setIsLoadingMore(false);
-  }, [data, isLinkedTraceMode, linkedTraceData?.trace?.summary]);
+  }
 
   // Track previous filter state to detect changes
   const prevFiltersRef = useRef<{ presets: string; attrs: string; services: string }>({
@@ -744,7 +742,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // Pre-compute chart query times to avoid nested ternaries in JSX
   const chartQueryEndMs =
     isLinkedTraceMode && activeTraceTimeMs
-      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, Date.now())
+      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, nowMs)
       : (jumpedTo?.endMs ?? timestamps.endMs);
   const chartQueryStartMs =
     isLinkedTraceMode && activeTraceTimeMs

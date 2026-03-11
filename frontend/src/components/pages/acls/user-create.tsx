@@ -225,7 +225,6 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
         >
           <Input
             autoComplete="off"
-            autoFocus
             data-testid="create-user-name"
             onChange={(v) => {
               state.setUsername(v.target.value);

@@ -87,7 +87,7 @@ const KafkaConnectorMain = ({
   connectorName: string;
   refreshData: (force: boolean) => Promise<void>;
 }) => {
-  const [connectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
+  const [connectClusterStore] = useState(() => ConnectClusterStore.getInstance(clusterName));
 
   const logsTopic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
 

@@ -21,7 +21,6 @@ import { getDefaultProperties } from './topic-properties-config';
 import { FormSchema, type FormValues, initialValues } from '../create/model';
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
-  'use no memo';
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,

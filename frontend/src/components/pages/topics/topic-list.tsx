@@ -310,7 +310,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
         ]}
         data={topics}
         onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-          uiSettings.topicList.pageSize = pageSize;
+          Object.assign(uiSettings.topicList, { pageSize });
           editQuery((query) => {
             query.page = String(pageIndex);
             query.pageSize = String(pageSize);

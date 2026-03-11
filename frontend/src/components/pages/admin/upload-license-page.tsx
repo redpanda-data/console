@@ -34,6 +34,7 @@ const UploadLicenseForm: FC<{
   return (
     <form
       onSubmit={async (e) => {
+        // SPA - no server action needed
         e.preventDefault();
 
         const content = (showFileUpload ? licenseFile : license) as string;
