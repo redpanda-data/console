@@ -22,6 +22,34 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 const STALE_TIME_MEDIUM = 30_000; // 30 seconds
 // const STALE_TIME_LONG = 60_000; // 60 seconds
 
+export type SchemaRegistryContextResponse = {
+  name: string;
+  mode: string;
+  compatibility: string;
+};
+
+export const useSchemaRegistryContextsQuery = (enabled = true) =>
+  useTanstackQuery<SchemaRegistryContextResponse[]>({
+    queryKey: ['schemaRegistry', 'contexts'],
+    queryFn: async () => {
+      const response = await fetch(`${config.restBasePath}/schema-registry/contexts`, {
+        headers: {
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+        },
+        method: 'GET',
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`Failed to fetch schema registry contexts (${response.status}): ${body}`);
+      }
+      const data: unknown = await response.json();
+      return Array.isArray(data) ? (data as SchemaRegistryContextResponse[]) : [];
+    },
+    enabled,
+    refetchOnMount: true,
+    staleTime: STALE_TIME_MEDIUM,
+  });
+
 export const useListSchemasQuery = () => {
   return useTanstackQuery<SchemaRegistrySubject[]>({
     queryKey: ['schemaRegistry', 'subjects'],
