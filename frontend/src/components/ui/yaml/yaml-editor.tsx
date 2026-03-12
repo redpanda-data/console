@@ -18,6 +18,8 @@ import { useEffect, useMemo, useRef } from 'react';
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
+  transparentBackground?: boolean;
+  onEditorMount?: (editor: editor.IStandaloneCodeEditor) => void;
   schema?: {
     definitions?: Record<string, JSONSchema>;
     properties?: Record<string, JSONSchema>;
@@ -87,7 +89,7 @@ function buildMonacoYamlOptions(
 }
 
 export const YamlEditor = (props: YamlEditorProps) => {
-  const { options: givenOptions, schema, ...rest } = props;
+  const { options: givenOptions, schema, transparentBackground, onEditorMount, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const yamlRef = useRef<MonacoYaml | null>(null);
   const hasInitializedRef = useRef(false);
@@ -120,11 +122,26 @@ export const YamlEditor = (props: YamlEditorProps) => {
     <Editor
       beforeMount={(monaco) => {
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+        if (transparentBackground) {
+          monaco.editor.defineTheme('kowl-transparent', {
+            base: 'vs',
+            inherit: true,
+            colors: {
+              'editor.background': '#00000000',
+              'editorGutter.background': '#00000000',
+            },
+            rules: [],
+          });
+        }
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
+      onMount={(editorInstance) => {
+        onEditorMount?.(editorInstance);
+      }}
       options={options}
       path="pipeline.yaml"
+      theme={transparentBackground ? 'kowl-transparent' : undefined}
       wrapperProps={{
         style: {
           minWidth: 0,

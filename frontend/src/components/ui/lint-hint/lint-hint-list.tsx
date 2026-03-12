@@ -12,7 +12,7 @@ import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircleIcon } from 'components/icons';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { memo } from 'react';
 
@@ -28,7 +28,7 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
   if (!hasHints && !isPending) {
     return (
       <div className={cn('flex items-center gap-2 py-4 text-muted-foreground', className)}>
-        <CheckCircle className="size-4 text-success" />
+        <CheckCircleIcon className="size-4 text-success" />
         <Text className="text-muted-foreground text-sm">No issues found</Text>
       </div>
     );

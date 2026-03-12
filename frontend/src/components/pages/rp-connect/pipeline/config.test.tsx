@@ -18,8 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { Config } from './config';
-
-const MIN_TASKS = 1;
+import { MIN_TASKS } from '../tasks';
 
 const schema = z.object({
   name: z.string().min(3),
@@ -136,7 +135,8 @@ describe('Config', () => {
     expect(valueInput).toHaveValue('production');
   });
 
-  it('tag key input has muted background styling', () => {
+  it('tag key input is rendered and editable', async () => {
+    const user = userEvent.setup();
     render(
       <TestWrapper
         defaultValues={{
@@ -145,6 +145,8 @@ describe('Config', () => {
       />
     );
     const keyInput = screen.getByPlaceholderText('Key');
-    expect(keyInput.className).toContain('bg-primary-alpha-default');
+    expect(keyInput).toBeInTheDocument();
+    await user.type(keyInput, 'test');
+    expect(keyInput).toHaveValue('test');
   });
 });

@@ -12,6 +12,20 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
+import {
+  AlertIcon,
+  ArrowBigUpIcon,
+  ArrowLeftIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CommandIcon,
+  EditIcon,
+  LoaderIcon,
+  PauseIcon,
+  PlayTriangleIcon,
+  RotateCcwIcon,
+  SettingsIcon,
+} from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -26,20 +40,6 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import {
-  AlertCircle,
-  ArrowBigUp,
-  ArrowLeft,
-  Check,
-  ChevronDown,
-  Command,
-  Loader2,
-  Pause,
-  Pencil,
-  Play,
-  RotateCcw,
-  Settings,
-} from 'lucide-react';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -117,7 +117,7 @@ function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactor
 
 function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
+    icon: isStopPending ? <LoaderIcon className="h-4 w-4 animate-spin" /> : <PauseIcon className="h-4 w-4" />,
     text: isStopPending ? 'Stopping' : 'Stop',
     action: handleStop,
   };
@@ -125,37 +125,37 @@ function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryP
 
 function createStartingConfig({ handleStart, handleStop }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    icon: <LoaderIcon className="h-4 w-4 animate-spin" />,
     text: 'Starting',
     dropdown: [
-      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStart },
-      { label: 'Stop', icon: <Pause className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
+      { label: 'Try again', icon: <RotateCcwIcon className="h-4 w-4" />, action: handleStart },
+      { label: 'Stop', icon: <PauseIcon className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
     ],
   };
 }
 
 function createStoppingConfig({ handleStop, handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    icon: <LoaderIcon className="h-4 w-4 animate-spin" />,
     text: 'Stopping',
     dropdown: [
-      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStop },
-      { label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart },
+      { label: 'Try again', icon: <RotateCcwIcon className="h-4 w-4" />, action: handleStop },
+      { label: 'Start', icon: <PlayTriangleIcon className="h-4 w-4" />, action: handleStart },
     ],
   };
 }
 
 function createErrorConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <AlertCircle className="h-4 w-4" />,
+    icon: <AlertIcon className="h-4 w-4" />,
     text: 'Error',
-    dropdown: [{ label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart }],
+    dropdown: [{ label: 'Start', icon: <PlayTriangleIcon className="h-4 w-4" />, action: handleStart }],
   };
 }
 
 function createCompletedConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Check className="h-4 w-4" />,
+    icon: <CheckIcon className="h-4 w-4" />,
     text: 'Restart',
     action: handleStart,
   };
@@ -183,6 +183,48 @@ function getPipelineButtonConfig(
   }
 }
 
+function PipelineActionButton({
+  buttonConfig,
+  isStartPending,
+  isStopPending,
+}: {
+  buttonConfig: ButtonConfig | null;
+  isStartPending: boolean;
+  isStopPending: boolean;
+}) {
+  if (!buttonConfig) {
+    return null;
+  }
+
+  if (buttonConfig.dropdown) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button>
+            {buttonConfig.icon}
+            {buttonConfig.text}
+            <ChevronDownIcon className="ml-1 h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {buttonConfig.dropdown.map((option) => (
+            <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
+              {option.icon}
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
+      {buttonConfig.text}
+    </Button>
+  );
+}
+
 export const Toolbar = memo(
   ({
     pipelineId,
@@ -198,7 +240,6 @@ export const Toolbar = memo(
     isLoading,
     nameError,
     autoFocus,
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Toolbar renders multiple conditional UI states
   }: ToolbarProps) => {
     const navigate = useNavigate();
 
@@ -290,40 +331,6 @@ export const Toolbar = memo(
       [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
     );
 
-    const renderActionButton = useCallback(() => {
-      if (!buttonConfig) {
-        return null;
-      }
-
-      if (buttonConfig.dropdown) {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                {buttonConfig.icon}
-                {buttonConfig.text}
-                <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {buttonConfig.dropdown.map((option) => (
-                <DropdownMenuItem key={option.label} onClick={option.action} variant={option.variant}>
-                  {option.icon}
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      }
-
-      return (
-        <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
-          {buttonConfig.text}
-        </Button>
-      );
-    }, [buttonConfig, isStartPending, isStopPending]);
-
     const isEditable = mode === 'edit' || mode === 'create';
     const displayName = pipelineName || pipelineId || '';
 
@@ -331,7 +338,7 @@ export const Toolbar = memo(
       <div className="mt-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button onClick={handleBack} size="icon" variant="ghost">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeftIcon className="h-5 w-5" />
           </Button>
           {isLoading ? (
             <Skeleton className="h-9 w-48" />
@@ -351,7 +358,7 @@ export const Toolbar = memo(
           )}
           {!isLoading && (
             <Button
-              icon={mode === 'view' ? <Pencil /> : <Settings />}
+              icon={mode === 'view' ? <EditIcon /> : <SettingsIcon />}
               onClick={handleEditClick}
               size="icon"
               variant="ghost"
@@ -365,8 +372,8 @@ export const Toolbar = memo(
               <Button
                 icon={
                   <Kbd variant="ghost">
-                    <Command />
-                    <ArrowBigUp />P
+                    <CommandIcon />
+                    <ArrowBigUpIcon />P
                   </Kbd>
                 }
                 onClick={onCommandMenu}
@@ -376,7 +383,13 @@ export const Toolbar = memo(
               </Button>
             ) : null}
             {shouldShowStatusBadge ? <StatusBadge pulsing={statusBadge.pulsing} variant={statusBadge.variant} /> : null}
-            {mode === 'view' && renderActionButton()}
+            {mode === 'view' && (
+              <PipelineActionButton
+                buttonConfig={buttonConfig}
+                isStartPending={isStartPending}
+                isStopPending={isStopPending}
+              />
+            )}
 
             {(mode === 'edit' || mode === 'create') && (
               <Button disabled={isSaving} onClick={onSave}>

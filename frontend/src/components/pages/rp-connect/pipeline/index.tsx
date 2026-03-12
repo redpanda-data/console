@@ -38,7 +38,7 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useLintPipelineConfigQuery, useListComponentsQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
@@ -196,13 +196,6 @@ export default function PipelinePage() {
       lintPanelRef.current?.collapse();
     }
   }, [hasLintHints, mode]);
-
-  // Reset manual override when YAML content changes
-  const prevYamlRef = useRef(yamlContent);
-  if (prevYamlRef.current !== yamlContent) {
-    prevYamlRef.current = yamlContent;
-    userLintOverrideRef.current = null;
-  }
 
   useEffect(() => {
     if (lintResponse) {
@@ -453,6 +446,7 @@ export default function PipelinePage() {
   const handleYamlChange = useCallback(
     (value: string) => {
       setYamlContent(value);
+      userLintOverrideRef.current = null;
       if (mode === 'create') {
         useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
       }
@@ -560,6 +554,8 @@ export default function PipelinePage() {
     [deleteMutation, navigate]
   );
 
+  const pipelineName = useWatch({ control: form.control, name: 'name' });
+
   return (
     <div className={cn('flex h-[calc(100dvh-10rem)] flex-col gap-4')}>
       <Toolbar
@@ -576,7 +572,7 @@ export default function PipelinePage() {
         onNameChange={handleNameChange}
         onSave={handleSave}
         pipelineId={pipelineId}
-        pipelineName={form.watch('name')}
+        pipelineName={pipelineName}
         pipelineState={pipeline?.state}
       />
       <div className="flex min-h-0 flex-1 rounded-lg border">

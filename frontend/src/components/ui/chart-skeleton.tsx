@@ -10,7 +10,7 @@
  */
 
 import { cn } from 'components/redpanda-ui/lib/utils';
-import type { FC } from 'react';
+import { type FC, useId } from 'react';
 
 type ChartSkeletonVariant = 'line' | 'area' | 'bar';
 
@@ -91,19 +91,20 @@ function LineVariant() {
 }
 
 function AreaVariant() {
+  const id = useId();
   return (
     <>
       <defs>
-        <linearGradient id="skelFill1" x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`${id}-fill1`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="currentColor" stopOpacity={0.08} />
           <stop offset="100%" stopColor="currentColor" stopOpacity={0.01} />
         </linearGradient>
-        <linearGradient id="skelFill2" x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`${id}-fill2`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor="currentColor" stopOpacity={0.05} />
           <stop offset="100%" stopColor="currentColor" stopOpacity={0.01} />
         </linearGradient>
       </defs>
-      <path d={`${LINE_PATH_1} ${AREA_CLOSE}`} fill="url(#skelFill1)" />
+      <path d={`${LINE_PATH_1} ${AREA_CLOSE}`} fill={`url(#${id}-fill1)`} />
       <path
         d={LINE_PATH_1}
         fill="none"
@@ -112,7 +113,7 @@ function AreaVariant() {
         strokeOpacity={0.12}
         strokeWidth={1.5}
       />
-      <path d={`${LINE_PATH_2} ${AREA_CLOSE}`} fill="url(#skelFill2)" />
+      <path d={`${LINE_PATH_2} ${AREA_CLOSE}`} fill={`url(#${id}-fill2)`} />
       <path
         d={LINE_PATH_2}
         fill="none"

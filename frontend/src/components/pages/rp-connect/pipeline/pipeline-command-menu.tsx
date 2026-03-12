@@ -80,12 +80,13 @@ export const PipelineCommandMenu = ({
     }
   }, [open]);
 
-  const { data: secretsResponse } = useListSecretsQuery({});
+  const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const secrets = useMemo(
     () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '').filter(Boolean) : []),
     [secretsResponse]
   );
 
+  // Cap at 500 — the command menu is a quick-pick, not a full topic browser
   const { data: topicsResponse } = useListTopicsQuery({ pageSize: 500 });
   const clusterTopics = useMemo(
     () => (topicsResponse?.topics ? topicsResponse.topics.map((t) => t.name).filter(Boolean) : []),

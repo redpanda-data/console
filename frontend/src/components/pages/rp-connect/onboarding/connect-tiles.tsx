@@ -41,7 +41,6 @@ const PRIORITY_COMPONENTS = [
   'mongodb_cdc',
   'snowflake_streaming',
   'redpanda_migrator',
-  'mysql_cdc',
   'snowflake_put',
   'slack',
   'sftp',
@@ -131,8 +130,8 @@ const ConnectTilesSkeleton = memo(
     gridCols?: number;
     tileCount?: number;
   }) => {
-    const skeletonTiles = Array.from({ length: tileCount }, () => (
-      <div className="h-[78px] rounded-lg border bg-card p-4" key={crypto.randomUUID()}>
+    const skeletonTiles = Array.from({ length: tileCount }, (_, i) => (
+      <div className="h-[78px] rounded-lg border bg-card p-4" key={i}>
         <SkeletonGroup direction="horizontal">
           <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
             <Skeleton variant="heading" width="md" />

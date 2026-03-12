@@ -30,7 +30,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import { TimerReset } from 'lucide-react';
 import type { FC } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { calculateTimeRange, getTimeRanges, type TimeRange } from 'utils/time-range';
@@ -71,6 +71,7 @@ function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: Time
 }
 
 export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipelineId }) => {
+  const id = useId();
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
 
   const { data: queriesData, isLoading: isLoadingQueries } = useListQueries({
@@ -160,11 +161,11 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
           <ChartContainer className="h-40 w-full" config={chartConfig}>
             <AreaChart data={chartData}>
               <defs>
-                <linearGradient id="fillIngress" x1="0" x2="0" y1="0" y2="1">
+                <linearGradient id={`${id}-ingress`} x1="0" x2="0" y1="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-ingress)" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="var(--color-ingress)" stopOpacity={0.05} />
                 </linearGradient>
-                <linearGradient id="fillEgress" x1="0" x2="0" y1="0" y2="1">
+                <linearGradient id={`${id}-egress`} x1="0" x2="0" y1="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-egress)" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="var(--color-egress)" stopOpacity={0.05} />
                 </linearGradient>
@@ -201,14 +202,14 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               />
               <Area
                 dataKey="ingress"
-                fill="url(#fillIngress)"
+                fill={`url(#${id}-ingress)`}
                 stroke="var(--color-ingress)"
                 strokeWidth={2}
                 type="monotone"
               />
               <Area
                 dataKey="egress"
-                fill="url(#fillEgress)"
+                fill={`url(#${id}-egress)`}
                 stroke="var(--color-egress)"
                 strokeWidth={2}
                 type="monotone"
