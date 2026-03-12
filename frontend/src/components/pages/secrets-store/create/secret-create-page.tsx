@@ -153,7 +153,7 @@ export const SecretCreatePage = () => {
                 <MultiSelectContent>
                   <MultiSelectList>
                     {SCOPE_OPTIONS.map((option) => (
-                      <MultiSelectItem key={option.value} value={option.value} label={option.label}>
+                      <MultiSelectItem key={option.value} label={option.label} value={option.value}>
                         <span className="flex items-center gap-2">
                           <option.icon className="size-4" />
                           {option.label}
