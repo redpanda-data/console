@@ -30,9 +30,10 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import { TimerReset } from 'lucide-react';
 import type { FC } from 'react';
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { formatChartTimestamp, formatTooltipLabel, mergeTimeSeries } from 'utils/pipeline-throughput.utils';
 import { calculateTimeRange, getTimeRanges, type TimeRange } from 'utils/time-range';
 
 const TIME_RANGES = getTimeRanges(24 * 60 * 60 * 1000);
@@ -46,30 +47,6 @@ type PipelineThroughputCardProps = {
   pipelineId: string;
 };
 
-type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
-type MergedPoint = { timestamp: number; ingress: number; egress: number };
-
-function addSeriesToMap(map: Map<number, MergedPoint>, results: TimeSeriesResult[], key: 'ingress' | 'egress'): void {
-  for (const series of results) {
-    for (const point of series.values) {
-      if (!point.timestamp || point.value === undefined) {
-        continue;
-      }
-      const ts = Number(point.timestamp.seconds) * 1000;
-      const entry = map.get(ts) ?? { timestamp: ts, ingress: 0, egress: 0 };
-      entry[key] = point.value;
-      map.set(ts, entry);
-    }
-  }
-}
-
-function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: TimeSeriesResult[]): MergedPoint[] {
-  const map = new Map<number, MergedPoint>();
-  addSeriesToMap(map, ingressResults, 'ingress');
-  addSeriesToMap(map, egressResults, 'egress');
-  return [...map.values()].sort((a, b) => a.timestamp - b.timestamp);
-}
-
 export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipelineId }) => {
   const id = useId();
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
@@ -82,24 +59,14 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     },
   });
 
-  const hasInputQuery = useMemo(
-    () => queriesData?.queries?.some((q) => q.name === 'connect_input_received') ?? false,
-    [queriesData]
-  );
-  const hasOutputQuery = useMemo(
-    () => queriesData?.queries?.some((q) => q.name === 'connect_output_sent') ?? false,
-    [queriesData]
-  );
+  const hasInputQuery = queriesData?.queries?.some((q) => q.name === 'connect_input_received') ?? false;
+  const hasOutputQuery = queriesData?.queries?.some((q) => q.name === 'connect_output_sent') ?? false;
 
-  const timeRange = useMemo(() => calculateTimeRange(selectedTimeRange), [selectedTimeRange]);
-
-  const timeParams = useMemo(
-    () => ({
-      start: timestampFromMs(timeRange.start.getTime()),
-      end: timestampFromMs(timeRange.end.getTime()),
-    }),
-    [timeRange]
-  );
+  const timeRange = calculateTimeRange(selectedTimeRange);
+  const timeParams = {
+    start: timestampFromMs(timeRange.start.getTime()),
+    end: timestampFromMs(timeRange.end.getTime()),
+  };
 
   const { data: ingressData, isLoading: isLoadingIngress } = useExecuteRangeQuery(
     {
@@ -125,10 +92,6 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const isLoading = isLoadingQueries || isLoadingIngress || isLoadingEgress;
   const hasData = chartData.length > 0;
 
-  const handleTimeRangeChange = useCallback((value: TimeRange) => {
-    setSelectedTimeRange(value);
-  }, []);
-
   return (
     <Card size="full">
       <CardHeader>
@@ -145,7 +108,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
                 <DropdownMenuCheckboxItem
                   checked={option.value === selectedTimeRange}
                   key={option.value}
-                  onCheckedChange={() => handleTimeRangeChange(option.value)}
+                  onCheckedChange={() => setSelectedTimeRange(option.value)}
                 >
                   {option.label}
                 </DropdownMenuCheckboxItem>
@@ -174,10 +137,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               <XAxis
                 axisLine={false}
                 dataKey="timestamp"
-                tickFormatter={(value) => {
-                  const date = new Date(value);
-                  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                }}
+                tickFormatter={formatChartTimestamp}
                 tickLine={false}
                 tickMargin={8}
               />
@@ -190,12 +150,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
                       if (!ts || typeof ts !== 'number') {
                         return '';
                       }
-                      return new Date(ts).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      });
+                      return formatTooltipLabel(ts);
                     }}
                   />
                 }

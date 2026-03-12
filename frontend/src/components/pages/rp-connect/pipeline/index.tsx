@@ -23,6 +23,7 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
+import { isFeatureFlagEnabled } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import {
@@ -60,6 +61,7 @@ import { z } from 'zod';
 
 import { Config } from './config';
 import { PipelineCommandMenu } from './pipeline-command-menu';
+import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { type MiniWizardResult, RedpandaMiniWizard } from './redpanda-mini-wizard';
 import { Toolbar } from './toolbar';
 import { ViewDetails } from './view-details';
@@ -577,7 +579,9 @@ export default function PipelinePage() {
       />
       <div className="flex min-h-0 flex-1 rounded-lg border">
         <div className="flex w-[300px] shrink-0 flex-col border-r">
-          <div className="min-h-0 flex-1" />
+          <div className="min-h-0 flex-1">
+            {isFeatureFlagEnabled('enablePipelineDiagrams') && <PipelineFlowDiagram configYaml={yamlContent} />}
+          </div>
           {mode !== 'view' && (
             <AddConnectorsCard
               editorContent={yamlContent}
