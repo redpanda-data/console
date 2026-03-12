@@ -289,9 +289,7 @@ describe('SecretsStoreListPage', () => {
     });
 
     // Click the "Scope" faceted filter button (not the column header one in <thead>)
-    const scopeFilterButton = screen
-      .getAllByRole('button', { name: /scope/i })
-      .find((btn) => !btn.closest('thead'))!;
+    const scopeFilterButton = screen.getAllByRole('button', { name: /scope/i }).find((btn) => !btn.closest('thead'))!;
     await user.click(scopeFilterButton);
 
     // Select the "MCP Server" option from the filter popover

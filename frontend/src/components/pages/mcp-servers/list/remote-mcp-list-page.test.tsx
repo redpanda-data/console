@@ -435,9 +435,9 @@ describe('RemoteMCPListPage', () => {
     });
 
     const transport = createMCPServersTransport({
-      listMCPServersMock: vi.fn().mockReturnValue(
-        create(ListMCPServersResponseSchema, { mcpServers: [server1], nextPageToken: '' })
-      ),
+      listMCPServersMock: vi
+        .fn()
+        .mockReturnValue(create(ListMCPServersResponseSchema, { mcpServers: [server1], nextPageToken: '' })),
     });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
@@ -474,9 +474,9 @@ describe('RemoteMCPListPage', () => {
     });
 
     const transport = createMCPServersTransport({
-      listMCPServersMock: vi.fn().mockReturnValue(
-        create(ListMCPServersResponseSchema, { mcpServers: [server1, server2], nextPageToken: '' })
-      ),
+      listMCPServersMock: vi
+        .fn()
+        .mockReturnValue(create(ListMCPServersResponseSchema, { mcpServers: [server1, server2], nextPageToken: '' })),
     });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
@@ -523,9 +523,9 @@ describe('RemoteMCPListPage', () => {
     });
 
     const transport = createMCPServersTransport({
-      listMCPServersMock: vi.fn().mockReturnValue(
-        create(ListMCPServersResponseSchema, { mcpServers: [server1, server2], nextPageToken: '' })
-      ),
+      listMCPServersMock: vi
+        .fn()
+        .mockReturnValue(create(ListMCPServersResponseSchema, { mcpServers: [server1, server2], nextPageToken: '' })),
     });
 
     renderWithFileRoutes(<RemoteMCPListPage />, { transport });
@@ -536,9 +536,7 @@ describe('RemoteMCPListPage', () => {
     });
 
     // Click the "Status" faceted filter button (not the column header one in <thead>)
-    const statusFilterButton = screen
-      .getAllByRole('button', { name: /status/i })
-      .find((btn) => !btn.closest('thead'))!;
+    const statusFilterButton = screen.getAllByRole('button', { name: /status/i }).find((btn) => !btn.closest('thead'))!;
     await user.click(statusFilterButton);
 
     // Select the "Running" option from the filter popover

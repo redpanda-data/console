@@ -646,9 +646,9 @@ describe('AIAgentsListPage', () => {
     });
 
     const transport = createAIAgentsTransport({
-      listAIAgentsMock: vi.fn().mockReturnValue(
-        create(ListAIAgentsResponseSchema, { aiAgents: [agent1], nextPageToken: '' })
-      ),
+      listAIAgentsMock: vi
+        .fn()
+        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1], nextPageToken: '' })),
     });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
@@ -693,9 +693,9 @@ describe('AIAgentsListPage', () => {
     });
 
     const transport = createAIAgentsTransport({
-      listAIAgentsMock: vi.fn().mockReturnValue(
-        create(ListAIAgentsResponseSchema, { aiAgents: [agent1, agent2], nextPageToken: '' })
-      ),
+      listAIAgentsMock: vi
+        .fn()
+        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1, agent2], nextPageToken: '' })),
     });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
@@ -750,9 +750,9 @@ describe('AIAgentsListPage', () => {
     });
 
     const transport = createAIAgentsTransport({
-      listAIAgentsMock: vi.fn().mockReturnValue(
-        create(ListAIAgentsResponseSchema, { aiAgents: [agent1, agent2], nextPageToken: '' })
-      ),
+      listAIAgentsMock: vi
+        .fn()
+        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1, agent2], nextPageToken: '' })),
     });
 
     renderWithFileRoutes(<AIAgentsListPage />, { transport });
@@ -763,9 +763,7 @@ describe('AIAgentsListPage', () => {
     });
 
     // Click the "Status" faceted filter button (not the column header one in <thead>)
-    const statusFilterButton = screen
-      .getAllByRole('button', { name: /status/i })
-      .find((btn) => !btn.closest('thead'))!;
+    const statusFilterButton = screen.getAllByRole('button', { name: /status/i }).find((btn) => !btn.closest('thead'))!;
     await user.click(statusFilterButton);
 
     // Select the "Stopped" option from the filter popover

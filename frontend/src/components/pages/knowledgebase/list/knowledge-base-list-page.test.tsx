@@ -15,12 +15,12 @@ import userEvent from '@testing-library/user-event';
 import {
   DeleteKnowledgeBaseRequestSchema,
   DeleteKnowledgeBaseResponseSchema,
-  KnowledgeBase_EmbeddingGeneratorSchema,
   KnowledgeBase_EmbeddingGenerator_ProviderSchema,
-  KnowledgeBase_RetrieverSchema,
-  KnowledgeBase_Retriever_RerankerSchema,
-  KnowledgeBase_Retriever_Reranker_ProviderSchema,
+  KnowledgeBase_EmbeddingGeneratorSchema,
   KnowledgeBase_Retriever_Reranker_Provider_CohereSchema,
+  KnowledgeBase_Retriever_Reranker_ProviderSchema,
+  KnowledgeBase_Retriever_RerankerSchema,
+  KnowledgeBase_RetrieverSchema,
   KnowledgeBaseSchema,
   ListKnowledgeBasesResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';

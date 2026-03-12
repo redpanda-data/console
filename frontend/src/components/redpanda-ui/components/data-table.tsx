@@ -1,5 +1,6 @@
 'use no memo';
 
+
 'use client';
 
 import type { Column, ColumnDef, Row, Table } from '@tanstack/react-table';

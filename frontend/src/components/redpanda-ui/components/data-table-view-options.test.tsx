@@ -9,75 +9,181 @@
  * by the Apache License, Version 2.0
  */
 
-import { type ColumnDef, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 
-import { DataTableViewOptions } from './data-table';
+import {
+  DataTableToolbar,
+  DataTableViewOptions,
+  type Task,
+  dataTableColumns,
+  dataTableMockData,
+} from './data-table';
 
-type TestRow = { id: number; name: string; status: string };
+/**
+ * Regression tests for DataTable search, faceted filter, and view options.
+ *
+ * These components broke when React Compiler memoized stale closure values
+ * in data-table.tsx and data-table-filter.tsx. The fix was adding 'use no memo'
+ * to both files and replacing DropdownMenuPrimitive.Trigger with DropdownMenuTrigger.
+ */
 
-const columns: ColumnDef<TestRow>[] = [
+// ── Harness: full toolbar with a table ──────────────────────────────────
+
+function ToolbarHarness() {
+  const table = useReactTable<Task>({
+    data: dataTableMockData,
+    columns: dataTableColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+  });
+
+  return (
+    <div>
+      <DataTableToolbar table={table} testId="toolbar" />
+      <table data-testid="task-table">
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Harness: standalone view options ────────────────────────────────────
+
+type SimpleRow = { id: number; name: string; status: string };
+
+const simpleColumns: ColumnDef<SimpleRow>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'status', header: 'Status' },
 ];
 
-const data: TestRow[] = [
+const simpleData: SimpleRow[] = [
   { id: 1, name: 'Alpha', status: 'active' },
   { id: 2, name: 'Beta', status: 'inactive' },
 ];
 
-function Harness() {
+function ViewOptionsHarness() {
   const table = useReactTable({
-    data,
-    columns,
+    data: simpleData,
+    columns: simpleColumns,
     getCoreRowModel: getCoreRowModel(),
   });
 
   return <DataTableViewOptions table={table} testId="view-options" />;
 }
 
+// ── jsdom shims ─────────────────────────────────────────────────────────
+
+// cmdk calls scrollIntoView which jsdom doesn't implement
+beforeAll(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
+
+// ── Tests ───────────────────────────────────────────────────────────────
+
+describe('DataTableToolbar – search input', () => {
+  it('accepts keystrokes and updates the filter value', async () => {
+    const user = userEvent.setup();
+    render(<ToolbarHarness />);
+
+    const searchInput = screen.getByPlaceholderText('Filter tasks...');
+
+    await user.type(searchInput, 'compress');
+    expect(searchInput).toHaveValue('compress');
+  });
+
+  it('filters table rows when typing', async () => {
+    const user = userEvent.setup();
+    render(<ToolbarHarness />);
+
+    const table = screen.getByTestId('task-table');
+    const initialRows = within(table).getAllByRole('row');
+    expect(initialRows.length).toBe(dataTableMockData.length);
+
+    const searchInput = screen.getByPlaceholderText('Filter tasks...');
+    // Only TASK-8782 has "compress" in its title
+    await user.type(searchInput, 'compress');
+
+    await waitFor(() => {
+      const filteredRows = within(table).getAllByRole('row');
+      expect(filteredRows.length).toBe(1);
+    });
+  });
+
+  it('clears the filter when text is removed', async () => {
+    const user = userEvent.setup();
+    render(<ToolbarHarness />);
+
+    const searchInput = screen.getByPlaceholderText('Filter tasks...');
+    const table = screen.getByTestId('task-table');
+
+    await user.type(searchInput, 'compress');
+    await waitFor(() => {
+      expect(within(table).getAllByRole('row').length).toBe(1);
+    });
+
+    await user.clear(searchInput);
+    await waitFor(() => {
+      expect(within(table).getAllByRole('row').length).toBe(dataTableMockData.length);
+    });
+  });
+});
+
+describe('DataTableToolbar – faceted filter', () => {
+  it('renders Status and Priority filter buttons', () => {
+    render(<ToolbarHarness />);
+
+    expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /priority/i })).toBeInTheDocument();
+  });
+});
+
 describe('DataTableViewOptions', () => {
   it('opens dropdown, toggles a column off, and reopens the dropdown', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<ViewOptionsHarness />);
 
-    // 1. Click "View" to open the dropdown
     const viewButton = screen.getByRole('button', { name: /view/i });
     await user.click(viewButton);
 
-    // 2. Verify column checkboxes appear
     await waitFor(() => {
       expect(screen.getByText('Toggle columns')).toBeInTheDocument();
     });
 
     const nameCheckbox = screen.getByRole('menuitemcheckbox', { name: /name/i });
-    const statusCheckbox = screen.getByRole('menuitemcheckbox', { name: /status/i });
-    expect(nameCheckbox).toBeInTheDocument();
-    expect(statusCheckbox).toBeInTheDocument();
-
-    // Both columns should initially be checked (visible)
     expect(nameCheckbox).toHaveAttribute('data-state', 'checked');
-    expect(statusCheckbox).toHaveAttribute('data-state', 'checked');
 
-    // 3. Toggle "name" column off
+    // Toggle "name" column off
     await user.click(nameCheckbox);
 
-    // The dropdown closes after clicking a checkbox item; verify the column is now unchecked
-    // by reopening the dropdown.
-
-    // 4. Click "View" again - this is the regression scenario.
-    //    With the raw primitive trigger, this second click would fail to reopen.
+    // Reopen — this was the regression: second click failed with raw primitive trigger
     await user.click(viewButton);
 
     await waitFor(() => {
       expect(screen.getByText('Toggle columns')).toBeInTheDocument();
     });
 
-    // "name" should now be unchecked, "status" should still be checked
-    const nameCheckboxAfter = screen.getByRole('menuitemcheckbox', { name: /name/i });
-    const statusCheckboxAfter = screen.getByRole('menuitemcheckbox', { name: /status/i });
-    expect(nameCheckboxAfter).toHaveAttribute('data-state', 'unchecked');
-    expect(statusCheckboxAfter).toHaveAttribute('data-state', 'checked');
+    expect(screen.getByRole('menuitemcheckbox', { name: /name/i })).toHaveAttribute('data-state', 'unchecked');
+    expect(screen.getByRole('menuitemcheckbox', { name: /status/i })).toHaveAttribute('data-state', 'checked');
   });
 });
