@@ -278,18 +278,19 @@ export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; va
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional to force message search to re-run when pipeline.id and refreshCount changes
   useEffect(() => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
     queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
-    executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
+    executeMessageSearch(search, topicName, pipeline.id).finally(() => {
       setLogState({ messages: [...search.messages], isComplete: true });
     });
     return () => {
       search.stopSearch();
     };
-  }, [refreshCount]);
+  }, [refreshCount, pipeline.id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
