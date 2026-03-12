@@ -1,7 +1,6 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex } from '@redpanda-data/ui';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { useStore } from 'zustand';
 
 import {
   coreHasEnterpriseFeatures,
@@ -13,15 +12,15 @@ import {
   prettyLicenseType,
 } from './license-utils';
 import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api, useApiStore } from '../../state/backend-api';
+import { api, useApiStoreHook } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const LicenseNotification = () => {
-  const licenses = useStore(useApiStore, (s) => s.licenses);
-  const licensesLoaded = useStore(useApiStore, (s) => s.licensesLoaded);
-  const licenseViolation = useStore(useApiStore, (s) => s.licenseViolation);
-  const enterpriseFeaturesUsed = useStore(useApiStore, (s) => s.enterpriseFeaturesUsed);
+  const licenses = useApiStoreHook((s) => s.licenses);
+  const licensesLoaded = useApiStoreHook((s) => s.licensesLoaded);
+  const licenseViolation = useApiStoreHook((s) => s.licenseViolation);
+  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
   const location = useLocation();
 
   useEffect(() => {
