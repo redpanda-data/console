@@ -44,22 +44,18 @@ export const useListMCPServersQuery = (
   input?: MessageInit<ListMCPServersRequest>,
   options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>
 ) => {
-  // Memoize requests to prevent infinite re-renders
-  const listMCPServersRequest = useMemo(
-    () =>
-      create(ListMCPServersRequestSchema, {
-        pageToken: '',
-        pageSize: MAX_PAGE_SIZE,
-        filter: input?.filter
-          ? create(ListMCPServersRequest_FilterSchema, {
-              displayNameContains: input.filter.displayNameContains,
-              tags: input.filter.tags,
-              secretId: input.filter.secretId,
-            })
-          : undefined,
-      }) as ListMCPServersRequest & Required<Pick<ListMCPServersRequest, 'pageToken'>>,
-    [input?.filter]
-  );
+  // The React compiler auto-memoizes this to prevent infinite re-renders
+  const listMCPServersRequest = create(ListMCPServersRequestSchema, {
+    pageToken: '',
+    pageSize: MAX_PAGE_SIZE,
+    filter: input?.filter
+      ? create(ListMCPServersRequest_FilterSchema, {
+          displayNameContains: input.filter.displayNameContains,
+          tags: input.filter.tags,
+          secretId: input.filter.secretId,
+        })
+      : undefined,
+  }) as ListMCPServersRequest & Required<Pick<ListMCPServersRequest, 'pageToken'>>;
 
   const result = useInfiniteQueryWithAllPages(listMCPServers, listMCPServersRequest, {
     enabled: options?.enabled !== false,

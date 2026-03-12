@@ -3,7 +3,7 @@ import type React from 'react';
 export const QdrantLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg fill="currentColor" viewBox="0 0 57 64" xmlns="http://www.w3.org/2000/svg" {...props}>
     <title>Qdrant</title>
-    <g clip-path="url(#a)">
+    <g clipPath="url(#a)">
       <path
         d="M28.335 0 .62 16v32l27.714 16 10.392-6V46l-10.392 6-17.32-10V22l17.32-10 17.32 10v40l10.393-6V16z"
         fill="#dc244c"

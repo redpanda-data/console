@@ -76,6 +76,14 @@ const EditSchemaModePage: FC<{ subjectName?: string }> = ({ subjectName: subject
     enabled: !!subjectName,
   });
 
+  const onClose = useCallback(() => {
+    if (subjectName) {
+      navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
+    } else {
+      navigate({ to: '/schema-registry' });
+    }
+  }, [subjectName, navigate]);
+
   useEffect(() => {
     uiState.pageTitle = 'Edit Mode';
     uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
@@ -110,14 +118,6 @@ const EditSchemaModePage: FC<{ subjectName?: string }> = ({ subjectName: subject
       </PageContent>
     );
   }
-
-  const onClose = useCallback(() => {
-    if (subjectName) {
-      navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
-    } else {
-      navigate({ to: '/schema-registry' });
-    }
-  }, [subjectName, navigate]);
 
   if (schemaMode === null) {
     return <SchemaNotConfiguredPage />;
@@ -171,7 +171,7 @@ function EditSchemaMode({
       ]
     : MODE_OPTIONS;
 
-  const onSave = useCallback(() => {
+  const onSave = () => {
     if (subjectName) {
       updateSubjectMutation.mutate(
         { subjectName, mode: selectedMode as 'DEFAULT' | SchemaRegistryMode },
@@ -196,7 +196,7 @@ function EditSchemaMode({
         },
       });
     }
-  }, [subjectName, selectedMode, updateSubjectMutation, updateGlobalMutation, onClose]);
+  };
 
   return (
     <div className="flex gap-16">

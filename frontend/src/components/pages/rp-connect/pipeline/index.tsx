@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
@@ -209,7 +211,7 @@ export default function PipelinePage() {
   });
 
   const [yamlContent, setYamlContent] = useState('');
-  const [lintHints, setLintHints] = useState<Record<string, LintHint>>({});
+  const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -254,19 +256,20 @@ export default function PipelinePage() {
     enabled: mode !== 'view',
   });
 
-  useEffect(() => {
-    if (lintResponse) {
-      try {
-        const hints: Record<string, LintHint> = {};
-        for (const [idx, hint] of Object.entries(lintResponse?.lintHints || [])) {
-          hints[`hint_${idx}`] = hint;
-        }
-        setLintHints(hints);
-      } catch (err) {
-        setLintHints(extractLintHintsFromError(err));
-      }
+  // Derive lint hints from response (replaces useEffect + setState)
+  const responseLintHints = useMemo(() => {
+    if (!lintResponse) {
+      return {};
     }
+    const hints: Record<string, LintHint> = {};
+    for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
+      hints[`hint_${idx}`] = hint;
+    }
+    return hints;
   }, [lintResponse]);
+
+  // Merge response-derived and error-derived lint hints (error hints cleared on next successful response)
+  const lintHints = Object.keys(errorLintHints).length > 0 ? errorLintHints : responseLintHints;
 
   // Initialize form data from pipeline (edit/view)
   useEffect(() => {
@@ -276,14 +279,16 @@ export default function PipelinePage() {
         description: pipeline.description || '',
         computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
       });
-      setYamlContent(pipeline.configYaml);
+      queueMicrotask(() => setYamlContent(pipeline.configYaml));
     }
   }, [pipeline, mode, form]);
 
   // Load persisted YAML from Zustand (CREATE mode only)
+  const hasLoadedPersistedYaml = useRef(false);
   useEffect(() => {
-    if (mode === 'create' && persistedYamlContent) {
-      setYamlContent(persistedYamlContent);
+    if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
+      hasLoadedPersistedYaml.current = true;
+      queueMicrotask(() => setYamlContent(persistedYamlContent));
     }
   }, [mode, persistedYamlContent]);
 
@@ -398,7 +403,7 @@ export default function PipelinePage() {
 
       createMutation(createRequest, {
         onSuccess: (response) => {
-          setLintHints({});
+          setErrorLintHints({});
           clearWizardStore();
           toast.success('Pipeline created');
 
@@ -415,7 +420,7 @@ export default function PipelinePage() {
           }
         },
         onError: (err) => {
-          setLintHints(extractLintHintsFromError(err));
+          setErrorLintHints(extractLintHintsFromError(err));
           toast.error(
             formatToastErrorMessageGRPC({
               error: err,
@@ -451,7 +456,7 @@ export default function PipelinePage() {
 
       updateMutation(updateRequest, {
         onSuccess: (response) => {
-          setLintHints({});
+          setErrorLintHints({});
           toast.success('Pipeline updated');
           const retUnits = cpuToTasks(response.response?.pipeline?.resources?.cpuShares);
           const currentUnits = form.getValues('computeUnits');
@@ -461,7 +466,7 @@ export default function PipelinePage() {
           navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => {
-          setLintHints(extractLintHintsFromError(err));
+          setErrorLintHints(extractLintHintsFromError(err));
           toast.error(
             formatToastErrorMessageGRPC({
               error: err,
@@ -529,37 +534,6 @@ export default function PipelinePage() {
     </>
   );
 
-  const renderContent = () => {
-    if (mode === 'create') {
-      return content;
-    }
-
-    if (mode === 'view' && pipeline) {
-      return (
-        <Card size="full">
-          <Tabs defaultValue="configuration">
-            <TabsList>
-              <TabsTrigger value="configuration">Configuration</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-            </TabsList>
-            <TabsContents>
-              <TabsContent value="configuration">{content}</TabsContent>
-              <TabsContent value="logs">
-                {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-                  <LogExplorer pipeline={pipeline} serverless={isServerless()} />
-                ) : (
-                  <LogsTab pipeline={pipeline} />
-                )}
-              </TabsContent>
-            </TabsContents>
-          </Tabs>
-        </Card>
-      );
-    }
-
-    return <Card size="full">{content}</Card>;
-  };
-
   return (
     <div>
       {mode === 'edit' && (
@@ -573,7 +547,28 @@ export default function PipelinePage() {
             <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
           )}
 
-          {renderContent()}
+          {mode === 'create' && content}
+          {mode === 'view' && pipeline && (
+            <Card size="full">
+              <Tabs defaultValue="configuration">
+                <TabsList>
+                  <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                  <TabsTrigger value="logs">Logs</TabsTrigger>
+                </TabsList>
+                <TabsContents>
+                  <TabsContent value="configuration">{content}</TabsContent>
+                  <TabsContent value="logs">
+                    {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+                      <LogExplorer pipeline={pipeline} serverless={isServerless()} />
+                    ) : (
+                      <LogsTab pipeline={pipeline} />
+                    )}
+                  </TabsContent>
+                </TabsContents>
+              </Tabs>
+            </Card>
+          )}
+          {mode === 'edit' && <Card size="full">{content}</Card>}
         </div>
         {(mode === 'create' || mode === 'edit') && (
           <CreatePipelineSidebar

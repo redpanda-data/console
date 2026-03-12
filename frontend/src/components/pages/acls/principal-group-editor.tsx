@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import {
   Box,
   Button,
@@ -68,10 +70,17 @@ export const AclPrincipalGroupEditor = (p: {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const [isFormValid, setIsFormValid] = useState(true);
-  const [isTopicsValid, setTopicsIsValid] = useState(true);
-  const [isConsumerGroupsValid, setConsumerGroupsIsValid] = useState(true);
-  const [isTransactionalIDValid, setTransactionalIDIsValid] = useState(true);
+  const [validation, setValidation] = useState({
+    isFormValid: true,
+    isTopicsValid: true,
+    isConsumerGroupsValid: true,
+    isTransactionalIDValid: true,
+  });
+  const { isFormValid, isTopicsValid, isConsumerGroupsValid, isTransactionalIDValid } = validation;
+  const setIsFormValid = (v: boolean) => setValidation((prev) => ({ ...prev, isFormValid: v }));
+  const setTopicsIsValid = (v: boolean) => setValidation((prev) => ({ ...prev, isTopicsValid: v }));
+  const setConsumerGroupsIsValid = (v: boolean) => setValidation((prev) => ({ ...prev, isConsumerGroupsValid: v }));
+  const setTransactionalIDIsValid = (v: boolean) => setValidation((prev) => ({ ...prev, isTransactionalIDValid: v }));
 
   const noNameOrNameInUse =
     p.type === 'create' &&
@@ -82,25 +91,33 @@ export const AclPrincipalGroupEditor = (p: {
   const onOK = async () => {
     setError(undefined);
     setIsLoading(true);
+
+    if (group.principalName.length === 0) {
+      setError('The principal field can not be empty.');
+      setIsLoading(false);
+      return;
+    }
+
+    const allToCreate = unpackPrincipalGroup(group);
+
+    if (allToCreate.length === 0) {
+      const emptyMsg =
+        p.type === 'create'
+          ? 'Creating an ACL group requires at least one resource to be targeted. Topic/Group targets with an empty selector are not valid.'
+          : 'No targeted resources. You can delete this ACL group from the list view.';
+      setError(emptyMsg);
+      setIsLoading(false);
+      return;
+    }
+
+    const isEdit = p.type === 'edit';
+    const hasSourceEntries = group.sourceEntries.length > 0;
+    const shouldDeleteExisting = isEdit && hasSourceEntries;
+    let caughtError: unknown = null;
     try {
-      if (group.principalName.length === 0) {
-        throw new Error('The principal field can not be empty.');
-      }
-
-      const allToCreate = unpackPrincipalGroup(group);
-
-      if (allToCreate.length === 0) {
-        if (p.type === 'create') {
-          throw new Error(
-            'Creating an ACL group requires at least one resource to be targeted. Topic/Group targets with an empty selector are not valid.'
-          );
-        }
-        throw new Error('No targeted resources. You can delete this ACL group from the list view.');
-      }
-
       // Ignore creation of ACLs that already exist, and delete ACLs that are no longer needed
-      if (p.type === 'edit' && group.sourceEntries.length > 0) {
-        const requests = group.sourceEntries.map((acl) => {
+      if (shouldDeleteExisting) {
+        const deleteRequests = group.sourceEntries.map((acl) => {
           // try to find this in allToCreate
           const foundIdx = allToCreate.findIndex((x) => JSON.stringify(acl) === JSON.stringify(x));
           if (foundIdx !== -1) {
@@ -111,11 +128,11 @@ export const AclPrincipalGroupEditor = (p: {
           // acl should no longer exist, delete it
           return api.deleteACLs(acl);
         });
-        await Promise.allSettled(requests);
+        await Promise.allSettled(deleteRequests);
       }
 
       // Create all ACLs in group
-      const requests = allToCreate.map((x) =>
+      const createRequests = allToCreate.map((x) =>
         api.createACL({
           host: x.host,
           principal: x.principal,
@@ -127,15 +144,20 @@ export const AclPrincipalGroupEditor = (p: {
         })
       );
 
-      const results = await Promise.allSettled(requests);
+      const results = await Promise.allSettled(createRequests);
       const rejected = results.filter((x) => x.status === 'rejected');
-      if (rejected.length) {
+      const rejectedCount = rejected.length;
+      if (rejectedCount) {
         // biome-ignore lint/suspicious/noConsole: error logging
         console.error('some create acl requests failed', { results, rejected });
-        throw new Error(`${rejected.length} requests failed`);
+        caughtError = new Error(`${rejectedCount} requests failed`);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      caughtError = err;
+    }
+
+    if (caughtError !== null) {
+      const msg = caughtError instanceof Error ? caughtError.message : String(caughtError);
       setError(msg);
       setIsLoading(false);
       return;
@@ -297,7 +319,7 @@ export const AclPrincipalGroupEditor = (p: {
                 <Flex flexDirection="column" gap={4}>
                   {group.topicAcls.map((t, i) => (
                     <ResourceACLsEditor
-                      key={`topic-${t.selector}-${i}`}
+                      key={t._key}
                       onChange={(updated) =>
                         setGroup(
                           (prev) =>
@@ -334,7 +356,7 @@ export const AclPrincipalGroupEditor = (p: {
                 <Flex flexDirection="column" gap={4}>
                   {group.consumerGroupAcls.map((t, i) => (
                     <ResourceACLsEditor
-                      key={`consumer-group-${t.selector}-${i}`}
+                      key={t._key}
                       onChange={(updated) =>
                         setGroup((prev) => ({
                           ...prev,
@@ -376,7 +398,7 @@ export const AclPrincipalGroupEditor = (p: {
                 <Flex flexDirection="column" gap={4}>
                   {group.transactionalIdAcls.map((t, i) => (
                     <ResourceACLsEditor
-                      key={`transactional-id-${t.selector}-${i}`}
+                      key={t._key}
                       onChange={(updated) =>
                         setGroup((prev) => ({
                           ...prev,

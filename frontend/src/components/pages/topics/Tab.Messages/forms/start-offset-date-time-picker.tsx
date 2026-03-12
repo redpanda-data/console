@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { DateTimeInput } from '@redpanda-data/ui';
 import { useEffect, useRef, useState } from 'react';
 
@@ -26,7 +28,9 @@ export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartO
 
   // Use ref to avoid onChange in useEffect dependencies (it changes every render)
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   // Stable fallback timestamp to avoid Date.now() changes causing re-renders
   const [initialTimestamp] = useState(() => Date.now());

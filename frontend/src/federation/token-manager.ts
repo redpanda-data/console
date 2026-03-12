@@ -74,6 +74,14 @@ export class TokenManager {
   }
 
   /**
+   * Updates the getAccessToken callback.
+   * Useful when the callback reference changes (e.g., from a React prop).
+   */
+  setGetAccessToken(fn: () => Promise<string>): void {
+    this.getAccessToken = fn;
+  }
+
+  /**
    * Returns whether a token refresh is currently in progress.
    */
   get isRefreshing(): boolean {

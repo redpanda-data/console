@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Box, Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -27,9 +29,12 @@ async function refreshRoleData(force: boolean) {
   if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
     return;
   }
-  await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
-  await rolesApi.refreshRoles();
-  await rolesApi.refreshRoleMembers();
+  await Promise.allSettled([
+    api.refreshAcls(AclRequestDefault, force),
+    api.refreshServiceAccounts(),
+    rolesApi.refreshRoles(),
+    rolesApi.refreshRoleMembers(),
+  ]);
 }
 
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {
@@ -67,12 +72,13 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
     setIsDeleting(true);
     try {
       await rolesApi.deleteRole(roleName, true);
-      await rolesApi.refreshRoles();
-      await rolesApi.refreshRoleMembers();
-    } finally {
+      await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
       setIsDeleting(false);
+      appGlobal.historyPush('/security/roles/');
+    } catch (e) {
+      setIsDeleting(false);
+      throw e;
     }
-    appGlobal.historyPush('/security/roles/');
   };
 
   const aclPrincipalGroup = principalGroupsView.principalGroups.find(

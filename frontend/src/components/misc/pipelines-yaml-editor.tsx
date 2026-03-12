@@ -9,11 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
-import 'monaco-editor';
+import type { EditorProps, Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { useCallback, useEffect, useState } from 'react';
+import { type ComponentType, lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
 
@@ -79,6 +78,10 @@ export const monacoYamlOptions = {
   ],
 } as MonacoYamlOptions;
 
+const LazyEditor = lazy(() =>
+  import('@monaco-editor/react').then((m) => ({ default: m.default as ComponentType<EditorProps> }))
+);
+
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
@@ -99,19 +102,21 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   }, []);
 
   return (
-    <Editor
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
-      defaultLanguage="yaml"
-      defaultValue={''}
-      loading={<LoadingPlaceholder />}
-      options={options}
-      path={'new-connector.yaml'}
-      wrapperProps={{
-        className: 'kowlEditor',
-        style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
-      }}
-      {...rest}
-    />
+    <Suspense fallback={<LoadingPlaceholder />}>
+      <LazyEditor
+        beforeMount={(monaco) => setMonacoOptions(monaco)}
+        defaultLanguage="yaml"
+        defaultValue={''}
+        loading={<LoadingPlaceholder />}
+        options={options}
+        path={'new-connector.yaml'}
+        wrapperProps={{
+          className: 'kowlEditor',
+          style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
+        }}
+        {...rest}
+      />
+    </Suspense>
   );
 }
 

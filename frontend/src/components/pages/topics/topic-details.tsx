@@ -241,7 +241,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       () => topic,
       'partitions',
       'viewPartitions',
-      <Flex gap={1}>
+      <Flex gap={1} key="partitions-title">
         Partitions
         {!!leaderLessPartitionIds && (
           <Tooltip

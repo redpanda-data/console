@@ -38,17 +38,134 @@ const MTLS_CLIENT_KEY_SECRET_TEXT: SecretSelectorCustomText = {
   emptyStateDescription: 'Create a secret to securely store your mTLS client private key',
 };
 
+const CERTIFICATE_LABELS: Record<CertificateType, string> = {
+  ca: 'CA certificate',
+  clientCert: 'Client certificate',
+  clientKey: 'Client private key',
+};
+
+const CERTIFICATE_PLACEHOLDERS: Record<CertificateType, string> = {
+  ca: '/etc/redpanda/certs/ca.crt',
+  clientCert: '/etc/redpanda/certs/client.crt',
+  clientKey: '/etc/redpanda/certs/client.key',
+};
+
+const CERTIFICATE_TEST_ID_SUFFIXES: Record<CertificateType, string> = {
+  ca: 'ca',
+  clientCert: 'client-cert',
+  clientKey: 'client-key',
+};
+
+type CertificateButtonProps = {
+  certType: CertificateType;
+  cert: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
+  onOpenDialog: (certType: CertificateType) => void;
+  onRemove: (certType: CertificateType) => void;
+};
+
+function CertificateButton({ certType, cert, onOpenDialog, onRemove }: CertificateButtonProps) {
+  const label = CERTIFICATE_LABELS[certType] ?? 'Certificate';
+  const hasCert = Boolean(cert?.filePath || cert?.pemContent);
+
+  if (!hasCert) {
+    return (
+      <Button onClick={() => onOpenDialog(certType)} testId={`add-${certType}-button`} type="button" variant="outline">
+        Add {label}
+      </Button>
+    );
+  }
+
+  const displayValue = cert?.fileName || cert?.filePath || 'Certificate added';
+
+  return (
+    <div className="flex items-center justify-between rounded-md bg-muted px-4 py-3" data-testid={`${certType}-status`}>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-muted-foreground text-xs">{label}</span>
+        <span className="font-medium text-sm">{displayValue}</span>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => onOpenDialog(certType)}
+          size="sm"
+          testId={`edit-${certType}-button`}
+          type="button"
+          variant="ghost"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit
+        </Button>
+        <Button
+          className="text-destructive hover:text-destructive"
+          onClick={() => onRemove(certType)}
+          size="sm"
+          testId={`remove-${certType}-button`}
+          type="button"
+          variant="ghost"
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+type CertificateInputFieldProps = {
+  certType: CertificateType;
+  control: Control<FormValues>;
+  cert: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
+};
+
+function CertificateInputField({ certType, control, cert }: CertificateInputFieldProps) {
+  const label = CERTIFICATE_LABELS[certType] ?? 'Certificate';
+  const placeholder = CERTIFICATE_PLACEHOLDERS[certType] ?? '/path/to/certificate';
+  const testIdSuffix = CERTIFICATE_TEST_ID_SUFFIXES[certType] ?? 'client-key';
+
+  return (
+    <FormField
+      control={control}
+      name={`mtls.${certType}`}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label} path</FormLabel>
+          <FormControl>
+            <Input
+              onChange={(e) => {
+                const value = e.target.value.trim();
+                field.onChange(value ? { filePath: value } : undefined);
+              }}
+              placeholder={placeholder}
+              testId={`mtls-${testIdSuffix}-path-input`}
+              type="text"
+              value={cert?.filePath || ''}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
 type MtlsCertificatesUploadProps = {
   control: Control<FormValues>;
   errors: FieldErrors<FormValues>;
-  renderCertificateButton: (certType: CertificateType) => React.ReactNode;
+  certs: {
+    ca: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
+    clientCert: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
+    clientKey: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
+  };
+  onOpenDialog: (certType: CertificateType) => void;
+  onRemove: (certType: CertificateType) => void;
   hideClientKey?: boolean;
 };
 
 const MtlsCertificatesUpload = ({
   control,
   errors,
-  renderCertificateButton,
+  certs,
+  onOpenDialog,
+  onRemove,
   hideClientKey,
 }: MtlsCertificatesUploadProps) => (
   <div className="flex flex-col gap-4">
@@ -56,20 +173,42 @@ const MtlsCertificatesUpload = ({
       <FormField
         control={control}
         name="mtls.ca"
-        render={() => <FormItem className="w-1/2">{renderCertificateButton('ca')}</FormItem>}
+        render={() => (
+          <FormItem className="w-1/2">
+            <CertificateButton cert={certs.ca} certType="ca" onOpenDialog={onOpenDialog} onRemove={onRemove} />
+          </FormItem>
+        )}
       />
 
       <FormField
         control={control}
         name="mtls.clientCert"
-        render={() => <FormItem className="w-1/2">{renderCertificateButton('clientCert')}</FormItem>}
+        render={() => (
+          <FormItem className="w-1/2">
+            <CertificateButton
+              cert={certs.clientCert}
+              certType="clientCert"
+              onOpenDialog={onOpenDialog}
+              onRemove={onRemove}
+            />
+          </FormItem>
+        )}
       />
 
       {!hideClientKey && (
         <FormField
           control={control}
           name="mtls.clientKey"
-          render={() => <FormItem className="w-1/2">{renderCertificateButton('clientKey')}</FormItem>}
+          render={() => (
+            <FormItem className="w-1/2">
+              <CertificateButton
+                cert={certs.clientKey}
+                certType="clientKey"
+                onOpenDialog={onOpenDialog}
+                onRemove={onRemove}
+              />
+            </FormItem>
+          )}
         />
       )}
     </div>
@@ -141,126 +280,12 @@ export const MtlsConfiguration = () => {
     setValue(`mtls.${certType}`, undefined);
   };
 
-  const getCertificateLabel = (certType: CertificateType): string => {
-    switch (certType) {
-      case 'ca':
-        return 'CA certificate';
-      case 'clientCert':
-        return 'Client certificate';
-      case 'clientKey':
-        return 'Client private key';
-      default:
-        return 'Certificate';
-    }
-  };
-
-  const getCertificatePlaceholder = (certType: CertificateType): string => {
-    switch (certType) {
-      case 'ca':
-        return '/etc/redpanda/certs/ca.crt';
-      case 'clientCert':
-        return '/etc/redpanda/certs/client.crt';
-      case 'clientKey':
-        return '/etc/redpanda/certs/client.key';
-      default:
-        return '/path/to/certificate';
-    }
-  };
-
   const getCertificateValue = (certType: CertificateType) => mtls?.[certType];
 
-  const renderCertificateButton = (certType: CertificateType) => {
-    const cert = getCertificateValue(certType);
-    const label = getCertificateLabel(certType);
-    const hasCert = Boolean(cert?.filePath || cert?.pemContent);
-
-    if (!hasCert) {
-      return (
-        <Button
-          onClick={() => handleOpenDialog(certType)}
-          testId={`add-${certType}-button`}
-          type="button"
-          variant="outline"
-        >
-          Add {label}
-        </Button>
-      );
-    }
-
-    const displayValue = cert?.fileName || cert?.filePath || 'Certificate added';
-
-    return (
-      <div
-        className="flex items-center justify-between rounded-md bg-muted px-4 py-3"
-        data-testid={`${certType}-status`}
-      >
-        <div className="flex flex-col gap-0.5">
-          <span className="text-muted-foreground text-xs">{label}</span>
-          <span className="font-medium text-sm">{displayValue}</span>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => handleOpenDialog(certType)}
-            size="sm"
-            testId={`edit-${certType}-button`}
-            type="button"
-            variant="ghost"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit
-          </Button>
-          <Button
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleRemoveCertificate(certType)}
-            size="sm"
-            testId={`remove-${certType}-button`}
-            type="button"
-            variant="ghost"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderCertificateInput = (certType: CertificateType) => {
-    const label = getCertificateLabel(certType);
-    const placeholder = getCertificatePlaceholder(certType);
-    const cert = getCertificateValue(certType);
-
-    let testIdSuffix = 'client-key';
-    if (certType === 'ca') {
-      testIdSuffix = 'ca';
-    } else if (certType === 'clientCert') {
-      testIdSuffix = 'client-cert';
-    }
-
-    return (
-      <FormField
-        control={control}
-        name={`mtls.${certType}`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>{label} path</FormLabel>
-            <FormControl>
-              <Input
-                onChange={(e) => {
-                  const value = e.target.value.trim();
-                  field.onChange(value ? { filePath: value } : undefined);
-                }}
-                placeholder={placeholder}
-                testId={`mtls-${testIdSuffix}-path-input`}
-                type="text"
-                value={cert?.filePath || ''}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    );
+  const certs = {
+    ca: getCertificateValue('ca'),
+    clientCert: getCertificateValue('clientCert'),
+    clientKey: getCertificateValue('clientKey'),
   };
 
   return (
@@ -307,17 +332,19 @@ export const MtlsConfiguration = () => {
 
         {!isEmbedded() && mtlsMode === 'file_path' ? (
           <div className="flex flex-col gap-4">
-            {renderCertificateInput('ca')}
-            {renderCertificateInput('clientCert')}
-            {renderCertificateInput('clientKey')}
+            <CertificateInputField cert={certs.ca} certType="ca" control={control} />
+            <CertificateInputField cert={certs.clientCert} certType="clientCert" control={control} />
+            <CertificateInputField cert={certs.clientKey} certType="clientKey" control={control} />
           </div>
         ) : (
           <>
             <MtlsCertificatesUpload
+              certs={certs}
               control={control}
               errors={errors}
               hideClientKey={isEmbedded()}
-              renderCertificateButton={renderCertificateButton}
+              onOpenDialog={handleOpenDialog}
+              onRemove={handleRemoveCertificate}
             />
             {isEmbedded() && (
               <FormField

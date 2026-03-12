@@ -1,3 +1,5 @@
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import {
@@ -41,7 +43,7 @@ type ChangePasswordModalProps = {
 
 export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePasswordModalProps) => {
   const toast = useToast();
-  const [password, setPassword] = useState(generatePassword(30, false));
+  const [password, setPassword] = useState(() => generatePassword(30, false));
   const [mechanism, setMechanism] = useState<SASLMechanism>();
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
   const isValidPassword = password && password.length >= 4 && password.length <= 64;
@@ -186,7 +188,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
 
   useEffect(() => {
     if (!isLoading && selectedRoles === undefined) {
-      setSelectedRoles([...originalRoles]);
+      queueMicrotask(() => setSelectedRoles([...originalRoles]));
     }
   }, [originalRoles, isLoading, selectedRoles]);
 
@@ -200,30 +202,29 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
     }
     const addedRoles = formattedSelectedRoles.except(originalRoles);
     const removedRoles = originalRoles.except(formattedSelectedRoles);
+    const promises: Promise<UpdateRoleMembershipResponse>[] = [];
+
+    // Remove user from "removedRoles"
+    for (const r of removedRoles) {
+      const membership = create(UpdateRoleMembershipRequestSchema, {
+        roleName: r,
+        remove: [{ principal: userName }],
+      });
+      promises.push(updateRoleMembership(membership));
+    }
+    // Add to newly selected roles
+    for (const r of addedRoles) {
+      const membership = create(UpdateRoleMembershipRequestSchema, {
+        roleName: r,
+        add: [{ principal: userName }],
+      });
+      promises.push(updateRoleMembership(membership));
+    }
+
     try {
-      const promises: Promise<UpdateRoleMembershipResponse>[] = [];
-
-      // Remove user from "removedRoles"
-      for (const r of removedRoles) {
-        const membership = create(UpdateRoleMembershipRequestSchema, {
-          roleName: r,
-          remove: [{ principal: userName }],
-        });
-        promises.push(updateRoleMembership(membership));
-      }
-      // Add to newly selected roles
-      for (const r of addedRoles) {
-        const membership = create(UpdateRoleMembershipRequestSchema, {
-          roleName: r,
-          add: [{ principal: userName }],
-        });
-        promises.push(updateRoleMembership(membership));
-      }
-
       await Promise.allSettled(promises);
       // TODO: Until we haven't migrated everything from mobx is better to not remove this
-      await rolesApi.refreshRoles();
-      await rolesApi.refreshRoleMembers();
+      await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
 
       toast({
         status: 'success',

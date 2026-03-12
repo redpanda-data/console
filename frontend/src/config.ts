@@ -393,27 +393,26 @@ export const embeddedAvailableRoutesObservable = {
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   setConfig(setupArgs);
 
+  // Set MonacoEnvironment synchronously before loader.init() to avoid race
+  // where the editor mounts before the worker URL resolver is available
+  window.MonacoEnvironment = {
+    getWorkerUrl(_, label: string): string {
+      switch (label) {
+        case 'editorWorkerService': {
+          return `${window.location.origin}/static/js/editor.worker.js`;
+        }
+        case 'typescript': {
+          return `${window.location.origin}/static/js/ts.worker.js`;
+        }
+        default: {
+          return `${window.location.origin}/static/js/${label}.worker.js`;
+        }
+      }
+    },
+  };
+
   // Tell monaco editor where to load dependencies from
   loader.config({ monaco });
-
-  // Ensure yaml workers are being loaded locally as well
-  loader.init().then(() => {
-    window.MonacoEnvironment = {
-      getWorkerUrl(_, label: string): string {
-        switch (label) {
-          case 'editorWorkerService': {
-            return `${window.location.origin}/static/js/editor.worker.js`;
-          }
-          case 'typescript': {
-            return `${window.location.origin}/static/js/ts.worker.js`;
-          }
-          default: {
-            return `${window.location.origin}/static/js/${label}.worker.js`;
-          }
-        }
-      },
-    };
-  });
 
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is

@@ -9,12 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AgentTab } from './agent-tab';
 import { AttributesTab } from './attributes-tab';
@@ -22,6 +24,7 @@ import { LLMIOTab } from './llm-io-tab';
 import { OverviewTab } from './overview-tab';
 import { RawJSONTab } from './raw-json-tab';
 import { ToolCallTab } from './tool-call-tab';
+import { bytesToHex } from '../utils/hex-utils';
 import { isAgentSpan, isLLMSpan, isToolSpan } from '../utils/span-classifier';
 import { isRootSpan } from '../utils/transcript-statistics';
 
@@ -68,6 +71,14 @@ export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueCh
   const [internalTab, setInternalTab] = useState(() =>
     getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab)
   );
+  const [prevSpanId, setPrevSpanId] = useState(() => bytesToHex(span.spanId));
+
+  // Reset to default tab when span changes (only in uncontrolled mode) - derived during render
+  const currentSpanId = bytesToHex(span.spanId);
+  if (value === undefined && currentSpanId !== prevSpanId) {
+    setPrevSpanId(currentSpanId);
+    setInternalTab(getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab));
+  }
 
   // Use controlled value if provided, otherwise use internal state
   const activeTab = value ?? internalTab;
@@ -80,14 +91,6 @@ export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueCh
       setInternalTab(newTab);
     }
   };
-
-  // Reset to default tab when span changes (only in uncontrolled mode)
-  useEffect(() => {
-    if (value === undefined) {
-      const defaultTab = getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab);
-      setInternalTab(defaultTab);
-    }
-  }, [showOverviewTab, showAgentTab, showLLMTab, showToolTab, value]);
 
   // Build tabs array
   const tabs = [

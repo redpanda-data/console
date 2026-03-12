@@ -141,7 +141,12 @@ export class StepReview extends Component<{
         <p>Using throttling you can limit the network traffic for reassignments.</p>
 
         <div style={{ marginTop: '2em', paddingBottom: '1em' }}>
-          <BandwidthSlider settings={settings} />
+          <BandwidthSlider
+            onSettingsChange={(x) => {
+              settings.maxReplicationTraffic = x;
+            }}
+            settings={settings}
+          />
         </div>
 
         <ul style={{ marginTop: '0.5em' }}>

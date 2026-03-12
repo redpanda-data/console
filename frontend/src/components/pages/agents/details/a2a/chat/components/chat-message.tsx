@@ -95,7 +95,7 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
             <TaskStatusUpdateBlock
               inputTokens={block.usage?.input_tokens}
               isLastBlock={index === message.contentBlocks.length - 1}
-              key={`${message.id}-status-${index}`}
+              key={`${message.id}-status-${block.messageId ?? ''}-${block.taskState ?? index}`}
               messageId={block.messageId}
               outputTokens={block.usage?.output_tokens}
               previousState={block.previousState}
@@ -105,12 +105,18 @@ export const ChatMessage = ({ message, isLoading: _isLoading }: ChatMessageProps
             />
           );
         case 'a2a-error':
-          return <A2AErrorBlock error={block.error} key={`${message.id}-error-${index}`} timestamp={block.timestamp} />;
+          return (
+            <A2AErrorBlock
+              error={block.error}
+              key={`${message.id}-error-${block.error?.code ?? index}`}
+              timestamp={block.timestamp}
+            />
+          );
         case 'connection-status':
           return (
             <ConnectionStatusBlock
               attempt={block.attempt}
-              key={`${message.id}-conn-${index}`}
+              key={`${message.id}-conn-${block.status}-${block.attempt ?? index}`}
               maxAttempts={block.maxAttempts}
               status={block.status}
               timestamp={block.timestamp}

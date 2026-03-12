@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { durationMs } from '@bufbuild/protobuf/wkt';
 import {
   type ColumnDef,
@@ -44,7 +46,7 @@ import {
 import type { MatchedSpanIds, TraceSummary } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { ChangeEvent, FC } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGetTraceQuery } from 'react-query/api/tracing';
 
 import {
@@ -354,7 +356,7 @@ const SpanRow: FC<SpanRowProps> = ({
   const startOffsetMs = Number(span.startTime - timeline.minTime) / 1_000_000;
   const spanTimestamp = new Date(baseTimestamp.getTime() + startOffsetMs);
 
-  const Icon = getIconForServiceName(span.span);
+  const serviceIcon = getIconForServiceName(span.span);
   const serviceName = getServiceName(span.span);
 
   // Check if this span is selected
@@ -419,7 +421,7 @@ const SpanRow: FC<SpanRowProps> = ({
             className="flex h-4 max-w-[150px] shrink-0 items-center border-border bg-muted/50 px-1.5 py-0 font-normal text-muted-foreground"
             variant="outline"
           >
-            <Icon className="mr-1 h-3 w-3 shrink-0" />
+            {createElement(serviceIcon, { className: 'mr-1 h-3 w-3 shrink-0' })}
             <Small className="truncate" title={serviceName}>
               {serviceName}
             </Small>
@@ -522,18 +524,18 @@ const useSpanExpansion = (spanTree: SpanNode[], collapseAllTrigger: number) => {
   // Reset to initial state when collapse all is triggered
   useEffect(() => {
     if (collapseAllTrigger > 0 && spanTree.length > 0) {
-      setExpandedSpans(computeInitialExpandedSpans(spanTree));
+      queueMicrotask(() => setExpandedSpans(computeInitialExpandedSpans(spanTree)));
     }
   }, [collapseAllTrigger, spanTree]);
 
   // Sync expansion state when spanTree loads (handles async data loading)
+  // Only initialize once when spanTree first becomes populated
   useEffect(() => {
-    // Only initialize once when spanTree first becomes populated
     if (!hasInitializedRef.current && spanTree.length > 0) {
       hasInitializedRef.current = true;
       const initialSpans = computeInitialExpandedSpans(spanTree);
       if (initialSpans.size > 0) {
-        setExpandedSpans(initialSpans);
+        queueMicrotask(() => setExpandedSpans(initialSpans));
       }
     }
   }, [spanTree]);
@@ -1002,6 +1004,7 @@ export const TranscriptsTable: FC<Props> = ({
   matchedSpans,
   showFullTraces = true,
 }) => {
+  'use no memo';
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
 
   // Auto-expand trace when autoExpandTraceId changes (for linked trace mode)

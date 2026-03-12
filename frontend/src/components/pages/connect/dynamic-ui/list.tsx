@@ -21,7 +21,9 @@ const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
 // but still calls the most recent version of the callback.
 const useLatestRef = <T,>(value: T) => {
   const ref = useRef(value);
-  ref.current = value;
+  useEffect(() => {
+    ref.current = value;
+  });
   return ref;
 };
 
@@ -182,6 +184,16 @@ export function CommaSeparatedStringList(props: {
   );
 }
 
+type ListItemRendererProps<T extends { id: string }> = {
+  item: T;
+  index: number;
+  renderItem: (item: T, index: number) => JSX.Element;
+};
+
+function ListItemRenderer<T extends { id: string }>({ item, index, renderItem }: ListItemRendererProps<T>) {
+  return renderItem(item, index);
+}
+
 export function List<T extends { id: string }>(props: {
   items: T[];
   renderItem: (item: T, index: number) => JSX.Element;
@@ -203,14 +215,14 @@ export function List<T extends { id: string }>(props: {
           {(droppableProvided, _droppableSnapshot) => (
             <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
               {list.map((tag, index) => (
-                <Draggable draggableId={String(index)} index={index} key={String(index)}>
+                <Draggable draggableId={String(index)} index={index} key={tag.id}>
                   {(draggableProvided, _draggableSnapshot) => (
                     <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                       <div className="draggableItem">
                         <div className="dragHandle" {...draggableProvided.dragHandleProps}>
                           <MenuIcon />
                         </div>
-                        {renderItem(tag, index)}
+                        <ListItemRenderer index={index} item={tag} renderItem={renderItem} />
                       </div>
                     </div>
                   )}

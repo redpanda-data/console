@@ -22,7 +22,7 @@ type KnowledgeBaseConfigurationTabProps = {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSave: () => Promise<void>;
-  formHasChanges: boolean;
+  isDirty: boolean;
   isUpdating: boolean;
 };
 
@@ -32,14 +32,14 @@ export const KnowledgeBaseConfigurationTab = ({
   onStartEdit,
   onCancelEdit,
   onSave,
-  formHasChanges,
+  isDirty,
   isUpdating,
 }: KnowledgeBaseConfigurationTabProps) => {
   return (
     <div className="flex flex-col gap-6">
       {/* Basic Info Section */}
       <BasicInfoSection
-        formHasChanges={formHasChanges}
+        isDirty={isDirty}
         isEditMode={isEditMode}
         isUpdating={isUpdating}
         knowledgeBase={knowledgeBase}

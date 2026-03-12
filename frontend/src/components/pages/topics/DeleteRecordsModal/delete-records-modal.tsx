@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import {
   Alert,
   AlertIcon,
@@ -222,7 +224,7 @@ const SelectOffsetStep = ({
                 }}
                 role="presentation"
               >
-                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp || Date.now().valueOf()} />
+                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp ?? 0} />
               </div>
             ),
           },
@@ -401,13 +403,22 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     }
   }, [topic?.topicName]);
 
-  const [partitionOption, setPartitionOption] = useState<PartitionOption>(null);
-  const [specifiedPartition, setSpecifiedPartition] = useState<null | number>(null);
-  const [offsetOption, setOffsetOption] = useState<OffsetOption>(null);
-  const [step, setStep] = useState<1 | 2>(1);
-  const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
+  const [wizardState, setWizardState] = useState(() => ({
+    partitionOption: null as PartitionOption,
+    specifiedPartition: null as null | number,
+    offsetOption: null as OffsetOption,
+    step: 1 as 1 | 2,
+    specifiedOffset: 0,
+    timestamp: Date.now(),
+  }));
+  const { partitionOption, specifiedPartition, offsetOption, step, specifiedOffset, timestamp } = wizardState;
+  const setPartitionOption = (v: PartitionOption) => setWizardState((prev) => ({ ...prev, partitionOption: v }));
+  const setSpecifiedPartition = (v: null | number) => setWizardState((prev) => ({ ...prev, specifiedPartition: v }));
+  const setOffsetOption = (v: OffsetOption) => setWizardState((prev) => ({ ...prev, offsetOption: v }));
+  const setStep = (v: 1 | 2) => setWizardState((prev) => ({ ...prev, step: v }));
+  const setSpecifiedOffset = (v: number) => setWizardState((prev) => ({ ...prev, specifiedOffset: v }));
+  const setTimestamp = (v: number) => setWizardState((prev) => ({ ...prev, timestamp: v }));
   const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
-  const [timestamp, setTimestamp] = useState<number>(Date.now());
   const [errors, setErrors] = useState<string[]>([]);
 
   const hasErrors = errors.length > 0;
@@ -527,8 +538,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
               <Flex flexDirection="column" gap={4} p={2}>
                 <Text>Errors have occurred when processing your request. Please contact your Kafka Administrator.</Text>
                 <List>
-                  {errors.map((e, i) => (
-                    <ListItem key={String(i)}>{e}</ListItem>
+                  {errors.map((e) => (
+                    <ListItem key={e}>{e}</ListItem>
                   ))}
                 </List>
               </Flex>

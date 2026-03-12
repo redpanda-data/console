@@ -27,7 +27,24 @@ export default defineConfig({
       include: /\.(?:ts|tsx)$/,
       babelLoaderOptions(opts) {
         opts.plugins ??= [];
-        opts.plugins.unshift(['babel-plugin-react-compiler', { target: '18' }]);
+        opts.plugins.unshift([
+          'babel-plugin-react-compiler',
+          {
+            target: '18',
+            sources: (filename: string) => {
+              if (filename.includes('/lib/redpanda-ui/')) {
+                return false;
+              }
+              if (filename.includes('/gen/')) {
+                return false;
+              }
+              if (filename.includes('node_modules')) {
+                return false;
+              }
+              return true;
+            },
+          },
+        ]);
       },
     }),
     pluginSvgr({ mixedImport: true }),

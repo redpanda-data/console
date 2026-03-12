@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { DataTable } from '@redpanda-data/ui';
 import { getRouteApi } from '@tanstack/react-router';
 
@@ -100,9 +102,12 @@ function executeMessageSearch(search: MessageSearch, topicName: string, remoteMc
 export const RemoteMCPLogsTab = () => {
   const { id } = routeApi.useParams();
 
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [logState, setLogState] = useState<{
+    messages: TopicMessage[];
+    isComplete: boolean;
+    error: string | null;
+  }>({ messages: [], isComplete: false, error: null });
+  const { messages, isComplete, error } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -113,16 +118,14 @@ export const RemoteMCPLogsTab = () => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setMessages([]);
-    setIsComplete(false);
-    setError(null);
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false, error: null }));
+    let searchError: string | null = null;
     executeMessageSearch(search, REMOTE_MCP_LOGS_TOPIC, id)
       .catch((x) => {
-        setError(String(x));
+        searchError = String(x);
       })
       .finally(() => {
-        setIsComplete(true);
-        setMessages([...search.messages]);
+        setLogState({ messages: [...search.messages], isComplete: true, error: searchError });
       });
     return () => {
       search.stopSearch();
@@ -133,7 +136,7 @@ export const RemoteMCPLogsTab = () => {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setMessages([...search.messages]);
+        setLogState((prev) => ({ ...prev, messages: [...search.messages] }));
       }
     }, 200);
     return () => clearInterval(interval);

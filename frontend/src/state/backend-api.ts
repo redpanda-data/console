@@ -25,6 +25,7 @@ import {
 } from 'components/license/license-utils';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
+import { useStore } from 'zustand';
 import { createStore as zustandCreate } from 'zustand/vanilla';
 
 import { appGlobal } from './app-global';
@@ -3111,8 +3112,14 @@ function addError(err: Error) {
   useApiStore.setState((s: any) => ({ errors: [...s.errors, err] }));
 }
 
+/** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
+function useApiStoreHook<T>(selector: (state: ReturnType<typeof _apiCreator>) => T): T {
+  return useStore(useApiStore, selector);
+}
+
 export {
   useApiStore,
+  useApiStoreHook,
   useRolesStore,
   usePipelinesStore,
   useKnowledgebaseStore,

@@ -25,6 +25,14 @@ import { api } from '../../../../../state/backend-api';
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/expandable-text';
 
+const setPropertyValue = (property: Property, value: Property['value']) => {
+  property.value = value;
+};
+
+const incrementErrorIndex = (property: Property) => {
+  property.currentErrorIndex += 1;
+};
+
 export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
   const propsMap = useMemo(() => new Map(p.properties.map((prop) => [prop.name, prop])), [p.properties]);
   const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
@@ -48,7 +56,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
   const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
   const cycleError = showErrors
     ? () => {
-        property.currentErrorIndex += 1;
+        incrementErrorIndex(property);
       }
     : undefined;
 
@@ -59,7 +67,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           <Checkbox
             isChecked={isRegex}
             onChange={(e) => {
-              property.value = '';
+              setPropertyValue(property, '');
               setSelected(e.target.checked ? 'topics.regex' : 'topics');
             }}
           >
@@ -76,7 +84,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           <Input
             autoComplete="off"
             onChange={(e) => {
-              property.value = e.target.value;
+              setPropertyValue(property, e.target.value);
             }}
             spellCheck={false}
             value={String(property.value)}
@@ -86,7 +94,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
             isMulti
             onChange={(v) => {
               if (isMultiValue(v)) {
-                property.value = v.map(({ value }) => value)?.join(',') ?? [];
+                setPropertyValue(property, v.map(({ value }) => value)?.join(',') ?? []);
               }
             }}
             options={api.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
