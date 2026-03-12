@@ -37,13 +37,19 @@ import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-fi
 import { InfoIcon, RefreshCcw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { useLogSearch } from '../../../hooks/use-log-search';
+import { useLogSearch } from '../../../react-query/api/logs';
 import type { Pipeline } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { TimestampDisplay } from '../../../utils/tsx-utils';
 import { cullText } from '../../../utils/utils';
 
 const DEFAULT_PAGE_SIZE = 10;
+
+/**
+ * TanStack Table assigns a default size of 150 to columns without an explicit `size`.
+ * We use this to detect "unsized" columns and avoid applying a fixed width.
+ */
+const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
 
 // --- Log payload helpers ---
 
@@ -197,9 +203,11 @@ function LogDetailSheet({
 
 interface LogExplorerProps {
   pipeline: Pipeline;
+  /** Pass `isServerless()` from config — controls whether pipelineId filtering uses server-side pushdown or client-side. */
+  serverless?: boolean;
 }
 
-export function LogExplorer({ pipeline }: LogExplorerProps) {
+export function LogExplorer({ pipeline, serverless }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -210,6 +218,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
     pipelineId: pipeline.id,
     live: liveViewEnabled,
     enabled: true,
+    serverless,
   });
 
   // --- Filter columns (dynamic options from loaded messages) ---
@@ -342,6 +351,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
           <div className="flex items-center gap-2">
             <Switch
               checked={liveViewEnabled}
+              id="live-view-toggle"
               onCheckedChange={(checked) => {
                 setLiveViewEnabled(checked);
                 setSorting([]);
@@ -354,7 +364,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
               <TooltipTrigger asChild>
                 <span className="flex gap-1">
                   <Label htmlFor="live-view-toggle">Live</Label>
-                  <InfoIcon className="size-4 text-muted-foreground" id="live-view-toggle" />
+                  <InfoIcon className="size-4 text-muted-foreground" />
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top">
@@ -364,6 +374,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
           </div>
         </div>
         <Button
+          data-testid="log-refresh-button"
           disabled={isSearching}
           onClick={refresh}
           size="icon"
@@ -392,7 +403,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
                     className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
-                    style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== 150 ? header.getSize() : undefined }}
+                    style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     {header.column.getIsSorted() === 'asc' && ' \u2191'}
@@ -408,7 +419,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
                 return (
                   <TableRow>
                     <TableCell className="py-10 text-center" colSpan={table.getVisibleFlatColumns().length}>
-                      <Spinner className="size-6" />
+                      <Spinner className="size-6" data-testid="log-loading-spinner" />
                     </TableCell>
                   </TableRow>
                 );
@@ -434,7 +445,7 @@ export function LogExplorer({ pipeline }: LogExplorerProps) {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== 150 ? cell.column.getSize() : undefined }}
+                      style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>

@@ -12,7 +12,7 @@ let mockReturn: {
   refresh: () => void;
 };
 
-vi.mock('../../../hooks/use-log-search', () => ({
+vi.mock('../../../react-query/api/logs', () => ({
   useLogSearch: () => mockReturn,
 }));
 
@@ -62,7 +62,7 @@ describe('LogExplorer', () => {
   test('shows spinner while searching with no messages', () => {
     mockReturn.phase = 'Searching...';
     renderExplorer();
-    expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(screen.getByTestId('log-loading-spinner')).toBeInTheDocument();
   });
 
   test('shows empty state when no messages and search complete', () => {
@@ -109,9 +109,8 @@ describe('LogExplorer', () => {
   test('refresh button calls refresh', async () => {
     const user = userEvent.setup();
     renderExplorer();
-    const refreshBtn = screen.getAllByRole('button').find((btn) => btn.querySelector('.lucide-refresh-ccw'));
-    expect(refreshBtn).toBeDefined();
-    await user.click(refreshBtn!);
+    const refreshBtn = screen.getByTestId('log-refresh-button');
+    await user.click(refreshBtn);
     expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 

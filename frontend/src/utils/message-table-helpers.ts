@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { createMessageSearch, type MessageSearchRequest } from '../state/backend-api';
 import type { TopicMessage } from '../state/rest-interfaces';
 
 /**
@@ -74,36 +72,4 @@ export function trimSlidingWindow({
     virtualStartIndex: virtualStartIndex + trimCount,
     trimCount,
   };
-}
-
-/**
- * Load a single large message by partition ID and offset, returning the loaded message.
- * Callers are responsible for replacing the old message in their own state.
- */
-export async function loadLargeMessage(
-  topicName: string,
-  partitionID: number,
-  offset: number,
-  keyDeserializer: PayloadEncoding = PayloadEncoding.UNSPECIFIED,
-  valueDeserializer: PayloadEncoding = PayloadEncoding.UNSPECIFIED
-): Promise<TopicMessage> {
-  const search = createMessageSearch();
-  const searchReq: MessageSearchRequest = {
-    filterInterpreterCode: '',
-    maxResults: 1,
-    partitionId: partitionID,
-    startOffset: offset,
-    startTimestamp: 0,
-    topicName,
-    includeRawPayload: true,
-    ignoreSizeLimit: true,
-    keyDeserializer,
-    valueDeserializer,
-  };
-  const result = await search.startSearch(searchReq);
-
-  if (result && result.length === 1) {
-    return result[0];
-  }
-  throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
 }

@@ -20,6 +20,7 @@ import type { ListMessagesResponse_DataMessage } from '../protogen/redpanda/api/
 import { CompressionType, type Payload, type TopicMessage } from '../state/rest-interfaces';
 
 const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
+const textDecoder = new TextDecoder();
 
 function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['encoding'] | undefined {
   switch (encoding) {
@@ -100,7 +101,7 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage): 
     m.headers.push({
       key: header.key,
       value: {
-        payload: JSON.stringify(new TextDecoder().decode(header.value)),
+        payload: JSON.stringify(textDecoder.decode(header.value)),
         encoding: 'text',
         schemaId: 0,
         size: header.value.length,
@@ -111,7 +112,7 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage): 
 
   // Key
   const key = data.key;
-  const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
+  const keyPayload = textDecoder.decode(key?.normalizedPayload);
 
   m.key = {} as Payload;
   m.key.rawBytes = key?.originalPayload;
@@ -145,7 +146,7 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage): 
 
   // Value
   const val = data.value;
-  const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
+  const valuePayload = textDecoder.decode(val?.normalizedPayload);
 
   m.value = {} as Payload;
   m.value.payload = valuePayload;
@@ -166,7 +167,6 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage): 
   m.value.schemaId = val?.schemaId ?? 0;
   m.value.troubleshootReport = val?.troubleshootReport;
   m.value.isPayloadNull = val?.encoding === PayloadEncoding.NULL;
-  m.valueJson = valuePayload;
   m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
 
   try {

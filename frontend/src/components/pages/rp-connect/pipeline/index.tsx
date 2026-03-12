@@ -61,6 +61,8 @@ import { Details } from './details';
 import { Toolbar } from './toolbar';
 import { extractLintHintsFromError } from '../errors';
 import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
+import { isFeatureFlagEnabled, isServerless } from 'config';
+import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { parseSchema } from '../utils/schema';
@@ -543,7 +545,11 @@ export default function PipelinePage() {
             <TabsContents>
               <TabsContent value="configuration">{content}</TabsContent>
               <TabsContent value="logs">
-                <LogsTab pipeline={pipeline} />
+                {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+                  <LogExplorer pipeline={pipeline} serverless={isServerless()} />
+                ) : (
+                  <LogsTab pipeline={pipeline} />
+                )}
               </TabsContent>
             </TabsContents>
           </Tabs>
