@@ -47,6 +47,8 @@ vi.mock('state/ui-state', () => ({
   },
 }));
 
+Element.prototype.scrollIntoView = vi.fn();
+
 import { RemoteMCPListPage } from './remote-mcp-list-page';
 
 const OPEN_MENU_REGEX = /open menu/i;
@@ -419,5 +421,134 @@ describe('RemoteMCPListPage', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+  });
+
+  test('search input updates value on keystrokes', async () => {
+    const user = userEvent.setup();
+
+    const server1 = create(MCPServerSchema, {
+      id: 'server-1',
+      displayName: 'Test Server',
+      url: 'http://localhost:8080',
+      state: MCPServer_State.RUNNING,
+      tools: {},
+    });
+
+    const transport = createMCPServersTransport({
+      listMCPServersMock: vi.fn().mockReturnValue(
+        create(ListMCPServersResponseSchema, { mcpServers: [server1], nextPageToken: '' })
+      ),
+    });
+
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Server')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter servers...');
+    await user.type(filterInput, 'hello');
+
+    // Input value must reflect typed text — a React Compiler memoization
+    // bug would freeze it at the initial empty string.
+    expect(filterInput).toHaveValue('hello');
+  });
+
+  test('filters servers by name via search input', async () => {
+    const user = userEvent.setup();
+
+    const server1 = create(MCPServerSchema, {
+      id: 'server-1',
+      displayName: 'Alpha Server',
+      url: 'http://localhost:8080',
+      state: MCPServer_State.RUNNING,
+      tools: {},
+    });
+
+    const server2 = create(MCPServerSchema, {
+      id: 'server-2',
+      displayName: 'Beta Server',
+      url: 'http://localhost:8081',
+      state: MCPServer_State.STOPPED,
+      tools: {},
+    });
+
+    const transport = createMCPServersTransport({
+      listMCPServersMock: vi.fn().mockReturnValue(
+        create(ListMCPServersResponseSchema, { mcpServers: [server1, server2], nextPageToken: '' })
+      ),
+    });
+
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Server')).toBeVisible();
+      expect(screen.getByText('Beta Server')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter servers...');
+    await user.type(filterInput, 'Beta');
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta Server')).toBeVisible();
+      expect(screen.queryByText('Alpha Server')).not.toBeInTheDocument();
+    });
+
+    // Clear and verify all rows reappear
+    await user.clear(filterInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Server')).toBeVisible();
+      expect(screen.getByText('Beta Server')).toBeVisible();
+    });
+  });
+
+  test('status faceted filter filters results', async () => {
+    const user = userEvent.setup();
+
+    const server1 = create(MCPServerSchema, {
+      id: 'server-1',
+      displayName: 'Running Server',
+      url: 'http://localhost:8080',
+      state: MCPServer_State.RUNNING,
+      tools: {},
+    });
+
+    const server2 = create(MCPServerSchema, {
+      id: 'server-2',
+      displayName: 'Stopped Server',
+      url: 'http://localhost:8081',
+      state: MCPServer_State.STOPPED,
+      tools: {},
+    });
+
+    const transport = createMCPServersTransport({
+      listMCPServersMock: vi.fn().mockReturnValue(
+        create(ListMCPServersResponseSchema, { mcpServers: [server1, server2], nextPageToken: '' })
+      ),
+    });
+
+    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Running Server')).toBeVisible();
+      expect(screen.getByText('Stopped Server')).toBeVisible();
+    });
+
+    // Click the "Status" faceted filter button (not the column header one in <thead>)
+    const statusFilterButton = screen
+      .getAllByRole('button', { name: /status/i })
+      .find((btn) => !btn.closest('thead'))!;
+    await user.click(statusFilterButton);
+
+    // Select the "Running" option from the filter popover
+    const runningOption = await screen.findByRole('option', { name: /running/i });
+    await user.click(runningOption);
+
+    // Only the running server should remain visible
+    await waitFor(() => {
+      expect(screen.getByText('Running Server')).toBeVisible();
+      expect(screen.queryByText('Stopped Server')).not.toBeInTheDocument();
+    });
   });
 });
