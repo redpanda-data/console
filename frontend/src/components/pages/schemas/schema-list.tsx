@@ -224,7 +224,13 @@ const SchemaList: FC = () => {
                 aria-label="Edit mode"
                 data-testid="schema-list-edit-mode-btn"
                 disabled={api.userData?.canManageSchemaRegistry === false}
-                onClick={() => appGlobal.historyPush('/schema-registry/edit-mode')}
+                onClick={() =>
+                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                    ? appGlobal.historyPush(
+                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                      )
+                    : appGlobal.historyPush('/schema-registry/edit-mode')
+                }
                 size="icon-xs"
                 variant="secondary-ghost"
               >
