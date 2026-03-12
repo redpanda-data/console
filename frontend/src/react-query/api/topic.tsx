@@ -115,13 +115,16 @@ export const useCreateTopicMutation = () => {
 
   return useMutation(createTopic, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: TopicService.method.listTopics,
-          cardinality: 'infinite',
+      await Promise.all([
+        api.refreshTopics(true),
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: TopicService.method.listTopics,
+            cardinality: 'infinite',
+          }),
+          exact: false,
         }),
-        exact: false,
-      });
+      ]);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
