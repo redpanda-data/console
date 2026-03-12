@@ -8,6 +8,7 @@ const kbdVariants = cva('inline-flex items-center justify-center rounded-md font
     variant: {
       filled: '!border-border border bg-accent text-accent-foreground',
       outline: '!border-input border text-accent-foreground',
+      ghost: 'text-primary',
     },
     size: {
       md: 'h-7 min-w-7 px-1.5 text-xs [&_svg]:size-3.5',

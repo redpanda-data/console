@@ -80,6 +80,8 @@ type AddUserStepProps = {
   defaultAuthMethod?: 'sasl' | 'service-account';
   defaultServiceAccountName?: string;
   pipelineName?: string;
+  selectionMode?: 'existing' | 'new' | 'both';
+  hideTitle?: boolean;
 };
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
@@ -94,6 +96,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       defaultAuthMethod,
       defaultServiceAccountName,
       pipelineName,
+      selectionMode = 'both',
+      hideTitle,
       ...motionProps
     },
     ref
@@ -203,9 +207,15 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       [usersList]
     );
 
-    const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(
-      userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING
-    );
+    const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(() => {
+      if (selectionMode === 'new') {
+        return CreatableSelectionOptions.CREATE;
+      }
+      if (selectionMode === 'existing') {
+        return CreatableSelectionOptions.EXISTING;
+      }
+      return userOptions.length === 0 ? CreatableSelectionOptions.CREATE : CreatableSelectionOptions.EXISTING;
+    });
 
     const userTopicPermissions = useMemo(() => {
       if (!(existingUserSelected && topicName && aclData?.aclResources)) {
@@ -363,15 +373,17 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     }));
 
     return (
-      <Card size="full" {...motionProps} animated>
-        <CardHeader className="max-w-2xl">
-          <CardTitle>
-            <Heading level={2}>Configure a user with permissions</Heading>
-          </CardTitle>
-          <CardDescription className="mt-4">
-            Select or create a SASL-SCRAM user that can interact with this topic.
-          </CardDescription>
-        </CardHeader>
+      <Card size="full" {...motionProps} animated variant="ghost">
+        {!hideTitle && (
+          <CardHeader className="max-w-2xl">
+            <CardTitle>
+              <Heading level={2}>Configure a user with permissions</Heading>
+            </CardTitle>
+            <CardDescription className="mt-4">
+              Select or create a SASL-SCRAM user that can interact with this topic.
+            </CardDescription>
+          </CardHeader>
+        )}
         <CardContent className="min-h-[300px]">
           <Form {...form}>
             <div className="mt-4 max-w-2xl space-y-8">
@@ -415,34 +427,36 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         : 'Select an existing user or create a new one.'}
                     </FormDescription>
                     <div className="flex flex-col items-start gap-2">
-                      <ToggleGroup
-                        disabled={isPending}
-                        onValueChange={(value) => {
-                          // Prevent deselection - ToggleGroup emits empty string when trying to deselect
-                          if (!value) {
-                            return;
-                          }
-                          handleUserSelectionTypeChange(value as CreatableSelectionType);
-                        }}
-                        type="single"
-                        value={userSelectionType}
-                        variant="outline"
-                      >
-                        <ToggleGroupItem
+                      {selectionMode === 'both' && (
+                        <ToggleGroup
                           disabled={isPending}
-                          id={CreatableSelectionOptions.EXISTING}
-                          value={CreatableSelectionOptions.EXISTING}
+                          onValueChange={(value) => {
+                            // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                            if (!value) {
+                              return;
+                            }
+                            handleUserSelectionTypeChange(value as CreatableSelectionType);
+                          }}
+                          type="single"
+                          value={userSelectionType}
+                          variant="outline"
                         >
-                          Existing
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                          disabled={isPending}
-                          id={CreatableSelectionOptions.CREATE}
-                          value={CreatableSelectionOptions.CREATE}
-                        >
-                          New
-                        </ToggleGroupItem>
-                      </ToggleGroup>
+                          <ToggleGroupItem
+                            disabled={isPending}
+                            id={CreatableSelectionOptions.EXISTING}
+                            value={CreatableSelectionOptions.EXISTING}
+                          >
+                            Existing
+                          </ToggleGroupItem>
+                          <ToggleGroupItem
+                            disabled={isPending}
+                            id={CreatableSelectionOptions.CREATE}
+                            value={CreatableSelectionOptions.CREATE}
+                          >
+                            New
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                      )}
 
                       <div className="flex gap-2">
                         <FormField

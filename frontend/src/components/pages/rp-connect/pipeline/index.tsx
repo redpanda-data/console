@@ -10,26 +10,25 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { isSystemTag } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card } from 'components/redpanda-ui/components/card';
+import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Form } from 'components/redpanda-ui/components/form';
-import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
-import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
-import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
-import { useDebounce } from 'hooks/use-debounce';
+import { YamlEditor } from 'components/ui/yaml/yaml-editor';
+import { isFeatureFlagEnabled } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import type { editor } from 'monaco-editor';
-import type { JSONSchema } from 'monaco-yaml';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import {
   CreatePipelineRequestSchema,
+  DeletePipelineRequestSchema,
   UpdatePipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
@@ -39,16 +38,19 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { useLintPipelineConfigQuery, useListComponentsQuery } from 'react-query/api/connect';
 import {
-  useGetPipelineServiceConfigSchemaQuery,
-  useLintPipelineConfigQuery,
-  useListComponentsQuery,
-} from 'react-query/api/connect';
-import { useCreatePipelineMutation, useGetPipelineQuery, useUpdatePipelineMutation } from 'react-query/api/pipeline';
+  useCreatePipelineMutation,
+  useDeletePipelineMutation,
+  useGetPipelineQuery,
+  useUpdatePipelineMutation,
+} from 'react-query/api/pipeline';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { toast } from 'sonner';
 import {
+  useOnboardingTopicDataStore,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
   useOnboardingYamlContentStore,
@@ -57,120 +59,25 @@ import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
-import { Details } from './details';
+import { Config } from './config';
+import { PipelineCommandMenu } from './pipeline-command-menu';
+import { PipelineFlowDiagram } from './pipeline-flow-diagram';
+import { type MiniWizardResult, RedpandaMiniWizard } from './redpanda-mini-wizard';
 import { Toolbar } from './toolbar';
+import { ViewDetails } from './view-details';
 import { extractLintHintsFromError } from '../errors';
-import { CreatePipelineSidebar } from '../onboarding/create-pipeline-sidebar';
+import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
+import { AddConnectorsCard } from '../onboarding/add-connectors-card';
+import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
+import { AddTopicStep } from '../onboarding/add-topic-step';
+import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
+import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
+import type { ConnectComponentType } from '../types/schema';
 import { parseSchema } from '../utils/schema';
-import { type PipelineMode, usePipelineMode } from '../utils/use-pipeline-mode';
+import { usePipelineMode } from '../utils/use-pipeline-mode';
 import { getConnectTemplate } from '../utils/yaml';
-
-type FooterProps = {
-  mode: PipelineMode;
-  onSave?: () => void;
-  onCancel: () => void;
-  isSaving?: boolean;
-  disabled?: boolean;
-};
-
-const Footer = memo(({ mode, onSave, onCancel, isSaving, disabled }: FooterProps) => {
-  if (mode === 'view') {
-    return (
-      <div className="flex items-center justify-between gap-2 border-t pt-4">
-        <Button onClick={onCancel} variant="secondary-ghost">
-          Cancel
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-2 border-t pt-4">
-      <Button disabled={isSaving} onClick={onCancel} variant="secondary-ghost">
-        Cancel
-      </Button>
-      <Button className="min-w-[70px]" disabled={isSaving || disabled} onClick={onSave}>
-        {mode === 'create' ? 'Create Pipeline' : 'Update Pipeline'}
-        {Boolean(isSaving) && <Spinner />}
-      </Button>
-    </div>
-  );
-});
-
-const PipelinePageSkeleton = memo(({ mode }: { mode: PipelineMode }) => {
-  const content = (
-    <div className="flex flex-1 flex-col gap-4 overflow-auto">
-      {/* Toolbar for view mode */}
-      {mode === 'view' && (
-        <div className="mb-4 flex items-center justify-between border-b pb-4">
-          <Skeleton className="h-9 w-24" />
-          <SkeletonGroup direction="horizontal" spacing="sm">
-            <Skeleton className="h-9 w-20" />
-            <Skeleton className="h-9 w-16" />
-            <Skeleton className="h-9 w-20" />
-          </SkeletonGroup>
-        </div>
-      )}
-
-      {/* Details section */}
-      <div className="space-y-4 rounded-lg border p-4">
-        <SkeletonGroup>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-        </SkeletonGroup>
-      </div>
-
-      {/* YAML Editor section */}
-      <div className="flex-1 rounded-lg border">
-        <div className="border-b p-3">
-          <Skeleton className="h-5 w-48" />
-        </div>
-        <div className="p-4">
-          <SkeletonGroup spacing="sm">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[90%]" />
-            <Skeleton className="h-4 w-[95%]" />
-            <Skeleton className="h-4 w-[85%]" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[92%]" />
-          </SkeletonGroup>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-2 border-t pt-4">
-        <Skeleton className="h-9 w-20" />
-        {(mode === 'create' || mode === 'edit') && <Skeleton className="h-9 w-32" />}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex w-full gap-4">
-      {mode === 'create' ? content : <Card size="full">{content}</Card>}
-
-      {/* Sidebar for create/edit modes */}
-      {(mode === 'create' || mode === 'edit') && (
-        <div className="w-80 space-y-4 rounded-lg border p-4">
-          <Skeleton className="h-6 w-48" />
-          <SkeletonGroup>
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[90%]" />
-          </SkeletonGroup>
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-});
 
 const pipelineFormSchema = z.object({
   name: z
@@ -179,10 +86,23 @@ const pipelineFormSchema = z.object({
     .max(100, 'Pipeline name must be less than 100 characters'),
   description: z.string().optional(),
   computeUnits: z.number().min(MIN_TASKS).int(),
+  tags: z
+    .array(
+      z.object({
+        key: z.string().min(1, 'Key is required'),
+        value: z.string().min(1, 'Value is required'),
+      })
+    )
+    .default([])
+    .refine((tags) => {
+      const keys = tags.map((t) => t.key).filter(Boolean);
+      return new Set(keys).size === keys.length;
+    }, 'Duplicate tag keys are not allowed'),
 });
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: pipeline page orchestrates many features
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
@@ -193,8 +113,6 @@ export default function PipelinePage() {
   const isServerlessMode = search.serverless === 'true';
   const hasInitializedServerless = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
-  const setPersistedYamlContent = useOnboardingYamlContentStore((state) => state.setYamlContent);
-  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
@@ -203,11 +121,37 @@ export default function PipelinePage() {
       name: '',
       description: '',
       computeUnits: MIN_TASKS,
+      tags: [],
     },
   });
 
   const [yamlContent, setYamlContent] = useState('');
   const [lintHints, setLintHints] = useState<Record<string, LintHint>>({});
+  const editorInstanceRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null);
+  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
+  const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [pendingSecretSearch, setPendingSecretSearch] = useState('');
+
+  const handleEditorMount = useCallback((editorInstance: import('monaco-editor').editor.IStandaloneCodeEditor) => {
+    editorInstanceRef.current = editorInstance;
+  }, []);
+
+  // Cmd+Shift+P keyboard shortcut for pipeline command menu
+  useEffect(() => {
+    if (mode === 'view') {
+      return;
+    }
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'p') {
+        e.preventDefault();
+        setIsCommandMenuOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [mode]);
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -218,39 +162,42 @@ export default function PipelinePage() {
 
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
-  const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
+  const { data: componentListResponse } = useListComponentsQuery();
 
   const components = useMemo(
     () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
     [componentListResponse]
   );
 
-  // Fetch JSON Schema from backend for YAML editor
-  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
-  const yamlEditorSchema = useMemo(() => {
-    if (!schemaResponse?.configSchema) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(schemaResponse.configSchema);
-      return {
-        definitions: parsed.definitions as Record<string, JSONSchema> | undefined,
-        properties: parsed.properties as Record<string, JSONSchema> | undefined,
-      };
-    } catch {
-      // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
-      return;
-    }
-  }, [schemaResponse]);
-
   const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
   const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
 
+  const lintPanelRef = useRef<ImperativePanelHandle>(null);
+  const userLintOverrideRef = useRef<'expanded' | 'collapsed' | null>(null);
+
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
-  const { data: lintResponse, isPending: isLinting } = useLintPipelineConfigQuery(debouncedYamlContent, {
+  const { data: lintResponse, isPending: isLintPending } = useLintPipelineConfigQuery(debouncedYamlContent, {
     enabled: mode !== 'view',
   });
+
+  const lintHintCount = Object.keys(lintHints).length;
+  const hasLintHints = lintHintCount > 0;
+
+  // Auto-collapse/expand lint panel, respecting manual user overrides
+  useEffect(() => {
+    if (mode === 'view') {
+      return;
+    }
+    const override = userLintOverrideRef.current;
+    if (override === 'expanded' || override === 'collapsed') {
+      return;
+    }
+    if (hasLintHints) {
+      lintPanelRef.current?.expand();
+    } else {
+      lintPanelRef.current?.collapse();
+    }
+  }, [hasLintHints, mode]);
 
   useEffect(() => {
     if (lintResponse) {
@@ -273,6 +220,9 @@ export default function PipelinePage() {
         name: pipeline.displayName,
         description: pipeline.description || '',
         computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
+        tags: Object.entries(pipeline.tags)
+          .filter(([k]) => !isSystemTag(k))
+          .map(([key, value]) => ({ key, value })),
       });
       setYamlContent(pipeline.configYaml);
     }
@@ -288,7 +238,7 @@ export default function PipelinePage() {
   // Serverless mode initialization - generate YAML from wizard data on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
   useEffect(() => {
-    if (mode !== 'create' || !isServerlessMode || hasInitializedServerless.current) {
+    if (mode !== 'create' || !isServerlessMode || hasInitializedServerless.current || components.length === 0) {
       return;
     }
 
@@ -325,7 +275,7 @@ export default function PipelinePage() {
     }
 
     hasInitializedServerless.current = true;
-  }, []);
+  }, [components]);
 
   // Clear wizard store (CREATE mode)
   const clearWizardStore = useCallback(() => {
@@ -354,7 +304,13 @@ export default function PipelinePage() {
       return;
     }
 
-    const { name, description, computeUnits } = form.getValues();
+    const { name, description, computeUnits, tags: formTags } = form.getValues();
+    const userTags: Record<string, string> = {};
+    for (const { key, value } of formTags) {
+      if (key) {
+        userTags[key] = value;
+      }
+    }
 
     if (mode === 'create') {
       const userData = useOnboardingUserDataStore.getState();
@@ -382,7 +338,7 @@ export default function PipelinePage() {
           cpuShares: tasksToCPU(computeUnits) || '0',
           memoryShares: '0',
         },
-        tags,
+        tags: { ...tags, ...userTags },
         serviceAccount: serviceAccountConfig,
       });
 
@@ -433,7 +389,8 @@ export default function PipelinePage() {
           memoryShares: '0',
         },
         tags: {
-          ...pipeline?.tags,
+          ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
+          ...userTags,
         },
         serviceAccount: pipeline?.serviceAccount,
       });
@@ -472,113 +429,330 @@ export default function PipelinePage() {
     }
   }, [form, yamlContent, mode, pipelineId, createMutation, updateMutation, navigate, clearWizardStore, pipeline]);
 
-  const handleSetYamlContent = useCallback((newYaml: string) => {
-    setYamlContent(newYaml);
+  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
+  const isSaving = isCreatePending || isUpdatePending;
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
+
+  const handleOpenConfigDialog = useCallback(() => {
+    setIsConfigDialogOpen(true);
   }, []);
 
-  const handleYamlChange = useDebounce((value: string) => {
-    setYamlContent(value);
-    // only when we're in create mode (which is always embedded within the wizard) we sync to the zustand store
-    if (mode === 'create') {
-      setPersistedYamlContent({ yamlContent: value });
-    }
-  }, 500);
-
-  const isSaving = isCreatePending || isUpdatePending;
-
-  if (isPipelineLoading) {
-    return <PipelinePageSkeleton mode={mode} />;
-  }
-
-  const content = (
-    <>
-      <Form {...form}>
-        <Details pipeline={pipeline} readonly={mode === 'view'} />
-      </Form>
-
-      <YamlEditorCard
-        onChange={handleYamlChange}
-        onMount={(editorRef) => {
-          setEditorInstance(editorRef);
-        }}
-        options={{
-          readOnly: mode === 'view',
-        }}
-        schema={yamlEditorSchema}
-        value={yamlContent}
-      />
-
-      {mode !== 'view' && Object.keys(lintHints).length > 0 && (
-        <div className="mt-4">
-          <Alert icon={undefined} variant="destructive">
-            <AlertDescription>
-              <LintHintList className="w-full" isPending={isLinting} lintHints={lintHints} />
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-      <Footer
-        disabled={Object.keys(lintHints).length > 0}
-        isSaving={isSaving}
-        mode={mode}
-        onCancel={handleCancel}
-        onSave={handleSave}
-      />
-    </>
+  const handleNameChange = useCallback(
+    (name: string) => {
+      form.setValue('name', name, { shouldValidate: true });
+    },
+    [form]
   );
 
-  const renderContent = () => {
-    if (mode === 'create') {
-      return content;
-    }
+  const handleYamlChange = useCallback(
+    (value: string) => {
+      setYamlContent(value);
+      userLintOverrideRef.current = null;
+      if (mode === 'create') {
+        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
+      }
+    },
+    [mode]
+  );
 
-    if (mode === 'view' && pipeline) {
-      return (
-        <Card size="full">
-          <Tabs defaultValue="configuration">
-            <TabsList>
-              <TabsTrigger value="configuration">Configuration</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-            </TabsList>
-            <TabsContents>
-              <TabsContent value="configuration">{content}</TabsContent>
-              <TabsContent value="logs">
-                <LogsTab pipeline={pipeline} />
-              </TabsContent>
-            </TabsContents>
-          </Tabs>
-        </Card>
-      );
-    }
+  const [miniWizardConfig, setMiniWizardConfig] = useState<{
+    connectionName: string;
+    connectionType: ConnectComponentType;
+  } | null>(null);
 
-    return <Card size="full">{content}</Card>;
-  };
+  const handleConnectorSelected = useCallback(
+    (connectionName: string, connectionType: ConnectComponentType) => {
+      setAddConnectorType(null);
+
+      // Redpanda components open the mini wizard instead of directly injecting
+      if (REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName)) {
+        setMiniWizardConfig({ connectionName, connectionType });
+        return;
+      }
+
+      const newYaml = getConnectTemplate({
+        connectionName,
+        connectionType,
+        components,
+        showAdvancedFields: false,
+        existingYaml: yamlContent,
+      });
+      if (newYaml) {
+        handleYamlChange(newYaml);
+      }
+    },
+    [components, yamlContent, handleYamlChange]
+  );
+
+  const handleMiniWizardComplete = useCallback(
+    (result: MiniWizardResult) => {
+      if (!miniWizardConfig) {
+        return;
+      }
+
+      // Populate onboarding stores so schemaToConfig can read topic/user data
+      if (result.topicName) {
+        useOnboardingTopicDataStore.getState().setTopicData({ topicName: result.topicName });
+      }
+      if (result.authMethod === 'service-account' && result.serviceAccountId) {
+        useOnboardingUserDataStore.getState().setUserData({
+          authMethod: 'service-account',
+          serviceAccountName: result.serviceAccountName ?? '',
+          serviceAccountId: result.serviceAccountId,
+          serviceAccountSecretName: result.serviceAccountSecretName ?? '',
+        });
+      } else if (result.username) {
+        useOnboardingUserDataStore.getState().setUserData({
+          authMethod: 'sasl',
+          username: result.username,
+          saslMechanism: (result.saslMechanism as 'SCRAM-SHA-256' | 'SCRAM-SHA-512') ?? 'SCRAM-SHA-256',
+          consumerGroup: result.consumerGroup ?? '',
+        });
+      }
+
+      const newYaml = getConnectTemplate({
+        connectionName: miniWizardConfig.connectionName,
+        connectionType: miniWizardConfig.connectionType,
+        components,
+        showAdvancedFields: false,
+        existingYaml: yamlContent,
+      });
+
+      // Clear stores immediately so they don't leak into other operations
+      useOnboardingTopicDataStore.getState().reset();
+      useOnboardingUserDataStore.getState().reset();
+
+      if (newYaml) {
+        handleYamlChange(newYaml);
+      }
+      setMiniWizardConfig(null);
+    },
+    [miniWizardConfig, components, yamlContent, handleYamlChange]
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      const deleteRequest = create(DeletePipelineRequestSchema, {
+        request: { id },
+      });
+
+      deleteMutation(deleteRequest, {
+        onSuccess: () => {
+          toast.success('Pipeline deleted');
+          navigate({ to: '/connect-clusters' });
+        },
+        onError: (err) => {
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'delete',
+              entity: 'pipeline',
+            })
+          );
+        },
+      });
+    },
+    [deleteMutation, navigate]
+  );
+
+  const pipelineName = useWatch({ control: form.control, name: 'name' });
 
   return (
-    <div>
-      {mode === 'edit' && (
-        <div className="mt-12 mb-4">
-          <Heading level={1}>Edit pipeline</Heading>
-        </div>
-      )}
-      <div className={cn((mode === 'create' || mode === 'edit') && 'grid grid-cols-[minmax(auto,950px)_260px] gap-4')}>
-        <div className="flex flex-1 flex-col gap-4">
-          {mode === 'view' && pipelineId && (
-            <Toolbar pipelineId={pipelineId} pipelineName={form.getValues('name')} pipelineState={pipeline?.state} />
+    <div className={cn('flex h-[calc(100dvh-10rem)] flex-col gap-4')}>
+      <Toolbar
+        autoFocus={mode === 'create'}
+        isLoading={isPipelineLoading}
+        isSaving={isSaving}
+        mode={mode}
+        nameError={form.formState.errors.name?.message}
+        onCancel={handleCancel}
+        onCommandMenu={() => {
+          setIsCommandMenuOpen(true);
+        }}
+        onEditConfig={handleOpenConfigDialog}
+        onNameChange={handleNameChange}
+        onSave={handleSave}
+        pipelineId={pipelineId}
+        pipelineName={pipelineName}
+        pipelineState={pipeline?.state}
+      />
+      <div className="flex min-h-0 flex-1 rounded-lg border">
+        <div className="flex w-[300px] shrink-0 flex-col border-r">
+          <div className="min-h-0 flex-1">
+            {isFeatureFlagEnabled('enablePipelineDiagrams') && <PipelineFlowDiagram configYaml={yamlContent} />}
+          </div>
+          {mode !== 'view' && (
+            <AddConnectorsCard
+              editorContent={yamlContent}
+              hasInput={yamlContent.includes('input:')}
+              hasOutput={yamlContent.includes('output:')}
+              onAddConnector={(type) => setAddConnectorType(type)}
+            />
           )}
-
-          {renderContent()}
         </div>
-        {(mode === 'create' || mode === 'edit') && (
-          <CreatePipelineSidebar
-            componentList={componentListResponse?.components}
-            editorContent={yamlContent}
-            editorInstance={editorInstance}
-            isComponentListLoading={isComponentListLoading}
-            setYamlContent={handleSetYamlContent}
-          />
-        )}
+        <div className="min-w-0 flex-1">
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel defaultSize={mode === 'view' ? 40 : 70} minSize={mode === 'view' ? 10 : 30}>
+              {mode === 'view' ? (
+                <div className="flex h-full flex-col gap-4 overflow-auto bg-primary-alpha-subtle p-4">
+                  <ViewDetails isDeleting={isDeletePending} onDelete={handleDelete} pipeline={pipeline} />
+                </div>
+              ) : (
+                <YamlEditor
+                  onChange={(value) => handleYamlChange(value || '')}
+                  onEditorMount={handleEditorMount}
+                  transparentBackground
+                  value={yamlContent}
+                />
+              )}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            {mode === 'view' ? (
+              <ResizablePanel collapsible defaultSize={60}>
+                {pipeline ? (
+                  <div className="h-full overflow-y-auto p-4">
+                    <LogsTab pipeline={pipeline} />
+                  </div>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                    Logs will be available after the pipeline is created
+                  </div>
+                )}
+              </ResizablePanel>
+            ) : (
+              <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
+                <div className="h-full overflow-auto p-4">
+                  <div className="flex items-center gap-2">
+                    <Heading className="text-muted-foreground" level={4}>
+                      Lint issues
+                    </Heading>
+                    {lintHintCount > 0 ? <CountDot count={lintHintCount} variant="error" /> : null}
+                  </div>
+                  <LintHintList isPending={isLintPending} lintHints={lintHints} />
+                </div>
+              </ResizablePanel>
+            )}
+          </ResizablePanelGroup>
+        </div>
       </div>
+
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            const tags = form.getValues('tags').filter((t) => t.key !== '' || t.value !== '');
+            form.setValue('tags', tags);
+          }
+          setIsConfigDialogOpen(open);
+        }}
+        open={isConfigDialogOpen}
+      >
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle>{mode === 'create' ? 'Pipeline settings' : 'Edit pipeline settings'}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <Config />
+            <div className="flex justify-end gap-2 pt-4">
+              <Button onClick={() => setIsConfigDialogOpen(false)} variant="primary">
+                Save
+              </Button>
+            </div>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <PipelineCommandMenu
+        editorInstance={editorInstanceRef.current}
+        initialSearch={pendingSecretSearch}
+        onCreateSecret={() => {
+          setIsCommandMenuOpen(false);
+          setPendingSecretSearch('');
+          setIsSecretsDialogOpen(true);
+        }}
+        onCreateTopic={() => {
+          setIsCommandMenuOpen(false);
+          setIsTopicDialogOpen(true);
+        }}
+        onCreateUser={() => {
+          setIsCommandMenuOpen(false);
+          setIsUserDialogOpen(true);
+        }}
+        onOpenChange={(open) => {
+          setIsCommandMenuOpen(open);
+          if (!open) {
+            setPendingSecretSearch('');
+          }
+        }}
+        open={isCommandMenuOpen}
+        yamlContent={yamlContent}
+      />
+
+      <AddSecretsDialog
+        existingSecrets={[]}
+        isOpen={isSecretsDialogOpen}
+        missingSecrets={[]}
+        onClose={() => setIsSecretsDialogOpen(false)}
+        onSecretsCreated={(secretNames) => {
+          setIsSecretsDialogOpen(false);
+          if (secretNames && secretNames.length > 0) {
+            setPendingSecretSearch(secretNames[0]);
+            setIsCommandMenuOpen(true);
+          }
+        }}
+      />
+
+      <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>Create a topic</DialogTitle>
+          </DialogHeader>
+          <AddTopicStep hideTitle ref={null} selectionMode="new" />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>Create a user</DialogTitle>
+          </DialogHeader>
+          <AddUserStep hideTitle ref={null} selectionMode="new" />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {componentListResponse?.components ? (
+        <AddConnectorDialog
+          components={componentListResponse.components}
+          connectorType={
+            addConnectorType === 'resource'
+              ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
+              : (addConnectorType ?? undefined)
+          }
+          isOpen={addConnectorType !== null}
+          onAddConnector={handleConnectorSelected}
+          onCloseAddConnector={() => setAddConnectorType(null)}
+        />
+      ) : null}
+
+      {miniWizardConfig !== null && (
+        <RedpandaMiniWizard
+          connectionName={miniWizardConfig.connectionName}
+          connectionType={miniWizardConfig.connectionType}
+          isOpen
+          onClose={() => setMiniWizardConfig(null)}
+          onComplete={handleMiniWizardComplete}
+        />
+      )}
     </div>
   );
 }

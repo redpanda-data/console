@@ -24,7 +24,7 @@ export const AddSecretsDialog = ({
   onClose: () => void;
   missingSecrets: string[];
   existingSecrets: string[];
-  onSecretsCreated: () => void;
+  onSecretsCreated: (secretNames?: string[]) => void;
   onUpdateEditorContent?: (oldName: string, newName: string) => void;
 }) => {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
@@ -33,9 +33,9 @@ export const AddSecretsDialog = ({
     setErrorMessages(errors);
   };
 
-  const handleSecretsCreated = () => {
+  const handleSecretsCreated = (names?: string[]) => {
     setErrorMessages([]);
-    onSecretsCreated();
+    onSecretsCreated(names);
   };
 
   return (

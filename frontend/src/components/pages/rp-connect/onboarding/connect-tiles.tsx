@@ -9,14 +9,15 @@ import {
   type CardVariant,
 } from 'components/redpanda-ui/components/card';
 import { Choicebox } from 'components/redpanda-ui/components/choicebox';
+import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
 import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
-import { Input, InputStart } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
-import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
+import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import type { FiltersState } from 'components/redpanda-ui/lib/filter-utils';
+import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { SearchIcon } from 'lucide-react';
+import { Search } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -40,7 +41,6 @@ const PRIORITY_COMPONENTS = [
   'mongodb_cdc',
   'snowflake_streaming',
   'redpanda_migrator',
-  'mysql_cdc',
   'snowflake_put',
   'slack',
   'sftp',
@@ -62,8 +62,13 @@ const searchComponents = (
     }
 
     if (query.trim()) {
-      const matchesName = component.name.toLowerCase().includes(query.toLowerCase());
-      if (!matchesName) {
+      const q = query.toLowerCase().trim();
+      const matchesText =
+        component.name.toLowerCase().includes(q) ||
+        (component.summary ?? '').toLowerCase().includes(q) ||
+        (component.description ?? '').toLowerCase().includes(q) ||
+        (component.categories ?? []).some((c) => c.toLowerCase().includes(q));
+      if (!matchesText) {
         return false;
       }
     }
@@ -125,8 +130,8 @@ const ConnectTilesSkeleton = memo(
     gridCols?: number;
     tileCount?: number;
   }) => {
-    const skeletonTiles = Array.from({ length: tileCount }, () => (
-      <div className="h-[78px] rounded-lg border bg-card p-4" key={crypto.randomUUID()}>
+    const skeletonTiles = Array.from({ length: tileCount }, (_, i) => (
+      <div className="h-[78px] rounded-lg border bg-card p-4" key={i}>
         <SkeletonGroup direction="horizontal">
           <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
             <Skeleton variant="heading" width="md" />
@@ -195,8 +200,6 @@ export const ConnectTiles = memo(
       },
       ref
     ) => {
-      const [filter, setFilter] = useState<string>('');
-      const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
       const [showScrollGradient, setShowScrollGradient] = useState(false);
       const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -239,18 +242,62 @@ export const ConnectTiles = memo(
         [allComponents, componentTypeFilter]
       );
 
+      const [searchQuery, setSearchQuery] = useState('');
+
+      const typeOptions = useMemo(() => {
+        const types = new Set(allComponents.map((c) => c.type));
+        return [...types].sort().map((t) => ({ value: t, label: t.replace(/_/g, ' ') }));
+      }, [allComponents]);
+
+      const filterColumns = useMemo<FilterColumnConfig[]>(
+        () => [
+          {
+            id: 'type',
+            displayName: 'Type',
+            displayNamePlural: 'Types',
+            type: 'multiOption',
+            options: typeOptions,
+          },
+          {
+            id: 'category',
+            displayName: 'Category',
+            displayNamePlural: 'Categories',
+            type: 'multiOption',
+            options: categories.map((cat) => ({ value: cat.id, label: cat.name })),
+          },
+        ],
+        [categories, typeOptions]
+      );
+
+      // Pre-select type filter when componentTypeFilter is provided
+      const defaultFilterValue = useMemo<FiltersState>(() => {
+        if (!componentTypeFilter?.length) {
+          return [];
+        }
+        return [{ columnId: 'type', type: 'multiOption', operator: 'is', values: componentTypeFilter }];
+      }, [componentTypeFilter]);
+
+      const { filters, actions } = useDataTableFilter({ columns: filterColumns, defaultValue: defaultFilterValue });
+
+      const selectedTypes = useMemo(() => filters.find((f) => f.columnId === 'type')?.values ?? [], [filters]);
+      const selectedCategories = useMemo(() => filters.find((f) => f.columnId === 'category')?.values ?? [], [filters]);
+
+      // Use filter-selected types if any, otherwise fall back to prop
+      const effectiveTypeFilter =
+        selectedTypes.length > 0 ? (selectedTypes as ConnectComponentType[]) : componentTypeFilter;
+
       const filteredComponents = useMemo(
         () =>
           searchComponents(
             allComponents,
-            filter,
+            searchQuery,
             {
-              types: componentTypeFilter,
+              types: effectiveTypeFilter,
               categories: selectedCategories,
             },
             additionalComponents
           ),
-        [componentTypeFilter, filter, selectedCategories, allComponents, additionalComponents]
+        [effectiveTypeFilter, searchQuery, selectedCategories, allComponents, additionalComponents]
       );
 
       useEffect(() => {
@@ -309,40 +356,17 @@ export const ConnectTiles = memo(
           <CardContent className="mt-2" id="rp-connect-onboarding-wizard">
             <Form {...form}>
               {!hideFilters && (
-                <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pt-2 pb-4">
-                  <div className="flex gap-4">
-                    <div className="flex w-[240px] flex-col gap-1.5">
-                      <Label htmlFor="search-connectors">Search connectors</Label>
-                      <Input
-                        className="flex-1"
-                        id="search-connectors"
-                        onChange={(e) => {
-                          setFilter(e.target.value);
-                        }}
-                        placeholder="Snowflake, S3..."
-                        value={filter}
-                      >
-                        <InputStart>
-                          <SearchIcon className="size-4" />
-                        </InputStart>
-                      </Input>
-                    </div>
-                    <div className="flex w-[240px] flex-col gap-1.5">
-                      <Label htmlFor="categories-filter">Categories</Label>
-                      <SimpleMultiSelect
-                        container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
-                        id="categories-filter"
-                        onValueChange={setSelectedCategories}
-                        options={categories.map((category) => ({
-                          value: category.id,
-                          label: category.name,
-                        }))}
-                        placeholder="All"
-                        value={selectedCategories}
-                        width="full"
-                      />
-                    </div>
+                <div className="sticky top-0 z-10 mb-0 flex items-center gap-2 border-b-2 bg-background pt-2 pb-4">
+                  <div className="relative w-[200px] shrink-0">
+                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      className="pl-8"
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search connectors..."
+                      value={searchQuery}
+                    />
                   </div>
+                  <DataTableFilter actions={actions} columns={filterColumns} filters={filters} />
                 </div>
               )}
 

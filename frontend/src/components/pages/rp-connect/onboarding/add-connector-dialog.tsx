@@ -20,27 +20,36 @@ export const AddConnectorDialog = ({
 }: {
   isOpen: boolean;
   onCloseAddConnector: () => void;
-  connectorType?: ConnectComponentType;
+  connectorType?: ConnectComponentType | ConnectComponentType[];
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   components: ComponentList;
-}) => (
-  <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
-    <DialogContent size="xl">
-      <DialogHeader>
-        <DialogTitle>Add a connector</DialogTitle>
-        <DialogDescription>Add a connector to your pipeline.</DialogDescription>
-      </DialogHeader>
-      <DialogBody>
-        <ConnectTiles
-          className="px-0 pt-0"
-          components={components}
-          componentTypeFilter={connectorType ? [connectorType] : undefined}
-          gridCols={3}
-          hideHeader
-          onChange={onAddConnector}
-          variant="ghost"
-        />
-      </DialogBody>
-    </DialogContent>
-  </Dialog>
-);
+}) => {
+  let typeFilter: ConnectComponentType[] | undefined;
+  if (Array.isArray(connectorType)) {
+    typeFilter = connectorType;
+  } else if (connectorType) {
+    typeFilter = [connectorType];
+  }
+
+  return (
+    <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
+      <DialogContent size="xl">
+        <DialogHeader>
+          <DialogTitle>Add a connector</DialogTitle>
+          <DialogDescription>Add a connector to your pipeline.</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <ConnectTiles
+            className="px-0 pt-0"
+            components={components}
+            componentTypeFilter={typeFilter}
+            gridCols={3}
+            hideHeader
+            onChange={onAddConnector}
+            variant="ghost"
+          />
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
+  );
+};

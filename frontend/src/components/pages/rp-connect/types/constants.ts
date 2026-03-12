@@ -88,4 +88,18 @@ export const stepMotionProps: MotionProps = {
   transition: { duration: 0.3, ease: 'easeInOut' },
 };
 
+export const MiniWizardStep = {
+  ADD_TOPIC: 'mini-add-topic',
+  ADD_USER: 'mini-add-user',
+} as const;
+
+export const miniWizardStepDefinitions = [
+  { id: MiniWizardStep.ADD_TOPIC, title: 'Add a topic' },
+  { id: MiniWizardStep.ADD_USER, title: 'Add permissions' },
+] as const;
+
+const MiniStepper = defineStepper(...miniWizardStepDefinitions);
+export const MiniWizardStepper = MiniStepper.Stepper;
+export type MiniWizardStepperSteps = typeof MiniStepper.Steps;
+
 export type PipelineMode = 'create' | 'edit' | 'view';
