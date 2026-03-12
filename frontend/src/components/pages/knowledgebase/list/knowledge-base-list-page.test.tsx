@@ -429,4 +429,102 @@ describe('KnowledgeBaseList', () => {
 
     expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
   });
+
+  test('search input value updates on each keystroke', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'Alpha',
+      description: '',
+      tags: {},
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
+
+    await user.type(filterInput, 'test');
+
+    // The input value must reflect what was typed — a React Compiler
+    // memoization bug would freeze it at the initial empty string.
+    expect(filterInput).toHaveValue('test');
+  });
+
+  test('search input can be cleared and reused', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'Alpha KB',
+      description: '',
+      tags: {},
+    });
+
+    const kb2 = create(KnowledgeBaseSchema, {
+      id: 'kb-2',
+      displayName: 'Beta KB',
+      description: '',
+      tags: {},
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1, kb2],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha KB')).toBeVisible();
+      expect(screen.getByText('Beta KB')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
+
+    // Type to filter down to Alpha only
+    await user.type(filterInput, 'Alpha');
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha KB')).toBeVisible();
+      expect(screen.queryByText('Beta KB')).not.toBeInTheDocument();
+    });
+
+    // Clear the input completely
+    await user.clear(filterInput);
+    expect(filterInput).toHaveValue('');
+
+    // Both rows should reappear
+    await waitFor(() => {
+      expect(screen.getByText('Alpha KB')).toBeVisible();
+      expect(screen.getByText('Beta KB')).toBeVisible();
+    });
+
+    // Type again to filter down to Beta
+    await user.type(filterInput, 'Beta');
+
+    await waitFor(() => {
+      expect(screen.queryByText('Alpha KB')).not.toBeInTheDocument();
+      expect(screen.getByText('Beta KB')).toBeVisible();
+    });
+
+    expect(filterInput).toHaveValue('Beta');
+  });
 });
