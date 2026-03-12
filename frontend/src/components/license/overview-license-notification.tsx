@@ -1,7 +1,6 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Text } from '@redpanda-data/ui';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
-import { useStore } from 'zustand';
 
 import {
   consoleHasEnterpriseFeature,
@@ -20,7 +19,7 @@ import {
 } from './license-utils';
 import { RegisterModal } from './register-modal';
 import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api, useApiStore } from '../../state/backend-api';
+import { api, useApiStoreHook } from '../../state/backend-api';
 
 const getLicenseAlertContent = (
   licenses: License[],
@@ -255,8 +254,8 @@ const getLicenseAlertContent = (
 };
 
 export const OverviewLicenseNotification: FC = () => {
-  const licenses = useStore(useApiStore, (s) => s.licenses);
-  const clusterOverview = useStore(useApiStore, (s) => s.clusterOverview);
+  const licenses = useApiStoreHook((s) => s.licenses);
+  const clusterOverview = useApiStoreHook((s) => s.clusterOverview);
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
