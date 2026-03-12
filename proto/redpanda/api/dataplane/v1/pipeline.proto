@@ -10,6 +10,7 @@ import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/common/v1/linthint.proto";
+import "redpanda/api/common/v1/options.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
@@ -159,6 +160,10 @@ service PipelineService {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      permission: "dataplane_pipeline_create"
+    };
   }
 
   // GetPipeline gets a specific Redpanda Connect pipeline.
@@ -190,6 +195,11 @@ service PipelineService {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      id_getter_cel: "request.id"
+      permission: "dataplane_pipeline_get"
+    };
   }
 
   // ListPipelines implements the list pipelines method which lists the pipelines
@@ -212,6 +222,14 @@ service PipelineService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.collection_authorization) = {
+      collection_getter_cel: "response.pipelines"
+      each: {
+        resource_type: "pipelines"
+        id_getter_cel: "each.id"
+        permission: "dataplane_pipeline_list"
+      }
     };
   }
 
@@ -237,6 +255,11 @@ service PipelineService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      id_getter_cel: "request.id"
+      permission: "dataplane_pipeline_update"
     };
   }
 
@@ -266,6 +289,11 @@ service PipelineService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      id_getter_cel: "request.id"
+      permission: "dataplane_pipeline_delete"
     };
   }
 
@@ -298,6 +326,11 @@ service PipelineService {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      id_getter_cel: "request.id"
+      permission: "dataplane_pipeline_stop"
+    };
   }
 
   // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
@@ -329,6 +362,11 @@ service PipelineService {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      id_getter_cel: "request.id"
+      permission: "dataplane_pipeline_start"
+    };
   }
 
   // The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
@@ -351,6 +389,10 @@ service PipelineService {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      permission: "dataplane_pipeline_get"
+    };
   }
 
   // ListComponents returns a JSON containing lists of allowed components based on component type filter.
@@ -372,6 +414,10 @@ service PipelineService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      permission: "dataplane_pipeline_get"
     };
   }
 
@@ -396,6 +442,10 @@ service PipelineService {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
     };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      permission: "dataplane_pipeline_list"
+    };
   }
 
   // GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
@@ -418,6 +468,10 @@ service PipelineService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      permission: "dataplane_pipeline_list"
     };
   }
 
@@ -444,6 +498,10 @@ service PipelineService {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
+    };
+    option (redpanda.api.common.v1.method_authorization) = {
+      resource_type: "pipelines"
+      permission: "dataplane_pipeline_get"
     };
   }
 }

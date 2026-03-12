@@ -3,3 +3,10 @@
 @import "./components/redpanda-ui/style/theme.css";
 @import "tailwindcss";
 @import "tw-animate-css";
+
+/* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
+   which collides with Monaco's internal .monaco-hover.fade-in class,
+   forcing hover widgets to be invisible. Override to restore opacity. */
+.monaco-hover.fade-in {
+  opacity: 1;
+}

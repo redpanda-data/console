@@ -6,7 +6,7 @@
     },
     "ultracite": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://www.ultracite.ai/api/mcp/mcp"]
+      "args": ["-y", "mcp-remote", "https://docs.ultracite.ai/mcp"]
     }
   }
 }
