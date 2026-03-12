@@ -12,6 +12,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
+
 import type { TopicMessage } from '../../state/rest-interfaces';
 
 // Track messages returned by convertListMessageData
@@ -106,7 +107,7 @@ describe('useLogSearch live mode', () => {
           enabled: true,
           serverless: false,
         }),
-      { wrapper: createWrapper() },
+      { wrapper: createWrapper() }
     );
 
     await waitFor(() => {
