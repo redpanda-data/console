@@ -10,10 +10,10 @@
  */
 
 import userEvent from '@testing-library/user-event';
+import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { render, screen } from 'test-utils';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
-import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
 
@@ -41,7 +41,7 @@ function renderSelector(props: { contexts: DerivedContext[]; selectedContext: st
   return render(
     <TooltipProvider>
       <SchemaContextSelector {...props} />
-    </TooltipProvider>,
+    </TooltipProvider>
   );
 }
 
