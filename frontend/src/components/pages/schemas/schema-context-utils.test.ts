@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
+
 import {
   ALL_CONTEXT_ID,
   DEFAULT_CONTEXT_ID,
@@ -77,7 +78,7 @@ describe('deriveContexts', () => {
       [
         { name: 'topic-a', isSoftDeleted: false },
         { name: 'topic-b', isSoftDeleted: false },
-      ],
+      ]
     );
 
     expect(result).toHaveLength(2);
@@ -108,17 +109,20 @@ describe('deriveContexts', () => {
         { name: 'topic-a', isSoftDeleted: false },
         { name: ':.staging:topic-b', isSoftDeleted: false },
         { name: ':.dev:topic-c', isSoftDeleted: false },
-      ],
+      ]
     );
 
     expect(result.map((c) => c.id)).toEqual([DEFAULT_CONTEXT_ID, '.dev', '.staging', ALL_CONTEXT_ID]);
   });
 
   test('soft-deleted subjects excluded from counts', () => {
-    const result = deriveContexts([{ name: '.', mode: 'READWRITE', compatibility: 'BACKWARD' }], [
-      { name: 'topic-a', isSoftDeleted: false },
-      { name: 'topic-b', isSoftDeleted: true },
-    ]);
+    const result = deriveContexts(
+      [{ name: '.', mode: 'READWRITE', compatibility: 'BACKWARD' }],
+      [
+        { name: 'topic-a', isSoftDeleted: false },
+        { name: 'topic-b', isSoftDeleted: true },
+      ]
+    );
 
     expect(result[0].subjectCount).toBe(1); // Default
     expect(result[1].subjectCount).toBe(1); // All
@@ -134,7 +138,7 @@ describe('deriveContexts', () => {
         { name: ':.staging:topic-a', isSoftDeleted: false },
         { name: ':.staging:topic-b', isSoftDeleted: false },
         { name: 'default-topic', isSoftDeleted: false },
-      ],
+      ]
     );
 
     const staging = result.find((c) => c.id === '.staging');
@@ -146,7 +150,7 @@ describe('deriveContexts', () => {
   test('missing default in API response: All falls back to empty mode/compat', () => {
     const result = deriveContexts(
       [{ name: '.staging', mode: 'READWRITE', compatibility: 'FULL' }],
-      [{ name: ':.staging:topic-a', isSoftDeleted: false }],
+      [{ name: ':.staging:topic-a', isSoftDeleted: false }]
     );
 
     const all = result.find((c) => c.id === ALL_CONTEXT_ID)!;

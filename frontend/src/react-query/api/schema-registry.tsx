@@ -341,6 +341,61 @@ export const useUpdateSubjectModeMutation = () => {
   });
 };
 
+export const useUpdateContextModeMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation<{ mode: string }, Error, { contextName: string; mode: 'DEFAULT' | SchemaRegistryMode }>({
+    mutationFn: async ({ contextName, mode }) => {
+      const qualifiedName = `:${contextName}:`;
+      if (mode === 'DEFAULT') {
+        const response = await fetch(
+          `${config.restBasePath}/schema-registry/mode/${encodeURIComponent(qualifiedName)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Failed to reset context mode to default');
+        }
+
+        return response.json();
+      }
+
+      const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(qualifiedName)}`, {
+        method: 'PUT',
+        headers: {
+          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mode }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update context mode');
+      }
+
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'contexts'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'context mode',
+      });
+    },
+  });
+};
+
 export const useDeleteSchemaSubjectMutation = () => {
   const queryClient = useQueryClient();
 
