@@ -665,8 +665,8 @@ const _apiCreator = (set: any, get: any) => ({
 
   _msgSearchVersion: 0,
 
-  refreshTopics(force?: boolean) {
-    cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
+  refreshTopics(force?: boolean): Promise<void> {
+    return cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
