@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
 'use client';
 
 import { create } from '@bufbuild/protobuf';
@@ -137,15 +138,12 @@ export const AIAgentCreatePage = () => {
 
   // Auto-generate service account name when agent name changes
   useEffect(() => {
-    if (displayName) {
-      const generatedName = generateServiceAccountName(displayName, 'agent');
-      const currentValue = form.getValues('serviceAccountName');
-      const prefix = getServiceAccountNamePrefix('agent');
-
-      // Only update if the field is empty or matches the previous auto-generated pattern
-      if (!currentValue || currentValue.startsWith(prefix)) {
-        form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
-      }
+    const generatedName = displayName ? generateServiceAccountName(displayName, 'agent') : '';
+    const currentValue = form.getValues('serviceAccountName');
+    const prefix = getServiceAccountNamePrefix('agent');
+    const shouldAutoGenerate = generatedName && (!currentValue || currentValue.startsWith(prefix));
+    if (shouldAutoGenerate) {
+      form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
     }
   }, [displayName, form]);
 
@@ -443,7 +441,12 @@ export const AIAgentCreatePage = () => {
         <Heading level={1}>Create AI Agent</Heading>
       </header>
 
-      <form className="w-full" onSubmit={form.handleSubmit(onSubmit)}>
+      <form
+        className="w-full"
+        onSubmit={(e) => {
+          form.handleSubmit(onSubmit)(e);
+        }}
+      >
         <div className="space-y-4">
           <div className="space-y-4">
             {/* Basic Information and OpenAI Configuration - Side by Side */}

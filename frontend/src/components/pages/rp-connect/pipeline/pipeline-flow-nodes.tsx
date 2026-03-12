@@ -46,10 +46,10 @@ export function PipelineFlowSkeleton({ error }: PipelineFlowSkeletonProps) {
         {SKELETON_SECTIONS.map((section) => (
           <div className="flex flex-col gap-2" key={section.label}>
             <Skeleton className={error ? 'animate-none! opacity-40' : ''} variant="text" width="xs" />
-            {Array.from({ length: section.leaves }, (_, i) => (
+            {Array.from({ length: section.leaves }, (_, leafIndex) => (
               <Skeleton
                 className={cn('ml-10', error ? 'animate-none! opacity-40' : '')}
-                key={`${section.label}-${i}`}
+                key={`${section.label}-leaf-${leafIndex}`}
                 size="lg"
                 variant="rounded"
                 width="md"

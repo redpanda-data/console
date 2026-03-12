@@ -346,7 +346,6 @@ class ReassignPartitions extends PageComponent {
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
                   <div>{nextButtonHelp}</div>
                   <Button
-                    autoFocus={true}
                     isDisabled={!nextButtonEnabled || requestInProgress}
                     onClick={this.onNextPage}
                     style={{ minWidth: '14em', marginLeft: 'auto' }}

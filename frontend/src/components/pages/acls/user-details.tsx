@@ -116,8 +116,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                   }
                 }
                 await Promise.allSettled(promises);
-                await invalidateUsersCache();
-                await rolesApi.refreshRoleMembers();
+                await Promise.all([invalidateUsersCache(), rolesApi.refreshRoleMembers()]);
                 appGlobal.historyPush('/security/users/');
               }}
               userName={userName}

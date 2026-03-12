@@ -127,10 +127,8 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
 
   // Reset to default tab when span changes
   useEffect(() => {
-    if (selectedSpan) {
-      const defaultTab = getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab);
-      setSelectedTab(defaultTab);
-    }
+    const defaultTab = getDefaultTab(showOverviewTab, showAgentTab, showLLMTab, showToolTab);
+    setSelectedTab(defaultTab);
   }, [showOverviewTab, showAgentTab, showLLMTab, showToolTab, selectedSpan, setSelectedTab]);
 
   if (!isOpen) {

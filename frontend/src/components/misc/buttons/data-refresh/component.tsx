@@ -20,9 +20,8 @@ import { prettyMilliseconds } from '../../../../utils/utils';
 
 export const DataRefreshButton = () => {
   const [isActive, setIsActive] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
-  const [activeRequests, setActiveRequests] = useState(0);
-  const [maxRequestCount, setMaxRequestCount] = useState(0);
+  const [refreshState, setRefreshState] = useState({ remainingSeconds: 0, activeRequests: 0, maxRequestCount: 0 });
+  const { remainingSeconds, activeRequests, maxRequestCount } = refreshState;
 
   const stateRef = useRef({
     isActive: false,
@@ -40,24 +39,30 @@ export const DataRefreshButton = () => {
       } else if (currentRequests > stateRef.current.maxRequestCount) {
         stateRef.current.maxRequestCount = currentRequests;
       }
-      setActiveRequests(currentRequests);
-      setMaxRequestCount(stateRef.current.maxRequestCount);
 
-      if (!stateRef.current.isActive) return;
-
-      if (currentRequests > 0) {
-        // Active requests — delay the next refresh
+      let newRemainingSeconds = 0;
+      if (stateRef.current.isActive && currentRequests === 0) {
+        if (currentRequests > 0) {
+          // Active requests — delay the next refresh
+          stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+        } else {
+          const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
+          if (timeUntilRefresh > 0) {
+            newRemainingSeconds = Math.ceil(timeUntilRefresh / 1000);
+          } else {
+            stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+            appGlobal.onRefresh();
+          }
+        }
+      } else if (stateRef.current.isActive && currentRequests > 0) {
         stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
-        return;
       }
 
-      const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
-      if (timeUntilRefresh > 0) {
-        setRemainingSeconds(Math.ceil(timeUntilRefresh / 1000));
-      } else {
-        stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
-        appGlobal.onRefresh();
-      }
+      setRefreshState({
+        activeRequests: currentRequests,
+        maxRequestCount: stateRef.current.maxRequestCount,
+        remainingSeconds: newRemainingSeconds,
+      });
     }, 150);
 
     return () => clearInterval(interval);

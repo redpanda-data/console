@@ -5,12 +5,12 @@ export const MemcachedLogo = (props: React.SVGProps<SVGSVGElement>) => (
     <title>Memcached</title>
     <defs>
       <linearGradient gradientUnits="userSpaceOnUse" id="A" x1="255.894" x2="255.894" y1="59.789" y2="-452">
-        <stop offset="0%" stop-color="#574c4a" />
-        <stop offset="100%" stop-color="#80716d" />
+        <stop offset="0%" stopColor="#574c4a" />
+        <stop offset="100%" stopColor="#80716d" />
       </linearGradient>
       <linearGradient gradientUnits="userSpaceOnUse" id="B" x1="380.442" x2="191.971" y1="-51.758" y2="-382.305">
-        <stop offset="0%" stop-color="#268d83" />
-        <stop offset="100%" stop-color="#2ea19e" />
+        <stop offset="0%" stopColor="#268d83" />
+        <stop offset="100%" stopColor="#2ea19e" />
       </linearGradient>
       <radialGradient
         cx="62.417"
@@ -22,8 +22,8 @@ export const MemcachedLogo = (props: React.SVGProps<SVGSVGElement>) => (
         id="C"
         r="9.213"
       >
-        <stop offset="0%" stop-color="#db7c7c" />
-        <stop offset="100%" stop-color="#c83737" />
+        <stop offset="0%" stopColor="#db7c7c" />
+        <stop offset="100%" stopColor="#c83737" />
       </radialGradient>
       <radialGradient
         cx="96.726"
@@ -35,8 +35,8 @@ export const MemcachedLogo = (props: React.SVGProps<SVGSVGElement>) => (
         id="D"
         r="9.213"
       >
-        <stop offset="0%" stop-color="#db7c7c" />
-        <stop offset="100%" stop-color="#c83737" />
+        <stop offset="0%" stopColor="#db7c7c" />
+        <stop offset="100%" stopColor="#c83737" />
       </radialGradient>
     </defs>
     <g transform="matrix(.125052 0 0 .125052 .000001 56.523492)">

@@ -29,6 +29,10 @@ type TopicPartitionsProps = {
   topic: Topic;
 };
 
+const persistPartitionPageSize = (pageSize: number) => {
+  uiState.topicSettings.partitionPageSize = pageSize;
+};
+
 export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const partitions = api.topicPartitions.get(topic.topicName);
   const paginationParams = usePaginationParams(partitions?.length ?? 0, uiState.topicSettings.partitionPageSize);
@@ -124,7 +128,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
         // @ts-expect-error - we need to get rid of this enum in DataTable
         defaultPageSize={uiState.topicSettings.partitionPageSize}
         onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-          uiState.topicSettings.partitionPageSize = pageSize;
+          persistPartitionPageSize(pageSize);
           editQuery((query) => {
             query.page = String(pageIndex);
             query.pageSize = String(pageSize);

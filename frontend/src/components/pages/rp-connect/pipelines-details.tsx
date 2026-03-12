@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
@@ -263,8 +265,11 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
+    messages: [],
+    isComplete: false,
+  });
+  const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -274,11 +279,9 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setMessages([]);
-    setIsComplete(false);
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
     executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
-      setIsComplete(true);
-      setMessages([...search.messages]);
+      setLogState({ messages: [...search.messages], isComplete: true });
     });
     return () => {
       search.stopSearch();
@@ -289,7 +292,7 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setMessages([...search.messages]);
+        setLogState((prev) => ({ ...prev, messages: [...search.messages] }));
       }
     }, 200);
     return () => clearInterval(interval);
@@ -312,12 +315,12 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     const loadedMessages = await search.startSearch(searchReq);
 
     if (loadedMessages && loadedMessages.length === 1) {
-      setMessages((prev) => {
-        const idx = prev.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
+      setLogState((prev) => {
+        const idx = prev.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (idx === -1) return prev;
-        const updated = [...prev];
+        const updated = [...prev.messages];
         updated[idx] = loadedMessages[0];
-        return updated;
+        return { ...prev, messages: updated };
       });
     } else {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");

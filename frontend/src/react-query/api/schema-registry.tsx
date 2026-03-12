@@ -1,3 +1,5 @@
+'use no memo';
+
 import { ConnectError } from '@connectrpc/connect';
 import {
   useQueryClient,
@@ -5,6 +7,7 @@ import {
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import { config } from 'config';
+import { api } from 'state/backend-api';
 import type {
   SchemaRegistryCompatibilityMode,
   SchemaRegistryConfigResponse,
@@ -315,7 +318,6 @@ export const useDeleteSchemaSubjectMutation = () => {
 
   return useTanstackMutation<void, Error, { subjectName: string; permanent: boolean }>({
     mutationFn: async ({ subjectName, permanent }) => {
-      const { api } = await import('state/backend-api');
       await api.deleteSchemaSubject(subjectName, permanent);
     },
     onSuccess: async () => {

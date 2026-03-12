@@ -11,7 +11,7 @@
 
 import { Button, Flex, useToast } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { Payload } from '../../../../../state/rest-interfaces';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
@@ -55,11 +55,77 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
   return elements;
 }
 
+type PayloadRenderData =
+  | { type: 'null' }
+  | { type: 'code'; content: React.ReactNode }
+  | { type: 'rawBytesUnavailable' }
+  | { type: 'controlChars'; content: string }
+  | { type: 'primitive'; content: string }
+  | { type: 'json'; content: string | object | null | undefined }
+  | { type: 'error'; content: string };
+
+function preparePayloadData(payload: Payload): PayloadRenderData {
+  try {
+    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
+      return { type: 'null' };
+    }
+
+    const val = payload.payload;
+    const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
+
+    if (payload.encoding === 'binary') {
+      const mode = 'hex' as 'ascii' | 'raw' | 'hex';
+      if (mode === 'raw') {
+        return { type: 'code', content: val as React.ReactNode };
+      }
+      if (mode === 'hex') {
+        const rawBytes = payload.rawBytes;
+        const normalizedPayload = payload.normalizedPayload;
+        const bytesSource = rawBytes !== null && rawBytes !== undefined ? rawBytes : normalizedPayload;
+        if (
+          bytesSource &&
+          (typeof bytesSource === 'string' || Array.isArray(bytesSource) || bytesSource instanceof Uint8Array)
+        ) {
+          let result = '';
+          for (const rawByte of bytesSource as Uint8Array) {
+            result += `${rawByte.toString(16).padStart(2, '0')} `;
+          }
+          return { type: 'code', content: result };
+        }
+        return { type: 'rawBytesUnavailable' };
+      }
+      const str = String(val);
+      let result = '';
+      for (let i = 0; i < str.length; i++) {
+        let ch = String.fromCharCode(str.charCodeAt(i));
+        ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
+        result += `${ch} `;
+      }
+      return { type: 'code', content: result };
+    }
+
+    if (payload.encoding === 'utf8WithControlChars') {
+      return { type: 'controlChars', content: val as string };
+    }
+
+    if (isPrimitive) {
+      return { type: 'primitive', content: String(val) };
+    }
+
+    return { type: 'json', content: val };
+  } catch (e) {
+    const err = e as Error;
+    const msg = err.message !== undefined ? err.message : String(e);
+    return { type: 'error', content: msg };
+  }
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
   const { payload, loadLargeMessage } = p;
   const toast = useToast();
   const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
+  const renderData = useMemo(() => preparePayloadData(payload), [payload]);
 
   if (payload.isPayloadTooLarge) {
     return (
@@ -92,66 +158,31 @@ export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => 
     );
   }
 
-  try {
-    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
-      return <code>null</code>;
-    }
-
-    const val = payload.payload;
-    const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
-
-    if (payload.encoding === 'binary') {
-      const mode = 'hex' as 'ascii' | 'raw' | 'hex';
-      if (mode === 'raw') {
-        return (
-          <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val as React.ReactNode}</code>
-        );
-      }
-      if (mode === 'hex') {
-        const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
-
-        if (rawBytes && (typeof rawBytes === 'string' || Array.isArray(rawBytes) || rawBytes instanceof Uint8Array)) {
-          let result = '';
-          for (const rawByte of rawBytes as Uint8Array) {
-            result += `${rawByte.toString(16).padStart(2, '0')} `;
-          }
-          return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-        }
-        return <div>Raw bytes not available</div>;
-      }
-      const str = String(val);
-      let result = '';
-      for (let i = 0; i < str.length; i++) {
-        let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
-        ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
-        result += `${ch} `;
-      }
-
-      return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-    }
-
-    // Decode payload from base64 and render control characters as code highlighted text, such as
-    // `NUL`, `ACK` etc.
-    if (payload.encoding === 'utf8WithControlChars') {
-      const elements = highlightControlChars(val as string);
-
-      return (
-        <div className="codeBox" data-testid="payload-content">
-          {elements}
-        </div>
-      );
-    }
-
-    if (isPrimitive) {
-      return (
-        <div className="codeBox" data-testid="payload-content">
-          {String(val)}
-        </div>
-      );
-    }
-
-    return <KowlJsonView srcObj={val} />;
-  } catch (e) {
-    return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {(e as Error).message ?? String(e)}</span>;
+  if (renderData.type === 'null') {
+    return <code>null</code>;
   }
+  if (renderData.type === 'code') {
+    return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{renderData.content}</code>;
+  }
+  if (renderData.type === 'rawBytesUnavailable') {
+    return <div>Raw bytes not available</div>;
+  }
+  if (renderData.type === 'controlChars') {
+    return (
+      <div className="codeBox" data-testid="payload-content">
+        {highlightControlChars(renderData.content)}
+      </div>
+    );
+  }
+  if (renderData.type === 'primitive') {
+    return (
+      <div className="codeBox" data-testid="payload-content">
+        {renderData.content}
+      </div>
+    );
+  }
+  if (renderData.type === 'json') {
+    return <KowlJsonView srcObj={renderData.content} />;
+  }
+  return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {renderData.content}</span>;
 };

@@ -11,6 +11,8 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: leave for now */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi } from '@tanstack/react-router';
 
@@ -146,9 +148,16 @@ const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = routeApi.useParams();
-  const [selectedTool, setSelectedTool] = useState<string>('');
-  const [toolParameters, setToolParameters] = useState<JSONValue>({});
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [toolFormState, setToolFormState] = useState<{
+    selectedTool: string;
+    toolParameters: JSONValue;
+    validationErrors: Record<string, string>;
+  }>({ selectedTool: '', toolParameters: {}, validationErrors: {} });
+  const { selectedTool, toolParameters, validationErrors } = toolFormState;
+  const setSelectedTool = (value: string) => setToolFormState((prev) => ({ ...prev, selectedTool: value }));
+  const setToolParameters = (value: JSONValue) => setToolFormState((prev) => ({ ...prev, toolParameters: value }));
+  const setValidationErrors = (value: Record<string, string>) =>
+    setToolFormState((prev) => ({ ...prev, validationErrors: value }));
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -178,11 +187,11 @@ export const RemoteMCPInspectorTab = () => {
   useEffect(() => {
     if (!selectedTool && mcpServerTools?.tools && mcpServerTools.tools.length === 1) {
       const singleTool = mcpServerTools.tools[0];
-      setSelectedTool(singleTool.name);
       const initialData = initializeFormData(singleTool.inputSchema as JSONSchemaType);
-      setToolParameters(initialData);
-      resetMCPServerToolCall();
-      setValidationErrors({});
+      queueMicrotask(() => {
+        setToolFormState({ selectedTool: singleTool.name, toolParameters: initialData, validationErrors: {} });
+        resetMCPServerToolCall();
+      });
     }
   }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
 
@@ -194,115 +203,6 @@ export const RemoteMCPInspectorTab = () => {
     },
     []
   );
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  useEffect(() => {
-    if (
-      selectedTool &&
-      topicsData?.topics &&
-      topicsData.topics.length === 1 &&
-      mcpServerData?.mcpServer?.tools?.[selectedTool] &&
-      (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) ===
-        MCPServer_Tool_ComponentType.OUTPUT
-    ) {
-      const availableTopic = topicsData.topics[0].topicName;
-      const params = toolParameters as { topic_name?: string; messages?: Array<{ topic_name?: string }> };
-
-      // Check if topic_name needs to be set - auto-select for messages without topic_name
-      const needsUpdate = (() => {
-        // Check top-level topic_name
-        if (params?.topic_name === availableTopic) {
-          return false;
-        }
-
-        // Check nested topic_name in messages array - look for messages without topics
-        if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
-          const messagesNeedingTopics = params.messages.some((message) => !message?.topic_name);
-          return messagesNeedingTopics;
-        }
-
-        return true;
-      })();
-
-      if (needsUpdate) {
-        let updatedParams = {
-          ...(typeof toolParameters === 'object' && toolParameters !== null && !Array.isArray(toolParameters)
-            ? toolParameters
-            : {}),
-        };
-
-        // If there's a messages array, set topic_name in all messages that don't have one
-        if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
-          updatedParams = {
-            ...updatedParams,
-            messages: updatedParams.messages.map((msg) => {
-              const msgTyped = msg as { topic_name?: string };
-              return msgTyped?.topic_name ? msg : { ...(msg as object), topic_name: availableTopic };
-            }),
-          };
-        } else {
-          // Fallback to top-level topic_name
-          updatedParams.topic_name = availableTopic;
-        }
-
-        setToolParameters(updatedParams);
-
-        // Also trigger validation
-        const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
-        if (selectedToolData) {
-          const validation = validateRequiredFields(selectedToolData.inputSchema as JSONSchemaType, updatedParams);
-          setValidationErrors(validation.errors);
-        }
-      }
-    }
-  }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
-
-  const executeToolRequest = () => {
-    if (!(selectedTool && mcpServerData?.mcpServer?.url)) {
-      return;
-    }
-
-    // Cancel any existing request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Create new abort controller for this request
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    const parameters = (toolParameters as Record<string, unknown>) || {};
-
-    callMCPServerTool(
-      {
-        serverUrl: mcpServerData.mcpServer.url,
-        toolName: selectedTool,
-        parameters,
-        signal: abortController.signal,
-      },
-      {
-        onError: (error) => {
-          if (error.message !== 'Request was cancelled') {
-            toast.error(error.message);
-          }
-        },
-        onSettled: () => {
-          // Clear the abort controller reference when request completes
-          if (abortControllerRef.current === abortController) {
-            abortControllerRef.current = null;
-          }
-        },
-      }
-    );
-  };
-
-  const cancelToolRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-  };
 
   const validateRequiredFields = (
     schema: JSONSchemaType | undefined,
@@ -363,6 +263,117 @@ export const RemoteMCPInspectorTab = () => {
     }
 
     return { isValid: Object.keys(errors).length === 0, errors };
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+  useEffect(() => {
+    if (
+      selectedTool &&
+      topicsData?.topics &&
+      topicsData.topics.length === 1 &&
+      mcpServerData?.mcpServer?.tools?.[selectedTool] &&
+      (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) ===
+        MCPServer_Tool_ComponentType.OUTPUT
+    ) {
+      const availableTopic = topicsData.topics[0].topicName;
+      const params = toolParameters as { topic_name?: string; messages?: Array<{ topic_name?: string }> };
+
+      // Check if topic_name needs to be set - auto-select for messages without topic_name
+      const needsUpdate = (() => {
+        // Check top-level topic_name
+        if (params?.topic_name === availableTopic) {
+          return false;
+        }
+
+        // Check nested topic_name in messages array - look for messages without topics
+        if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
+          const messagesNeedingTopics = params.messages.some((message) => !message?.topic_name);
+          return messagesNeedingTopics;
+        }
+
+        return true;
+      })();
+
+      if (needsUpdate) {
+        let updatedParams = {
+          ...(typeof toolParameters === 'object' && toolParameters !== null && !Array.isArray(toolParameters)
+            ? toolParameters
+            : {}),
+        };
+
+        // If there's a messages array, set topic_name in all messages that don't have one
+        if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
+          updatedParams = {
+            ...updatedParams,
+            messages: updatedParams.messages.map((msg) => {
+              const msgTyped = msg as { topic_name?: string };
+              return msgTyped?.topic_name ? msg : { ...(msg as object), topic_name: availableTopic };
+            }),
+          };
+        } else {
+          // Fallback to top-level topic_name
+          updatedParams.topic_name = availableTopic;
+        }
+
+        queueMicrotask(() => {
+          setToolParameters(updatedParams);
+
+          // Also trigger validation
+          const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
+          if (selectedToolData) {
+            const validation = validateRequiredFields(selectedToolData.inputSchema as JSONSchemaType, updatedParams);
+            setValidationErrors(validation.errors);
+          }
+        });
+      }
+    }
+  }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
+
+  const executeToolRequest = () => {
+    if (!(selectedTool && mcpServerData?.mcpServer?.url)) {
+      return;
+    }
+
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    const parameters = (toolParameters as Record<string, unknown>) || {};
+
+    callMCPServerTool(
+      {
+        serverUrl: mcpServerData.mcpServer.url,
+        toolName: selectedTool,
+        parameters,
+        signal: abortController.signal,
+      },
+      {
+        onError: (error) => {
+          if (error.message !== 'Request was cancelled') {
+            toast.error(error.message);
+          }
+        },
+        onSettled: () => {
+          // Clear the abort controller reference when request completes
+          if (abortControllerRef.current === abortController) {
+            abortControllerRef.current = null;
+          }
+        },
+      }
+    );
+  };
+
+  const cancelToolRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic

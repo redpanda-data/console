@@ -15,7 +15,7 @@ const routeApi = getRouteApi('/mcp-servers/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { AlertCircle, Link, Loader2, Logs, Search, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { uiState } from 'state/ui-state';
 
@@ -39,7 +39,7 @@ export const RemoteMCPDetailsPage = () => {
   // Use fine-grained selector to only re-render when tab changes
   const tab = routeApi.useSearch({ select: (s) => s.tab });
 
-  const [activeTab, setActiveTab] = useState(tab || 'configuration');
+  const activeTab = tab || 'configuration';
 
   const { data: mcpServerData, isLoading, error } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
@@ -49,16 +49,7 @@ export const RemoteMCPDetailsPage = () => {
     }
   }, [mcpServerData]);
 
-  useEffect(() => {
-    if (tab) {
-      setActiveTab(tab);
-    } else {
-      setActiveTab('configuration');
-    }
-  }, [tab]);
-
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
     navigate({ search: { tab: value } });
   };
 

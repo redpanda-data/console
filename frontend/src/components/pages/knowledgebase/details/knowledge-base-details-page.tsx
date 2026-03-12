@@ -220,7 +220,6 @@ export const KnowledgeBaseDetailsPage = () => {
 
   // Local state
   const [isEditMode, setIsEditMode] = useState(false);
-  const [formHasChanges, setFormHasChanges] = useState(false);
   const prevEditModeRef = useRef(isEditMode);
 
   // Fetch knowledge base data
@@ -254,15 +253,10 @@ export const KnowledgeBaseDetailsPage = () => {
   const refreshFormData = useCallback(() => {
     if (knowledgeBase) {
       form.reset(initializeFormData(knowledgeBase));
-      setFormHasChanges(false);
     }
   }, [knowledgeBase, form]);
 
-  useEffect(() => {
-    if (knowledgebaseId) {
-      updatePageTitle(knowledgebaseId);
-    }
-  }, [knowledgebaseId]);
+  updatePageTitle(knowledgebaseId);
 
   // Only refresh form when entering edit mode, not when data refetches while in edit mode
   useEffect(() => {
@@ -278,10 +272,6 @@ export const KnowledgeBaseDetailsPage = () => {
 
   // Subscribe to form changes by accessing isDirty during render
   const { isDirty } = form.formState;
-
-  useEffect(() => {
-    setFormHasChanges(isDirty);
-  }, [isDirty]);
 
   const generateUpdateMask = useCallback((): string[] => {
     const updateMask: string[] = [];
@@ -311,12 +301,10 @@ export const KnowledgeBaseDetailsPage = () => {
   // Handlers
   const handleStartEdit = () => {
     setIsEditMode(true);
-    setFormHasChanges(false);
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    setFormHasChanges(false);
     refreshFormData();
   };
 
@@ -376,7 +364,6 @@ export const KnowledgeBaseDetailsPage = () => {
           toast.success('Knowledge base updated successfully');
           refetchKnowledgeBase();
           setIsEditMode(false);
-          setFormHasChanges(false);
           form.reset(updatedKnowledgeBase, { keepValues: true });
           resolve();
         },
@@ -490,7 +477,7 @@ export const KnowledgeBaseDetailsPage = () => {
 
           <TabsContent value="configuration">
             <KnowledgeBaseConfigurationTab
-              formHasChanges={formHasChanges}
+              isDirty={isDirty}
               isEditMode={isEditMode}
               isUpdating={isUpdating}
               knowledgeBase={knowledgeBase}

@@ -43,7 +43,7 @@ export const ExplicitConfirmModal = (p: {
 
           <Box mt="4">
             To confirm, enter "{requiredText}":
-            <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
+            <Input onChange={(e) => setConfirmBoxText(e.target.value)} />
           </Box>
         </ModalBody>
 

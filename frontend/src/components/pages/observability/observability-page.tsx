@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import type { FC } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type FC, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useListQueries } from 'react-query/api/observability';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
 
-import { MetricChart } from './metric-chart';
+const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
+
 import { ObservabilityToolbar } from './observability-toolbar';
 import { calculateTimeRange, type TimeRange } from '../../../utils/time-range';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
@@ -81,11 +81,13 @@ const ObservabilityPage: FC = () => {
       />
 
       {queries?.queries && queries.queries.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {queries.queries.map((query) => (
-            <MetricChart key={query.name} queryName={query.name} timeRange={timeRange} />
-          ))}
-        </div>
+        <Suspense fallback={<Skeleton className="h-[200px]" />}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {queries.queries.map((query) => (
+              <MetricChart key={query.name} queryName={query.name} timeRange={timeRange} />
+            ))}
+          </div>
+        </Suspense>
       ) : (
         <Alert variant="info">
           <AlertDescription>No metrics queries available at this time.</AlertDescription>

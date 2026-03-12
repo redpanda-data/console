@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { Markdown } from '@redpanda-data/ui';
@@ -97,6 +99,41 @@ type AgentCard = {
     examples: string[];
   }>;
 };
+
+type SkillFieldProps = {
+  skill: AgentCard['skills'][number];
+  index: number;
+  field: 'id' | 'name' | 'description';
+  onUpdate: (index: number, field: 'id' | 'name' | 'description', value: string) => void;
+};
+
+const SKILL_PLACEHOLDERS = {
+  id: 'e.g., redpanda-cluster-info',
+  name: 'e.g., Redpanda Cluster Information',
+  description: 'Describe what this skill does...',
+} as const;
+
+function SkillField({ skill, index, field, onUpdate }: SkillFieldProps) {
+  if (field === 'description') {
+    return (
+      <Textarea
+        id={`skill-${field}-${index}`}
+        onChange={(e) => onUpdate(index, field, e.target.value)}
+        placeholder={SKILL_PLACEHOLDERS[field]}
+        rows={3}
+        value={skill[field]}
+      />
+    );
+  }
+  return (
+    <Input
+      id={`skill-${field}-${index}`}
+      onChange={(e) => onUpdate(index, field, e.target.value)}
+      placeholder={SKILL_PLACEHOLDERS[field]}
+      value={skill[field]}
+    />
+  );
+}
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Agent card tab contains CRUD operations for agent card configuration with layout complexity
 export const AIAgentCardTab = () => {
@@ -188,38 +225,38 @@ export const AIAgentCardTab = () => {
       return;
     }
 
-    try {
-      const hasData = !!(
-        displayCard.iconUrl ||
-        displayCard.documentationUrl ||
-        displayCard.skills.length > 0 ||
-        displayCard.provider?.organization ||
-        displayCard.provider?.url
-      );
-
-      const agentCard = hasData
-        ? create(AIAgent_AgentCardSchema, {
-            iconUrl: displayCard.iconUrl || undefined,
-            documentationUrl: displayCard.documentationUrl || undefined,
-            provider:
-              displayCard.provider?.organization || displayCard.provider?.url
-                ? create(AIAgent_AgentCard_ProviderSchema, {
-                    organization: displayCard.provider.organization || undefined,
-                    url: displayCard.provider.url || undefined,
-                  })
-                : undefined,
-            skills: displayCard.skills.map((skill) =>
-              create(AIAgent_AgentCard_SkillSchema, {
-                id: skill.id.trim(),
-                name: skill.name.trim(),
-                description: skill.description.trim(),
-                tags: skill.tags.filter((t: string) => t.trim()),
-                examples: skill.examples.filter((e: string) => e.trim()),
+    const provider = displayCard.provider;
+    const hasData = !!(
+      displayCard.iconUrl ||
+      displayCard.documentationUrl ||
+      displayCard.skills.length > 0 ||
+      provider?.organization ||
+      provider?.url
+    );
+    const hasProvider = !!(provider?.organization || provider?.url);
+    const agentCard = hasData
+      ? create(AIAgent_AgentCardSchema, {
+          iconUrl: displayCard.iconUrl || undefined,
+          documentationUrl: displayCard.documentationUrl || undefined,
+          provider: hasProvider
+            ? create(AIAgent_AgentCard_ProviderSchema, {
+                organization: provider?.organization || undefined,
+                url: provider?.url || undefined,
               })
-            ),
-          })
-        : undefined;
+            : undefined,
+          skills: displayCard.skills.map((skill) =>
+            create(AIAgent_AgentCard_SkillSchema, {
+              id: skill.id.trim(),
+              name: skill.name.trim(),
+              description: skill.description.trim(),
+              tags: skill.tags.filter((t: string) => t.trim()),
+              examples: skill.examples.filter((e: string) => e.trim()),
+            })
+          ),
+        })
+      : undefined;
 
+    try {
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -267,38 +304,6 @@ export const AIAgentCardTab = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setEditedCard(null);
-  };
-
-  const renderSkillField = (
-    skill: AgentCard['skills'][number],
-    index: number,
-    field: 'id' | 'name' | 'description'
-  ) => {
-    const placeholders = {
-      id: 'e.g., redpanda-cluster-info',
-      name: 'e.g., Redpanda Cluster Information',
-      description: 'Describe what this skill does...',
-    };
-
-    if (field === 'description') {
-      return (
-        <Textarea
-          id={`skill-${field}-${index}`}
-          onChange={(e) => updateSkill(index, field, e.target.value)}
-          placeholder={placeholders[field]}
-          rows={3}
-          value={skill[field]}
-        />
-      );
-    }
-    return (
-      <Input
-        id={`skill-${field}-${index}`}
-        onChange={(e) => updateSkill(index, field, e.target.value)}
-        placeholder={placeholders[field]}
-        value={skill[field]}
-      />
-    );
   };
 
   return (
@@ -450,8 +455,7 @@ export const AIAgentCardTab = () => {
                 displayCard.skills.length > 0 && (
                   <div className="space-y-4">
                     {displayCard.skills.map((skill, index) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key
-                      <div className="rounded-lg border p-4" key={`skill-${index}`}>
+                      <div className="rounded-lg border p-4" key={skill.id || `skill-${skill.name}-${index}`}>
                         <div className="mb-4 flex items-start justify-between">
                           <div className="flex-1">
                             <Text className="font-medium">{skill.name || `Skill ${index + 1}`}</Text>
@@ -472,20 +476,20 @@ export const AIAgentCardTab = () => {
                                   <Label htmlFor={`skill-id-${index}`}>
                                     Skill ID <span className="text-red-500">*</span>
                                   </Label>
-                                  {renderSkillField(skill, index, 'id')}
+                                  <SkillField field="id" index={index} onUpdate={updateSkill} skill={skill} />
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor={`skill-name-${index}`}>
                                     Skill Name <span className="text-red-500">*</span>
                                   </Label>
-                                  {renderSkillField(skill, index, 'name')}
+                                  <SkillField field="name" index={index} onUpdate={updateSkill} skill={skill} />
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor={`skill-description-${index}`}>
                                   Description <span className="text-red-500">*</span>
                                 </Label>
-                                {renderSkillField(skill, index, 'description')}
+                                <SkillField field="description" index={index} onUpdate={updateSkill} skill={skill} />
                               </div>
                               <div className="space-y-2">
                                 <Label>Tags</Label>

@@ -122,7 +122,7 @@ export class StepSelectPartitions extends Component<{
 
                 return (
                   <Flex alignItems="center" flexDirection="row" gap={2}>
-                    {renderPartitionErrorsForTopic(errors)}
+                    <PartitionErrorsForTopic partitionsWithErrors={errors} />
                     <Text>
                       {topic.partitionCount - errors} / {topic.partitionCount}
                     </Text>
@@ -363,7 +363,7 @@ function renderPartitionError(partition: Partition) {
   );
 }
 
-function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
+function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
     <Popover
       content={

@@ -95,7 +95,6 @@ export function CreateTopicModalContent({ state }: Props) {
       <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
         <Label text="Topic Name">
           <Input
-            autoFocus
             data-testid="topic-name"
             onChange={(e) => {
               state.topicName = e.target.value;

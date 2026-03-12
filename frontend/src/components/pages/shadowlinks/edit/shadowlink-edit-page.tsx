@@ -150,14 +150,12 @@ export const ShadowLinkEditPage = () => {
   };
 
   useEffect(() => {
-    if (name) {
-      uiState.pageTitle = `Edit Shadow Link: ${name}`;
-      uiState.pageBreadcrumbs = [
-        { title: 'Shadow Links', linkTo: '/shadowlinks' },
-        { title: name, linkTo: `/shadowlinks/${name}` },
-        { title: 'Edit', linkTo: `/shadowlinks/${name}/edit` },
-      ];
-    }
+    uiState.pageTitle = `Edit Shadow Link: ${name}`;
+    uiState.pageBreadcrumbs = [
+      { title: 'Shadow Links', linkTo: '/shadowlinks' },
+      { title: name, linkTo: `/shadowlinks/${name}` },
+      { title: 'Edit', linkTo: `/shadowlinks/${name}/edit` },
+    ];
   }, [name]);
 
   if (!(isLoading || hasData)) {

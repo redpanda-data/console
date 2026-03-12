@@ -49,8 +49,8 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
 
       <Section>
         <List spacing={3}>
-          {api.errors.map((e, i) => (
-            <ListItem display="flex" key={`${formatError(e)}-${i}`}>
+          {api.errors.map((e) => (
+            <ListItem display="flex" key={formatError(e)}>
               <ListIcon alignSelf="center" as={WarningIcon} color="red.500" />
               {formatError(e)}
             </ListItem>

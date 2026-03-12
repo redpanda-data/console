@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -361,20 +363,32 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     [setUrlState]
   );
 
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [viewState, setViewState] = useState(() => ({ nowMs: Date.now(), collapseAllTrigger: 0 }));
+  const nowMs = viewState.nowMs;
+  const collapseAllTrigger = viewState.collapseAllTrigger;
+  const setNowMs = (v: number) => setViewState((prev) => ({ ...prev, nowMs: v }));
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  // Lazy loading state
-  const [accumulatedTraces, setAccumulatedTraces] = useState<TraceSummary[]>([]);
-  const [currentPageToken, setCurrentPageToken] = useState<string>('');
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Jump navigation state
-  const [jumpedTo, setJumpedTo] = useState<JumpedState>(null);
-
-  // Linked trace state - for showing traces from URL that aren't in current results
-  // This mode is ONLY entered when the page initially loads with a traceId in the URL
-  const [isLinkedTraceMode, setIsLinkedTraceMode] = useState(false);
+  // Lazy loading + jump navigation state
+  const [paginationState, setPaginationState] = useState({
+    accumulatedTraces: [] as TraceSummary[],
+    currentPageToken: '' as string,
+    isLoadingMore: false,
+    jumpedTo: null as JumpedState,
+    // Linked trace state - for showing traces from URL that aren't in current results
+    // This mode is ONLY entered when the page initially loads with a traceId in the URL
+    isLinkedTraceMode: false,
+  });
+  const { accumulatedTraces, currentPageToken, isLoadingMore, jumpedTo, isLinkedTraceMode } = paginationState;
+  const setAccumulatedTraces = (v: TraceSummary[] | ((prev: TraceSummary[]) => TraceSummary[])) =>
+    setPaginationState((prev) => ({
+      ...prev,
+      accumulatedTraces: typeof v === 'function' ? v(prev.accumulatedTraces) : v,
+    }));
+  const setCurrentPageToken = (v: string) => setPaginationState((prev) => ({ ...prev, currentPageToken: v }));
+  const setIsLoadingMore = (v: boolean) => setPaginationState((prev) => ({ ...prev, isLoadingMore: v }));
+  const setJumpedTo = (v: JumpedState) => setPaginationState((prev) => ({ ...prev, jumpedTo: v }));
+  const setIsLinkedTraceMode = (v: boolean) => setPaginationState((prev) => ({ ...prev, isLinkedTraceMode: v }));
   const linkedTraceIdRef = useRef<string | null>(null);
   const hasCompletedInitialMount = useRef(false);
 
@@ -487,7 +501,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     const ONE_HOUR = 60 * ONE_MINUTE;
     if (isLinkedTraceMode && activeTraceTimeMs) {
       // Cap end time to current time - no point showing future time range
-      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, Date.now());
+      const endMs = Math.min(activeTraceTimeMs + ONE_HOUR, nowMs);
       return {
         startTimestamp: timestampFromMs(activeTraceTimeMs - ONE_HOUR),
         endTimestamp: timestampFromMs(endMs),
@@ -523,26 +537,24 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     filter: histogramFilter,
   });
 
-  // Accumulate traces when data changes
-  // Note: Don't include currentPageToken in deps - it changes before data arrives,
-  // which would cause the effect to re-run with stale data and duplicate traces
-  // biome-ignore lint/correctness/useExhaustiveDependencies: currentPageToken is intentionally excluded - see comment above
-  useEffect(() => {
-    // In linked mode, get trace summary from GetTrace response
+  // Accumulate traces when data changes (during render, not in effect)
+  // Uses setState-during-render pattern to detect prop changes without ref access
+  const linkedSummary = linkedTraceData?.trace?.summary;
+  const [prevTraceData, setPrevTraceData] = useState({
+    data: undefined as typeof data,
+    linkedSummary: undefined as TraceSummary | undefined,
+  });
+  if (prevTraceData.data !== data || prevTraceData.linkedSummary !== linkedSummary) {
+    setPrevTraceData({ data, linkedSummary });
     if (isLinkedTraceMode) {
-      if (linkedTraceData?.trace?.summary) {
-        setAccumulatedTraces([linkedTraceData.trace.summary]);
+      if (linkedSummary) {
+        setAccumulatedTraces([linkedSummary]);
       }
-      return;
+    } else if (data?.traces) {
+      setAccumulatedTraces((prev) => (currentPageToken === '' ? data.traces : [...prev, ...data.traces]));
+      setIsLoadingMore(false);
     }
-
-    // Normal mode: accumulate from ListTraces response
-    if (!data?.traces) {
-      return;
-    }
-    setAccumulatedTraces((prev) => (currentPageToken === '' ? data.traces : [...prev, ...data.traces]));
-    setIsLoadingMore(false);
-  }, [data, isLinkedTraceMode, linkedTraceData?.trace?.summary]);
+  }
 
   // Track previous filter state to detect changes
   const prevFiltersRef = useRef<{ presets: string; attrs: string; services: string }>({
@@ -578,8 +590,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     if (hasCompletedInitialMount.current) {
       // After initial mount, only handle exiting linked mode when URL params are cleared
       if (!selectedTraceId && isLinkedTraceMode) {
-        setIsLinkedTraceMode(false);
-        linkedTraceIdRef.current = null;
+        queueMicrotask(() => {
+          setIsLinkedTraceMode(false);
+          linkedTraceIdRef.current = null;
+        });
       }
       return;
     }
@@ -588,8 +602,10 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     hasCompletedInitialMount.current = true;
     if (selectedTraceId) {
       // Page loaded with traceId in URL - enter linked mode
-      setIsLinkedTraceMode(true);
-      linkedTraceIdRef.current = selectedTraceId;
+      queueMicrotask(() => {
+        setIsLinkedTraceMode(true);
+        linkedTraceIdRef.current = selectedTraceId;
+      });
     }
   }, [selectedTraceId, isLinkedTraceMode]);
 
@@ -718,11 +734,9 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
     }
   };
 
-  const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
-
   const handleCollapseAll = () => {
     // Trigger collapse all by incrementing counter
-    setCollapseAllTrigger((prev) => prev + 1);
+    setViewState((prev) => ({ ...prev, collapseAllTrigger: prev.collapseAllTrigger + 1 }));
   };
 
   // Calculate the actual visible window from accumulated traces
@@ -742,7 +756,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   // Pre-compute chart query times to avoid nested ternaries in JSX
   const chartQueryEndMs =
     isLinkedTraceMode && activeTraceTimeMs
-      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, Date.now())
+      ? Math.min(activeTraceTimeMs + 60 * 60 * 1000, nowMs)
       : (jumpedTo?.endMs ?? timestamps.endMs);
   const chartQueryStartMs =
     isLinkedTraceMode && activeTraceTimeMs

@@ -1,6 +1,8 @@
 import { Command, CommandGroup, CommandItem, CommandList } from 'components/redpanda-ui/components/command';
 import { Input } from 'components/redpanda-ui/components/input';
-import { type ChangeEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, useState } from 'react';
+
+const EMPTY_SUGGESTIONS: string[] = [];
 
 type AutocompleteInputProps = {
   value: string;
@@ -16,20 +18,14 @@ export function AutocompleteInput({
   onChange,
   placeholder,
   className,
-  suggestions = [],
+  suggestions = EMPTY_SUGGESTIONS,
   'data-testid': dataTestId,
 }: AutocompleteInputProps) {
-  const [inputValue, setInputValue] = useState(value);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
-
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setInputValue(newValue);
     onChange(newValue);
 
     if (newValue.length > 0 && suggestions.length > 0) {
@@ -42,7 +38,6 @@ export function AutocompleteInput({
   };
 
   const handleSelectSuggestion = (suggestion: string) => {
-    setInputValue(suggestion);
     onChange(suggestion);
     setShowSuggestions(false);
   };
@@ -54,10 +49,8 @@ export function AutocompleteInput({
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         onChange={handleInputChange}
         onFocus={() => {
-          if (inputValue.length > 0 && suggestions.length > 0) {
-            const filtered = suggestions.filter((suggestion) =>
-              suggestion.toLowerCase().includes(inputValue.toLowerCase())
-            );
+          if (value.length > 0 && suggestions.length > 0) {
+            const filtered = suggestions.filter((suggestion) => suggestion.toLowerCase().includes(value.toLowerCase()));
             setFilteredSuggestions(filtered);
             setShowSuggestions(filtered.length > 0);
           }
@@ -65,7 +58,7 @@ export function AutocompleteInput({
         placeholder={placeholder}
         testId={dataTestId}
         type="text"
-        value={inputValue}
+        value={value}
       />
 
       {showSuggestions && filteredSuggestions.length > 0 && (
