@@ -225,6 +225,30 @@ export const RemoteMCPLogsTab = () => {
                       () => Promise.resolve() // No need to load large messages for this view
                     }
                     msg={original}
+                    onDownloadRecord={() => {
+                      const blob = new Blob(
+                        [
+                          JSON.stringify(
+                            {
+                              offset: original.offset,
+                              key: original.keyJson,
+                              value: original.valueJson,
+                              timestamp: original.timestamp,
+                              headers: original.headers,
+                            },
+                            null,
+                            2
+                          ),
+                        ],
+                        { type: 'application/json' }
+                      );
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `mcp-log-${original.offset}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
                   />
                 )}
               />
