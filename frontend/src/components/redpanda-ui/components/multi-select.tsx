@@ -69,6 +69,8 @@ type MultiSelectProps = React.ComponentPropsWithoutRef<typeof PopoverPrimitive.R
     filter?: boolean | ((keyword: string, current: string) => boolean);
     disabled?: boolean;
     maxCount?: number;
+    /** Pre-populate the item cache so labels are available before MultiSelectItem mounts. */
+    items?: MultiSelectOptionItem[];
   };
 
 const MultiSelect: React.FC<MultiSelectProps> = ({
@@ -84,9 +86,12 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   filter,
   disabled,
   maxCount,
+  items,
   ...popoverProps
 }) => {
-  const itemCache = React.useRef(new Map<string, MultiSelectOptionItem>()).current;
+  const itemCache = React.useRef(new Map<string, MultiSelectOptionItem>(
+    items?.map((item) => [item.value, item]) ?? [],
+  )).current;
 
   const handleValueChange = React.useCallback(
     (state: string[]) => {

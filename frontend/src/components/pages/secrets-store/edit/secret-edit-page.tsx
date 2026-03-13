@@ -191,6 +191,7 @@ export const SecretEditPage = () => {
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel required>Scopes</FieldLabel>
               <MultiSelect
+                items={SCOPE_OPTIONS}
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >
