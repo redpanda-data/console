@@ -10,6 +10,13 @@
       "src/globals.css",
       "src/components/pages/connect/dynamic-ui/components.tsx"
     ],
-    "rules": ["react-doctor/use-lazy-motion", "react-doctor/no-giant-component", "react-doctor/require-reduced-motion", "react-hooks-js/incompatible-library", "react-doctor/prefer-useReducer", "react-doctor/prefer-dynamic-import"]
+    "rules": [
+      "react-doctor/use-lazy-motion",
+      "react-doctor/no-giant-component",
+      "react-doctor/require-reduced-motion",
+      "react-hooks-js/incompatible-library",
+      "react-doctor/prefer-useReducer",
+      "react-doctor/prefer-dynamic-import"
+    ]
   }
 }
