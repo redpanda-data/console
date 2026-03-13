@@ -9,14 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -292,13 +290,18 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setLogState((prev) => ({ ...prev, messages: [...search.messages] }));
+        setLogState((prev) => {
+          if (prev.messages.length === search.messages.length) {
+            return prev;
+          }
+          return { ...prev, messages: [...search.messages] };
+        });
       }
     }, 200);
     return () => clearInterval(interval);
   }, []);
 
-  const loadLargeMessage = async (msgTopicName: string, partitionID: number, offset: number) => {
+  const loadLargeMessage = useCallback(async (msgTopicName: string, partitionID: number, offset: number) => {
     const search = createMessageSearch();
     const searchReq: MessageSearchRequest = {
       filterInterpreterCode: '',
@@ -325,40 +328,63 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     } else {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
-  };
+  }, []);
 
   const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: ColumnDef<TopicMessage>[] = [
-    {
-      header: 'Timestamp',
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 30,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          msg={original}
-          previewFields={() => []}
-        />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
+  const messageTableColumns: ColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      {
+        header: 'Timestamp',
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
+        size: 30,
+      },
+      {
+        header: 'Value',
+        accessorKey: 'value',
+        cell: ({ row: { original } }) => (
+          <MessagePreview
+            isCompactTopic={isCompactTopic}
+            msg={original}
+            previewFields={() => []}
+          />
+        ),
+        size: Number.MAX_SAFE_INTEGER,
+      },
+    ],
+    [isCompactTopic]
+  );
 
-  const filteredMessages = messages.filter((x) => {
-    if (!logsQuickSearch) {
-      return true;
-    }
-    return isFilterMatch(logsQuickSearch, x);
-  });
+  const renderSubComponent = useCallback(
+    ({ row: { original } }: { row: { original: TopicMessage } }) => (
+      <ExpandedMessage
+        loadLargeMessage={() =>
+          loadLargeMessage(
+            searchRef.current?.searchRequest?.topicName ?? '',
+            original.partitionID,
+            original.offset
+          )
+        }
+        msg={original}
+      />
+    ),
+    [loadLargeMessage]
+  );
+
+  const filteredMessages = useMemo(
+    () => messages.filter((x) => {
+      if (!logsQuickSearch) {
+        return true;
+      }
+      return isFilterMatch(logsQuickSearch, x);
+    }),
+    [messages, logsQuickSearch]
+  );
 
   return (
     <>
@@ -382,18 +408,7 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
           sorting={sorting}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-          subComponent={({ row: { original } }) => (
-            <ExpandedMessage
-              loadLargeMessage={() =>
-                loadLargeMessage(
-                  searchRef.current?.searchRequest?.topicName ?? '',
-                  original.partitionID,
-                  original.offset
-                )
-              }
-              msg={original}
-            />
-          )}
+          subComponent={renderSubComponent}
         />
       </Section>
     </>
