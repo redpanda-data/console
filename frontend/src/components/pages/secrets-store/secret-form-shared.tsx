@@ -18,48 +18,28 @@ export const SECRET_ID_REGEX = /^[a-zA-Z0-9/_-]+$/;
 export const SCOPE_OPTIONS = [
   {
     value: String(Scope.AI_GATEWAY),
-    label: (
-      <span className="flex items-center gap-2">
-        <Waypoints className="size-4" />
-        AI Gateway
-      </span>
-    ),
+    label: 'AI Gateway',
+    icon: Waypoints,
   },
   {
     value: String(Scope.MCP_SERVER),
-    label: (
-      <span className="flex items-center gap-2">
-        <MCPIcon className="size-4" />
-        MCP Server
-      </span>
-    ),
+    label: 'MCP Server',
+    icon: MCPIcon,
   },
   {
     value: String(Scope.AI_AGENT),
-    label: (
-      <span className="flex items-center gap-2">
-        <CircleUser className="size-4" />
-        AI Agent
-      </span>
-    ),
+    label: 'AI Agent',
+    icon: CircleUser,
   },
   {
     value: String(Scope.REDPANDA_CONNECT),
-    label: (
-      <span className="flex items-center gap-2">
-        <Link className="size-4" />
-        Redpanda Connect
-      </span>
-    ),
+    label: 'Redpanda Connect',
+    icon: Link,
   },
   {
     value: String(Scope.REDPANDA_CLUSTER),
-    label: (
-      <span className="flex items-center gap-2">
-        <Server className="size-4" />
-        Redpanda Cluster
-      </span>
-    ),
+    label: 'Redpanda Cluster',
+    icon: Server,
   },
 ];
 

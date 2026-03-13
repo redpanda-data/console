@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('@redpanda-data/ui', async () => {
   const React = await import('react');
@@ -168,6 +169,21 @@ describe('topic message rendering', () => {
     rerender(<ExpandedMessage {...props} />);
 
     expect(kowlJsonViewSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('calls onDownloadRecord when "Download Record" button is clicked', async () => {
+    const user = userEvent.setup();
+    const onDownloadRecord = vi.fn();
+    const msg = buildMessage();
+
+    render(
+      <ExpandedMessage loadLargeMessage={() => Promise.resolve()} msg={msg} onDownloadRecord={onDownloadRecord} />
+    );
+
+    const downloadButton = screen.getByRole('button', { name: /download record/i });
+    await user.click(downloadButton);
+
+    expect(onDownloadRecord).toHaveBeenCalledTimes(1);
   });
 
   test('rerenders expanded object payloads when the message prop changes', () => {

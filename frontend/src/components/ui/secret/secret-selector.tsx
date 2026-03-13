@@ -52,6 +52,7 @@ import { toast } from "sonner";
 import { formatToastErrorMessageGRPC } from "utils/toast.utils";
 import { base64ToUInt8Array, encodeBase64 } from "utils/utils";
 import { z } from "zod";
+import { extractSecretName } from "./secret-utils";
 
 // OpenAI API key validation pattern
 export const OPENAI_API_KEY_PATTERN = {
@@ -200,7 +201,11 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 			) : (
 				// Secrets available - show combobox with create button
 				<div className="flex items-center gap-2">
-					<Select onValueChange={onChange} value={value}>
+					<Select
+						key={`${extractSecretName(value)}-${availableSecrets.length}`}
+						onValueChange={onChange}
+						value={extractSecretName(value)}
+					>
 						<SelectTrigger className="flex-1">
 							<SelectValue placeholder={placeholder} />
 						</SelectTrigger>

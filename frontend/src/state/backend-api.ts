@@ -656,8 +656,8 @@ const _apiCreator = (set: any, get: any) => ({
 
   _msgSearchVersion: 0,
 
-  refreshTopics(force?: boolean) {
-    cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
+  refreshTopics(force?: boolean): Promise<void> {
+    return cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
@@ -805,7 +805,7 @@ const _apiCreator = (set: any, get: any) => ({
         const newTopicPartitions = new Map(get().topicPartitions);
 
         for (const t of response.topics) {
-          if (t.error !== null) {
+          if (t.error !== null && t.error !== undefined) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
             continue;
@@ -2039,12 +2039,20 @@ const _apiCreator = (set: any, get: any) => ({
     }
 
     await Promise.all([
-      client.listEnterpriseFeatures({}).then((enterpriseFeaturesResponse) => {
-        set({
-          enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
-          licenseViolation: enterpriseFeaturesResponse.violation,
-        });
-      }),
+      client
+        .listEnterpriseFeatures({})
+        .then((enterpriseFeaturesResponse) => {
+          set({
+            enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
+            licenseViolation: enterpriseFeaturesResponse.violation,
+          });
+        })
+        .catch((err) => {
+          const errorText = err instanceof Error ? err.message : String(err);
+
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log(`error listing enterprise features: ${errorText}`);
+        }),
       client
         .listLicenses({})
         .then((licensesResponse) => {

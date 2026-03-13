@@ -629,4 +629,151 @@ describe('AIAgentsListPage', () => {
 
     expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
   });
+
+  test('search input updates value on keystrokes', async () => {
+    const user = userEvent.setup();
+
+    const agent1 = create(AIAgentSchema, {
+      id: 'agent-1',
+      displayName: 'Test Agent',
+      description: '',
+      state: AIAgent_State.RUNNING,
+      provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
+      model: 'gpt-4',
+      systemPrompt: '',
+      mcpServers: {},
+      tags: {},
+    });
+
+    const transport = createAIAgentsTransport({
+      listAIAgentsMock: vi
+        .fn()
+        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1], nextPageToken: '' })),
+    });
+
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Agent')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter agents...');
+    await user.type(filterInput, 'hello');
+
+    // Input value must reflect typed text — a React Compiler memoization
+    // bug would freeze it at the initial empty string.
+    expect(filterInput).toHaveValue('hello');
+  });
+
+  test('filters agents by name via search input', async () => {
+    const user = userEvent.setup();
+
+    const agent1 = create(AIAgentSchema, {
+      id: 'agent-1',
+      displayName: 'Alpha Agent',
+      description: '',
+      state: AIAgent_State.RUNNING,
+      provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
+      model: 'gpt-4',
+      systemPrompt: '',
+      mcpServers: {},
+      tags: {},
+    });
+
+    const agent2 = create(AIAgentSchema, {
+      id: 'agent-2',
+      displayName: 'Beta Agent',
+      description: '',
+      state: AIAgent_State.STOPPED,
+      provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
+      model: 'gpt-4',
+      systemPrompt: '',
+      mcpServers: {},
+      tags: {},
+    });
+
+    const transport = createAIAgentsTransport({
+      listAIAgentsMock: vi
+        .fn()
+        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1, agent2], nextPageToken: '' })),
+    });
+
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Agent')).toBeVisible();
+      expect(screen.getByText('Beta Agent')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter agents...');
+    await user.type(filterInput, 'Beta');
+
+    await waitFor(() => {
+      expect(screen.getByText('Beta Agent')).toBeVisible();
+      expect(screen.queryByText('Alpha Agent')).not.toBeInTheDocument();
+    });
+
+    // Clear and type again to verify the input remains interactive
+    await user.clear(filterInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Agent')).toBeVisible();
+      expect(screen.getByText('Beta Agent')).toBeVisible();
+    });
+  });
+
+  test('status faceted filter filters results', async () => {
+    const user = userEvent.setup();
+
+    const agent1 = create(AIAgentSchema, {
+      id: 'agent-1',
+      displayName: 'Running Agent',
+      description: '',
+      state: AIAgent_State.RUNNING,
+      provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
+      model: 'gpt-4',
+      systemPrompt: '',
+      mcpServers: {},
+      tags: {},
+    });
+
+    const agent2 = create(AIAgentSchema, {
+      id: 'agent-2',
+      displayName: 'Stopped Agent',
+      description: '',
+      state: AIAgent_State.STOPPED,
+      provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
+      model: 'gpt-4',
+      systemPrompt: '',
+      mcpServers: {},
+      tags: {},
+    });
+
+    const transport = createAIAgentsTransport({
+      listAIAgentsMock: vi
+        .fn()
+        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1, agent2], nextPageToken: '' })),
+    });
+
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Running Agent')).toBeVisible();
+      expect(screen.getByText('Stopped Agent')).toBeVisible();
+    });
+
+    // Click the "Status" faceted filter button (not the column header one in <thead>)
+    const statusFilterButton = screen.getAllByRole('button', { name: /status/i }).find((btn) => !btn.closest('thead'))!;
+    await user.click(statusFilterButton);
+
+    // Select the "Stopped" option from the filter popover
+    const stoppedOption = await screen.findByRole('option', { name: /stopped/i });
+    await user.click(stoppedOption);
+
+    // Only the stopped agent should remain visible
+    await waitFor(() => {
+      expect(screen.getByText('Stopped Agent')).toBeVisible();
+      expect(screen.queryByText('Running Agent')).not.toBeInTheDocument();
+    });
+  });
 });

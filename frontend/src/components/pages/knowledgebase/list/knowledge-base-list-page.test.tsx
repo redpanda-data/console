@@ -15,6 +15,12 @@ import userEvent from '@testing-library/user-event';
 import {
   DeleteKnowledgeBaseRequestSchema,
   DeleteKnowledgeBaseResponseSchema,
+  KnowledgeBase_EmbeddingGenerator_ProviderSchema,
+  KnowledgeBase_EmbeddingGeneratorSchema,
+  KnowledgeBase_Retriever_Reranker_Provider_CohereSchema,
+  KnowledgeBase_Retriever_Reranker_ProviderSchema,
+  KnowledgeBase_Retriever_RerankerSchema,
+  KnowledgeBase_RetrieverSchema,
   KnowledgeBaseSchema,
   ListKnowledgeBasesResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
@@ -41,6 +47,8 @@ vi.mock('state/ui-state', () => ({
     pageBreadcrumbs: [],
   },
 }));
+
+Element.prototype.scrollIntoView = vi.fn();
 
 import { KnowledgeBaseListPage as KnowledgeBaseList } from './knowledge-base-list-page';
 
@@ -428,5 +436,292 @@ describe('KnowledgeBaseList', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+  });
+
+  test('search input value updates on each keystroke', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'Alpha',
+      description: '',
+      tags: {},
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
+
+    await user.type(filterInput, 'test');
+
+    // The input value must reflect what was typed — a React Compiler
+    // memoization bug would freeze it at the initial empty string.
+    expect(filterInput).toHaveValue('test');
+  });
+
+  test('search input can be cleared and reused', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'Alpha KB',
+      description: '',
+      tags: {},
+    });
+
+    const kb2 = create(KnowledgeBaseSchema, {
+      id: 'kb-2',
+      displayName: 'Beta KB',
+      description: '',
+      tags: {},
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1, kb2],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha KB')).toBeVisible();
+      expect(screen.getByText('Beta KB')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
+
+    // Type to filter down to Alpha only
+    await user.type(filterInput, 'Alpha');
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha KB')).toBeVisible();
+      expect(screen.queryByText('Beta KB')).not.toBeInTheDocument();
+    });
+
+    // Clear the input completely
+    await user.clear(filterInput);
+    expect(filterInput).toHaveValue('');
+
+    // Both rows should reappear
+    await waitFor(() => {
+      expect(screen.getByText('Alpha KB')).toBeVisible();
+      expect(screen.getByText('Beta KB')).toBeVisible();
+    });
+
+    // Type again to filter down to Beta
+    await user.type(filterInput, 'Beta');
+
+    await waitFor(() => {
+      expect(screen.queryByText('Alpha KB')).not.toBeInTheDocument();
+      expect(screen.getByText('Beta KB')).toBeVisible();
+    });
+
+    expect(filterInput).toHaveValue('Beta');
+  });
+
+  test('filters knowledge bases by search text and updates results', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'Customer Support KB',
+      description: 'Handles support queries',
+      tags: {},
+    });
+
+    const kb2 = create(KnowledgeBaseSchema, {
+      id: 'kb-2',
+      displayName: 'Product Docs KB',
+      description: 'Product documentation',
+      tags: {},
+    });
+
+    const kb3 = create(KnowledgeBaseSchema, {
+      id: 'kb-3',
+      displayName: 'Internal Wiki KB',
+      description: 'Internal notes',
+      tags: {},
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1, kb2, kb3],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Customer Support KB')).toBeVisible();
+      expect(screen.getByText('Product Docs KB')).toBeVisible();
+      expect(screen.getByText('Internal Wiki KB')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
+
+    // Type partial name that matches only one KB
+    await user.type(filterInput, 'Product');
+
+    await waitFor(() => {
+      expect(screen.getByText('Product Docs KB')).toBeVisible();
+      expect(screen.queryByText('Customer Support KB')).not.toBeInTheDocument();
+      expect(screen.queryByText('Internal Wiki KB')).not.toBeInTheDocument();
+    });
+
+    // Update the search to match a different KB
+    await user.clear(filterInput);
+    await user.type(filterInput, 'Internal');
+
+    await waitFor(() => {
+      expect(screen.getByText('Internal Wiki KB')).toBeVisible();
+      expect(screen.queryByText('Customer Support KB')).not.toBeInTheDocument();
+      expect(screen.queryByText('Product Docs KB')).not.toBeInTheDocument();
+    });
+  });
+
+  test('embedding model faceted filter filters results', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'OpenAI KB',
+      description: '',
+      tags: {},
+      embeddingGenerator: create(KnowledgeBase_EmbeddingGeneratorSchema, {
+        model: 'text-embedding-3-small',
+        provider: create(KnowledgeBase_EmbeddingGenerator_ProviderSchema, {
+          provider: { case: 'openai', value: { apiKey: 'key' } },
+        }),
+      }),
+    });
+
+    const kb2 = create(KnowledgeBaseSchema, {
+      id: 'kb-2',
+      displayName: 'Cohere KB',
+      description: '',
+      tags: {},
+      embeddingGenerator: create(KnowledgeBase_EmbeddingGeneratorSchema, {
+        model: 'embed-english-v3.0',
+        provider: create(KnowledgeBase_EmbeddingGenerator_ProviderSchema, {
+          provider: { case: 'cohere', value: { apiKey: 'key' } },
+        }),
+      }),
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1, kb2],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('OpenAI KB')).toBeVisible();
+      expect(screen.getByText('Cohere KB')).toBeVisible();
+    });
+
+    // Click the "Embedding Model" faceted filter button (not the column header one in <thead>)
+    const embeddingFilterButton = screen
+      .getAllByRole('button', { name: /embedding model/i })
+      .find((btn) => !btn.closest('thead'))!;
+    await user.click(embeddingFilterButton);
+
+    // Select the "text-embedding-3-small" option from the filter popover
+    const option = await screen.findByRole('option', { name: /text-embedding-3-small/i });
+    await user.click(option);
+
+    // Only the OpenAI KB should remain visible
+    await waitFor(() => {
+      expect(screen.getByText('OpenAI KB')).toBeVisible();
+      expect(screen.queryByText('Cohere KB')).not.toBeInTheDocument();
+    });
+  });
+
+  test('reranker model faceted filter filters results', async () => {
+    const user = userEvent.setup();
+
+    const kb1 = create(KnowledgeBaseSchema, {
+      id: 'kb-1',
+      displayName: 'With Reranker KB',
+      description: '',
+      tags: {},
+      retriever: create(KnowledgeBase_RetrieverSchema, {
+        reranker: create(KnowledgeBase_Retriever_RerankerSchema, {
+          enabled: true,
+          provider: create(KnowledgeBase_Retriever_Reranker_ProviderSchema, {
+            provider: {
+              case: 'cohere',
+              value: create(KnowledgeBase_Retriever_Reranker_Provider_CohereSchema, {
+                model: 'rerank-v3.5',
+                apiKey: 'key',
+              }),
+            },
+          }),
+        }),
+      }),
+    });
+
+    const kb2 = create(KnowledgeBaseSchema, {
+      id: 'kb-2',
+      displayName: 'No Reranker KB',
+      description: '',
+      tags: {},
+    });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listKnowledgeBases, () =>
+        create(ListKnowledgeBasesResponseSchema, {
+          knowledgeBases: [kb1, kb2],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('With Reranker KB')).toBeVisible();
+      expect(screen.getByText('No Reranker KB')).toBeVisible();
+    });
+
+    // Click the "Reranker Model" faceted filter button (not the column header one in <thead>)
+    const rerankerFilterButton = screen
+      .getAllByRole('button', { name: /reranker model/i })
+      .find((btn) => !btn.closest('thead'))!;
+    await user.click(rerankerFilterButton);
+
+    // Select the "rerank-v3.5" option
+    const option = await screen.findByRole('option', { name: /rerank-v3\.5/i });
+    await user.click(option);
+
+    // Only the KB with reranker should remain visible
+    await waitFor(() => {
+      expect(screen.getByText('With Reranker KB')).toBeVisible();
+      expect(screen.queryByText('No Reranker KB')).not.toBeInTheDocument();
+    });
   });
 });

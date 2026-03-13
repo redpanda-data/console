@@ -44,6 +44,7 @@ import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
+import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
 
 import { NotFoundPage } from './components/misc/not-found-page';
@@ -90,9 +91,14 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const EMPTY_SETUP_ARGS = {};
+
 const App = () => {
   const developerView = useDeveloperView();
-  setup({});
+
+  useEffect(() => {
+    setup(EMPTY_SETUP_ARGS);
+  }, []);
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (

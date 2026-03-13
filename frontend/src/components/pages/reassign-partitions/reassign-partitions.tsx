@@ -131,6 +131,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   componentDidMount() {
+    super.componentDidMount();
     this.removeThrottleFromTopics = this.removeThrottleFromTopics.bind(this);
     this.onNextPage = this.onNextPage.bind(this);
     this.onPreviousPage = this.onPreviousPage.bind(this);
@@ -203,18 +204,6 @@ class ReassignPartitions extends PageComponent {
       return DefaultSkeleton;
     }
 
-    // wait until every topic has partitions, and no partitions have errors
-    for (const t of api.topics) {
-      const p = api.topicPartitions.get(t.topicName);
-      if (!p) {
-        // no partitions for this topic yet...
-        return null;
-      }
-    }
-
-    if (api.topicPartitions.size < api.topics.length) {
-      return DefaultSkeleton;
-    }
     if (api.partitionReassignments === undefined) {
       return DefaultSkeleton;
     }

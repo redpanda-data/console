@@ -517,7 +517,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
   return (
     <>
-      {Boolean(api.isAdminApiConfigured) && (
+      {Boolean(api.isAdminApiConfigured) && !isServerless() && (
         <ChangePasswordModal
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
@@ -533,7 +533,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
           <Icon as={MoreHorizontalIcon} />
         </MenuButton>
         <MenuList>
-          {Boolean(api.isAdminApiConfigured) && (
+          {Boolean(api.isAdminApiConfigured) && !isServerless() && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
