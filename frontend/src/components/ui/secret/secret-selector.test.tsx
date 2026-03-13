@@ -9,15 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from './secret-selector';
 
+const mockCreateSecret = vi.fn().mockResolvedValue({});
+
 // Mock the secret mutation hook - SecretSelector uses it for the "Create secret" dialog
 vi.mock('react-query/api/secret', () => ({
   useCreateSecretMutation: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: mockCreateSecret,
     isPending: false,
   }),
 }));
@@ -56,5 +59,46 @@ describe('SecretSelector', () => {
 
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveTextContent('Select from secrets store or create new');
+  });
+
+  test('shows newly created secret in dropdown after creation from empty state', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    const { rerender } = render(
+      <SecretSelector {...defaultProps} availableSecrets={[]} onChange={onChange} value="" />,
+    );
+
+    // Empty state should show "Create secret" button
+    const createButton = screen.getByRole('button', { name: /create secret/i });
+    await user.click(createButton);
+
+    // Fill in the dialog form
+    const nameInput = screen.getByLabelText(/secret name/i);
+    const valueInput = screen.getByLabelText(/secret value/i);
+    await user.type(nameInput, 'MY_NEW_SECRET');
+    await user.type(valueInput, 'sk-test-value-that-is-long-enough');
+
+    // Submit the form
+    const submitButton = screen.getByRole('button', { name: /^create secret$/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('MY_NEW_SECRET');
+    });
+
+    // Simulate parent updating value and the query refetch providing the new secret
+    rerender(
+      <SecretSelector
+        {...defaultProps}
+        availableSecrets={[{ id: 'MY_NEW_SECRET', name: 'MY_NEW_SECRET' }]}
+        onChange={onChange}
+        value="MY_NEW_SECRET"
+      />,
+    );
+
+    // The newly created secret should be selected and displayed
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('MY_NEW_SECRET');
   });
 });

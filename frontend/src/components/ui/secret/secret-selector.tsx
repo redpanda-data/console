@@ -201,7 +201,11 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 			) : (
 				// Secrets available - show combobox with create button
 				<div className="flex items-center gap-2">
-					<Select onValueChange={onChange} value={extractSecretName(value)}>
+					<Select
+						key={`${extractSecretName(value)}-${availableSecrets.length}`}
+						onValueChange={onChange}
+						value={extractSecretName(value)}
+					>
 						<SelectTrigger className="flex-1">
 							<SelectValue placeholder={placeholder} />
 						</SelectTrigger>
