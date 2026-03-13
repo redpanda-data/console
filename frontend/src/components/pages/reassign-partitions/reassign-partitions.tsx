@@ -131,6 +131,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   componentDidMount() {
+    super.componentDidMount();
     this.removeThrottleFromTopics = this.removeThrottleFromTopics.bind(this);
     this.onNextPage = this.onNextPage.bind(this);
     this.onPreviousPage = this.onPreviousPage.bind(this);
