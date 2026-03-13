@@ -396,6 +396,68 @@ export const useUpdateContextModeMutation = () => {
   });
 };
 
+export const useUpdateContextCompatibilityMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation<
+    SchemaRegistryConfigResponse,
+    Error,
+    { contextName: string; mode: 'DEFAULT' | SchemaRegistryCompatibilityMode }
+  >({
+    mutationFn: async ({ contextName, mode }) => {
+      const qualifiedName = `:${contextName}:`;
+      if (mode === 'DEFAULT') {
+        const response = await fetch(
+          `${config.restBasePath}/schema-registry/config/${encodeURIComponent(qualifiedName)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Failed to reset context compatibility mode to default');
+        }
+
+        return response.json();
+      }
+
+      const response = await fetch(
+        `${config.restBasePath}/schema-registry/config/${encodeURIComponent(qualifiedName)}`,
+        {
+          method: 'PUT',
+          headers: {
+            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ compatibility: mode }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update context compatibility mode');
+      }
+
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'contexts'], exact: false });
+    },
+    onError: (error) => {
+      const connectError = ConnectError.from(error);
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'update',
+        entity: 'context compatibility mode',
+      });
+    },
+  });
+};
+
 export const useDeleteSchemaSubjectMutation = () => {
   const queryClient = useQueryClient();
 

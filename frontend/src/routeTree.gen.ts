@@ -75,6 +75,7 @@ import { Route as SchemaRegistrySubjectsSubjectNameEditModeRouteImport } from '.
 import { Route as SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-compatibility';
 import { Route as SchemaRegistrySubjectsSubjectNameAddVersionRouteImport } from './routes/schema-registry/subjects/$subjectName/add-version';
 import { Route as SchemaRegistryContextsContextNameEditModeRouteImport } from './routes/schema-registry/contexts/$contextName/edit-mode';
+import { Route as SchemaRegistryContextsContextNameEditCompatibilityRouteImport } from './routes/schema-registry/contexts/$contextName/edit-compatibility';
 import { Route as RpConnectSecretsSecretIdEditRouteImport } from './routes/rp-connect/secrets/$secretId/edit';
 import { Route as KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport } from './routes/knowledgebases/$knowledgebaseId/documents/$documentId';
 
@@ -426,6 +427,12 @@ const SchemaRegistryContextsContextNameEditModeRoute =
     path: '/schema-registry/contexts/$contextName/edit-mode',
     getParentRoute: () => rootRouteImport,
   } as any);
+const SchemaRegistryContextsContextNameEditCompatibilityRoute =
+  SchemaRegistryContextsContextNameEditCompatibilityRouteImport.update({
+    id: '/schema-registry/contexts/$contextName/edit-compatibility',
+    path: '/schema-registry/contexts/$contextName/edit-compatibility',
+    getParentRoute: () => rootRouteImport,
+  } as any);
 const RpConnectSecretsSecretIdEditRoute =
   RpConnectSecretsSecretIdEditRouteImport.update({
     id: '/rp-connect/secrets/$secretId/edit',
@@ -498,6 +505,7 @@ export interface FileRoutesByFullPath {
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
+  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
   '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
@@ -568,6 +576,7 @@ export interface FileRoutesByTo {
   '/topics/$topicName': typeof TopicsTopicNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
+  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
   '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
@@ -639,6 +648,7 @@ export interface FileRoutesById {
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
+  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
   '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
@@ -711,6 +721,7 @@ export interface FileRouteTypes {
     | '/topics/$topicName/'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
+    | '/schema-registry/contexts/$contextName/edit-compatibility'
     | '/schema-registry/contexts/$contextName/edit-mode'
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
@@ -781,6 +792,7 @@ export interface FileRouteTypes {
     | '/topics/$topicName'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
+    | '/schema-registry/contexts/$contextName/edit-compatibility'
     | '/schema-registry/contexts/$contextName/edit-mode'
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
@@ -851,6 +863,7 @@ export interface FileRouteTypes {
     | '/topics/$topicName/'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
+    | '/schema-registry/contexts/$contextName/edit-compatibility'
     | '/schema-registry/contexts/$contextName/edit-mode'
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
@@ -922,6 +935,7 @@ export interface RootRouteChildren {
   TopicsTopicNameIndexRoute: typeof TopicsTopicNameIndexRoute;
   KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   RpConnectSecretsSecretIdEditRoute: typeof RpConnectSecretsSecretIdEditRoute;
+  SchemaRegistryContextsContextNameEditCompatibilityRoute: typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
   SchemaRegistryContextsContextNameEditModeRoute: typeof SchemaRegistryContextsContextNameEditModeRoute;
   SchemaRegistrySubjectsSubjectNameAddVersionRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
@@ -1398,6 +1412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SchemaRegistryContextsContextNameEditModeRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/schema-registry/contexts/$contextName/edit-compatibility': {
+      id: '/schema-registry/contexts/$contextName/edit-compatibility';
+      path: '/schema-registry/contexts/$contextName/edit-compatibility';
+      fullPath: '/schema-registry/contexts/$contextName/edit-compatibility';
+      preLoaderRoute: typeof SchemaRegistryContextsContextNameEditCompatibilityRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/secrets/$secretId/edit': {
       id: '/rp-connect/secrets/$secretId/edit';
       path: '/rp-connect/secrets/$secretId/edit';
@@ -1478,6 +1499,8 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute:
     KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute,
   RpConnectSecretsSecretIdEditRoute: RpConnectSecretsSecretIdEditRoute,
+  SchemaRegistryContextsContextNameEditCompatibilityRoute:
+    SchemaRegistryContextsContextNameEditCompatibilityRoute,
   SchemaRegistryContextsContextNameEditModeRoute:
     SchemaRegistryContextsContextNameEditModeRoute,
   SchemaRegistrySubjectsSubjectNameAddVersionRoute:
