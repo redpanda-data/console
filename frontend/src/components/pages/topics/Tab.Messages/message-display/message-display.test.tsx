@@ -177,11 +177,7 @@ describe('topic message rendering', () => {
     const msg = buildMessage();
 
     render(
-      <ExpandedMessage
-        loadLargeMessage={() => Promise.resolve()}
-        msg={msg}
-        onDownloadRecord={onDownloadRecord}
-      />
+      <ExpandedMessage loadLargeMessage={() => Promise.resolve()} msg={msg} onDownloadRecord={onDownloadRecord} />
     );
 
     const downloadButton = screen.getByRole('button', { name: /download record/i });

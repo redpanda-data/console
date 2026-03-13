@@ -23,8 +23,10 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebounce } from 'hooks/use-debounce';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { editor } from 'monaco-editor';
@@ -256,7 +258,9 @@ export default function PipelinePage() {
 
   // Derive lint hints from response (replaces useEffect + setState)
   const responseLintHints = useMemo(() => {
-    if (!lintResponse) return {};
+    if (!lintResponse) {
+      return {};
+    }
     const hints: Record<string, LintHint> = {};
     for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
       hints[`hint_${idx}`] = hint;
@@ -554,7 +558,11 @@ export default function PipelinePage() {
                 <TabsContents>
                   <TabsContent value="configuration">{content}</TabsContent>
                   <TabsContent value="logs">
-                    <LogsTab pipeline={pipeline} />
+                    {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+                      <LogExplorer pipeline={pipeline} serverless={isServerless()} />
+                    ) : (
+                      <LogsTab pipeline={pipeline} />
+                    )}
                   </TabsContent>
                 </TabsContents>
               </Tabs>

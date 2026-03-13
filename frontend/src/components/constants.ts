@@ -12,6 +12,7 @@ export const FEATURE_FLAGS = {
   enableApiKeyConfigurationAgent: false,
   enableDataplaneObservabilityServerless: false,
   enableDataplaneObservability: false,
+  enableNewPipelineLogs: false,
 };
 
 // Cloud-managed tag keys for service account integration
