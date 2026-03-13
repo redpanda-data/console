@@ -11,8 +11,8 @@
 
 import { Box, CodeBlock, Flex, Grid, GridItem, RadioGroup, Text, useToast } from '@redpanda-data/ui';
 import { useNavigate } from '@tanstack/react-router';
-import type { FC } from 'react';
-import { useEffect, useState } from 'react';
+import { InfoIcon } from 'components/icons';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
@@ -20,6 +20,8 @@ import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
   useSchemaModeQuery,
+  useSchemaRegistryContextsQuery,
+  useUpdateContextCompatibilityMutation,
   useUpdateGlobalCompatibilityMutation,
   useUpdateSubjectCompatibilityMutation,
 } from '../../../react-query/api/schema-registry';
@@ -29,25 +31,42 @@ import type {
   SchemaRegistrySubjectDetails,
   SchemaRegistryVersionedSchema,
 } from '../../../state/rest-interfaces';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import { Button, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 
-const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
+const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: string }> = ({
+  subjectName: subjectNameEncoded,
+  contextName: contextNameEncoded,
+}) => {
   const navigate = useNavigate();
   const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
+  const contextName = contextNameEncoded ? decodeURIComponent(contextNameEncoded) : undefined;
+  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
   const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
     enabled: !!subjectName,
   });
+  const { data: contexts, isLoading: isContextsLoading } = useSchemaRegistryContextsQuery(!!contextName);
+
+  const contextCompatibility = useMemo(
+    () => (contextName ? contexts?.find((c) => c.name === contextName)?.compatibility : undefined),
+    [contexts, contextName]
+  );
 
   useEffect(() => {
     uiState.pageTitle = 'Edit Schema Compatibility';
     uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
 
-    if (subjectName) {
+    if (contextName) {
+      uiState.pageBreadcrumbs.push({
+        title: 'Edit Compatibility',
+        linkTo: `/schema-registry/contexts/${encodeURIComponent(contextName)}/edit-compatibility`,
+      });
+    } else if (subjectName) {
       uiState.pageBreadcrumbs.push({
         title: subjectName,
         linkTo: `/schema-registry/subjects/${subjectName}`,
@@ -62,9 +81,28 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
         linkTo: '/schema-registry/edit-compatibility',
       });
     }
-  }, [subjectName]);
+  }, [subjectName, contextName]);
 
-  if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) {
+  const onClose = useCallback(() => {
+    if (subjectName) {
+      navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
+    } else if (contextName) {
+      navigate({ to: '/schema-registry', search: { context: contextName } });
+    } else {
+      navigate({ to: '/schema-registry' });
+    }
+  }, [subjectName, contextName, navigate]);
+
+  if (contextName && !schemaRegistryContextsSupported) {
+    return <ContextsNotSupportedPage />;
+  }
+
+  if (
+    isModeLoading ||
+    isCompatibilityLoading ||
+    (subjectName && isDetailsLoading) ||
+    (contextName && isContextsLoading)
+  ) {
     return DefaultSkeleton;
   }
 
@@ -75,13 +113,9 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
   return (
     <PageContent>
       <EditSchemaCompatibility
-        onClose={() => {
-          if (subjectName) {
-            navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
-          } else {
-            navigate({ to: '/schema-registry' });
-          }
-        }}
+        contextCompatibility={contextCompatibility}
+        contextName={contextName}
+        onClose={onClose}
         schemaCompatibility={schemaCompatibility}
         schemaDetails={schemaDetails}
         schemaMode={schemaMode}
@@ -95,22 +129,27 @@ export default EditSchemaCompatibilityPage;
 
 function EditSchemaCompatibility(p: {
   subjectName?: string;
+  contextName?: string;
+  contextCompatibility?: string;
   schemaMode: string | null | undefined;
   schemaCompatibility: string | null | undefined;
   schemaDetails: SchemaRegistrySubjectDetails | undefined;
   onClose: () => void;
 }) {
   const toast = useToast();
-  const { subjectName, schemaDetails, schemaCompatibility } = p;
+  const { subjectName, contextName, contextCompatibility, schemaDetails, schemaCompatibility } = p;
   const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
   const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
+  const updateContextMutation = useUpdateContextCompatibilityMutation();
 
   const schema = schemaDetails?.schemas.first(
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
   const [configMode, setConfigMode] = useState<string>(
-    (subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT'
+    contextName
+      ? (contextCompatibility ?? 'DEFAULT')
+      : ((subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT')
   );
 
   if (subjectName && !schema) {
@@ -118,60 +157,55 @@ function EditSchemaCompatibility(p: {
   }
 
   const onSave = () => {
-    if (subjectName) {
+    const callbacks = {
+      onSuccess: () => {
+        toast({
+          status: 'success',
+          duration: 4000,
+          isClosable: false,
+          title: `Compatibility mode updated to ${configMode}`,
+          position: 'top-right',
+        });
+        p.onClose();
+      },
+      onError: (err: Error) => {
+        toast({
+          status: 'error',
+          duration: null,
+          isClosable: true,
+          title: 'Failed to update compatibility mode',
+          description: String(err),
+          position: 'top-right',
+        });
+      },
+    };
+
+    if (contextName) {
+      updateContextMutation.mutate(
+        { contextName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode },
+        callbacks
+      );
+    } else if (subjectName) {
       updateSubjectMutation.mutate(
         { subjectName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode },
-        {
-          onSuccess: () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: `Compatibility mode updated to ${configMode}`,
-              position: 'top-right',
-            });
-            p.onClose();
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to update compatibility mode',
-              description: String(err),
-              position: 'top-right',
-            });
-          },
-        }
+        callbacks
       );
     } else {
-      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, {
-        onSuccess: () => {
-          toast({
-            status: 'success',
-            duration: 4000,
-            isClosable: false,
-            title: `Compatibility mode updated to ${configMode}`,
-            position: 'top-right',
-          });
-          p.onClose();
-        },
-        onError: (err) => {
-          toast({
-            status: 'error',
-            duration: null,
-            isClosable: true,
-            title: 'Failed to update compatibility mode',
-            description: String(err),
-            position: 'top-right',
-          });
-        },
-      });
+      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, callbacks);
     }
   };
 
   return (
     <>
+      {contextName && (
+        <div className="mb-4 flex items-center gap-2" data-testid="edit-compatibility-context-name">
+          <InfoIcon className="size-4 text-muted-foreground" />
+          <Text className="font-bold text-lg">
+            Editing compatibility for context: <span className="text-muted-foreground">{contextName}</span>
+          </Text>
+        </div>
+      )}
+
       <Text data-testid="edit-compatibility-description">
         Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.
         {/* <Link>Learn more.</Link> */}
@@ -190,7 +224,7 @@ function EditSchemaCompatibility(p: {
               options={[
                 {
                   value: 'DEFAULT',
-                  disabled: !schemaDetails,
+                  disabled: !(schemaDetails || contextName),
                   label: (
                     <Box>
                       <Text>Default</Text>
@@ -335,5 +369,16 @@ function EditSchemaCompatibility(p: {
         </Button>
       </Flex>
     </>
+  );
+}
+
+function ContextsNotSupportedPage() {
+  return (
+    <PageContent>
+      <div className="flex flex-col items-center gap-4" data-testid="contexts-not-supported">
+        <Text className="font-bold text-lg">Not Supported</Text>
+        <Text className="text-center">Schema Registry contexts are not supported in this cluster.</Text>
+      </div>
+    </PageContent>
   );
 }
