@@ -814,7 +814,7 @@ const _apiCreator = (set: any, get: any) => ({
         const newTopicPartitions = new Map(get().topicPartitions);
 
         for (const t of response.topics) {
-          if (t.error !== null) {
+          if (t.error !== null && t.error !== undefined) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
             continue;
