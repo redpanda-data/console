@@ -14,6 +14,7 @@ import { UserAclsCard } from 'components/pages/roles/user-acls-card';
 import { UserInformationCard } from 'components/pages/roles/user-information-card';
 import { UserRolesCard } from 'components/pages/roles/user-roles-card';
 import { Button } from 'components/redpanda-ui/components/button';
+import { isServerless } from 'config';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { useEffect, useState } from 'react';
 
@@ -79,7 +80,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
       <div className="flex flex-col gap-4">
         <UserInformationCard
           onEditPassword={
-            api.isAdminApiConfigured
+            api.isAdminApiConfigured && !isServerless()
               ? () => {
                   setIsChangePasswordModalOpen(true);
                 }
@@ -124,7 +125,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
           )}
         </div>
 
-        {Boolean(api.isAdminApiConfigured) && (
+        {Boolean(api.isAdminApiConfigured) && !isServerless() && (
           <ChangePasswordModal
             isOpen={isChangePasswordModalOpen}
             setIsOpen={setIsChangePasswordModalOpen}
