@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
@@ -101,6 +101,68 @@ function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless:
   return msg.keyJson === pipelineId;
 }
 
+// --- History streaming (extracted for React Compiler compatibility) ---
+
+type HistoryStreamOpts = {
+  pipelineId: string;
+  serverless: boolean;
+  signal: AbortSignal;
+  messagesRef: React.RefObject<TopicMessage[]>;
+  setPhase: React.Dispatch<React.SetStateAction<string | null>>;
+};
+
+function handleHistoryMessage(res: ListMessagesResponse, opts: HistoryStreamOpts) {
+  switch (res.controlMessage.case) {
+    case 'data': {
+      const msg = convertListMessageData(res.controlMessage.value);
+      if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
+        opts.messagesRef.current?.push(msg);
+      }
+      break;
+    }
+    case 'phase':
+      opts.setPhase(res.controlMessage.value.phase);
+      break;
+    case 'done':
+      opts.setPhase(null);
+      break;
+    case 'error': {
+      const errMsg = res.controlMessage.value.message;
+      sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+      throw new Error(errMsg);
+    }
+    default:
+      break;
+  }
+}
+
+async function runHistoryStream(opts: HistoryStreamOpts) {
+  const client = appConfig.consoleClient;
+  if (!client) {
+    throw new Error('Console client not configured');
+  }
+
+  const req = buildRequest(opts.pipelineId, false, opts.serverless);
+
+  try {
+    for await (const res of client.listMessages(req, {
+      signal: opts.signal,
+      timeoutMs: HISTORY_TIMEOUT_MS,
+    })) {
+      if (opts.signal.aborted) {
+        break;
+      }
+      handleHistoryMessage(res, opts);
+    }
+  } catch (e) {
+    opts.setPhase(null);
+    throw e;
+  }
+
+  opts.setPhase(null);
+  return opts.messagesRef.current ?? [];
+}
+
 // --- useLogHistory: React Query + ref/interval for incremental streaming ---
 
 function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled: boolean }) {
@@ -114,62 +176,25 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
       return;
     }
     const interval = setInterval(() => {
-      setStreamingMessages([...messagesRef.current]);
+      setStreamingMessages([...(messagesRef.current ?? [])]);
     }, FLUSH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [phase]);
 
   const query = useTanstackQuery<TopicMessage[]>({
     queryKey: LOG_HISTORY_KEY(opts.pipelineId),
-    queryFn: async ({ signal }) => {
+    queryFn: ({ signal }) => {
       messagesRef.current = [];
       setPhase('Searching...');
       setStreamingMessages([]);
 
-      const client = appConfig.consoleClient;
-      if (!client) {
-        throw new Error('Console client not configured');
-      }
-
-      const req = buildRequest(opts.pipelineId, false, opts.serverless);
-
-      try {
-        for await (const res of client.listMessages(req, {
-          signal,
-          timeoutMs: HISTORY_TIMEOUT_MS,
-        })) {
-          if (signal?.aborted) {
-            break;
-          }
-
-          switch (res.controlMessage.case) {
-            case 'data': {
-              const msg = convertListMessageData(res.controlMessage.value);
-              if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
-                messagesRef.current.push(msg);
-              }
-              break;
-            }
-            case 'phase':
-              setPhase(res.controlMessage.value.phase);
-              break;
-            case 'done':
-              setPhase(null);
-              break;
-            case 'error': {
-              const errMsg = res.controlMessage.value.message;
-              sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
-              throw new Error(errMsg);
-            }
-            default:
-              break;
-          }
-        }
-      } finally {
-        setPhase(null);
-      }
-
-      return messagesRef.current;
+      return runHistoryStream({
+        pipelineId: opts.pipelineId,
+        serverless: opts.serverless,
+        signal,
+        messagesRef,
+        setPhase,
+      });
     },
     enabled: opts.enabled,
     staleTime: 0,
@@ -185,6 +210,44 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
 
 // --- useLogLive: Standalone streaming hook for live tail ---
 
+type LiveState = {
+  messages: TopicMessage[];
+  phase: string | null;
+  error: string | null;
+};
+
+type LiveAction =
+  | { type: 'reset' }
+  | { type: 'start' }
+  | { type: 'addMessage'; msg: TopicMessage }
+  | { type: 'setPhase'; phase: string }
+  | { type: 'setError'; error: string }
+  | { type: 'done' }
+  | { type: 'noClient' };
+
+const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null };
+
+function liveReducer(state: LiveState, action: LiveAction): LiveState {
+  switch (action.type) {
+    case 'reset':
+      return LIVE_INITIAL_STATE;
+    case 'start':
+      return { messages: [], phase: 'Searching...', error: null };
+    case 'addMessage':
+      return { ...state, messages: [action.msg, ...state.messages] };
+    case 'setPhase':
+      return { ...state, phase: action.phase };
+    case 'setError':
+      return { ...state, error: action.error, phase: null };
+    case 'done':
+      return { ...state, phase: null };
+    case 'noClient':
+      return { messages: [], error: 'Console client not configured', phase: null };
+    default:
+      return state;
+  }
+}
+
 type LiveStreamOpts = {
   client: NonNullable<typeof appConfig.consoleClient>;
   req: ReturnType<typeof buildRequest>;
@@ -192,37 +255,33 @@ type LiveStreamOpts = {
   pipelineId: string;
   serverless: boolean;
   isMountedRef: React.RefObject<boolean>;
-  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>;
-  setPhase: React.Dispatch<React.SetStateAction<string | null>>;
-  setError: React.Dispatch<React.SetStateAction<string | null>>;
+  dispatch: React.Dispatch<LiveAction>;
 };
 
 function handleLiveMessage(res: ListMessagesResponse, opts: LiveStreamOpts) {
+  if (!opts.isMountedRef.current) {
+    return;
+  }
   switch (res.controlMessage.case) {
     case 'phase':
-      if (opts.isMountedRef.current) {
-        opts.setPhase(res.controlMessage.value.phase);
-      }
+      opts.dispatch({ type: 'setPhase', phase: res.controlMessage.value.phase });
       break;
     case 'data': {
       const msg = convertListMessageData(res.controlMessage.value);
-      if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless) && opts.isMountedRef.current) {
-        opts.setMessages((prev) => [msg, ...prev]);
+      if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
+        opts.dispatch({ type: 'addMessage', msg });
       }
       break;
     }
     case 'done':
-      if (opts.isMountedRef.current) {
-        opts.setPhase(null);
-      }
+      opts.dispatch({ type: 'done' });
       break;
-    case 'error':
-      if (opts.isMountedRef.current) {
-        const errMsg = res.controlMessage.value.message;
-        sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
-        opts.setError(errMsg);
-      }
+    case 'error': {
+      const errMsg = res.controlMessage.value.message;
+      sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+      opts.dispatch({ type: 'setError', error: errMsg });
       break;
+    }
     default:
       break;
   }
@@ -246,24 +305,17 @@ async function runLiveStream(opts: LiveStreamOpts) {
     if (opts.isMountedRef.current) {
       const errMsg = e instanceof Error ? e.message : 'Unknown error';
       sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
-      opts.setError(errMsg);
-      opts.setPhase(null);
+      opts.dispatch({ type: 'setError', error: errMsg });
     }
   } finally {
     if (opts.isMountedRef.current && !opts.abortController.signal.aborted) {
-      opts.setPhase(null);
+      opts.dispatch({ type: 'done' });
     }
   }
 }
 
-function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: boolean }): {
-  messages: TopicMessage[];
-  phase: string | null;
-  error: string | null;
-} {
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [phase, setPhase] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: boolean }): LiveState {
+  const [state, dispatch] = useReducer(liveReducer, LIVE_INITIAL_STATE);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
@@ -279,9 +331,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
   useEffect(() => {
     if (!opts.enabled) {
       abortControllerRef.current?.abort();
-      setMessages([]);
-      setPhase(null);
-      setError(null);
+      dispatch({ type: 'reset' });
       return;
     }
 
@@ -289,14 +339,11 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    setPhase('Searching...');
-    setError(null);
-    setMessages([]);
+    dispatch({ type: 'start' });
 
     const client = appConfig.consoleClient;
     if (!client) {
-      setError('Console client not configured');
-      setPhase(null);
+      dispatch({ type: 'noClient' });
       return;
     }
 
@@ -308,9 +355,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
       pipelineId: opts.pipelineId,
       serverless: opts.serverless,
       isMountedRef,
-      setMessages,
-      setPhase,
-      setError,
+      dispatch,
     });
 
     return () => {
@@ -318,7 +363,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
     };
   }, [opts.enabled, opts.pipelineId, opts.serverless]);
 
-  return { messages, phase, error };
+  return state;
 }
 
 // --- useLogSearch: Public composition hook ---
@@ -341,10 +386,6 @@ export function useLogSearch({
     enabled: enabled && live,
   });
 
-  const refresh = useCallback(() => {
-    history.refetch();
-  }, [history.refetch]);
-
   if (live) {
     return {
       messages: liveResult.messages,
@@ -358,6 +399,6 @@ export function useLogSearch({
     messages: history.messages,
     phase: history.phase,
     error: history.error,
-    refresh,
+    refresh: history.refetch,
   };
 }
