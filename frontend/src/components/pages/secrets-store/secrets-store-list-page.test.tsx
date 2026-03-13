@@ -46,6 +46,8 @@ vi.mock('components/redpanda-ui/components/data-table', async (importOriginal) =
   };
 });
 
+Element.prototype.scrollIntoView = vi.fn();
+
 import { SecretsStoreListPage } from './secrets-store-list-page';
 
 const createListSecretsTransport = (listSecretsMock: ReturnType<typeof vi.fn>) =>
@@ -179,5 +181,125 @@ describe('SecretsStoreListPage', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+  });
+
+  test('search input updates value on keystrokes', async () => {
+    const user = userEvent.setup();
+
+    const secret1 = create(SecretSchema, {
+      id: 'my-secret',
+      labels: {},
+      scopes: [Scope.AI_GATEWAY],
+    });
+
+    const listSecretsMock = vi.fn().mockReturnValue(
+      create(ListSecretsResponseSchema, {
+        response: { secrets: [secret1], nextPageToken: '' },
+      })
+    );
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('my-secret')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter by ID...');
+    await user.type(filterInput, 'hello');
+
+    // Input value must reflect typed text — a React Compiler memoization
+    // bug would freeze it at the initial empty string.
+    expect(filterInput).toHaveValue('hello');
+  });
+
+  test('filters secrets by ID via search input', async () => {
+    const user = userEvent.setup();
+
+    const secret1 = create(SecretSchema, {
+      id: 'alpha-secret',
+      labels: {},
+      scopes: [Scope.AI_GATEWAY],
+    });
+
+    const secret2 = create(SecretSchema, {
+      id: 'beta-secret',
+      labels: {},
+      scopes: [Scope.MCP_SERVER],
+    });
+
+    const listSecretsMock = vi.fn().mockReturnValue(
+      create(ListSecretsResponseSchema, {
+        response: { secrets: [secret1, secret2], nextPageToken: '' },
+      })
+    );
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('alpha-secret')).toBeVisible();
+      expect(screen.getByText('beta-secret')).toBeVisible();
+    });
+
+    const filterInput = screen.getByPlaceholderText('Filter by ID...');
+    await user.type(filterInput, 'beta');
+
+    await waitFor(() => {
+      expect(screen.getByText('beta-secret')).toBeVisible();
+      expect(screen.queryByText('alpha-secret')).not.toBeInTheDocument();
+    });
+
+    // Clear and verify all rows reappear
+    await user.clear(filterInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('alpha-secret')).toBeVisible();
+      expect(screen.getByText('beta-secret')).toBeVisible();
+    });
+  });
+
+  test('scope faceted filter filters results', async () => {
+    const user = userEvent.setup();
+
+    const secret1 = create(SecretSchema, {
+      id: 'gateway-secret',
+      labels: {},
+      scopes: [Scope.AI_GATEWAY],
+    });
+
+    const secret2 = create(SecretSchema, {
+      id: 'mcp-secret',
+      labels: {},
+      scopes: [Scope.MCP_SERVER],
+    });
+
+    const listSecretsMock = vi.fn().mockReturnValue(
+      create(ListSecretsResponseSchema, {
+        response: { secrets: [secret1, secret2], nextPageToken: '' },
+      })
+    );
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('gateway-secret')).toBeVisible();
+      expect(screen.getByText('mcp-secret')).toBeVisible();
+    });
+
+    // Click the "Scope" faceted filter button (not the column header one in <thead>)
+    const scopeFilterButton = screen.getAllByRole('button', { name: /scope/i }).find((btn) => !btn.closest('thead'))!;
+    await user.click(scopeFilterButton);
+
+    // Select the "MCP Server" option from the filter popover
+    const mcpOption = await screen.findByRole('option', { name: /mcp server/i });
+    await user.click(mcpOption);
+
+    // Only the MCP-scoped secret should remain visible
+    await waitFor(() => {
+      expect(screen.getByText('mcp-secret')).toBeVisible();
+      expect(screen.queryByText('gateway-secret')).not.toBeInTheDocument();
+    });
   });
 });
