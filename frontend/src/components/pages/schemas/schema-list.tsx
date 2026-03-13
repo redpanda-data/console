@@ -137,12 +137,20 @@ const SchemaList: FC = () => {
     [contexts, schemaSubjects, schemaRegistryContextsSupported]
   );
 
-  // Reset to default if the selected context no longer exists (e.g. deleted server-side)
+  // Reset to default if the selected context no longer exists (e.g. deleted server-side).
+  // Wait until both contexts and subjects have loaded to avoid resetting during partial data.
+  const contextsLoaded = contexts !== undefined;
+  const subjectsLoaded = schemaSubjects !== undefined;
   useEffect(() => {
-    if (derivedContexts.length > 0 && !derivedContexts.some((c) => c.id === selectedContext)) {
+    if (
+      contextsLoaded &&
+      subjectsLoaded &&
+      derivedContexts.length > 0 &&
+      !derivedContexts.some((c) => c.id === selectedContext)
+    ) {
       setSelectedContext(DEFAULT_CONTEXT_ID);
     }
-  }, [derivedContexts, selectedContext, setSelectedContext]);
+  }, [derivedContexts, selectedContext, setSelectedContext, contextsLoaded, subjectsLoaded]);
 
   // Use context-specific mode/compat when a named context is selected
   const { displayMode, displayCompat } = useMemo(() => {
@@ -259,7 +267,13 @@ const SchemaList: FC = () => {
                 aria-label="Edit compatibility"
                 data-testid="schema-list-edit-compatibility-btn"
                 disabled={api.userData?.canManageSchemaRegistry === false}
-                onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
+                onClick={() =>
+                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                    ? appGlobal.historyPush(
+                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                      )
+                    : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                }
                 size="icon-xs"
                 variant="secondary-ghost"
               >
