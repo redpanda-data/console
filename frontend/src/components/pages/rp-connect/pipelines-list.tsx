@@ -61,43 +61,43 @@ export const PipelineStatus = (p: { status: Pipeline_State }) => {
     case Pipeline_State.STARTING:
       return (
         <Flex alignItems="center" gap="2">
-          <RotateCwIcon color="#444" fontSize="17px" width="auto" /> Starting
+          <RotateCwIcon color="#444" size={24} /> Starting
         </Flex>
       );
     case Pipeline_State.RUNNING:
       return (
         <Flex alignItems="center" gap="2">
-          <CheckIcon color="green" fontSize="17px" width="auto" /> Running
+          <CheckIcon color="green" size={24} /> Running
         </Flex>
       );
     case Pipeline_State.COMPLETED:
       return (
         <Flex alignItems="center" gap="2">
-          <CheckIcon color="green" fontSize="17px" width="auto" /> Completed
+          <CheckIcon color="green" size={24} /> Completed
         </Flex>
       );
     case Pipeline_State.STOPPING:
       return (
         <Flex alignItems="center" gap="2">
-          <RotateCwIcon color="#444" fontSize="17px" width="auto" /> Stopping
+          <RotateCwIcon color="#444" size={24} /> Stopping
         </Flex>
       );
     case Pipeline_State.STOPPED:
       return (
         <Flex alignItems="center" gap="2">
-          <StopCircleIcon color="#444" fontSize="17px" width="auto" /> Stopped
+          <StopCircleIcon color="#444" size={24} /> Stopped
         </Flex>
       );
     case Pipeline_State.ERROR:
       return (
         <Flex alignItems="center" gap="2">
-          <CloseIcon color="red" fontSize="17px" width="auto" /> Error
+          <CloseIcon color="red" size={24} /> Error
         </Flex>
       );
     default:
       return (
         <Flex alignItems="center" gap="2">
-          <HelpIcon color="red" fontSize="17px" width="auto" /> Unknown
+          <HelpIcon color="red" size={24} /> Unknown
         </Flex>
       );
   }
