@@ -44,6 +44,7 @@ import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
 import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
+import { useSupportedFeaturesStore } from '../../state/supported-features';
 import { AppFeatures } from '../../utils/env';
 import { getUserInitials } from '../../utils/string';
 import { UserPreferencesDialog } from '../misc/user-preferences';
@@ -225,6 +226,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 const SidebarNavigation = () => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  useSupportedFeaturesStore((s) => s.endpointCompatibility); // re-render when endpoint compatibility loads
   const groupedItems = createGroupedSidebarItems();
 
   const handleNavClick = () => {
