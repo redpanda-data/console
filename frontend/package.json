@@ -44,8 +44,16 @@
   },
   "overrides": {
     "elliptic": "^6.6.1",
-    "dompurify": "^3.2.5",
-    "prismjs": "^1.30.0"
+    "dompurify": "^3.3.2",
+    "prismjs": "^1.30.0",
+    "ajv": "^8.18.0",
+    "body-parser": "^2.2.1",
+    "diff": "^5.2.2",
+    "@hono/node-server": "^1.19.10",
+    "lodash": "^4.17.23",
+    "lodash-es": "^4.17.23",
+    "mdast-util-to-hast": "^13.2.1",
+    "qs": "^6.14.2"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.10",
@@ -68,7 +76,7 @@
     "@icons-pack/react-simple-icons": "^13.8.0",
     "@milkdown/kit": "^7.18.0",
     "@milkdown/react": "^7.18.0",
-    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@monaco-editor/react": "^4.7.0",
     "@redpanda-data/ui": "^4.2.0",
     "@stepperize/react": "^5.1.8",
@@ -100,7 +108,7 @@
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.563.0",
     "moment": "^2.30.1",
-    "monaco-editor": "^0.54.0",
+    "monaco-editor": "^0.55.0",
     "monaco-editor-webpack-plugin": "^7.1.1",
     "monaco-yaml": "^5.4.0",
     "motion": "^12.23.24",
@@ -121,7 +129,7 @@
     "react-hook-form": "^7.54.2",
     "react-markdown": "^10.1.0",
     "react-simple-code-editor": "^0.14.1",
-    "react-syntax-highlighter": "^15.6.6",
+    "react-syntax-highlighter": "^16.0.0",
     "recharts": "2.15.4",
     "remark-emoji": "^5.0.2",
     "remark-gfm": "^4.0.1",
@@ -192,6 +200,16 @@
   },
   "resolutions": {
     "react-error-overlay": "6.0.11",
-    "immer": "9.0.7"
+    "immer": "9.0.7",
+    "dompurify": "^3.3.2",
+    "ajv": "^8.18.0",
+    "body-parser": "^2.2.1",
+    "diff": "^5.2.2",
+    "@hono/node-server": "^1.19.10",
+    "lodash": "^4.17.23",
+    "lodash-es": "^4.17.23",
+    "mdast-util-to-hast": "^13.2.1",
+    "qs": "^6.14.2",
+    "prismjs": "^1.30.0"
   }
 }
