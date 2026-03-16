@@ -113,6 +113,12 @@ func RedpandaImage() string {
 	return getImage("redpanda", "TEST_IMAGE_REDPANDA")
 }
 
+// RedpandaNightlyImage returns the Docker image for Redpanda tests using
+// the nightly image. Can be overridden with TEST_IMAGE_REDPANDA env var.
+func RedpandaNightlyImage() string {
+	return getImage("redpandaNightly", "TEST_IMAGE_REDPANDA")
+}
+
 // KafkaConnectImage returns the Docker image for Kafka Connect tests.
 // Can be overridden with TEST_IMAGE_KAFKA_CONNECT environment variable.
 func KafkaConnectImage() string {
