@@ -1022,8 +1022,12 @@ const _apiCreator = (set: any, get: any) => ({
       if (!r) {
         return null;
       }
-      set({ endpointCompatibility: r.endpointCompatibility });
+      // IMPORTANT: Update useSupportedFeaturesStore BEFORE useApiStore.
+      // The useApiStore subscription in config.ts fires synchronously and calls
+      // updateSidebarItems(), which reads feature support from useSupportedFeaturesStore.
+      // If useApiStore is updated first, the subscription sees stale feature data.
       useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
+      set({ endpointCompatibility: r.endpointCompatibility });
       return r;
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
