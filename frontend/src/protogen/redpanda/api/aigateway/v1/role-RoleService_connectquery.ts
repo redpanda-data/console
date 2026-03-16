@@ -38,3 +38,32 @@ export const updateRole = RoleService.method.updateRole;
  * @generated from rpc redpanda.api.aigateway.v1.RoleService.DeleteRole
  */
 export const deleteRole = RoleService.method.deleteRole;
+
+/**
+ * Assigns a role to a team.
+ * Implements Cedar pattern: Team in Role
+ *
+ * @generated from rpc redpanda.api.aigateway.v1.RoleService.AssignTeamRole
+ */
+export const assignTeamRole = RoleService.method.assignTeamRole;
+
+/**
+ * Unassigns a role from a team.
+ *
+ * @generated from rpc redpanda.api.aigateway.v1.RoleService.UnassignTeamRole
+ */
+export const unassignTeamRole = RoleService.method.unassignTeamRole;
+
+/**
+ * Lists teams assigned to a role.
+ *
+ * @generated from rpc redpanda.api.aigateway.v1.RoleService.ListRoleTeams
+ */
+export const listRoleTeams = RoleService.method.listRoleTeams;
+
+/**
+ * Lists roles assigned to a team.
+ *
+ * @generated from rpc redpanda.api.aigateway.v1.RoleService.ListTeamRoles
+ */
+export const listTeamRoles = RoleService.method.listTeamRoles;
