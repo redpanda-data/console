@@ -4,6 +4,10 @@
       "repository": "redpandadata/redpanda",
       "tag": "v25.3.6"
     },
+    "redpandaNightly": {
+      "repository": "redpandadata/redpanda-nightly",
+      "tag": "v0.0.0-20260315git94f368c"
+    },
     "kafkaConnect": {
       "repository": "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors",
       "tag": "latest"
