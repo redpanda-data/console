@@ -19,8 +19,13 @@ import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { AIAgentStateBadge } from './ai-agent-state-badge';
 import { AIAgentToggleButton } from './ai-agent-toggle-button';
 
-export const AIAgentDetailsHeader = () => {
-  const { id } = routeApi.useParams();
+type AIAgentDetailsHeaderProps = {
+  agentId?: string;
+};
+
+export const AIAgentDetailsHeader = ({ agentId }: AIAgentDetailsHeaderProps) => {
+  const { id: routeId } = routeApi.useParams();
+  const id = agentId || routeId;
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   if (!aiAgentData?.aiAgent) {
@@ -31,8 +36,8 @@ export const AIAgentDetailsHeader = () => {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <Heading level={1}>{aiAgentData.aiAgent.displayName}</Heading>
-        <AIAgentStateBadge />
-        <AIAgentToggleButton />
+        <AIAgentStateBadge agentId={id} />
+        <AIAgentToggleButton agentId={id} />
       </div>
     </div>
   );

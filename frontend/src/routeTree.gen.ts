@@ -76,6 +76,7 @@ import { Route as SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport 
 import { Route as SchemaRegistrySubjectsSubjectNameAddVersionRouteImport } from './routes/schema-registry/subjects/$subjectName/add-version';
 import { Route as RpConnectSecretsSecretIdEditRouteImport } from './routes/rp-connect/secrets/$secretId/edit';
 import { Route as KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport } from './routes/knowledgebases/$knowledgebaseId/documents/$documentId';
+import { Route as AgentsIdTranscriptsTranscriptIdRouteImport } from './routes/agents/$id/transcripts/$transcriptId';
 
 const UploadLicenseRoute = UploadLicenseRouteImport.update({
   id: '/upload-license',
@@ -431,6 +432,12 @@ const KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute =
     path: '/knowledgebases/$knowledgebaseId/documents/$documentId',
     getParentRoute: () => rootRouteImport,
   } as any);
+const AgentsIdTranscriptsTranscriptIdRoute =
+  AgentsIdTranscriptsTranscriptIdRouteImport.update({
+    id: '/transcripts/$transcriptId',
+    path: '/transcripts/$transcriptId',
+    getParentRoute: () => AgentsIdRoute,
+  } as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -439,7 +446,7 @@ export interface FileRoutesByFullPath {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/agents/$id': typeof AgentsIdRoute;
+  '/agents/$id': typeof AgentsIdRouteWithChildren;
   '/agents/create': typeof AgentsCreateRoute;
   '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
@@ -489,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$transcriptId': typeof AgentsIdTranscriptsTranscriptIdRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
@@ -508,7 +516,7 @@ export interface FileRoutesByTo {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/agents/$id': typeof AgentsIdRoute;
+  '/agents/$id': typeof AgentsIdRouteWithChildren;
   '/agents/create': typeof AgentsCreateRoute;
   '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
@@ -558,6 +566,7 @@ export interface FileRoutesByTo {
   '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
   '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$transcriptId': typeof AgentsIdTranscriptsTranscriptIdRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
@@ -578,7 +587,7 @@ export interface FileRoutesById {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/agents/$id': typeof AgentsIdRoute;
+  '/agents/$id': typeof AgentsIdRouteWithChildren;
   '/agents/create': typeof AgentsCreateRoute;
   '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
@@ -628,6 +637,7 @@ export interface FileRoutesById {
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$transcriptId': typeof AgentsIdTranscriptsTranscriptIdRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/'
     | '/shadowlinks/$name/'
     | '/topics/$topicName/'
+    | '/agents/$id/transcripts/$transcriptId'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
@@ -768,6 +779,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId'
     | '/shadowlinks/$name'
     | '/topics/$topicName'
+    | '/agents/$id/transcripts/$transcriptId'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
@@ -837,6 +849,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/'
     | '/shadowlinks/$name/'
     | '/topics/$topicName/'
+    | '/agents/$id/transcripts/$transcriptId'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/subjects/$subjectName/add-version'
@@ -857,7 +870,7 @@ export interface RootRouteChildren {
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
-  AgentsIdRoute: typeof AgentsIdRoute;
+  AgentsIdRoute: typeof AgentsIdRouteWithChildren;
   AgentsCreateRoute: typeof AgentsCreateRoute;
   GetStartedApiRoute: typeof GetStartedApiRoute;
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute;
@@ -1391,8 +1404,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/agents/$id/transcripts/$transcriptId': {
+      id: '/agents/$id/transcripts/$transcriptId';
+      path: '/transcripts/$transcriptId';
+      fullPath: '/agents/$id/transcripts/$transcriptId';
+      preLoaderRoute: typeof AgentsIdTranscriptsTranscriptIdRouteImport;
+      parentRoute: typeof AgentsIdRoute;
+    };
   }
 }
+
+interface AgentsIdRouteChildren {
+  AgentsIdTranscriptsTranscriptIdRoute: typeof AgentsIdTranscriptsTranscriptIdRoute;
+}
+
+const AgentsIdRouteChildren: AgentsIdRouteChildren = {
+  AgentsIdTranscriptsTranscriptIdRoute: AgentsIdTranscriptsTranscriptIdRoute,
+};
+
+const AgentsIdRouteWithChildren = AgentsIdRoute._addFileChildren(
+  AgentsIdRouteChildren,
+);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1401,7 +1433,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,
-  AgentsIdRoute: AgentsIdRoute,
+  AgentsIdRoute: AgentsIdRouteWithChildren,
   AgentsCreateRoute: AgentsCreateRoute,
   GetStartedApiRoute: GetStartedApiRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,

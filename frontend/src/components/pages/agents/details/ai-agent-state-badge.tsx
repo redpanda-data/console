@@ -59,8 +59,13 @@ const getAIAgentStatus = (state: AIAgent_State): { icon: React.ReactNode; text: 
   }
 };
 
-export const AIAgentStateBadge = () => {
-  const { id } = routeApi.useParams();
+type AIAgentStateBadgeProps = {
+  agentId?: string;
+};
+
+export const AIAgentStateBadge = ({ agentId }: AIAgentStateBadgeProps) => {
+  const { id: routeId } = routeApi.useParams();
+  const id = agentId || routeId;
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   if (!aiAgentData?.aiAgent) {

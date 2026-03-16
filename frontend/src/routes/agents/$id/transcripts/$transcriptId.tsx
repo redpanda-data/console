@@ -12,41 +12,28 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { createQueryOptions } from '@connectrpc/connect-query';
-import { createFileRoute, notFound, Outlet, useLocation, useParams } from '@tanstack/react-router';
+import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { NotFoundContent } from 'components/misc/not-found-content';
+import { AIAgentTranscriptDetailsPage } from 'components/pages/agents/details/ai-agent-transcript-details-page';
 import { GetAIAgentRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { getAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 import { z } from 'zod';
 
-import { AIAgentDetailsPage } from '../../components/pages/agents/details/ai-agent-details-page';
-
 const searchSchema = z.object({
   mockAgentTranscripts: fallback(z.string().optional(), undefined),
-  tab: fallback(z.string().optional(), undefined),
 });
 
-function AIAgentNotFound() {
-  const { id } = useParams({ from: '/agents/$id' });
+function AIAgentTranscriptNotFound() {
+  const { id } = useParams({ from: '/agents/$id/transcripts/$transcriptId' });
   return (
     <NotFoundContent backLink="/agents" backLinkText="Back to AI Agents" resourceId={id} resourceType="AI Agent" />
   );
 }
 
-function AIAgentRouteComponent() {
-  const { id } = Route.useParams();
-  const location = useLocation();
-
-  if (location.pathname === `/agents/${id}`) {
-    return <AIAgentDetailsPage />;
-  }
-
-  return <Outlet />;
-}
-
-export const Route = createFileRoute('/agents/$id')({
+export const Route = createFileRoute('/agents/$id/transcripts/$transcriptId')({
   staticData: {
-    title: 'AI Agent Details',
+    title: 'AI Agent Transcript Details',
   },
   validateSearch: zodValidator(searchSchema),
   loader: async ({ context: { queryClient, dataplaneTransport }, params: { id } }) => {
@@ -61,6 +48,6 @@ export const Route = createFileRoute('/agents/$id')({
       throw error;
     }
   },
-  notFoundComponent: AIAgentNotFound,
-  component: AIAgentRouteComponent,
+  notFoundComponent: AIAgentTranscriptNotFound,
+  component: AIAgentTranscriptDetailsPage,
 });

@@ -20,8 +20,13 @@ import { useGetAIAgentQuery, useStartAIAgentMutation, useStopAIAgentMutation } f
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-export const AIAgentToggleButton = () => {
-  const { id } = routeApi.useParams();
+type AIAgentToggleButtonProps = {
+  agentId?: string;
+};
+
+export const AIAgentToggleButton = ({ agentId }: AIAgentToggleButtonProps) => {
+  const { id: routeId } = routeApi.useParams();
+  const id = agentId || routeId;
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
   const { mutateAsync: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();

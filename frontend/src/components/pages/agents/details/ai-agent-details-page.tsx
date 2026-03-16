@@ -15,8 +15,8 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id');
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { AlertCircle, Loader2, Network, Search, Settings } from 'lucide-react';
+import { Tabs, TabsContent } from 'components/redpanda-ui/components/tabs';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
@@ -24,7 +24,9 @@ import { uiState } from 'state/ui-state';
 import { AIAgentCardTab } from './ai-agent-card-tab';
 import { AIAgentConfigurationTab } from './ai-agent-configuration-tab';
 import { AIAgentDetailsHeader } from './ai-agent-details-header';
+import { AIAgentDetailsTabs } from './ai-agent-details-tabs';
 import { AIAgentInspectorTab } from './ai-agent-inspector-tab';
+import { AIAgentTranscriptsTab } from './ai-agent-transcripts-tab';
 
 export const updatePageTitle = (agentName?: string) => {
   uiState.pageTitle = agentName ? `AI Agent - ${agentName}` : 'AI Agent Details';
@@ -39,6 +41,7 @@ export const AIAgentDetailsPage = () => {
   const navigate = useNavigate({ from: '/agents/$id' });
   // Use fine-grained selector to only re-render when tab changes
   const tab = routeApi.useSearch({ select: (s) => s.tab });
+  const mockAgentTranscripts = routeApi.useSearch({ select: (s) => s.mockAgentTranscripts });
 
   const activeTab = tab || 'configuration';
 
@@ -51,7 +54,7 @@ export const AIAgentDetailsPage = () => {
   }, [aiAgentData]);
 
   const handleTabChange = (value: string) => {
-    navigate({ search: { tab: value } });
+    navigate({ search: { mockAgentTranscripts, tab: value } });
   };
 
   if (isLoading) {
@@ -85,27 +88,13 @@ export const AIAgentDetailsPage = () => {
       <AIAgentDetailsHeader />
 
       <Tabs className="min-h-0 flex-1" onValueChange={handleTabChange} value={activeTab}>
-        <TabsList>
-          <TabsTrigger className="gap-2" value="configuration">
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Configuration
-            </div>
-          </TabsTrigger>
-          <TabsTrigger className="gap-2" value="agent-card">
-            <div className="flex items-center gap-2">
-              <Network className="h-4 w-4" />
-              A2A
-            </div>
-          </TabsTrigger>
-          <TabsTrigger className="gap-2" value="inspector">
-            <Search className="h-4 w-4" />
-            Inspector
-          </TabsTrigger>
-        </TabsList>
+        <AIAgentDetailsTabs />
 
         <TabsContent value="configuration">
           <AIAgentConfigurationTab />
+        </TabsContent>
+        <TabsContent value="transcripts">
+          <AIAgentTranscriptsTab />
         </TabsContent>
         <TabsContent value="agent-card">
           <AIAgentCardTab />

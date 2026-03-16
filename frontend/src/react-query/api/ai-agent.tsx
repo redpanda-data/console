@@ -9,22 +9,31 @@ import {
   type GetAIAgentRequest,
   GetAIAgentRequestSchema,
   type GetAIAgentResponse,
+  type GetAIAgentTranscriptRequest,
+  GetAIAgentTranscriptRequestSchema,
+  type GetAIAgentTranscriptResponse,
   type ListAIAgentsRequest,
   ListAIAgentsRequest_FilterSchema,
   ListAIAgentsRequestSchema,
   type ListAIAgentsResponse,
+  type ListAIAgentTranscriptsRequest,
+  ListAIAgentTranscriptsRequestSchema,
+  type ListAIAgentTranscriptsResponse,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import {
   createAIAgent,
   deleteAIAgent,
   getAIAgent,
+  getAIAgentTranscript,
   listAIAgents,
+  listAIAgentTranscripts,
   startAIAgent,
   stopAIAgent,
   updateAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 import { useMemo } from 'react';
 import {
+  fastFailRetry,
   MAX_PAGE_SIZE,
   type MessageInit,
   type QueryOptions,
@@ -85,6 +94,40 @@ export const useGetAIAgentQuery = (
         return shouldPoll ? SHORT_POLLING_INTERVAL : false;
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
+  });
+};
+
+export const useListAIAgentTranscriptsQuery = (
+  input?: MessageInit<ListAIAgentTranscriptsRequest>,
+  options?: QueryOptions<GenMessage<ListAIAgentTranscriptsResponse>>
+) => {
+  const listAIAgentTranscriptsRequest = create(ListAIAgentTranscriptsRequestSchema, {
+    id: input?.id,
+    pageToken: input?.pageToken ?? '',
+    pageSize: input?.pageSize ?? MAX_PAGE_SIZE,
+    filter: input?.filter,
+  });
+
+  return useQuery(listAIAgentTranscripts, listAIAgentTranscriptsRequest, {
+    enabled: options?.enabled,
+    refetchInterval: options?.refetchInterval,
+    refetchIntervalInBackground: options?.refetchIntervalInBackground,
+    retry: fastFailRetry,
+  });
+};
+
+export const useGetAIAgentTranscriptQuery = (
+  input?: MessageInit<GetAIAgentTranscriptRequest>,
+  options?: QueryOptions<GenMessage<GetAIAgentTranscriptResponse>>
+) => {
+  const getAIAgentTranscriptRequest = create(GetAIAgentTranscriptRequestSchema, {
+    id: input?.id,
+    transcriptId: input?.transcriptId,
+  });
+
+  return useQuery(getAIAgentTranscript, getAIAgentTranscriptRequest, {
+    enabled: options?.enabled,
+    retry: fastFailRetry,
   });
 };
 
