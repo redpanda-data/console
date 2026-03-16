@@ -16,7 +16,7 @@ import { useEffect } from 'react';
 
 import { GroupState } from './group-details';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription } from '../../../state/rest-interfaces';
 import { useUISettingsStore } from '../../../state/ui';
 import { editQuery } from '../../../utils/query-helper';
@@ -47,8 +47,14 @@ class GroupList extends PageComponent {
 }
 
 const GroupListContent: FC = () => {
+  const consumerGroups = useApiStoreHook((s) => s.consumerGroups);
   const { consumerGroupList, updateSettings } = useUISettingsStore();
   const { quickSearch } = consumerGroupList;
+
+  useEffect(() => {
+    api.refreshConsumerGroups(true);
+    appGlobal.onRefresh = () => api.refreshConsumerGroups(true);
+  }, []);
 
   // Initialize from URL query param on mount
   useEffect(() => {
@@ -70,11 +76,11 @@ const GroupListContent: FC = () => {
     });
   }, [quickSearch]);
 
-  if (!api.consumerGroups) {
+  if (!consumerGroups) {
     return DefaultSkeleton;
   }
 
-  let groups = Array.from(api.consumerGroups.values());
+  let groups = Array.from(consumerGroups.values());
 
   try {
     const quickSearchRegExp = new RegExp(quickSearch, 'i');
