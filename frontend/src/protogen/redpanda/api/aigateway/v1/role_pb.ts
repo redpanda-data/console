@@ -17,11 +17,11 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/aigateway/v1/role.proto.
  */
 export const file_redpanda_api_aigateway_v1_role: GenFile = /*@__PURE__*/
-  fileDesc("CiRyZWRwYW5kYS9hcGkvYWlnYXRld2F5L3YxL3JvbGUucHJvdG8SGXJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEiwgMKBFJvbGUSEQoEbmFtZRgBIAEoCUID4EEIEiMKDGRpc3BsYXlfbmFtZRgCIAEoCUIN4EECukgHcgUQARj/ARIYCgtkZXNjcmlwdGlvbhgDIAEoCUID4EEBEj8KCG1ldGFkYXRhGAQgAygLMi0ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5Sb2xlLk1ldGFkYXRhRW50cnkSNAoLY3JlYXRlX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgPgQQMSNAoLdXBkYXRlX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgPgQQMSFAoHY3JlYXRvchgHIAEoCUID4EEDEhQKB3VwZGF0ZXIYCCABKAlCA+BBAxovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6XupBWwobYWlnYXRld2F5LnJlZHBhbmRhLmNvbS9Sb2xlEjxhY2NvdW50cy97YWNjb3VudH0vb3JnYW5pemF0aW9ucy97b3JnYW5pemF0aW9ufS9yb2xlcy97cm9sZX0iygEKElRlYW1Sb2xlQXNzaWdubWVudBIxCgR0ZWFtGAEgASgJQiPgQQL6QR0KG2FpZ2F0ZXdheS5yZWRwYW5kYS5jb20vVGVhbRIxCgRyb2xlGAIgASgJQiPgQQL6QR0KG2FpZ2F0ZXdheS5yZWRwYW5kYS5jb20vUm9sZRI0Cgthc3NpZ25lZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCA+BBAxIYCgthc3NpZ25lZF9ieRgEIAEoCUID4EEDIpoBChFDcmVhdGVSb2xlUmVxdWVzdBI7CgZwYXJlbnQYASABKAlCK+BBAvpBJQojYWlnYXRld2F5LnJlZHBhbmRhLmNvbS9Pcmdhbml6YXRpb24SFAoHcm9sZV9pZBgCIAEoCUID4EEBEjIKBHJvbGUYAyABKAsyHy5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLlJvbGVCA+BBAiJDChJDcmVhdGVSb2xlUmVzcG9uc2USLQoEcm9sZRgBIAEoCzIfLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuUm9sZSJDCg5HZXRSb2xlUmVxdWVzdBIxCgRuYW1lGAEgASgJQiPgQQL6QR0KG2FpZ2F0ZXdheS5yZWRwYW5kYS5jb20vUm9sZSJACg9HZXRSb2xlUmVzcG9uc2USLQoEcm9sZRgBIAEoCzIfLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuUm9sZSK2AQoQTGlzdFJvbGVzUmVxdWVzdBI7CgZwYXJlbnQYASABKAlCK+BBAvpBJQojYWlnYXRld2F5LnJlZHBhbmRhLmNvbS9Pcmdhbml6YXRpb24SIAoJcGFnZV9zaXplGAIgASgFQg3gQQG6SAcaBRjoBygAEhcKCnBhZ2VfdG9rZW4YAyABKAlCA+BBARITCgZmaWx0ZXIYBCABKAlCA+BBARIVCghvcmRlcl9ieRgFIAEoCUID4EEBInAKEUxpc3RSb2xlc1Jlc3BvbnNlEi4KBXJvbGVzGAEgAygLMh8ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5Sb2xlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRISCgp0b3RhbF9zaXplGAMgASgFIn0KEVVwZGF0ZVJvbGVSZXF1ZXN0EjIKBHJvbGUYASABKAsyHy5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLlJvbGVCA+BBAhI0Cgt1cGRhdGVfbWFzaxgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5GaWVsZE1hc2tCA+BBASJDChJVcGRhdGVSb2xlUmVzcG9uc2USLQoEcm9sZRgBIAEoCzIfLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuUm9sZSJaChFEZWxldGVSb2xlUmVxdWVzdBIxCgRuYW1lGAEgASgJQiPgQQL6QR0KG2FpZ2F0ZXdheS5yZWRwYW5kYS5jb20vUm9sZRISCgVmb3JjZRgCIAEoCEID4EEBIhQKEkRlbGV0ZVJvbGVSZXNwb25zZSJ9ChVBc3NpZ25UZWFtUm9sZVJlcXVlc3QSMQoEcm9sZRgBIAEoCUIj4EEC+kEdChthaWdhdGV3YXkucmVkcGFuZGEuY29tL1JvbGUSMQoEdGVhbRgCIAEoCUIj4EEC+kEdChthaWdhdGV3YXkucmVkcGFuZGEuY29tL1RlYW0iWwoWQXNzaWduVGVhbVJvbGVSZXNwb25zZRJBCgphc3NpZ25tZW50GAEgASgLMi0ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5UZWFtUm9sZUFzc2lnbm1lbnQifwoXVW5hc3NpZ25UZWFtUm9sZVJlcXVlc3QSMQoEcm9sZRgBIAEoCUIj4EEC+kEdChthaWdhdGV3YXkucmVkcGFuZGEuY29tL1JvbGUSMQoEdGVhbRgCIAEoCUIj4EEC+kEdChthaWdhdGV3YXkucmVkcGFuZGEuY29tL1RlYW0iGgoYVW5hc3NpZ25UZWFtUm9sZVJlc3BvbnNlIoQBChRMaXN0Um9sZVRlYW1zUmVxdWVzdBIxCgRyb2xlGAEgASgJQiPgQQL6QR0KG2FpZ2F0ZXdheS5yZWRwYW5kYS5jb20vUm9sZRIgCglwYWdlX3NpemUYAiABKAVCDeBBAbpIBxoFGOgHKAASFwoKcGFnZV90b2tlbhgDIAEoCUID4EEBIogBChVMaXN0Um9sZVRlYW1zUmVzcG9uc2USQgoLYXNzaWdubWVudHMYASADKAsyLS5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLlRlYW1Sb2xlQXNzaWdubWVudBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkSEgoKdG90YWxfc2l6ZRgDIAEoBSKEAQoUTGlzdFRlYW1Sb2xlc1JlcXVlc3QSMQoEdGVhbRgBIAEoCUIj4EEC+kEdChthaWdhdGV3YXkucmVkcGFuZGEuY29tL1RlYW0SIAoJcGFnZV9zaXplGAIgASgFQg3gQQG6SAcaBRjoBygAEhcKCnBhZ2VfdG9rZW4YAyABKAlCA+BBASKIAQoVTGlzdFRlYW1Sb2xlc1Jlc3BvbnNlEkIKC2Fzc2lnbm1lbnRzGAEgAygLMi0ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5UZWFtUm9sZUFzc2lnbm1lbnQSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJEhIKCnRvdGFsX3NpemUYAyABKAUywgwKC1JvbGVTZXJ2aWNlEqYBCgpDcmVhdGVSb2xlEiwucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5DcmVhdGVSb2xlUmVxdWVzdBotLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuQ3JlYXRlUm9sZVJlc3BvbnNlIjuC0+STAjU6BHJvbGUiLS92MS97cGFyZW50PWFjY291bnRzLyovb3JnYW5pemF0aW9ucy8qfS9yb2xlcxKXAQoHR2V0Um9sZRIpLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuR2V0Um9sZVJlcXVlc3QaKi5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkdldFJvbGVSZXNwb25zZSI1gtPkkwIvEi0vdjEve25hbWU9YWNjb3VudHMvKi9vcmdhbml6YXRpb25zLyovcm9sZXMvKn0SnQEKCUxpc3RSb2xlcxIrLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuTGlzdFJvbGVzUmVxdWVzdBosLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuTGlzdFJvbGVzUmVzcG9uc2UiNYLT5JMCLxItL3YxL3twYXJlbnQ9YWNjb3VudHMvKi9vcmdhbml6YXRpb25zLyp9L3JvbGVzEqsBCgpVcGRhdGVSb2xlEiwucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5VcGRhdGVSb2xlUmVxdWVzdBotLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuVXBkYXRlUm9sZVJlc3BvbnNlIkCC0+STAjo6BHJvbGUyMi92MS97cm9sZS5uYW1lPWFjY291bnRzLyovb3JnYW5pemF0aW9ucy8qL3JvbGVzLyp9EqABCgpEZWxldGVSb2xlEiwucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5EZWxldGVSb2xlUmVxdWVzdBotLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuRGVsZXRlUm9sZVJlc3BvbnNlIjWC0+STAi8qLS92MS97bmFtZT1hY2NvdW50cy8qL29yZ2FuaXphdGlvbnMvKi9yb2xlcy8qfRK6AQoOQXNzaWduVGVhbVJvbGUSMC5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkFzc2lnblRlYW1Sb2xlUmVxdWVzdBoxLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuQXNzaWduVGVhbVJvbGVSZXNwb25zZSJDgtPkkwI9OgEqIjgvdjEve3JvbGU9YWNjb3VudHMvKi9vcmdhbml6YXRpb25zLyovcm9sZXMvKn06YXNzaWduVGVhbRLCAQoQVW5hc3NpZ25UZWFtUm9sZRIyLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuVW5hc3NpZ25UZWFtUm9sZVJlcXVlc3QaMy5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLlVuYXNzaWduVGVhbVJvbGVSZXNwb25zZSJFgtPkkwI/OgEqIjovdjEve3JvbGU9YWNjb3VudHMvKi9vcmdhbml6YXRpb25zLyovcm9sZXMvKn06dW5hc3NpZ25UZWFtEq8BCg1MaXN0Um9sZVRlYW1zEi8ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5MaXN0Um9sZVRlYW1zUmVxdWVzdBowLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuTGlzdFJvbGVUZWFtc1Jlc3BvbnNlIjuC0+STAjUSMy92MS97cm9sZT1hY2NvdW50cy8qL29yZ2FuaXphdGlvbnMvKi9yb2xlcy8qfS90ZWFtcxKvAQoNTGlzdFRlYW1Sb2xlcxIvLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuTGlzdFRlYW1Sb2xlc1JlcXVlc3QaMC5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkxpc3RUZWFtUm9sZXNSZXNwb25zZSI7gtPkkwI1EjMvdjEve3RlYW09YWNjb3VudHMvKi9vcmdhbml6YXRpb25zLyovdGVhbXMvKn0vcm9sZXMaGcpBFmFpZ2F0ZXdheS5yZWRwYW5kYS5jb21CTVpLZ28ucGFuZGEuZGV2L3JlZHBhbmRhLWFpZ3cvcHJvdG9zL2dlbi9yZWRwYW5kYS9hcGkvYWlnYXRld2F5L3YxO2FpZ2F0ZXdheXYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
+  fileDesc("CiRyZWRwYW5kYS9hcGkvYWlnYXRld2F5L3YxL3JvbGUucHJvdG8SGXJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEiwgMKBFJvbGUSEQoEbmFtZRgBIAEoCUID4EEIEiMKDGRpc3BsYXlfbmFtZRgCIAEoCUIN4EECukgHcgUQARj/ARIYCgtkZXNjcmlwdGlvbhgDIAEoCUID4EEBEj8KCG1ldGFkYXRhGAQgAygLMi0ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5Sb2xlLk1ldGFkYXRhRW50cnkSNAoLY3JlYXRlX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgPgQQMSNAoLdXBkYXRlX3RpbWUYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgPgQQMSFAoHY3JlYXRvchgHIAEoCUID4EEDEhQKB3VwZGF0ZXIYCCABKAlCA+BBAxovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6XupBWwobYWlnYXRld2F5LnJlZHBhbmRhLmNvbS9Sb2xlEjxhY2NvdW50cy97YWNjb3VudH0vb3JnYW5pemF0aW9ucy97b3JnYW5pemF0aW9ufS9yb2xlcy97cm9sZX0imgEKEUNyZWF0ZVJvbGVSZXF1ZXN0EjsKBnBhcmVudBgBIAEoCUIr4EEC+kElCiNhaWdhdGV3YXkucmVkcGFuZGEuY29tL09yZ2FuaXphdGlvbhIUCgdyb2xlX2lkGAIgASgJQgPgQQESMgoEcm9sZRgDIAEoCzIfLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuUm9sZUID4EECIkMKEkNyZWF0ZVJvbGVSZXNwb25zZRItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5Sb2xlIkMKDkdldFJvbGVSZXF1ZXN0EjEKBG5hbWUYASABKAlCI+BBAvpBHQobYWlnYXRld2F5LnJlZHBhbmRhLmNvbS9Sb2xlIkAKD0dldFJvbGVSZXNwb25zZRItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5Sb2xlIrYBChBMaXN0Um9sZXNSZXF1ZXN0EjsKBnBhcmVudBgBIAEoCUIr4EEC+kElCiNhaWdhdGV3YXkucmVkcGFuZGEuY29tL09yZ2FuaXphdGlvbhIgCglwYWdlX3NpemUYAiABKAVCDeBBAbpIBxoFGOgHKAASFwoKcGFnZV90b2tlbhgDIAEoCUID4EEBEhMKBmZpbHRlchgEIAEoCUID4EEBEhUKCG9yZGVyX2J5GAUgASgJQgPgQQEicAoRTGlzdFJvbGVzUmVzcG9uc2USLgoFcm9sZXMYASADKAsyHy5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLlJvbGUSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJEhIKCnRvdGFsX3NpemUYAyABKAUifQoRVXBkYXRlUm9sZVJlcXVlc3QSMgoEcm9sZRgBIAEoCzIfLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuUm9sZUID4EECEjQKC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFza0ID4EEBIkMKElVwZGF0ZVJvbGVSZXNwb25zZRItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5Sb2xlIloKEURlbGV0ZVJvbGVSZXF1ZXN0EjEKBG5hbWUYASABKAlCI+BBAvpBHQobYWlnYXRld2F5LnJlZHBhbmRhLmNvbS9Sb2xlEhIKBWZvcmNlGAIgASgIQgPgQQEiFAoSRGVsZXRlUm9sZVJlc3BvbnNlMtwGCgtSb2xlU2VydmljZRKmAQoKQ3JlYXRlUm9sZRIsLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuQ3JlYXRlUm9sZVJlcXVlc3QaLS5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkNyZWF0ZVJvbGVSZXNwb25zZSI7gtPkkwI1OgRyb2xlIi0vdjEve3BhcmVudD1hY2NvdW50cy8qL29yZ2FuaXphdGlvbnMvKn0vcm9sZXMSlwEKB0dldFJvbGUSKS5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkdldFJvbGVSZXF1ZXN0GioucmVkcGFuZGEuYXBpLmFpZ2F0ZXdheS52MS5HZXRSb2xlUmVzcG9uc2UiNYLT5JMCLxItL3YxL3tuYW1lPWFjY291bnRzLyovb3JnYW5pemF0aW9ucy8qL3JvbGVzLyp9Ep0BCglMaXN0Um9sZXMSKy5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkxpc3RSb2xlc1JlcXVlc3QaLC5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkxpc3RSb2xlc1Jlc3BvbnNlIjWC0+STAi8SLS92MS97cGFyZW50PWFjY291bnRzLyovb3JnYW5pemF0aW9ucy8qfS9yb2xlcxKrAQoKVXBkYXRlUm9sZRIsLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuVXBkYXRlUm9sZVJlcXVlc3QaLS5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLlVwZGF0ZVJvbGVSZXNwb25zZSJAgtPkkwI6OgRyb2xlMjIvdjEve3JvbGUubmFtZT1hY2NvdW50cy8qL29yZ2FuaXphdGlvbnMvKi9yb2xlcy8qfRKgAQoKRGVsZXRlUm9sZRIsLnJlZHBhbmRhLmFwaS5haWdhdGV3YXkudjEuRGVsZXRlUm9sZVJlcXVlc3QaLS5yZWRwYW5kYS5hcGkuYWlnYXRld2F5LnYxLkRlbGV0ZVJvbGVSZXNwb25zZSI1gtPkkwIvKi0vdjEve25hbWU9YWNjb3VudHMvKi9vcmdhbml6YXRpb25zLyovcm9sZXMvKn0aGcpBFmFpZ2F0ZXdheS5yZWRwYW5kYS5jb21CTVpLZ28ucGFuZGEuZGV2L3JlZHBhbmRhLWFpZ3cvcHJvdG9zL2dlbi9yZWRwYW5kYS9hcGkvYWlnYXRld2F5L3YxO2FpZ2F0ZXdheXYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_field_mask, file_google_protobuf_timestamp]);
 
 /**
  * Role represents a named Cedar entity within an organization.
- * Roles can be assigned to teams. Permissions are defined via Cedar policies.
+ * Roles can be assigned to users. Permissions are defined via Cedar policies.
  * Cedar entity type: AIGateway::Role
  *
  * @generated from message redpanda.api.aigateway.v1.Role
@@ -94,50 +94,6 @@ export const RoleSchema: GenMessage<Role> = /*@__PURE__*/
   messageDesc(file_redpanda_api_aigateway_v1_role, 0);
 
 /**
- * TeamRoleAssignment represents the assignment of a role to a team.
- *
- * @generated from message redpanda.api.aigateway.v1.TeamRoleAssignment
- */
-export type TeamRoleAssignment = Message<"redpanda.api.aigateway.v1.TeamRoleAssignment"> & {
-  /**
-   * Reference to the team.
-   * Format: `accounts/{account}/organizations/{organization}/teams/{team}`
-   *
-   * @generated from field: string team = 1;
-   */
-  team: string;
-
-  /**
-   * Reference to the role.
-   * Format: `accounts/{account}/organizations/{organization}/roles/{role}`
-   *
-   * @generated from field: string role = 2;
-   */
-  role: string;
-
-  /**
-   * Output only. When the assignment was created
-   *
-   * @generated from field: google.protobuf.Timestamp assigned_at = 3;
-   */
-  assignedAt?: Timestamp;
-
-  /**
-   * Output only. Who created the assignment
-   *
-   * @generated from field: string assigned_by = 4;
-   */
-  assignedBy: string;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.TeamRoleAssignment.
- * Use `create(TeamRoleAssignmentSchema)` to create a new message.
- */
-export const TeamRoleAssignmentSchema: GenMessage<TeamRoleAssignment> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 1);
-
-/**
  * Request message for CreateRole RPC.
  *
  * @generated from message redpanda.api.aigateway.v1.CreateRoleRequest
@@ -171,7 +127,7 @@ export type CreateRoleRequest = Message<"redpanda.api.aigateway.v1.CreateRoleReq
  * Use `create(CreateRoleRequestSchema)` to create a new message.
  */
 export const CreateRoleRequestSchema: GenMessage<CreateRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 2);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 1);
 
 /**
  * Response message for CreateRole RPC.
@@ -190,7 +146,7 @@ export type CreateRoleResponse = Message<"redpanda.api.aigateway.v1.CreateRoleRe
  * Use `create(CreateRoleResponseSchema)` to create a new message.
  */
 export const CreateRoleResponseSchema: GenMessage<CreateRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 3);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 2);
 
 /**
  * Request message for GetRole RPC.
@@ -211,7 +167,7 @@ export type GetRoleRequest = Message<"redpanda.api.aigateway.v1.GetRoleRequest">
  * Use `create(GetRoleRequestSchema)` to create a new message.
  */
 export const GetRoleRequestSchema: GenMessage<GetRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 4);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 3);
 
 /**
  * Response message for GetRole RPC.
@@ -230,7 +186,7 @@ export type GetRoleResponse = Message<"redpanda.api.aigateway.v1.GetRoleResponse
  * Use `create(GetRoleResponseSchema)` to create a new message.
  */
 export const GetRoleResponseSchema: GenMessage<GetRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 5);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 4);
 
 /**
  * Request message for ListRoles RPC.
@@ -279,7 +235,7 @@ export type ListRolesRequest = Message<"redpanda.api.aigateway.v1.ListRolesReque
  * Use `create(ListRolesRequestSchema)` to create a new message.
  */
 export const ListRolesRequestSchema: GenMessage<ListRolesRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 6);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 5);
 
 /**
  * Response message for ListRoles RPC.
@@ -314,7 +270,7 @@ export type ListRolesResponse = Message<"redpanda.api.aigateway.v1.ListRolesResp
  * Use `create(ListRolesResponseSchema)` to create a new message.
  */
 export const ListRolesResponseSchema: GenMessage<ListRolesResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 7);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 6);
 
 /**
  * Request message for UpdateRole RPC.
@@ -343,7 +299,7 @@ export type UpdateRoleRequest = Message<"redpanda.api.aigateway.v1.UpdateRoleReq
  * Use `create(UpdateRoleRequestSchema)` to create a new message.
  */
 export const UpdateRoleRequestSchema: GenMessage<UpdateRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 8);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 7);
 
 /**
  * Response message for UpdateRole RPC.
@@ -362,7 +318,7 @@ export type UpdateRoleResponse = Message<"redpanda.api.aigateway.v1.UpdateRoleRe
  * Use `create(UpdateRoleResponseSchema)` to create a new message.
  */
 export const UpdateRoleResponseSchema: GenMessage<UpdateRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 9);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 8);
 
 /**
  * Request message for DeleteRole RPC.
@@ -378,7 +334,7 @@ export type DeleteRoleRequest = Message<"redpanda.api.aigateway.v1.DeleteRoleReq
   name: string;
 
   /**
-   * If true, unassign all teams from this role before deleting
+   * If true, force delete the role even if it has assignments
    *
    * @generated from field: bool force = 2;
    */
@@ -390,7 +346,7 @@ export type DeleteRoleRequest = Message<"redpanda.api.aigateway.v1.DeleteRoleReq
  * Use `create(DeleteRoleRequestSchema)` to create a new message.
  */
 export const DeleteRoleRequestSchema: GenMessage<DeleteRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 10);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 9);
 
 /**
  * Response message for DeleteRole RPC.
@@ -405,247 +361,11 @@ export type DeleteRoleResponse = Message<"redpanda.api.aigateway.v1.DeleteRoleRe
  * Use `create(DeleteRoleResponseSchema)` to create a new message.
  */
 export const DeleteRoleResponseSchema: GenMessage<DeleteRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 11);
-
-/**
- * Request message for AssignTeamRole RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.AssignTeamRoleRequest
- */
-export type AssignTeamRoleRequest = Message<"redpanda.api.aigateway.v1.AssignTeamRoleRequest"> & {
-  /**
-   * Required: Role to assign.
-   * Format: `accounts/{account}/organizations/{organization}/roles/{role}`
-   *
-   * @generated from field: string role = 1;
-   */
-  role: string;
-
-  /**
-   * Required: Team to assign the role to.
-   * Format: `accounts/{account}/organizations/{organization}/teams/{team}`
-   *
-   * @generated from field: string team = 2;
-   */
-  team: string;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.AssignTeamRoleRequest.
- * Use `create(AssignTeamRoleRequestSchema)` to create a new message.
- */
-export const AssignTeamRoleRequestSchema: GenMessage<AssignTeamRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 12);
-
-/**
- * Response message for AssignTeamRole RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.AssignTeamRoleResponse
- */
-export type AssignTeamRoleResponse = Message<"redpanda.api.aigateway.v1.AssignTeamRoleResponse"> & {
-  /**
-   * @generated from field: redpanda.api.aigateway.v1.TeamRoleAssignment assignment = 1;
-   */
-  assignment?: TeamRoleAssignment;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.AssignTeamRoleResponse.
- * Use `create(AssignTeamRoleResponseSchema)` to create a new message.
- */
-export const AssignTeamRoleResponseSchema: GenMessage<AssignTeamRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 13);
-
-/**
- * Request message for UnassignTeamRole RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.UnassignTeamRoleRequest
- */
-export type UnassignTeamRoleRequest = Message<"redpanda.api.aigateway.v1.UnassignTeamRoleRequest"> & {
-  /**
-   * Required: Role to unassign.
-   * Format: `accounts/{account}/organizations/{organization}/roles/{role}`
-   *
-   * @generated from field: string role = 1;
-   */
-  role: string;
-
-  /**
-   * Required: Team to unassign the role from.
-   * Format: `accounts/{account}/organizations/{organization}/teams/{team}`
-   *
-   * @generated from field: string team = 2;
-   */
-  team: string;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.UnassignTeamRoleRequest.
- * Use `create(UnassignTeamRoleRequestSchema)` to create a new message.
- */
-export const UnassignTeamRoleRequestSchema: GenMessage<UnassignTeamRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 14);
-
-/**
- * Response message for UnassignTeamRole RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.UnassignTeamRoleResponse
- */
-export type UnassignTeamRoleResponse = Message<"redpanda.api.aigateway.v1.UnassignTeamRoleResponse"> & {
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.UnassignTeamRoleResponse.
- * Use `create(UnassignTeamRoleResponseSchema)` to create a new message.
- */
-export const UnassignTeamRoleResponseSchema: GenMessage<UnassignTeamRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 15);
-
-/**
- * Request message for ListRoleTeams RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.ListRoleTeamsRequest
- */
-export type ListRoleTeamsRequest = Message<"redpanda.api.aigateway.v1.ListRoleTeamsRequest"> & {
-  /**
-   * Required: Role to list teams for.
-   * Format: `accounts/{account}/organizations/{organization}/roles/{role}`
-   *
-   * @generated from field: string role = 1;
-   */
-  role: string;
-
-  /**
-   * Maximum number of assignments to return (max 1000)
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * Page token from a previous call
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.ListRoleTeamsRequest.
- * Use `create(ListRoleTeamsRequestSchema)` to create a new message.
- */
-export const ListRoleTeamsRequestSchema: GenMessage<ListRoleTeamsRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 16);
-
-/**
- * Response message for ListRoleTeams RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.ListRoleTeamsResponse
- */
-export type ListRoleTeamsResponse = Message<"redpanda.api.aigateway.v1.ListRoleTeamsResponse"> & {
-  /**
-   * The list of team role assignments
-   *
-   * @generated from field: repeated redpanda.api.aigateway.v1.TeamRoleAssignment assignments = 1;
-   */
-  assignments: TeamRoleAssignment[];
-
-  /**
-   * Token for next page
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-
-  /**
-   * Total count
-   *
-   * @generated from field: int32 total_size = 3;
-   */
-  totalSize: number;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.ListRoleTeamsResponse.
- * Use `create(ListRoleTeamsResponseSchema)` to create a new message.
- */
-export const ListRoleTeamsResponseSchema: GenMessage<ListRoleTeamsResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 17);
-
-/**
- * Request message for ListTeamRoles RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.ListTeamRolesRequest
- */
-export type ListTeamRolesRequest = Message<"redpanda.api.aigateway.v1.ListTeamRolesRequest"> & {
-  /**
-   * Required: Team to list roles for.
-   * Format: `accounts/{account}/organizations/{organization}/teams/{team}`
-   *
-   * @generated from field: string team = 1;
-   */
-  team: string;
-
-  /**
-   * Maximum number of assignments to return (max 1000)
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * Page token from a previous call
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.ListTeamRolesRequest.
- * Use `create(ListTeamRolesRequestSchema)` to create a new message.
- */
-export const ListTeamRolesRequestSchema: GenMessage<ListTeamRolesRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 18);
-
-/**
- * Response message for ListTeamRoles RPC.
- *
- * @generated from message redpanda.api.aigateway.v1.ListTeamRolesResponse
- */
-export type ListTeamRolesResponse = Message<"redpanda.api.aigateway.v1.ListTeamRolesResponse"> & {
-  /**
-   * The list of team role assignments
-   *
-   * @generated from field: repeated redpanda.api.aigateway.v1.TeamRoleAssignment assignments = 1;
-   */
-  assignments: TeamRoleAssignment[];
-
-  /**
-   * Token for next page
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-
-  /**
-   * Total count
-   *
-   * @generated from field: int32 total_size = 3;
-   */
-  totalSize: number;
-};
-
-/**
- * Describes the message redpanda.api.aigateway.v1.ListTeamRolesResponse.
- * Use `create(ListTeamRolesResponseSchema)` to create a new message.
- */
-export const ListTeamRolesResponseSchema: GenMessage<ListTeamRolesResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_aigateway_v1_role, 19);
+  messageDesc(file_redpanda_api_aigateway_v1_role, 10);
 
 /**
  * RoleService manages roles within organizations.
- * Roles are Cedar entities that teams can be assigned to.
+ * Roles are Cedar entities that users can be assigned to.
  * Permissions for roles are defined via Cedar policies, not stored in the role itself.
  * Resource name: accounts/{account_id}/organizations/{organization_id}/roles/{role_id}
  *
@@ -701,47 +421,6 @@ export const RoleService: GenService<{
     methodKind: "unary";
     input: typeof DeleteRoleRequestSchema;
     output: typeof DeleteRoleResponseSchema;
-  },
-  /**
-   * Assigns a role to a team.
-   * Implements Cedar pattern: Team in Role
-   *
-   * @generated from rpc redpanda.api.aigateway.v1.RoleService.AssignTeamRole
-   */
-  assignTeamRole: {
-    methodKind: "unary";
-    input: typeof AssignTeamRoleRequestSchema;
-    output: typeof AssignTeamRoleResponseSchema;
-  },
-  /**
-   * Unassigns a role from a team.
-   *
-   * @generated from rpc redpanda.api.aigateway.v1.RoleService.UnassignTeamRole
-   */
-  unassignTeamRole: {
-    methodKind: "unary";
-    input: typeof UnassignTeamRoleRequestSchema;
-    output: typeof UnassignTeamRoleResponseSchema;
-  },
-  /**
-   * Lists teams assigned to a role.
-   *
-   * @generated from rpc redpanda.api.aigateway.v1.RoleService.ListRoleTeams
-   */
-  listRoleTeams: {
-    methodKind: "unary";
-    input: typeof ListRoleTeamsRequestSchema;
-    output: typeof ListRoleTeamsResponseSchema;
-  },
-  /**
-   * Lists roles assigned to a team.
-   *
-   * @generated from rpc redpanda.api.aigateway.v1.RoleService.ListTeamRoles
-   */
-  listTeamRoles: {
-    methodKind: "unary";
-    input: typeof ListTeamRolesRequestSchema;
-    output: typeof ListTeamRolesResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_aigateway_v1_role, 0);
