@@ -112,7 +112,7 @@ export function deriveContexts(
 // True for actual SR contexts (not the synthetic
 // "All" or "Default" entries).
 export function isNamedContext(contextId: string): boolean {
-  return contextId !== ALL_CONTEXT_ID && contextId !== DEFAULT_CONTEXT_ID;
+  return contextId != '' && contextId !== ALL_CONTEXT_ID && contextId !== DEFAULT_CONTEXT_ID;
 }
 
 // Convert a raw context name (e.g. from a URL param or parseSubjectContext)
