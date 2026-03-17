@@ -14,6 +14,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { InfoIcon } from 'components/icons';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 import {
@@ -369,16 +370,5 @@ function EditSchemaCompatibility(p: {
         </Button>
       </Flex>
     </>
-  );
-}
-
-function ContextsNotSupportedPage() {
-  return (
-    <PageContent>
-      <div className="flex flex-col items-center gap-4" data-testid="contexts-not-supported">
-        <Text className="font-bold text-lg">Not Supported</Text>
-        <Text className="text-center">Schema Registry contexts are not supported in this cluster.</Text>
-      </div>
-    </PageContent>
   );
 }
