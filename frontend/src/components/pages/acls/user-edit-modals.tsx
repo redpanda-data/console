@@ -3,6 +3,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import {
+  Box,
   Button,
   Checkbox,
   CopyButton,
@@ -115,7 +116,10 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                     />
                   </Tooltip>
                   <Tooltip hasArrow label={'Copy password'} placement="top">
-                    <CopyButton content={password} variant="ghost" />
+                    {/* Wrapper needed: CopyButton doesn't forward refs, so Chakra Tooltip can't position itself without a DOM element to measure */}
+                    <Box as="span" display="inline-flex">
+                      <CopyButton content={password} variant="ghost" />
+                    </Box>
                   </Tooltip>
                 </Flex>
                 <Checkbox
