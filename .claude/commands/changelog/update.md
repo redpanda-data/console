@@ -1,6 +1,6 @@
 ---
-allowed-tools: Bash(git tag:*), Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(git fetch:*), Bash(git branch:*), Bash(pwd), Bash(ls:*), Bash(cat:*), Bash(cd:*), Bash(head:*), Bash(echo:*), Read, Write, Edit
-description: Generate a changelog comparing a specified tag (or latest if not provided) with the previous version across OSS and enterprise repositories.
+allowed-tools: Bash(git tag:*), Bash(git log:*), Bash(git status:*), Bash(git branch:*), Bash(head:*), Bash(pwd), Read, Edit
+description: Generate a changelog comparing a specified tag (or latest if not provided) with the previous version.
 ---
 
 ## Your task
