@@ -213,7 +213,7 @@ interface InlineCodeProps extends React.HTMLAttributes<HTMLElement>, SharedProps
 export function InlineCode({ className, children, testId, ...props }: InlineCodeProps) {
   return (
     <code
-      className={cn('relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm', className)}
+      className={cn('relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm leading-8', className)}
       data-testid={testId}
       {...props}
     >
