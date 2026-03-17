@@ -25,6 +25,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 import {
@@ -293,16 +294,5 @@ function EditSchemaMode({
         </div>
       )}
     </div>
-  );
-}
-
-function ContextsNotSupportedPage() {
-  return (
-    <PageContent>
-      <div className="flex flex-col items-center gap-4" data-testid="contexts-not-supported">
-        <Text className="font-bold text-lg">Not Supported</Text>
-        <Text className="text-center">Schema Registry contexts are not supported in this cluster.</Text>
-      </div>
-    </PageContent>
   );
 }

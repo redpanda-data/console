@@ -46,6 +46,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { InfoIcon } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 
+import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 import {
   ALL_CONTEXT_ID,
@@ -246,14 +247,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
   const state = deriveSchemaEditorState(stateData);
 
   if (contextName && !srContextsEnabled) {
-    return (
-      <PageContent>
-        <div className="flex flex-col items-center gap-4" data-testid="contexts-not-supported">
-          <Text className="font-bold text-lg">Not Supported</Text>
-          <Text className="text-center">Schema Registry contexts are not supported in this cluster.</Text>
-        </div>
-      </PageContent>
-    );
+    return <ContextsNotSupportedPage />;
   }
 
   return (
