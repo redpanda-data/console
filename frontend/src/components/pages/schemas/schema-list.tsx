@@ -296,7 +296,11 @@ const SchemaList: FC = () => {
         <Button
           data-testid="schema-list-create-btn"
           disabled={api.userData?.canCreateSchemas === false}
-          onClick={() => appGlobal.historyPush('/schema-registry/create')}
+          onClick={() =>
+            isNamedContext(selectedContext) && schemaRegistryContextsSupported
+              ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
+              : appGlobal.historyPush('/schema-registry/create')
+          }
           variant="primary"
         >
           Create new schema

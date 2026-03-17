@@ -13,6 +13,8 @@ import { describe, expect, test } from 'vitest';
 
 import {
   ALL_CONTEXT_ID,
+  buildQualifiedSubjectName,
+  contextNameToId,
   DEFAULT_CONTEXT_ID,
   deriveContexts,
   isNamedContext,
@@ -174,6 +176,42 @@ describe('isNamedContext', () => {
 
   test('empty string is a named context', () => {
     expect(isNamedContext('')).toBe(true);
+  });
+});
+
+describe('buildQualifiedSubjectName', () => {
+  test('returns plain subject name for default context', () => {
+    expect(buildQualifiedSubjectName(DEFAULT_CONTEXT_ID, 'my-topic')).toBe('my-topic');
+  });
+
+  test('returns qualified name for named context', () => {
+    expect(buildQualifiedSubjectName('.staging', 'my-topic')).toBe(':.staging:my-topic');
+  });
+
+  test('returns empty string when subject is empty', () => {
+    expect(buildQualifiedSubjectName('.staging', '')).toBe('');
+  });
+
+  test('returns empty string for default context with empty subject', () => {
+    expect(buildQualifiedSubjectName(DEFAULT_CONTEXT_ID, '')).toBe('');
+  });
+
+  test('returns plain name for ALL_CONTEXT_ID', () => {
+    expect(buildQualifiedSubjectName(ALL_CONTEXT_ID, 'my-topic')).toBe('my-topic');
+  });
+});
+
+describe('contextNameToId', () => {
+  test('maps "default" to DEFAULT_CONTEXT_ID', () => {
+    expect(contextNameToId('default')).toBe(DEFAULT_CONTEXT_ID);
+  });
+
+  test('passes through dot-prefixed names unchanged', () => {
+    expect(contextNameToId('.staging')).toBe('.staging');
+  });
+
+  test('prepends dot to bare context names', () => {
+    expect(contextNameToId('prod')).toBe('.prod');
   });
 });
 
