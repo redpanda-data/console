@@ -1,11 +1,16 @@
 ---
-allowed-tools: Bash(git tag:*), Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(git fetch:*), Bash(git branch:*), Bash(pwd), Bash(ls:*), Bash(cat:*), Bash(cd:*), Bash(head:*), Bash(echo:*), Read, Write, Edit
-description: Generate a changelog comparing a specified tag (or latest if not provided) with the previous version across OSS and enterprise repositories.
+allowed-tools: Bash(git tag:*), Bash(git log:*), Bash(git status:*), Bash(git branch:*), Bash(head:*), Bash(pwd), Read, Edit
+description: Generate a changelog comparing a specified tag (or latest if not provided) with the previous version.
 ---
 
 ## Your task
 
-Generate a succinct changelog by comparing a specified git tag with the previous version following semantic versioning patterns. If no tag is specified via $ARGUMENTS, use the latest tag. Take changes in only the OSS repository (current directory), try to ignore any enterprise or adp related changes. Update the root CHANGELOG.md file with up to 10 most significant changes.
+Generate a succinct changelog by comparing a specified git tag with the previous version following semantic versioning patterns. If no tag is specified via $ARGUMENTS, use the latest tag. Take changes in only the OSS repository (current directory). Update the root CHANGELOG.md file with up to 10 most significant changes.
+
+**This changelog is for the self-hosted Redpanda Console product.** Exclude changes related to:
+- Enterprise, ADP, AI Agents, or AI Gateway features
+- Cloud/serverless-only functionality
+- Internal toolchain updates (e.g. Go version bumps, dependency upgrades, CI config) unless they have a direct user-facing impact
 
 The version comparison logic:
 - For patch versions (x.y.z): compare with x.y.(z-1) or x.y.(highest patch)
@@ -105,8 +110,11 @@ The user provided the following additional input for this command (may be empty)
   - **New minor/major version**: Incorporate existing unreleased changes into the new version section
 - Limit to 10 most significant changes total across both repositories
 - Display a summary of changes found
+- Deduplicate closely related commits — if multiple commits address the same user-facing change (e.g. a fix and a follow-up perf improvement for the same feature), merge them into a single entry
 - Group similar changes together
-- Exclude merge commits, version bumps, and CI-only changes
+- Exclude merge commits, version bumps, CI-only changes, and internal toolchain/dependency updates (e.g. "bump Go to 1.26", "update protobuf dependency") that have no direct user-facing impact
+- Exclude cloud/serverless-only changes — this changelog is for self-hosted Redpanda Console
+- Do not mention release branch names (e.g. "release-2.8") in changelog entries — the version is already conveyed by the section heading
 - Use clear, concise descriptions that focus on user-facing changes
 - Prioritize user-impacting changes over internal refactoring
 - Add in date order to the `CHANGELOG.md` file
