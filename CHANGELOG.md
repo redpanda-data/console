@@ -7,16 +7,10 @@
 - [SECURITY] Upgrade backend dependencies to address Snyk security vulnerabilities.
 - [IMPROVEMENT] Improve performance of JSON view and Monaco editor in message viewer to reduce record expansion slowness.
 
-## v3.5.3 / 2026-03-17
+## v3.5.3 / 2026-02-26
 - [IMPROVEMENT] Add new observability page with chart support and unified time-range approach.
-- [IMPROVEMENT] Add SSE reconnection via tasks/resubscribe for improved AI agent reliability.
 - [IMPROVEMENT] Add reload button to connection-lost alert for better UX.
-- [IMPROVEMENT] Remove beta badges from agentic AI sidebar items.
-- [IMPROVEMENT] Update Go toolchain to Go 1.26 with modernizer fixes.
-- [IMPROVEMENT] Upgrade go-chi and go-git backend dependencies to latest versions.
-- [BUGFIX] Fix shadow links page crash when feature is disabled.
-- [BUGFIX] Fix artifact text and tool badges not rendering correctly on page reload.
-- [BUGFIX] Fix stale tools being shown on SSE stream end.
+- [BUGFIX] Fix shadowlinks page crash when feature is disabled.
 
 ## v3.5.2 / 2026-02-11
 - [BUGFIX] Fix Console sending "Authorization: Bearer undefined" header when authentication is not configured.
