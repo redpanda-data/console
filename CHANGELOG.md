@@ -2,6 +2,13 @@
 
 ## Master / Unreleased
 
+## v2.8.11 / 2026-03-10
+
+- [SECURITY] Resolve Snyk security vulnerabilities in frontend dependencies on release-2.8 branch.
+- [SECURITY] Upgrade backend dependencies to address Snyk security vulnerabilities.
+- [BUGFIX] Stabilize message viewer subcomponent identity to prevent Monaco editor remounting on record expansion.
+- [IMPROVEMENT] Improve performance of JSON view and Monaco editor in message viewer to reduce record expansion slowness.
+
 ## v3.5.2 / 2026-02-11
 - [BUGFIX] Fix Console sending "Authorization: Bearer undefined" header when authentication is not configured.
 - [BUGFIX] Fix pagination for lists exceeding page size causing incomplete data loading.
