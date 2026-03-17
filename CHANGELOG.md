@@ -4,9 +4,8 @@
 
 ## v2.8.11 / 2026-03-10
 
-- [SECURITY] Resolve Snyk security vulnerabilities in frontend dependencies on release-2.8 branch.
+- [SECURITY] Resolve Snyk security vulnerabilities in frontend dependencies.
 - [SECURITY] Upgrade backend dependencies to address Snyk security vulnerabilities.
-- [BUGFIX] Stabilize message viewer subcomponent identity to prevent Monaco editor remounting on record expansion.
 - [IMPROVEMENT] Improve performance of JSON view and Monaco editor in message viewer to reduce record expansion slowness.
 
 ## v3.5.2 / 2026-02-11
