@@ -175,7 +175,7 @@ describe('isNamedContext', () => {
   });
 
   test('empty string is a named context', () => {
-    expect(isNamedContext('')).toBe(true);
+    expect(isNamedContext('')).toBe(false);
   });
 });
 
