@@ -40,6 +40,7 @@ export function parseSubjectContext(name: string): ParsedSubject {
 
 export const ALL_CONTEXT_ID = '__all__';
 export const DEFAULT_CONTEXT_ID = '__default__';
+export const DEFAULT_CONTEXT_LABEL = 'Default';
 
 export type DerivedContext = {
   id: string;
@@ -74,7 +75,7 @@ export function deriveContexts(
       defaultContext = ctx;
       contexts.push({
         id: DEFAULT_CONTEXT_ID,
-        label: 'Default',
+        label: DEFAULT_CONTEXT_LABEL,
         subjectCount: countByContext.get(DEFAULT_CONTEXT_ID) ?? 0,
         mode: ctx.mode,
         compatibility: ctx.compatibility,
@@ -112,6 +113,47 @@ export function deriveContexts(
 // "All" or "Default" entries).
 export function isNamedContext(contextId: string): boolean {
   return contextId !== ALL_CONTEXT_ID && contextId !== DEFAULT_CONTEXT_ID;
+}
+
+// Convert a raw context name (e.g. from a URL param or parseSubjectContext)
+// into the internal context ID used by the editor state.
+// ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
+export function contextNameToId(name: string): string {
+  if (name === 'default') return DEFAULT_CONTEXT_ID;
+  if (name.startsWith('.')) return name;
+  return `.${name}`;
+}
+
+// Build a qualified subject name from context + subject.
+// Named contexts (e.g. ".staging") → ":.staging:subject"
+// Default context → plain "subject"
+export function buildQualifiedSubjectName(contextId: string, subjectName: string): string {
+  if (!subjectName) return '';
+  if (isNamedContext(contextId)) return `:${contextId}:${subjectName}`;
+  return subjectName;
+}
+
+// Map between internal context IDs and display labels.
+// DEFAULT_CONTEXT_ID ('__default__') ↔ 'Default'; all others pass through.
+export function contextIdToLabel(contextId: string): string {
+  return contextId === DEFAULT_CONTEXT_ID ? DEFAULT_CONTEXT_LABEL : contextId;
+}
+
+export function contextLabelToId(label: string): string {
+  return label === DEFAULT_CONTEXT_LABEL ? DEFAULT_CONTEXT_ID : label;
+}
+
+// Build qualified references for API calls (create/validate).
+export function buildQualifiedReferences(
+  refs: { name: string; subject: string; version: number; context: string }[]
+): { name: string; subject: string; version: number }[] {
+  return refs
+    .filter((x) => x.name && x.subject)
+    .map((r) => ({
+      name: r.name,
+      subject: buildQualifiedSubjectName(r.context, r.subject),
+      version: r.version,
+    }));
 }
 
 // Simple English pluralization: 1 subject / 3 subjects.
