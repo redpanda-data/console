@@ -2,7 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Text } from 'components/redpanda-ui/components/typography';
 
-import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
+import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 
 /**
  * Extracts lint hints from a ConnectError for display in LintResults component.

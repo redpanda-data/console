@@ -15,8 +15,8 @@ import {
   type ListModelProvidersRequest,
   ListModelProvidersRequestSchema,
   type ListModelProvidersResponse,
-} from 'protogen/redpanda/api/aigateway/v1/model_providers_pb';
-import { listModelProviders } from 'protogen/redpanda/api/aigateway/v1/model_providers-ModelProvidersService_connectquery';
+} from '@buf/redpandadata_ai-gateway.bufbuild_es/redpanda/api/aigateway/v1/model_providers_pb';
+import { listModelProviders } from '@buf/redpandadata_ai-gateway.connectrpc_query-es/redpanda/api/aigateway/v1/model_providers-ModelProvidersService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 const AI_GATEWAY_DEFAULT_PAGE_SIZE = 50;

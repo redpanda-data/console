@@ -24,7 +24,7 @@ import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpand
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Trash2 } from 'lucide-react';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
