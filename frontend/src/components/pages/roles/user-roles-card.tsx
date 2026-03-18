@@ -73,7 +73,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
       </TableCell>
     </TableRow>,
     isLoading && (
-      <TableRow>
+      <TableRow key={`role-${rowKey}-loading`}>
         <TableCell>
           <Skeleton />
         </TableCell>

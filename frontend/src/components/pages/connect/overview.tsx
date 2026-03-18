@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
@@ -236,13 +238,17 @@ class TabClusters extends Component {
               }
 
               return (
-                // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
-                // biome-ignore lint/a11y/noNoninteractiveElementInteractions: legacy MobX pattern
-                // biome-ignore lint/a11y/useKeyWithClickEvents: legacy MobX pattern
                 <span
                   className="hoverLink"
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`);
+                    }
+                  }}
+                  role="button"
                   style={{ display: 'inline-block', width: '100%' }}
+                  tabIndex={0}
                 >
                   {r.clusterName}
                 </span>
@@ -295,7 +301,10 @@ const TabConnectors = () => {
   const isFilterMatch = useCallback((filter: string, item: ConnectorType): boolean => {
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
-      return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
+      const nameMatch = item.name.match(quickSearchRegExp) !== null;
+      const classMatch = item.class.match(quickSearchRegExp) !== null;
+      if (nameMatch) return true;
+      return classMatch;
     } catch (_e) {
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
@@ -324,9 +333,6 @@ const TabConnectors = () => {
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
               <Tooltip hasArrow={true} label={original.name} placement="top">
-                {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
-                {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: legacy MobX pattern */}
-                {/** biome-ignore lint/a11y/useKeyWithClickEvents: legacy MobX pattern */}
                 <span
                   className="hoverLink"
                   onClick={() =>
@@ -334,7 +340,16 @@ const TabConnectors = () => {
                       `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
                     )
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      appGlobal.historyPush(
+                        `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
+                      );
+                    }
+                  }}
+                  role="button"
                   style={{ display: 'inline-block', width: '100%' }}
+                  tabIndex={0}
                 >
                   {original.name}
                 </span>

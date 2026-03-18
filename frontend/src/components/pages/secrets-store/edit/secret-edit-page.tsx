@@ -72,20 +72,18 @@ export const SecretEditPage = () => {
   });
 
   useEffect(() => {
-    if (secret) {
-      const existingLabels = secret.labels
-        ? Object.entries(secret.labels)
-            .filter(([key, value]) => !(key === 'owner' && value === 'console'))
-            .map(([key, value]) => ({ key, value }))
-        : [];
+    const existingLabels = secret?.labels
+      ? Object.entries(secret.labels)
+          .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+          .map(([key, value]) => ({ key, value }))
+      : [];
 
-      form.reset({
-        id: secret.id,
-        value: '',
-        scopes: secret.scopes,
-        labels: existingLabels.length > 0 ? existingLabels : [],
-      });
-    }
+    form.reset({
+      id: secret?.id ?? '',
+      value: '',
+      scopes: secret?.scopes ?? [],
+      labels: existingLabels,
+    });
   }, [secret, form]);
 
   useEffect(() => {
@@ -193,6 +191,7 @@ export const SecretEditPage = () => {
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel required>Scopes</FieldLabel>
               <MultiSelect
+                items={SCOPE_OPTIONS}
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >
@@ -202,8 +201,11 @@ export const SecretEditPage = () => {
                 <MultiSelectContent>
                   <MultiSelectList>
                     {SCOPE_OPTIONS.map((option) => (
-                      <MultiSelectItem key={option.value} {...option}>
-                        {option.label}
+                      <MultiSelectItem key={option.value} label={option.label} value={option.value}>
+                        <span className="flex items-center gap-2">
+                          <option.icon className="size-4" />
+                          {option.label}
+                        </span>
                       </MultiSelectItem>
                     ))}
                   </MultiSelectList>

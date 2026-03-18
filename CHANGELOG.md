@@ -2,6 +2,23 @@
 
 ## Master / Unreleased
 
+## v3.6.0 / 2026-03-10
+- [IMPROVEMENT] Add unlimited and continuous pagination for Kafka message listing.
+- [IMPROVEMENT] Group sidebar navigation items into sections for better organization.
+- [BUGFIX] Fix creation of Mirror Maker 2 (MM2) connectors.
+- [BUGFIX] Fix infinite loading in topic detail pages.
+- [SECURITY] Resolve Snyk dependency vulnerabilities in backend and frontend dependencies.
+
+## v2.8.11 / 2026-03-10
+- [SECURITY] Resolve Snyk security vulnerabilities in frontend dependencies.
+- [SECURITY] Upgrade backend dependencies to address Snyk security vulnerabilities.
+- [IMPROVEMENT] Improve performance of JSON view and Monaco editor in message viewer to reduce record expansion slowness.
+
+## v3.5.3 / 2026-02-26
+- [IMPROVEMENT] Add new observability page with chart support and unified time-range approach.
+- [IMPROVEMENT] Add reload button to connection-lost alert for better UX.
+- [BUGFIX] Fix shadowlinks page crash when feature is disabled.
+
 ## v3.5.2 / 2026-02-11
 - [BUGFIX] Fix Console sending "Authorization: Bearer undefined" header when authentication is not configured.
 - [BUGFIX] Fix pagination for lists exceeding page size causing incomplete data loading.

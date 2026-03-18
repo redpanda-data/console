@@ -13,7 +13,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, CornerDownRight, Wrench } from 'lucide-react';
 import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { prettyBytes } from 'utils/utils';
 
 import { ContentPanel } from './content-panel';
@@ -46,21 +46,18 @@ export type ToolEventCardProps = {
  * - 3-line preview with "Click to expand" for collapsed large payloads
  */
 export const ToolEventCard: FC<ToolEventCardProps> = ({ content, toolName, type, callId, defaultExpanded, testId }) => {
-  const payloadSize = useMemo(() => new Blob([content]).size, [content]);
+  const payloadSize = new Blob([content]).size;
   const shouldDefaultExpand = defaultExpanded ?? payloadSize < SMALL_PAYLOAD_THRESHOLD;
   const [isExpanded, setIsExpanded] = useState(shouldDefaultExpand);
 
-  const preview = useMemo(() => getPreview(content, PREVIEW_LINES), [content]);
+  const preview = getPreview(content, PREVIEW_LINES);
   const hasPreview = content.split('\n').length > PREVIEW_LINES || payloadSize > SMALL_PAYLOAD_THRESHOLD;
 
   const isCall = type === 'call';
   const typeLabel = isCall ? 'Tool Call' : 'Tool Response';
 
   // Generate stable IDs for ARIA relationships
-  const contentId = useMemo(
-    () => `tool-event-content-${toolName.toLowerCase().replace(/\s+/g, '-')}-${type}`,
-    [toolName, type]
-  );
+  const contentId = `tool-event-content-${toolName.toLowerCase().replace(/\s+/g, '-')}-${type}`;
 
   return (
     <ContentPanel className="p-0" data-testid={testId}>

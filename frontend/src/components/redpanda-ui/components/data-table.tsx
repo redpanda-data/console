@@ -1,3 +1,6 @@
+'use no memo';
+
+
 'use client';
 
 import type { Column, ColumnDef, Row, Table } from '@tanstack/react-table';
@@ -20,7 +23,6 @@ import {
   Settings2,
   Timer
 } from 'lucide-react';
-import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 import React from 'react';
 import { z } from 'zod';
 
@@ -558,12 +560,12 @@ export function DataTableViewOptions<TData>({ table, testId }: { table: Table<TD
   return (
     <div data-testid={testId}>
       <DropdownMenu>
-        <DropdownMenuPrimitive.Trigger asChild>
+        <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
             <Settings2 />
             View
           </Button>
-        </DropdownMenuPrimitive.Trigger>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-auto min-w-[150px] max-w-[300px]">
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />

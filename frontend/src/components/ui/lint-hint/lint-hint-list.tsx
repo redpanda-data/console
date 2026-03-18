@@ -13,7 +13,7 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckCircleIcon } from 'components/icons';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { memo } from 'react';
 
 type LintHintListProps = {

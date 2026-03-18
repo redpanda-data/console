@@ -23,7 +23,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Logs, RefreshCcw } from 'lucide-react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MessageSearch, MessageSearchRequest } from 'state/backend-api';
 import { createMessageSearch } from 'state/backend-api';
 import type { TopicMessage } from 'state/rest-interfaces';
@@ -100,9 +100,12 @@ function executeMessageSearch(search: MessageSearch, topicName: string, remoteMc
 export const RemoteMCPLogsTab = () => {
   const { id } = routeApi.useParams();
 
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [logState, setLogState] = useState<{
+    messages: TopicMessage[];
+    isComplete: boolean;
+    error: string | null;
+  }>({ messages: [], isComplete: false, error: null });
+  const { messages, isComplete, error } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -113,16 +116,14 @@ export const RemoteMCPLogsTab = () => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setMessages([]);
-    setIsComplete(false);
-    setError(null);
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false, error: null }));
+    let searchError: string | null = null;
     executeMessageSearch(search, REMOTE_MCP_LOGS_TOPIC, id)
       .catch((x) => {
-        setError(String(x));
+        searchError = String(x);
       })
       .finally(() => {
-        setIsComplete(true);
-        setMessages([...search.messages]);
+        setLogState({ messages: [...search.messages], isComplete: true, error: searchError });
       });
     return () => {
       search.stopSearch();
@@ -133,34 +134,81 @@ export const RemoteMCPLogsTab = () => {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setMessages([...search.messages]);
+        setLogState((prev) => {
+          if (prev.messages.length === search.messages.length) {
+            return prev;
+          }
+          return { ...prev, messages: [...search.messages] };
+        });
       }
     }, 200);
     return () => clearInterval(interval);
   }, []);
 
-  const messageTableColumns: ColumnDef<TopicMessage>[] = [
-    {
-      header: 'Timestamp',
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 200,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview isCompactTopic={false} msg={original} previewFields={() => []} />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  const messageTableColumns: ColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      {
+        header: 'Timestamp',
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
+        size: 200,
+      },
+      {
+        header: 'Value',
+        accessorKey: 'value',
+        cell: ({ row: { original } }) => (
+          <MessagePreview isCompactTopic={false} msg={original} previewFields={() => []} />
+        ),
+        size: Number.MAX_SAFE_INTEGER,
+      },
+    ],
+    []
+  );
 
-  const filteredMessages = messages.filter((x) => isFilterMatch(logsQuickSearch, x));
+  const loadLargeMessage = useCallback(() => Promise.resolve(), []);
+
+  const renderSubComponent = useCallback(
+    ({ row: { original } }: { row: { original: TopicMessage } }) => (
+      <ExpandedMessage
+        loadLargeMessage={loadLargeMessage}
+        msg={original}
+        onDownloadRecord={() => {
+          const blob = new Blob(
+            [
+              JSON.stringify(
+                {
+                  offset: original.offset,
+                  key: original.keyJson,
+                  value: original.valueJson,
+                  timestamp: original.timestamp,
+                  headers: original.headers,
+                },
+                null,
+                2
+              ),
+            ],
+            { type: 'application/json' }
+          );
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `mcp-log-${original.offset}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+      />
+    ),
+    [loadLargeMessage]
+  );
+
+  const filteredMessages = useMemo(
+    () => messages.filter((x) => isFilterMatch(logsQuickSearch, x)),
+    [messages, logsQuickSearch]
+  );
 
   return (
     <Card className="px-0 py-0" size="full">
@@ -216,14 +264,7 @@ export const RemoteMCPLogsTab = () => {
                 loadingText="Loading... This can take several seconds."
                 onSortingChange={setSorting}
                 sorting={sorting}
-                subComponent={({ row: { original } }) => (
-                  <ExpandedMessage
-                    loadLargeMessage={
-                      () => Promise.resolve() // No need to load large messages for this view
-                    }
-                    msg={original}
-                  />
-                )}
+                subComponent={renderSubComponent}
               />
             );
           })()}

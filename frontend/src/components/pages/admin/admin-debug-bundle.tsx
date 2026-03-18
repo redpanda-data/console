@@ -12,7 +12,6 @@
 import { Link } from '@tanstack/react-router';
 import { type FC, useEffect, useState } from 'react';
 
-import { api } from '../../../state/backend-api';
 import '../../../utils/array-extensions';
 import { create } from '@bufbuild/protobuf';
 import { timestampDate, timestampFromDate } from '@bufbuild/protobuf/wkt';
@@ -40,11 +39,13 @@ import { TrashIcon } from 'components/icons';
 import {
   type CreateDebugBundleRequest,
   CreateDebugBundleRequestSchema,
+  DebugBundleStatus_Status,
   LabelSelectorSchema,
   type SCRAMAuth,
   SCRAMAuth_Mechanism,
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { appGlobal } from '../../../state/app-global';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { BrokerWithConfigAndStorage } from '../../../state/rest-interfaces';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
 import { SingleSelect } from '../../misc/select';
@@ -124,18 +125,40 @@ export class AdminDebugBundle extends PageComponent {
 }
 
 const AdminDebugBundleContent: FC = () => {
+  const statuses = useApiStoreHook((s) => s.debugBundleStatuses);
+  const hasDebugProcess = useApiStoreHook((s) => s.hasDebugProcess);
   const [submitInProgress, setSubmitInProgress] = useState(false);
   const [createBundleError, setCreateBundleError] = useState<ErrorResponse | undefined>(undefined);
 
-  if (api.isDebugBundleInProgress) {
+  const isInProgress = statuses.some(
+    (s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.RUNNING
+  );
+  const isExpired =
+    statuses.length > 0 &&
+    !isInProgress &&
+    statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.EXPIRED);
+  const isError =
+    statuses.length > 0 &&
+    !isInProgress &&
+    statuses.every((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.ERROR);
+  const canDownload =
+    statuses.length > 0 &&
+    !isInProgress &&
+    statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.SUCCESS);
+
+  const debugBundleStatus = statuses
+    .map((s) => (s.value.case === 'bundleStatus' ? s.value.value : undefined))
+    .find(Boolean);
+
+  if (isInProgress) {
     return (
       <Box>
         <Header />
-        <Button as={Link} mt={4} px={0} to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`} variant="link">
+        <Button as={Link} mt={4} px={0} to={`/debug-bundle/progress/${debugBundleStatus?.jobId}`} variant="link">
           Bundle generation in progress...
         </Button>
-        {api.debugBundleStatus?.createdAt ? (
-          <Text>Started {timestampDate(api.debugBundleStatus.createdAt).toLocaleString()}</Text>
+        {debugBundleStatus?.createdAt ? (
+          <Text>Started {timestampDate(debugBundleStatus.createdAt).toLocaleString()}</Text>
         ) : null}
       </Box>
     );
@@ -144,24 +167,22 @@ const AdminDebugBundleContent: FC = () => {
   return (
     <Box>
       <Box mt={4}>
-        {Boolean(api.canDownloadDebugBundle || api.isDebugBundleExpired) && (
-          <Text fontWeight="bold">Latest debug bundle:</Text>
-        )}
-        {Boolean(api.isDebugBundleExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
-        {Boolean(api.isDebugBundleError) && (
-          <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>
-        )}
-        {Boolean(api.canDownloadDebugBundle) && <DebugBundleLink showDeleteButton statuses={api.debugBundleStatuses} />}
+        {Boolean(canDownload || isExpired) && <Text fontWeight="bold">Latest debug bundle:</Text>}
+        {Boolean(isExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
+        {Boolean(isError) && <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>}
+        {Boolean(canDownload) && <DebugBundleLink showDeleteButton statuses={statuses} />}
 
-        {api.debugBundleStatuses.length === 0 && <Text>No debug bundle available for download.</Text>}
+        {statuses.length === 0 && <Text>No debug bundle available for download.</Text>}
       </Box>
 
       <Box>
         {Boolean(submitInProgress) && <Box>Generating bundle ...</Box>}
 
         <NewDebugBundleForm
-          debugBundleExists={api.hasDebugProcess}
+          debugBundleExists={hasDebugProcess}
           error={createBundleError}
+          isError={isError}
+          isExpired={isExpired}
           onSubmit={(data: CreateDebugBundleRequest) => {
             setSubmitInProgress(true);
             setCreateBundleError(undefined);
@@ -188,7 +209,9 @@ const NewDebugBundleForm: FC<{
   onSubmit: (data: CreateDebugBundleRequest) => void;
   error?: ErrorResponse;
   debugBundleExists: boolean;
-}> = ({ onSubmit, error, debugBundleExists }) => {
+  isExpired: boolean;
+  isError: boolean;
+}> = ({ onSubmit, error, debugBundleExists, isExpired, isError }) => {
   const [advancedForm, setAdvancedForm] = useState(false);
 
   useEffect(() => {
@@ -559,7 +582,7 @@ const NewDebugBundleForm: FC<{
             label="Label selectors"
           >
             {formState.labelSelectors.map((labelSelector, idx) => (
-              <Grid gap={2} key={`${labelSelector.key}-${labelSelector.value}-${idx}`} templateColumns="1fr 1fr auto">
+              <Grid gap={2} key={`label-${labelSelector.key}-${labelSelector.value}`} templateColumns="1fr 1fr auto">
                 <GridItem>
                   <Text fontSize="sm">Key</Text>
                   <Input
@@ -629,7 +652,7 @@ const NewDebugBundleForm: FC<{
       ) : null}
 
       <Flex gap={2} mt={4}>
-        {debugBundleExists && !api.isDebugBundleExpired && !api.isDebugBundleError ? (
+        {debugBundleExists && !isExpired && !isError ? (
           <ConfirmModal
             heading="Generate new debug bundle"
             onConfirm={() => {

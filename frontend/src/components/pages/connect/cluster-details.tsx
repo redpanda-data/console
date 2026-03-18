@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
@@ -115,7 +117,10 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
   const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo): boolean => {
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
-      return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
+      const nameMatch = item.name.match(quickSearchRegExp) !== null;
+      const classMatch = item.class.match(quickSearchRegExp) !== null;
+      if (nameMatch) return true;
+      return classMatch;
     } catch (_e) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');

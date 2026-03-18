@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { getRouteApi, Link } from '@tanstack/react-router';
@@ -327,8 +329,14 @@ export const AIAgentConfigurationTab = () => {
   const { data: secretsData } = useListSecretsQuery();
   const { data: gatewaysData } = useListGatewaysQuery();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
+  const [editState, setEditState] = useState<{ isEditing: boolean; editedAgentData: LocalAIAgent | null }>({
+    isEditing: false,
+    editedAgentData: null,
+  });
+  const isEditing = editState.isEditing;
+  const editedAgentData = editState.editedAgentData;
+  const setIsEditing = (v: boolean) => setEditState((prev) => ({ ...prev, isEditing: v }));
+  const setEditedAgentData = (v: LocalAIAgent | null) => setEditState((prev) => ({ ...prev, editedAgentData: v }));
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
   const [systemPromptMode, setSystemPromptMode] = useState<MarkdownEditorMode>('editor');
   const [subagentPromptModes, setSubagentPromptModes] = useState<Record<number, MarkdownEditorMode>>({});
@@ -730,81 +738,84 @@ export const AIAgentConfigurationTab = () => {
       }
     }
 
+    const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
+
+    // Build MCP servers map
+    const mcpServersMap: Record<string, { id: string }> = {};
+    for (const serverId of displayData.selectedMcpServers) {
+      mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+    }
+
+    // Build subagents map
+    const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
+    for (const subagent of displayData.subagents) {
+      const trimmedName = subagent.name.trim();
+      if (trimmedName) {
+        const subagentMcpMap: Record<string, { id: string }> = {};
+        for (const serverId of subagent.selectedMcpServers) {
+          subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+        }
+
+        subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
+          description: subagent.description?.trim() ?? '',
+          systemPrompt: subagent.systemPrompt.trim(),
+          mcpServers: subagentMcpMap,
+        });
+      }
+    }
+
+    const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
+    // When using gateway, keep the existing API key reference; otherwise use the selected secret
+    const currentProvider = aiAgentData.aiAgent!.provider;
+    const apiKeyRef =
+      isUsingGateway && currentProvider
+        ? extractProviderInfo(currentProvider).apiKeyTemplate
+        : `\${secrets.${displayData.apiKeySecret}}`;
+    const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
+
+    const gatewayId = displayData.gatewayId;
+    const gatewayConfig =
+      gatewayId && gatewayId.trim() !== ''
+        ? create(AIAgent_GatewayConfigSchema, { virtualGatewayId: gatewayId })
+        : undefined;
+
+    const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
+      if (!card) {
+        return false;
+      }
+      return !!(
+        card.iconUrl ||
+        card.documentationUrl ||
+        card.skills?.length > 0 ||
+        card.provider?.organization ||
+        card.provider?.url
+      );
+    };
+
+    const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
+      !!(provider?.organization || provider?.url);
+
+    const agentCard =
+      displayData.agentCard && hasAgentCardData(displayData.agentCard)
+        ? create(AIAgent_AgentCardSchema, {
+            iconUrl: displayData.agentCard.iconUrl || undefined,
+            documentationUrl: displayData.agentCard.documentationUrl || undefined,
+            provider:
+              displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
+                ? create(AIAgent_AgentCard_ProviderSchema, {
+                    organization: displayData.agentCard.provider.organization || undefined,
+                    url: displayData.agentCard.provider.url || undefined,
+                  })
+                : undefined,
+            skills: displayData.agentCard.skills.map(sanitizeSkill),
+          })
+        : undefined;
+
+    const cpuShares = selectedTier?.cpu || '100m';
+    const memoryShares = selectedTier?.memory || '400M';
+    const serviceAccount = aiAgentData.aiAgent.serviceAccount;
+
     try {
-      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
-
-      // Build MCP servers map
-      const mcpServersMap: Record<string, { id: string }> = {};
-      for (const serverId of displayData.selectedMcpServers) {
-        mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
-      }
-
-      // Build subagents map
-      const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
-      for (const subagent of displayData.subagents) {
-        const trimmedName = subagent.name.trim();
-        if (trimmedName) {
-          const subagentMcpMap: Record<string, { id: string }> = {};
-          for (const serverId of subagent.selectedMcpServers) {
-            subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
-          }
-
-          subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
-            description: subagent.description?.trim() ?? '',
-            systemPrompt: subagent.systemPrompt.trim(),
-            mcpServers: subagentMcpMap,
-          });
-        }
-      }
-
-      const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
-      // When using gateway, keep the existing API key reference; otherwise use the selected secret
-      const currentProvider = aiAgentData.aiAgent!.provider;
-      const apiKeyRef =
-        isUsingGateway && currentProvider
-          ? extractProviderInfo(currentProvider).apiKeyTemplate
-          : `\${secrets.${displayData.apiKeySecret}}`;
-      const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
-
-      const gatewayConfig =
-        displayData.gatewayId && displayData.gatewayId.trim() !== ''
-          ? create(AIAgent_GatewayConfigSchema, {
-              virtualGatewayId: displayData.gatewayId,
-            })
-          : undefined;
-
-      const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
-        if (!card) {
-          return false;
-        }
-        return !!(
-          card.iconUrl ||
-          card.documentationUrl ||
-          card.skills?.length > 0 ||
-          card.provider?.organization ||
-          card.provider?.url
-        );
-      };
-
-      const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
-        !!(provider?.organization || provider?.url);
-
-      const agentCard =
-        displayData.agentCard && hasAgentCardData(displayData.agentCard)
-          ? create(AIAgent_AgentCardSchema, {
-              iconUrl: displayData.agentCard.iconUrl || undefined,
-              documentationUrl: displayData.agentCard.documentationUrl || undefined,
-              provider:
-                displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
-                  ? create(AIAgent_AgentCard_ProviderSchema, {
-                      organization: displayData.agentCard.provider.organization || undefined,
-                      url: displayData.agentCard.provider.url || undefined,
-                    })
-                  : undefined,
-              skills: displayData.agentCard.skills.map(sanitizeSkill),
-            })
-          : undefined;
-
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -815,10 +826,10 @@ export const AIAgentConfigurationTab = () => {
             maxIterations: displayData.maxIterations,
             provider: updatedProvider,
             systemPrompt: displayData.systemPrompt,
-            serviceAccount: aiAgentData.aiAgent.serviceAccount,
+            serviceAccount,
             resources: {
-              cpuShares: selectedTier?.cpu || '100m',
-              memoryShares: selectedTier?.memory || '400M',
+              cpuShares,
+              memoryShares,
             },
             mcpServers: mcpServersMap,
             subagents: subagentsMap,
@@ -1085,8 +1096,7 @@ export const AIAgentConfigurationTab = () => {
                       );
 
                       return (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for subagent items
-                        <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
+                        <AccordionItem key={`subagent-${subagent.name || index}`} value={`subagent-${index}`}>
                           <AccordionTrigger>
                             <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
                           </AccordionTrigger>

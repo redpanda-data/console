@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,11 +24,13 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import type { editor } from 'monaco-editor';
+import type { JSONSchema } from 'monaco-yaml';
 import {
   CreatePipelineRequestSchema,
   DeletePipelineRequestSchema,
@@ -40,7 +45,11 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { useLintPipelineConfigQuery, useListComponentsQuery } from 'react-query/api/connect';
+import {
+  useGetPipelineServiceConfigSchemaQuery,
+  useLintPipelineConfigQuery,
+  useListComponentsQuery,
+} from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
@@ -102,6 +111,59 @@ const pipelineFormSchema = z.object({
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
+function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
+  const userTags: Record<string, string> = {};
+  for (const { key, value } of formTags) {
+    if (key) {
+      userTags[key] = value;
+    }
+  }
+  return userTags;
+}
+
+function warnIfResized(form: ReturnType<typeof useForm<PipelineFormValues>>, cpuShares: string | undefined) {
+  const retUnits = cpuToTasks(cpuShares);
+  const currentUnits = form.getValues('computeUnits');
+  if (retUnits && currentUnits !== retUnits) {
+    toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
+  }
+}
+
+function buildCreateRequest(opts: {
+  name: string;
+  description: string | undefined;
+  computeUnits: number;
+  userTags: Record<string, string>;
+  yamlContent: string;
+}) {
+  const userData = useOnboardingUserDataStore.getState();
+  const tags: Record<string, string> = {
+    __redpanda_cloud_pipeline_type: 'pipeline',
+  };
+
+  let serviceAccountConfig: ReturnType<typeof create<typeof Pipeline_ServiceAccountSchema>> | undefined;
+  if (userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName) {
+    addServiceAccountTags(tags, userData.serviceAccountId, userData.serviceAccountSecretName);
+    serviceAccountConfig = create(Pipeline_ServiceAccountSchema, {
+      clientId: `\${secrets.${userData.serviceAccountSecretName}.client_id}`,
+      clientSecret: `\${secrets.${userData.serviceAccountSecretName}.client_secret}`,
+    });
+  }
+
+  return create(CreatePipelineRequestSchema, {
+    request: create(CreatePipelineRequestSchemaDataPlane, {
+      pipeline: create(PipelineCreateSchema, {
+        displayName: opts.name,
+        configYaml: opts.yamlContent,
+        description: opts.description || '',
+        resources: { cpuShares: tasksToCPU(opts.computeUnits) || '0', memoryShares: '0' },
+        tags: { ...tags, ...opts.userTags },
+        serviceAccount: serviceAccountConfig,
+      }),
+    }),
+  });
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: pipeline page orchestrates many features
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
@@ -113,6 +175,7 @@ export default function PipelinePage() {
   const isServerlessMode = search.serverless === 'true';
   const hasInitializedServerless = useRef(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
@@ -126,17 +189,12 @@ export default function PipelinePage() {
   });
 
   const [yamlContent, setYamlContent] = useState('');
-  const [lintHints, setLintHints] = useState<Record<string, LintHint>>({});
-  const editorInstanceRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null);
+  const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [pendingSecretSearch, setPendingSecretSearch] = useState('');
-
-  const handleEditorMount = useCallback((editorInstance: import('monaco-editor').editor.IStandaloneCodeEditor) => {
-    editorInstanceRef.current = editorInstance;
-  }, []);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -169,6 +227,25 @@ export default function PipelinePage() {
     [componentListResponse]
   );
 
+  // Fetch JSON Schema from backend for YAML editor
+  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
+  const yamlEditorSchema = useMemo(() => {
+    if (!schemaResponse?.configSchema) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(schemaResponse.configSchema);
+      return {
+        definitions: parsed.definitions as Record<string, JSONSchema> | undefined,
+        properties: parsed.properties as Record<string, JSONSchema> | undefined,
+      };
+    } catch {
+      // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
+      return;
+    }
+  }, [schemaResponse]);
+
   const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
   const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
 
@@ -180,38 +257,20 @@ export default function PipelinePage() {
     enabled: mode !== 'view',
   });
 
-  const lintHintCount = Object.keys(lintHints).length;
-  const hasLintHints = lintHintCount > 0;
-
-  // Auto-collapse/expand lint panel, respecting manual user overrides
-  useEffect(() => {
-    if (mode === 'view') {
-      return;
+  // Derive lint hints from response (replaces useEffect + setState)
+  const responseLintHints = useMemo(() => {
+    if (!lintResponse) {
+      return {};
     }
-    const override = userLintOverrideRef.current;
-    if (override === 'expanded' || override === 'collapsed') {
-      return;
+    const hints: Record<string, LintHint> = {};
+    for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
+      hints[`hint_${idx}`] = hint;
     }
-    if (hasLintHints) {
-      lintPanelRef.current?.expand();
-    } else {
-      lintPanelRef.current?.collapse();
-    }
-  }, [hasLintHints, mode]);
-
-  useEffect(() => {
-    if (lintResponse) {
-      try {
-        const hints: Record<string, LintHint> = {};
-        for (const [idx, hint] of Object.entries(lintResponse?.lintHints || [])) {
-          hints[`hint_${idx}`] = hint;
-        }
-        setLintHints(hints);
-      } catch (err) {
-        setLintHints(extractLintHintsFromError(err));
-      }
-    }
+    return hints;
   }, [lintResponse]);
+
+  // Merge response-derived and error-derived lint hints (error hints cleared on next successful response)
+  const lintHints = Object.keys(errorLintHints).length > 0 ? errorLintHints : responseLintHints;
 
   // Initialize form data from pipeline (edit/view)
   useEffect(() => {
@@ -224,14 +283,16 @@ export default function PipelinePage() {
           .filter(([k]) => !isSystemTag(k))
           .map(([key, value]) => ({ key, value })),
       });
-      setYamlContent(pipeline.configYaml);
+      queueMicrotask(() => setYamlContent(pipeline.configYaml));
     }
   }, [pipeline, mode, form]);
 
   // Load persisted YAML from Zustand (CREATE mode only)
+  const hasLoadedPersistedYaml = useRef(false);
   useEffect(() => {
-    if (mode === 'create' && persistedYamlContent) {
-      setYamlContent(persistedYamlContent);
+    if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
+      hasLoadedPersistedYaml.current = true;
+      queueMicrotask(() => setYamlContent(persistedYamlContent));
     }
   }, [mode, persistedYamlContent]);
 
@@ -298,133 +359,59 @@ export default function PipelinePage() {
   }, [mode, clearWizardStore, navigate, router]);
 
   const handleSave = useCallback(async () => {
-    // Validate form
     const isValid = await form.trigger();
     if (!isValid) {
       return;
     }
 
     const { name, description, computeUnits, tags: formTags } = form.getValues();
-    const userTags: Record<string, string> = {};
-    for (const { key, value } of formTags) {
-      if (key) {
-        userTags[key] = value;
-      }
-    }
+    const userTags = buildUserTags(formTags);
+
+    const onError = (err: ConnectError, action: 'create' | 'update') => {
+      setErrorLintHints(extractLintHintsFromError(err));
+      toast.error(formatToastErrorMessageGRPC({ error: err, action, entity: 'pipeline' }));
+    };
 
     if (mode === 'create') {
-      const userData = useOnboardingUserDataStore.getState();
-      const tags: Record<string, string> = {
-        __redpanda_cloud_pipeline_type: 'pipeline',
-      };
-
-      let serviceAccountConfig: ReturnType<typeof create<typeof Pipeline_ServiceAccountSchema>> | undefined;
-      if (userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName) {
-        // Add cloud-managed tags for cleanup
-        addServiceAccountTags(tags, userData.serviceAccountId, userData.serviceAccountSecretName);
-
-        // Service account passed in proto spec, NOT in YAML
-        serviceAccountConfig = create(Pipeline_ServiceAccountSchema, {
-          clientId: `\${secrets.${userData.serviceAccountSecretName}.client_id}`,
-          clientSecret: `\${secrets.${userData.serviceAccountSecretName}.client_secret}`,
-        });
-      }
-
-      const pipelineCreate = create(PipelineCreateSchema, {
-        displayName: name,
-        configYaml: yamlContent,
-        description: description || '',
-        resources: {
-          cpuShares: tasksToCPU(computeUnits) || '0',
-          memoryShares: '0',
-        },
-        tags: { ...tags, ...userTags },
-        serviceAccount: serviceAccountConfig,
-      });
-
-      const createRequestDataPlane = create(CreatePipelineRequestSchemaDataPlane, {
-        pipeline: pipelineCreate,
-      });
-
-      const createRequest = create(CreatePipelineRequestSchema, {
-        request: createRequestDataPlane,
-      });
+      const createRequest = buildCreateRequest({ name, description, computeUnits, userTags, yamlContent });
 
       createMutation(createRequest, {
         onSuccess: (response) => {
-          setLintHints({});
+          setErrorLintHints({});
           clearWizardStore();
           toast.success('Pipeline created');
-
-          const retUnits = cpuToTasks(response.response?.pipeline?.resources?.cpuShares);
-          const currentUnits = form.getValues('computeUnits');
-          if (retUnits && currentUnits !== retUnits) {
-            toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
-          }
+          warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
           const newPipelineId = response.response?.pipeline?.id;
-          if (newPipelineId) {
-            navigate({ to: `/rp-connect/${newPipelineId}` });
-          } else {
-            navigate({ to: '/connect-clusters' });
-          }
+          navigate({ to: newPipelineId ? `/rp-connect/${newPipelineId}` : '/connect-clusters' });
         },
-        onError: (err) => {
-          setLintHints(extractLintHintsFromError(err));
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: err,
-              action: 'create',
-              entity: 'pipeline',
-            })
-          );
-        },
+        onError: (err) => onError(err, 'create'),
       });
     } else if (pipelineId) {
-      const pipelineUpdate = create(PipelineUpdateSchema, {
-        displayName: name,
-        configYaml: yamlContent,
-        description: description || '',
-        resources: {
-          cpuShares: tasksToCPU(computeUnits) || '0',
-          memoryShares: '0',
-        },
-        tags: {
-          ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
-          ...userTags,
-        },
-        serviceAccount: pipeline?.serviceAccount,
-      });
-
-      const updateRequestDataPlane = create(UpdatePipelineRequestSchemaDataPlane, {
-        id: pipelineId,
-        pipeline: pipelineUpdate,
-      });
-
       const updateRequest = create(UpdatePipelineRequestSchema, {
-        request: updateRequestDataPlane,
+        request: create(UpdatePipelineRequestSchemaDataPlane, {
+          id: pipelineId,
+          pipeline: create(PipelineUpdateSchema, {
+            displayName: name,
+            configYaml: yamlContent,
+            description: description || '',
+            resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
+            tags: {
+              ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
+              ...userTags,
+            },
+            serviceAccount: pipeline?.serviceAccount,
+          }),
+        }),
       });
 
       updateMutation(updateRequest, {
         onSuccess: (response) => {
-          setLintHints({});
+          setErrorLintHints({});
           toast.success('Pipeline updated');
-          const retUnits = cpuToTasks(response.response?.pipeline?.resources?.cpuShares);
-          const currentUnits = form.getValues('computeUnits');
-          if (retUnits && currentUnits !== retUnits) {
-            toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
-          }
+          warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
           navigate({ to: `/rp-connect/${pipelineId}` });
         },
-        onError: (err) => {
-          setLintHints(extractLintHintsFromError(err));
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: err,
-              action: 'update',
-              entity: 'pipeline',
-            })
-          );
-        },
+        onError: (err) => onError(err, 'update'),
       });
     }
   }, [form, yamlContent, mode, pipelineId, createMutation, updateMutation, navigate, clearWizardStore, pipeline]);
@@ -600,8 +587,11 @@ export default function PipelinePage() {
                 </div>
               ) : (
                 <YamlEditor
-                  onChange={(value) => handleYamlChange(value || '')}
-                  onEditorMount={handleEditorMount}
+                  onChange={(val) => handleYamlChange(val || '')}
+                  onEditorMount={(editorRef) => {
+                    setEditorInstance(editorRef);
+                  }}
+                  schema={yamlEditorSchema}
                   transparentBackground
                   value={yamlContent}
                 />
@@ -612,7 +602,11 @@ export default function PipelinePage() {
               <ResizablePanel collapsible defaultSize={60}>
                 {pipeline ? (
                   <div className="h-full overflow-y-auto p-4">
-                    <LogsTab pipeline={pipeline} />
+                    {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+                      <LogExplorer pipeline={pipeline} serverless={isServerless()} />
+                    ) : (
+                      <LogsTab pipeline={pipeline} />
+                    )}
                   </div>
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
@@ -627,7 +621,9 @@ export default function PipelinePage() {
                     <Heading className="text-muted-foreground" level={4}>
                       Lint issues
                     </Heading>
-                    {lintHintCount > 0 ? <CountDot count={lintHintCount} variant="error" /> : null}
+                    {Object.keys(lintHints).length > 0 ? (
+                      <CountDot count={Object.keys(lintHints).length} variant="error" />
+                    ) : null}
                   </div>
                   <LintHintList isPending={isLintPending} lintHints={lintHints} />
                 </div>
@@ -663,7 +659,7 @@ export default function PipelinePage() {
       </Dialog>
 
       <PipelineCommandMenu
-        editorInstance={editorInstanceRef.current}
+        editorInstance={editorInstance}
         initialSearch={pendingSecretSearch}
         onCreateSecret={() => {
           setIsCommandMenuOpen(false);

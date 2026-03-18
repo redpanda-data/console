@@ -122,7 +122,7 @@ export class StepSelectPartitions extends Component<{
 
                 return (
                   <Flex alignItems="center" flexDirection="row" gap={2}>
-                    {renderPartitionErrorsForTopic(errors)}
+                    <PartitionErrorsForTopic partitionsWithErrors={errors} />
                     <Text>
                       {topic.partitionCount - errors} / {topic.partitionCount}
                     </Text>
@@ -265,16 +265,17 @@ export class StepSelectPartitions extends Component<{
     if (api.topics === null) {
       return [];
     }
-    return api.topics
-      .map((topic) => {
-        return {
-          ...topic,
-          // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-          partitions: api.topicPartitions.get(topic.topicName)!,
-          activeReassignments: this.inProgress.get(topic.topicName) ?? [],
-        };
-      })
-      .filter((t) => t.activeReassignments.length === 0);
+    return api.topics.flatMap((topic) => {
+      const partitions = api.topicPartitions.get(topic.topicName);
+      if (!partitions) {
+        return []; // skip topics whose partitions haven't loaded yet (e.g. newly created)
+      }
+      const activeReassignments = this.inProgress.get(topic.topicName) ?? [];
+      if (activeReassignments.length > 0) {
+        return []; // skip topics with active reassignments
+      }
+      return [{ ...topic, partitions, activeReassignments }];
+    });
   }
 
   get inProgress() {
@@ -363,7 +364,7 @@ function renderPartitionError(partition: Partition) {
   );
 }
 
-function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
+function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
     <Popover
       content={

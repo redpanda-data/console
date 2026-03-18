@@ -43,12 +43,10 @@ export const ShadowLinkDetailsPage = () => {
   const [failoverTopicName, setFailoverTopicName] = useState<string>('');
 
   useEffect(() => {
-    if (name) {
-      uiState.pageBreadcrumbs = [
-        { title: 'Shadow Links', linkTo: '/shadowlinks' },
-        { title: name, linkTo: '' },
-      ];
-    }
+    uiState.pageBreadcrumbs = [
+      { title: 'Shadow Links', linkTo: '/shadowlinks' },
+      { title: name, linkTo: '' },
+    ];
   }, [name]);
 
   // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)

@@ -39,7 +39,6 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -342,7 +341,7 @@ export const Toolbar = memo(
           </Button>
           {isLoading ? (
             <Skeleton className="h-9 w-48" />
-          ) : isEditable ? (
+          ) : (
             <EditableText
               as="heading"
               autoFocus={autoFocus}
@@ -351,10 +350,9 @@ export const Toolbar = memo(
               headingLevel={1}
               onChange={onNameChange}
               placeholder="New pipeline"
+              readOnly={!isEditable}
               value={displayName}
             />
-          ) : (
-            <Heading level={1}>{displayName || 'New pipeline'}</Heading>
           )}
           {!isLoading && (
             <Button

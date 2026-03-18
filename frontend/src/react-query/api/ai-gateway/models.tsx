@@ -5,18 +5,18 @@
  * Use `useAIGatewayTransport()` hook to create the transport that points to /.redpanda/api/
  */
 
+import {
+  type ListModelsRequest,
+  ListModelsRequestSchema,
+  type ListModelsResponse,
+} from '@buf/redpandadata_ai-gateway.bufbuild_es/redpanda/api/aigateway/v1/models_pb';
+import { listModels } from '@buf/redpandadata_ai-gateway.connectrpc_query-es/redpanda/api/aigateway/v1/models-ModelsService_connectquery';
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import type { ConnectError } from '@connectrpc/connect';
 import { useQuery } from '@connectrpc/connect-query';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useAIGatewayTransport } from 'hooks/use-ai-gateway-transport';
-import {
-  type ListModelsRequest,
-  ListModelsRequestSchema,
-  type ListModelsResponse,
-} from 'protogen/redpanda/api/aigateway/v1/models_pb';
-import { listModels } from 'protogen/redpanda/api/aigateway/v1/models-ModelsService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 const AI_GATEWAY_DEFAULT_PAGE_SIZE = 50;

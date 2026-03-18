@@ -25,10 +25,12 @@ async function refreshEditData(force: boolean) {
     return;
   }
 
-  await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
-
-  await rolesApi.refreshRoles();
-  await rolesApi.refreshRoleMembers();
+  await Promise.allSettled([
+    api.refreshAcls(AclRequestDefault, force),
+    api.refreshServiceAccounts(),
+    rolesApi.refreshRoles(),
+    rolesApi.refreshRoleMembers(),
+  ]);
 }
 
 class RoleEditPage extends PageComponent<{ roleName: string }> {

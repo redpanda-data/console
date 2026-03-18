@@ -1,3 +1,5 @@
+'use no memo';
+
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
@@ -270,48 +272,40 @@ export const ConnectOnboardingWizard = ({
       }
       case WizardStep.ADD_TOPIC: {
         setIsSubmitting(true);
-        try {
-          const result = await addTopicStepRef.current?.triggerSubmit();
-          if (result?.success && result.data) {
-            setTopicData({ topicName: result.data.topicName });
-            regenerateYamlForTopicUserComponents(components);
-          }
-          handleStepResult(result, methods.next);
-        } finally {
-          setIsSubmitting(false);
+        const topicResult = await addTopicStepRef.current?.triggerSubmit().finally(() => setIsSubmitting(false));
+        if (topicResult?.success && topicResult.data) {
+          setTopicData({ topicName: topicResult.data.topicName });
+          regenerateYamlForTopicUserComponents(components);
         }
+        handleStepResult(topicResult, methods.next);
         break;
       }
       case WizardStep.ADD_USER: {
         setIsSubmitting(true);
-        try {
-          const result = await addUserStepRef.current?.triggerSubmit();
-          if (result?.success && result.data) {
-            if ('authMethod' in result.data && result.data.authMethod === 'service-account') {
-              // Service account data
-              setUserData({
-                authMethod: 'service-account',
-                username: '',
-                saslMechanism: 'SCRAM-SHA-256',
-                consumerGroup: '',
-                serviceAccountName: result.data.serviceAccountName,
-                serviceAccountId: result.data.serviceAccountId,
-                serviceAccountSecretName: result.data.serviceAccountSecretName,
-              });
-            } else if ('username' in result.data) {
-              // SASL user data
-              setUserData({
-                authMethod: 'sasl',
-                username: result.data.username,
-                saslMechanism: result.data.saslMechanism,
-                consumerGroup: result.data.consumerGroup || '',
-              });
-            }
-            regenerateYamlForTopicUserComponents(components);
-            methods.next();
+        const userResult = await addUserStepRef.current?.triggerSubmit().finally(() => setIsSubmitting(false));
+        if (userResult?.success && userResult.data) {
+          if ('authMethod' in userResult.data && userResult.data.authMethod === 'service-account') {
+            // Service account data
+            setUserData({
+              authMethod: 'service-account',
+              username: '',
+              saslMechanism: 'SCRAM-SHA-256',
+              consumerGroup: '',
+              serviceAccountName: userResult.data.serviceAccountName,
+              serviceAccountId: userResult.data.serviceAccountId,
+              serviceAccountSecretName: userResult.data.serviceAccountSecretName,
+            });
+          } else if ('username' in userResult.data) {
+            // SASL user data
+            setUserData({
+              authMethod: 'sasl',
+              username: userResult.data.username,
+              saslMechanism: userResult.data.saslMechanism,
+              consumerGroup: userResult.data.consumerGroup || '',
+            });
           }
-        } finally {
-          setIsSubmitting(false);
+          regenerateYamlForTopicUserComponents(components);
+          methods.next();
         }
         break;
       }

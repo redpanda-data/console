@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Link, useLocation } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/redpanda-ui/components/avatar';
 import {
@@ -37,12 +39,12 @@ import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
-import { useStore } from 'zustand';
 
 import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
 import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { api, useApiStore } from '../../state/backend-api';
+import { api, useApiStoreHook } from '../../state/backend-api';
+import { useSupportedFeaturesStore } from '../../state/supported-features';
 import { AppFeatures } from '../../utils/env';
 import { getUserInitials } from '../../utils/string';
 import { UserPreferencesDialog } from '../misc/user-preferences';
@@ -84,7 +86,7 @@ function SidebarCollapseToggle() {
 const UserProfile = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const { state, isMobile, setOpenMobile } = useSidebar();
-  useStore(useApiStore, (s) => s.userData); // re-render when userData changes
+  useApiStoreHook((s) => s.userData); // re-render when userData changes
 
   useEffect(() => {
     api.refreshUserData().catch(() => {
@@ -224,6 +226,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 const SidebarNavigation = () => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  useSupportedFeaturesStore((s) => s.endpointCompatibility); // re-render when endpoint compatibility loads
   const groupedItems = createGroupedSidebarItems();
 
   const handleNavClick = () => {

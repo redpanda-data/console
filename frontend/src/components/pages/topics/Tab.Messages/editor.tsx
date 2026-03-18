@@ -10,7 +10,7 @@
  */
 
 import type { BeforeMount, OnChange, OnMount } from '@monaco-editor/react';
-import type { editor, languages, Uri } from 'monaco-editor';
+import type { editor, typescript, Uri } from 'monaco-editor';
 import { type FC, useRef, useState } from 'react';
 
 import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/kowl-editor';
@@ -24,10 +24,26 @@ const options: editor.IStandaloneEditorConstructionOptions = {
   lineNumbers: 'on',
 };
 
+async function tryTranspile(
+  tsWorkerClient: typescript.TypeScriptWorker,
+  formattedEditorUri: string,
+  fallback: string
+): Promise<string> {
+  try {
+    const result = await tsWorkerClient.getEmitOutput(formattedEditorUri);
+    if (result?.outputFiles?.[0]?.text) {
+      return result.outputFiles[0].text;
+    }
+  } catch (_error) {
+    // Intentionally ignore transpilation errors and fall back to original code
+  }
+  return fallback;
+}
+
 const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
   const [editorUri, setEditorUri] = useState<Uri>();
-  const [tsWorkerClient, setTsWorkerClient] = useState<languages.typescript.TypeScriptWorker>();
+  const [tsWorkerClient, setTsWorkerClient] = useState<typescript.TypeScriptWorker>();
 
   const editorRef = useRef<undefined | IStandaloneCodeEditor>();
 
@@ -87,14 +103,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     let transpiledCode = editorValue; // Fallback to original code if transpilation fails
 
     if (formattedEditorUri && tsWorkerClient) {
-      try {
-        const result = await tsWorkerClient.getEmitOutput(formattedEditorUri);
-        if (result?.outputFiles?.[0]?.text) {
-          transpiledCode = result.outputFiles[0].text;
-        }
-      } catch (_error) {
-        // Intentionally ignore transpilation errors and fall back to original code
-      }
+      transpiledCode = await tryTranspile(tsWorkerClient, formattedEditorUri, editorValue);
     }
 
     // Always call onValueChange, even if transpilation failed

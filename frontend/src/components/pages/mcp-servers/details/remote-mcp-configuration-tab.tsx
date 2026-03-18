@@ -8,6 +8,9 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+'use no memo';
+
 /** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import { create } from '@bufbuild/protobuf';
@@ -17,6 +20,7 @@ import { getRouteApi } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/mcp-servers/$id');
 
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -41,9 +45,8 @@ import { ServiceAccountSection } from 'components/ui/service-account/service-acc
 import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Edit, FileText, Hammer, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   type MCPServer_State,
   MCPServer_Tool_ComponentType,
@@ -93,12 +96,14 @@ export const RemoteMCPConfigurationTab = () => {
   });
   const { data: secretsData } = useListSecretsQuery();
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [uiState, setUiState] = useState({ isEditing: false, isExpandedDialogOpen: false });
+  const isEditing = uiState.isEditing;
+  const isExpandedDialogOpen = uiState.isExpandedDialogOpen;
+  const setIsEditing = (v: boolean) => setUiState((prev) => ({ ...prev, isEditing: v }));
+  const setIsExpandedDialogOpen = (v: boolean) => setUiState((prev) => ({ ...prev, isExpandedDialogOpen: v }));
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
-  const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);
   const [lintHints, setLintHints] = useState<Record<string, Record<string, LintHint>>>({});
-  const [isExpandedDialogOpen, setIsExpandedDialogOpen] = useState(false);
 
   const getResourceTierFromServer = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
@@ -190,43 +195,51 @@ export const RemoteMCPConfigurationTab = () => {
       return;
     }
 
+    const toolsMap: {
+      [key: string]: { componentType: number; configYaml: string };
+    } = {};
+    for (const tool of currentData.tools) {
+      toolsMap[tool.name] = {
+        componentType: tool.componentType,
+        configYaml: tool.config,
+      };
+    }
+
+    // Validate that user tags don't use reserved keys
+    for (const tag of currentData.tags) {
+      const trimmedKey = tag.key.trim();
+      if (isCloudManagedTagKey(trimmedKey)) {
+        toast.error(`Tag key "${trimmedKey}" is reserved for system use`);
+        return;
+      }
+    }
+
+    const tagsMap: { [key: string]: string } = {};
+
+    // Preserve system-generated tags
+    const serviceAccountTag = mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID];
+    if (serviceAccountTag) {
+      tagsMap[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] = serviceAccountTag;
+    }
+    const secretIdTag = mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID];
+    if (secretIdTag) {
+      tagsMap[CLOUD_MANAGED_TAG_KEYS.SECRET_ID] = secretIdTag;
+    }
+
+    // Add user-defined tags
+    for (const tag of currentData.tags) {
+      const trimmedKey = tag.key.trim();
+      const trimmedValue = tag.value.trim();
+      if (trimmedKey && trimmedValue) {
+        tagsMap[trimmedKey] = trimmedValue;
+      }
+    }
+
+    const resourceTier = getResourceTierByName(currentData.resources.tier);
+    const memoryShares = convertToApiMemoryFormat(resourceTier?.memory || '512M');
+    const cpuShares = resourceTier?.cpu || '200m';
+
     try {
-      const toolsMap: {
-        [key: string]: { componentType: number; configYaml: string };
-      } = {};
-      for (const tool of currentData.tools) {
-        toolsMap[tool.name] = {
-          componentType: tool.componentType,
-          configYaml: tool.config,
-        };
-      }
-
-      // Validate that user tags don't use reserved keys
-      for (const tag of currentData.tags) {
-        if (isCloudManagedTagKey(tag.key.trim())) {
-          toast.error(`Tag key "${tag.key.trim()}" is reserved for system use`);
-          return;
-        }
-      }
-
-      const tagsMap: { [key: string]: string } = {};
-
-      // Preserve system-generated tags
-      if (mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]) {
-        tagsMap[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] =
-          mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID];
-      }
-      if (mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID]) {
-        tagsMap[CLOUD_MANAGED_TAG_KEYS.SECRET_ID] = mcpServerData.mcpServer.tags[CLOUD_MANAGED_TAG_KEYS.SECRET_ID];
-      }
-
-      // Add user-defined tags
-      for (const tag of currentData.tags) {
-        if (tag.key.trim() && tag.value.trim()) {
-          tagsMap[tag.key.trim()] = tag.value.trim();
-        }
-      }
-
       await updateMCPServer(
         {
           id,
@@ -236,10 +249,8 @@ export const RemoteMCPConfigurationTab = () => {
             tools: toolsMap,
             tags: tagsMap,
             resources: {
-              memoryShares: convertToApiMemoryFormat(
-                getResourceTierByName(currentData.resources.tier)?.memory || '512M'
-              ),
-              cpuShares: getResourceTierByName(currentData.resources.tier)?.cpu || '200m',
+              memoryShares,
+              cpuShares,
             },
           },
           updateMask: create(FieldMaskSchema, {
@@ -333,13 +344,18 @@ export const RemoteMCPConfigurationTab = () => {
         });
 
         // Sync tool name from YAML label when config changes
+        let parsedYaml: Record<string, unknown> | null = null;
         try {
-          const parsed = parse(updates.config);
-          if (parsed?.label && typeof parsed.label === 'string') {
-            updatedTool.name = parsed.label;
-          }
+          parsedYaml = parse(updates.config);
         } catch {
           // If YAML is invalid, keep the current tool name
+        }
+        if (parsedYaml) {
+          const label = parsedYaml.label;
+          const isString = typeof label === 'string';
+          if (label && isString) {
+            updatedTool.name = label as string;
+          }
         }
       }
 
@@ -403,42 +419,40 @@ export const RemoteMCPConfigurationTab = () => {
 
     const newLintHints: Record<string, Record<string, LintHint>> = {};
     let hasIssues = false;
+    let lintError: unknown = null;
 
-    try {
-      // Lint each tool individually to properly map results
-      for (const tool of currentData.tools) {
-        if (!(tool.name.trim() && tool.config.trim())) {
-          continue;
-        }
+    // Pre-filter tools that have both name and config
+    const toolsToLint = currentData.tools.filter((tool) => {
+      const hasName = tool.name.trim().length > 0;
+      const hasConfig = tool.config.trim().length > 0;
+      return hasName && hasConfig;
+    });
 
-        const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
-          [tool.name.trim()]: {
-            componentType: tool.componentType,
-            configYaml: tool.config,
-          },
-        };
+    for (const tool of toolsToLint) {
+      const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
+        [tool.name.trim()]: {
+          componentType: tool.componentType,
+          configYaml: tool.config,
+        },
+      };
 
-        const response = await lintConfig({
-          tools: toolsMap,
-        });
-
-        // Store hints for this tool
-        if (response.lintHints && Object.keys(response.lintHints).length > 0) {
-          newLintHints[tool.id] = response.lintHints;
-          hasIssues = true;
-        }
+      let response: Awaited<ReturnType<typeof lintConfig>> | null = null;
+      try {
+        response = await lintConfig({ tools: toolsMap });
+      } catch (error) {
+        lintError = error;
+        break;
       }
-
-      setLintHints(newLintHints);
-
-      if (hasIssues) {
-        toast.error('Configuration has linting issues. Please fix them before saving.');
-        return false;
+      const hints = response?.lintHints;
+      const hintCount = hints ? Object.keys(hints).length : 0;
+      if (hintCount > 0 && hints) {
+        newLintHints[tool.id] = hints;
+        hasIssues = true;
       }
+    }
 
-      return true;
-    } catch (error) {
-      const connectError = ConnectError.from(error);
+    if (lintError !== null) {
+      const connectError = ConnectError.from(lintError);
       toast.error(
         formatToastErrorMessageGRPC({
           error: connectError,
@@ -448,6 +462,15 @@ export const RemoteMCPConfigurationTab = () => {
       );
       return true;
     }
+
+    setLintHints(newLintHints);
+
+    if (hasIssues) {
+      toast.error('Configuration has linting issues. Please fix them before saving.');
+      return false;
+    }
+
+    return true;
   };
 
   const handleAddTag = () => {
@@ -521,29 +544,31 @@ export const RemoteMCPConfigurationTab = () => {
       }
     }
 
+    let parsed: Record<string, unknown> | null = null;
     try {
-      const parsed = parse(tool.config);
-      return parsed?.spec?.description || parsed?.meta?.mcp?.description || 'No description available';
+      parsed = parse(tool.config);
     } catch {
       return 'Invalid YAML configuration';
     }
+    const specDesc = parsed?.spec as { description?: string } | undefined;
+    const metaDesc = parsed?.meta as { mcp?: { description?: string } } | undefined;
+    return specDesc?.description || metaDesc?.mcp?.description || 'No description available';
   };
 
   const displayData = getCurrentData();
 
-  const selectedTool = React.useMemo(() => {
+  const selectedTool = (() => {
     if (!(selectedToolId && displayData?.tools)) {
       return null;
     }
     return displayData.tools.find((tool) => tool.id === selectedToolId) || null;
-  }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
+  })();
 
   // Detect secrets in YAML configurations
-  useEffect(() => {
+  const detectedSecrets = React.useMemo(() => {
     const currentData = getCurrentData();
     if (!currentData?.tools) {
-      setDetectedSecrets([]);
-      return;
+      return [];
     }
 
     const allSecretReferences: string[] = [];
@@ -561,8 +586,7 @@ export const RemoteMCPConfigurationTab = () => {
     }
 
     // Get unique secret names
-    const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();
-    setDetectedSecrets(uniqueSecrets);
+    return Array.from(new Set(allSecretReferences)).sort();
   }, [getCurrentData]);
 
   React.useEffect(() => {

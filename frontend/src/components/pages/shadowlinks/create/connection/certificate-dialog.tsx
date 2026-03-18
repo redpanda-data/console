@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -21,7 +23,7 @@ import { Dropzone } from 'components/redpanda-ui/components/dropzone';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { TLS_MODE, type TLSMode } from '../model';
 
@@ -66,22 +68,24 @@ export function CertificateDialog({
   const [pemContent, setPemContent] = useState(existingValue?.pemContent ?? '');
   const [fileName, setFileName] = useState(existingValue?.fileName ?? '');
 
-  // Reset state when dialog opens based on whether we're adding or editing
-  useEffect(() => {
-    if (isOpen) {
-      if (existingValue) {
-        // Edit mode: populate with existing values
-        setFilePath(existingValue.filePath ?? '');
-        setPemContent(existingValue.pemContent ?? '');
-        setFileName(existingValue.fileName ?? '');
-      } else {
-        // Add mode: clear all fields
-        setFilePath('');
-        setPemContent('');
-        setFileName('');
-      }
+  // Tracks previous isOpen value to detect open/close transitions (not derived state)
+  const [prevIsOpen, setPrevIsOpen] = useState(() => isOpen);
+  if (isOpen && !prevIsOpen) {
+    if (existingValue) {
+      // Edit mode: populate with existing values
+      setFilePath(existingValue.filePath ?? '');
+      setPemContent(existingValue.pemContent ?? '');
+      setFileName(existingValue.fileName ?? '');
+    } else {
+      // Add mode: clear all fields
+      setFilePath('');
+      setPemContent('');
+      setFileName('');
     }
-  }, [isOpen, existingValue]);
+  }
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
+  }
 
   const handleFileUpload = useCallback((files: File[]) => {
     if (files.length === 0) {

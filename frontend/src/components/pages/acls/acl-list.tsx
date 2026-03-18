@@ -512,13 +512,12 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
     }
 
     await Promise.allSettled(promises);
-    await rolesApi.refreshRoleMembers();
-    await invalidateUsersCache();
+    await Promise.all([rolesApi.refreshRoleMembers(), invalidateUsersCache()]);
   };
 
   return (
     <>
-      {Boolean(api.isAdminApiConfigured) && (
+      {Boolean(api.isAdminApiConfigured) && !isServerless() && (
         <ChangePasswordModal
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
@@ -534,7 +533,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
           <Icon as={MoreHorizontalIcon} />
         </MenuButton>
         <MenuList>
-          {Boolean(api.isAdminApiConfigured) && (
+          {Boolean(api.isAdminApiConfigured) && !isServerless() && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -674,8 +673,7 @@ const RolesTab = () => {
                         numberOfPrincipals={entry.members.length}
                         onConfirm={async () => {
                           await rolesApi.deleteRole(entry.name, true);
-                          await rolesApi.refreshRoles();
-                          await rolesApi.refreshRoleMembers();
+                          await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
                         }}
                         roleName={entry.name}
                       />

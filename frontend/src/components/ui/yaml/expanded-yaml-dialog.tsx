@@ -19,7 +19,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { useWatch, type UseFormReturn } from 'react-hook-form';
 
 // Form-based props (for create/edit with react-hook-form)

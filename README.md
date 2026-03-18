@@ -18,6 +18,10 @@ https://user-images.githubusercontent.com/23424570/220130537-7b0b8596-0a06-4132-
 - **Kafka connect:** Manage connectors from multiple connect clusters, patch configs, view their current state or restart tasks.
 - **Redpanda Transforms:** Manage and monitor data transforms deployed in your Redpanda cluster.  
 
+## Code Quality
+
+The frontend uses [react-doctor](https://github.com/aidenybai/react-doctor) to statically analyze React components for performance anti-patterns. Run `bun run doctor` in the `frontend/` directory for a local scan. React Doctor also runs automatically in CI on every push and pull request.
+
 ## Getting Started
 
 ### Prerequisites

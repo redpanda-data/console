@@ -61,7 +61,37 @@ tasks:
         cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
       - task: :backend:fmt
       - task: generate-openapi3
+      - task: check-bsr-versions
       - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
+
+  check-bsr-versions:
+    desc: verify BSR SDK package versions match buf.lock commits
+    dir: "{{.ROOT_DIR}}"
+    cmds:
+      - |
+        errors=0
+        # Extract first 12 chars of commit from buf.lock for a module
+        get_commit() { grep -A1 "name: $1" buf.lock | grep 'commit:' | awk '{print $2}' | cut -c1-12; }
+
+        check() {
+          local file="$1" pkg="$2" commit="$3" label="$4"
+          local ver=$(grep "$pkg" "$file" | head -1 || true)
+          if [ -n "$ver" ] && ! echo "$ver" | grep -q "$commit"; then
+            echo "MISMATCH ($label): buf.lock commit $commit not found in: $ver"
+            errors=$((errors + 1))
+          fi
+        }
+
+        COMMON=$(get_commit buf.build/redpandadata/common)
+
+        [ -n "$COMMON" ] && check backend/go.mod "buf.build/gen/go/redpandadata/common/protocolbuffers/go" "$COMMON" "go:common"
+        [ -n "$COMMON" ] && check frontend/package.json "@buf/redpandadata_common.bufbuild_es" "$COMMON" "npm:common"
+
+        if [ $errors -gt 0 ]; then
+          echo "BSR version mismatches found. Update packages to match buf.lock."
+          exit 1
+        fi
+        echo "BSR versions consistent."
 
   generate-openapi3:
     desc: generate protos
@@ -116,7 +146,7 @@ tasks:
     cmds:
       - '{{ .PATH_PREFIX }} go install github.com/mikefarah/yq/v4@v{{.YQ_VERSION}}'
     status:
-      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/yq >/dev/null 2>&1'
+      - '[ -d ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/yq >/dev/null 2>&1'
       - '[[ $({{.BUILD_ROOT}}/bin/go/yq --version) == *"{{.YQ_VERSION}}"* ]]'
 
   install-connect-gateway:
@@ -129,7 +159,7 @@ tasks:
       - |
         {{ .PATH_PREFIX }} go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
     status:
-      - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway >/dev/null 2>&1"
+      - "[ -d '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway >/dev/null 2>&1"
       - '[[ $({{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'
 
   install-protoc-gen-connectrpc-go:

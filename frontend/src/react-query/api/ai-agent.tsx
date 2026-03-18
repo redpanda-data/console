@@ -37,21 +37,17 @@ export const useListAIAgentsQuery = (
   input?: MessageInit<ListAIAgentsRequest>,
   options?: QueryOptions<GenMessage<ListAIAgentsRequest>, ListAIAgentsResponse>
 ) => {
-  // Memoize request to prevent infinite re-renders
-  const listAIAgentsRequest = useMemo(
-    () =>
-      create(ListAIAgentsRequestSchema, {
-        pageToken: '',
-        pageSize: MAX_PAGE_SIZE,
-        filter: input?.filter
-          ? create(ListAIAgentsRequest_FilterSchema, {
-              nameContains: input.filter.nameContains,
-              tags: input.filter.tags,
-            })
-          : undefined,
-      }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>,
-    [input?.filter]
-  );
+  // The React compiler auto-memoizes this to prevent infinite re-renders
+  const listAIAgentsRequest = create(ListAIAgentsRequestSchema, {
+    pageToken: '',
+    pageSize: MAX_PAGE_SIZE,
+    filter: input?.filter
+      ? create(ListAIAgentsRequest_FilterSchema, {
+          nameContains: input.filter.nameContains,
+          tags: input.filter.tags,
+        })
+      : undefined,
+  }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>;
 
   const listAIAgentsResult = useInfiniteQueryWithAllPages(listAIAgents, listAIAgentsRequest, {
     enabled: options?.enabled,

@@ -126,15 +126,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     );
 
     useEffect(() => {
-      if (existingTopicSelected) {
-        if (topicConfig && !topicConfig.error) {
-          const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
-          form.reset(allTopicValues, { keepDefaultValues: false });
-        } else {
-          form.setValue('topicName', existingTopicSelected.topicName, {
-            shouldDirty: false,
-          });
-        }
+      if (!existingTopicSelected) return;
+      if (topicConfig && !topicConfig.error) {
+        const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
+        form.reset(allTopicValues, { keepDefaultValues: false });
+      } else {
+        form.setValue('topicName', existingTopicSelected.topicName, {
+          shouldDirty: false,
+        });
       }
     }, [existingTopicSelected, topicConfig, form]);
 

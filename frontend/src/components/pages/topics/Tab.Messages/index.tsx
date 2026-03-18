@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
@@ -102,6 +104,7 @@ import { appGlobal } from '../../../../state/app-global';
 import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
+import { trimSlidingWindow } from '../../../../utils/message-table-helpers';
 import { sortingParser } from '../../../../utils/sorting-parser';
 import { getTopicFilters, setTopicFilters } from '../../../../utils/topic-filters-session';
 import {
@@ -257,7 +260,18 @@ type LoadLargeMessageParams = {
   topicName: string;
   messagePartitionID: number;
   offset: number;
-  setMessages: React.Dispatch<React.SetStateAction<TopicMessage[]>>;
+  setSearchState: React.Dispatch<
+    React.SetStateAction<{
+      messages: TopicMessage[];
+      messageSearch: ReturnType<typeof createMessageSearch> | null;
+      totalLoadedCount: number;
+      virtualStartIndex: number;
+      windowStartPage: number;
+      loadMoreFailures: number;
+      forceRefresh: number;
+      loadMorePhase: 'idle' | 'loading' | 'loading-visible';
+    }>
+  >;
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
 };
@@ -266,7 +280,7 @@ async function loadLargeMessage({
   topicName,
   messagePartitionID,
   offset,
-  setMessages,
+  setSearchState,
   keyDeserializer,
   valueDeserializer,
 }: LoadLargeMessageParams) {
@@ -289,14 +303,14 @@ async function loadLargeMessage({
   if (result && result.length === 1) {
     // We must update the old message (that still says "payload too large")
     // So we just find its index and replace it in the array we are currently displaying
-    setMessages((currentMessages) => {
-      const indexOfOldMessage = currentMessages.findIndex(
+    setSearchState((prev) => {
+      const indexOfOldMessage = prev.messages.findIndex(
         (x) => x.partitionID === messagePartitionID && x.offset === offset
       );
       if (indexOfOldMessage > -1) {
-        const newMessages = [...currentMessages];
+        const newMessages = [...prev.messages];
         newMessages[indexOfOldMessage] = result[0];
-        return newMessages;
+        return { ...prev, messages: newMessages };
       }
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('LoadLargeMessage: cannot find old message to replace', {
@@ -314,54 +328,9 @@ async function loadLargeMessage({
   }
 }
 
-/**
- * Pure function for sliding-window trimming of messages.
- * Keeps at most maxResults + pageSize messages in the window,
- * trimming only pages before the user's current view.
- */
-function trimSlidingWindow({
-  messages,
-  maxResults,
-  pageSize,
-  currentGlobalPage,
-  windowStartPage,
-  virtualStartIndex,
-}: {
-  messages: TopicMessage[];
-  maxResults: number;
-  pageSize: number;
-  currentGlobalPage: number;
-  windowStartPage: number;
-  virtualStartIndex: number;
-}): { messages: TopicMessage[]; windowStartPage: number; virtualStartIndex: number; trimCount: number } {
-  const maxWindowSize = maxResults + pageSize;
-
-  if (maxResults < pageSize || messages.length <= maxWindowSize) {
-    return { messages, windowStartPage, virtualStartIndex, trimCount: 0 };
-  }
-
-  const excess = messages.length - maxWindowSize;
-  const currentLocalPage = Math.max(0, currentGlobalPage - windowStartPage);
-
-  // Never trim the page the user is currently viewing or the one before it
-  const maxPagesToTrim = Math.max(0, currentLocalPage - 1);
-  const pagesToTrim = Math.min(Math.floor(excess / pageSize), maxPagesToTrim);
-  const trimCount = pagesToTrim * pageSize;
-
-  if (trimCount === 0) {
-    return { messages, windowStartPage, virtualStartIndex, trimCount: 0 };
-  }
-
-  return {
-    messages: messages.slice(trimCount),
-    windowStartPage: windowStartPage + pagesToTrim,
-    virtualStartIndex: virtualStartIndex + trimCount,
-    trimCount,
-  };
-}
-
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
+  'use no memo';
   const toast = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
@@ -524,8 +493,36 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     parseAsBoolean.withDefault(false)
   );
 
-  // Track total loaded count for trimming indicator
-  const [totalLoadedCount, setTotalLoadedCount] = useState(0);
+  // Combined search & pagination state to avoid cascading setState calls
+  const [searchState, setSearchState] = useState<{
+    messages: TopicMessage[];
+    messageSearch: ReturnType<typeof createMessageSearch> | null;
+    totalLoadedCount: number;
+    virtualStartIndex: number;
+    windowStartPage: number;
+    loadMoreFailures: number;
+    forceRefresh: number;
+    loadMorePhase: 'idle' | 'loading' | 'loading-visible';
+  }>({
+    messages: [],
+    messageSearch: null,
+    totalLoadedCount: 0,
+    virtualStartIndex: 0,
+    windowStartPage: 0,
+    loadMoreFailures: 0,
+    forceRefresh: 0,
+    loadMorePhase: 'idle',
+  });
+  const {
+    messages,
+    messageSearch,
+    totalLoadedCount,
+    virtualStartIndex,
+    windowStartPage,
+    loadMoreFailures,
+    forceRefresh,
+    loadMorePhase,
+  } = searchState;
 
   // Modal states
   const [showColumnSettingsModal, setShowColumnSettingsModal] = useState(false);
@@ -540,40 +537,30 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
   const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
 
-  // Message search state
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [virtualStartIndex, setVirtualStartIndex] = useState(0);
   const virtualStartIndexRef = useRef(0); // Ref to avoid stale closures in effects
 
   // Sliding window: the global page number of the first page currently in memory
-  const [windowStartPage, setWindowStartPage] = useState(0);
   const windowStartPageRef = useRef(0);
   const [searchPhase, setSearchPhase] = useState<string | null>(null);
   const [bytesConsumed, setBytesConsumed] = useState(0);
   const [totalMessagesConsumed, setTotalMessagesConsumed] = useState(0);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
-
-  const [messageSearch, setMessageSearch] = useState<ReturnType<typeof createMessageSearch> | null>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
+  const isLoadingMore = loadMorePhase !== 'idle';
+  const showLoadingIndicator = loadMorePhase === 'loading-visible';
 
   useEffect(() => {
-    if (isLoadingMore) {
-      const timer = setTimeout(() => setShowLoadingIndicator(true), 1000);
-      return () => clearTimeout(timer);
-    }
-    setShowLoadingIndicator(false);
-  }, [isLoadingMore]);
+    if (loadMorePhase !== 'loading') return;
+    const timer = setTimeout(() => setSearchState((prev) => ({ ...prev, loadMorePhase: 'loading-visible' })), 1000);
+    return () => clearTimeout(timer);
+  }, [loadMorePhase]);
   const currentSearchRunRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const prevStartOffsetRef = useRef<number>(startOffset);
   const prevMaxResultsRef = useRef<number>(maxResults);
   const prevPageIndexRef = useRef<number>(pageIndex);
-  const [forceRefresh, setForceRefresh] = useState(0);
 
   const currentMessageSearchRef = useRef<ReturnType<typeof createMessageSearch> | null>(null);
   const loadMoreAbortRef = useRef<AbortController | null>(null);
-  const [loadMoreFailures, setLoadMoreFailures] = useState(0);
   const isMountedRef = useRef(true);
   const MAX_LOAD_MORE_RETRIES = 3;
   const lastLoadMoreRef = useRef<{ pageIndex: number; total: number }>({ pageIndex: -1, total: -1 });
@@ -729,7 +716,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setSearchPhase('Searching...');
 
         const search = createMessageSearch();
-        setMessageSearch(search);
+        setSearchState((prev) => ({ ...prev, messageSearch: search }));
         const startTime = Date.now();
 
         const result = await search.startSearch(request, abortSignal).catch((err: Error) => {
@@ -742,14 +729,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         });
 
         const endTime = Date.now();
-        setMessages(result);
-        setWindowStartPage(0);
+        setSearchState((prev) => ({ ...prev, messages: result, windowStartPage: 0 }));
         windowStartPageRef.current = 0;
         if (maxResults < pageSize) {
           lastLoadMoreRef.current = { pageIndex: 0, total: result.length };
         }
         setSearchPhase(null);
-        setElapsedMs(endTime - startTime);
+        setElapsedMs(() => endTime - startTime);
         setBytesConsumed(search.bytesConsumed);
         setTotalMessagesConsumed(search.totalMessagesConsumed);
 
@@ -798,12 +784,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       abortControllerRef.current = new AbortController();
 
       // Clear messages immediately when starting new search
-      setMessages([]);
-      setVirtualStartIndex(0);
-      setWindowStartPage(0);
+      setSearchState((prev) => ({
+        ...prev,
+        messages: [],
+        virtualStartIndex: 0,
+        windowStartPage: 0,
+        loadMoreFailures: 0,
+      }));
       windowStartPageRef.current = 0;
       lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
-      setLoadMoreFailures(0);
 
       try {
         executeMessageSearch(abortControllerRef.current?.signal)
@@ -878,58 +867,83 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       loadMoreAbortRef.current = abortController;
       const capturedMessageSearch = messageSearch;
 
-      setIsLoadingMore(true);
+      setSearchState((prev) => ({ ...prev, loadMorePhase: 'loading' }));
       capturedMessageSearch
         .loadMore(maxResults)
-        .then(() => {
-          if (currentMessageSearchRef.current !== capturedMessageSearch) {
-            return;
-          }
+        .then(
+          (): {
+            type: 'success' | 'stale';
+            trimResult?: ReturnType<typeof trimSlidingWindow>;
+            allMessagesLength?: number;
+          } => {
+            if (currentMessageSearchRef.current !== capturedMessageSearch) {
+              return { type: 'stale' };
+            }
 
-          const allMessages = capturedMessageSearch.messages;
-          setTotalLoadedCount(allMessages.length);
+            const allMessages = capturedMessageSearch.messages;
 
-          const trimResult = trimSlidingWindow({
-            messages: [...allMessages],
-            maxResults,
-            pageSize,
-            currentGlobalPage: pageIndexRef.current,
-            windowStartPage: windowStartPageRef.current,
-            virtualStartIndex: virtualStartIndexRef.current,
-          });
-
-          // Free memory from the MobX observable array
-          if (trimResult.trimCount > 0) {
-            capturedMessageSearch.messages.splice(0, trimResult.trimCount);
-          }
-
-          // Update refs BEFORE setting state to prevent cascading
-          windowStartPageRef.current = trimResult.windowStartPage;
-          virtualStartIndexRef.current = trimResult.virtualStartIndex;
-          lastLoadMoreRef.current = {
-            pageIndex: pageIndexRef.current,
-            total: trimResult.virtualStartIndex + trimResult.messages.length,
-          };
-
-          setWindowStartPage(trimResult.windowStartPage);
-          setVirtualStartIndex(trimResult.virtualStartIndex);
-          setMessages(trimResult.messages);
-          setLoadMoreFailures(0);
-        })
-        .catch((err) => {
-          if (isMountedRef.current && !abortController.signal.aborted) {
-            setLoadMoreFailures((prev) => prev + 1);
-            toastRef.current({
-              title: 'Failed to load more messages',
-              description: (err as Error).message,
-              status: 'error',
-              duration: 5000,
-              isClosable: true,
+            const trimResult = trimSlidingWindow({
+              messages: [...allMessages],
+              maxResults,
+              pageSize,
+              currentGlobalPage: pageIndexRef.current,
+              windowStartPage: windowStartPageRef.current,
+              virtualStartIndex: virtualStartIndexRef.current,
             });
+
+            // Free memory from the MobX observable array
+            if (trimResult.trimCount > 0) {
+              capturedMessageSearch.messages.splice(0, trimResult.trimCount);
+            }
+
+            // Update refs BEFORE setting state to prevent cascading
+            windowStartPageRef.current = trimResult.windowStartPage;
+            virtualStartIndexRef.current = trimResult.virtualStartIndex;
+            lastLoadMoreRef.current = {
+              pageIndex: pageIndexRef.current,
+              total: trimResult.virtualStartIndex + trimResult.messages.length,
+            };
+
+            return { type: 'success', trimResult, allMessagesLength: allMessages.length };
+          },
+          (err: unknown) => {
+            const shouldReport = isMountedRef.current && !abortController.signal.aborted;
+            if (shouldReport) {
+              toastRef.current({
+                title: 'Failed to load more messages',
+                description: (err as Error).message,
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+              });
+            }
+            return { type: 'error' as const, shouldReport };
           }
+        )
+        .then((result) => {
+          setSearchState((prev) => {
+            if (result.type === 'success' && result.trimResult) {
+              return {
+                ...prev,
+                messages: result.trimResult.messages,
+                totalLoadedCount: result.allMessagesLength ?? 0,
+                windowStartPage: result.trimResult.windowStartPage,
+                virtualStartIndex: result.trimResult.virtualStartIndex,
+                loadMoreFailures: 0,
+                loadMorePhase: 'idle',
+              };
+            }
+            if (result.type === 'error') {
+              return {
+                ...prev,
+                loadMoreFailures: result.shouldReport ? prev.loadMoreFailures + 1 : prev.loadMoreFailures,
+                loadMorePhase: 'idle',
+              };
+            }
+            return { ...prev, loadMorePhase: 'idle' };
+          });
         })
         .finally(() => {
-          setIsLoadingMore(false);
           if (loadMoreAbortRef.current === abortController) {
             loadMoreAbortRef.current = null;
           }
@@ -967,23 +981,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       prevPageIndexRef.current > 1 &&
       currentMessageSearchRef.current
     ) {
-      // Clear the message search and state
-      setMessages([]);
-      setMessageSearch(null);
-      // Reset failure count when resetting pagination
-      setLoadMoreFailures(0);
-      // Reset total loaded count
-      setTotalLoadedCount(0);
-      // Reset virtual start index for sliding window
-      setVirtualStartIndex(0);
-      // Reset window start page for sliding window
-      setWindowStartPage(0);
+      // Reset all search and pagination state, trigger forced refresh
+      setSearchState((prev) => ({
+        ...prev,
+        messages: [],
+        messageSearch: null,
+        loadMoreFailures: 0,
+        loadMorePhase: 'idle',
+        totalLoadedCount: 0,
+        virtualStartIndex: 0,
+        windowStartPage: 0,
+        forceRefresh: prev.forceRefresh + 1,
+      }));
       windowStartPageRef.current = 0;
       // Reset last loadMore page tracking
       lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
-      // Clear the search run ref and trigger a forced refresh
+      // Clear the search run ref
       currentSearchRunRef.current = null;
-      setForceRefresh((prev) => prev + 1);
     }
     prevPageIndexRef.current = pageIndex;
     // Note: messageSearch intentionally excluded to avoid circular dependency
@@ -1006,11 +1020,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         topicName: targetTopicName,
         messagePartitionID,
         offset,
-        setMessages,
+        setSearchState,
         keyDeserializer,
         valueDeserializer,
       }),
-    [keyDeserializer, setMessages, valueDeserializer]
+    [keyDeserializer, setSearchState, valueDeserializer]
   );
   const onSetDownloadMessages = useCallback((nextMessages: TopicMessage[]) => {
     setDownloadMessages(nextMessages);
@@ -1250,7 +1264,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const newState = typeof updater === 'function' ? updater(paginationParams) : updater;
       uiState.topicSettings.searchParams.pageSize = newState.pageSize;
       if (continuousPaginationEnabled) {
-        setPageIndex(windowStartPage + newState.pageIndex);
+        setPageIndex(() => windowStartPage + newState.pageIndex);
       } else {
         setPageIndex(newState.pageIndex);
       }
@@ -1829,7 +1843,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   <RegistryButton
                     className="size-8"
                     disabled={boundedLocalPageIndex >= loadedPages - 1 && !hasMoreData}
-                    onClick={() => setPageIndex(pageIndex + 1)}
+                    onClick={() => setPageIndex((prev) => (prev ?? 0) + 1)}
                     size="icon"
                     variant="outline"
                   >

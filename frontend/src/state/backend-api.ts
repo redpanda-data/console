@@ -23,12 +23,9 @@ import {
   isBakedInTrial,
   prettyLicenseType,
 } from 'components/license/license-utils';
-import JSONBigIntFactory from 'json-bigint';
-
-const JSONBigInt = JSONBigIntFactory({ storeAsString: true });
-
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
+import { useStore } from 'zustand';
 import { createStore as zustandCreate } from 'zustand/vanilla';
 
 import { appGlobal } from './app-global';
@@ -47,7 +44,6 @@ import {
   type ClusterInfo,
   type ClusterInfoResponse,
   type ClusterOverview,
-  CompressionType,
   type ConfigEntry,
   ConfigResourceType,
   type ConnectorValidationResult,
@@ -89,7 +85,6 @@ import {
   type PatchConfigsRequest,
   type PatchConfigsResponse,
   type PatchTopicConfigsRequest,
-  type Payload,
   type ProduceRecordsResponse,
   type PublishRecordsRequest,
   type QuotaResponse,
@@ -134,11 +129,7 @@ import {
   SchemaRegistryCapability,
 } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import {
-  PayloadEncoding,
-  PayloadEncodingSchema,
-  CompressionType as ProtoCompressionType,
-} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import type { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type CreateDebugBundleRequest,
   type CreateDebugBundleResponse,
@@ -182,6 +173,7 @@ import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
+import { convertListMessageData } from '../utils/message-converters';
 import { ObjToKv } from '../utils/tsx-utils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
@@ -664,8 +656,8 @@ const _apiCreator = (set: any, get: any) => ({
 
   _msgSearchVersion: 0,
 
-  refreshTopics(force?: boolean) {
-    cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
+  refreshTopics(force?: boolean): Promise<void> {
+    return cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
@@ -813,7 +805,7 @@ const _apiCreator = (set: any, get: any) => ({
         const newTopicPartitions = new Map(get().topicPartitions);
 
         for (const t of response.topics) {
-          if (t.error !== null) {
+          if (t.error !== null && t.error !== undefined) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
             continue;
@@ -1030,8 +1022,12 @@ const _apiCreator = (set: any, get: any) => ({
       if (!r) {
         return null;
       }
-      set({ endpointCompatibility: r.endpointCompatibility });
+      // IMPORTANT: Update useSupportedFeaturesStore BEFORE useApiStore.
+      // The useApiStore subscription in config.ts fires synchronously and calls
+      // updateSidebarItems(), which reads feature support from useSupportedFeaturesStore.
+      // If useApiStore is updated first, the subscription sees stale feature data.
       useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
+      set({ endpointCompatibility: r.endpointCompatibility });
       return r;
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -2047,12 +2043,20 @@ const _apiCreator = (set: any, get: any) => ({
     }
 
     await Promise.all([
-      client.listEnterpriseFeatures({}).then((enterpriseFeaturesResponse) => {
-        set({
-          enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
-          licenseViolation: enterpriseFeaturesResponse.violation,
-        });
-      }),
+      client
+        .listEnterpriseFeatures({})
+        .then((enterpriseFeaturesResponse) => {
+          set({
+            enterpriseFeaturesUsed: enterpriseFeaturesResponse.features,
+            licenseViolation: enterpriseFeaturesResponse.violation,
+          });
+        })
+        .catch((err) => {
+          const errorText = err instanceof Error ? err.message : String(err);
+
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log(`error listing enterprise features: ${errorText}`);
+        }),
       client
         .listLicenses({})
         .then((licensesResponse) => {
@@ -2869,223 +2873,7 @@ export function createMessageSearch() {
 
                 break;
               case 'data': {
-                // TODO I would guess we should replace the rest interface types and just utilize the generated Connect types
-                // this is my hacky way of attempting to get things working by converting the Connect types
-                // to the rest interface types that are hooked up to other things
-
-                const m = {} as TopicMessage;
-                m.partitionID = res.controlMessage.value.partitionId;
-
-                m.compression = CompressionType.Unknown;
-                switch (res.controlMessage.value.compression) {
-                  case ProtoCompressionType.UNCOMPRESSED:
-                    m.compression = CompressionType.Uncompressed;
-                    break;
-                  case ProtoCompressionType.GZIP:
-                    m.compression = CompressionType.GZip;
-                    break;
-                  case ProtoCompressionType.SNAPPY:
-                    m.compression = CompressionType.Snappy;
-                    break;
-                  case ProtoCompressionType.LZ4:
-                    m.compression = CompressionType.LZ4;
-                    break;
-                  case ProtoCompressionType.ZSTD:
-                    m.compression = CompressionType.ZStd;
-                    break;
-                  default:
-                    m.compression = CompressionType.Unknown;
-                    break;
-                }
-
-                m.offset = Number(res.controlMessage.value.offset);
-                m.timestamp = Number(res.controlMessage.value.timestamp);
-                m.isTransactional = res.controlMessage.value.isTransactional;
-                m.headers = [];
-                for (const header of res.controlMessage.value.headers) {
-                  m.headers.push({
-                    key: header.key,
-                    value: {
-                      payload: JSON.stringify(new TextDecoder().decode(header.value)),
-                      encoding: 'text',
-                      schemaId: 0,
-                      size: header.value.length,
-                      isPayloadNull: header.value === null,
-                    },
-                  });
-                }
-
-                // key
-                const key = res.controlMessage.value.key;
-                const keyPayload = new TextDecoder().decode(key?.normalizedPayload);
-
-                m.key = {} as Payload;
-                m.key.rawBytes = key?.originalPayload;
-
-                switch (key?.encoding) {
-                  case PayloadEncoding.NULL:
-                    m.key.encoding = 'null';
-                    break;
-                  case PayloadEncoding.BINARY:
-                    m.key.encoding = 'binary';
-                    break;
-                  case PayloadEncoding.XML:
-                    m.key.encoding = 'xml';
-                    break;
-                  case PayloadEncoding.AVRO:
-                    m.key.encoding = 'avro';
-                    break;
-                  case PayloadEncoding.JSON:
-                    m.key.encoding = 'json';
-                    break;
-                  case PayloadEncoding.JSON_SCHEMA:
-                    m.key.encoding = 'jsonSchema';
-                    break;
-                  case PayloadEncoding.PROTOBUF:
-                    m.key.encoding = 'protobuf';
-                    break;
-                  case PayloadEncoding.PROTOBUF_SCHEMA:
-                    m.key.encoding = 'protobufSchema';
-                    break;
-                  case PayloadEncoding.PROTOBUF_BSR:
-                    m.key.encoding = 'protobufBSR';
-                    break;
-                  case PayloadEncoding.MESSAGE_PACK:
-                    m.key.encoding = 'msgpack';
-                    break;
-                  case PayloadEncoding.TEXT:
-                    m.key.encoding = 'text';
-                    break;
-                  case PayloadEncoding.UTF8:
-                    m.key.encoding = 'utf8WithControlChars';
-                    break;
-                  case PayloadEncoding.UINT:
-                    m.key.encoding = 'uint';
-                    break;
-                  case PayloadEncoding.SMILE:
-                    m.key.encoding = 'smile';
-                    break;
-                  case PayloadEncoding.CONSUMER_OFFSETS:
-                    m.key.encoding = 'consumerOffsets';
-                    break;
-                  case PayloadEncoding.CBOR:
-                    m.key.encoding = 'cbor';
-                    break;
-                  default:
-                    // biome-ignore lint/suspicious/noConsole: intentional console usage
-                    console.log('unhandled key encoding type', {
-                      encoding: key?.encoding,
-                      encodingName:
-                        key?.encoding !== null && key?.encoding !== undefined
-                          ? PayloadEncodingSchema.values.find((value) => value.number === key?.encoding)?.localName
-                          : undefined,
-                      message: res,
-                    });
-                }
-
-                m.key.isPayloadNull = key?.encoding === PayloadEncoding.NULL;
-                m.key.payload = keyPayload;
-                m.key.normalizedPayload = key?.normalizedPayload;
-
-                // Only parse JSON payloads with JSONBigInt to preserve large integer precision
-                try {
-                  m.key.payload = JSONBigInt.parse(keyPayload);
-                } catch {
-                  // no op - payload may not be valid JSON
-                }
-
-                m.key.troubleshootReport = key?.troubleshootReport;
-                m.key.schemaId = key?.schemaId ?? 0;
-                m.keyJson = keyPayload;
-                m.key.size = Number(key?.payloadSize);
-                m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
-
-                // value
-                const val = res.controlMessage.value.value;
-                const valuePayload = new TextDecoder().decode(val?.normalizedPayload);
-
-                m.value = {} as Payload;
-                m.value.payload = valuePayload;
-                m.value.normalizedPayload = val?.normalizedPayload;
-                m.value.rawBytes = val?.originalPayload;
-
-                switch (val?.encoding) {
-                  case PayloadEncoding.NULL:
-                    m.value.encoding = 'null';
-                    break;
-                  case PayloadEncoding.BINARY:
-                    m.value.encoding = 'binary';
-                    break;
-                  case PayloadEncoding.XML:
-                    m.value.encoding = 'xml';
-                    break;
-                  case PayloadEncoding.AVRO:
-                    m.value.encoding = 'avro';
-                    break;
-                  case PayloadEncoding.JSON:
-                    m.value.encoding = 'json';
-                    break;
-                  case PayloadEncoding.JSON_SCHEMA:
-                    m.value.encoding = 'jsonSchema';
-                    break;
-                  case PayloadEncoding.PROTOBUF:
-                    m.value.encoding = 'protobuf';
-                    break;
-                  case PayloadEncoding.PROTOBUF_SCHEMA:
-                    m.value.encoding = 'protobufSchema';
-                    break;
-                  case PayloadEncoding.PROTOBUF_BSR:
-                    m.value.encoding = 'protobufBSR';
-                    break;
-                  case PayloadEncoding.MESSAGE_PACK:
-                    m.value.encoding = 'msgpack';
-                    break;
-                  case PayloadEncoding.TEXT:
-                    m.value.encoding = 'text';
-                    break;
-                  case PayloadEncoding.UTF8:
-                    m.value.encoding = 'utf8WithControlChars';
-                    break;
-                  case PayloadEncoding.UINT:
-                    m.value.encoding = 'uint';
-                    break;
-                  case PayloadEncoding.SMILE:
-                    m.value.encoding = 'smile';
-                    break;
-                  case PayloadEncoding.CONSUMER_OFFSETS:
-                    m.value.encoding = 'consumerOffsets';
-                    break;
-                  case PayloadEncoding.CBOR:
-                    m.value.encoding = 'cbor';
-                    break;
-                  default:
-                    // biome-ignore lint/suspicious/noConsole: intentional console usage
-                    console.log('unhandled value encoding type', {
-                      encoding: val?.encoding,
-                      encodingName:
-                        val?.encoding !== null && val?.encoding !== undefined
-                          ? PayloadEncodingSchema.values.find((value) => value.number === val?.encoding)?.localName
-                          : undefined,
-                      message: res,
-                    });
-                }
-
-                m.value.schemaId = val?.schemaId ?? 0;
-                m.value.troubleshootReport = val?.troubleshootReport;
-                m.value.isPayloadNull = val?.encoding === PayloadEncoding.NULL;
-                m.valueJson = valuePayload;
-                m.value.isPayloadTooLarge = val?.isPayloadTooLarge;
-
-                // Only parse JSON payloads with JSONBigInt to preserve large integer precision
-                try {
-                  m.value.payload = JSONBigInt.parse(valuePayload);
-                } catch {
-                  // no op - payload may not be valid JSON
-                }
-
-                m.valueJson = valuePayload;
-                m.value.size = Number(val?.payloadSize);
-
+                const m = convertListMessageData(res.controlMessage.value);
                 this.messages.push(m);
                 break;
               }
@@ -3336,8 +3124,14 @@ function addError(err: Error) {
   useApiStore.setState((s: any) => ({ errors: [...s.errors, err] }));
 }
 
+/** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
+function useApiStoreHook<T>(selector: (state: ReturnType<typeof _apiCreator>) => T): T {
+  return useStore(useApiStore, selector);
+}
+
 export {
   useApiStore,
+  useApiStoreHook,
   useRolesStore,
   usePipelinesStore,
   useKnowledgebaseStore,

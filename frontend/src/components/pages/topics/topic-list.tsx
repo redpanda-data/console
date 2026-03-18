@@ -41,6 +41,7 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { CreateTopicModal } from './CreateTopicModal/create-topic-modal';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/use-pagination-params';
+import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
@@ -86,6 +87,10 @@ const TopicList: FC = () => {
 
     refetchTopics();
   }, [refetchTopics]);
+
+  useEffect(() => {
+    appGlobal.onRefresh = refreshData;
+  }, [refreshData]);
 
   const topics = useMemo(() => {
     let filteredTopics = data.topics ?? [];
@@ -239,7 +244,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                     params={{ topicName: encodeURIComponent(topic.topicName) }}
                     to="/topics/$topicName"
                   >
-                    {renderName(topic)}
+                    <TopicName topic={topic} />
                   </Link>
                   {!!leaderLessPartitions && (
                     <Tooltip
@@ -310,7 +315,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
         ]}
         data={topics}
         onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-          uiSettings.topicList.pageSize = pageSize;
+          Object.assign(uiSettings.topicList, { pageSize });
           editQuery((query) => {
             query.page = String(pageIndex);
             query.pageSize = String(pageSize);
@@ -339,7 +344,7 @@ const iconClosedEye = (
   </span>
 );
 
-const renderName = (topic: Topic) => {
+const TopicName = ({ topic }: { topic: Topic }) => {
   const actions = topic.allowedActions;
 
   if (!actions || actions[0] === 'all') {

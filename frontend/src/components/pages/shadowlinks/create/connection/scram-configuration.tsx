@@ -24,7 +24,7 @@ import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/sec
 import { isEmbedded } from 'config';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
@@ -70,8 +70,9 @@ export const ScramConfiguration = () => {
     return match?.[1] || '';
   };
 
-  useEffect(() => {
-    if (useScram) {
+  const handleScramToggle = (checked: boolean) => {
+    setValue('useScram', checked);
+    if (checked) {
       // Only set default values if no existing credentials
       const existingCredentials = getValues('scramCredentials');
       if (!(existingCredentials?.username || existingCredentials?.password)) {
@@ -84,7 +85,7 @@ export const ScramConfiguration = () => {
     } else {
       setValue('scramCredentials', undefined);
     }
-  }, [useScram, setValue, getValues]);
+  };
 
   return (
     <Card size="full">
@@ -94,11 +95,11 @@ export const ScramConfiguration = () => {
       <FormField
         control={control}
         name="useScram"
-        render={({ field }) => (
+        render={() => (
           <FormItem className="flex flex-row items-center gap-3">
             <FormLabel>Use SCRAM authentication</FormLabel>
             <FormControl>
-              <Switch checked={field.value} onCheckedChange={field.onChange} testId="scram-toggle" />
+              <Switch checked={useScram} onCheckedChange={handleScramToggle} testId="scram-toggle" />
             </FormControl>
           </FormItem>
         )}

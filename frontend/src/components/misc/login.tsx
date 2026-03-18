@@ -115,9 +115,15 @@ const NoneAuthComponent = ({ hasMethodsError }: { hasMethodsError: boolean }) =>
 };
 
 const BasicAuthComponent = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [mechanism, setMechanism] = useState(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256);
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: '',
+    mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+  });
+  const { username, password, mechanism } = credentials;
+  const setUsername = (v: string) => setCredentials((prev) => ({ ...prev, username: v }));
+  const setPassword = (v: string) => setCredentials((prev) => ({ ...prev, password: v }));
+  const setMechanism = (v: SASLMechanism) => setCredentials((prev) => ({ ...prev, mechanism: v }));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
 

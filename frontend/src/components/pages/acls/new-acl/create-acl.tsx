@@ -1,4 +1,7 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
+
+'use no memo';
+
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Card,
@@ -20,7 +23,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
@@ -568,7 +571,7 @@ const SharedConfiguration = ({
   const [principalType, setPrincipalType] = useState(
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
-  const [hostType, setHostType] = useState<HostType>(stringToHostType(sharedConfig.host));
+  const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
 
   return (
     <Card size={'full'}>
@@ -742,6 +745,7 @@ export default function CreateACL({
     host: propSharedConfig?.host ?? '*',
   });
 
+  const ruleIdCounter = useRef(2);
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
       {
@@ -767,7 +771,7 @@ export default function CreateACL({
 
   useEffect(() => {
     if (parsePrincipal(sharedConfig.principal).type) {
-      setPrincipalError('');
+      queueMicrotask(() => setPrincipalError(''));
     }
   }, [sharedConfig.principal]);
 
@@ -779,7 +783,7 @@ export default function CreateACL({
     }
 
     const newRule = {
-      id: Date.now(),
+      id: ruleIdCounter.current++,
       resourceType: defaultResourceType as ResourceType,
       mode: ModeCustom,
       selectorType: ResourcePatternTypeAny,

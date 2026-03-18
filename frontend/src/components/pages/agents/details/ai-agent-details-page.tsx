@@ -9,13 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { AlertCircle, Loader2, Network, Search, Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
 
@@ -38,7 +40,7 @@ export const AIAgentDetailsPage = () => {
   // Use fine-grained selector to only re-render when tab changes
   const tab = routeApi.useSearch({ select: (s) => s.tab });
 
-  const [activeTab, setActiveTab] = useState(tab || 'configuration');
+  const activeTab = tab || 'configuration';
 
   const { data: aiAgentData, isLoading, error } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
 
@@ -48,16 +50,7 @@ export const AIAgentDetailsPage = () => {
     }
   }, [aiAgentData]);
 
-  useEffect(() => {
-    if (tab) {
-      setActiveTab(tab);
-    } else {
-      setActiveTab('configuration');
-    }
-  }, [tab]);
-
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
     navigate({ search: { tab: value } });
   };
 

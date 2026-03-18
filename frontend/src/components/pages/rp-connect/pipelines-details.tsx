@@ -13,8 +13,10 @@ import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { useEffect, useRef, useState } from 'react';
+import { RefreshCcw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -40,6 +42,7 @@ import {
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
+import { isFilterMatch } from '../../../utils/message-table-helpers';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -259,43 +262,50 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-export const LogsTab = (p: { pipeline: Pipeline }) => {
+export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; variant?: 'ghost' | 'card' }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
+    messages: [],
+    isComplete: false,
+  });
+  const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional to force message search to re-run when pipeline.id and refreshCount changes
   useEffect(() => {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setMessages([]);
-    setIsComplete(false);
-    executeMessageSearch(search, topicName, p.pipeline.id).finally(() => {
-      setIsComplete(true);
-      setMessages([...search.messages]);
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
+    executeMessageSearch(search, topicName, pipeline.id).finally(() => {
+      setLogState({ messages: [...search.messages], isComplete: true });
     });
     return () => {
       search.stopSearch();
     };
-  }, [refreshCount]);
+  }, [refreshCount, pipeline.id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setMessages([...search.messages]);
+        setLogState((prev) => {
+          if (prev.messages.length === search.messages.length) {
+            return prev;
+          }
+          return { ...prev, messages: [...search.messages] };
+        });
       }
     }, 200);
     return () => clearInterval(interval);
   }, []);
 
-  const loadLargeMessage = async (msgTopicName: string, partitionID: number, offset: number) => {
+  const loadLargeMessage = useCallback(async (msgTopicName: string, partitionID: number, offset: number) => {
     const search = createMessageSearch();
     const searchReq: MessageSearchRequest = {
       filterInterpreterCode: '',
@@ -312,62 +322,80 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
     const loadedMessages = await search.startSearch(searchReq);
 
     if (loadedMessages && loadedMessages.length === 1) {
-      setMessages((prev) => {
-        const idx = prev.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
-        if (idx === -1) return prev;
-        const updated = [...prev];
+      setLogState((prev) => {
+        const idx = prev.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
+        if (idx === -1) {
+          return prev;
+        }
+        const updated = [...prev.messages];
         updated[idx] = loadedMessages[0];
-        return updated;
+        return { ...prev, messages: updated };
       });
     } else {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
-  };
+  }, []);
 
   const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: ColumnDef<TopicMessage>[] = [
-    {
-      header: 'Timestamp',
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 30,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          msg={original}
-          previewFields={() => []}
-        />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
+  const messageTableColumns: ColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      {
+        header: 'Timestamp',
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
+        size: 30,
+      },
+      {
+        header: 'Value',
+        accessorKey: 'value',
+        cell: ({ row: { original } }) => (
+          <MessagePreview isCompactTopic={isCompactTopic} msg={original} previewFields={() => []} />
+        ),
+        size: Number.MAX_SAFE_INTEGER,
+      },
+    ],
+    [isCompactTopic]
+  );
 
-  const filteredMessages = messages.filter((x) => {
-    if (!logsQuickSearch) {
-      return true;
-    }
-    return isFilterMatch(logsQuickSearch, x);
-  });
+  const renderSubComponent = useCallback(
+    ({ row: { original } }: { row: { original: TopicMessage } }) => (
+      <ExpandedMessage
+        loadLargeMessage={() =>
+          loadLargeMessage(searchRef.current?.searchRequest?.topicName ?? '', original.partitionID, original.offset)
+        }
+        msg={original}
+      />
+    ),
+    [loadLargeMessage]
+  );
+
+  const filteredMessages = useMemo(
+    () =>
+      messages.filter((x) => {
+        if (!logsQuickSearch) {
+          return true;
+        }
+        return isFilterMatch(logsQuickSearch, x);
+      }),
+    [messages, logsQuickSearch]
+  );
 
   return (
     <>
       <Box my="1rem">The logs below are for the last five hours.</Box>
 
-      <Section minWidth="800px">
-        <Flex mb="6">
+      <Section borderColor={variant === 'ghost' ? 'transparent' : undefined} minWidth="800px" overflowY="auto">
+        <div className="mb-6 flex items-center justify-between gap-2">
           <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
-          <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
-            Refresh logs
-          </Button>
-        </Flex>
+          <RegistryButton onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">
+            <RefreshCcw />
+          </RegistryButton>
+        </div>
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
@@ -379,37 +407,12 @@ export const LogsTab = (p: { pipeline: Pipeline }) => {
           sorting={sorting}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-          subComponent={({ row: { original } }) => (
-            <ExpandedMessage
-              loadLargeMessage={() =>
-                loadLargeMessage(
-                  searchRef.current?.searchRequest?.topicName ?? '',
-                  original.partitionID,
-                  original.offset
-                )
-              }
-              msg={original}
-            />
-          )}
+          subComponent={renderSubComponent}
         />
       </Section>
     </>
   );
 };
-
-function isFilterMatch(str: string, m: TopicMessage) {
-  const lowerStr = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  if (m.keyJson?.toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  if (m.valueJson?.toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  return false;
-}
 
 function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
   const filterCode: string = `return key == "${pipelineId}";`;

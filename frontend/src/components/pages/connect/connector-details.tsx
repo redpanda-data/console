@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+'use no memo';
+
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';
@@ -85,7 +87,7 @@ const KafkaConnectorMain = ({
   connectorName: string;
   refreshData: (force: boolean) => Promise<void>;
 }) => {
-  const [connectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
+  const [connectClusterStore] = useState(() => ConnectClusterStore.getInstance(clusterName));
 
   const logsTopic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
 
@@ -674,8 +676,11 @@ const LogsTab = (p: {
   const topicName = LOGS_TOPIC_NAME;
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
-  const [messages, setMessages] = useState<TopicMessage[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
+    messages: [],
+    isComplete: false,
+  });
+  const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -685,16 +690,14 @@ const LogsTab = (p: {
     searchRef.current?.stopSearch();
     const search = createMessageSearch();
     searchRef.current = search;
-    setMessages([]);
-    setIsComplete(false);
+    queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
     executeMessageSearch(search, topicName, connectorName)
       .catch((x) => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('error loading connector logs', x);
       })
       .finally(() => {
-        setIsComplete(true);
-        setMessages([...search.messages]);
+        setLogState({ messages: [...search.messages], isComplete: true });
       });
     return () => {
       search.stopSearch();
@@ -705,7 +708,7 @@ const LogsTab = (p: {
     const interval = setInterval(() => {
       const search = searchRef.current;
       if (search) {
-        setMessages([...search.messages]);
+        setLogState((prev) => ({ ...prev, messages: [...search.messages] }));
       }
     }, 200);
     return () => clearInterval(interval);
@@ -728,11 +731,11 @@ const LogsTab = (p: {
     const result = await search.startSearch(searchReq);
 
     if (result && result.length === 1) {
-      setMessages((prev) => {
-        const updated = [...prev];
+      setLogState((prev) => {
+        const updated = [...prev.messages];
         const idx = updated.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (idx > -1) updated[idx] = result[0];
-        return updated;
+        return { ...prev, messages: updated };
       });
     } else {
       // biome-ignore lint/suspicious/noConsole: intentional console usage

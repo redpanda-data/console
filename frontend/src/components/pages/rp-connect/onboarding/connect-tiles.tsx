@@ -380,35 +380,34 @@ export const ConnectTiles = memo(
                     control={form.control}
                     name="connectionName"
                     render={({ field }) => {
-                      const renderTiles = () =>
-                        filteredComponents.map((component) => {
-                          const uniqueKey = `${component.type}-${component.name}`;
-                          const isChecked =
-                            field.value === component.name && form.getValues('connectionType') === component.type;
+                      const tiles = filteredComponents.map((component) => {
+                        const uniqueKey = `${component.type}-${component.name}`;
+                        const isChecked =
+                          field.value === component.name && form.getValues('connectionType') === component.type;
 
-                          return (
-                            <ConnectTile
-                              checked={isChecked}
-                              component={component}
-                              key={uniqueKey}
-                              onChange={() => {
-                                if (isChecked) {
-                                  // Unselect if already selected
-                                  field.onChange('');
-                                  form.setValue('connectionType', '' as ConnectComponentType, { shouldValidate: true });
-                                } else {
-                                  // Select the component
-                                  field.onChange(component.name);
-                                  form.setValue('connectionType', component.type as ConnectComponentType, {
-                                    shouldValidate: true,
-                                  });
-                                  onChange?.(component.name, component.type as ConnectComponentType);
-                                }
-                              }}
-                              uniqueKey={uniqueKey}
-                            />
-                          );
-                        });
+                        return (
+                          <ConnectTile
+                            checked={isChecked}
+                            component={component}
+                            key={uniqueKey}
+                            onChange={() => {
+                              if (isChecked) {
+                                // Unselect if already selected
+                                field.onChange('');
+                                form.setValue('connectionType', '' as ConnectComponentType, { shouldValidate: true });
+                              } else {
+                                // Select the component
+                                field.onChange(component.name);
+                                form.setValue('connectionType', component.type as ConnectComponentType, {
+                                  shouldValidate: true,
+                                });
+                                onChange?.(component.name, component.type as ConnectComponentType);
+                              }
+                            }}
+                            uniqueKey={uniqueKey}
+                          />
+                        );
+                      });
 
                       const hasResults = filteredComponents.length > 0;
                       const showSkeleton = isLoading;
@@ -429,15 +428,13 @@ export const ConnectTiles = memo(
                       } else if (showSkeleton) {
                         content = (
                           <ConnectTilesSkeleton gridCols={gridCols} tileCount={PRIORITY_COMPONENTS.length}>
-                            {renderTiles()}
+                            {tiles}
                           </ConnectTilesSkeleton>
                         );
                       } else {
                         content = (
                           <Choicebox>
-                            <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>
-                              {renderTiles()}
-                            </div>
+                            <div className={cn('grid-auto-rows-fr grid gap-2', `grid-cols-${gridCols}`)}>{tiles}</div>
                           </Choicebox>
                         );
                       }

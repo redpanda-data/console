@@ -47,6 +47,8 @@ export type AclPrincipalGroup = {
 };
 
 export type TopicACLs = {
+  /** Stable unique key for React list rendering */
+  _key: string;
   patternType: AclStrResourcePatternType;
   selector: string;
   all: AclStrPermission;
@@ -64,6 +66,8 @@ export type TopicACLs = {
 };
 
 export type ConsumerGroupACLs = {
+  /** Stable unique key for React list rendering */
+  _key: string;
   patternType: AclStrResourcePatternType;
   selector: string;
   all: AclStrPermission;
@@ -76,6 +80,8 @@ export type ConsumerGroupACLs = {
 };
 
 export type TransactionalIdACLs = {
+  /** Stable unique key for React list rendering */
+  _key: string;
   patternType: AclStrResourcePatternType;
   selector: string;
   all: AclStrPermission;
@@ -103,6 +109,7 @@ export type ResourceACLs = TopicACLs | ConsumerGroupACLs | TransactionalIdACLs |
 
 export function createEmptyTopicAcl(): TopicACLs {
   return {
+    _key: crypto.randomUUID(),
     selector: '*',
     patternType: 'Any',
     all: 'Any',
@@ -121,6 +128,7 @@ export function createEmptyTopicAcl(): TopicACLs {
 
 export function createEmptyConsumerGroupAcl(): ConsumerGroupACLs {
   return {
+    _key: crypto.randomUUID(),
     selector: '*',
     patternType: 'Any',
     all: 'Any',
@@ -134,6 +142,7 @@ export function createEmptyConsumerGroupAcl(): ConsumerGroupACLs {
 
 export function createEmptyTransactionalIdAcl(): TransactionalIdACLs {
   return {
+    _key: crypto.randomUUID(),
     selector: '*',
     patternType: 'Any',
     all: 'Any',
@@ -215,6 +224,7 @@ function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
     }
 
     const topicAcl: TopicACLs = {
+      _key: crypto.randomUUID(),
       patternType: modelPatternTypeToUIType(first.resourcePatternType, selector),
       selector,
       permissions: topicPermissions,
@@ -262,6 +272,7 @@ function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
     }
 
     const groupAcl: ConsumerGroupACLs = {
+      _key: crypto.randomUUID(),
       patternType: modelPatternTypeToUIType(first.resourcePatternType, selector),
       selector,
       permissions: groupPermissions,
@@ -308,6 +319,7 @@ function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs[] {
     }
 
     const groupAcl: TransactionalIdACLs = {
+      _key: crypto.randomUUID(),
       patternType: modelPatternTypeToUIType(first.resourcePatternType, selector),
       selector,
       permissions: transactionalIdPermissions,
