@@ -29,9 +29,9 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Search } from 'lucide-react';
-import { AIAgentTranscriptStatus } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { TranscriptStatus } from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
 import { useMemo, useState } from 'react';
-import { useListAIAgentTranscriptsQuery } from 'react-query/api/ai-agent';
+import { useListTranscriptsQuery } from 'react-query/api/ai-agent';
 
 import { getMockAIAgentTranscriptSummaries, isMockAIAgentTranscriptsEnabled } from './ai-agent-transcripts-mock-data';
 import {
@@ -49,12 +49,12 @@ const filterMatchesStatus = (value: number, filter: StatusFilterValue) => {
   }
 
   if (filter === 'completed') {
-    return value === AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_COMPLETED;
+    return value === TranscriptStatus.COMPLETED;
   }
   if (filter === 'error') {
-    return value === AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_ERROR;
+    return value === TranscriptStatus.ERROR;
   }
-  return value === AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_RUNNING;
+  return value === TranscriptStatus.RUNNING;
 };
 
 const isUnavailableTranscriptError = (error: unknown) =>
@@ -69,8 +69,8 @@ export const AIAgentTranscriptsTab = () => {
   const [status, setStatus] = useState<StatusFilterValue>('all');
   const shouldUseMockData = isMockAIAgentTranscriptsEnabled();
 
-  const transcriptsQuery = useListAIAgentTranscriptsQuery(
-    { id: id || '', pageSize: 50 },
+  const transcriptsQuery = useListTranscriptsQuery(
+    { agentId: id || '', pageSize: 50 },
     { enabled: !!id && !shouldUseMockData }
   );
 
@@ -84,7 +84,7 @@ export const AIAgentTranscriptsTab = () => {
     return transcripts.filter((transcript) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
-        transcript.transcriptId.toLowerCase().includes(normalizedQuery) ||
+        transcript.conversationId.toLowerCase().includes(normalizedQuery) ||
         transcript.title.toLowerCase().includes(normalizedQuery) ||
         transcript.userId.toLowerCase().includes(normalizedQuery);
 
@@ -95,11 +95,8 @@ export const AIAgentTranscriptsTab = () => {
   const stats = useMemo(
     () => ({
       total: transcripts.length,
-      completed: transcripts.filter(
-        (item) => item.status === AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_COMPLETED
-      ).length,
-      errors: transcripts.filter((item) => item.status === AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_ERROR)
-        .length,
+      completed: transcripts.filter((item) => item.status === TranscriptStatus.COMPLETED).length,
+      errors: transcripts.filter((item) => item.status === TranscriptStatus.ERROR).length,
       totalTokens: transcripts.reduce((sum, item) => sum + Number(item.usage?.totalTokens ?? 0), 0),
     }),
     [transcripts]
@@ -130,7 +127,7 @@ export const AIAgentTranscriptsTab = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             <Text className="text-muted-foreground">
-              Once the enterprise backend implements `ListAIAgentTranscripts`, this tab will load real agent-specific
+              Once the enterprise backend implements `ListTranscripts`, this tab will load real agent-specific
               transcripts.
             </Text>
             {process.env.NODE_ENV === 'development' && (
@@ -245,11 +242,11 @@ export const AIAgentTranscriptsTab = () => {
                 {filteredTranscripts.map((transcript) => (
                   <TableRow
                     className="cursor-pointer"
-                    key={transcript.transcriptId}
+                    key={transcript.conversationId}
                     onClick={() =>
                       navigate({
                         to: '/agents/$id/transcripts/$transcriptId',
-                        params: { id, transcriptId: transcript.transcriptId },
+                        params: { id, transcriptId: transcript.conversationId },
                         search: mockAgentTranscripts ? { mockAgentTranscripts } : undefined,
                       })
                     }
@@ -257,7 +254,7 @@ export const AIAgentTranscriptsTab = () => {
                     <TableCell>
                       <div className="flex flex-col">
                         <Text className="font-medium">{transcript.title}</Text>
-                        <Text className="font-mono text-muted-foreground text-xs">{transcript.transcriptId}</Text>
+                        <Text className="font-mono text-muted-foreground text-xs">{transcript.conversationId}</Text>
                       </div>
                     </TableCell>
                     <TableCell>

@@ -23,12 +23,12 @@ import { Tabs } from 'components/redpanda-ui/components/tabs';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import {
-  type AIAgentTranscript,
-  AIAgentTranscriptStatus,
-  AIAgentTranscriptSummarySchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+  type GetTranscriptResponse,
+  TranscriptStatus,
+  TranscriptSummarySchema,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
 import { useEffect } from 'react';
-import { useGetAIAgentQuery, useGetAIAgentTranscriptQuery } from 'react-query/api/ai-agent';
+import { useGetAIAgentQuery, useGetTranscriptQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
 
 import { AIAgentDetailsHeader } from './ai-agent-details-header';
@@ -79,7 +79,7 @@ type TranscriptPageState =
   | { kind: 'agent-error'; message: string }
   | { kind: 'loading' }
   | { kind: 'not-found' }
-  | { kind: 'ready'; transcript: AIAgentTranscript }
+  | { kind: 'ready'; transcript: GetTranscriptResponse }
   | { kind: 'transcript-error'; message: string }
   | { kind: 'transcript-unavailable' };
 
@@ -93,7 +93,7 @@ const getTranscriptPageState = ({
   agentError?: Error | null;
   isLoading: boolean;
   shouldUseMockData: boolean;
-  transcript: AIAgentTranscript | null;
+  transcript: GetTranscriptResponse | null;
   transcriptError?: Error | null;
 }): TranscriptPageState => {
   if (isLoading) {
@@ -126,14 +126,12 @@ export const AIAgentTranscriptDetailsPage = () => {
   const shouldUseMockData = isMockAIAgentTranscriptsEnabled();
 
   const agentQuery = useGetAIAgentQuery({ id }, { enabled: !!id });
-  const transcriptQuery = useGetAIAgentTranscriptQuery(
-    { id, transcriptId },
+  const transcriptQuery = useGetTranscriptQuery(
+    { agentId: id, conversationId: transcriptId },
     { enabled: !!id && !!transcriptId && !shouldUseMockData }
   );
 
-  const transcript = shouldUseMockData
-    ? getMockAIAgentTranscript(id, transcriptId)
-    : (transcriptQuery.data?.transcript ?? null);
+  const transcript = shouldUseMockData ? getMockAIAgentTranscript(id, transcriptId) : (transcriptQuery.data ?? null);
   const pageState = getTranscriptPageState({
     shouldUseMockData,
     agentError: agentQuery.error,
@@ -206,11 +204,11 @@ export const AIAgentTranscriptDetailsPage = () => {
 
   const summary =
     transcriptData.summary ??
-    create(AIAgentTranscriptSummarySchema, {
-      transcriptId,
+    create(TranscriptSummarySchema, {
+      conversationId: transcriptId,
       agentId: id,
       title: transcriptId,
-      status: AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_UNSPECIFIED,
+      status: TranscriptStatus.UNSPECIFIED,
       turnCount: transcriptData.turns.length,
       usage: {
         inputTokens: 0n,
@@ -246,7 +244,7 @@ export const AIAgentTranscriptDetailsPage = () => {
         </Button>
         <div className="flex items-center gap-2">
           <TranscriptStatusBadge status={summary.status} />
-          <Text className="font-mono text-muted-foreground text-xs">{summary.transcriptId}</Text>
+          <Text className="font-mono text-muted-foreground text-xs">{summary.conversationId}</Text>
         </div>
       </div>
 
@@ -280,10 +278,7 @@ export const AIAgentTranscriptDetailsPage = () => {
       <Card size="full">
         <CardHeader>
           <CardTitle>{summary.title}</CardTitle>
-          <CardDescription>
-            User {summary.userId || 'N/A'}
-            {summary.traceId ? ` • Trace ${summary.traceId}` : ''}
-          </CardDescription>
+          <CardDescription>User {summary.userId || 'N/A'}</CardDescription>
         </CardHeader>
         {Boolean(transcriptData.systemPrompt) && (
           <CardContent className="pt-0">

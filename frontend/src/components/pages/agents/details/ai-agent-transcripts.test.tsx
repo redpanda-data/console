@@ -15,19 +15,20 @@ import { createRouterTransport } from '@connectrpc/connect';
 import {
   AIAgent_State,
   AIAgentSchema,
-  AIAgentTranscriptSchema,
-  AIAgentTranscriptStatus,
-  AIAgentTranscriptSummarySchema,
-  AIAgentTranscriptTurnRole,
   GetAIAgentResponseSchema,
-  GetAIAgentTranscriptResponseSchema,
-  ListAIAgentTranscriptsResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+import { getAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 import {
-  getAIAgent,
-  getAIAgentTranscript,
-  listAIAgentTranscripts,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
+  GetTranscriptResponseSchema,
+  ListTranscriptsResponseSchema,
+  TranscriptStatus,
+  TranscriptSummarySchema,
+  TranscriptTurnRole,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
+import {
+  getTranscript,
+  listTranscripts,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript-TranscriptService_connectquery';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -81,14 +82,14 @@ const createAgent = () =>
   });
 
 const createSummary = () =>
-  create(AIAgentTranscriptSummarySchema, {
-    transcriptId: TRANSCRIPT_ID,
+  create(TranscriptSummarySchema, {
+    conversationId: TRANSCRIPT_ID,
     agentId: AGENT_ID,
     title: 'Billing issue classification',
     startTime: timestampFromMs(Date.now() - 5 * 60 * 1000),
     endTime: timestampFromMs(Date.now() - 5 * 60 * 1000 + 87 * 1000),
     duration: durationFromMs(87 * 1000),
-    status: AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_COMPLETED,
+    status: TranscriptStatus.COMPLETED,
     turnCount: 3,
     usage: {
       inputTokens: 596n,
@@ -97,23 +98,22 @@ const createSummary = () =>
       estimatedCostUsd: 0.12,
     },
     userId: 'user_abc123',
-    traceId: 'trace_001',
   });
 
-const createTranscript = () =>
-  create(AIAgentTranscriptSchema, {
+const createTranscriptResponse = () =>
+  create(GetTranscriptResponseSchema, {
     summary: createSummary(),
     systemPrompt: 'You are a support ticket classifier.',
     turns: [
       {
         turnId: 'turn-1',
-        role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_USER,
+        role: TranscriptTurnRole.USER,
         timestamp: timestampFromMs(Date.now() - 5 * 60 * 1000),
         content: 'Customer complaint about billing issue with invoice #45892.',
       },
       {
         turnId: 'turn-2',
-        role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_ASSISTANT,
+        role: TranscriptTurnRole.ASSISTANT,
         timestamp: timestampFromMs(Date.now() - 5 * 60 * 1000 + 2000),
         content: '{ "category": "billing", "priority": "high" }',
         model: 'gpt-4o',
@@ -136,18 +136,14 @@ const createTransport = () =>
       })
     );
 
-    rpc(listAIAgentTranscripts, () =>
-      create(ListAIAgentTranscriptsResponseSchema, {
+    rpc(listTranscripts, () =>
+      create(ListTranscriptsResponseSchema, {
         transcripts: [createSummary()],
         nextPageToken: '',
       })
     );
 
-    rpc(getAIAgentTranscript, () =>
-      create(GetAIAgentTranscriptResponseSchema, {
-        transcript: createTranscript(),
-      })
-    );
+    rpc(getTranscript, () => createTranscriptResponse());
   });
 
 describe('agent transcripts UI', () => {

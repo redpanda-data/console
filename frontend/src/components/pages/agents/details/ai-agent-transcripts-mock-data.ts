@@ -12,14 +12,14 @@
 import { create } from '@bufbuild/protobuf';
 import { durationFromMs, timestampFromMs } from '@bufbuild/protobuf/wkt';
 import {
-  type AIAgentTranscript,
-  AIAgentTranscriptSchema,
-  AIAgentTranscriptStatus,
-  type AIAgentTranscriptSummary,
-  AIAgentTranscriptSummarySchema,
-  AIAgentTranscriptToolCallStatus,
-  AIAgentTranscriptTurnRole,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+  type GetTranscriptResponse,
+  GetTranscriptResponseSchema,
+  TranscriptStatus,
+  type TranscriptSummary,
+  TranscriptSummarySchema,
+  TranscriptToolCallStatus,
+  TranscriptTurnRole,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
 import type { MessageInit } from 'react-query/react-query.utils';
 
 const now = Date.now();
@@ -34,50 +34,47 @@ const usage = (inputTokens: number, outputTokens: number, totalTokens: number, e
 
 const summaries = [
   {
-    transcriptId: 'conv_001',
+    conversationId: 'conv_001',
     title: 'Billing issue classification',
     offsetMs: 5 * 60 * 1000,
     durationMs: 87 * 1000,
-    status: AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_COMPLETED,
+    status: TranscriptStatus.COMPLETED,
     turnCount: 3,
     usage: usage(596, 544, 1140, 0.12),
     userId: 'user_abc123',
     hasErrors: false,
-    traceId: 'trace_001',
   },
   {
-    transcriptId: 'conv_002',
+    conversationId: 'conv_002',
     title: 'Password reset triage',
     offsetMs: 27 * 60 * 1000,
     durationMs: 26 * 1000,
-    status: AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_COMPLETED,
+    status: TranscriptStatus.COMPLETED,
     turnCount: 2,
     usage: usage(208, 312, 520, 0.04),
     userId: 'user_def456',
     hasErrors: false,
-    traceId: 'trace_002',
   },
   {
-    transcriptId: 'conv_003',
+    conversationId: 'conv_003',
     title: 'Long context failure',
     offsetMs: 71 * 60 * 1000,
     durationMs: 40 * 1000,
-    status: AIAgentTranscriptStatus.AI_AGENT_TRANSCRIPT_STATUS_ERROR,
+    status: TranscriptStatus.ERROR,
     turnCount: 2,
     usage: usage(1205, 0, 1205, 0.06),
     userId: 'user_ghi789',
     hasErrors: true,
-    traceId: 'trace_003',
   },
 ] as const;
 
-const buildSummary = (agentId: string, summary: (typeof summaries)[number]): AIAgentTranscriptSummary => {
+const buildSummary = (agentId: string, summary: (typeof summaries)[number]): TranscriptSummary => {
   const startMs = now - summary.offsetMs;
   const endMs = startMs + summary.durationMs;
 
   const init = {
     agentId,
-    transcriptId: summary.transcriptId,
+    conversationId: summary.conversationId,
     title: summary.title,
     startTime: timestampFromMs(startMs),
     endTime: timestampFromMs(endMs),
@@ -87,17 +84,16 @@ const buildSummary = (agentId: string, summary: (typeof summaries)[number]): AIA
     usage: summary.usage,
     userId: summary.userId,
     hasErrors: summary.hasErrors,
-    traceId: summary.traceId,
-  } satisfies MessageInit<AIAgentTranscriptSummary>;
+  } satisfies MessageInit<TranscriptSummary>;
 
-  return create(AIAgentTranscriptSummarySchema, init);
+  return create(TranscriptSummarySchema, init);
 };
 
-export const getMockAIAgentTranscriptSummaries = (agentId: string): AIAgentTranscriptSummary[] =>
+export const getMockAIAgentTranscriptSummaries = (agentId: string): TranscriptSummary[] =>
   summaries.map((summary) => buildSummary(agentId, summary));
 
-export const getMockAIAgentTranscript = (agentId: string, transcriptId: string): AIAgentTranscript | null => {
-  const summary = getMockAIAgentTranscriptSummaries(agentId).find((item) => item.transcriptId === transcriptId);
+export const getMockAIAgentTranscript = (agentId: string, transcriptId: string): GetTranscriptResponse | null => {
+  const summary = getMockAIAgentTranscriptSummaries(agentId).find((item) => item.conversationId === transcriptId);
 
   if (!summary) {
     return null;
@@ -111,14 +107,14 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
       turns: [
         {
           turnId: 'turn_001_1',
-          role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_USER,
+          role: TranscriptTurnRole.USER,
           timestamp: timestampFromMs(now - 5 * 60 * 1000),
           content:
             'Customer complaint about billing issue with invoice #45892. They claim they were double charged and want an immediate refund.',
         },
         {
           turnId: 'turn_001_2',
-          role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_ASSISTANT,
+          role: TranscriptTurnRole.ASSISTANT,
           timestamp: timestampFromMs(now - 5 * 60 * 1000 + 2 * 1000),
           content: '',
           model: 'gpt-4o',
@@ -128,14 +124,14 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
             {
               toolCallId: 'tool_001_1',
               name: 'analyze_sentiment',
-              status: AIAgentTranscriptToolCallStatus.AI_AGENT_TRANSCRIPT_TOOL_CALL_STATUS_COMPLETED,
+              status: TranscriptToolCallStatus.COMPLETED,
               latency: durationFromMs(120),
               output: '{"sentiment":"negative","confidence":0.97}',
             },
             {
               toolCallId: 'tool_001_2',
               name: 'categorize_ticket',
-              status: AIAgentTranscriptToolCallStatus.AI_AGENT_TRANSCRIPT_TOOL_CALL_STATUS_COMPLETED,
+              status: TranscriptToolCallStatus.COMPLETED,
               latency: durationFromMs(95),
               output: '{"category":"billing","priority":"high"}',
             },
@@ -143,7 +139,7 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
         },
         {
           turnId: 'turn_001_3',
-          role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_ASSISTANT,
+          role: TranscriptTurnRole.ASSISTANT,
           timestamp: timestampFromMs(now - 5 * 60 * 1000 + 4 * 1000),
           content:
             '{\n  "category": "billing",\n  "priority": "high",\n  "sentiment": "negative",\n  "confidence": 0.94,\n  "suggested_action": "escalate_to_billing_team"\n}',
@@ -152,9 +148,9 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
           usage: usage(312, 544, 856, 0.09),
         },
       ],
-    } satisfies MessageInit<AIAgentTranscript>;
+    } satisfies MessageInit<GetTranscriptResponse>;
 
-    return create(AIAgentTranscriptSchema, init);
+    return create(GetTranscriptResponseSchema, init);
   }
 
   if (transcriptId === 'conv_002') {
@@ -165,13 +161,13 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
       turns: [
         {
           turnId: 'turn_002_1',
-          role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_USER,
+          role: TranscriptTurnRole.USER,
           timestamp: timestampFromMs(now - 27 * 60 * 1000),
           content: 'How do I reset my password?',
         },
         {
           turnId: 'turn_002_2',
-          role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_ASSISTANT,
+          role: TranscriptTurnRole.ASSISTANT,
           timestamp: timestampFromMs(now - 27 * 60 * 1000 + 26 * 1000),
           content:
             '{\n  "category": "account",\n  "priority": "low",\n  "sentiment": "neutral",\n  "suggested_action": "send_password_reset_link"\n}',
@@ -180,9 +176,9 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
           usage: usage(208, 312, 520, 0.04),
         },
       ],
-    } satisfies MessageInit<AIAgentTranscript>;
+    } satisfies MessageInit<GetTranscriptResponse>;
 
-    return create(AIAgentTranscriptSchema, init);
+    return create(GetTranscriptResponseSchema, init);
   }
 
   const init = {
@@ -192,13 +188,13 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
     turns: [
       {
         turnId: 'turn_003_1',
-        role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_USER,
+        role: TranscriptTurnRole.USER,
         timestamp: timestampFromMs(now - 71 * 60 * 1000),
         content: 'Here is our entire conversation history from the past year and all attached artifacts...',
       },
       {
         turnId: 'turn_003_2',
-        role: AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_ASSISTANT,
+        role: TranscriptTurnRole.ASSISTANT,
         timestamp: timestampFromMs(now - 71 * 60 * 1000 + 40 * 1000),
         content: '',
         model: 'gpt-4o',
@@ -208,7 +204,7 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
           {
             toolCallId: 'tool_003_1',
             name: 'analyze_sentiment',
-            status: AIAgentTranscriptToolCallStatus.AI_AGENT_TRANSCRIPT_TOOL_CALL_STATUS_ERROR,
+            status: TranscriptToolCallStatus.ERROR,
             latency: durationFromMs(38 * 1000),
             error: { code: 'context_window_exceeded', message: 'Context window exceeded while processing input' },
           },
@@ -217,9 +213,9 @@ export const getMockAIAgentTranscript = (agentId: string, transcriptId: string):
       },
     ],
     error: { code: 'context_window_exceeded', message: 'Context window exceeded while processing input' },
-  } satisfies MessageInit<AIAgentTranscript>;
+  } satisfies MessageInit<GetTranscriptResponse>;
 
-  return create(AIAgentTranscriptSchema, init);
+  return create(GetTranscriptResponseSchema, init);
 };
 
 export const isMockAIAgentTranscriptsEnabled = () => {

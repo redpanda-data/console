@@ -9,28 +9,32 @@ import {
   type GetAIAgentRequest,
   GetAIAgentRequestSchema,
   type GetAIAgentResponse,
-  type GetAIAgentTranscriptRequest,
-  GetAIAgentTranscriptRequestSchema,
-  type GetAIAgentTranscriptResponse,
   type ListAIAgentsRequest,
   ListAIAgentsRequest_FilterSchema,
   ListAIAgentsRequestSchema,
   type ListAIAgentsResponse,
-  type ListAIAgentTranscriptsRequest,
-  ListAIAgentTranscriptsRequestSchema,
-  type ListAIAgentTranscriptsResponse,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import {
   createAIAgent,
   deleteAIAgent,
   getAIAgent,
-  getAIAgentTranscript,
   listAIAgents,
-  listAIAgentTranscripts,
   startAIAgent,
   stopAIAgent,
   updateAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
+import {
+  type GetTranscriptRequest,
+  GetTranscriptRequestSchema,
+  type GetTranscriptResponse,
+  type ListTranscriptsRequest,
+  ListTranscriptsRequestSchema,
+  type ListTranscriptsResponse,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
+import {
+  getTranscript,
+  listTranscripts,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript-TranscriptService_connectquery';
 import { useMemo } from 'react';
 import {
   fastFailRetry,
@@ -97,18 +101,18 @@ export const useGetAIAgentQuery = (
   });
 };
 
-export const useListAIAgentTranscriptsQuery = (
-  input?: MessageInit<ListAIAgentTranscriptsRequest>,
-  options?: QueryOptions<GenMessage<ListAIAgentTranscriptsResponse>>
+export const useListTranscriptsQuery = (
+  input?: MessageInit<ListTranscriptsRequest>,
+  options?: QueryOptions<GenMessage<ListTranscriptsResponse>>
 ) => {
-  const listAIAgentTranscriptsRequest = create(ListAIAgentTranscriptsRequestSchema, {
-    id: input?.id,
+  const listTranscriptsRequest = create(ListTranscriptsRequestSchema, {
+    agentId: input?.agentId,
     pageToken: input?.pageToken ?? '',
     pageSize: input?.pageSize ?? MAX_PAGE_SIZE,
     filter: input?.filter,
   });
 
-  return useQuery(listAIAgentTranscripts, listAIAgentTranscriptsRequest, {
+  return useQuery(listTranscripts, listTranscriptsRequest, {
     enabled: options?.enabled,
     refetchInterval: options?.refetchInterval,
     refetchIntervalInBackground: options?.refetchIntervalInBackground,
@@ -116,16 +120,16 @@ export const useListAIAgentTranscriptsQuery = (
   });
 };
 
-export const useGetAIAgentTranscriptQuery = (
-  input?: MessageInit<GetAIAgentTranscriptRequest>,
-  options?: QueryOptions<GenMessage<GetAIAgentTranscriptResponse>>
+export const useGetTranscriptQuery = (
+  input?: MessageInit<GetTranscriptRequest>,
+  options?: QueryOptions<GenMessage<GetTranscriptResponse>>
 ) => {
-  const getAIAgentTranscriptRequest = create(GetAIAgentTranscriptRequestSchema, {
-    id: input?.id,
-    transcriptId: input?.transcriptId,
+  const getTranscriptRequest = create(GetTranscriptRequestSchema, {
+    agentId: input?.agentId,
+    conversationId: input?.conversationId,
   });
 
-  return useQuery(getAIAgentTranscript, getAIAgentTranscriptRequest, {
+  return useQuery(getTranscript, getTranscriptRequest, {
     enabled: options?.enabled,
     retry: fastFailRetry,
   });

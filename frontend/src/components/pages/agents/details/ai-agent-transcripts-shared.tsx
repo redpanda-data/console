@@ -12,11 +12,11 @@
 import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import {
-  type AIAgentTranscriptStatus,
-  AIAgentTranscriptStatus as AIAgentTranscriptStatusEnum,
-  AIAgentTranscriptTurnRole,
-  type AIAgentTranscriptTurnRole as AIAgentTranscriptTurnRoleType,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
+  type TranscriptStatus,
+  TranscriptStatus as TranscriptStatusEnum,
+  TranscriptTurnRole,
+  type TranscriptTurnRole as TranscriptTurnRoleType,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
 import { prettyMilliseconds } from 'utils/utils';
 
 export const formatTranscriptDateTime = (value?: Parameters<typeof timestampDate>[0]) => {
@@ -49,28 +49,28 @@ export const formatTranscriptTokens = (count?: number | bigint) => {
   return Number(count).toLocaleString('en-US');
 };
 
-export const transcriptRoleLabel = (role: AIAgentTranscriptTurnRoleType) => {
+export const transcriptRoleLabel = (role: TranscriptTurnRoleType) => {
   switch (role) {
-    case AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_SYSTEM:
+    case TranscriptTurnRole.SYSTEM:
       return 'System';
-    case AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_USER:
+    case TranscriptTurnRole.USER:
       return 'User';
-    case AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_ASSISTANT:
+    case TranscriptTurnRole.ASSISTANT:
       return 'Assistant';
-    case AIAgentTranscriptTurnRole.AI_AGENT_TRANSCRIPT_TURN_ROLE_TOOL:
+    case TranscriptTurnRole.TOOL:
       return 'Tool';
     default:
       return 'Unknown';
   }
 };
 
-export const TranscriptStatusBadge = ({ status }: { status: AIAgentTranscriptStatus }) => {
+export const TranscriptStatusBadge = ({ status }: { status: TranscriptStatus }) => {
   switch (status) {
-    case AIAgentTranscriptStatusEnum.AI_AGENT_TRANSCRIPT_STATUS_COMPLETED:
+    case TranscriptStatusEnum.COMPLETED:
       return <Badge variant="success-inverted">Completed</Badge>;
-    case AIAgentTranscriptStatusEnum.AI_AGENT_TRANSCRIPT_STATUS_ERROR:
+    case TranscriptStatusEnum.ERROR:
       return <Badge variant="destructive-inverted">Error</Badge>;
-    case AIAgentTranscriptStatusEnum.AI_AGENT_TRANSCRIPT_STATUS_RUNNING:
+    case TranscriptStatusEnum.RUNNING:
       return <Badge variant="info-inverted">Running</Badge>;
     default:
       return <Badge variant="neutral">Unknown</Badge>;
