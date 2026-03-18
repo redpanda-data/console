@@ -3,6 +3,8 @@ clean: true
 inputs:
   - directory: proto
   - module: buf.build/redpandadata/common
+    exclude_paths:
+      - redpanda/policymaterializer
   - module: buf.build/redpandadata/ai-gateway
 plugins:
   - remote: buf.build/bufbuild/es:v2.2.5

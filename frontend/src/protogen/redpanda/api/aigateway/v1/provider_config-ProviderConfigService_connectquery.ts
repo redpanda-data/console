@@ -47,3 +47,11 @@ export const deleteProviderConfig = ProviderConfigService.method.deleteProviderC
  * @generated from rpc redpanda.api.aigateway.v1.ProviderConfigService.TestProviderConfig
  */
 export const testProviderConfig = ProviderConfigService.method.testProviderConfig;
+
+/**
+ * Tests provider credentials inline without saving them first.
+ * Used by the UI to validate credentials before creating a configuration.
+ *
+ * @generated from rpc redpanda.api.aigateway.v1.ProviderConfigService.TestProviderCredentials
+ */
+export const testProviderCredentials = ProviderConfigService.method.testProviderCredentials;
