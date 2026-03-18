@@ -144,14 +144,21 @@ export function contextLabelToId(label: string): string {
 }
 
 // Build qualified references for API calls (create/validate).
+// When the parent subject is in a named context and a reference targets the
+// default context, explicitly qualify it as `:.:subject` so the SR doesn't
+// auto-prefix with the parent's context.
 export function buildQualifiedReferences(
-  refs: { name: string; subject: string; version: number; context: string }[]
+  refs: { name: string; subject: string; version: number; context: string }[],
+  parentContext: string
 ): { name: string; subject: string; version: number }[] {
   return refs
     .filter((x) => x.name && x.subject)
     .map((r) => ({
       name: r.name,
-      subject: buildQualifiedSubjectName(r.context, r.subject),
+      subject:
+        isNamedContext(parentContext) && !isNamedContext(r.context)
+          ? buildQualifiedSubjectName('.', r.subject)
+          : buildQualifiedSubjectName(r.context, r.subject),
       version: r.version,
     }));
 }
