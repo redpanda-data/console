@@ -41,4 +41,6 @@ jobs:
           key: proto-tools-${{ runner.os }}-${{ hashFiles('taskfiles/proto.yaml') }}
 
       - name: Generate protos
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
         run: task proto:generate
