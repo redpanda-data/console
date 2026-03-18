@@ -3,6 +3,8 @@ clean: true
 inputs:
   - directory: proto
   - module: buf.build/redpandadata/common
+    exclude_paths:
+      - redpanda/policymaterializer
 managed:
   enabled: true
   disable:
