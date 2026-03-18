@@ -711,6 +711,7 @@ const SchemaEditor = (p: {
               onChange={(e) => {
                 p.onStateChange((prev) => ({ ...prev, userInput: e.target.value }));
               }}
+              testId="schema-create-subject-name-input"
               value={state.computedSubjectName}
             />
           </FormField>
