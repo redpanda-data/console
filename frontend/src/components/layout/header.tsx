@@ -113,7 +113,7 @@ function AppPageHeader() {
               className={cn('mr-2', lastBreadcrumb.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
               level={1}
             >
-              {lastBreadcrumb.title}
+              {lastBreadcrumb.titleNode ?? lastBreadcrumb.title}
             </Heading>
           ) : null}
           {lastBreadcrumb ? (
