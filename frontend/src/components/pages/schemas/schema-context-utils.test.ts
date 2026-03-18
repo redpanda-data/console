@@ -13,6 +13,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
   ALL_CONTEXT_ID,
+  buildQualifiedReferences,
   buildQualifiedSubjectName,
   contextNameToId,
   DEFAULT_CONTEXT_ID,
@@ -226,5 +227,42 @@ describe('pluralize', () => {
 
   test('plural for count > 1', () => {
     expect(pluralize(3, 'subject')).toBe('3 subjects');
+  });
+});
+
+describe('buildQualifiedReferences', () => {
+  const ref = (context: string, subject: string) => ({
+    name: 'ref1',
+    subject,
+    version: 1,
+    context,
+  });
+
+  test('default parent + default ref → unqualified subject', () => {
+    const result = buildQualifiedReferences([ref(DEFAULT_CONTEXT_ID, 'aaaa')], DEFAULT_CONTEXT_ID);
+    expect(result).toEqual([{ name: 'ref1', subject: 'aaaa', version: 1 }]);
+  });
+
+  test('named parent + same-context ref → qualified with context', () => {
+    const result = buildQualifiedReferences([ref('.supertest', 'aaaa')], '.supertest');
+    expect(result).toEqual([{ name: 'ref1', subject: ':.supertest:aaaa', version: 1 }]);
+  });
+
+  test('named parent + default ref → explicitly qualified as `:.:subject`', () => {
+    const result = buildQualifiedReferences([ref(DEFAULT_CONTEXT_ID, 'aaaa')], '.supertest');
+    expect(result).toEqual([{ name: 'ref1', subject: ':.:aaaa', version: 1 }]);
+  });
+
+  test('named parent + empty-string context ref → explicitly qualified as `:.:subject`', () => {
+    const result = buildQualifiedReferences([ref('', 'aaaa')], '.supertest');
+    expect(result).toEqual([{ name: 'ref1', subject: ':.:aaaa', version: 1 }]);
+  });
+
+  test('filters out refs with missing name or subject', () => {
+    const result = buildQualifiedReferences(
+      [ref(DEFAULT_CONTEXT_ID, ''), { name: '', subject: 'aaaa', version: 1, context: DEFAULT_CONTEXT_ID }],
+      DEFAULT_CONTEXT_ID
+    );
+    expect(result).toEqual([]);
   });
 });

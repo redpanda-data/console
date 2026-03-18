@@ -682,7 +682,10 @@ func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName st
 		ctx = sr.WithParams(ctx, sr.Normalize)
 	}
 
-	subjectSchema, err := srClient.CreateSchema(ctx, subjectName, schema)
+	// Use RegisterSchema instead of CreateSchema to avoid a follow-up
+	// SchemaUsagesByID call that fails for named contexts (schema IDs
+	// are context-scoped, but the lookup doesn't include context).
+	schemaID, err := srClient.RegisterSchema(ctx, subjectName, schema, -1, -1)
 	if err != nil {
 		// If metadata was included and we got a parse error, retry without metadata.
 		// Older Redpanda versions don't support the metadata field.
@@ -690,16 +693,16 @@ func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName st
 			s.logger.WarnContext(ctx, "retrying schema creation without metadata (unsupported by this Redpanda version)",
 				slog.String("subject", subjectName))
 			schema.SchemaMetadata = nil
-			subjectSchema, err = srClient.CreateSchema(ctx, subjectName, schema)
+			schemaID, err = srClient.RegisterSchema(ctx, subjectName, schema, -1, -1)
 			if err != nil {
 				return nil, err
 			}
-			return &CreateSchemaResponse{ID: subjectSchema.ID}, nil
+			return &CreateSchemaResponse{ID: schemaID}, nil
 		}
 		return nil, err
 	}
 
-	return &CreateSchemaResponse{ID: subjectSchema.ID}, nil
+	return &CreateSchemaResponse{ID: schemaID}, nil
 }
 
 // SchemaRegistrySchemaValidation is the response to a schema validation.

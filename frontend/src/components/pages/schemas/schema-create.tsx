@@ -415,7 +415,7 @@ const SchemaPageButtons = (p: {
                 .createSchema(subjectName, {
                   schemaType: editorState.format as SchemaTypeType,
                   schema: editorState.schemaText,
-                  references: buildQualifiedReferences(editorState.references),
+                  references: buildQualifiedReferences(editorState.references, editorState.context),
                   metadata: editorState.computedMetadata,
                   params: {
                     normalize: editorState.normalize,
@@ -509,7 +509,7 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
     .validateSchema(state.qualifiedSubjectName, 'latest', {
       schemaType: state.format as SchemaTypeType,
       schema: state.schemaText,
-      references: buildQualifiedReferences(state.references),
+      references: buildQualifiedReferences(state.references, state.context),
     })
     .catch(
       (err) =>
@@ -1036,7 +1036,7 @@ const ReferencesEditor = (p: {
             ...prev,
             references: [
               ...prev.references,
-              { id: crypto.randomUUID(), name: '', subject: '', version: 1, context: '' },
+              { id: crypto.randomUUID(), name: '', subject: '', version: 1, context: p.parentContext },
             ],
           }));
         }}
