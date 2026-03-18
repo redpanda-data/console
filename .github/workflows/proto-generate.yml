@@ -37,8 +37,8 @@ jobs:
       - name: Cache proto tools
         uses: actions/cache@v4
         with:
-          path: build/bin
-          key: proto-tools-${{ runner.os }}-${{ hashFiles('taskfiles/proto.yaml') }}
+          path: build
+          key: proto-tools-${{ runner.os }}-go${{ hashFiles('backend/go.mod') }}-${{ hashFiles('taskfiles/proto.yaml') }}
 
       - name: Generate protos
         env:
