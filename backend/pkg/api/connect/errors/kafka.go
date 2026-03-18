@@ -21,6 +21,20 @@ import (
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
+// NewConnectErrorFromKafkaError creates a connect.Error from a Kafka error.
+// If the error is a *kerr.Error it delegates to NewConnectErrorFromKafkaErrorCode;
+// otherwise it wraps the error as CodeInternal (e.g. transport/connection failures).
+func NewConnectErrorFromKafkaError(err error) *connect.Error {
+	if kafkaErr, ok := errors.AsType[*kerr.Error](err); ok {
+		return NewConnectErrorFromKafkaErrorCode(kafkaErr.Code, nil)
+	}
+	return NewConnectError(
+		connect.CodeInternal,
+		err,
+		NewErrorInfo(v1alpha2.Reason_REASON_KAFKA_API_ERROR.String()),
+	)
+}
+
 // NewConnectErrorFromKafkaErrorCode creates a new connect.Error for a given Kafka error code.
 // Kafka error codes are described in the franz-go kerr package.
 func NewConnectErrorFromKafkaErrorCode(code int16, msg *string) *connect.Error {
@@ -78,8 +92,7 @@ func KeyValsFromKafkaError(err error) []KeyVal {
 		return []KeyVal{}
 	}
 
-	var kafkaErr *kerr.Error
-	if errors.As(err, &kafkaErr) {
+	if kafkaErr, ok := errors.AsType[*kerr.Error](err); ok {
 		return []KeyVal{
 			{
 				Key:   "kafka_error_code",
