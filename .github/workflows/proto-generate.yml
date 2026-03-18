@@ -34,5 +34,11 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Cache proto tools
+        uses: actions/cache@v4
+        with:
+          path: build/bin
+          key: proto-tools-${{ runner.os }}-${{ hashFiles('taskfiles/proto.yaml') }}
+
       - name: Generate protos
         run: task proto:generate
