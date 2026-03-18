@@ -41,6 +41,7 @@ const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 import React, { useEffect, useState } from 'react';
 
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { parseSubjectContext } from './schema-context-utils';
 import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { useGetIdentityQuery } from '../../../react-query/api/authentication';
 import {
@@ -93,11 +94,19 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   // Update page title and breadcrumbs
   useEffect(() => {
+    const parsed = parseSubjectContext(subjectNameRaw);
     uiState.pageTitle = subjectNameRaw;
     uiState.pageBreadcrumbs = [
       { title: 'Schema Registry', linkTo: '/schema-registry' },
       {
         title: subjectNameRaw,
+        titleNode:
+          parsed.context !== 'default' ? (
+            <>
+              <span className="text-gray-400">:.{parsed.context}:</span>
+              {parsed.displayName}
+            </>
+          ) : undefined,
         linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`,
         options: {
           canBeTruncated: true,
@@ -751,6 +760,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
             // Navigation uses encodeURIComponentPercents() instead of encodeURIComponent()
             // because schema subject names with periods/slashes cause URL parsing issues
             // in React Router. The special encoder replaces % with ﹪ to avoid conflicts.
+            const parsed = parseSubjectContext(ref.subject);
             return (
               <ListItem key={ref.name + ref.subject + ref.version}>
                 <Link
@@ -759,7 +769,8 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                   search={{ version: String(ref.version) }}
                   to="/schema-registry/subjects/$subjectName"
                 >
-                  {ref.subject}
+                  {parsed.context !== 'default' && <span className="text-gray-400">:.{parsed.context}:</span>}
+                  {parsed.displayName}
                 </Link>
               </ListItem>
             );
@@ -786,6 +797,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
               // so this section was already displaying correctly. However, we use
               // encodeURIComponentPercents() for consistent navigation behavior
               // with the References section above.
+              const parsed = parseSubjectContext(ref.subject);
               return (
                 <ListItem key={ref.subject + ref.version}>
                   <Link
@@ -794,7 +806,8 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                     search={{ version: String(ref.version) }}
                     to="/schema-registry/subjects/$subjectName"
                   >
-                    {ref.subject}
+                    {parsed.context !== 'default' && <span className="text-gray-400">:.{parsed.context}:</span>}
+                    {parsed.displayName}
                   </Link>
                 </ListItem>
               );
