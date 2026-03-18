@@ -8,7 +8,7 @@ require (
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20251216164002-601698cfe71d.1
 	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251111205446-9c61b5cb371f.2
-	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260219184720-92d267893f89.1
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260313213909-923579c57f1c.1
 	buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1
 	buf.build/go/protovalidate v1.0.1
 	connectrpc.com/connect v1.19.1
@@ -44,7 +44,6 @@ require (
 	github.com/redpanda-data/benthos/v4 v4.56.0
 	github.com/redpanda-data/common-go/api v0.0.0-20260130192523-413455981e59
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
-	github.com/redpanda-data/common-go/proto v0.0.0-20260318014216-2bbd72bde0a0
 	github.com/redpanda-data/common-go/rpadmin v0.2.0
 	github.com/redpanda-data/common-go/rpsr v0.1.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
