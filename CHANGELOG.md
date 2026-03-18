@@ -2,6 +2,13 @@
 
 ## Master / Unreleased
 
+## v3.6.0 / 2026-03-10
+- [IMPROVEMENT] Add unlimited and continuous pagination for Kafka message listing.
+- [IMPROVEMENT] Group sidebar navigation items into sections for better organization.
+- [BUGFIX] Fix creation of Mirror Maker 2 (MM2) connectors.
+- [BUGFIX] Fix infinite loading in topic detail pages.
+- [SECURITY] Resolve Snyk dependency vulnerabilities in backend and frontend dependencies.
+
 ## v2.8.11 / 2026-03-10
 - [SECURITY] Resolve Snyk security vulnerabilities in frontend dependencies.
 - [SECURITY] Upgrade backend dependencies to address Snyk security vulnerabilities.
