@@ -15,8 +15,8 @@ import {
   type ListModelsRequest,
   ListModelsRequestSchema,
   type ListModelsResponse,
-} from 'protogen/redpanda/api/aigateway/v1/models_pb';
-import { listModels } from 'protogen/redpanda/api/aigateway/v1/models-ModelsService_connectquery';
+} from '@buf/redpandadata_ai-gateway.bufbuild_es/redpanda/api/aigateway/v1/models_pb';
+import { listModels } from '@buf/redpandadata_ai-gateway.connectrpc_query-es/redpanda/api/aigateway/v1/models-ModelsService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 
 const AI_GATEWAY_DEFAULT_PAGE_SIZE = 50;

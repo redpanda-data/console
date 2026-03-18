@@ -153,8 +153,10 @@ export const ListKafkaConnectionsResponseSchema: GenMessage<ListKafkaConnections
  */
 export const ClusterService: GenService<{
   /**
-   * ListKafkaConnections returns information about the cluster's Kafka
-   * connections, collected and ordered across all brokers.
+   * ListKafkaConnections
+   *
+   * Returns information about the cluster's Kafka connections, collected
+   * and ordered across all brokers.
    *
    * @generated from rpc redpanda.core.admin.v2.ClusterService.ListKafkaConnections
    */

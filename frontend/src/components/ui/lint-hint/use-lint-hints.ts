@@ -9,7 +9,7 @@
  */
 
 import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 

@@ -1,13 +1,15 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "dependencies": {
         "@a2a-js/sdk": "^0.3.10",
         "@autoform/react": "^4.0.0",
         "@autoform/zod": "^5.0.0",
+        "@buf/redpandadata_ai-gateway.bufbuild_es": "^2.11.0-20260313141452-dbbaece03f76.1",
+        "@buf/redpandadata_ai-gateway.connectrpc_query-es": "^2.2.0-20260313141452-dbbaece03f76.1",
         "@buf/redpandadata_cloud.connectrpc_query-es": "^2.2.0-20251128173054-b9f9fc6e5a70.1",
+        "@buf/redpandadata_common.bufbuild_es": "^2.11.0-20260316210807-5d899910f714.1",
         "@bufbuild/protobuf": "^2.10.0",
         "@bufbuild/protoc-gen-es": "^2.10.0",
         "@builder.io/sdk-react": "^4.2.4",
@@ -276,11 +278,11 @@
 
     "@braintree/sanitize-url": ["@braintree/sanitize-url@7.1.1", "", {}, "sha512-i1L7noDNxtFyL5DmZafWy1wRVhGehQmzZaz1HiN5e7iylJMSZR7ekOV7NsIqa5qBldlLrsKv4HbgFUVlQrz8Mw=="],
 
-    "@buf/bufbuild_protovalidate.bufbuild_es": ["@buf/bufbuild_protovalidate.bufbuild_es@2.7.0-20250912141014-52f32327d4b0.1", "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.7.0-20250912141014-52f32327d4b0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+    "@buf/bufbuild_protovalidate.bufbuild_es": ["@buf/bufbuild_protovalidate.bufbuild_es@2.11.0-20250912141014-52f32327d4b0.1", "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.11.0-20250912141014-52f32327d4b0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.11.0" } }, ""],
 
     "@buf/bufbuild_protovalidate.connectrpc_query-es": ["@buf/bufbuild_protovalidate.connectrpc_query-es@2.2.0-20250912141014-52f32327d4b0.1", "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.connectrpc_query-es/-/bufbuild_protovalidate.connectrpc_query-es-2.2.0-20250912141014-52f32327d4b0.1.tgz", { "dependencies": { "@buf/bufbuild_protovalidate.bufbuild_es": "2.7.0-20250912141014-52f32327d4b0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
 
-    "@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20251009205305-72c8614f3bd0.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20251009205305-72c8614f3bd0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+    "@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.11.0-20251009205305-72c8614f3bd0.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.11.0-20251009205305-72c8614f3bd0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.11.0" } }, ""],
 
     "@buf/googleapis_googleapis.connectrpc_query-es": ["@buf/googleapis_googleapis.connectrpc_query-es@2.2.0-20251009205305-72c8614f3bd0.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.2.0-20251009205305-72c8614f3bd0.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20251009205305-72c8614f3bd0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
 
@@ -288,11 +290,15 @@
 
     "@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es": ["@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es@2.2.0-20221127060915-a1ecdc58eccd.1", "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es/-/grpc-ecosystem_grpc-gateway.connectrpc_query-es-2.2.0-20221127060915-a1ecdc58eccd.1.tgz", { "dependencies": { "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es": "2.7.0-20221127060915-a1ecdc58eccd.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
 
+    "@buf/redpandadata_ai-gateway.bufbuild_es": ["@buf/redpandadata_ai-gateway.bufbuild_es@2.11.0-20260313141452-dbbaece03f76.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_ai-gateway.bufbuild_es/-/redpandadata_ai-gateway.bufbuild_es-2.11.0-20260313141452-dbbaece03f76.1.tgz", { "dependencies": { "@buf/bufbuild_protovalidate.bufbuild_es": "2.11.0-20250912141014-52f32327d4b0.1", "@buf/googleapis_googleapis.bufbuild_es": "2.11.0-20251009205305-72c8614f3bd0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.11.0" } }, ""],
+
+    "@buf/redpandadata_ai-gateway.connectrpc_query-es": ["@buf/redpandadata_ai-gateway.connectrpc_query-es@2.2.0-20260313141452-dbbaece03f76.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_ai-gateway.connectrpc_query-es/-/redpandadata_ai-gateway.connectrpc_query-es-2.2.0-20260313141452-dbbaece03f76.1.tgz", { "dependencies": { "@buf/bufbuild_protovalidate.connectrpc_query-es": "2.2.0-20250912141014-52f32327d4b0.1", "@buf/googleapis_googleapis.connectrpc_query-es": "2.2.0-20251009205305-72c8614f3bd0.1", "@buf/redpandadata_ai-gateway.bufbuild_es": "2.7.0-20260313141452-dbbaece03f76.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
+
     "@buf/redpandadata_cloud.bufbuild_es": ["@buf/redpandadata_cloud.bufbuild_es@2.7.0-20251128173054-b9f9fc6e5a70.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.bufbuild_es/-/redpandadata_cloud.bufbuild_es-2.7.0-20251128173054-b9f9fc6e5a70.1.tgz", { "dependencies": { "@buf/bufbuild_protovalidate.bufbuild_es": "2.7.0-20250912141014-52f32327d4b0.1", "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20251009205305-72c8614f3bd0.1", "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es": "2.7.0-20221127060915-a1ecdc58eccd.1", "@buf/redpandadata_common.bufbuild_es": "2.7.0-20250904135917-9feeb2588236.1", "@buf/redpandadata_core.bufbuild_es": "2.7.0-20251024023333-e0f79c48b9f0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
 
     "@buf/redpandadata_cloud.connectrpc_query-es": ["@buf/redpandadata_cloud.connectrpc_query-es@2.2.0-20251128173054-b9f9fc6e5a70.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.connectrpc_query-es/-/redpandadata_cloud.connectrpc_query-es-2.2.0-20251128173054-b9f9fc6e5a70.1.tgz", { "dependencies": { "@buf/bufbuild_protovalidate.connectrpc_query-es": "2.2.0-20250912141014-52f32327d4b0.1", "@buf/googleapis_googleapis.connectrpc_query-es": "2.2.0-20251009205305-72c8614f3bd0.1", "@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es": "2.2.0-20221127060915-a1ecdc58eccd.1", "@buf/redpandadata_cloud.bufbuild_es": "2.7.0-20251128173054-b9f9fc6e5a70.1", "@buf/redpandadata_common.connectrpc_query-es": "2.2.0-20250904135917-9feeb2588236.1", "@buf/redpandadata_core.connectrpc_query-es": "2.2.0-20251024023333-e0f79c48b9f0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
 
-    "@buf/redpandadata_common.bufbuild_es": ["@buf/redpandadata_common.bufbuild_es@2.7.0-20250904135917-9feeb2588236.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.7.0-20250904135917-9feeb2588236.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20250411203938-61b203b9a916.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+    "@buf/redpandadata_common.bufbuild_es": ["@buf/redpandadata_common.bufbuild_es@2.11.0-20260316210807-5d899910f714.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.11.0-20260316210807-5d899910f714.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.bufbuild_es": "2.11.0-20251126203132-004180b77378.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.11.0" } }, ""],
 
     "@buf/redpandadata_common.connectrpc_query-es": ["@buf/redpandadata_common.connectrpc_query-es@2.2.0-20250904135917-9feeb2588236.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_common.connectrpc_query-es/-/redpandadata_common.connectrpc_query-es-2.2.0-20250904135917-9feeb2588236.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.connectrpc_query-es": "2.2.0-20250411203938-61b203b9a916.1", "@buf/redpandadata_common.bufbuild_es": "2.7.0-20250904135917-9feeb2588236.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
 
@@ -3916,9 +3922,23 @@
 
     "@babel/traverse/@babel/parser": ["@babel/parser@7.28.5", "", { "dependencies": { "@babel/types": "^7.28.5" }, "bin": "./bin/babel-parser.js" }, "sha512-KKBU1VGYR7ORr3At5HAtUQ+TV3SzRCXmA/8OdDZiLDBIZxVyzXuztPjfLd3BV1PRAQGCMWWSHYhL0F8d5uHBDQ=="],
 
-    "@buf/redpandadata_common.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+    "@buf/bufbuild_protovalidate.connectrpc_query-es/@buf/bufbuild_protovalidate.bufbuild_es": ["@buf/bufbuild_protovalidate.bufbuild_es@2.7.0-20250912141014-52f32327d4b0.1", "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.7.0-20250912141014-52f32327d4b0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/googleapis_googleapis.connectrpc_query-es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20251009205305-72c8614f3bd0.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20251009205305-72c8614f3bd0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_ai-gateway.connectrpc_query-es/@buf/redpandadata_ai-gateway.bufbuild_es": ["@buf/redpandadata_ai-gateway.bufbuild_es@2.7.0-20260313141452-dbbaece03f76.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_ai-gateway.bufbuild_es/-/redpandadata_ai-gateway.bufbuild_es-2.7.0-20260313141452-dbbaece03f76.1.tgz", { "dependencies": { "@buf/bufbuild_protovalidate.bufbuild_es": "2.7.0-20250912141014-52f32327d4b0.1", "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20251009205305-72c8614f3bd0.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_cloud.bufbuild_es/@buf/bufbuild_protovalidate.bufbuild_es": ["@buf/bufbuild_protovalidate.bufbuild_es@2.7.0-20250912141014-52f32327d4b0.1", "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.7.0-20250912141014-52f32327d4b0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_cloud.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20251009205305-72c8614f3bd0.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20251009205305-72c8614f3bd0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_cloud.bufbuild_es/@buf/redpandadata_common.bufbuild_es": ["@buf/redpandadata_common.bufbuild_es@2.7.0-20250904135917-9feeb2588236.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.7.0-20250904135917-9feeb2588236.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20250411203938-61b203b9a916.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_common.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.11.0-20251126203132-004180b77378.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.11.0-20251126203132-004180b77378.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.11.0" } }, ""],
 
     "@buf/redpandadata_common.connectrpc_query-es/@buf/googleapis_googleapis.connectrpc_query-es": ["@buf/googleapis_googleapis.connectrpc_query-es@2.2.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.2.0-20250411203938-61b203b9a916.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20250411203938-61b203b9a916.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect-query": "^2.2.0" } }, ""],
+
+    "@buf/redpandadata_common.connectrpc_query-es/@buf/redpandadata_common.bufbuild_es": ["@buf/redpandadata_common.bufbuild_es@2.7.0-20250904135917-9feeb2588236.1", "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.7.0-20250904135917-9feeb2588236.1.tgz", { "dependencies": { "@buf/googleapis_googleapis.bufbuild_es": "2.7.0-20250411203938-61b203b9a916.1" }, "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
 
     "@buf/redpandadata_core.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
 
@@ -4572,7 +4592,15 @@
 
     "@babel/helpers/@babel/template/@babel/code-frame": ["@babel/code-frame@7.29.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw=="],
 
+    "@buf/redpandadata_ai-gateway.connectrpc_query-es/@buf/redpandadata_ai-gateway.bufbuild_es/@buf/bufbuild_protovalidate.bufbuild_es": ["@buf/bufbuild_protovalidate.bufbuild_es@2.7.0-20250912141014-52f32327d4b0.1", "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.7.0-20250912141014-52f32327d4b0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_ai-gateway.connectrpc_query-es/@buf/redpandadata_ai-gateway.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20251009205305-72c8614f3bd0.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20251009205305-72c8614f3bd0.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_cloud.bufbuild_es/@buf/redpandadata_common.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
     "@buf/redpandadata_common.connectrpc_query-es/@buf/googleapis_googleapis.connectrpc_query-es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
+
+    "@buf/redpandadata_common.connectrpc_query-es/@buf/redpandadata_common.bufbuild_es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
 
     "@buf/redpandadata_core.connectrpc_query-es/@buf/googleapis_googleapis.connectrpc_query-es/@buf/googleapis_googleapis.bufbuild_es": ["@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1", "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, ""],
 
