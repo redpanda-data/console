@@ -1,0 +1,38 @@
+---
+name: Proto generate check
+
+on:
+  pull_request:
+    paths:
+      - '**/*.proto'
+      - '**/buf.yaml'
+      - '**/buf.gen*.yaml'
+      - '**/buf.lock'
+      - 'taskfiles/proto.yaml'
+      - '.github/workflows/proto-generate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  proto-generate:
+    name: Proto generate
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'backend/go.mod'
+          cache-dependency-path: 'backend/go.sum'
+
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate protos
+        run: task proto:generate
