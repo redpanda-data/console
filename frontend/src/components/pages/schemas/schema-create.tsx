@@ -204,13 +204,14 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
 
 export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
   initPage(p: PageInitHelper): void {
-    const subjectName = this.props.subjectName;
+    const subjectName = decodeURIComponent(this.props.subjectName);
+    const encodedSubjectName = encodeURIComponent(subjectName);
     p.title = 'Add schema version';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
-    p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, undefined, {
+    p.addBreadcrumb(subjectName, `/schema-registry/subjects/${encodedSubjectName}`, undefined, {
       canBeTruncated: true,
     });
-    p.addBreadcrumb('Create schema', `/schema-registry/subjects/${subjectName}/add-version`);
+    p.addBreadcrumb('Create schema', `/schema-registry/subjects/${encodedSubjectName}/add-version`);
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
@@ -261,6 +262,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
 const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
   const [stateData, setStateData] = useState<SchemaEditorStateData | null>(null);
   const subject = api.schemaDetails.get(subjectName);
+  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   useEffect(() => {
     if (!subject || stateData !== null) return;
@@ -316,7 +318,7 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
         context: contextId,
       })
     );
-  }, [subject, stateData]);
+  }, [subject, stateData, srContextsEnabled]);
 
   if (!subject || stateData === null) return DefaultSkeleton;
 
