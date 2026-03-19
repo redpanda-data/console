@@ -76,18 +76,18 @@ describe('ConfigDialog', () => {
     expect(screen.getByText('Tags')).toBeInTheDocument();
   });
 
-  it('first tag row has + button, clicking it adds a new row', async () => {
+  it('add tag button creates a new row', async () => {
     const user = userEvent.setup();
-    render(<TestWrapper />);
+    render(<TestWrapper defaultValues={{ tags: [{ key: '', value: '' }] }} />);
     const addButton = screen.getByRole('button', { name: /add tag/i });
     await user.click(addButton);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Key')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Value')).toBeInTheDocument();
+      expect(screen.getAllByPlaceholderText('Key')).toHaveLength(2);
+      expect(screen.getAllByPlaceholderText('Value')).toHaveLength(2);
     });
   });
 
-  it('subsequent tag rows have × button, clicking removes the row', async () => {
+  it('delete button removes a tag row', async () => {
     const user = userEvent.setup();
     render(
       <TestWrapper
@@ -102,7 +102,7 @@ describe('ConfigDialog', () => {
     const keyInputs = screen.getAllByPlaceholderText('Key');
     expect(keyInputs).toHaveLength(2);
 
-    const removeButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg.lucide-x'));
+    const removeButtons = screen.getAllByRole('button', { name: /delete key-value pair/i });
     expect(removeButtons.length).toBeGreaterThanOrEqual(1);
     await user.click(removeButtons[0]);
 

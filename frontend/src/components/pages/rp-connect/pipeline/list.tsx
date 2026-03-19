@@ -24,6 +24,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { isSystemTag } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -70,6 +71,8 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { TabKafkaConnect } from '../../connect/overview';
 import { parseConfigComponents } from '../utils/yaml';
 
+type TagPair = { key: string; value: string };
+
 type Pipeline = {
   id: string;
   name: string;
@@ -79,10 +82,14 @@ type Pipeline = {
   inputs: string[];
   processors: string[];
   outputs: string[];
+  tags: TagPair[];
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   const { inputs, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
+  const tags = Object.entries(apiPipeline.tags)
+    .filter(([k]) => !isSystemTag(k))
+    .map(([key, value]) => ({ key, value }));
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
@@ -92,6 +99,7 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     inputs,
     processors,
     outputs,
+    tags,
   };
 };
 
@@ -425,6 +433,40 @@ const createColumns = ({
     },
   },
   {
+    id: 'tags',
+    accessorFn: (row) => row.tags.map((t) => `${t.key}:${t.value}`),
+    header: 'Tags',
+    filterFn: createFilterFn('multiOption'),
+    cell: ({ row }) => {
+      const tags = row.original.tags;
+      if (tags.length === 0) {
+        return null;
+      }
+      return (
+        <BadgeGroup
+          className="min-w-[184px]"
+          maxVisible={3}
+          renderOverflowContent={(overflow) => (
+            <List>
+              {tags.slice(-overflow.length).map((t) => (
+                <ListItem key={t.key}>
+                  {t.key}: {t.value}
+                </ListItem>
+              ))}
+            </List>
+          )}
+          variant="simple-outline"
+        >
+          {tags.map((t) => (
+            <Badge key={t.key} variant="simple-outline">
+              {t.key}: {t.value}
+            </Badge>
+          ))}
+        </BadgeGroup>
+      );
+    },
+  },
+  {
     id: 'state',
     accessorFn: (row) => String(row.state),
     header: 'Status',
@@ -500,6 +542,10 @@ const PipelineListPageContent = () => {
       value: v,
       label: v,
     }));
+    const tagOptions = [...new Set(pipelines.flatMap((p) => p.tags.map((t) => `${t.key}:${t.value}`)))].map((v) => ({
+      value: v,
+      label: v,
+    }));
     const stateOptions = PIPELINE_STATE_OPTIONS.map((o) => ({
       value: o.value,
       label: o.label,
@@ -530,6 +576,13 @@ const PipelineListPageContent = () => {
         displayName: 'Output',
         type: 'multiOption' as const,
         options: outputOptions,
+      },
+      {
+        id: 'tags',
+        displayName: 'Tag',
+        displayNamePlural: 'Tags',
+        type: 'multiOption' as const,
+        options: tagOptions,
       },
       {
         id: 'state',

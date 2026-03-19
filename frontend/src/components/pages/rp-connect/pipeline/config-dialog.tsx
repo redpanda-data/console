@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import {
@@ -20,69 +22,85 @@ import {
   FormLabel,
   FormMessage,
 } from 'components/redpanda-ui/components/form';
-import { Group } from 'components/redpanda-ui/components/group';
 import { Input } from 'components/redpanda-ui/components/input';
+import { KeyValueField } from 'components/redpanda-ui/components/key-value-field';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { KeyValueInput } from 'components/ui/key-value-input';
-import { PlusIcon, XIcon } from 'lucide-react';
-import { Controller, type UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
+import { type UseFormReturn, useFormContext } from 'react-hook-form';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
 
-function TagsField() {
+function TagsField({ readonly }: { readonly?: boolean }) {
   const { control, formState } = useFormContext();
-  const { fields, append, remove } = useFieldArray({ control, name: 'tags' });
 
   const tagsError = formState.errors.tags;
   const rootError = String(tagsError?.root?.message ?? (tagsError as { message?: string })?.message ?? '');
 
   return (
-    <FormItem>
-      <FormLabel>Tags</FormLabel>
-      <div className="flex flex-col gap-2">
-        {fields.map((field, index) => {
-          const tagErrors = (
-            formState.errors.tags as
-              | Record<number, { key?: { message?: string }; value?: { message?: string } }>
-              | undefined
-          )?.[index];
-          const errorMsg = tagErrors?.key?.message || tagErrors?.value?.message;
+    <FormField
+      control={control}
+      name="tags"
+      render={({ field }) => {
+        const tags = (field.value ?? []) as Array<{ key: string; value: string }>;
+        const filtered = tags.filter((t) => t.key);
+
+        if (readonly) {
           return (
-            <div className="flex flex-col gap-1" key={field.id}>
-              <Group>
-                <Controller
-                  control={control}
-                  name={`tags.${index}`}
-                  render={({ field: controllerField }) => (
-                    <KeyValueInput onChange={controllerField.onChange} value={controllerField.value} />
+            <FormItem>
+              <FormLabel>Tags</FormLabel>
+              {filtered.length === 0 ? (
+                <p className="text-muted-foreground text-sm">No tags</p>
+              ) : (
+                <BadgeGroup
+                  maxVisible={5}
+                  renderOverflowContent={(overflow) => (
+                    <List>
+                      {filtered.slice(-overflow.length).map((t) => (
+                        <ListItem key={t.key}>
+                          {t.key}: {t.value}
+                        </ListItem>
+                      ))}
+                    </List>
                   )}
-                />
-                <Button
-                  className="shrink-0"
-                  onClick={() => remove(index)}
-                  size="icon"
-                  type="button"
-                  variant="secondary-ghost"
+                  variant="simple-outline"
                 >
-                  <XIcon className="size-4" />
-                </Button>
-              </Group>
-              {errorMsg ? <p className="text-destructive text-sm">{errorMsg}</p> : null}
-            </div>
+                  {filtered.map((t) => (
+                    <Badge key={t.key} variant="simple-outline">
+                      {t.key}: {t.value}
+                    </Badge>
+                  ))}
+                </BadgeGroup>
+              )}
+            </FormItem>
           );
-        })}
-        {rootError ? <p className="text-destructive text-sm">{rootError}</p> : null}
-        <Button onClick={() => append({ key: '', value: '' })} size="sm" type="button" variant="ghost">
-          <PlusIcon className="size-4" /> Add tag
-        </Button>
-      </div>
-    </FormItem>
+        }
+
+        // Seed with one empty row so the add button is always visible
+        const editableValue = field.value && field.value.length > 0 ? field.value : [{ key: '', value: '' }];
+
+        return (
+          <FormItem>
+            <KeyValueField
+              addButtonLabel="Add tag"
+              keyFieldProps={{ placeholder: 'Key' }}
+              label="Tags"
+              onChange={field.onChange}
+              value={editableValue}
+              valueFieldProps={{ placeholder: 'Value' }}
+            />
+            {rootError ? <p className="text-destructive text-sm">{rootError}</p> : null}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
+    />
   );
 }
 
-function ConfigFields() {
+function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
   const { control } = useFormContext();
+  const readonly = mode === 'view';
 
   return (
     <div className="space-y-4">
@@ -93,7 +111,7 @@ function ConfigFields() {
           <FormItem>
             <FormLabel required>Pipeline name</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter pipeline name" />
+              <Input {...field} disabled={readonly} placeholder="Enter pipeline name" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -107,7 +125,7 @@ function ConfigFields() {
           <FormItem>
             <FormLabel>Description</FormLabel>
             <FormControl>
-              <Textarea {...field} placeholder="Optional description for this pipeline" rows={3} />
+              <Textarea {...field} disabled={readonly} placeholder="Optional description for this pipeline" rows={3} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -123,6 +141,7 @@ function ConfigFields() {
             <FormControl>
               <div className="flex items-center gap-2">
                 <Slider
+                  disabled={readonly}
                   max={MAX_TASKS}
                   min={MIN_TASKS}
                   onValueChange={(values) => field.onChange(values[0])}
@@ -131,6 +150,7 @@ function ConfigFields() {
                 />
                 <Input
                   className="w-12"
+                  disabled={readonly}
                   max={MAX_TASKS}
                   min={MIN_TASKS}
                   onChange={(e) => {
@@ -154,7 +174,7 @@ function ConfigFields() {
         )}
       />
 
-      <TagsField />
+      <TagsField readonly={readonly} />
     </div>
   );
 }
@@ -169,7 +189,7 @@ type ConfigDialogProps = {
 
 export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogProps) {
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
+    if (!nextOpen && mode !== 'view') {
       const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
       form.setValue('tags', tags);
     }
@@ -180,15 +200,19 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent size="full">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Pipeline settings' : 'Edit pipeline settings'}</DialogTitle>
+          <DialogTitle>
+            {mode === 'create' ? 'Pipeline settings' : mode === 'view' ? 'Pipeline settings' : 'Edit pipeline settings'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <ConfigFields />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={() => onOpenChange(false)} variant="primary">
-              Save
-            </Button>
-          </div>
+          <ConfigFields mode={mode} />
+          {mode !== 'view' && (
+            <div className="flex justify-end gap-2 pt-4">
+              <Button onClick={() => onOpenChange(false)} variant="primary">
+                Save
+              </Button>
+            </div>
+          )}
         </Form>
       </DialogContent>
     </Dialog>
