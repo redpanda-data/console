@@ -69,6 +69,7 @@ import { ConnectorWizard } from './connector-wizard';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { Toolbar } from './toolbar';
+import { useSlashCommand } from './use-slash-command';
 import { ViewDetails } from './view-details';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
@@ -184,6 +185,9 @@ export default function PipelinePage() {
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
+
+  // Slash command: inline command menu triggered by typing `/` in the editor
+  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -564,6 +568,20 @@ export default function PipelinePage() {
         editorInstance={editorInstance}
         onOpenChange={setIsCommandMenuOpen}
         open={isCommandMenuOpen}
+        yamlContent={yamlContent}
+      />
+
+      <PipelineCommandMenu
+        commandContainerRef={slashCommand.commandContainerRef}
+        editorInstance={editorInstance}
+        onOpenChange={(open) => {
+          if (!open) slashCommand.close();
+        }}
+        onSlashSelect={slashCommand.handleSlashSelect}
+        open={slashCommand.isOpen}
+        slashQuery={slashCommand.slashQuery}
+        variant="popover"
+        widgetDom={slashCommand.widgetDom}
         yamlContent={yamlContent}
       />
 

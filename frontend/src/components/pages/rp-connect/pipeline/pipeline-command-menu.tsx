@@ -11,6 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -26,6 +27,7 @@ import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/sec
 import { PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { useListUsersQuery } from 'react-query/api/user';
@@ -40,13 +42,31 @@ import { extractAllTopics } from '../utils/yaml';
 
 type FilterValue = 'all' | 'variables' | 'secrets' | 'topics' | 'users';
 
-type PipelineCommandMenuProps = {
+type SharedProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editorInstance: editor.IStandaloneCodeEditor | null;
   hideInternal?: boolean;
   yamlContent?: string;
 };
+
+type DialogVariantProps = SharedProps & {
+  variant?: 'dialog';
+};
+
+type PopoverVariantProps = SharedProps & {
+  variant: 'popover';
+  /** DOM node from useSlashCommand to portal into (positioned by Monaco IContentWidget) */
+  widgetDom: HTMLElement;
+  /** Text typed after `/` — drives cmdk filtering */
+  slashQuery: string;
+  /** Ref to attach to the Command container for keyboard event forwarding */
+  commandContainerRef: React.RefObject<HTMLDivElement | null>;
+  /** Called on item selection — replaces `/query` text in editor */
+  onSlashSelect: (text: string) => void;
+};
+
+export type PipelineCommandMenuProps = DialogVariantProps | PopoverVariantProps;
 
 function insertAtCursor(editorInstance: editor.IStandaloneCodeEditor, text: string) {
   const position = editorInstance.getPosition();
@@ -87,13 +107,130 @@ function replaceSecretInEditor(editorInstance: editor.IStandaloneCodeEditor | nu
   }
 }
 
-export const PipelineCommandMenu = ({
-  open,
-  onOpenChange,
-  editorInstance,
-  hideInternal = true,
-  yamlContent = '',
-}: PipelineCommandMenuProps) => {
+// ── Shared content rendered by both variants ─────────────────────────
+
+type CommandMenuContentProps = {
+  contextualVariables: Array<{ name: string }>;
+  secrets: string[];
+  allTopics: string[];
+  users: string[];
+  showCategoryFilter: boolean;
+  activeFilter: FilterValue;
+  onFilterChange: (filter: FilterValue) => void;
+  onSelect: (text: string) => void;
+  onOpenSubDialog: (setOpen: (v: boolean) => void) => void;
+  setIsSecretsDialogOpen: (v: boolean) => void;
+  setIsTopicDialogOpen: (v: boolean) => void;
+  setIsUserDialogOpen: (v: boolean) => void;
+};
+
+function CommandMenuContent({
+  contextualVariables,
+  secrets,
+  allTopics,
+  users,
+  showCategoryFilter,
+  activeFilter,
+  onFilterChange,
+  onSelect,
+  onOpenSubDialog,
+  setIsSecretsDialogOpen,
+  setIsTopicDialogOpen,
+  setIsUserDialogOpen,
+}: CommandMenuContentProps) {
+  const show = (section: FilterValue) => activeFilter === 'all' || activeFilter === section;
+  const showSep = (a: FilterValue, b: FilterValue) => show(a) && show(b);
+
+  return (
+    <>
+      {showCategoryFilter && (
+        <div className="border-b px-2 py-1.5">
+          <ToggleGroup
+            attached={false}
+            onValueChange={(v: string) => {
+              if (v) {
+                onFilterChange(v as FilterValue);
+              }
+            }}
+            size="sm"
+            type="single"
+            value={activeFilter}
+          >
+            <ToggleGroupItem value="all">All</ToggleGroupItem>
+            <ToggleGroupItem value="variables">Variables</ToggleGroupItem>
+            <ToggleGroupItem value="secrets">Secrets</ToggleGroupItem>
+            <ToggleGroupItem value="topics">Topics</ToggleGroupItem>
+            <ToggleGroupItem value="users">Users</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      )}
+      <CommandList className="pb-2">
+        <CommandEmpty>No results found.</CommandEmpty>
+        {show('variables') && (
+          <CommandGroup heading="Contextual Variables">
+            {contextualVariables.map((v) => (
+              <CommandItem key={v.name} onSelect={() => onSelect(getContextualVariableSyntax(v.name))}>
+                <InlineCode>{getContextualVariableSyntax(v.name)}</InlineCode>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+        {showSep('variables', 'secrets') && <CommandSeparator />}
+        {show('secrets') && (
+          <CommandGroup heading="Secrets">
+            {secrets.map((name) => (
+              <CommandItem key={name} onSelect={() => onSelect(getSecretSyntax(name))}>
+                <InlineCode>{getSecretSyntax(name)}</InlineCode>
+              </CommandItem>
+            ))}
+            <CommandItem
+              className="justify-center text-center"
+              onSelect={() => onOpenSubDialog(setIsSecretsDialogOpen)}
+            >
+              Create new secret
+              <PlusIcon />
+            </CommandItem>
+          </CommandGroup>
+        )}
+        {showSep('secrets', 'topics') && <CommandSeparator />}
+        {show('topics') && (
+          <CommandGroup heading="Topics">
+            {allTopics.map((name) => (
+              <CommandItem key={name} onSelect={() => onSelect(name)}>
+                {name}
+              </CommandItem>
+            ))}
+            <CommandItem className="justify-center text-center" onSelect={() => onOpenSubDialog(setIsTopicDialogOpen)}>
+              <PlusIcon />
+              Create new topic
+            </CommandItem>
+          </CommandGroup>
+        )}
+        {showSep('topics', 'users') && <CommandSeparator />}
+        {show('users') && (
+          <CommandGroup heading="Users">
+            {users.map((name) => (
+              <CommandItem key={name} onSelect={() => onSelect(name)}>
+                {name}
+              </CommandItem>
+            ))}
+            <CommandItem className="justify-center text-center" onSelect={() => onOpenSubDialog(setIsUserDialogOpen)}>
+              <PlusIcon />
+              Create new user
+            </CommandItem>
+          </CommandGroup>
+        )}
+      </CommandList>
+    </>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────
+
+export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
+  const { open, onOpenChange, editorInstance, hideInternal = true, yamlContent = '' } = props;
+  const isPopover = props.variant === 'popover';
+
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
   const [pendingSearch, setPendingSearch] = useState('');
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
@@ -161,12 +298,22 @@ export const PipelineCommandMenu = ({
 
   const contextualVariables = useMemo(() => Object.values(REDPANDA_CONTEXTUAL_VARIABLES), []);
 
-  const handleSelect = (text: string) => {
-    if (editorInstance) {
-      insertAtCursor(editorInstance, text);
-    }
-    handleOpenChange(false);
-  };
+  const handleSelect = useCallback(
+    (text: string) => {
+      if (isPopover) {
+        props.onSlashSelect(text);
+      } else {
+        if (editorInstance) {
+          insertAtCursor(editorInstance, text);
+        }
+        onOpenChange(false);
+        requestAnimationFrame(() => {
+          editorInstance?.focus();
+        });
+      }
+    },
+    [isPopover, editorInstance, onOpenChange, props]
+  );
 
   const openSubDialog = (setOpen: (v: boolean) => void) => {
     onOpenChange(false);
@@ -185,11 +332,10 @@ export const PipelineCommandMenu = ({
     (secretNames?: string[]) => {
       setIsSecretsDialogOpen(false);
       if (secretNames && secretNames.length > 0) {
-        setPendingSearch(secretNames[0]);
-        onOpenChange(true);
+        handleSelect(getSecretSyntax(secretNames[0]));
       }
     },
-    [onOpenChange]
+    [handleSelect]
   );
 
   const handleCreateTopic = useCallback(async () => {
@@ -200,13 +346,12 @@ export const PipelineCommandMenu = ({
       }
       setIsTopicDialogOpen(false);
       if (result.data?.topicName) {
-        setPendingSearch(result.data.topicName);
-        onOpenChange(true);
+        handleSelect(result.data.topicName);
       }
     } else if (result?.error) {
       toast.error(result.error);
     }
-  }, [onOpenChange]);
+  }, [handleSelect]);
 
   const handleCreateUser = useCallback(async () => {
     const result = await userStepRef.current?.triggerSubmit();
@@ -215,13 +360,12 @@ export const PipelineCommandMenu = ({
       const data = result.data;
       const name = data && 'username' in data ? data.username : '';
       if (name) {
-        setPendingSearch(name);
-        onOpenChange(true);
+        handleSelect(name);
       }
     }
-  }, [onOpenChange]);
+  }, [handleSelect]);
 
-  const handleOpenChange = (nextOpen: boolean) => {
+  const handleDialogOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen);
     if (!nextOpen) {
       setPendingSearch('');
@@ -232,98 +376,25 @@ export const PipelineCommandMenu = ({
     }
   };
 
-  const show = (section: FilterValue) => activeFilter === 'all' || activeFilter === section;
+  const contentProps: CommandMenuContentProps = {
+    contextualVariables,
+    secrets,
+    allTopics,
+    users,
+    showCategoryFilter: !isPopover,
+    activeFilter,
+    onFilterChange: setActiveFilter,
+    onSelect: handleSelect,
+    onOpenSubDialog: openSubDialog,
+    setIsSecretsDialogOpen,
+    setIsTopicDialogOpen,
+    setIsUserDialogOpen,
+  };
 
-  // Show separator between two sections only when both are visible
-  const showSep = (a: FilterValue, b: FilterValue) => show(a) && show(b);
+  // ── Sub-dialogs (shared by both variants) ──────────────────────────
 
-  return (
+  const subDialogs = (
     <>
-      <CommandDialog
-        description="Insert contextual variables, secrets, topics, and users"
-        onOpenChange={handleOpenChange}
-        open={open}
-        title="Command Menu"
-      >
-        <CommandInput defaultValue={pendingSearch} placeholder="Search variables, secrets, topics, users..." />
-        <div className="border-b px-2 py-1.5">
-          <ToggleGroup
-            attached={false}
-            onValueChange={(v: string) => {
-              if (v) {
-                setActiveFilter(v as FilterValue);
-              }
-            }}
-            size="sm"
-            type="single"
-            value={activeFilter}
-          >
-            <ToggleGroupItem value="all">All</ToggleGroupItem>
-            <ToggleGroupItem value="variables">Variables</ToggleGroupItem>
-            <ToggleGroupItem value="secrets">Secrets</ToggleGroupItem>
-            <ToggleGroupItem value="topics">Topics</ToggleGroupItem>
-            <ToggleGroupItem value="users">Users</ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-        <CommandList className="pb-2">
-          <CommandEmpty>No results found.</CommandEmpty>
-          {show('variables') && (
-            <CommandGroup heading="Contextual Variables">
-              {contextualVariables.map((v) => (
-                <CommandItem key={v.name} onSelect={() => handleSelect(getContextualVariableSyntax(v.name))}>
-                  <InlineCode>{getContextualVariableSyntax(v.name)}</InlineCode>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-          {showSep('variables', 'secrets') && <CommandSeparator />}
-          {show('secrets') && (
-            <CommandGroup heading="Secrets">
-              {secrets.map((name) => (
-                <CommandItem key={name} onSelect={() => handleSelect(getSecretSyntax(name))}>
-                  <InlineCode>{getSecretSyntax(name)}</InlineCode>
-                </CommandItem>
-              ))}
-              <CommandItem
-                className="justify-center text-center"
-                onSelect={() => openSubDialog(setIsSecretsDialogOpen)}
-              >
-                Create new secret
-                <PlusIcon />
-              </CommandItem>
-            </CommandGroup>
-          )}
-          {showSep('secrets', 'topics') && <CommandSeparator />}
-          {show('topics') && (
-            <CommandGroup heading="Topics">
-              {allTopics.map((name) => (
-                <CommandItem key={name} onSelect={() => handleSelect(name)}>
-                  {name}
-                </CommandItem>
-              ))}
-              <CommandItem className="justify-center text-center" onSelect={() => openSubDialog(setIsTopicDialogOpen)}>
-                <PlusIcon />
-                Create new topic
-              </CommandItem>
-            </CommandGroup>
-          )}
-          {showSep('topics', 'users') && <CommandSeparator />}
-          {show('users') && (
-            <CommandGroup heading="Users">
-              {users.map((name) => (
-                <CommandItem key={name} onSelect={() => handleSelect(name)}>
-                  {name}
-                </CommandItem>
-              ))}
-              <CommandItem className="justify-center text-center" onSelect={() => openSubDialog(setIsUserDialogOpen)}>
-                <PlusIcon />
-                Create new user
-              </CommandItem>
-            </CommandGroup>
-          )}
-        </CommandList>
-      </CommandDialog>
-
       <AddSecretsDialog
         existingSecrets={secrets}
         isOpen={isSecretsDialogOpen}
@@ -366,6 +437,48 @@ export const PipelineCommandMenu = ({
           </div>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  // ── Popover variant (rendered into Monaco content widget via portal) ──
+
+  if (isPopover) {
+    return (
+      <>
+        {open &&
+          createPortal(
+            <Command
+              className="w-72 rounded-md border bg-background shadow-md"
+              loop
+              ref={props.commandContainerRef}
+              size="sm"
+              variant="elevated"
+              vimBindings={false}
+            >
+              <CommandInput className="sr-only" tabIndex={-1} value={props.slashQuery} />
+              <CommandMenuContent {...contentProps} />
+            </Command>,
+            props.widgetDom
+          )}
+        {subDialogs}
+      </>
+    );
+  }
+
+  // ── Dialog variant (existing Cmd+Shift+P behavior) ─────────────────
+
+  return (
+    <>
+      <CommandDialog
+        description="Insert contextual variables, secrets, topics, and users"
+        onOpenChange={handleDialogOpenChange}
+        open={open}
+        title="Command Menu"
+      >
+        <CommandInput defaultValue={pendingSearch} placeholder="Search variables, secrets, topics, users..." />
+        <CommandMenuContent {...contentProps} />
+      </CommandDialog>
+      {subDialogs}
     </>
   );
 };
