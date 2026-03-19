@@ -1,16 +1,7 @@
-/**
- * Copyright 2025 Redpanda Data, Inc.
- *
- * Use of this software is governed by the Business Source License
- * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
- *
- * As of the Change Date specified in that file, in accordance with
- * the Business Source License, use of this software will be governed
- * by the Apache License, Version 2.0
- */
+'use client';
 
-// TODO: upstream to UI registry
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
+
 import { cn } from '../lib/utils';
 
 const headingClasses: Record<number, string> = {
@@ -21,7 +12,7 @@ const headingClasses: Record<number, string> = {
   5: 'font-display font-medium leading-none tracking-heading text-sm',
 };
 
-interface EditableTextProps {
+type EditableTextProps = {
   value: string;
   onChange?: (value: string) => void;
   onBlur?: () => void;
@@ -33,9 +24,9 @@ interface EditableTextProps {
   error?: boolean;
   errorMessage?: string;
   autoFocus?: boolean;
-}
+};
 
-export function EditableText({
+function EditableText({
   value,
   onChange,
   onBlur,
@@ -50,26 +41,35 @@ export function EditableText({
 }: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(autoFocus ?? false);
   const [draft, setDraft] = useState(value);
+  const [textWidth, setTextWidth] = useState<number | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
+  const spanRef = useRef<HTMLButtonElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+  const handleInputRef = useCallback((node: HTMLInputElement | null) => {
+    inputRef.current = node;
+    if (!node) {
+      return;
     }
-  }, [isEditing]);
+    if (measureRef.current) {
+      const measuredWidth = measureRef.current.offsetWidth;
+      setTextWidth((prev) => prev ?? measuredWidth);
+    }
+    node.focus();
+    node.select();
+  }, []);
 
   const typographyClasses =
     as === 'heading' ? headingClasses[headingLevel] : 'font-sans font-normal text-sm leading-5 tracking-normal';
 
   const handleClick = useCallback(() => {
-    if (readOnly) return;
+    if (readOnly) {
+      return;
+    }
+    setDraft(value);
+    setTextWidth(spanRef.current?.offsetWidth);
     setIsEditing(true);
-  }, [readOnly]);
+  }, [readOnly, value]);
 
   const handleBlur = useCallback(() => {
     setIsEditing(false);
@@ -80,7 +80,7 @@ export function EditableText({
   }, [draft, value, onChange, onBlur]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         inputRef.current?.blur();
       }
@@ -97,12 +97,19 @@ export function EditableText({
   if (isEditing) {
     return (
       <div className="relative">
+        <span
+          aria-hidden="true"
+          className={cn(typographyClasses, 'pointer-events-none invisible absolute whitespace-pre')}
+          ref={measureRef}
+        >
+          {value || placeholder}
+        </span>
         <input
-          ref={inputRef}
           className={cn(
             typographyClasses,
             'border-transparent bg-transparent px-0 shadow-none outline-none focus-visible:border-ring focus-visible:ring-0',
             'border-b',
+            'line-clamp-1 min-w-[100px] max-w-full overflow-hidden text-ellipsis',
             errorClasses,
             className
           )}
@@ -110,37 +117,36 @@ export function EditableText({
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          ref={handleInputRef}
+          style={{ width: textWidth }}
           value={draft}
         />
-        {error && errorMessage && (
-          <p className="absolute top-full mt-1 text-destructive text-xs">{errorMessage}</p>
-        )}
+        {error && !!errorMessage && <p className="absolute top-full mt-1 text-destructive text-xs">{errorMessage}</p>}
       </div>
     );
   }
 
   return (
     <div className="relative">
-      <span
+      <button
         className={cn(
           typographyClasses,
-          'cursor-text border-b border-transparent',
+          'cursor-text border-transparent border-b text-left',
+          'line-clamp-1 min-w-[100px] max-w-full overflow-hidden text-ellipsis',
           !value && 'text-muted-foreground',
           errorClasses,
           className
         )}
+        disabled={readOnly}
         onClick={handleClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') handleClick();
-        }}
-        role="button"
-        tabIndex={readOnly ? undefined : 0}
+        ref={spanRef}
+        type="button"
       >
         {value || placeholder}
-      </span>
-      {error && errorMessage && (
-        <p className="absolute top-full mt-1 text-destructive text-xs">{errorMessage}</p>
-      )}
+      </button>
+      {error && !!errorMessage && <p className="absolute top-full mt-1 text-destructive text-xs">{errorMessage}</p>}
     </div>
   );
 }
+
+export { EditableText, type EditableTextProps };

@@ -5,7 +5,8 @@ import { Select as SelectPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { useGroup } from './group';
-import { cn, type SharedProps } from '../lib/utils';
+import { usePortalContainer } from '../lib/use-portal-container';
+import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
 function Select({ testId, ...props }: React.ComponentProps<typeof SelectPrimitive.Root> & SharedProps) {
   return <SelectPrimitive.Root data-slot="select" data-testid={testId} {...props} />;
@@ -68,36 +69,39 @@ SelectTrigger.displayName = 'SelectTrigger';
 
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
-  React.ComponentProps<typeof SelectPrimitive.Content> & SharedProps & { container?: Element }
->(({ className, children, position = 'popper', testId, container, ...props }, ref) => (
-  <SelectPrimitive.Portal container={container}>
-    <SelectPrimitive.Content
-      className={cn(
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
-        position === 'popper' &&
-          'data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
-        className
-      )}
-      data-slot="select-content"
-      data-testid={testId}
-      position={position}
-      ref={ref}
-      {...props}
-    >
-      <SelectScrollUpButton />
-      <SelectPrimitive.Viewport
+  React.ComponentProps<typeof SelectPrimitive.Content> & SharedProps & Pick<PortalContentProps, 'container'>
+>(({ className, children, position = 'popper', testId, container, ...props }, ref) => {
+  const portalContainer = usePortalContainer();
+  return (
+    <SelectPrimitive.Portal container={container ?? portalContainer}>
+      <SelectPrimitive.Content
         className={cn(
-          'p-1',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
           position === 'popper' &&
-            'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1'
+            'data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
+          className
         )}
+        data-slot="select-content"
+        data-testid={testId}
+        position={position}
+        ref={ref}
+        {...props}
       >
-        {children}
-      </SelectPrimitive.Viewport>
-      <SelectScrollDownButton />
-    </SelectPrimitive.Content>
-  </SelectPrimitive.Portal>
-));
+        <SelectScrollUpButton />
+        <SelectPrimitive.Viewport
+          className={cn(
+            'p-1',
+            position === 'popper' &&
+              'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1'
+          )}
+        >
+          {children}
+        </SelectPrimitive.Viewport>
+        <SelectScrollDownButton />
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  );
+});
 
 SelectContent.displayName = 'SelectContent';
 

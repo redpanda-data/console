@@ -102,7 +102,7 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
     defaultValue,
     onValueChange,
     className,
-    transition = { type: 'tween', ease: 'easeOut', duration: 0.2 },
+    transition = { type: 'spring', stiffness: 350, damping: 35 },
     hover = false,
     enabled = true,
     controlledItems,
