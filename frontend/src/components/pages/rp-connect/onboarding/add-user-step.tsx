@@ -510,6 +510,15 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         )}
                       </div>
 
+                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && (
+                        <Alert variant="info">
+                          <AlertDescription>
+                            A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will
+                            be used.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {existingUserSelected &&
                         userSelectionType === CreatableSelectionOptions.EXISTING &&
                         topicName &&

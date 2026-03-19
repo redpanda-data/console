@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
@@ -240,6 +241,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       isPending,
     }));
 
+    // Show info alert when user types a name that matches an existing topic in "new" mode
+    const showExistingTopicAlert =
+      topicSelectionType === CreatableSelectionOptions.CREATE && Boolean(existingTopicSelected);
+
     return (
       <Card size="full" {...motionProps} animated variant="ghost">
         {!hideTitle && (
@@ -331,6 +336,15 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                       </Button>
                     )}
                   </div>
+
+                  {showExistingTopicAlert && (
+                    <Alert variant="info">
+                      <AlertDescription>
+                        A topic named <b>{watchedTopicName}</b> already exists. A reference to the existing topic will
+                        be used.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </div>
 
