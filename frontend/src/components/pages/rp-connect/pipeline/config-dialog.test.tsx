@@ -11,13 +11,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import userEvent from '@testing-library/user-event';
-import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { Config } from './config';
+import { ConfigDialog } from './config-dialog';
 import { MIN_TASKS } from '../tasks';
 
 const schema = z.object({
@@ -41,16 +40,10 @@ function TestWrapper({ defaultValues }: { defaultValues?: Partial<FormValues> })
     },
   });
 
-  return (
-    <Form {...form}>
-      <form>
-        <Config />
-      </form>
-    </Form>
-  );
+  return <ConfigDialog form={form} mode="create" onOpenChange={() => {}} open />;
 }
 
-describe('Config', () => {
+describe('ConfigDialog', () => {
   it('renders pipeline name input, accepts text', async () => {
     const user = userEvent.setup();
     render(<TestWrapper />);

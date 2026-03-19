@@ -88,18 +88,18 @@ export const stepMotionProps: MotionProps = {
   transition: { duration: 0.3, ease: 'easeInOut' },
 };
 
-export const MiniWizardStep = {
-  ADD_TOPIC: 'mini-add-topic',
-  ADD_USER: 'mini-add-user',
+export const RedpandaConnectorSetupStep = {
+  ADD_TOPIC: 'redpanda-connector-add-topic',
+  ADD_USER: 'redpanda-connector-add-user',
 } as const;
 
-export const miniWizardStepDefinitions = [
-  { id: MiniWizardStep.ADD_TOPIC, title: 'Add a topic' },
-  { id: MiniWizardStep.ADD_USER, title: 'Add permissions' },
+export const redpandaConnectorSetupStepDefinitions = [
+  { id: RedpandaConnectorSetupStep.ADD_TOPIC, title: 'Add a topic' },
+  { id: RedpandaConnectorSetupStep.ADD_USER, title: 'Add permissions' },
 ] as const;
 
-const MiniStepper = defineStepper(...miniWizardStepDefinitions);
-export const MiniWizardStepper = MiniStepper.Stepper;
-export type MiniWizardStepperSteps = typeof MiniStepper.Steps;
+const RedpandaConnectorSetupStepDefinition = defineStepper(...redpandaConnectorSetupStepDefinitions);
+export const RedpandaConnectorSetupStepper = RedpandaConnectorSetupStepDefinition.Stepper;
+export type RedpandaConnectorSetupSteps = typeof RedpandaConnectorSetupStepDefinition.Steps;
 
 export type PipelineMode = 'create' | 'edit' | 'view';

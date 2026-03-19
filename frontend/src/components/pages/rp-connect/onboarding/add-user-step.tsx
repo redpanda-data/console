@@ -75,6 +75,7 @@ import {
 type AddUserStepProps = {
   defaultUsername?: string;
   defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
+  hideInternal?: boolean;
   topicName?: string;
   defaultConsumerGroup?: string;
   showConsumerGroupFields?: boolean;
@@ -91,6 +92,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     {
       defaultUsername,
       defaultSaslMechanism,
+      hideInternal = true,
       topicName,
       defaultConsumerGroup,
       showConsumerGroupFields = false,
@@ -202,11 +204,13 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
     const userOptions = useMemo(
       () =>
-        (usersList?.users ?? []).map((user) => ({
-          value: user.name || '',
-          label: user.name || '',
-        })),
-      [usersList]
+        (usersList?.users ?? [])
+          .filter((user) => !(hideInternal && user.name?.startsWith('__')))
+          .map((user) => ({
+            value: user.name || '',
+            label: user.name || '',
+          })),
+      [usersList, hideInternal]
     );
 
     const [userSelectionType, setUserSelectionType] = useState<CreatableSelectionType>(() => {

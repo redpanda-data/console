@@ -17,10 +17,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
-import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
-import { Form } from 'components/redpanda-ui/components/form';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -59,7 +56,6 @@ import {
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { toast } from 'sonner';
 import {
-  useOnboardingTopicDataStore,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
   useOnboardingYamlContentStore,
@@ -68,21 +64,16 @@ import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
-import { Config } from './config';
+import { ConfigDialog } from './config-dialog';
+import { ConnectorWizard } from './connector-wizard';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
-import { type MiniWizardResult, RedpandaMiniWizard } from './redpanda-mini-wizard';
 import { Toolbar } from './toolbar';
 import { ViewDetails } from './view-details';
 import { extractLintHintsFromError } from '../errors';
-import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
-import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
-import { AddTopicStep } from '../onboarding/add-topic-step';
-import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
-import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
 import { parseSchema } from '../utils/schema';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -191,10 +182,8 @@ export default function PipelinePage() {
   const [yamlContent, setYamlContent] = useState('');
   const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
-  const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
-  const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
-  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-  const [pendingSecretSearch, setPendingSecretSearch] = useState('');
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -418,105 +407,6 @@ export default function PipelinePage() {
 
   const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
   const isSaving = isCreatePending || isUpdatePending;
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
-
-  const handleOpenConfigDialog = useCallback(() => {
-    setIsConfigDialogOpen(true);
-  }, []);
-
-  const handleNameChange = useCallback(
-    (name: string) => {
-      form.setValue('name', name, { shouldValidate: true });
-    },
-    [form]
-  );
-
-  const handleYamlChange = useCallback(
-    (value: string) => {
-      setYamlContent(value);
-      userLintOverrideRef.current = null;
-      if (mode === 'create') {
-        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
-      }
-    },
-    [mode]
-  );
-
-  const [miniWizardConfig, setMiniWizardConfig] = useState<{
-    connectionName: string;
-    connectionType: ConnectComponentType;
-  } | null>(null);
-
-  const handleConnectorSelected = useCallback(
-    (connectionName: string, connectionType: ConnectComponentType) => {
-      setAddConnectorType(null);
-
-      // Redpanda components open the mini wizard instead of directly injecting
-      if (REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName)) {
-        setMiniWizardConfig({ connectionName, connectionType });
-        return;
-      }
-
-      const newYaml = getConnectTemplate({
-        connectionName,
-        connectionType,
-        components,
-        showAdvancedFields: false,
-        existingYaml: yamlContent,
-      });
-      if (newYaml) {
-        handleYamlChange(newYaml);
-      }
-    },
-    [components, yamlContent, handleYamlChange]
-  );
-
-  const handleMiniWizardComplete = useCallback(
-    (result: MiniWizardResult) => {
-      if (!miniWizardConfig) {
-        return;
-      }
-
-      // Populate onboarding stores so schemaToConfig can read topic/user data
-      if (result.topicName) {
-        useOnboardingTopicDataStore.getState().setTopicData({ topicName: result.topicName });
-      }
-      if (result.authMethod === 'service-account' && result.serviceAccountId) {
-        useOnboardingUserDataStore.getState().setUserData({
-          authMethod: 'service-account',
-          serviceAccountName: result.serviceAccountName ?? '',
-          serviceAccountId: result.serviceAccountId,
-          serviceAccountSecretName: result.serviceAccountSecretName ?? '',
-        });
-      } else if (result.username) {
-        useOnboardingUserDataStore.getState().setUserData({
-          authMethod: 'sasl',
-          username: result.username,
-          saslMechanism: (result.saslMechanism as 'SCRAM-SHA-256' | 'SCRAM-SHA-512') ?? 'SCRAM-SHA-256',
-          consumerGroup: result.consumerGroup ?? '',
-        });
-      }
-
-      const newYaml = getConnectTemplate({
-        connectionName: miniWizardConfig.connectionName,
-        connectionType: miniWizardConfig.connectionType,
-        components,
-        showAdvancedFields: false,
-        existingYaml: yamlContent,
-      });
-
-      // Clear stores immediately so they don't leak into other operations
-      useOnboardingTopicDataStore.getState().reset();
-      useOnboardingUserDataStore.getState().reset();
-
-      if (newYaml) {
-        handleYamlChange(newYaml);
-      }
-      setMiniWizardConfig(null);
-    },
-    [miniWizardConfig, components, yamlContent, handleYamlChange]
-  );
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -543,6 +433,45 @@ export default function PipelinePage() {
     [deleteMutation, navigate]
   );
 
+  const handleNameChange = useCallback(
+    (name: string) => {
+      form.setValue('name', name, { shouldValidate: true });
+    },
+    [form]
+  );
+
+  const handleYamlChange = useCallback(
+    (value: string) => {
+      setYamlContent(value);
+      userLintOverrideRef.current = null;
+      if (mode === 'create') {
+        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
+      }
+    },
+    [mode]
+  );
+
+  // After adding a connector via wizard, focus editor and move cursor to end of file
+  const handleConnectorYamlChange = useCallback(
+    (yaml: string) => {
+      handleYamlChange(yaml);
+      // Defer until after React render so the editor has the new content
+      setTimeout(() => {
+        if (editorInstance) {
+          const model = editorInstance.getModel();
+          if (model) {
+            const lastLine = model.getLineCount();
+            const lastColumn = model.getLineMaxColumn(lastLine);
+            editorInstance.setPosition({ lineNumber: lastLine, column: lastColumn });
+            editorInstance.revealLine(lastLine);
+          }
+          editorInstance.focus();
+        }
+      }, 0);
+    },
+    [handleYamlChange, editorInstance]
+  );
+
   const pipelineName = useWatch({ control: form.control, name: 'name' });
 
   return (
@@ -554,10 +483,8 @@ export default function PipelinePage() {
         mode={mode}
         nameError={form.formState.errors.name?.message}
         onCancel={handleCancel}
-        onCommandMenu={() => {
-          setIsCommandMenuOpen(true);
-        }}
-        onEditConfig={handleOpenConfigDialog}
+        onCommandMenu={() => setIsCommandMenuOpen(true)}
+        onEditConfig={() => setIsConfigDialogOpen(true)}
         onNameChange={handleNameChange}
         onSave={handleSave}
         pipelineId={pipelineId}
@@ -588,9 +515,7 @@ export default function PipelinePage() {
               ) : (
                 <YamlEditor
                   onChange={(val) => handleYamlChange(val || '')}
-                  onEditorMount={(editorRef) => {
-                    setEditorInstance(editorRef);
-                  }}
+                  onEditorMount={(editorRef) => setEditorInstance(editorRef)}
                   schema={yamlEditorSchema}
                   transparentBackground
                   value={yamlContent}
@@ -633,122 +558,23 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      <Dialog
-        onOpenChange={(open) => {
-          if (!open) {
-            const tags = form.getValues('tags').filter((t) => t.key !== '' || t.value !== '');
-            form.setValue('tags', tags);
-          }
-          setIsConfigDialogOpen(open);
-        }}
-        open={isConfigDialogOpen}
-      >
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>{mode === 'create' ? 'Pipeline settings' : 'Edit pipeline settings'}</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <Config />
-            <div className="flex justify-end gap-2 pt-4">
-              <Button onClick={() => setIsConfigDialogOpen(false)} variant="primary">
-                Save
-              </Button>
-            </div>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />
 
       <PipelineCommandMenu
         editorInstance={editorInstance}
-        initialSearch={pendingSecretSearch}
-        onCreateSecret={() => {
-          setIsCommandMenuOpen(false);
-          setPendingSecretSearch('');
-          setIsSecretsDialogOpen(true);
-        }}
-        onCreateTopic={() => {
-          setIsCommandMenuOpen(false);
-          setIsTopicDialogOpen(true);
-        }}
-        onCreateUser={() => {
-          setIsCommandMenuOpen(false);
-          setIsUserDialogOpen(true);
-        }}
-        onOpenChange={(open) => {
-          setIsCommandMenuOpen(open);
-          if (!open) {
-            setPendingSecretSearch('');
-          }
-        }}
+        onOpenChange={setIsCommandMenuOpen}
         open={isCommandMenuOpen}
         yamlContent={yamlContent}
       />
 
-      <AddSecretsDialog
-        existingSecrets={[]}
-        isOpen={isSecretsDialogOpen}
-        missingSecrets={[]}
-        onClose={() => setIsSecretsDialogOpen(false)}
-        onSecretsCreated={(secretNames) => {
-          setIsSecretsDialogOpen(false);
-          if (secretNames && secretNames.length > 0) {
-            setPendingSecretSearch(secretNames[0]);
-            setIsCommandMenuOpen(true);
-          }
-        }}
+      <ConnectorWizard
+        addConnectorType={addConnectorType}
+        componentList={componentListResponse?.components}
+        components={components}
+        onClose={() => setAddConnectorType(null)}
+        onYamlChange={handleConnectorYamlChange}
+        yamlContent={yamlContent}
       />
-
-      <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
-        <DialogContent size="xl">
-          <DialogHeader>
-            <DialogTitle>Create a topic</DialogTitle>
-          </DialogHeader>
-          <AddTopicStep hideTitle ref={null} selectionMode="new" />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
-        <DialogContent size="xl">
-          <DialogHeader>
-            <DialogTitle>Create a user</DialogTitle>
-          </DialogHeader>
-          <AddUserStep hideTitle ref={null} selectionMode="new" />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {componentListResponse?.components ? (
-        <AddConnectorDialog
-          components={componentListResponse.components}
-          connectorType={
-            addConnectorType === 'resource'
-              ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
-              : (addConnectorType ?? undefined)
-          }
-          isOpen={addConnectorType !== null}
-          onAddConnector={handleConnectorSelected}
-          onCloseAddConnector={() => setAddConnectorType(null)}
-        />
-      ) : null}
-
-      {miniWizardConfig !== null && (
-        <RedpandaMiniWizard
-          connectionName={miniWizardConfig.connectionName}
-          connectionType={miniWizardConfig.connectionType}
-          isOpen
-          onClose={() => setMiniWizardConfig(null)}
-          onComplete={handleMiniWizardComplete}
-        />
-      )}
     </div>
   );
 }

@@ -48,13 +48,17 @@ import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FO
 
 type AddTopicStepProps = {
   defaultTopicName?: string;
+  hideInternal?: boolean;
   onValidityChange?: (isValid: boolean) => void;
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
 };
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  ({ defaultTopicName, onValidityChange, selectionMode = 'both', hideTitle, ...motionProps }, ref) => {
+  (
+    { defaultTopicName, hideInternal = true, onValidityChange, selectionMode = 'both', hideTitle, ...motionProps },
+    ref
+  ) => {
     const queryClient = useQueryClient();
 
     const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
@@ -67,11 +71,13 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
     const topicOptions = useMemo(
       () =>
-        topicList?.topics?.map((topic) => ({
-          value: topic.topicName,
-          label: topic.topicName,
-        })) ?? [],
-      [topicList]
+        topicList?.topics
+          ?.filter((topic) => !(hideInternal && topic.topicName.startsWith('__')))
+          .map((topic) => ({
+            value: topic.topicName,
+            label: topic.topicName,
+          })) ?? [],
+      [topicList, hideInternal]
     );
 
     const [topicSelectionType, setTopicSelectionType] = useState<CreatableSelectionType>(() => {

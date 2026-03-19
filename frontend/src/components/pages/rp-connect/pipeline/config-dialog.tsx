@@ -10,7 +10,9 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import {
+  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -24,7 +26,7 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { KeyValueInput } from 'components/ui/key-value-input';
 import { PlusIcon, XIcon } from 'lucide-react';
-import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
+import { Controller, type UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
 
@@ -79,7 +81,7 @@ function TagsField() {
   );
 }
 
-export function Config() {
+function ConfigFields() {
   const { control } = useFormContext();
 
   return (
@@ -154,5 +156,41 @@ export function Config() {
 
       <TagsField />
     </div>
+  );
+}
+
+type ConfigDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  // biome-ignore lint/suspicious/noExplicitAny: form type is defined in parent
+  form: UseFormReturn<any>;
+  mode: 'create' | 'edit' | 'view';
+};
+
+export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogProps) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
+      form.setValue('tags', tags);
+    }
+    onOpenChange(nextOpen);
+  };
+
+  return (
+    <Dialog onOpenChange={handleOpenChange} open={open}>
+      <DialogContent size="full">
+        <DialogHeader>
+          <DialogTitle>{mode === 'create' ? 'Pipeline settings' : 'Edit pipeline settings'}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <ConfigFields />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button onClick={() => onOpenChange(false)} variant="primary">
+              Save
+            </Button>
+          </div>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
