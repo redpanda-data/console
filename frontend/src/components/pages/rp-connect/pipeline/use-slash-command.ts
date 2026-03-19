@@ -24,6 +24,13 @@ const KEY_ESCAPE = 9; // KeyCode.Escape
 const KEY_UP = 16; // KeyCode.UpArrow
 const KEY_DOWN = 18; // KeyCode.DownArrow
 
+function createWidgetDom() {
+  const el = document.createElement('div');
+  // Sit above Monaco's scrollbars (z-11), suggest widget (z-40), and surrounding UI
+  el.style.zIndex = '50';
+  return el;
+}
+
 /**
  * Hook that detects `/` typed in a Monaco editor and manages the slash command
  * menu lifecycle: positioning via IContentWidget, keyboard interception via
@@ -35,7 +42,7 @@ export function useSlashCommand(editorInstance: editor.IStandaloneCodeEditor | n
   const slashPositionRef = useRef<SlashPosition | null>(null);
   // Preserved across close() so sub-dialog callbacks can still replace the /query text
   const lastSlashRangeRef = useRef<{ start: SlashPosition; endColumn: number } | null>(null);
-  const widgetDomRef = useRef<HTMLDivElement>(document.createElement('div'));
+  const widgetDomRef = useRef<HTMLDivElement>(createWidgetDom());
   const contextKeyRef = useRef<editor.IContextKey<boolean> | null>(null);
   const commandContainerRef = useRef<HTMLDivElement>(null);
   const isWidgetMountedRef = useRef(false);

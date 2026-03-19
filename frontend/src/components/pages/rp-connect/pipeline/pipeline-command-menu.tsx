@@ -21,6 +21,7 @@ import {
   CommandSeparator,
 } from 'components/redpanda-ui/components/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
@@ -236,6 +237,8 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
+  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
@@ -339,29 +342,39 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   );
 
   const handleCreateTopic = useCallback(async () => {
-    const result = await topicStepRef.current?.triggerSubmit();
-    if (result?.success) {
-      if (result.message) {
-        toast.success(result.message);
+    setIsTopicSubmitting(true);
+    try {
+      const result = await topicStepRef.current?.triggerSubmit();
+      if (result?.success) {
+        if (result.message) {
+          toast.success(result.message);
+        }
+        setIsTopicDialogOpen(false);
+        if (result.data?.topicName) {
+          handleSelect(result.data.topicName);
+        }
+      } else if (result?.error) {
+        toast.error(result.error);
       }
-      setIsTopicDialogOpen(false);
-      if (result.data?.topicName) {
-        handleSelect(result.data.topicName);
-      }
-    } else if (result?.error) {
-      toast.error(result.error);
+    } finally {
+      setIsTopicSubmitting(false);
     }
   }, [handleSelect]);
 
   const handleCreateUser = useCallback(async () => {
-    const result = await userStepRef.current?.triggerSubmit();
-    if (result?.success) {
-      setIsUserDialogOpen(false);
-      const data = result.data;
-      const name = data && 'username' in data ? data.username : '';
-      if (name) {
-        handleSelect(name);
+    setIsUserSubmitting(true);
+    try {
+      const result = await userStepRef.current?.triggerSubmit();
+      if (result?.success) {
+        setIsUserDialogOpen(false);
+        const data = result.data;
+        const name = data && 'username' in data ? data.username : '';
+        if (name) {
+          handleSelect(name);
+        }
       }
+    } finally {
+      setIsUserSubmitting(false);
     }
   }, [handleSelect]);
 
@@ -411,11 +424,11 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
           </DialogHeader>
           <AddTopicStep hideTitle ref={topicStepRef} selectionMode="new" />
           <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
+            <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button onClick={handleCreateTopic} variant="primary">
-              Create
+            <Button className="min-w-[70px]" disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary">
+              {isTopicSubmitting ? <Spinner /> : 'Create'}
             </Button>
           </div>
         </DialogContent>
@@ -428,11 +441,11 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
           </DialogHeader>
           <AddUserStep hideTitle ref={userStepRef} selectionMode="new" />
           <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
+            <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button onClick={handleCreateUser} variant="primary">
-              Create
+            <Button className="min-w-[70px]" disabled={isUserSubmitting} onClick={handleCreateUser} variant="primary">
+              {isUserSubmitting ? <Spinner /> : 'Create'}
             </Button>
           </div>
         </DialogContent>
