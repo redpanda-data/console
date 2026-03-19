@@ -519,6 +519,21 @@ components:
         trace:
           $ref: '#/components/schemas/Trace'
       type: object
+    GetTranscriptResponse:
+      properties:
+        error:
+          $ref: '#/components/schemas/TranscriptError'
+        summary:
+          $ref: '#/components/schemas/TranscriptSummary'
+        system_prompt:
+          description: System prompt / instructions provided to the agent.
+          type: string
+        turns:
+          description: Ordered list of conversation turns.
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      type: object
     Google:
       properties:
         api_key:
@@ -1287,6 +1302,38 @@ components:
             $ref: '#/components/schemas/TraceSummary'
           type: array
       type: object
+    ListTranscriptsRequest.Filter:
+      description: Optional filters for narrowing the transcript list.
+      properties:
+        end_time:
+          description: Filter conversations that started before this time (exclusive).
+          format: date-time
+          type: string
+        has_errors:
+          description: Filter for conversations that contain errors.
+          nullable: true
+          type: boolean
+        query:
+          description: Free-text search across conversation titles and content.
+          type: string
+        start_time:
+          description: Filter conversations that started after this time (inclusive).
+          format: date-time
+          type: string
+        status:
+          $ref: '#/components/schemas/TranscriptStatus'
+      type: object
+    ListTranscriptsResponse:
+      properties:
+        next_page_token:
+          description: Token for fetching the next page. Empty if no more results.
+          type: string
+        transcripts:
+          description: List of conversation summaries.
+          items:
+            $ref: '#/components/schemas/TranscriptSummary'
+          type: array
+      type: object
     MCPServer.State:
       description: |-
         State of the MCP server.
@@ -1854,6 +1901,197 @@ components:
         trace_id:
           description: Unique trace identifier as a 32-character hexadecimal string.
           pattern: ^[0-9a-f]{32}$
+          type: string
+      type: object
+    TranscriptError:
+      description: |-
+        Error information associated with a transcript or turn.
+        Sourced from OTel span status_code = ERROR and status_message.
+      properties:
+        code:
+          description: Error code or category.
+          type: string
+        message:
+          description: Human-readable error description. From OTel span status_message.
+          type: string
+      type: object
+    TranscriptStatus:
+      description: |-
+        Transcript execution status.
+        Derived from the OTel span status_code of the root agent span.
+
+         - TRANSCRIPT_STATUS_RUNNING: The conversation is still in progress (root span has not ended).
+         - TRANSCRIPT_STATUS_COMPLETED: The conversation completed successfully (status_code = OK or UNSET).
+         - TRANSCRIPT_STATUS_ERROR: The conversation ended with an error (status_code = ERROR).
+      enum:
+        - TRANSCRIPT_STATUS_RUNNING
+        - TRANSCRIPT_STATUS_COMPLETED
+        - TRANSCRIPT_STATUS_ERROR
+      type: string
+    TranscriptSummary:
+      description: |-
+        Summary information for a single transcript (conversation).
+        Aggregated from the spans sharing the same gen_ai.conversation.id.
+      properties:
+        agent_id:
+          description: |-
+            Agent that produced this conversation. For managed agents this is the
+            Redpanda agent ID; for BYOA this is the agent identifier from the
+            span's resource or span attributes.
+          readOnly: true
+          type: string
+        conversation_id:
+          description: |-
+            Conversation ID from the OTel GenAI semantic conventions
+            (gen_ai.conversation.id).
+          type: string
+        duration:
+          description: Total conversation duration (end_time - start_time).
+          type: string
+        end_time:
+          description: When the conversation ended. From the latest span end_time.
+          format: date-time
+          type: string
+        has_errors:
+          description: Whether any turn in the conversation had an error.
+          type: boolean
+        start_time:
+          description: When the conversation started. From the earliest span start_time.
+          format: date-time
+          type: string
+        status:
+          $ref: '#/components/schemas/TranscriptStatus'
+        title:
+          description: |-
+            Short description of the conversation, e.g. derived from the first
+            user message or set by the agent.
+          type: string
+        turn_count:
+          description: Number of turns in the conversation.
+          format: int32
+          type: integer
+        usage:
+          $ref: '#/components/schemas/TranscriptUsage'
+        user_id:
+          description: Identifier of the user who initiated the conversation.
+          type: string
+      required:
+        - conversation_id
+      type: object
+    TranscriptToolCall:
+      description: |-
+        Tool call information associated with a transcript turn.
+        Each tool call corresponds to a child span with
+        gen_ai.operation.name = "execute_tool".
+      properties:
+        error:
+          $ref: '#/components/schemas/TranscriptError'
+        input:
+          description: Tool invocation parameters (JSON-encoded).
+          type: string
+        latency:
+          description: Tool execution duration. Derived from the span's duration.
+          type: string
+        name:
+          description: Tool name. From gen_ai.tool.name span attribute.
+          type: string
+        output:
+          description: Tool execution result (JSON-encoded).
+          type: string
+        status:
+          $ref: '#/components/schemas/TranscriptToolCallStatus'
+        tool_call_id:
+          description: Unique tool call identifier. Sourced from the OTel span ID.
+          type: string
+      required:
+        - name
+      type: object
+    TranscriptToolCallStatus:
+      description: |-
+        Tool call status within a transcript turn.
+        Derived from the OTel span status_code of the tool execution span.
+
+         - TRANSCRIPT_TOOL_CALL_STATUS_RUNNING: Tool call is currently executing (span has not ended).
+         - TRANSCRIPT_TOOL_CALL_STATUS_COMPLETED: Tool call completed successfully.
+         - TRANSCRIPT_TOOL_CALL_STATUS_ERROR: Tool call ended with an error.
+      enum:
+        - TRANSCRIPT_TOOL_CALL_STATUS_RUNNING
+        - TRANSCRIPT_TOOL_CALL_STATUS_COMPLETED
+        - TRANSCRIPT_TOOL_CALL_STATUS_ERROR
+      type: string
+    TranscriptTurn:
+      description: |-
+        A single transcript turn representing one message in the conversation.
+        Each turn corresponds to an OTel span within the conversation trace.
+      properties:
+        content:
+          description: Message content (user prompt, assistant response, or tool result).
+          type: string
+        error:
+          $ref: '#/components/schemas/TranscriptError'
+        latency:
+          description: Turn duration. Derived from the span's duration.
+          type: string
+        model:
+          description: LLM model used for this turn. From gen_ai.request.model.
+          type: string
+        role:
+          $ref: '#/components/schemas/TranscriptTurnRole'
+        timestamp:
+          description: When this turn occurred. From the span's start_time.
+          format: date-time
+          type: string
+        tool_calls:
+          description: |-
+            Tool calls made during this turn (assistant turns only).
+            Each entry corresponds to a child span with gen_ai.operation.name = "execute_tool".
+          items:
+            $ref: '#/components/schemas/TranscriptToolCall'
+          type: array
+        turn_id:
+          description: Unique turn identifier. Sourced from the OTel span ID.
+          type: string
+        usage:
+          $ref: '#/components/schemas/TranscriptUsage'
+      required:
+        - turn_id
+      type: object
+    TranscriptTurnRole:
+      description: |-
+        Transcript turn role.
+        Inferred from gen_ai.operation.name and the span's position in the hierarchy.
+
+         - TRANSCRIPT_TURN_ROLE_SYSTEM: System prompt / instructions.
+         - TRANSCRIPT_TURN_ROLE_USER: User input message.
+         - TRANSCRIPT_TURN_ROLE_ASSISTANT: LLM assistant response (gen_ai.operation.name = "chat").
+         - TRANSCRIPT_TURN_ROLE_TOOL: Tool execution result (gen_ai.operation.name = "execute_tool").
+      enum:
+        - TRANSCRIPT_TURN_ROLE_SYSTEM
+        - TRANSCRIPT_TURN_ROLE_USER
+        - TRANSCRIPT_TURN_ROLE_ASSISTANT
+        - TRANSCRIPT_TURN_ROLE_TOOL
+      type: string
+    TranscriptUsage:
+      description: |-
+        Token and cost usage for a transcript or turn.
+        Sourced from gen_ai.usage.input_tokens and gen_ai.usage.output_tokens
+        span attributes. For the summary level, values are aggregated across all turns.
+      properties:
+        estimated_cost_usd:
+          description: Estimated cost in USD. May not be available for all providers.
+          format: double
+          type: number
+        input_tokens:
+          description: Number of input/prompt tokens. From gen_ai.usage.input_tokens.
+          format: int64
+          type: string
+        output_tokens:
+          description: Number of output/completion tokens. From gen_ai.usage.output_tokens.
+          format: int64
+          type: string
+        total_tokens:
+          description: Sum of input and output tokens.
+          format: int64
           type: string
       type: object
     UpdateAIAgentResponse:
@@ -2834,6 +3072,123 @@ paths:
       summary: Get trace histogram
       tags:
         - Tracing
+  /v1alpha3/transcripts:
+    get:
+      description: List transcripts for a specific AI agent. The agent_id query parameter is required and can refer to either a managed Redpanda agent or a bring-your-own-agent (BYOA) deployment.
+      operationId: TranscriptService_ListTranscripts
+      parameters:
+        - description: |-
+            Agent ID to list conversations for. Required. Can be a managed Redpanda
+            agent ID or a BYOA agent identifier.
+          in: query
+          name: agent_id
+          required: true
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: Pagination token from a previous ListTranscriptsResponse.
+          in: query
+          name: page_token
+          schema:
+            type: string
+        - description: Filter conversations that started after this time (inclusive).
+          in: query
+          name: filter.start_time
+          schema:
+            format: date-time
+            type: string
+        - description: Filter conversations that started before this time (exclusive).
+          in: query
+          name: filter.end_time
+          schema:
+            format: date-time
+            type: string
+        - description: |-
+            Filter by conversation status.
+
+             - TRANSCRIPT_STATUS_RUNNING: The conversation is still in progress (root span has not ended).
+             - TRANSCRIPT_STATUS_COMPLETED: The conversation completed successfully (status_code = OK or UNSET).
+             - TRANSCRIPT_STATUS_ERROR: The conversation ended with an error (status_code = ERROR).
+          in: query
+          name: filter.status
+          schema:
+            enum:
+              - TRANSCRIPT_STATUS_RUNNING
+              - TRANSCRIPT_STATUS_COMPLETED
+              - TRANSCRIPT_STATUS_ERROR
+            type: string
+        - description: Free-text search across conversation titles and content.
+          in: query
+          name: filter.query
+          schema:
+            type: string
+        - description: Filter for conversations that contain errors.
+          in: query
+          name: filter.has_errors
+          schema:
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTranscriptsResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Transcripts
+      tags:
+        - Transcripts
+  /v1alpha3/transcripts/{conversation_id}:
+    get:
+      description: Get a single transcript by ID. The agent_id query parameter is required and can refer to either a managed Redpanda agent or a bring-your-own-agent (BYOA) deployment.
+      operationId: TranscriptService_GetTranscript
+      parameters:
+        - description: Conversation ID (gen_ai.conversation.id) to retrieve.
+          in: path
+          name: conversation_id
+          required: true
+          schema:
+            type: string
+        - description: |-
+            Agent ID the conversation belongs to. Required. Can be a managed Redpanda
+            agent ID or a BYOA agent identifier.
+          in: query
+          name: agent_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTranscriptResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Transcript
+      tags:
+        - Transcripts
 security:
   - auth0: []
 servers:
@@ -2857,3 +3212,5 @@ tags:
     name: Observability
   - description: Query and retrieve OpenTelemetry traces from Redpanda.
     name: Tracing
+  - description: Access and retrieve AI agent conversation transcripts, including turn-by-turn interaction history, tool calls, and usage metrics.
+    name: Transcripts
