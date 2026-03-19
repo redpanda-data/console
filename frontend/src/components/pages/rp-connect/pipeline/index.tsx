@@ -17,8 +17,12 @@ import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
+import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
@@ -487,7 +491,6 @@ export default function PipelinePage() {
         mode={mode}
         nameError={form.formState.errors.name?.message}
         onCancel={handleCancel}
-        onCommandMenu={() => setIsCommandMenuOpen(true)}
         onEditConfig={() => setIsConfigDialogOpen(true)}
         onNameChange={handleNameChange}
         onSave={handleSave}
@@ -501,12 +504,36 @@ export default function PipelinePage() {
             {isFeatureFlagEnabled('enablePipelineDiagrams') && <PipelineFlowDiagram configYaml={yamlContent} />}
           </div>
           {mode !== 'view' && (
-            <AddConnectorsCard
-              editorContent={yamlContent}
-              hasInput={yamlContent.includes('input:')}
-              hasOutput={yamlContent.includes('output:')}
-              onAddConnector={(type) => setAddConnectorType(type)}
-            />
+            <>
+              <AddConnectorsCard
+                editorContent={yamlContent}
+                hasInput={yamlContent.includes('input:')}
+                hasOutput={yamlContent.includes('output:')}
+                onAddConnector={(type) => setAddConnectorType(type)}
+              />
+              <div className="px-4 pb-4">
+                <Separator className="mb-3" />
+                <div className="flex flex-col gap-2">
+                  <Heading className="mb-2 text-muted-foreground" level={5}>
+                    Variables
+                  </Heading>
+                  <Button
+                    className="max-w-fit"
+                    icon={
+                      <Kbd variant="ghost">
+                        <CommandIcon />
+                        <ArrowBigUpIcon />P
+                      </Kbd>
+                    }
+                    onClick={() => setIsCommandMenuOpen(true)}
+                    size="xs"
+                    variant="secondary-outline"
+                  >
+                    Insert
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -575,7 +602,9 @@ export default function PipelinePage() {
         commandContainerRef={slashCommand.commandContainerRef}
         editorInstance={editorInstance}
         onOpenChange={(open) => {
-          if (!open) slashCommand.close();
+          if (!open) {
+            slashCommand.close();
+          }
         }}
         onSlashSelect={slashCommand.handleSlashSelect}
         open={slashCommand.isOpen}

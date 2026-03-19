@@ -617,8 +617,8 @@ const PipelineListPageContent = () => {
   const handleCreateClick = useCallback(() => {
     resetOnboardingWizardStore();
     navigate({
-      to: '/rp-connect/wizard',
-      search: { step: undefined, serverless: undefined },
+      to: '/rp-connect/create',
+      search: { serverless: undefined },
     });
   }, [resetOnboardingWizardStore, navigate]);
 

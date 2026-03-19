@@ -14,11 +14,9 @@ import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import {
   AlertIcon,
-  ArrowBigUpIcon,
   ArrowLeftIcon,
   CheckIcon,
   ChevronDownIcon,
-  CommandIcon,
   EditIcon,
   LoaderIcon,
   PauseIcon,
@@ -35,7 +33,6 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { EditableText } from 'components/redpanda-ui/components/editable-text';
 import { Group } from 'components/redpanda-ui/components/group';
-import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
@@ -366,20 +363,7 @@ export const Toolbar = memo(
 
         <div>
           <Group className="items-center gap-2">
-            {isEditable && onCommandMenu ? (
-              <Button
-                icon={
-                  <Kbd variant="ghost">
-                    <CommandIcon />
-                    <ArrowBigUpIcon />P
-                  </Kbd>
-                }
-                onClick={onCommandMenu}
-                variant="outline"
-              >
-                Insert
-              </Button>
-            ) : null}
+            {null}
             {shouldShowStatusBadge ? <StatusBadge pulsing={statusBadge.pulsing} variant={statusBadge.variant} /> : null}
             {mode === 'view' && (
               <PipelineActionButton
