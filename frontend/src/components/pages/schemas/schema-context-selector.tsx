@@ -57,7 +57,7 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
             </span>
           </TooltipTrigger>
           <TooltipContent side="top">
-            Schema Registry contexts allow grouping subjects into isolated namespaces
+            Schema registry contexts allow grouping subjects into isolated namespaces
           </TooltipContent>
         </Tooltip>
       </div>
