@@ -44,6 +44,7 @@ import { api, useApiStore } from './state/backend-api';
 import { useUIStateStore } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 import { getEmbeddedAvailableRoutes } from './utils/route-utils';
+import { getRegisteredTokenRefreshInterceptor } from './utils/token-refresh-interceptor';
 
 declare const __webpack_public_path__: string;
 
@@ -206,11 +207,18 @@ const setConfig = ({
 }: SetConfigArguments) => {
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
+  const configuredFetch = fetch ?? window.fetch.bind(window);
+  const tokenRefreshInterceptor = getRegisteredTokenRefreshInterceptor();
 
   // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
   const dataplaneTransport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
-    interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    fetch: configuredFetch,
+    interceptors: [
+      addBearerTokenInterceptor,
+      ...(tokenRefreshInterceptor ? [tokenRefreshInterceptor] : []),
+      checkExpiredLicenseInterceptor,
+    ],
     jsonOptions: {
       registry: protobufRegistry,
     },
@@ -218,7 +226,8 @@ const setConfig = ({
 
   const controlplaneTransport = createConnectTransport({
     baseUrl: config.controlplaneUrl,
-    interceptors: [addBearerTokenInterceptor],
+    fetch: configuredFetch,
+    interceptors: [addBearerTokenInterceptor, ...(tokenRefreshInterceptor ? [tokenRefreshInterceptor] : [])],
     jsonOptions: {
       registry: protobufRegistry,
     },
@@ -250,7 +259,7 @@ const setConfig = ({
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
-    fetch: fetch ?? window.fetch.bind(window),
+    fetch: configuredFetch,
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
     licenseClient: licenseGrpcClient,
@@ -352,7 +361,7 @@ setTimeout(() => {
         updateSidebarItems();
       }
     });
-  } catch (error) {
+  } catch (_error) {
     // Ignore errors in test environments where stores might not be properly initialized
     // This setTimeout runs globally when config.ts is imported
   }

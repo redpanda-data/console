@@ -52,6 +52,12 @@ import {
 } from './config';
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
+import { api } from './state/backend-api';
+import {
+  getRegisteredTokenRefreshInterceptor,
+  TokenRefreshInterceptorProvider,
+} from './utils/token-refresh-interceptor';
+import { useEmbeddedAuthPrewarm } from './utils/use-embedded-auth-prewarm';
 
 // Regex for normalizing paths by removing trailing slashes
 const TRAILING_SLASH_REGEX = /\/+$/;
@@ -86,6 +92,10 @@ export interface EmbeddedProps extends SetConfigArguments {
 }
 
 function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
+  const tokenRefreshInterceptor = getRegisteredTokenRefreshInterceptor();
+  const defaultFetch = useMemo(() => window.fetch.bind(window), []);
+  const configuredFetch = p.fetch ?? defaultFetch;
+
   useEffect(() => {
     const shellNavigationHandler = (event: Event) => {
       const pathname = (event as CustomEvent<string>).detail;
@@ -115,12 +125,17 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     () =>
       createConnectTransport({
         baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
-        interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+        fetch: configuredFetch,
+        interceptors: [
+          addBearerTokenInterceptor,
+          ...(tokenRefreshInterceptor ? [tokenRefreshInterceptor] : []),
+          checkExpiredLicenseInterceptor,
+        ],
         jsonOptions: {
           registry: protobufRegistry,
         },
       }),
-    [p.urlOverride?.grpc]
+    [configuredFetch, p.urlOverride?.grpc, tokenRefreshInterceptor]
   );
 
   // Create router with dynamic basePath
@@ -139,20 +154,33 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     [basePath, dataplaneTransport]
   );
 
+  useEmbeddedAuthPrewarm({
+    enabled: Boolean(p.isConsoleReadyToMount),
+    prewarm: async () => {
+      await api.refreshUserData().catch(() => {
+        // Best-effort prewarm only; embedded hosts handle any hard auth failures.
+      });
+
+      await Promise.allSettled([queryClient.invalidateQueries(), router.invalidate()]);
+    },
+  });
+
   if (!p.isConsoleReadyToMount) {
     return null;
   }
 
   return (
-    <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
-      <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-        <TransportProvider transport={dataplaneTransport}>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-          </QueryClientProvider>
-        </TransportProvider>
-      </ChakraProvider>
-    </CustomFeatureFlagProvider>
+    <TokenRefreshInterceptorProvider value={tokenRefreshInterceptor}>
+      <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
+        <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+          <TransportProvider transport={dataplaneTransport}>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+            </QueryClientProvider>
+          </TransportProvider>
+        </ChakraProvider>
+      </CustomFeatureFlagProvider>
+    </TokenRefreshInterceptorProvider>
   );
 }
 

@@ -14,7 +14,7 @@
 // Array prototype extensions (must be imported early)
 import '../utils/array-extensions';
 
-import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
@@ -32,7 +32,6 @@ import '../assets/fonts/kumbh-sans.css';
 import '../globals.css';
 /* end tailwind styles */
 
-import { Code, ConnectError, type Interceptor } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
@@ -44,38 +43,14 @@ import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
-
-/**
- * Creates an interceptor that refreshes the token on 401 and retries the request.
- * Uses TokenManager for deduplication and abort support.
- */
-function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor {
-  return (next) => async (request) => {
-    try {
-      return await next(request);
-    } catch (error) {
-      // Only handle Unauthenticated errors
-      if (!(error instanceof ConnectError && error.code === Code.Unauthenticated)) {
-        throw error;
-      }
-
-      // Use TokenManager for deduplicated refresh
-      try {
-        await tokenManager.refresh();
-      } catch {
-        throw error; // Throw original error if refresh fails
-      }
-
-      // Retry the request with refreshed token.
-      // Header mutation is necessary because the original request was created
-      // with the old token by addBearerTokenInterceptor on the first attempt.
-      if (config.jwt) {
-        request.header.set('Authorization', `Bearer ${config.jwt}`);
-      }
-      return await next(request);
-    }
-  };
-}
+import { api } from '../state/backend-api';
+import { createTokenRefreshInterceptor } from '../utils/create-token-refresh-interceptor';
+import { notifyEmbeddedAuthError } from '../utils/notify-embedded-auth-error';
+import {
+  setRegisteredTokenRefreshInterceptor,
+  TokenRefreshInterceptorProvider,
+} from '../utils/token-refresh-interceptor';
+import { useEmbeddedAuthPrewarm } from '../utils/use-embedded-auth-prewarm';
 
 /**
  * Error boundary for the federated Console app.
@@ -170,6 +145,8 @@ function ConsoleAppInner({
   const [isInitialized, setIsInitialized] = useState(false);
   // Track last notified path to prevent navigation loops between host and remote
   const lastNotifiedPathRef = useRef<string>(initialPath);
+  const defaultFetch = useMemo(() => window.fetch.bind(window), []);
+  const configuredFetch = configOverrides?.fetch ?? defaultFetch;
 
   // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);
@@ -194,11 +171,20 @@ function ConsoleAppInner({
   }, [getAccessToken, tokenManager]);
 
   // Create token refresh interceptor using TokenManager
-  const tokenRefreshInterceptor = useMemo(() => createTokenRefreshInterceptor(tokenManager), [tokenManager]);
+  const tokenRefreshInterceptor = useMemo(
+    () =>
+      createTokenRefreshInterceptor({
+        getAccessToken: () => config.jwt,
+        refreshAccessToken: () => tokenManager.refresh(),
+        onRefreshFailure: () => notifyEmbeddedAuthError({ clusterId }),
+      }),
+    [clusterId, tokenManager]
+  );
 
   // Initialize Console on mount and cleanup on unmount
   useEffect(() => {
     const initialize = async () => {
+      setRegisteredTokenRefreshInterceptor(tokenRefreshInterceptor);
       await tokenManager.refresh();
 
       // Setup Console config with overrides
@@ -218,22 +204,33 @@ function ConsoleAppInner({
 
     // Cleanup on unmount
     return () => {
+      setRegisteredTokenRefreshInterceptor(undefined);
       tokenManager.reset();
       queryClient.clear();
     };
-  }, [tokenManager, queryClient, clusterId, onSidebarItemsChange, onBreadcrumbsChange, featureFlags, configOverrides]);
+  }, [
+    tokenManager,
+    tokenRefreshInterceptor,
+    queryClient,
+    clusterId,
+    onSidebarItemsChange,
+    onBreadcrumbsChange,
+    featureFlags,
+    configOverrides,
+  ]);
 
   // Create transport with token interceptors (including refresh on 401)
   const dataplaneTransport = useMemo(
     () =>
       createConnectTransport({
         baseUrl: getGrpcBasePath(configOverrides?.urlOverride?.grpc),
+        fetch: configuredFetch,
         interceptors: [addBearerTokenInterceptor, tokenRefreshInterceptor, checkExpiredLicenseInterceptor],
         jsonOptions: {
           registry: protobufRegistry,
         },
       }),
-    [configOverrides?.urlOverride?.grpc, tokenRefreshInterceptor]
+    [configOverrides?.urlOverride?.grpc, configuredFetch, tokenRefreshInterceptor]
   );
 
   // Create memory history router (host controls browser URL)
@@ -293,17 +290,39 @@ function ConsoleAppInner({
     }
   }, [navigateTo, isInitialized, router]);
 
+  const prewarmEmbeddedAuth = useCallback(async () => {
+    try {
+      await tokenManager.refresh();
+    } catch {
+      notifyEmbeddedAuthError({ clusterId });
+      return;
+    }
+
+    await api.refreshUserData().catch(() => {
+      // Best-effort only. A failed refreshUserData call should not crash the prewarm flow.
+    });
+
+    await Promise.allSettled([queryClient.invalidateQueries(), router.invalidate()]);
+  }, [clusterId, queryClient, router, tokenManager]);
+
+  useEmbeddedAuthPrewarm({
+    enabled: isInitialized,
+    prewarm: prewarmEmbeddedAuth,
+  });
+
   // Don't render until initialized, don't show anything until then
   if (!isInitialized) {
     return null;
   }
 
   return (
-    <ConsoleErrorBoundary onError={onError}>
-      <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
-        <RouterProvider router={router} />
-      </FederatedProviders>
-    </ConsoleErrorBoundary>
+    <TokenRefreshInterceptorProvider value={tokenRefreshInterceptor}>
+      <ConsoleErrorBoundary onError={onError}>
+        <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
+          <RouterProvider router={router} />
+        </FederatedProviders>
+      </ConsoleErrorBoundary>
+    </TokenRefreshInterceptorProvider>
   );
 }
 

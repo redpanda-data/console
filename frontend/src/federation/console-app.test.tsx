@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+
+const tokenManagerInstances: Array<{ refresh: ReturnType<typeof vi.fn> }> = [];
 
 // Mock TanStack Router before any imports
 vi.mock('@tanstack/react-router', async () => {
@@ -19,6 +22,7 @@ vi.mock('@tanstack/react-router', async () => {
     createRouter: vi.fn(() => ({
       subscribe: vi.fn(() => vi.fn()), // Returns unsubscribe function
       load: vi.fn().mockResolvedValue(undefined),
+      invalidate: vi.fn().mockResolvedValue(undefined),
       state: { location: { pathname: '/topics' } },
       navigate: vi.fn(),
     })),
@@ -28,11 +32,21 @@ vi.mock('@tanstack/react-router', async () => {
       push: vi.fn(),
       replace: vi.fn(),
     })),
-    RouterProvider: ({ children }: { children?: React.ReactNode }) => (
-      <div data-testid="router-provider">{children}</div>
-    ),
+    RouterProvider: ({ children }: { children?: ReactNode }) => <div data-testid="router-provider">{children}</div>,
   };
 });
+
+vi.mock('@redpanda-data/ui', () => ({
+  ChakraProvider: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  createStandaloneToast: vi.fn(() => ({
+    ToastContainer: () => null,
+    toast: {
+      closeAll: vi.fn(),
+    },
+  })),
+  redpandaTheme: {},
+  redpandaToastOptions: {},
+}));
 
 vi.mock('config', () => ({
   config: {
@@ -56,6 +70,16 @@ vi.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: () => <div>Not Found</div>,
 }));
 
+vi.mock('../state/backend-api', () => ({
+  api: {
+    refreshUserData: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('./federated-providers', () => ({
+  FederatedProviders: ({ children }: { children?: ReactNode }) => <>{children}</>,
+}));
+
 vi.mock('./token-manager', () => ({
   TokenManager: class MockTokenManager {
     private getToken: () => Promise<string>;
@@ -70,6 +94,7 @@ vi.mock('./token-manager', () => ({
       this.setGetAccessToken.mockImplementation((fn: () => Promise<string>) => {
         this.getToken = fn;
       });
+      tokenManagerInstances.push(this);
     }
   },
 }));
@@ -99,16 +124,27 @@ describe('ConsoleApp', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    tokenManagerInstances.length = 0;
     mockGetAccessToken.mockResolvedValue('test-token-123');
     // Reset config.jwt
     config.jwt = undefined;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test('shows nothing while loading', () => {
-    const { container } = render(<ConsoleApp {...defaultProps} />);
+    const tokenPromise = new Promise<string>(() => {
+      // Intentionally unresolved to keep the component in its loading state.
+    });
+    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
+
+    const { container, unmount } = render(<ConsoleApp {...defaultProps} />);
 
     // Component returns null while initializing
     expect(container.firstChild).toBeNull();
+    unmount();
   });
 
   test('calls getAccessToken on mount', async () => {
@@ -154,7 +190,9 @@ describe('ConsoleApp', () => {
 
   test('stays in loading state while token refresh is pending', async () => {
     // Create a deferred promise that never resolves during this test
-    const tokenPromise = new Promise<string>(() => {});
+    const tokenPromise = new Promise<string>(() => {
+      // Intentionally unresolved to keep the component in its loading state.
+    });
     mockGetAccessToken.mockReturnValueOnce(tokenPromise);
 
     const { container } = render(<ConsoleApp {...defaultProps} />);
@@ -222,6 +260,25 @@ describe('ConsoleApp', () => {
 
     // Should not throw on unmount (unsubscribe should be called)
     unmount();
+  });
+
+  test('prewarms auth once when focus and visibility events arrive in a burst', async () => {
+    render(<ConsoleApp {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
+    });
+
+    expect(tokenManagerInstances).toHaveLength(1);
+    vi.useFakeTimers();
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('focus'));
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(tokenManagerInstances[0]?.refresh).toHaveBeenCalledTimes(2);
   });
 
   describe('Feature Flags', () => {

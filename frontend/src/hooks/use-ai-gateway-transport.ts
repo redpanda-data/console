@@ -3,6 +3,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { addBearerTokenInterceptor, config, isEmbedded } from 'config';
 import { protobufRegistry } from 'protobuf-registry';
 import { useMemo } from 'react';
+import { useTokenRefreshInterceptor } from 'utils/token-refresh-interceptor';
 
 /**
  * Custom hook to create and memoize a Connect transport for AI Gateway API calls
@@ -21,12 +22,17 @@ import { useMemo } from 'react';
  * @returns Transport instance configured for AI Gateway communication
  */
 export const useAIGatewayTransport = (): Transport => {
+  const tokenRefreshInterceptor = useTokenRefreshInterceptor();
+
   const aiGatewayTransport = useMemo(() => {
+    const interceptors = [addBearerTokenInterceptor, ...(tokenRefreshInterceptor ? [tokenRefreshInterceptor] : [])];
+
     // In development, use relative path and rely on dev server proxy
     if (process.env.NODE_ENV === 'development') {
       return createConnectTransport({
         baseUrl: '/.redpanda/api',
-        interceptors: [addBearerTokenInterceptor],
+        fetch: config.fetch,
+        interceptors,
         jsonOptions: {
           registry: protobufRegistry,
         },
@@ -42,7 +48,8 @@ export const useAIGatewayTransport = (): Transport => {
 
       return createConnectTransport({
         baseUrl,
-        interceptors: [addBearerTokenInterceptor],
+        fetch: config.fetch,
+        interceptors,
         jsonOptions: {
           registry: protobufRegistry,
         },
@@ -52,12 +59,13 @@ export const useAIGatewayTransport = (): Transport => {
     // Fallback to relative path for standalone mode
     return createConnectTransport({
       baseUrl: '/.redpanda/api',
-      interceptors: [addBearerTokenInterceptor],
+      fetch: config.fetch,
+      interceptors,
       jsonOptions: {
         registry: protobufRegistry,
       },
     });
-  }, []);
+  }, [tokenRefreshInterceptor]);
 
   return aiGatewayTransport;
 };
