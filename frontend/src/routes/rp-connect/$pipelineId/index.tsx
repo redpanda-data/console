@@ -12,9 +12,13 @@
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
+import { isFeatureFlagEnabled } from 'config';
+import { lazy } from 'react';
 import { z } from 'zod';
 
 import RpConnectPipelinesDetails from '../../../components/pages/rp-connect/pipelines-details';
+
+const PipelinePage = lazy(() => import('../../../components/pages/rp-connect/pipeline'));
 
 const searchSchema = z.object({
   pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
@@ -26,10 +30,15 @@ export const Route = createFileRoute('/rp-connect/$pipelineId/')({
     title: 'Pipeline Details',
   },
   validateSearch: zodValidator(searchSchema),
-  component: PipelineDetailsWrapper,
+  component: PipelineDetailsRoute,
 });
 
-function PipelineDetailsWrapper() {
+function PipelineDetailsRoute() {
   const { pipelineId } = useParams({ from: '/rp-connect/$pipelineId/' });
+  // Tier 1: enablePipelineDiagrams → new pipeline page directly
+  // Tier 2/3: legacy wrapper (internally checks enableRpcnTiles → PipelinePage, else legacy form)
+  if (isFeatureFlagEnabled('enablePipelineDiagrams')) {
+    return <PipelinePage />;
+  }
   return <RpConnectPipelinesDetails matchedPath={`/rp-connect/${pipelineId}`} pipelineId={pipelineId} />;
 }

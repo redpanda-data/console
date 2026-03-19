@@ -30,14 +30,14 @@ export const useOnboardingWizardDataStore = create<
   Partial<OnboardingWizardFormData> & {
     setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
     reset: () => void;
-    _hasHydrated: boolean;
+    hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
   }
 >()(
   persist(
     (set, get) => ({
       ...initialWizardData,
-      _hasHydrated: false,
+      hasHydrated: false,
       setWizardData: (data) => set(data),
       reset: () => {
         sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
@@ -46,13 +46,13 @@ export const useOnboardingWizardDataStore = create<
             ...initialWizardData,
             setWizardData: get().setWizardData,
             reset: get().reset,
-            _hasHydrated: false,
+            hasHydrated: false,
             setHasHydrated: get().setHasHydrated,
           },
           true
         );
       },
-      setHasHydrated: (state) => set({ _hasHydrated: state }),
+      setHasHydrated: (state) => set({ hasHydrated: state }),
     }),
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
@@ -123,7 +123,7 @@ export const onboardingWizardStore = {
     const {
       setWizardData: _,
       reset: __,
-      _hasHydrated: ___,
+      hasHydrated: ___,
       setHasHydrated: ____,
       ...data
     } = useOnboardingWizardDataStore.getState();
@@ -141,7 +141,7 @@ export const onboardingWizardStore = {
     const { setYamlContent: _, reset: __, ...data } = useOnboardingYamlContentStore.getState();
     return data;
   },
-  hasHydrated: () => useOnboardingWizardDataStore.getState()._hasHydrated,
+  hasHydrated: () => useOnboardingWizardDataStore.getState().hasHydrated,
   setWizardData: (data: Partial<OnboardingWizardFormData>) =>
     useOnboardingWizardDataStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingTopicDataStore.getState().setTopicData(data),

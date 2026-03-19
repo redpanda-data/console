@@ -293,10 +293,20 @@ export default function PipelinePage() {
     }
   }, [mode, persistedYamlContent]);
 
-  // Serverless mode initialization - generate YAML from wizard data on mount
+  // Serverless mode initialization - generate YAML from onboarding wizard store on mount.
+  // Cloud UI populates useOnboardingWizardDataStore (sessionStorage) with the selected
+  // connector, then navigates here via the wizard redirect. Wait for hydration before reading.
+  const wizardStoreHydrated = useOnboardingWizardDataStore((state) => state.hasHydrated);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
   useEffect(() => {
-    if (mode !== 'create' || !isServerlessMode || hasInitializedServerless.current || components.length === 0) {
+    if (
+      mode !== 'create' ||
+      !isServerlessMode ||
+      hasInitializedServerless.current ||
+      components.length === 0 ||
+      !wizardStoreHydrated
+    ) {
       return;
     }
 
@@ -333,7 +343,7 @@ export default function PipelinePage() {
     }
 
     hasInitializedServerless.current = true;
-  }, [components]);
+  }, [components, wizardStoreHydrated]);
 
   // Clear wizard store (CREATE mode)
   const clearWizardStore = useCallback(() => {

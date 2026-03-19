@@ -10,17 +10,26 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
+import { isFeatureFlagEnabled } from 'config';
+import { lazy } from 'react';
 
 import RpConnectPipelinesEdit from '../../../components/pages/rp-connect/pipelines-edit';
+
+const PipelinePage = lazy(() => import('../../../components/pages/rp-connect/pipeline'));
 
 export const Route = createFileRoute('/rp-connect/$pipelineId/edit')({
   staticData: {
     title: 'Edit Pipeline',
   },
-  component: PipelineEditWrapper,
+  component: PipelineEditRoute,
 });
 
-function PipelineEditWrapper() {
+function PipelineEditRoute() {
   const { pipelineId } = useParams({ from: '/rp-connect/$pipelineId/edit' });
+  // Tier 1: enablePipelineDiagrams → new pipeline page directly
+  // Tier 2/3: legacy wrapper (internally checks enableRpcnTiles → PipelinePage, else legacy form)
+  if (isFeatureFlagEnabled('enablePipelineDiagrams')) {
+    return <PipelinePage />;
+  }
   return <RpConnectPipelinesEdit matchedPath={`/rp-connect/${pipelineId}/edit`} pipelineId={pipelineId} />;
 }

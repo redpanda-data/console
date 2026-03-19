@@ -11,9 +11,13 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
+import { isFeatureFlagEnabled } from 'config';
+import { lazy } from 'react';
 import { z } from 'zod';
 
 import RpConnectPipelinesCreate from '../../components/pages/rp-connect/pipelines-create';
+
+const PipelinePage = lazy(() => import('../../components/pages/rp-connect/pipeline'));
 
 const searchSchema = z.object({
   serverless: fallback(z.string().optional(), undefined),
@@ -24,9 +28,14 @@ export const Route = createFileRoute('/rp-connect/create')({
     title: 'Create Pipeline',
   },
   validateSearch: zodValidator(searchSchema),
-  component: RpConnectPipelinesCreateWrapper,
+  component: CreatePipelineRoute,
 });
 
-function RpConnectPipelinesCreateWrapper() {
+function CreatePipelineRoute() {
+  // Tier 1: enablePipelineDiagrams → new pipeline page directly
+  // Tier 2/3: legacy wrapper (internally checks enableRpcnTiles → PipelinePage, else legacy form)
+  if (isFeatureFlagEnabled('enablePipelineDiagrams')) {
+    return <PipelinePage />;
+  }
   return <RpConnectPipelinesCreate matchedPath="/rp-connect/create" />;
 }
