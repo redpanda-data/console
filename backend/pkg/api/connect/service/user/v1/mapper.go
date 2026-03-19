@@ -12,20 +12,33 @@ package user
 import (
 	"fmt"
 
-	adminapi "github.com/redpanda-data/common-go/rpadmin"
+	"github.com/twmb/franz-go/pkg/kadm"
 
 	dataplanev1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
-// saslMechanismToRedpandaAdminAPIString converts the SASL Mechanism enum into a string that is understood by
-// the Redpanda Admin API.
-func saslMechanismToRedpandaAdminAPIString(mechanism dataplanev1.SASLMechanism) (string, error) {
+// saslMechanismToScramMechanism converts the proto SASL Mechanism enum to a kadm ScramMechanism.
+func saslMechanismToScramMechanism(mechanism dataplanev1.SASLMechanism) (kadm.ScramMechanism, error) {
 	switch mechanism {
 	case dataplanev1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256:
-		return adminapi.ScramSha256, nil
+		return kadm.ScramSha256, nil
 	case dataplanev1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512:
-		return adminapi.ScramSha512, nil
+		return kadm.ScramSha512, nil
 	default:
-		return "", fmt.Errorf("unable to convert %q to a known string that can be handled by the Redpanda Admin API", mechanism.String())
+		return 0, fmt.Errorf("unsupported SASL mechanism: %q", mechanism.String())
+	}
+}
+
+// scramMechanismToProto converts a kadm ScramMechanism to the proto SASL Mechanism enum.
+func scramMechanismToProto(mechanism kadm.ScramMechanism) *dataplanev1.SASLMechanism {
+	switch mechanism {
+	case kadm.ScramSha256:
+		m := dataplanev1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256
+		return &m
+	case kadm.ScramSha512:
+		m := dataplanev1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512
+		return &m
+	default:
+		return nil
 	}
 }

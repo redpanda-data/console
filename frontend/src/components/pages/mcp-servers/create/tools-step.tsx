@@ -13,7 +13,7 @@ import { Field, FieldError } from 'components/redpanda-ui/components/field';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { Plus } from 'lucide-react';
-import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';

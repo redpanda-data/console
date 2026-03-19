@@ -10,7 +10,7 @@
  */
 
 import type { BeforeMount, OnChange, OnMount } from '@monaco-editor/react';
-import type { editor, languages, Uri } from 'monaco-editor';
+import type { editor, typescript, Uri } from 'monaco-editor';
 import { type FC, useRef, useState } from 'react';
 
 import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/kowl-editor';
@@ -25,7 +25,7 @@ const options: editor.IStandaloneEditorConstructionOptions = {
 };
 
 async function tryTranspile(
-  tsWorkerClient: languages.typescript.TypeScriptWorker,
+  tsWorkerClient: typescript.TypeScriptWorker,
   formattedEditorUri: string,
   fallback: string
 ): Promise<string> {
@@ -43,7 +43,7 @@ async function tryTranspile(
 const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
   const [editorUri, setEditorUri] = useState<Uri>();
-  const [tsWorkerClient, setTsWorkerClient] = useState<languages.typescript.TypeScriptWorker>();
+  const [tsWorkerClient, setTsWorkerClient] = useState<typescript.TypeScriptWorker>();
 
   const editorRef = useRef<undefined | IStandaloneCodeEditor>();
 

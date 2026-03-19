@@ -106,7 +106,7 @@ tasks:
       - |
         {{ .PATH_PREFIX }} go install go.uber.org/mock/mockgen@v{{ .GOMOCK_VERSION }}
     status:
-      - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/mockgen >/dev/null 2>&1"
+      - "[ -d '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/mockgen >/dev/null 2>&1"
       - "[[ $({{ .BUILD_ROOT }}/bin/go/mockgen --version) == 'v{{.GOMOCK_VERSION}}' ]]"
 
   install-ifacemaker:
@@ -119,7 +119,7 @@ tasks:
       - |
         {{ .PATH_PREFIX }} go install github.com/vburenin/ifacemaker@v{{ .IFACEMAKER_VERSION }}
     status:
-      - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/ifacemaker >/dev/null 2>&1"
+      - "[ -d '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/ifacemaker >/dev/null 2>&1"
 
   fmt:
     desc: Format Go code

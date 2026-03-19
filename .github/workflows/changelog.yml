@@ -1,0 +1,87 @@
+name: Changelog PR
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
+      - name: Extract tag name
+        id: tag
+        run: echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Create changelog branch
+        run: |
+          git checkout -b "changelog/${{ steps.tag.outputs.name }}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Cache Claude Code
+        id: cache-claude
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: claude-code-${{ runner.os }}
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Claude Code
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "/changelog:update ${{ steps.tag.outputs.name }}" \
+            --allowedTools "Bash(git tag:*),Bash(git log:*),Bash(git status:*),Bash(git branch:*),Bash(head:*),Bash(pwd),Read,Edit"
+
+      - name: Check for changes, commit, and create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet CHANGELOG.md; then
+            echo "No changelog changes detected, skipping PR creation."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG.md for ${{ steps.tag.outputs.name }}"
+          git push origin "changelog/${{ steps.tag.outputs.name }}"
+
+          gh pr create \
+            --title "docs: update CHANGELOG.md for ${{ steps.tag.outputs.name }}" \
+            --body "$(cat <<'EOF'
+          ## Summary
+
+          - Auto-generated changelog entry for release ${{ steps.tag.outputs.name }}
+          - Created by the changelog CI workflow using Claude Code
+
+          ## Test plan
+
+          - [ ] Review the CHANGELOG.md diff for accuracy
+          - [ ] Verify commit classifications are correct
+          EOF
+          )" \
+            --base master \
+            --head "changelog/${{ steps.tag.outputs.name }}"

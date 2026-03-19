@@ -16,19 +16,17 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
-	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
 )
@@ -38,25 +36,20 @@ var _ dataplanev1alpha2connect.UserServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	cfg                    *config.Config
-	logger                 *slog.Logger
-	consoleSvc             console.Servicer
-	redpandaClientProvider redpandafactory.ClientFactory
-	defaulter              defaulter
+	logger     *slog.Logger
+	consoleSvc console.Servicer
+	defaulter  defaulter
 }
 
 // NewService creates a new user service handler.
-func NewService(cfg *config.Config,
+func NewService(
 	logger *slog.Logger,
-	redpandaClientProvider redpandafactory.ClientFactory,
 	consoleSvc console.Servicer,
 ) *Service {
 	return &Service{
-		cfg:                    cfg,
-		logger:                 logger,
-		consoleSvc:             consoleSvc,
-		redpandaClientProvider: redpandaClientProvider,
-		defaulter:              defaulter{},
+		logger:     logger,
+		consoleSvc: consoleSvc,
+		defaulter:  defaulter{},
 	}
 }
 
@@ -64,54 +57,46 @@ func NewService(cfg *config.Config,
 func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.ListUsersRequest]) (*connect.Response[v1alpha2.ListUsersResponse], error) {
 	s.defaulter.applyListUsersRequest(req.Msg)
 
-	// 1. Try to retrieve a Redpanda Admin API client.
-	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	described, err := s.consoleSvc.DescribeUserSCRAMCredentials(ctx)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectErrorFromKafkaError(err)
 	}
 
-	// 2. List users
-	users, err := redpandaCl.ListUsers(ctx)
-	if err != nil {
-		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
-	}
-
-	// doesUserPassFilter returns true if either no filter is provided or
-	// if the given username passes the given filter criteria.
 	doesUserPassFilter := func(username string) bool {
 		if req.Msg.Filter == nil {
 			return true
 		}
-
 		if req.Msg.Filter.Name == username {
 			return true
 		}
-
 		if req.Msg.Filter.NameContains != "" && strings.Contains(username, req.Msg.Filter.NameContains) {
 			return true
 		}
-
 		return false
 	}
 
+	// described.Sorted() returns users sorted by name.
 	filteredUsers := make([]*v1alpha2.ListUsersResponse_User, 0)
-	for _, user := range users {
-		// Remove users that do not pass the filter criteria
-		if !doesUserPassFilter(user) {
+	for _, user := range described.Sorted() {
+		if user.Err != nil {
+			s.logger.WarnContext(ctx, "error describing user SCRAM credentials", slog.String("user", user.User), slog.Any("error", user.Err))
 			continue
 		}
-
-		filteredUsers = append(filteredUsers, &v1alpha2.ListUsersResponse_User{
-			Name: user,
-		})
+		if !doesUserPassFilter(user.User) {
+			continue
+		}
+		u := &v1alpha2.ListUsersResponse_User{
+			Name: user.User,
+		}
+		if len(user.CredInfos) > 0 {
+			u.Mechanism = scramMechanismToProto(user.CredInfos[0].Mechanism)
+		}
+		filteredUsers = append(filteredUsers, u)
 	}
 
 	var nextPageToken string
 	if req.Msg.GetPageSize() > 0 {
-		// Add pagination
-		sort.SliceStable(filteredUsers, func(i, j int) bool {
-			return filteredUsers[i].Name < filteredUsers[j].Name
-		})
+		// filteredUsers is already sorted by name via described.Sorted().
 		page, token, err := pagination.SliceToPaginatedWithToken(filteredUsers, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha2.ListUsersResponse_User) string {
 			return x.GetName()
 		})
@@ -134,59 +119,60 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 
 // CreateUser creates a new Redpanda/Kafka user.
 func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.CreateUserRequest]) (*connect.Response[v1alpha2.CreateUserResponse], error) {
-	// 1. Try to retrieve a Redpanda Admin API client.
-	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Map inputs from proto to admin api
-	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
+	mechanism, err := saslMechanismToScramMechanism(req.Msg.User.Mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
-			connect.CodeInternal, // Internal because the mechanism should already be validated
+			connect.CodeInternal,
 			err,
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
 
-	// 3. Create user
-	err = redpandaCl.CreateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
+	results, err := s.consoleSvc.AlterUserSCRAMs(ctx, nil, []kadm.UpsertSCRAM{{
+		User:       req.Msg.User.Name,
+		Mechanism:  mechanism,
+		Iterations: console.DefaultSCRAMIterations,
+		Password:   req.Msg.User.Password,
+	}})
 	if err != nil {
-		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+		return nil, apierrors.NewConnectErrorFromKafkaError(err)
 	}
 
-	res := &v1alpha2.CreateUserResponse{
+	if result, ok := results[req.Msg.User.Name]; ok && result.Err != nil {
+		return nil, apierrors.NewConnectErrorFromKafkaError(result.Err)
+	}
+
+	return connect.NewResponse(&v1alpha2.CreateUserResponse{
 		User: &v1alpha2.CreateUserResponse_User{
 			Name:      req.Msg.User.Name,
 			Mechanism: &req.Msg.User.Mechanism,
 		},
-	}
-	return connect.NewResponse(res), nil
+	}), nil
 }
 
 // UpdateUser upserts a new Redpanda/Kafka user. This equals a PUT operation.
 func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.UpdateUserRequest]) (*connect.Response[v1alpha2.UpdateUserResponse], error) {
-	// 1. Try to retrieve a Redpanda Admin API client.
-	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Map inputs from proto to admin api
-	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
+	mechanism, err := saslMechanismToScramMechanism(req.Msg.User.Mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
-			connect.CodeInternal, // Internal because the mechanism should already be validated
+			connect.CodeInternal,
 			err,
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
 
-	// 3. Update user
-	err = redpandaCl.UpdateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
+	results, err := s.consoleSvc.AlterUserSCRAMs(ctx, nil, []kadm.UpsertSCRAM{{
+		User:       req.Msg.User.Name,
+		Mechanism:  mechanism,
+		Iterations: console.DefaultSCRAMIterations,
+		Password:   req.Msg.User.Password,
+	}})
 	if err != nil {
-		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
+		return nil, apierrors.NewConnectErrorFromKafkaError(err)
+	}
+
+	if result, ok := results[req.Msg.User.Name]; ok && result.Err != nil {
+		return nil, apierrors.NewConnectErrorFromKafkaError(result.Err)
 	}
 
 	return connect.NewResponse(&v1alpha2.UpdateUserResponse{
@@ -199,31 +185,44 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 
 // DeleteUser deletes an existing Redpanda/Kafka user.
 func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.DeleteUserRequest]) (*connect.Response[v1alpha2.DeleteUserResponse], error) {
-	// 1. Try to retrieve a Redpanda Admin API client.
-	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	described, err := s.consoleSvc.DescribeUserSCRAMCredentials(ctx, req.Msg.Name)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectErrorFromKafkaError(err)
 	}
 
-	// 2. List users to check if the requested user exists. The Redpanda admin API
-	// always returns ok, regardless whether the user exists or not.
-	listedUsers, err := redpandaCl.ListUsers(ctx)
-	if err != nil {
-		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to list users: ")
-	}
-	exists := slices.Contains(listedUsers, req.Msg.Name)
-	if !exists {
+	userSCRAM, ok := described[req.Msg.Name]
+	switch {
+	case !ok || errors.Is(userSCRAM.Err, kerr.ResourceNotFound):
 		return nil, apierrors.NewConnectError(
 			connect.CodeNotFound,
 			errors.New("user not found"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
 		)
+	case userSCRAM.Err != nil:
+		return nil, apierrors.NewConnectErrorFromKafkaError(userSCRAM.Err)
+	case len(userSCRAM.CredInfos) == 0:
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			errors.New("user has no SCRAM credentials"),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
+		)
 	}
 
-	// 3. Delete user
-	err = redpandaCl.DeleteUser(ctx, req.Msg.Name)
+	deletions := make([]kadm.DeleteSCRAM, 0, len(userSCRAM.CredInfos))
+	for _, cred := range userSCRAM.CredInfos {
+		deletions = append(deletions, kadm.DeleteSCRAM{
+			User:      req.Msg.Name,
+			Mechanism: cred.Mechanism,
+		})
+	}
+
+	results, err := s.consoleSvc.AlterUserSCRAMs(ctx, deletions, nil)
 	if err != nil {
-		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to delete user: ")
+		return nil, apierrors.NewConnectErrorFromKafkaError(err)
+	}
+
+	if result, ok := results[req.Msg.Name]; ok && result.Err != nil {
+		return nil, apierrors.NewConnectErrorFromKafkaError(result.Err)
 	}
 
 	connectResponse := connect.NewResponse(&v1alpha2.DeleteUserResponse{})

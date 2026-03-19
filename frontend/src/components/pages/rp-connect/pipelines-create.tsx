@@ -21,7 +21,7 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon } from 'lucide-react';
-import type { editor, IDisposable, languages } from 'monaco-editor';
+import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -257,7 +257,7 @@ const registerSecretsAutocomplete = async (
   const secrets = rpcnSecretManagerApi.secrets || [];
   const autocomplete = monaco.languages.registerCompletionItemProvider('yaml', {
     triggerCharacters: ['$'],
-    provideCompletionItems: (model, position) => {
+    provideCompletionItems: (model: editor.ITextModel, position: IPosition) => {
       const word = model.getWordUntilPosition(position);
       const range = {
         startLineNumber: position.lineNumber,
@@ -287,7 +287,7 @@ const registerContextualVariablesAutocomplete = (
 
   const autocomplete = monaco.languages.registerCompletionItemProvider('yaml', {
     triggerCharacters: ['$', '{'],
-    provideCompletionItems: (model, position) => {
+    provideCompletionItems: (model: editor.ITextModel, position: IPosition) => {
       const word = model.getWordUntilPosition(position);
       const range = {
         startLineNumber: position.lineNumber,
