@@ -165,7 +165,7 @@ service UserService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_ADMIN
-      api: API_REDPANDA_ADMIN
+      api: API_KAFKA
     };
   }
   rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
@@ -197,7 +197,7 @@ service UserService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_ADMIN
-      api: API_REDPANDA_ADMIN
+      api: API_KAFKA
     };
   }
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
@@ -217,7 +217,7 @@ service UserService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_REDPANDA_ADMIN
+      api: API_KAFKA
     };
   }
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
@@ -244,7 +244,7 @@ service UserService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_ADMIN
-      api: API_REDPANDA_ADMIN
+      api: API_KAFKA
     };
   }
 }

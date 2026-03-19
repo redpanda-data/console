@@ -19,13 +19,82 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/carlmjohnson/requests"
-	adminapi "github.com/redpanda-data/common-go/rpadmin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 	v1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
+
+// userServiceClientV1 returns a v1 UserService connect-go client.
+func (s *APISuite) userServiceClientV1() v1connect.UserServiceClient {
+	return v1connect.NewUserServiceClient(http.DefaultClient, s.httpAddress())
+}
+
+func (s *APISuite) TestCreateUser_v1() {
+	t := s.T()
+
+	t.Run("create user with SCRAM-SHA-256 (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		client := s.userServiceClientV1()
+		username := "console-integration-test-create-user-256"
+
+		res, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+			User: &v1.CreateUserRequest_User{
+				Name:      username,
+				Password:  "test-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			},
+		}))
+		require.NoError(err)
+		assert.Equal(username, res.Msg.User.Name)
+		assert.Equal(v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256, *res.Msg.User.Mechanism)
+
+		// Cleanup
+		_, err = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: username}))
+		assert.NoError(err)
+	})
+
+	t.Run("create user with SCRAM-SHA-512 (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		client := s.userServiceClientV1()
+		username := "console-integration-test-create-user-512"
+
+		res, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+			User: &v1.CreateUserRequest_User{
+				Name:      username,
+				Password:  "test-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512,
+			},
+		}))
+		require.NoError(err)
+		assert.Equal(username, res.Msg.User.Name)
+		assert.Equal(v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512, *res.Msg.User.Mechanism)
+
+		// Verify mechanism is returned in list
+		listRes, err := client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{
+			Filter: &v1.ListUsersRequest_Filter{Name: username},
+		}))
+		require.NoError(err)
+		require.Len(listRes.Msg.Users, 1)
+		require.NotNil(listRes.Msg.Users[0].Mechanism)
+		assert.Equal(v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512, *listRes.Msg.Users[0].Mechanism)
+
+		// Cleanup
+		_, err = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: username}))
+		assert.NoError(err)
+	})
+}
 
 func (s *APISuite) TestListUsers_v1() {
 	t := s.T()
@@ -34,38 +103,33 @@ func (s *APISuite) TestListUsers_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		// 1. Create some users in Redpanda
 		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
-		// Helper function to create a user
-		createUser := func(username string) {
-			childCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			defer cancel()
-
-			err := s.redpandaAdminClient.CreateUser(childCtx, username, "random", adminapi.ScramSha256)
-			require.NoError(err)
-		}
-		deleteUser := func(username string) {
-			childCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			defer cancel()
-
-			err := s.redpandaAdminClient.DeleteUser(childCtx, username)
-			assert.NoError(err)
-		}
+		client := s.userServiceClientV1()
 
 		username1 := "console-integration-test-list-users-1"
 		username2 := "console-integration-test-list-users-2"
-		createUser(username1)
-		createUser(username2)
-		defer deleteUser(username1)
-		defer deleteUser(username2)
+		for _, name := range []string{username1, username2} {
+			_, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+				User: &v1.CreateUserRequest_User{
+					Name:      name,
+					Password:  "test-password",
+					Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+				},
+			}))
+			require.NoError(err)
+		}
+		defer func() {
+			for _, name := range []string{username1, username2} {
+				_, _ = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: name}))
+			}
+		}()
 
-		// 2. List users
-		client := v1connect.NewUserServiceClient(http.DefaultClient, s.httpAddress())
+		// List users
 		res, err := client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{}))
 		require.NoError(err)
-		assert.GreaterOrEqual(2, len(res.Msg.Users))
+		assert.GreaterOrEqual(len(res.Msg.Users), 2)
 
 		foundUser1 := false
 		foundUser2 := false
@@ -85,34 +149,30 @@ func (s *APISuite) TestListUsers_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		// 1. Create some users in Redpanda
 		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
-		// Helper function to create a user
-		createUser := func(username string) {
-			childCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			defer cancel()
+		client := s.userServiceClientV1()
 
-			err := s.redpandaAdminClient.CreateUser(childCtx, username, "random", adminapi.ScramSha256)
+		username1 := "console-integration-test-list-users-http-1"
+		username2 := "console-integration-test-list-users-http-2"
+		for _, name := range []string{username1, username2} {
+			_, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+				User: &v1.CreateUserRequest_User{
+					Name:      name,
+					Password:  "test-password",
+					Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+				},
+			}))
 			require.NoError(err)
 		}
-		deleteUser := func(username string) {
-			childCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			defer cancel()
+		defer func() {
+			for _, name := range []string{username1, username2} {
+				_, _ = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: name}))
+			}
+		}()
 
-			err := s.redpandaAdminClient.DeleteUser(childCtx, username)
-			assert.NoError(err)
-		}
-
-		username1 := "console-integration-test-list-users-1"
-		username2 := "console-integration-test-list-users-2"
-		createUser(username1)
-		createUser(username2)
-		defer deleteUser(username1)
-		defer deleteUser(username2)
-
-		// 2. List users
+		// List users via HTTP
 		type listUsersRes struct {
 			Users []struct {
 				Name string `json:"name"`
@@ -124,7 +184,7 @@ func (s *APISuite) TestListUsers_v1() {
 			URL(s.httpAddress() + "/v1/users").
 			ToJSON(&httpRes).
 			AddValidator(requests.ValidatorHandler(
-				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
+				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
 			)).
 			Fetch(ctx)
@@ -147,74 +207,193 @@ func (s *APISuite) TestListUsers_v1() {
 
 	t.Run("list users with valid filter (connect-go)", func(t *testing.T) {
 		require := require.New(t)
-		assert := assert.New(t)
 
-		// 1. Create some users in Redpanda
 		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 		defer cancel()
 
-		// Helper function to create a user
-		createUser := func(username string) {
-			childCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			defer cancel()
-
-			err := s.redpandaAdminClient.CreateUser(childCtx, username, "random", adminapi.ScramSha256)
-			require.NoError(err)
-		}
-		deleteUser := func(username string) {
-			childCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			defer cancel()
-
-			err := s.redpandaAdminClient.DeleteUser(childCtx, username)
-			assert.NoError(err)
-		}
+		client := s.userServiceClientV1()
 
 		users := []string{
-			"console-integration-test-list-users-1",
-			"console-integration-test-list-users-2",
-			"console-integration-test-list-users-3",
-			"console-integration-test-list-users-4",
+			"console-integration-test-list-users-filter-1",
+			"console-integration-test-list-users-filter-2",
+			"console-integration-test-list-users-filter-3",
+			"console-integration-test-list-users-filter-4",
 			"console-integration-test-different-name-1",
 		}
-		for _, user := range users {
-			createUser(user)
+		for _, name := range users {
+			_, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+				User: &v1.CreateUserRequest_User{
+					Name:      name,
+					Password:  "test-password",
+					Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+				},
+			}))
+			require.NoError(err)
 		}
 		defer func() {
-			for _, user := range users {
-				deleteUser(user)
+			for _, name := range users {
+				_, _ = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: name}))
 			}
 		}()
 
-		// 2. List users with name contains that should yield exactly one user
-		client := v1connect.NewUserServiceClient(http.DefaultClient, s.httpAddress())
+		// Filter by name contains: should yield exactly one user
 		res, err := client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{
-			Filter: &v1.ListUsersRequest_Filter{
-				NameContains: "different-name",
-			},
+			Filter: &v1.ListUsersRequest_Filter{NameContains: "different-name"},
 		}))
 		require.NoError(err)
 		require.Equal(1, len(res.Msg.Users))
+		require.Equal("console-integration-test-different-name-1", res.Msg.Users[0].Name)
 
-		foundUser := res.Msg.Users[0]
-		assert.Equal("console-integration-test-different-name-1", foundUser.Name)
-
-		// 3. List users with name contains that should yield exactly 4 users
+		// Filter by name contains: should yield exactly 4 users
 		res, err = client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{
-			Filter: &v1.ListUsersRequest_Filter{
-				NameContains: "test-list-users",
-			},
+			Filter: &v1.ListUsersRequest_Filter{NameContains: "list-users-filter"},
 		}))
 		require.NoError(err)
 		require.Equal(4, len(res.Msg.Users))
 
-		// 3. List users with exact name match that should yield one user
+		// Filter by exact name match
 		res, err = client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{
-			Filter: &v1.ListUsersRequest_Filter{
-				Name: "console-integration-test-list-users-3",
-			},
+			Filter: &v1.ListUsersRequest_Filter{Name: "console-integration-test-list-users-filter-3"},
 		}))
 		require.NoError(err)
 		require.Equal(1, len(res.Msg.Users))
-		require.Equal("console-integration-test-list-users-3", res.Msg.Users[0].Name)
+		require.Equal("console-integration-test-list-users-filter-3", res.Msg.Users[0].Name)
+	})
+}
+
+func (s *APISuite) TestUpdateUser_v1() {
+	t := s.T()
+
+	t.Run("update user password (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		client := s.userServiceClientV1()
+		username := "console-integration-test-update-user"
+
+		// Create user
+		_, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+			User: &v1.CreateUserRequest_User{
+				Name:      username,
+				Password:  "old-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			},
+		}))
+		require.NoError(err)
+		defer func() {
+			_, _ = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: username}))
+		}()
+
+		// Update password
+		res, err := client.UpdateUser(ctx, connect.NewRequest(&v1.UpdateUserRequest{
+			User: &v1.UpdateUserRequest_User{
+				Name:      username,
+				Password:  "new-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			},
+		}))
+		require.NoError(err)
+		assert.Equal(username, res.Msg.User.Name)
+		assert.Equal(v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256, *res.Msg.User.Mechanism)
+	})
+
+	t.Run("update user mechanism (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		client := s.userServiceClientV1()
+		username := "console-integration-test-update-mechanism"
+
+		// Create with SHA-256
+		_, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+			User: &v1.CreateUserRequest_User{
+				Name:      username,
+				Password:  "test-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			},
+		}))
+		require.NoError(err)
+		defer func() {
+			_, _ = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: username}))
+		}()
+
+		// Update to SHA-512
+		_, err = client.UpdateUser(ctx, connect.NewRequest(&v1.UpdateUserRequest{
+			User: &v1.UpdateUserRequest_User{
+				Name:      username,
+				Password:  "test-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512,
+			},
+		}))
+		require.NoError(err)
+
+		// Verify mechanism changed in list
+		listRes, err := client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{
+			Filter: &v1.ListUsersRequest_Filter{Name: username},
+		}))
+		require.NoError(err)
+		require.Len(listRes.Msg.Users, 1)
+		require.NotNil(listRes.Msg.Users[0].Mechanism)
+		assert.Equal(v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_512, *listRes.Msg.Users[0].Mechanism)
+	})
+}
+
+func (s *APISuite) TestDeleteUser_v1() {
+	t := s.T()
+
+	t.Run("delete existing user (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		client := s.userServiceClientV1()
+		username := "console-integration-test-delete-user"
+
+		// Create user
+		_, err := client.CreateUser(ctx, connect.NewRequest(&v1.CreateUserRequest{
+			User: &v1.CreateUserRequest_User{
+				Name:      username,
+				Password:  "test-password",
+				Mechanism: v1.SASLMechanism_SASL_MECHANISM_SCRAM_SHA_256,
+			},
+		}))
+		require.NoError(err)
+
+		// Delete user
+		_, err = client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{Name: username}))
+		require.NoError(err)
+
+		// Verify user is gone
+		listRes, err := client.ListUsers(ctx, connect.NewRequest(&v1.ListUsersRequest{
+			Filter: &v1.ListUsersRequest_Filter{Name: username},
+		}))
+		require.NoError(err)
+		require.Empty(listRes.Msg.Users)
+	})
+
+	t.Run("delete non-existent user returns not found (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		client := s.userServiceClientV1()
+
+		_, err := client.DeleteUser(ctx, connect.NewRequest(&v1.DeleteUserRequest{
+			Name: "console-integration-test-nonexistent-user",
+		}))
+		require.Error(err)
+
+		var connectErr *connect.Error
+		require.ErrorAs(err, &connectErr)
+		assert.Equal(connect.CodeNotFound, connectErr.Code())
 	})
 }
