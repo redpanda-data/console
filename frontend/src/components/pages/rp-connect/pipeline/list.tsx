@@ -331,7 +331,7 @@ const createColumns = ({
     header: 'Pipeline Name',
     filterFn: createFilterFn('text'),
     cell: ({ row }) => (
-      <div className="flex min-w-[324px] items-center gap-4">
+      <div className="flex min-w-[200px] items-center gap-4">
         <Link
           as={TanStackRouterLink}
           className="max-w-[200px] text-base text-primary text-truncate"
@@ -473,7 +473,7 @@ const createColumns = ({
     header: 'Status',
     filterFn: createFilterFn('option'),
     cell: ({ row }) => (
-      <StatusBadge className="min-w-[150px]" variant={pipelineStateToStatusVariant[row.original.state]} />
+      <StatusBadge className="min-w-[150px]" size="sm" variant={pipelineStateToStatusVariant[row.original.state]} />
     ),
   },
   {

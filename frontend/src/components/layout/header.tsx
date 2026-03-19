@@ -17,7 +17,7 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Fragment, useMemo } from 'react';
 
-import { isEmbedded } from '../../config';
+import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
@@ -207,6 +207,20 @@ function useShouldShowRefresh() {
 }
 function useShouldHideHeader() {
   const { pathname } = useLocation();
+  const matchRoute = useMatchRoute();
+
+  // Hide header when PipelinePage renders (it has its own header/breadcrumbs)
+  const isPipelineRoute =
+    matchRoute({ to: '/rp-connect/$pipelineId' }) ||
+    matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
+    matchRoute({ to: '/rp-connect/create' });
+
+  if (
+    isPipelineRoute &&
+    (isFeatureFlagEnabled('enablePipelineDiagrams') || (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()))
+  ) {
+    return true;
+  }
 
   // Only hide header in embedded mode for pages that have their own headers
   if (!isEmbedded()) {
