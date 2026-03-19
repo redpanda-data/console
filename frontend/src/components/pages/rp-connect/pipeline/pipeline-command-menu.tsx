@@ -27,7 +27,7 @@ import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useListTopicsQuery } from 'react-query/api/topic';
@@ -40,6 +40,83 @@ import { AddUserStep } from '../onboarding/add-user-step';
 import { getContextualVariableSyntax, getSecretSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from '../types/constants';
 import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard';
 import { extractAllTopics } from '../utils/yaml';
+
+/**
+ * Compute the pixel position of a line/column in the Monaco editor using
+ * `getScrolledVisiblePosition`. Returns a fixed-position style for the popover.
+ * Re-syncs on editor scroll and window resize.
+ * (Rule 4: external system sync — Monaco coordinate API)
+ */
+function useAnchorPosition(
+  editorInstance: editor.IStandaloneCodeEditor | null,
+  slashPosition: { lineNumber: number; column: number } | null,
+  open: boolean
+) {
+  const [style, setStyle] = useState<React.CSSProperties>({ position: 'fixed', visibility: 'hidden' });
+
+  useEffect(() => {
+    if (!(editorInstance && slashPosition && open)) {
+      setStyle({ position: 'fixed', visibility: 'hidden' });
+      return;
+    }
+
+    const updatePosition = () => {
+      const coords = editorInstance.getScrolledVisiblePosition(slashPosition);
+      const editorDom = editorInstance.getDomNode();
+      if (!(coords && editorDom)) {
+        setStyle((prev) => ({ ...prev, visibility: 'hidden' }));
+        return;
+      }
+      const editorRect = editorDom.getBoundingClientRect();
+      setStyle({
+        position: 'fixed',
+        top: editorRect.top + coords.top + coords.height,
+        left: editorRect.left + coords.left,
+        zIndex: 50,
+        visibility: 'visible',
+      });
+    };
+
+    // Synchronous — position is correct immediately, no rAF needed
+    updatePosition();
+
+    const scrollDisposable = editorInstance.onDidScrollChange(updatePosition);
+    window.addEventListener('resize', updatePosition, { passive: true });
+
+    return () => {
+      scrollDisposable.dispose();
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [editorInstance, slashPosition, open]);
+
+  return style;
+}
+
+/**
+ * Close the popover when the user clicks outside of it.
+ * Returns a ref to attach to the popover container.
+ * (Rule 4: external system sync — document click listener)
+ */
+function useClickOutside(open: boolean, onClose: () => void) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [open, onClose]);
+
+  return containerRef;
+}
 
 type FilterValue = 'all' | 'variables' | 'secrets' | 'topics' | 'users';
 
@@ -57,13 +134,9 @@ type DialogVariantProps = SharedProps & {
 
 type PopoverVariantProps = SharedProps & {
   variant: 'popover';
-  /** DOM node from useSlashCommand to portal into (positioned by Monaco IContentWidget) */
-  widgetDom: HTMLElement;
-  /** Text typed after `/` — drives cmdk filtering */
-  slashQuery: string;
-  /** Ref to attach to the Command container for keyboard event forwarding */
-  commandContainerRef: React.RefObject<HTMLDivElement | null>;
-  /** Called on item selection — replaces `/query` text in editor */
+  /** Line/column where `/` was typed — used for popover positioning */
+  slashPosition: { lineNumber: number; column: number } | null;
+  /** Called on item selection — replaces `/` text in editor */
   onSlashSelect: (text: string) => void;
 };
 
@@ -144,7 +217,7 @@ function CommandMenuContent({
 
   return (
     <>
-      {showCategoryFilter && (
+      {showCategoryFilter ? (
         <div className="border-b px-2 py-1.5">
           <ToggleGroup
             attached={false}
@@ -164,7 +237,7 @@ function CommandMenuContent({
             <ToggleGroupItem value="users">Users</ToggleGroupItem>
           </ToggleGroup>
         </div>
-      )}
+      ) : null}
       <CommandList className="pb-2">
         <CommandEmpty>No results found.</CommandEmpty>
         {show('variables') && (
@@ -231,6 +304,37 @@ function CommandMenuContent({
 export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   const { open, onOpenChange, editorInstance, hideInternal = true, yamlContent = '' } = props;
   const isPopover = props.variant === 'popover';
+
+  // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
+  const anchorStyle = useAnchorPosition(
+    isPopover ? editorInstance : null,
+    isPopover ? props.slashPosition : null,
+    open
+  );
+  const clickOutsideRef = useClickOutside(isPopover && open, () => onOpenChange(false));
+
+  // Ref callback: when the popover div mounts, steal focus from Monaco into the cmdk input.
+  // Uses setTimeout(0) to defer past Monaco's keystroke processing, then retries via rAF
+  // if Monaco reclaims focus. Fires once per open (portal unmounts on close → remounts on open).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clickOutsideRef is a stable ref object
+  const popoverRef = useCallback((node: HTMLDivElement | null) => {
+    clickOutsideRef.current = node;
+    if (!node) {
+      return;
+    }
+    let attempts = 0;
+    const tryFocus = () => {
+      const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
+      if (input && document.activeElement !== input && attempts < 10) {
+        attempts += 1;
+        input.focus();
+        if (document.activeElement !== input) {
+          requestAnimationFrame(tryFocus);
+        }
+      }
+    };
+    setTimeout(tryFocus, 0);
+  }, []);
 
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
   const [pendingSearch, setPendingSearch] = useState('');
@@ -453,26 +557,43 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     </>
   );
 
-  // ── Popover variant (rendered into Monaco content widget via portal) ──
+  // ── Popover variant (rendered outside Monaco's DOM for proper focus) ──
 
   if (isPopover) {
     return (
       <>
-        {open &&
-          createPortal(
-            <Command
-              className="w-72 rounded-md border bg-background shadow-md"
-              loop
-              ref={props.commandContainerRef}
-              size="sm"
-              variant="elevated"
-              vimBindings={false}
-            >
-              <CommandInput className="sr-only" tabIndex={-1} value={props.slashQuery} />
-              <CommandMenuContent {...contentProps} />
-            </Command>,
-            props.widgetDom
-          )}
+        {open
+          ? createPortal(
+              <div ref={popoverRef} style={anchorStyle}>
+                <Command
+                  className="w-72 rounded-md border bg-background shadow-md"
+                  loop
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      onOpenChange(false);
+                    }
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      const selected = (e.currentTarget as HTMLElement).querySelector(
+                        '[cmdk-item][aria-selected="true"]'
+                      );
+                      if (selected) {
+                        (selected as HTMLElement).click();
+                      }
+                    }
+                  }}
+                  size="sm"
+                  variant="elevated"
+                  vimBindings={false}
+                >
+                  <CommandInput autoFocus placeholder="Filter..." />
+                  <CommandMenuContent {...contentProps} />
+                </Command>
+              </div>,
+              document.body
+            )
+          : null}
         {subDialogs}
       </>
     );

@@ -14,6 +14,7 @@ export const FEATURE_FLAGS = {
   enableDataplaneObservability: false,
   enableNewPipelineLogs: false,
   enablePipelineDiagrams: false,
+  enableConnectSlashMenu: false,
 };
 
 // Cloud-managed tag keys for service account integration

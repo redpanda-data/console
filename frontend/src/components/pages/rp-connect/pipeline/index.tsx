@@ -166,6 +166,7 @@ export default function PipelinePage() {
   const navigate = useNavigate();
   const router = useRouter();
   const search = useSearch({ strict: false }) as { serverless?: string };
+  const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
 
   // Zustand store for wizard persistence (CREATE mode only)
   const isServerlessMode = search.serverless === 'true';
@@ -191,7 +192,7 @@ export default function PipelinePage() {
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
 
   // Slash command: inline command menu triggered by typing `/` in the editor
-  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null);
+  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -608,21 +609,21 @@ export default function PipelinePage() {
         yamlContent={yamlContent}
       />
 
-      <PipelineCommandMenu
-        commandContainerRef={slashCommand.commandContainerRef}
-        editorInstance={editorInstance}
-        onOpenChange={(open) => {
-          if (!open) {
-            slashCommand.close();
-          }
-        }}
-        onSlashSelect={slashCommand.handleSlashSelect}
-        open={slashCommand.isOpen}
-        slashQuery={slashCommand.slashQuery}
-        variant="popover"
-        widgetDom={slashCommand.widgetDom}
-        yamlContent={yamlContent}
-      />
+      {isSlashMenuEnabled ? (
+        <PipelineCommandMenu
+          editorInstance={editorInstance}
+          onOpenChange={(open) => {
+            if (!open) {
+              slashCommand.close();
+            }
+          }}
+          onSlashSelect={slashCommand.handleSlashSelect}
+          open={slashCommand.isOpen}
+          slashPosition={slashCommand.slashPosition}
+          variant="popover"
+          yamlContent={yamlContent}
+        />
+      ) : null}
 
       <ConnectorWizard
         addConnectorType={addConnectorType}

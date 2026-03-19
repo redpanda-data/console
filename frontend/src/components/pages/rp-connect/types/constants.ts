@@ -47,7 +47,7 @@ export const REDPANDA_CONTEXTUAL_VARIABLES = {
   },
 } as const;
 
-export const getContextualVariableSyntax = (name: ContextualVariableName): string => `\${${name}}`;
+export const getContextualVariableSyntax = (name: string): string => `\${${name}}`;
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 
