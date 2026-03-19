@@ -2,8 +2,6 @@ version: v2
 clean: true
 inputs:
   - directory: proto
-  - module: buf.build/redpandadata/common
-  - module: buf.build/redpandadata/ai-gateway:0d2811b8e7ef43cfaa056826a96c7515
 plugins:
   - remote: buf.build/bufbuild/es:v2.2.5
     out: frontend/src/protogen
