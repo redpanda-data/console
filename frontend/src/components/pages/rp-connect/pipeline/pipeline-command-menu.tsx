@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { PlusIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Command,
@@ -25,7 +26,6 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading, InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -383,7 +383,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   }
 
   // Secrets: query + missing-secret detection for AddSecretsDialog
-  const { data: secretsResponse } = useListSecretsQuery({});
+  const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const secrets = useMemo(
     () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '').filter(Boolean) : []),
     [secretsResponse]
@@ -399,7 +399,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   }, [yamlContent, secrets]);
 
   // Cap at 500 — the command menu is a quick-pick, not a full topic browser
-  const { data: topicsResponse } = useListTopicsQuery({ pageSize: 500 });
+  const { data: topicsResponse } = useListTopicsQuery({ pageSize: 500 }, { enabled: open });
   const clusterTopics = useMemo(
     () =>
       topicsResponse?.topics

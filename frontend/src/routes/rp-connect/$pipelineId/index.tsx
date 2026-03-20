@@ -12,7 +12,7 @@
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
-import { isFeatureFlagEnabled } from 'config';
+import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
 import { z } from 'zod';
 
@@ -37,7 +37,7 @@ function PipelineDetailsRoute() {
   const { pipelineId } = useParams({ from: '/rp-connect/$pipelineId/' });
   // Tier 1: enablePipelineDiagrams → new pipeline page directly
   // Tier 2/3: legacy wrapper (internally checks enableRpcnTiles → PipelinePage, else legacy form)
-  if (isFeatureFlagEnabled('enablePipelineDiagrams')) {
+  if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
     return <PipelinePage />;
   }
   return <RpConnectPipelinesDetails matchedPath={`/rp-connect/${pipelineId}`} pipelineId={pipelineId} />;

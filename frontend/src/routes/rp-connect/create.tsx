@@ -11,7 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
-import { isFeatureFlagEnabled } from 'config';
+import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
 import { z } from 'zod';
 
@@ -34,7 +34,7 @@ export const Route = createFileRoute('/rp-connect/create')({
 function CreatePipelineRoute() {
   // Tier 1: enablePipelineDiagrams → new pipeline page directly
   // Tier 2/3: legacy wrapper (internally checks enableRpcnTiles → PipelinePage, else legacy form)
-  if (isFeatureFlagEnabled('enablePipelineDiagrams')) {
+  if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
     return <PipelinePage />;
   }
   return <RpConnectPipelinesCreate matchedPath="/rp-connect/create" />;

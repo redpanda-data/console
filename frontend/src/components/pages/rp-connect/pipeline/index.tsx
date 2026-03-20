@@ -30,7 +30,7 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { isFeatureFlagEnabled, isServerless } from 'config';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
@@ -542,7 +542,7 @@ export default function PipelinePage() {
       <div className="flex min-h-0 flex-1 rounded-lg border">
         <div className="flex w-[300px] shrink-0 flex-col border-r">
           <div className="min-h-0 flex-1">
-            {isFeatureFlagEnabled('enablePipelineDiagrams') && (
+            {isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded() && (
               <PipelineFlowDiagram
                 configYaml={yamlContent}
                 hideZoomControls
@@ -558,7 +558,7 @@ export default function PipelinePage() {
                 editorContent={yamlContent}
                 hasInput={yamlContent.includes('input:')}
                 hasOutput={yamlContent.includes('output:')}
-                hideInputOutput={isFeatureFlagEnabled('enablePipelineDiagrams')}
+                hideInputOutput={isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()}
                 onAddConnector={(type) => setAddConnectorType(type)}
               />
               <div className="px-4 pb-4">

@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SlashPosition = { lineNumber: number; column: number };
 
-export const SLASH_TRIGGER_PATTERN = /[\s:]/;
+export const SLASH_TRIGGER_PATTERN = /\s/;
 
 /** Check if the `/` just typed is at a valid trigger position (start of line or after whitespace/colon). */
 export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor): SlashPosition | null {

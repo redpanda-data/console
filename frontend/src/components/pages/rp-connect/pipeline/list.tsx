@@ -49,7 +49,7 @@ import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-fi
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
-import { isFeatureFlagEnabled } from 'config';
+import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, MoreHorizontal } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -617,7 +617,7 @@ const PipelineListPageContent = () => {
     resetOnboardingWizardStore();
     // enablePipelineDiagrams: skip wizard, go straight to pipeline editor
     // otherwise: go through wizard (master behavior)
-    if (isFeatureFlagEnabled('enablePipelineDiagrams')) {
+    if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
       navigate({ to: '/rp-connect/create' });
     } else {
       navigate({ to: '/rp-connect/wizard', search: { step: undefined, serverless: undefined } });

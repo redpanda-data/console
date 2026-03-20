@@ -215,9 +215,13 @@ function useShouldHideHeader() {
     matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
     matchRoute({ to: '/rp-connect/create' });
 
+  // Both flags are cloud-only (schema requires embedded mode).
+  // enablePipelineDiagrams: full new pipeline layout with diagrams.
+  // enableRpcnTiles: new tiles-based create flow embedded in legacy layout.
   if (
     isPipelineRoute &&
-    (isFeatureFlagEnabled('enablePipelineDiagrams') || (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()))
+    isEmbedded() &&
+    (isFeatureFlagEnabled('enablePipelineDiagrams') || isFeatureFlagEnabled('enableRpcnTiles'))
   ) {
     return true;
   }

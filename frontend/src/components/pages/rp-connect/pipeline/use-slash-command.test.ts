@@ -33,8 +33,8 @@ describe('SLASH_TRIGGER_PATTERN', () => {
     expect(SLASH_TRIGGER_PATTERN.test('\t')).toBe(true);
   });
 
-  it('matches colon', () => {
-    expect(SLASH_TRIGGER_PATTERN.test(':')).toBe(true);
+  it('does not match colon', () => {
+    expect(SLASH_TRIGGER_PATTERN.test(':')).toBe(false);
   });
 
   it('does not match letters', () => {
@@ -67,8 +67,8 @@ describe('detectSlashTrigger', () => {
       expect(detectSlashTrigger(mockEditor('  /', 4))).toEqual({ lineNumber: 1, column: 3 });
     });
 
-    it('/ after colon', () => {
-      expect(detectSlashTrigger(mockEditor('key:/', 6))).toEqual({ lineNumber: 1, column: 5 });
+    it('/ after colon (no longer triggers — prevents URL false positives)', () => {
+      expect(detectSlashTrigger(mockEditor('key:/', 6))).toBeNull();
     });
 
     it('/ after colon+space', () => {
