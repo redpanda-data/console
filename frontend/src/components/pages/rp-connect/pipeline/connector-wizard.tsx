@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -21,9 +22,14 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { InfoIcon } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useRef, useState } from 'react';
-import { useOnboardingTopicDataStore, useOnboardingUserDataStore } from 'state/onboarding-wizard-store';
+import {
+  useOnboardingTopicDataStore,
+  useOnboardingUserDataStore,
+  useOnboardingWizardDataStore,
+} from 'state/onboarding-wizard-store';
 
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddTopicStep } from '../onboarding/add-topic-step';
@@ -60,12 +66,14 @@ function RedpandaSetupSteps({
   methods,
   onClose,
   onComplete,
+  serverlessHint,
 }: {
   connectionName: string;
   connectionType: ConnectComponentType;
   methods: RedpandaConnectorSetupSteps;
   onClose: () => void;
   onComplete: (result: RedpandaSetupResult) => void;
+  serverlessHint?: string;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [topicName, setTopicName] = useState<string>();
@@ -123,14 +131,14 @@ function RedpandaSetupSteps({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>
+        <DialogTitle className="capitalize">
           Configure {connectionName} {connectionType}
         </DialogTitle>
-        <DialogDescription>
-          {isTopicStep ? 'Select or create a topic for this component.' : 'Configure user authentication.'}
+        <DialogDescription className="mt-4">
+          {isTopicStep ? 'Select or create a topic.' : 'Configure user authentication.'}
         </DialogDescription>
       </DialogHeader>
-      <DialogBody>
+      <DialogBody className="mt-4">
         <RedpandaConnectorSetupStepper.Navigation>
           {methods.all.map((step) => (
             <RedpandaConnectorSetupStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
@@ -140,7 +148,14 @@ function RedpandaSetupSteps({
         </RedpandaConnectorSetupStepper.Navigation>
         {methods.switch({
           [RedpandaConnectorSetupStep.ADD_TOPIC]: () => (
-            <AddTopicStep hideTitle ref={topicStepRef} {...stepMotionProps} />
+            <>
+              {serverlessHint ? (
+                <Alert className="mt-4" icon={<InfoIcon className="h-4 w-4" />} variant="warning">
+                  <AlertDescription>{serverlessHint}</AlertDescription>
+                </Alert>
+              ) : null}
+              <AddTopicStep hideTitle ref={topicStepRef} {...stepMotionProps} />
+            </>
           ),
           [RedpandaConnectorSetupStep.ADD_USER]: () => (
             <AddUserStep
@@ -178,6 +193,7 @@ type ConnectorWizardProps = {
   componentList?: ComponentList;
   yamlContent: string;
   onYamlChange: (yaml: string) => void;
+  autoOpenRedpandaSetup?: { connectionName: string; connectionType: ConnectComponentType };
 };
 
 export function ConnectorWizard({
@@ -187,11 +203,20 @@ export function ConnectorWizard({
   componentList,
   yamlContent,
   onYamlChange,
+  autoOpenRedpandaSetup,
 }: ConnectorWizardProps) {
+  const wizardInputName = useOnboardingWizardDataStore((state) => state.input?.connectionName);
+
+  const serverlessHint = autoOpenRedpandaSetup
+    ? wizardInputName === 'redpanda'
+      ? 'Create or select a topic you want to stream data from.'
+      : `Stream data to a Redpanda topic from your ${wizardInputName} input.`
+    : undefined;
+
   const [redpandaSetupConfig, setRedpandaSetupConfig] = useState<{
     connectionName: string;
     connectionType: ConnectComponentType;
-  } | null>(null);
+  } | null>(autoOpenRedpandaSetup ?? null);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -288,6 +313,7 @@ export function ConnectorWizard({
                   methods={methods}
                   onClose={() => setRedpandaSetupConfig(null)}
                   onComplete={handleRedpandaSetupComplete}
+                  serverlessHint={serverlessHint}
                 />
               )}
             </RedpandaConnectorSetupStepper.Provider>

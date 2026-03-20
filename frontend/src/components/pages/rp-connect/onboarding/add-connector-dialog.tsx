@@ -6,10 +6,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { Link } from 'components/redpanda-ui/components/typography';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectTiles } from './connect-tiles';
 import type { ConnectComponentType } from '../types/schema';
+
+function getDocsUrl(connectorType?: ConnectComponentType | ConnectComponentType[]): string | null {
+  const type = Array.isArray(connectorType) ? connectorType[0] : connectorType;
+  if (!type) {
+    return null;
+  }
+  return `https://docs.redpanda.com/redpanda-cloud/develop/connect/components/${type}s/about/`;
+}
 
 export const AddConnectorDialog = ({
   isOpen,
@@ -31,12 +40,21 @@ export const AddConnectorDialog = ({
     typeFilter = [connectorType];
   }
 
+  const docsUrl = getDocsUrl(connectorType);
+
   return (
     <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>Add a connector</DialogTitle>
-          <DialogDescription>Add a connector to your pipeline.</DialogDescription>
+          <DialogDescription className="mt-4">
+            Configure your pipeline.{' '}
+            {docsUrl ? (
+              <Link href={docsUrl} rel="noopener noreferrer" target="_blank">
+                Learn more
+              </Link>
+            ) : null}
+          </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <ConnectTiles

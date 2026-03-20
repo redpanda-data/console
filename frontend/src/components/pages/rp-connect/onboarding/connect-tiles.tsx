@@ -11,7 +11,7 @@ import {
 import { Choicebox } from 'components/redpanda-ui/components/choicebox';
 import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
 import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
-import { Input } from 'components/redpanda-ui/components/input';
+import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import type { FiltersState } from 'components/redpanda-ui/lib/filter-utils';
@@ -357,15 +357,16 @@ export const ConnectTiles = memo(
             <Form {...form}>
               {!hideFilters && (
                 <div className="sticky top-0 z-10 mb-0 flex items-center gap-2 border-b-2 bg-background pt-2 pb-4">
-                  <div className="relative w-[200px] shrink-0">
-                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      className="pl-8"
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search connectors..."
-                      value={searchQuery}
-                    />
-                  </div>
+                  <Input
+                    containerClassName="w-[200px] shrink-0"
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search connectors..."
+                    value={searchQuery}
+                  >
+                    <InputStart>
+                      <Search className="size-4 text-muted-foreground" />
+                    </InputStart>
+                  </Input>
                   <DataTableFilter actions={actions} columns={filterColumns} filters={filters} />
                 </div>
               )}

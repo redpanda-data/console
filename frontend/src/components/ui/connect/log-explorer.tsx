@@ -121,11 +121,6 @@ function LogDetailSheet({
     }
   }, [message]);
 
-  const keyCode = useMemo(() => {
-    if (!message) return '';
-    return message.keyJson ?? '';
-  }, [message]);
-
   return (
     <Sheet onOpenChange={(open) => !open && onClose()} open={message !== null}>
       <SheetContent className="flex flex-col gap-6 overflow-y-auto" size="lg">
@@ -137,9 +132,9 @@ function LogDetailSheet({
               </SheetTitle>
             </SheetHeader>
 
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+            <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-4">
               <Text as="span" variant="labelStrongSmall">Level</Text>
-              <LogLevelBadge level={logPayload?.level} />
+              <span><LogLevelBadge level={logPayload?.level} /></span>
 
               {logPayload?.path && (
                 <>
@@ -162,6 +157,15 @@ function LogDetailSheet({
               )}
             </div>
 
+            {logPayload?.message && (
+              <SimpleCodeBlock
+                code={logPayload.message}
+                language="text"
+                title="Message"
+                width="full"
+              />
+            )}
+
             <SimpleCodeBlock
               code={valueCode}
               language="json"
@@ -169,15 +173,6 @@ function LogDetailSheet({
               title="Value"
               width="full"
             />
-
-            {keyCode && (
-              <SimpleCodeBlock
-                code={keyCode}
-                maxHeight="sm"
-                title="Key"
-                width="full"
-              />
-            )}
 
             {message.headers.length > 0 && (
               <div className="flex flex-col gap-2">
@@ -205,10 +200,22 @@ interface LogExplorerProps {
   pipeline: Pipeline;
   /** Pass `isServerless()` from config — controls whether pipelineId filtering uses server-side pushdown or client-side. */
   serverless?: boolean;
+  /** Whether to enable the live view. Defaults to false. */
+  enableLiveView?: boolean;
 }
 
-export function LogExplorer({ pipeline, serverless }: LogExplorerProps) {
-  const [liveViewEnabled, setLiveViewEnabled] = useState(false);
+export function LogExplorer({ pipeline, serverless, enableLiveView = false }: LogExplorerProps) {
+  const [liveViewEnabled, setLiveViewEnabled] = useState(enableLiveView);
+
+  // Sync live view when pipeline state changes (e.g. transitions to RUNNING)
+  const [prevEnableLiveView, setPrevEnableLiveView] = useState(enableLiveView);
+  if (enableLiveView !== prevEnableLiveView) {
+    setPrevEnableLiveView(enableLiveView);
+    if (enableLiveView) {
+      setLiveViewEnabled(true);
+    }
+  }
+
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [sorting, setSorting] = useState<SortingState>([]);

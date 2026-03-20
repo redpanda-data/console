@@ -18,7 +18,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
 import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
+import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
@@ -40,6 +42,7 @@ import {
 import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
   Pipeline_ServiceAccountSchema,
+  Pipeline_State,
   PipelineCreateSchema,
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
@@ -60,6 +63,7 @@ import {
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { toast } from 'sonner';
 import {
+  getWizardConnectionData,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
   useOnboardingYamlContentStore,
@@ -70,11 +74,12 @@ import { z } from 'zod';
 
 import { ConfigDialog } from './config-dialog';
 import { ConnectorWizard } from './connector-wizard';
+import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
+import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { Toolbar } from './toolbar';
 import { useSlashCommand } from './use-slash-command';
-import { ViewDetails } from './view-details';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
 import { LogsTab } from '../pipelines-details';
@@ -189,6 +194,7 @@ export default function PipelinePage() {
   const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
 
   // Slash command: inline command menu triggered by typing `/` in the editor
@@ -311,9 +317,7 @@ export default function PipelinePage() {
       return;
     }
 
-    const wizardData = useOnboardingWizardDataStore.getState();
-    const inputData = wizardData.input;
-    const outputData = wizardData.output;
+    const { input: inputData, output: outputData } = getWizardConnectionData();
 
     if (inputData?.connectionName && inputData?.connectionType) {
       let generatedYaml = '';
@@ -345,6 +349,22 @@ export default function PipelinePage() {
 
     hasInitializedServerless.current = true;
   }, [components, wizardStoreHydrated]);
+
+  // Auto-open redpanda setup dialog when arriving from serverless onboarding with a redpanda connector
+  const wizardInput = useOnboardingWizardDataStore((state) => state.input);
+  const wizardOutput = useOnboardingWizardDataStore((state) => state.output);
+  const autoOpenRedpandaSetup = useMemo(() => {
+    if (!isServerlessMode) {
+      return;
+    }
+    if (wizardInput?.connectionName === 'redpanda') {
+      return { connectionName: 'redpanda', connectionType: wizardInput.connectionType };
+    }
+    if (wizardOutput?.connectionName === 'redpanda') {
+      return { connectionName: 'redpanda', connectionType: wizardOutput.connectionType };
+    }
+    return;
+  }, [isServerlessMode, wizardInput, wizardOutput]);
 
   // Clear wizard store (CREATE mode)
   const clearWizardStore = useCallback(() => {
@@ -491,10 +511,18 @@ export default function PipelinePage() {
     [handleYamlChange, editorInstance]
   );
 
+  // Slash menu tip banner — dismissable
+  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
+
   const pipelineName = useWatch({ control: form.control, name: 'name' });
 
   return (
-    <div className={cn('flex h-[calc(100dvh-10rem)] flex-col gap-4')}>
+    <div
+      className={cn(
+        'flex flex-col gap-4',
+        mode === 'view' ? 'h-full min-h-[calc(100dvh-10rem)]' : 'h-[calc(100dvh-10rem)]'
+      )}
+    >
       <Toolbar
         autoFocus={mode === 'create'}
         isLoading={isPipelineLoading}
@@ -505,6 +533,7 @@ export default function PipelinePage() {
         onEditConfig={() => setIsConfigDialogOpen(true)}
         onNameChange={handleNameChange}
         onSave={handleSave}
+        onViewConfig={() => setIsViewConfigDialogOpen(true)}
         pipelineId={pipelineId}
         pipelineName={pipelineName}
         pipelineState={pipeline?.state}
@@ -548,40 +577,60 @@ export default function PipelinePage() {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={mode === 'view' ? 40 : 70} minSize={mode === 'view' ? 10 : 30}>
-              {mode === 'view' ? (
-                <div className="flex h-full flex-col gap-4 overflow-auto bg-primary-alpha-subtle p-4">
-                  <ViewDetails isDeleting={isDeletePending} onDelete={handleDelete} pipeline={pipeline} />
-                </div>
+          {mode === 'view' ? (
+            <div className="flex h-full flex-col gap-4 overflow-auto p-4">
+              {pipeline ? (
+                <>
+                  <PipelineThroughputCard pipelineId={pipeline.id} />
+                  <Card size="full" variant="outlined">
+                    <CardContent className="pt-6">
+                      {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+                        <LogExplorer
+                          enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+                          pipeline={pipeline}
+                          serverless={isServerless()}
+                        />
+                      ) : (
+                        <LogsTab pipeline={pipeline} />
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
               ) : (
-                <YamlEditor
-                  onChange={(val) => handleYamlChange(val || '')}
-                  onEditorMount={(editorRef) => setEditorInstance(editorRef)}
-                  schema={yamlEditorSchema}
-                  transparentBackground
-                  value={yamlContent}
-                />
+                <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                  Loading pipeline...
+                </div>
               )}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            {mode === 'view' ? (
-              <ResizablePanel collapsible defaultSize={60}>
-                {pipeline ? (
-                  <div className="h-full overflow-y-auto p-4">
-                    {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-                      <LogExplorer pipeline={pipeline} serverless={isServerless()} />
-                    ) : (
-                      <LogsTab pipeline={pipeline} />
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                    Logs will be available after the pipeline is created
-                  </div>
-                )}
+            </div>
+          ) : (
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={70} minSize={30}>
+                <div className="relative h-full">
+                  {slashTipVisible ? (
+                    <div className="absolute inset-x-0 top-0 z-10">
+                      <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
+                        <BannerContent>
+                          Tip: use{' '}
+                          <Kbd size="xs" variant="filled">
+                            /
+                          </Kbd>{' '}
+                          to insert variables
+                        </BannerContent>
+                        <BannerClose onClick={() => setSlashTipVisible(false)} variant="ghost" />
+                      </Banner>
+                    </div>
+                  ) : null}
+                  <YamlEditor
+                    onChange={(val) => handleYamlChange(val || '')}
+                    onEditorMount={(editorRef) => setEditorInstance(editorRef)}
+                    options={slashTipVisible ? { padding: { top: 32 } } : undefined}
+                    schema={yamlEditorSchema}
+                    transparentBackground
+                    value={yamlContent}
+                  />
+                </div>
               </ResizablePanel>
-            ) : (
+              <ResizableHandle withHandle />
               <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
                 <div className="h-full overflow-auto p-4">
                   <div className="flex items-center gap-2">
@@ -595,12 +644,20 @@ export default function PipelinePage() {
                   <LintHintList isPending={isLintPending} lintHints={lintHints} />
                 </div>
               </ResizablePanel>
-            )}
-          </ResizablePanelGroup>
+            </ResizablePanelGroup>
+          )}
         </div>
       </div>
 
       <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />
+
+      <DetailsDialog
+        isDeleting={isDeletePending}
+        onDelete={handleDelete}
+        onOpenChange={setIsViewConfigDialogOpen}
+        open={isViewConfigDialogOpen}
+        pipeline={pipeline}
+      />
 
       <PipelineCommandMenu
         editorInstance={editorInstance}
@@ -627,6 +684,7 @@ export default function PipelinePage() {
 
       <ConnectorWizard
         addConnectorType={addConnectorType}
+        autoOpenRedpandaSetup={autoOpenRedpandaSetup}
         componentList={componentListResponse?.components}
         components={components}
         onClose={() => setAddConnectorType(null)}

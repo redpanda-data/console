@@ -18,12 +18,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from 'components/redpanda-ui/components/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
-import { InlineCode } from 'components/redpanda-ui/components/typography';
+import { Heading, InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
@@ -181,6 +181,20 @@ function replaceSecretInEditor(editorInstance: editor.IStandaloneCodeEditor | nu
   }
 }
 
+function CommandGroupHeading({ children, separator }: { children: React.ReactNode; separator?: boolean }) {
+  return (
+    <>
+      {separator ? <Separator /> : null}
+      <Heading
+        className="pt-3 pb-3 pl-2 font-semibold text-muted-foreground text-xs uppercase tracking-caption-wide"
+        level={5}
+      >
+        {children}
+      </Heading>
+    </>
+  );
+}
+
 // ── Shared content rendered by both variants ─────────────────────────
 
 type CommandMenuContentProps = {
@@ -213,7 +227,6 @@ function CommandMenuContent({
   setIsUserDialogOpen,
 }: CommandMenuContentProps) {
   const show = (section: FilterValue) => activeFilter === 'all' || activeFilter === section;
-  const showSep = (a: FilterValue, b: FilterValue) => show(a) && show(b);
 
   return (
     <>
@@ -226,7 +239,6 @@ function CommandMenuContent({
                 onFilterChange(v as FilterValue);
               }
             }}
-            size="sm"
             type="single"
             value={activeFilter}
           >
@@ -238,10 +250,11 @@ function CommandMenuContent({
           </ToggleGroup>
         </div>
       ) : null}
-      <CommandList className="pb-2">
+      <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         {show('variables') && (
-          <CommandGroup heading="Contextual Variables">
+          <CommandGroup>
+            <CommandGroupHeading>Contextual variables</CommandGroupHeading>
             {contextualVariables.map((v) => (
               <CommandItem key={v.name} onSelect={() => onSelect(getContextualVariableSyntax(v.name))}>
                 <InlineCode>{getContextualVariableSyntax(v.name)}</InlineCode>
@@ -249,52 +262,63 @@ function CommandMenuContent({
             ))}
           </CommandGroup>
         )}
-        {showSep('variables', 'secrets') && <CommandSeparator />}
         {show('secrets') && (
-          <CommandGroup heading="Secrets">
+          <CommandGroup>
+            <CommandGroupHeading separator={show('variables')}>Secrets</CommandGroupHeading>
             {secrets.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(getSecretSyntax(name))}>
                 <InlineCode>{getSecretSyntax(name)}</InlineCode>
               </CommandItem>
             ))}
-            <CommandItem
-              className="justify-center text-center"
-              onSelect={() => onOpenSubDialog(setIsSecretsDialogOpen)}
-            >
-              Create new secret
-              <PlusIcon />
-            </CommandItem>
           </CommandGroup>
         )}
-        {showSep('secrets', 'topics') && <CommandSeparator />}
         {show('topics') && (
-          <CommandGroup heading="Topics">
+          <CommandGroup>
+            <CommandGroupHeading separator={show('variables') || show('secrets')}>Topics</CommandGroupHeading>
             {allTopics.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(name)}>
                 {name}
               </CommandItem>
             ))}
-            <CommandItem className="justify-center text-center" onSelect={() => onOpenSubDialog(setIsTopicDialogOpen)}>
-              <PlusIcon />
-              Create new topic
-            </CommandItem>
           </CommandGroup>
         )}
-        {showSep('topics', 'users') && <CommandSeparator />}
         {show('users') && (
-          <CommandGroup heading="Users">
+          <CommandGroup>
+            <CommandGroupHeading separator={show('variables') || show('secrets') || show('topics')}>
+              Users
+            </CommandGroupHeading>
             {users.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(name)}>
                 {name}
               </CommandItem>
             ))}
-            <CommandItem className="justify-center text-center" onSelect={() => onOpenSubDialog(setIsUserDialogOpen)}>
-              <PlusIcon />
-              Create new user
-            </CommandItem>
           </CommandGroup>
         )}
       </CommandList>
+      {(show('secrets') || show('topics') || show('users')) && (
+        <div className="flex gap-1 border-border border-t bg-primary-alpha-subtle px-2 py-2">
+          {show('secrets') && (
+            <Button
+              icon={<PlusIcon />}
+              onClick={() => onOpenSubDialog(setIsSecretsDialogOpen)}
+              size="sm"
+              variant="ghost"
+            >
+              Create secret
+            </Button>
+          )}
+          {show('topics') && (
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsTopicDialogOpen)} size="sm" variant="ghost">
+              Create topic
+            </Button>
+          )}
+          {show('users') && (
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsUserDialogOpen)} size="sm" variant="ghost">
+              Create user
+            </Button>
+          )}
+        </div>
+      )}
     </>
   );
 }
@@ -566,7 +590,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
           ? createPortal(
               <div ref={popoverRef} style={anchorStyle}>
                 <Command
-                  className="w-72 rounded-md border bg-background shadow-md"
+                  className="w-[340px] rounded-md bg-background"
                   loop
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') {

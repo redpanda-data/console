@@ -15,14 +15,11 @@ import { useNavigate } from '@tanstack/react-router';
 import {
   AlertIcon,
   ArrowLeftIcon,
-  CheckIcon,
   ChevronDownIcon,
-  EditIcon,
-  LoaderIcon,
-  PauseIcon,
-  PlayTriangleIcon,
-  RotateCcwIcon,
+  PlayIcon,
+  RotateCwIcon,
   SettingsIcon,
+  StopCircleIcon,
 } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -35,7 +32,8 @@ import { EditableText } from 'components/redpanda-ui/components/editable-text';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
+import type { StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
+import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -68,10 +66,10 @@ type ToolbarProps = {
   pipelineState?: Pipeline_State;
   mode: 'view' | 'edit' | 'create';
   onEditConfig?: () => void;
+  onViewConfig?: () => void;
   onNameChange?: (name: string) => void;
   onSave?: () => void;
   onCancel?: () => void;
-  onCommandMenu?: () => void;
   isSaving?: boolean;
   isLoading?: boolean;
   nameError?: string;
@@ -108,12 +106,13 @@ function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactor
   return {
     text: isStartPending ? 'Starting' : 'Start',
     action: handleStart,
+    icon: <PlayIcon />,
   };
 }
 
 function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStopPending ? <LoaderIcon className="h-4 w-4 animate-spin" /> : <PauseIcon className="h-4 w-4" />,
+    icon: isStopPending ? <Spinner /> : <StopCircleIcon />,
     text: isStopPending ? 'Stopping' : 'Stop',
     action: handleStop,
   };
@@ -121,22 +120,22 @@ function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryP
 
 function createStartingConfig({ handleStart, handleStop }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <LoaderIcon className="h-4 w-4 animate-spin" />,
+    icon: <Spinner />,
     text: 'Starting',
     dropdown: [
-      { label: 'Try again', icon: <RotateCcwIcon className="h-4 w-4" />, action: handleStart },
-      { label: 'Stop', icon: <PauseIcon className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
+      { label: 'Try again', icon: <RotateCwIcon />, action: handleStart },
+      { label: 'Stop', icon: <StopCircleIcon />, action: handleStop, variant: 'destructive' },
     ],
   };
 }
 
 function createStoppingConfig({ handleStop, handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <LoaderIcon className="h-4 w-4 animate-spin" />,
+    icon: <Spinner />,
     text: 'Stopping',
     dropdown: [
-      { label: 'Try again', icon: <RotateCcwIcon className="h-4 w-4" />, action: handleStop },
-      { label: 'Start', icon: <PlayTriangleIcon className="h-4 w-4" />, action: handleStart },
+      { label: 'Try again', icon: <RotateCwIcon />, action: handleStop },
+      { label: 'Start', icon: <PlayIcon />, action: handleStart },
     ],
   };
 }
@@ -145,13 +144,13 @@ function createErrorConfig({ handleStart }: ButtonConfigFactoryParams): ButtonCo
   return {
     icon: <AlertIcon className="h-4 w-4" />,
     text: 'Error',
-    dropdown: [{ label: 'Start', icon: <PlayTriangleIcon className="h-4 w-4" />, action: handleStart }],
+    dropdown: [{ label: 'Start', icon: <PlayIcon />, action: handleStart }],
   };
 }
 
 function createCompletedConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <CheckIcon className="h-4 w-4" />,
+    icon: <RotateCwIcon />,
     text: 'Restart',
     action: handleStart,
   };
@@ -196,7 +195,7 @@ function PipelineActionButton({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button>
+          <Button variant="outline">
             {buttonConfig.icon}
             {buttonConfig.text}
             <ChevronDownIcon className="ml-1 h-3 w-3" />
@@ -215,7 +214,12 @@ function PipelineActionButton({
   }
 
   return (
-    <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
+    <Button
+      disabled={isStartPending || isStopPending}
+      icon={buttonConfig.icon}
+      onClick={buttonConfig.action}
+      variant="outline"
+    >
       {buttonConfig.text}
     </Button>
   );
@@ -228,10 +232,10 @@ export const Toolbar = memo(
     pipelineState,
     mode,
     onEditConfig,
+    onViewConfig,
     onNameChange,
     onSave,
     onCancel,
-    onCommandMenu,
     isSaving,
     isLoading,
     nameError,
@@ -298,23 +302,19 @@ export const Toolbar = memo(
       });
     }, [pipelineId, stopMutation]);
 
-    const handleEditClick = useCallback(() => {
-      if (mode === 'view' && pipelineId) {
+    const handleEditNavigate = useCallback(() => {
+      if (pipelineId) {
         navigate({ to: `/rp-connect/${pipelineId}/edit` });
+      }
+    }, [pipelineId, navigate]);
+
+    const handleGearClick = useCallback(() => {
+      if (mode === 'view') {
+        onViewConfig?.();
       } else {
         onEditConfig?.();
       }
-    }, [mode, pipelineId, navigate, onEditConfig]);
-
-    const statusBadge = useMemo(() => pipelineStateToVariant(pipelineState), [pipelineState]);
-    const shouldShowStatusBadge = useMemo(
-      () =>
-        mode === 'view' &&
-        pipelineState !== undefined &&
-        pipelineState !== PipelineState.STARTING &&
-        pipelineState !== PipelineState.STOPPING,
-      [mode, pipelineState]
-    );
+    }, [mode, onViewConfig, onEditConfig]);
 
     const buttonConfig = useMemo(
       () =>
@@ -330,55 +330,72 @@ export const Toolbar = memo(
     const isEditable = mode === 'edit' || mode === 'create';
     const displayName = pipelineName || pipelineId || '';
 
+    if (mode === 'view') {
+      return (
+        <div className="mt-5 flex items-start justify-between">
+          <div className="flex gap-2">
+            <Button className="mt-1" onClick={handleBack} size="icon" variant="ghost">
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                {isLoading ? <Skeleton className="h-9 w-48" /> : <Heading level={1}>{displayName}</Heading>}
+                {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
+              </div>
+              <Text className="mb-4 text-muted-foreground">Monitor pipeline status and performance.</Text>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <PipelineActionButton
+              buttonConfig={buttonConfig}
+              isStartPending={isStartPending}
+              isStopPending={isStopPending}
+            />
+            <Button onClick={handleEditNavigate}>Edit pipeline</Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="mt-5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button onClick={handleBack} size="icon" variant="ghost">
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          {isLoading ? (
-            <Skeleton className="h-9 w-48" />
-          ) : (
-            <EditableText
-              as="heading"
-              autoFocus={autoFocus}
-              error={!!nameError}
-              errorMessage={nameError}
-              headingLevel={1}
-              onChange={onNameChange}
-              placeholder="New pipeline"
-              readOnly={!isEditable}
-              value={displayName}
-            />
-          )}
-          {!isLoading && (
-            <Button
-              icon={mode === 'view' ? <EditIcon /> : <SettingsIcon />}
-              onClick={handleEditClick}
-              size="icon"
-              variant="ghost"
-            />
-          )}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Button onClick={handleBack} size="icon" variant="ghost">
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Button>
+            {isLoading ? (
+              <Skeleton className="h-9 w-48" />
+            ) : (
+              <EditableText
+                as="heading"
+                autoFocus={autoFocus}
+                className="min-w-[280px]"
+                error={!!nameError}
+                errorMessage={nameError}
+                headingLevel={1}
+                onChange={onNameChange}
+                placeholder="Pipeline name"
+                readOnly={!isEditable}
+                value={displayName}
+              />
+            )}
+            {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
+          </div>
+          <Text className="mt-4">
+            Redpanda Connect builds data pipelines for real-time analytics and actionable business insights.{' '}
+            <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+              Learn more
+            </Link>
+          </Text>
         </div>
 
         <div>
           <Group className="items-center gap-2">
-            {null}
-            {shouldShowStatusBadge ? <StatusBadge pulsing={statusBadge.pulsing} variant={statusBadge.variant} /> : null}
-            {mode === 'view' && (
-              <PipelineActionButton
-                buttonConfig={buttonConfig}
-                isStartPending={isStartPending}
-                isStopPending={isStopPending}
-              />
-            )}
-
-            {(mode === 'edit' || mode === 'create') && (
-              <Button disabled={isSaving} onClick={onSave}>
-                Save
-                {Boolean(isSaving) && <Spinner />}
-              </Button>
-            )}
+            <Button disabled={isSaving} onClick={onSave}>
+              Save
+              {Boolean(isSaving) && <Spinner />}
+            </Button>
           </Group>
         </div>
       </div>

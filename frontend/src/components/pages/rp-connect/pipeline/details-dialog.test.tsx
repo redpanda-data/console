@@ -16,12 +16,12 @@ import type { ComponentProps } from 'react';
 import { render, screen } from 'test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ViewDetails } from './view-details';
+import { DetailsDialog } from './details-dialog';
 
-function renderViewDetails(props: ComponentProps<typeof ViewDetails>) {
+function renderDetailsDialog(props: Partial<ComponentProps<typeof DetailsDialog>> = {}) {
   return render(
     <TooltipProvider>
-      <ViewDetails {...props} />
+      <DetailsDialog onOpenChange={vi.fn()} open={true} {...props} />
     </TooltipProvider>
   );
 }
@@ -40,29 +40,29 @@ function createPipeline(overrides: Record<string, unknown> = {}) {
   });
 }
 
-describe('ViewDetails', () => {
+describe('DetailsDialog', () => {
   it('renders pipeline ID with copy button', () => {
-    renderViewDetails({ pipeline: createPipeline() });
+    renderDetailsDialog({ pipeline: createPipeline() });
     expect(screen.getByText('pipeline-123')).toBeInTheDocument();
   });
 
   it('renders description', () => {
-    renderViewDetails({ pipeline: createPipeline() });
+    renderDetailsDialog({ pipeline: createPipeline() });
     expect(screen.getByText('A test pipeline')).toBeInTheDocument();
   });
 
   it('renders compute units', () => {
-    renderViewDetails({ pipeline: createPipeline() });
+    renderDetailsDialog({ pipeline: createPipeline() });
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('renders URL with copy button', () => {
-    renderViewDetails({ pipeline: createPipeline() });
+    renderDetailsDialog({ pipeline: createPipeline() });
     expect(screen.getByText('https://pipeline.example.com/pipeline-123')).toBeInTheDocument();
   });
 
   it('renders service account when present', () => {
-    renderViewDetails({
+    renderDetailsDialog({
       pipeline: createPipeline({
         serviceAccount: { clientId: 'sa-client-id', clientSecret: '' },
       }),
@@ -71,7 +71,7 @@ describe('ViewDetails', () => {
   });
 
   it('renders user-visible tags in References card as key: value badges', () => {
-    renderViewDetails({
+    renderDetailsDialog({
       pipeline: createPipeline({
         tags: { env: 'production', team: 'platform' },
       }),
@@ -81,7 +81,7 @@ describe('ViewDetails', () => {
   });
 
   it('hides system tags (__-prefixed)', () => {
-    renderViewDetails({
+    renderDetailsDialog({
       pipeline: createPipeline({
         tags: {
           __redpanda_cloud_pipeline_type: 'pipeline',
@@ -94,7 +94,7 @@ describe('ViewDetails', () => {
   });
 
   it('renders secrets in References card', () => {
-    renderViewDetails({
+    renderDetailsDialog({
       pipeline: createPipeline({
         configYaml: [
           'input:',
@@ -110,7 +110,7 @@ describe('ViewDetails', () => {
   });
 
   it('renders topics in References card', () => {
-    renderViewDetails({
+    renderDetailsDialog({
       pipeline: createPipeline({
         configYaml: 'input:\n  kafka_franz:\n    seed_brokers: []\n    topics: ["my-topic"]\noutput:\n  stdout: {}',
       }),
@@ -119,12 +119,12 @@ describe('ViewDetails', () => {
   });
 
   it('renders delete button when onDelete provided', () => {
-    renderViewDetails({ isDeleting: false, onDelete: vi.fn(), pipeline: createPipeline() });
+    renderDetailsDialog({ isDeleting: false, onDelete: vi.fn(), pipeline: createPipeline() });
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 
   it('does not render delete section when onDelete is undefined', () => {
-    renderViewDetails({ pipeline: createPipeline() });
+    renderDetailsDialog({ pipeline: createPipeline() });
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
     expect(screen.queryByText('Danger zone')).not.toBeInTheDocument();
   });

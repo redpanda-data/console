@@ -117,6 +117,34 @@ export const useResetOnboardingWizardStore = () =>
     useOnboardingYamlContentStore.getState().reset();
   }, []);
 
+/**
+ * Read wizard connection data from the Zustand store, falling back to session storage.
+ * The persist middleware hydrates once at store creation — if CloudV2 writes to session
+ * storage and then does a client-side navigation (no full reload), the store may have
+ * hydrated before the data was set. This function handles that race condition.
+ */
+export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
+  let input = useOnboardingWizardDataStore.getState().input;
+  let output = useOnboardingWizardDataStore.getState().output;
+
+  if (!(input || output)) {
+    try {
+      const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>;
+        input = parsed.input;
+        output = parsed.output;
+        // Sync the store so other consumers see the data
+        useOnboardingWizardDataStore.getState().setWizardData({ input, output });
+      }
+    } catch {
+      // Ignore malformed session storage
+    }
+  }
+
+  return { input, output };
+}
+
 // Imperative API for non-hook contexts (class components, utility functions)
 export const onboardingWizardStore = {
   getWizardData: () => {

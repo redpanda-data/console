@@ -21,16 +21,17 @@ import {
   ChartTooltipContent,
 } from 'components/redpanda-ui/components/chart';
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
-import { TimerReset } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
 import type { FC } from 'react';
-import { useId, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { formatChartTimestamp, formatTooltipLabel, mergeTimeSeries } from 'utils/pipeline-throughput.utils';
@@ -68,7 +69,12 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     end: timestampFromMs(timeRange.end.getTime()),
   };
 
-  const { data: ingressData, isLoading: isLoadingIngress } = useExecuteRangeQuery(
+  const {
+    data: ingressData,
+    isLoading: isLoadingIngress,
+    isFetching: isFetchingIngress,
+    refetch: refetchIngress,
+  } = useExecuteRangeQuery(
     {
       queryName: 'connect_input_received',
       params: { ...timeParams, filters: { pipeline_id: pipelineId } },
@@ -76,7 +82,12 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     { enabled: hasInputQuery }
   );
 
-  const { data: egressData, isLoading: isLoadingEgress } = useExecuteRangeQuery(
+  const {
+    data: egressData,
+    isLoading: isLoadingEgress,
+    isFetching: isFetchingEgress,
+    refetch: refetchEgress,
+  } = useExecuteRangeQuery(
     {
       queryName: 'connect_output_sent',
       params: { ...timeParams, filters: { pipeline_id: pipelineId } },
@@ -84,37 +95,42 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     { enabled: hasOutputQuery }
   );
 
+  const handleRefresh = useCallback(() => {
+    refetchIngress();
+    refetchEgress();
+  }, [refetchIngress, refetchEgress]);
+
   const chartData = useMemo(
     () => mergeTimeSeries(ingressData?.results ?? [], egressData?.results ?? []),
     [ingressData, egressData]
   );
 
   const isLoading = isLoadingQueries || isLoadingIngress || isLoadingEgress;
+  const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
   return (
-    <Card size="full">
+    <Card size="full" variant="outlined">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Throughput</CardTitle>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <TimerReset className="size-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {TIME_RANGES.map((option) => (
-                <DropdownMenuCheckboxItem
-                  checked={option.value === selectedTimeRange}
-                  key={option.value}
-                  onCheckedChange={() => setSelectedTimeRange(option.value)}
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-1">
+            <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
+              <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+            </Button>
+            <Select onValueChange={(v) => setSelectedTimeRange(v as TimeRange)} value={selectedTimeRange}>
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {TIME_RANGES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="mt-4">
