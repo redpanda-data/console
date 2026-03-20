@@ -61,15 +61,13 @@ const DetailRow = ({
 );
 
 export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleting }: DetailsDialogProps) {
+  const configYaml = pipeline?.configYaml;
   const secrets = useMemo(
-    () => (pipeline?.configYaml ? getUniqueSecretNames(extractSecretReferences(pipeline.configYaml)) : []),
-    [pipeline?.configYaml]
+    () => (configYaml ? getUniqueSecretNames(extractSecretReferences(configYaml)) : []),
+    [configYaml]
   );
 
-  const topics = useMemo(
-    () => (pipeline?.configYaml ? extractAllTopics(pipeline.configYaml) : []),
-    [pipeline?.configYaml]
-  );
+  const topics = useMemo(() => (configYaml ? extractAllTopics(configYaml) : []), [configYaml]);
 
   const shouldShowReferencesCard = useMemo(
     () => secrets.length > 0 || topics.length > 0 || Object.keys(pipeline?.tags ?? {}).length > 0,

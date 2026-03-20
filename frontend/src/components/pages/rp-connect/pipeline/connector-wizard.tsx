@@ -82,18 +82,21 @@ function RedpandaSetupSteps({
 
   const isTopicStep = methods.current.id === RedpandaConnectorSetupStep.ADD_TOPIC;
 
-  const handleNext = async () => {
-    setIsSubmitting(true);
-    try {
-      if (isTopicStep) {
-        const result = await topicStepRef.current?.triggerSubmit();
-        if (result?.success && result.data) {
+  const submitStep = async () => {
+    if (isTopicStep) {
+      const topicRef = topicStepRef.current;
+      if (topicRef) {
+        const result = await topicRef.triggerSubmit();
+        if (result.success && result.data) {
           setTopicName(result.data.topicName);
           methods.next();
         }
-      } else {
-        const result = await userStepRef.current?.triggerSubmit();
-        if (result?.success && result.data) {
+      }
+    } else {
+      const userRef = userStepRef.current;
+      if (userRef) {
+        const result = await userRef.triggerSubmit();
+        if (result.success && result.data) {
           const data = result.data;
           onComplete({
             topicName,
@@ -115,8 +118,17 @@ function RedpandaSetupSteps({
           });
         }
       }
-    } finally {
+    }
+  };
+
+  const handleNext = async () => {
+    setIsSubmitting(true);
+    try {
+      await submitStep();
       setIsSubmitting(false);
+    } catch (e) {
+      setIsSubmitting(false);
+      throw e;
     }
   };
 

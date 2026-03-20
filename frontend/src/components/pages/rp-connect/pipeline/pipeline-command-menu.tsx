@@ -47,18 +47,18 @@ import { extractAllTopics } from '../utils/yaml';
  * Re-syncs on editor scroll and window resize.
  * (Rule 4: external system sync — Monaco coordinate API)
  */
+const HIDDEN_STYLE: React.CSSProperties = { position: 'fixed', visibility: 'hidden' };
+
 function useAnchorPosition(
   editorInstance: editor.IStandaloneCodeEditor | null,
   slashPosition: { lineNumber: number; column: number } | null,
   open: boolean
 ) {
-  const [style, setStyle] = useState<React.CSSProperties>({ position: 'fixed', visibility: 'hidden' });
+  const [style, setStyle] = useState<React.CSSProperties>(HIDDEN_STYLE);
+  const isActive = !!(editorInstance && slashPosition && open);
 
   useEffect(() => {
-    if (!(editorInstance && slashPosition && open)) {
-      setStyle({ position: 'fixed', visibility: 'hidden' });
-      return;
-    }
+    if (!(editorInstance && slashPosition && open)) return;
 
     const updatePosition = () => {
       const coords = editorInstance.getScrolledVisiblePosition(slashPosition);
@@ -89,6 +89,7 @@ function useAnchorPosition(
     };
   }, [editorInstance, slashPosition, open]);
 
+  if (!isActive) return HIDDEN_STYLE;
   return style;
 }
 
@@ -340,25 +341,27 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   // Ref callback: when the popover div mounts, steal focus from Monaco into the cmdk input.
   // Uses setTimeout(0) to defer past Monaco's keystroke processing, then retries via rAF
   // if Monaco reclaims focus. Fires once per open (portal unmounts on close → remounts on open).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: clickOutsideRef is a stable ref object
-  const popoverRef = useCallback((node: HTMLDivElement | null) => {
-    clickOutsideRef.current = node;
-    if (!node) {
-      return;
-    }
-    let attempts = 0;
-    const tryFocus = () => {
-      const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
-      if (input && document.activeElement !== input && attempts < 10) {
-        attempts += 1;
-        input.focus();
-        if (document.activeElement !== input) {
-          requestAnimationFrame(tryFocus);
-        }
+  const popoverRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      clickOutsideRef.current = node;
+      if (!node) {
+        return;
       }
-    };
-    setTimeout(tryFocus, 0);
-  }, []);
+      let attempts = 0;
+      const tryFocus = () => {
+        const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
+        if (input && document.activeElement !== input && attempts < 10) {
+          attempts += 1;
+          input.focus();
+          if (document.activeElement !== input) {
+            requestAnimationFrame(tryFocus);
+          }
+        }
+      };
+      setTimeout(tryFocus, 0);
+    },
+    [clickOutsideRef]
+  );
 
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
   const [pendingSearch, setPendingSearch] = useState('');
@@ -470,40 +473,38 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   );
 
   const handleCreateTopic = useCallback(async () => {
+    const ref = topicStepRef.current;
+    if (!ref) return;
     setIsTopicSubmitting(true);
-    try {
-      const result = await topicStepRef.current?.triggerSubmit();
-      if (result?.success) {
-        if (result.message) {
-          toast.success(result.message);
-        }
-        setIsTopicDialogOpen(false);
-        if (result.data?.topicName) {
-          handleSelect(result.data.topicName);
-        }
-      } else if (result?.error) {
-        toast.error(result.error);
+    const result = await ref.triggerSubmit();
+    if (result.success) {
+      if (result.message) {
+        toast.success(result.message);
       }
-    } finally {
-      setIsTopicSubmitting(false);
+      setIsTopicDialogOpen(false);
+      if (result.data?.topicName) {
+        handleSelect(result.data.topicName);
+      }
+    } else if (result.error) {
+      toast.error(result.error);
     }
+    setIsTopicSubmitting(false);
   }, [handleSelect]);
 
   const handleCreateUser = useCallback(async () => {
+    const ref = userStepRef.current;
+    if (!ref) return;
     setIsUserSubmitting(true);
-    try {
-      const result = await userStepRef.current?.triggerSubmit();
-      if (result?.success) {
-        setIsUserDialogOpen(false);
-        const data = result.data;
-        const name = data && 'username' in data ? data.username : '';
-        if (name) {
-          handleSelect(name);
-        }
+    const result = await ref.triggerSubmit();
+    if (result.success) {
+      setIsUserDialogOpen(false);
+      const data = result.data;
+      const name = data && 'username' in data ? data.username : '';
+      if (name) {
+        handleSelect(name);
       }
-    } finally {
-      setIsUserSubmitting(false);
     }
+    setIsUserSubmitting(false);
   }, [handleSelect]);
 
   const handleDialogOpenChange = (nextOpen: boolean) => {
