@@ -382,7 +382,7 @@ export const Toolbar = memo(
             )}
             {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
           </div>
-          <Text className="mt-4">
+          <Text className="mt-4 ml-9">
             Redpanda Connect builds data pipelines for real-time analytics and actionable business insights.{' '}
             <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
               Learn more

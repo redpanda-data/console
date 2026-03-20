@@ -13,10 +13,13 @@ import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
+import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode } from 'components/ui/base-node';
+import { ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
 
 const invisibleHandle = '!w-0 !h-0 !border-0 !bg-transparent !min-w-0 !min-h-0';
 const ARROW_GAP = 8;
@@ -66,16 +69,20 @@ type TreeNodeData = {
   label: string;
   labelText?: string;
   topics?: string[];
+  section?: string;
   collapsed?: boolean;
   collapsible?: boolean;
   childCount?: number;
   onToggle?: () => void;
+  onAddConnector?: (type: string) => void;
 };
 
 const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
   <div className="flex h-7 items-center">
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
-    <span className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">{data.label}</span>
+    <Text as="span" className="text-muted-foreground uppercase" variant="captionStrongMedium">
+      {data.label}
+    </Text>
     <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />
   </div>
 );
@@ -83,8 +90,12 @@ const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
 const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   <button className="nodrag nopan flex h-7 cursor-pointer items-center text-sm" onClick={data.onToggle} type="button">
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
-    <span className="font-medium text-foreground">{data.label}</span>
-    <span className="ml-1 text-subtle">{data.collapsed ? '\u25B8' : '\u25BE'}</span>
+    <Text as="span" variant="bodyStrongMedium">
+      {data.label}
+    </Text>
+    <Text as="span" className="ml-1 text-subtle" variant="bodySmall">
+      {data.collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+    </Text>
     {data.collapsed && data.childCount ? (
       <CountDot className="ml-1.5" count={data.childCount} size="sm" variant="disabled" />
     ) : null}
@@ -95,6 +106,7 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
 const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   const hasTopics = data.topics && data.topics.length > 0;
   const isPlaceholder = data.label === 'none';
+  const showAddButton = isPlaceholder && data.onAddConnector && data.section;
   return (
     <BaseNode
       className={cn(
@@ -105,9 +117,13 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
       )}
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
-      <div className={cn('text-sm', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}>
-        {isPlaceholder ? 'Not configured' : data.label}
-      </div>
+      <Text
+        as="span"
+        className={isPlaceholder ? 'text-muted-foreground' : 'text-foreground'}
+        variant="bodyStrongMedium"
+      >
+        {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
+      </Text>
       <div className={cn(data.labelText || (hasTopics && 'mt-2'), 'flex gap-1.5')}>
         {data.labelText ? (
           <Badge size="sm" variant="primary-inverted">
@@ -124,6 +140,16 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
           </BadgeGroup>
         ) : null}
       </div>
+      {showAddButton ? (
+        <Button
+          className="nodrag nopan absolute top-1/2 -right-3 -translate-y-1/2 rounded-full bg-background"
+          onClick={() => data.onAddConnector?.(data.section ?? '')}
+          size="icon-xs"
+          variant="outline"
+        >
+          <PlusIcon />
+        </Button>
+      ) : null}
     </BaseNode>
   );
 };

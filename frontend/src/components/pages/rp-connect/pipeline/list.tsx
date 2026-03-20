@@ -331,7 +331,7 @@ const createColumns = ({
     header: 'Pipeline Name',
     filterFn: createFilterFn('text'),
     cell: ({ row }) => (
-      <div className="flex min-w-[200px] items-center gap-4">
+      <div className="flex min-w-[160px] items-center gap-4">
         <Link
           as={TanStackRouterLink}
           className="max-w-[200px] text-base text-primary text-truncate"
@@ -354,7 +354,7 @@ const createColumns = ({
       }
       return (
         <BadgeGroup
-          className="min-w-[184px]"
+          className="min-w-[174px]"
           maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
@@ -384,7 +384,7 @@ const createColumns = ({
       }
       return (
         <BadgeGroup
-          className="min-w-[184px]"
+          className="min-w-[174px]"
           maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
@@ -414,7 +414,7 @@ const createColumns = ({
       }
       return (
         <BadgeGroup
-          className="min-w-[184px]"
+          className="min-w-[174px]"
           maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
@@ -445,7 +445,7 @@ const createColumns = ({
       }
       return (
         <BadgeGroup
-          className="min-w-[184px]"
+          className="min-w-[174px]"
           maxVisible={3}
           renderOverflowContent={(overflow) => (
             <List>
@@ -472,9 +472,7 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: 'Status',
     filterFn: createFilterFn('option'),
-    cell: ({ row }) => (
-      <StatusBadge className="min-w-[150px]" size="sm" variant={pipelineStateToStatusVariant[row.original.state]} />
-    ),
+    cell: ({ row }) => <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]} />,
   },
   {
     id: 'actions',

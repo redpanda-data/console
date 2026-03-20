@@ -34,11 +34,14 @@ export const AddConnectorsCard = memo(
     onAddConnector,
     hasInput,
     hasOutput,
+    hideInputOutput,
     editorContent,
   }: {
     onAddConnector: (type: ConnectComponentType) => void;
     hasInput?: boolean;
     hasOutput?: boolean;
+    /** Hide input/output buttons (e.g. when the diagram provides add-connector buttons instead). */
+    hideInputOutput?: boolean;
     editorContent?: string;
   }) => {
     const inputSupportsScanner = editorContent
@@ -61,7 +64,7 @@ export const AddConnectorsCard = memo(
             ))}
             {Boolean(inputSupportsScanner) && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
           </div>
-          {!(hasInput && hasOutput) && (
+          {hideInputOutput || !(hasInput && hasOutput) ? null : (
             <div className="flex flex-col gap-2">
               <Separator className="mb-2" />
               {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" variant="outline" />}

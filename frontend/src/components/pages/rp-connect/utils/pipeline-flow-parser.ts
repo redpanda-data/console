@@ -569,6 +569,7 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
       collapsible: node.collapsible ?? false,
       ...(node.labelText ? { labelText: node.labelText } : {}),
       ...(node.topics ? { topics: node.topics } : {}),
+      ...(node.section ? { section: node.section } : {}),
       ...(state.collapsedIds.has(node.id) ? { childCount: state.childrenMap.get(node.id)?.length ?? 0 } : {}),
     },
   };

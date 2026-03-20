@@ -18,6 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
 import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
+import { isMacOS } from 'utils/platform';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -541,7 +542,15 @@ export default function PipelinePage() {
       <div className="flex min-h-0 flex-1 rounded-lg border">
         <div className="flex w-[300px] shrink-0 flex-col border-r">
           <div className="min-h-0 flex-1">
-            {isFeatureFlagEnabled('enablePipelineDiagrams') && <PipelineFlowDiagram configYaml={yamlContent} />}
+            {isFeatureFlagEnabled('enablePipelineDiagrams') && (
+              <PipelineFlowDiagram
+                configYaml={yamlContent}
+                hideZoomControls
+                onAddConnector={
+                  mode !== 'view' ? (type) => setAddConnectorType(type as ConnectComponentType) : undefined
+                }
+              />
+            )}
           </div>
           {mode !== 'view' && (
             <>
@@ -549,6 +558,7 @@ export default function PipelinePage() {
                 editorContent={yamlContent}
                 hasInput={yamlContent.includes('input:')}
                 hasOutput={yamlContent.includes('output:')}
+                hideInputOutput={isFeatureFlagEnabled('enablePipelineDiagrams')}
                 onAddConnector={(type) => setAddConnectorType(type)}
               />
               <div className="px-4 pb-4">
@@ -561,7 +571,7 @@ export default function PipelinePage() {
                     className="max-w-fit"
                     icon={
                       <Kbd variant="ghost">
-                        <CommandIcon />
+                        {isMacOS() ? <CommandIcon /> : 'Ctrl'}
                         <ArrowBigUpIcon />P
                       </Kbd>
                     }

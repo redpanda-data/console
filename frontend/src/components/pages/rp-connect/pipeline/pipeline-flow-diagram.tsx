@@ -57,6 +57,10 @@ function ZoomControls() {
 
 type PipelineFlowDiagramProps = {
   configYaml: string;
+  /** Callback when user clicks + on a placeholder node. Receives the section type ('input' | 'output'). */
+  onAddConnector?: (type: string) => void;
+  /** Hide the zoom +/- controls. */
+  hideZoomControls?: boolean;
   /** Custom parser — defaults to `parsePipelineFlowTree`. */
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
   /** Custom layout — defaults to `computeTreeLayout`. */
@@ -111,6 +115,8 @@ function computeTranslateExtent(
 
 export const PipelineFlowDiagram = ({
   configYaml,
+  onAddConnector,
+  hideZoomControls,
   parseTree = defaultParseTree,
   computeLayout = defaultComputeLayout,
 }: PipelineFlowDiagramProps) => {
@@ -176,7 +182,10 @@ export const PipelineFlowDiagram = ({
   const { rfNodes, rfEdges } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
-    // Inject toggle callback into group nodes
+    // Inject callbacks into group and placeholder leaf nodes.
+    // The + button only appears on placeholder nodes (label === 'none'), which the parser
+    // only creates when `input:` or `output:` keys are missing from the YAML. If a connector
+    // is configured (even `input: redpanda:`), the parser creates a real leaf — no + button.
     const nodesWithCallbacks = layout.rfNodes.map((node: Node) => {
       if (node.type === 'treeGroup') {
         return {
@@ -184,11 +193,22 @@ export const PipelineFlowDiagram = ({
           data: { ...node.data, onToggle: () => toggleCollapse(node.id) },
         };
       }
+      if (
+        onAddConnector &&
+        node.type === 'treeLeaf' &&
+        node.data.label === 'none' &&
+        (node.data.section === 'input' || node.data.section === 'output')
+      ) {
+        return {
+          ...node,
+          data: { ...node.data, onAddConnector },
+        };
+      }
       return node;
     });
 
     return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges };
-  }, [nodes, collapsedIds, toggleCollapse, computeLayout]);
+  }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector]);
 
   const translateExtent = useMemo(
     () => (containerSize ? computeTranslateExtent(rfNodes, containerSize.width, containerSize.height) : undefined),
@@ -227,7 +247,7 @@ export const PipelineFlowDiagram = ({
             zoomOnPinch={false}
             zoomOnScroll={false}
           />
-          <ZoomControls />
+          {hideZoomControls ? null : <ZoomControls />}
         </ReactFlowProvider>
       ) : null}
     </div>
