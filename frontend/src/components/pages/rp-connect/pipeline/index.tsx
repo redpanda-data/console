@@ -18,7 +18,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
 import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
-import { isMacOS } from 'utils/platform';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -69,6 +68,7 @@ import {
   useOnboardingWizardDataStore,
   useOnboardingYamlContentStore,
 } from 'state/onboarding-wizard-store';
+import { isMacOS } from 'utils/platform';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
