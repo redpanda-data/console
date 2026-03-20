@@ -466,16 +466,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
 
       {/* Pagination (client-side only) */}
       {filteredRowCount > 0 && (
-        <DataTablePagination
-          pagination={{
-            canNextPage: table.getCanNextPage(),
-            canPreviousPage: table.getCanPreviousPage(),
-            pageCount: table.getPageCount(),
-            pageIndex: paginationParams.pageIndex,
-            pageSize: paginationParams.pageSize,
-          }}
-          table={table}
-        />
+        <DataTablePagination table={table} />
       )}
 
       {/* Detail sheet */}

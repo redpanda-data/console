@@ -481,16 +481,7 @@ const AIAgentsListPageContent = ({
             })()}
           </TableBody>
         </Table>
-        <DataTablePagination
-          pagination={{
-            canNextPage: table.getCanNextPage(),
-            canPreviousPage: table.getCanPreviousPage(),
-            pageCount: table.getPageCount(),
-            pageIndex: pagination.pageIndex,
-            pageSize: pagination.pageSize,
-          }}
-          table={table}
-        />
+        <DataTablePagination table={table} />
       </div>
     </TooltipProvider>
   );
