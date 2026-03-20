@@ -10,7 +10,10 @@ import { config } from 'config';
 import { api } from 'state/backend-api';
 import type {
   SchemaRegistryCompatibilityMode,
+  SchemaRegistryCompatibilityModeWithDefault,
   SchemaRegistryConfigResponse,
+  SchemaRegistryMode,
+  SchemaRegistryModeWithDefault,
   SchemaRegistrySubject,
   SchemaRegistrySubjectDetails,
   SchemaVersion,
@@ -24,8 +27,8 @@ const STALE_TIME_MEDIUM = 30_000; // 30 seconds
 
 export type SchemaRegistryContextResponse = {
   name: string;
-  mode: string;
-  compatibility: string;
+  mode: SchemaRegistryModeWithDefault;
+  compatibility: SchemaRegistryCompatibilityModeWithDefault;
 };
 
 export const useSchemaRegistryContextsQuery = (enabled = true) =>
@@ -154,7 +157,14 @@ export const useSchemaDetailsQuery = (subjectName?: string, options?: { enabled?
     enabled: options?.enabled !== false && subjectName !== '',
   });
 
-export type SchemaRegistryMode = 'READWRITE' | 'READONLY' | 'IMPORT';
+export type { SchemaRegistryMode, SchemaRegistryModeWithDefault } from 'state/rest-interfaces';
+
+export const SchemaRegistryModes = {
+  DEFAULT: 'DEFAULT',
+  READWRITE: 'READWRITE',
+  READONLY: 'READONLY',
+  IMPORT: 'IMPORT',
+} as const satisfies Record<string, SchemaRegistryModeWithDefault>;
 
 export const useUpdateGlobalModeMutation = () => {
   const queryClient = useQueryClient();
@@ -232,7 +242,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
   return useTanstackMutation<
     SchemaRegistryConfigResponse,
     Error,
-    { subjectName: string; mode: 'DEFAULT' | SchemaRegistryCompatibilityMode }
+    { subjectName: string; mode: SchemaRegistryCompatibilityModeWithDefault }
   >({
     mutationFn: async ({ subjectName, mode }) => {
       if (mode === 'DEFAULT') {
@@ -290,7 +300,7 @@ export const useUpdateSubjectCompatibilityMutation = () => {
 export const useUpdateSubjectModeMutation = () => {
   const queryClient = useQueryClient();
 
-  return useTanstackMutation<{ mode: string }, Error, { subjectName: string; mode: 'DEFAULT' | SchemaRegistryMode }>({
+  return useTanstackMutation<{ mode: string }, Error, { subjectName: string; mode: SchemaRegistryModeWithDefault }>({
     mutationFn: async ({ subjectName, mode }) => {
       if (mode === 'DEFAULT') {
         const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(subjectName)}`, {
@@ -344,7 +354,7 @@ export const useUpdateSubjectModeMutation = () => {
 export const useUpdateContextModeMutation = () => {
   const queryClient = useQueryClient();
 
-  return useTanstackMutation<{ mode: string }, Error, { contextName: string; mode: 'DEFAULT' | SchemaRegistryMode }>({
+  return useTanstackMutation<{ mode: string }, Error, { contextName: string; mode: SchemaRegistryModeWithDefault }>({
     mutationFn: async ({ contextName, mode }) => {
       const qualifiedName = `:${contextName}:`;
       if (mode === 'DEFAULT') {
@@ -402,7 +412,7 @@ export const useUpdateContextCompatibilityMutation = () => {
   return useTanstackMutation<
     SchemaRegistryConfigResponse,
     Error,
-    { contextName: string; mode: 'DEFAULT' | SchemaRegistryCompatibilityMode }
+    { contextName: string; mode: SchemaRegistryCompatibilityModeWithDefault }
   >({
     mutationFn: async ({ contextName, mode }) => {
       const qualifiedName = `:${contextName}:`;

@@ -30,6 +30,8 @@ import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 import {
   type SchemaRegistryMode,
+  SchemaRegistryModes,
+  type SchemaRegistryModeWithDefault,
   useSchemaDetailsQuery,
   useSchemaModeQuery,
   useSchemaRegistryContextsQuery,
@@ -44,7 +46,7 @@ import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
 
 const DEFAULT_OPTION = {
-  value: 'DEFAULT',
+  value: SchemaRegistryModes.DEFAULT,
   title: 'Default',
   description: 'Use the globally configured default mode.',
   warning: null,
@@ -57,20 +59,20 @@ const MODE_OPTIONS: {
   warning: string | null;
 }[] = [
   {
-    value: 'READWRITE',
+    value: SchemaRegistryModes.READWRITE,
     title: 'Read/Write',
     description: 'The registry accepts new schema registrations and allows reads. This is the normal operating mode.',
     warning: null,
   },
   {
-    value: 'READONLY',
+    value: SchemaRegistryModes.READONLY,
     title: 'Read Only',
     description:
       'Schema lookups are permitted but registration is blocked. Use this for standby clusters in a disaster recovery setup that replicate schemas from an active cluster.',
     warning: null,
   },
   {
-    value: 'IMPORT',
+    value: SchemaRegistryModes.IMPORT,
     title: 'Import',
     description:
       'Allows registering schemas with specific IDs and versions while bypassing compatibility checks. Use this on target clusters during migrations to preserve schema IDs. Requires an empty registry or subject.',
@@ -184,7 +186,7 @@ function EditSchemaMode({
   onClose: () => void;
   subjectName?: string;
   contextName?: string;
-  contextMode?: string;
+  contextMode?: SchemaRegistryModeWithDefault;
   schemaDetails?: SchemaRegistrySubjectDetails;
 }) {
   const updateGlobalMutation = useUpdateGlobalModeMutation();
@@ -195,15 +197,19 @@ function EditSchemaMode({
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const initialMode = contextName
-    ? (contextMode ?? 'DEFAULT')
-    : subjectName
-      ? (schemaDetails?.mode ?? 'READWRITE')
-      : (schemaMode ?? 'READWRITE');
-  const [selectedMode, setSelectedMode] = useState<string>(initialMode);
+  const getInitialMode = (): SchemaRegistryModeWithDefault => {
+    if (contextName) return contextMode ?? SchemaRegistryModes.DEFAULT;
+    if (subjectName) return schemaDetails?.mode ?? SchemaRegistryModes.READWRITE;
+    return (schemaMode as SchemaRegistryModeWithDefault) ?? SchemaRegistryModes.READWRITE;
+  };
+  const [selectedMode, setSelectedMode] = useState<SchemaRegistryModeWithDefault>(getInitialMode);
 
-  const allOptions: { value: string; title: string; description: string; warning: string | null }[] =
-    subjectName || contextName ? [DEFAULT_OPTION, ...MODE_OPTIONS] : MODE_OPTIONS;
+  const allOptions: {
+    value: SchemaRegistryModeWithDefault;
+    title: string;
+    description: string;
+    warning: string | null;
+  }[] = subjectName || contextName ? [DEFAULT_OPTION, ...MODE_OPTIONS] : MODE_OPTIONS;
 
   const onSave = () => {
     const callbacks = {
@@ -217,9 +223,9 @@ function EditSchemaMode({
     };
 
     if (contextName) {
-      updateContextMutation.mutate({ contextName, mode: selectedMode as 'DEFAULT' | SchemaRegistryMode }, callbacks);
+      updateContextMutation.mutate({ contextName, mode: selectedMode }, callbacks);
     } else if (subjectName) {
-      updateSubjectMutation.mutate({ subjectName, mode: selectedMode as 'DEFAULT' | SchemaRegistryMode }, callbacks);
+      updateSubjectMutation.mutate({ subjectName, mode: selectedMode }, callbacks);
     } else {
       updateGlobalMutation.mutate(selectedMode as SchemaRegistryMode, callbacks);
     }
@@ -244,7 +250,7 @@ function EditSchemaMode({
           <Choicebox
             className="w-full"
             data-testid="edit-mode-radio"
-            onValueChange={setSelectedMode}
+            onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}
             value={selectedMode}
           >
             {allOptions.map((option) => (

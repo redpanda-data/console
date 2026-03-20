@@ -27,10 +27,12 @@ import {
   useUpdateSubjectCompatibilityMutation,
 } from '../../../react-query/api/schema-registry';
 import { api } from '../../../state/backend-api';
-import type {
-  SchemaRegistryCompatibilityMode,
-  SchemaRegistrySubjectDetails,
-  SchemaRegistryVersionedSchema,
+import {
+  type SchemaRegistryCompatibilityMode,
+  SchemaRegistryCompatibilityModes,
+  type SchemaRegistryCompatibilityModeWithDefault,
+  type SchemaRegistrySubjectDetails,
+  type SchemaRegistryVersionedSchema,
 } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
@@ -131,7 +133,7 @@ export default EditSchemaCompatibilityPage;
 function EditSchemaCompatibility(p: {
   subjectName?: string;
   contextName?: string;
-  contextCompatibility?: string;
+  contextCompatibility?: SchemaRegistryCompatibilityModeWithDefault;
   schemaMode: string | null | undefined;
   schemaCompatibility: string | null | undefined;
   schemaDetails: SchemaRegistrySubjectDetails | undefined;
@@ -147,11 +149,12 @@ function EditSchemaCompatibility(p: {
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const [configMode, setConfigMode] = useState<string>(
-    contextName
-      ? (contextCompatibility ?? 'DEFAULT')
-      : ((subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT')
-  );
+  const getInitialCompatibility = (): SchemaRegistryCompatibilityModeWithDefault => {
+    if (contextName) return contextCompatibility ?? SchemaRegistryCompatibilityModes.DEFAULT;
+    const source = subjectName ? schemaDetails?.compatibility : schemaCompatibility;
+    return (source as SchemaRegistryCompatibilityModeWithDefault) ?? SchemaRegistryCompatibilityModes.DEFAULT;
+  };
+  const [configMode, setConfigMode] = useState<SchemaRegistryCompatibilityModeWithDefault>(getInitialCompatibility);
 
   if (subjectName && !schema) {
     return DefaultSkeleton;
@@ -182,15 +185,9 @@ function EditSchemaCompatibility(p: {
     };
 
     if (contextName) {
-      updateContextMutation.mutate(
-        { contextName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode },
-        callbacks
-      );
+      updateContextMutation.mutate({ contextName, mode: configMode }, callbacks);
     } else if (subjectName) {
-      updateSubjectMutation.mutate(
-        { subjectName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode },
-        callbacks
-      );
+      updateSubjectMutation.mutate({ subjectName, mode: configMode }, callbacks);
     } else {
       updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, callbacks);
     }
@@ -220,11 +217,11 @@ function EditSchemaCompatibility(p: {
               isAttached={false}
               name="configMode"
               onChange={(e) => {
-                setConfigMode(e);
+                setConfigMode(e as SchemaRegistryCompatibilityModeWithDefault);
               }}
               options={[
                 {
-                  value: 'DEFAULT',
+                  value: SchemaRegistryCompatibilityModes.DEFAULT,
                   disabled: !(schemaDetails || contextName),
                   label: (
                     <Box>
@@ -234,7 +231,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'NONE',
+                  value: SchemaRegistryCompatibilityModes.NONE,
                   label: (
                     <Box>
                       <Text>None</Text>
@@ -243,7 +240,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'BACKWARD',
+                  value: SchemaRegistryCompatibilityModes.BACKWARD,
                   label: (
                     <Box>
                       <Text>Backward</Text>
@@ -255,7 +252,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'BACKWARD_TRANSITIVE',
+                  value: SchemaRegistryCompatibilityModes.BACKWARD_TRANSITIVE,
                   label: (
                     <Box>
                       <Text>Transitive Backward</Text>
@@ -267,7 +264,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'FORWARD',
+                  value: SchemaRegistryCompatibilityModes.FORWARD,
                   label: (
                     <Box>
                       <Text>Forward</Text>
@@ -279,7 +276,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'FORWARD_TRANSITIVE',
+                  value: SchemaRegistryCompatibilityModes.FORWARD_TRANSITIVE,
                   label: (
                     <Box>
                       <Text>Transitive Forward</Text>
@@ -291,7 +288,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'FULL',
+                  value: SchemaRegistryCompatibilityModes.FULL,
                   label: (
                     <Box>
                       <Text>Full</Text>
@@ -303,7 +300,7 @@ function EditSchemaCompatibility(p: {
                   ),
                 },
                 {
-                  value: 'FULL_TRANSITIVE',
+                  value: SchemaRegistryCompatibilityModes.FULL_TRANSITIVE,
                   label: (
                     <Box>
                       <Text>Transitive Full</Text>

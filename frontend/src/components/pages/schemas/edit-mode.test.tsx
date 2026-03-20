@@ -32,32 +32,36 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
-vi.mock('react-query/api/schema-registry', () => ({
-  useSchemaModeQuery: vi.fn(() => ({
-    data: 'READWRITE',
-    isLoading: false,
-  })),
-  useSchemaDetailsQuery: vi.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
-    data: undefined,
-    isLoading: false,
-  })),
-  useUpdateGlobalModeMutation: vi.fn(() => ({
-    mutate: mockMutateGlobal,
-    isPending: false,
-  })),
-  useUpdateSubjectModeMutation: vi.fn(() => ({
-    mutate: mockMutateSubject,
-    isPending: false,
-  })),
-  useSchemaRegistryContextsQuery: vi.fn(() => ({
-    data: [],
-    isLoading: false,
-  })),
-  useUpdateContextModeMutation: vi.fn(() => ({
-    mutate: mockMutateContext,
-    isPending: false,
-  })),
-}));
+vi.mock('react-query/api/schema-registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-query/api/schema-registry')>();
+  return {
+    ...actual,
+    useSchemaModeQuery: vi.fn(() => ({
+      data: 'READWRITE',
+      isLoading: false,
+    })),
+    useSchemaDetailsQuery: vi.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
+      data: undefined,
+      isLoading: false,
+    })),
+    useUpdateGlobalModeMutation: vi.fn(() => ({
+      mutate: mockMutateGlobal,
+      isPending: false,
+    })),
+    useUpdateSubjectModeMutation: vi.fn(() => ({
+      mutate: mockMutateSubject,
+      isPending: false,
+    })),
+    useSchemaRegistryContextsQuery: vi.fn(() => ({
+      data: [],
+      isLoading: false,
+    })),
+    useUpdateContextModeMutation: vi.fn(() => ({
+      mutate: mockMutateContext,
+      isPending: false,
+    })),
+  };
+});
 
 vi.mock('state/backend-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('state/backend-api')>();
