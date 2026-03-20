@@ -30,6 +30,19 @@ export const inputVariants = cva(
   }
 );
 
+const stepControlVariants = cva('flex items-center justify-center', {
+  variants: {
+    size: {
+      sm: 'size-8 [&_svg]:size-3.5',
+      md: 'size-9 [&_svg]:size-4',
+      lg: 'size-10 [&_svg]:size-5',
+    },
+  },
+  defaultVariants: {
+    size: 'md',
+  },
+});
+
 const inputContainerVariants = cva('', {
   variants: {
     layout: {
@@ -43,7 +56,7 @@ const inputContainerVariants = cva('', {
   },
 });
 
-interface InputProps
+export interface InputProps
   extends Omit<React.ComponentProps<'input'>, 'size'>,
     VariantProps<typeof inputVariants>,
     SharedProps {
@@ -191,22 +204,22 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {shouldShowControls ? (
             <div className="flex flex-row gap-1">
               <Button
+                className={stepControlVariants({ size })}
                 disabled={props.disabled || readOnly}
                 onClick={increment}
-                size={size}
                 type="button"
                 variant="outline"
               >
-                <Plus className="h-4 w-4" />
+                <Plus />
               </Button>
               <Button
+                className={stepControlVariants({ size })}
                 disabled={props.disabled || readOnly}
                 onClick={decrement}
-                size={size}
                 type="button"
                 variant="outline"
               >
-                <Minus className="h-4 w-4" />
+                <Minus />
               </Button>
             </div>
           ) : null}

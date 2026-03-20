@@ -10,7 +10,7 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
-import { WarningIcon } from 'components/icons';
+import { InfoIcon, WarningIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Choicebox,
@@ -22,22 +22,35 @@ import {
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 import {
   type SchemaRegistryMode,
+  SchemaRegistryModes,
+  type SchemaRegistryModeWithDefault,
   useSchemaDetailsQuery,
   useSchemaModeQuery,
+  useSchemaRegistryContextsQuery,
+  useUpdateContextModeMutation,
   useUpdateGlobalModeMutation,
   useUpdateSubjectModeMutation,
 } from '../../../react-query/api/schema-registry';
 import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
+
+const DEFAULT_OPTION = {
+  value: SchemaRegistryModes.DEFAULT,
+  title: 'Default',
+  description: 'Use the globally configured default mode.',
+  warning: null,
+};
 
 const MODE_OPTIONS: {
   value: SchemaRegistryMode;
@@ -46,20 +59,20 @@ const MODE_OPTIONS: {
   warning: string | null;
 }[] = [
   {
-    value: 'READWRITE',
+    value: SchemaRegistryModes.READWRITE,
     title: 'Read/Write',
     description: 'The registry accepts new schema registrations and allows reads. This is the normal operating mode.',
     warning: null,
   },
   {
-    value: 'READONLY',
+    value: SchemaRegistryModes.READONLY,
     title: 'Read Only',
     description:
       'Schema lookups are permitted but registration is blocked. Use this for standby clusters in a disaster recovery setup that replicate schemas from an active cluster.',
     warning: null,
   },
   {
-    value: 'IMPORT',
+    value: SchemaRegistryModes.IMPORT,
     title: 'Import',
     description:
       'Allows registering schemas with specific IDs and versions while bypassing compatibility checks. Use this on target clusters during migrations to preserve schema IDs. Requires an empty registry or subject.',
@@ -67,28 +80,46 @@ const MODE_OPTIONS: {
   },
 ];
 
-const EditSchemaModePage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
+const EditSchemaModePage: FC<{ subjectName?: string; contextName?: string }> = ({
+  subjectName: subjectNameEncoded,
+  contextName: contextNameEncoded,
+}) => {
   const navigate = useNavigate();
   const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
+  const contextName = contextNameEncoded ? decodeURIComponent(contextNameEncoded) : undefined;
+  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
     enabled: !!subjectName,
   });
+  const { data: contexts, isLoading: isContextsLoading } = useSchemaRegistryContextsQuery(!!contextName);
+
+  const contextMode = useMemo(
+    () => (contextName ? contexts?.find((c) => c.name === contextName)?.mode : undefined),
+    [contexts, contextName]
+  );
 
   const onClose = useCallback(() => {
     if (subjectName) {
       navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
+    } else if (contextName) {
+      navigate({ to: '/schema-registry', search: { context: contextName } });
     } else {
       navigate({ to: '/schema-registry' });
     }
-  }, [subjectName, navigate]);
+  }, [subjectName, contextName, navigate]);
 
   useEffect(() => {
     uiState.pageTitle = 'Edit Mode';
     uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
 
-    if (subjectName) {
+    if (contextName) {
+      uiState.pageBreadcrumbs.push({
+        title: 'Edit Mode',
+        linkTo: `/schema-registry/contexts/${encodeURIComponent(contextName)}/edit-mode`,
+      });
+    } else if (subjectName) {
       uiState.pageBreadcrumbs.push({
         title: subjectName,
         linkTo: `/schema-registry/subjects/${subjectName}`,
@@ -103,9 +134,13 @@ const EditSchemaModePage: FC<{ subjectName?: string }> = ({ subjectName: subject
         linkTo: '/schema-registry/edit-mode',
       });
     }
-  }, [subjectName]);
+  }, [subjectName, contextName]);
 
-  if (isModeLoading || (subjectName && isDetailsLoading)) {
+  if (contextName && !schemaRegistryContextsSupported) {
+    return <ContextsNotSupportedPage />;
+  }
+
+  if (isModeLoading || (subjectName && isDetailsLoading) || (contextName && isContextsLoading)) {
     return (
       <PageContent>
         <SkeletonGroup direction="vertical" spacing="lg">
@@ -126,6 +161,8 @@ const EditSchemaModePage: FC<{ subjectName?: string }> = ({ subjectName: subject
   return (
     <PageContent>
       <EditSchemaMode
+        contextMode={contextMode}
+        contextName={contextName}
         onClose={onClose}
         schemaDetails={schemaDetails}
         schemaMode={schemaMode}
@@ -141,66 +178,70 @@ function EditSchemaMode({
   schemaMode,
   onClose,
   subjectName,
+  contextName,
+  contextMode,
   schemaDetails,
 }: {
   schemaMode: string | null | undefined;
   onClose: () => void;
   subjectName?: string;
+  contextName?: string;
+  contextMode?: SchemaRegistryModeWithDefault;
   schemaDetails?: SchemaRegistrySubjectDetails;
 }) {
   const updateGlobalMutation = useUpdateGlobalModeMutation();
   const updateSubjectMutation = useUpdateSubjectModeMutation();
+  const updateContextMutation = useUpdateContextModeMutation();
 
   const schema = schemaDetails?.schemas.first(
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const [selectedMode, setSelectedMode] = useState<string>(
-    (subjectName ? schemaDetails?.mode : schemaMode) ?? 'READWRITE'
-  );
+  const getInitialMode = (): SchemaRegistryModeWithDefault => {
+    if (contextName) return contextMode ?? SchemaRegistryModes.DEFAULT;
+    if (subjectName) return schemaDetails?.mode ?? SchemaRegistryModes.READWRITE;
+    return (schemaMode as SchemaRegistryModeWithDefault) ?? SchemaRegistryModes.READWRITE;
+  };
+  const [selectedMode, setSelectedMode] = useState<SchemaRegistryModeWithDefault>(getInitialMode);
 
-  const allOptions: { value: string; title: string; description: string; warning: string | null }[] = subjectName
-    ? [
-        {
-          value: 'DEFAULT',
-          title: 'Default',
-          description: 'Use the globally configured default mode.',
-          warning: null,
-        },
-        ...MODE_OPTIONS,
-      ]
-    : MODE_OPTIONS;
+  const allOptions: {
+    value: SchemaRegistryModeWithDefault;
+    title: string;
+    description: string;
+    warning: string | null;
+  }[] = subjectName || contextName ? [DEFAULT_OPTION, ...MODE_OPTIONS] : MODE_OPTIONS;
 
   const onSave = () => {
-    if (subjectName) {
-      updateSubjectMutation.mutate(
-        { subjectName, mode: selectedMode as 'DEFAULT' | SchemaRegistryMode },
-        {
-          onSuccess: () => {
-            toast.success(`Mode updated to ${selectedMode}`);
-            onClose();
-          },
-          onError: (err) => {
-            toast.error('Failed to update mode', { description: String(err) });
-          },
-        }
-      );
+    const callbacks = {
+      onSuccess: () => {
+        toast.success(`Mode updated to ${selectedMode}`);
+        onClose();
+      },
+      onError: (err: Error) => {
+        toast.error('Failed to update mode', { description: String(err) });
+      },
+    };
+
+    if (contextName) {
+      updateContextMutation.mutate({ contextName, mode: selectedMode }, callbacks);
+    } else if (subjectName) {
+      updateSubjectMutation.mutate({ subjectName, mode: selectedMode }, callbacks);
     } else {
-      updateGlobalMutation.mutate(selectedMode as SchemaRegistryMode, {
-        onSuccess: () => {
-          toast.success(`Mode updated to ${selectedMode}`);
-          onClose();
-        },
-        onError: (err) => {
-          toast.error('Failed to update mode', { description: String(err) });
-        },
-      });
+      updateGlobalMutation.mutate(selectedMode as SchemaRegistryMode, callbacks);
     }
   };
 
   return (
     <div className="flex gap-16">
       <div className="flex-1">
+        {contextName && (
+          <div className="mb-4 flex items-center gap-2" data-testid="edit-mode-context-name">
+            <InfoIcon className="size-4 text-muted-foreground" />
+            <Text className="font-bold text-lg">
+              Editing mode for context: <span className="text-muted-foreground">{contextName}</span>
+            </Text>
+          </div>
+        )}
         <Text data-testid="edit-mode-description">
           Mode controls whether the Schema Registry accepts new schema registrations and under what conditions.
         </Text>
@@ -209,7 +250,7 @@ function EditSchemaMode({
           <Choicebox
             className="w-full"
             data-testid="edit-mode-radio"
-            onValueChange={setSelectedMode}
+            onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}
             value={selectedMode}
           >
             {allOptions.map((option) => (

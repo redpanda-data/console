@@ -22,6 +22,7 @@ export type BreadcrumbOptions = {
 
 export type BreadcrumbEntry = {
   title: string;
+  titleNode?: React.ReactNode;
   heading?: string;
   linkTo: string;
   options?: BreadcrumbOptions;

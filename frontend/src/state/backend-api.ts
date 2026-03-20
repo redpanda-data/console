@@ -91,6 +91,7 @@ import {
   type ResourceConfig,
   type SchemaReferencedByEntry,
   type SchemaRegistryCompatibilityMode,
+  type SchemaRegistryCompatibilityModeWithDefault,
   type SchemaRegistryConfigResponse,
   type SchemaRegistryCreateSchema,
   type SchemaRegistryCreateSchemaResponse,
@@ -1465,7 +1466,7 @@ const _apiCreator = (set: any, get: any) => ({
 
   async setSchemaRegistrySubjectCompatibilityMode(
     subjectName: string,
-    mode: 'DEFAULT' | SchemaRegistryCompatibilityMode
+    mode: SchemaRegistryCompatibilityModeWithDefault
   ): Promise<SchemaRegistryConfigResponse> {
     if (mode === 'DEFAULT') {
       const response = await appConfig.fetch(
