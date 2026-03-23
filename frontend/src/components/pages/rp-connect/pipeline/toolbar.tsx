@@ -342,7 +342,10 @@ export const Toolbar = memo(
                 {isLoading ? <Skeleton className="h-9 w-48" /> : <Heading level={1}>{displayName}</Heading>}
                 {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
               </div>
-              <Text className="mb-4 text-muted-foreground">Monitor pipeline status and performance.</Text>
+              <Text className="text-muted-foreground">Monitor pipeline status and performance.</Text>
+              <span className="mt-3">
+                <Button onClick={handleEditNavigate}>Edit pipeline</Button>
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -351,7 +354,6 @@ export const Toolbar = memo(
               isStartPending={isStartPending}
               isStopPending={isStopPending}
             />
-            <Button onClick={handleEditNavigate}>Edit pipeline</Button>
           </div>
         </div>
       );

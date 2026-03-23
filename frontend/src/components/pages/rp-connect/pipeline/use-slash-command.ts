@@ -16,7 +16,7 @@ export type SlashPosition = { lineNumber: number; column: number };
 
 export const SLASH_TRIGGER_PATTERN = /\s/;
 
-/** Check if the `/` just typed is at a valid trigger position (start of line or after whitespace/colon). */
+/** Check if the `/` just typed is at a valid trigger position (start of line or after whitespace). */
 export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor): SlashPosition | null {
   const position = editorInstance.getPosition();
   if (!position) {
@@ -43,7 +43,11 @@ export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor)
  * Focus moves to the CommandInput inside the popover when the menu opens.
  * cmdk handles all keyboard navigation natively (ArrowUp/Down, Enter, Escape).
  */
-export function useSlashCommand(editorInstance: editor.IStandaloneCodeEditor | null, enabled?: boolean) {
+export function useSlashCommand(
+  editorInstance: editor.IStandaloneCodeEditor | null,
+  enabled?: boolean,
+  onOpen?: () => void
+) {
   const [isOpen, setIsOpen] = useState(false);
   const [slashPosition, setSlashPosition] = useState<SlashPosition | null>(null);
   const slashPositionRef = useRef<SlashPosition | null>(null);
@@ -93,11 +97,12 @@ export function useSlashCommand(editorInstance: editor.IStandaloneCodeEditor | n
         lastSlashRangeRef.current = null;
         setSlashPosition(pos);
         setIsOpen(true);
+        onOpen?.();
       }
     });
 
     return () => disposable.dispose();
-  }, [editorInstance, enabled]);
+  }, [editorInstance, enabled, onOpen]);
 
   /**
    * Replace the `/` text with the selected item text and close.

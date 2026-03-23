@@ -10,6 +10,7 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
@@ -71,6 +72,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
 
   const {
     data: ingressData,
+    isError: isErrorIngress,
     isLoading: isLoadingIngress,
     isFetching: isFetchingIngress,
     refetch: refetchIngress,
@@ -84,6 +86,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
 
   const {
     data: egressData,
+    isError: isErrorEgress,
     isLoading: isLoadingEgress,
     isFetching: isFetchingEgress,
     refetch: refetchEgress,
@@ -106,8 +109,81 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   );
 
   const isLoading = isLoadingQueries || isLoadingIngress || isLoadingEgress;
+  const isError = isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
+
+  const content = useMemo(() => {
+    if (isLoading) {
+      return <ChartSkeleton className="h-40 w-full" variant="area" />;
+    }
+
+    if (isError) {
+      return (
+        <Alert variant="warning">
+          <AlertDescription>Failed to load throughput metrics</AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (!hasData) {
+      return <Text className="text-muted-foreground">Throughput metrics not available</Text>;
+    }
+
+    return (
+      <ChartContainer className="h-40 w-full" config={chartConfig}>
+        <AreaChart data={chartData}>
+          <defs>
+            <linearGradient id={`${id}-ingress`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="5%" stopColor="var(--color-ingress)" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="var(--color-ingress)" stopOpacity={0.05} />
+            </linearGradient>
+            <linearGradient id={`${id}-egress`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="5%" stopColor="var(--color-egress)" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="var(--color-egress)" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} />
+          <XAxis
+            axisLine={false}
+            dataKey="timestamp"
+            tickFormatter={formatChartTimestamp}
+            tickLine={false}
+            tickMargin={8}
+          />
+          <YAxis axisLine={false} tickLine={false} tickMargin={8} width={40} />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                labelFormatter={(_, payload) => {
+                  const ts = payload?.[0]?.payload?.timestamp;
+                  if (!ts || typeof ts !== 'number') {
+                    return '';
+                  }
+                  return formatTooltipLabel(ts);
+                }}
+              />
+            }
+          />
+          <Area
+            dataKey="ingress"
+            fill={`url(#${id}-ingress)`}
+            stroke="var(--color-ingress)"
+            strokeWidth={2}
+            type="monotone"
+          />
+          <Area
+            dataKey="egress"
+            fill={`url(#${id}-egress)`}
+            stroke="var(--color-egress)"
+            strokeWidth={2}
+            type="monotone"
+          />
+          <ChartLegend content={<ChartLegendContent />} />
+        </AreaChart>
+      </ChartContainer>
+    );
+  }, [isLoading, isError, hasData, chartData, id]);
 
   return (
     <Card size="full" variant="outlined">
@@ -133,63 +209,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
           </div>
         </div>
       </CardHeader>
-      <CardContent className="mt-4">
-        {isLoading ? <ChartSkeleton className="h-40 w-full" variant="area" /> : null}
-        {isLoading || hasData ? null : <Text className="text-muted-foreground">Throughput metrics not available</Text>}
-        {!isLoading && hasData ? (
-          <ChartContainer className="h-40 w-full" config={chartConfig}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id={`${id}-ingress`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-ingress)" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="var(--color-ingress)" stopOpacity={0.05} />
-                </linearGradient>
-                <linearGradient id={`${id}-egress`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-egress)" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="var(--color-egress)" stopOpacity={0.05} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                axisLine={false}
-                dataKey="timestamp"
-                tickFormatter={formatChartTimestamp}
-                tickLine={false}
-                tickMargin={8}
-              />
-              <YAxis axisLine={false} tickLine={false} tickMargin={8} width={40} />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    labelFormatter={(_, payload) => {
-                      const ts = payload?.[0]?.payload?.timestamp;
-                      if (!ts || typeof ts !== 'number') {
-                        return '';
-                      }
-                      return formatTooltipLabel(ts);
-                    }}
-                  />
-                }
-              />
-              <Area
-                dataKey="ingress"
-                fill={`url(#${id}-ingress)`}
-                stroke="var(--color-ingress)"
-                strokeWidth={2}
-                type="monotone"
-              />
-              <Area
-                dataKey="egress"
-                fill={`url(#${id}-egress)`}
-                stroke="var(--color-egress)"
-                strokeWidth={2}
-                type="monotone"
-              />
-              <ChartLegend content={<ChartLegendContent />} />
-            </AreaChart>
-          </ChartContainer>
-        ) : null}
-      </CardContent>
+      <CardContent className="mt-4">{content}</CardContent>
     </Card>
   );
 };

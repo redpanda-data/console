@@ -265,6 +265,55 @@ describe('useSlashCommand', () => {
     });
   });
 
+  describe('onOpen callback', () => {
+    it('calls onOpen callback when slash triggers menu', () => {
+      const { instance, fireContentChange } = createMockEditor('  /', 4);
+      const onOpen = vi.fn();
+      const { result } = renderHook(() => useSlashCommand(instance, true, onOpen));
+
+      act(() => fireContentChange('/'));
+
+      expect(onOpen).toHaveBeenCalledOnce();
+      expect(result.current.isOpen).toBe(true);
+    });
+
+    it('does not call onOpen on invalid slash position', () => {
+      const { instance, fireContentChange } = createMockEditor('input/', 6);
+      const onOpen = vi.fn();
+      const { result } = renderHook(() => useSlashCommand(instance, true, onOpen));
+
+      act(() => fireContentChange('/'));
+
+      expect(onOpen).not.toHaveBeenCalled();
+      expect(result.current.isOpen).toBe(false);
+    });
+
+    it('re-subscribes when onOpen changes', () => {
+      const disposeFn = vi.fn();
+      const instance = {
+        getPosition: vi.fn(),
+        getModel: vi.fn(),
+        onDidChangeModelContent: vi.fn(() => ({ dispose: disposeFn })),
+        executeEdits: vi.fn(),
+        focus: vi.fn(),
+      } as unknown as editor.IStandaloneCodeEditor;
+
+      const onOpen1 = vi.fn();
+      const onOpen2 = vi.fn();
+
+      const { rerender } = renderHook(({ onOpen }) => useSlashCommand(instance, true, onOpen), {
+        initialProps: { onOpen: onOpen1 },
+      });
+
+      expect(instance.onDidChangeModelContent).toHaveBeenCalledTimes(1);
+
+      rerender({ onOpen: onOpen2 });
+
+      expect(disposeFn).toHaveBeenCalledOnce();
+      expect(instance.onDidChangeModelContent).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('cleanup', () => {
     it('disposes Monaco subscription on unmount', () => {
       const disposeFn = vi.fn();

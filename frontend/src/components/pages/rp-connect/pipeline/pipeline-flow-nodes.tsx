@@ -40,7 +40,7 @@ export function PipelineFlowSkeleton({ error }: PipelineFlowSkeletonProps) {
   return (
     <div className="relative h-full w-full">
       {error ? (
-        <Banner variant="accent">
+        <Banner height="2rem" variant="accent">
           <BannerContent>Unable to visualize pipeline.</BannerContent>
           <BannerClose variant="ghost" />
         </Banner>

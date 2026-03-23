@@ -199,7 +199,10 @@ export default function PipelinePage() {
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
 
   // Slash command: inline command menu triggered by typing `/` in the editor
-  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled);
+  const handleSlashOpen = useCallback(() => {
+    setIsCommandMenuOpen(false);
+  }, []);
+  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -209,12 +212,13 @@ export default function PipelinePage() {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'p') {
         e.preventDefault();
+        slashCommand.close();
         setIsCommandMenuOpen(true);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [mode]);
+  }, [mode, slashCommand.close]);
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -255,7 +259,6 @@ export default function PipelinePage() {
   const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
 
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
-  const userLintOverrideRef = useRef<'expanded' | 'collapsed' | null>(null);
 
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
   const { data: lintResponse, isPending: isLintPending } = useLintPipelineConfigQuery(debouncedYamlContent, {
@@ -274,8 +277,17 @@ export default function PipelinePage() {
     return hints;
   }, [lintResponse]);
 
-  // Merge response-derived and error-derived lint hints (error hints cleared on next successful response)
-  const lintHints = Object.keys(errorLintHints).length > 0 ? errorLintHints : responseLintHints;
+  // Merge both hint sources — namespace keys to avoid collision (both use hint_N)
+  const lintHints = useMemo(() => {
+    const merged: Record<string, LintHint> = {};
+    for (const [key, hint] of Object.entries(errorLintHints)) {
+      merged[`error_${key}`] = hint;
+    }
+    for (const [key, hint] of Object.entries(responseLintHints)) {
+      merged[`lint_${key}`] = hint;
+    }
+    return merged;
+  }, [errorLintHints, responseLintHints]);
 
   // Initialize form data from pipeline (edit/view)
   useEffect(() => {
@@ -424,6 +436,8 @@ export default function PipelinePage() {
             configYaml: yamlContent,
             description: description || '',
             resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
+            // pipeline.tags is derived from useGetPipelineQuery and auto-refreshes;
+            // system tags here reflect the latest cached server state.
             tags: {
               ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
               ...userTags,
@@ -482,8 +496,8 @@ export default function PipelinePage() {
 
   const handleYamlChange = useCallback(
     (value: string) => {
+      setErrorLintHints({});
       setYamlContent(value);
-      userLintOverrideRef.current = null;
       if (mode === 'create') {
         useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
       }
@@ -539,8 +553,8 @@ export default function PipelinePage() {
         pipelineName={pipelineName}
         pipelineState={pipeline?.state}
       />
-      <div className="flex min-h-0 flex-1 rounded-lg border">
-        <div className="flex w-[300px] shrink-0 flex-col border-r">
+      <div className="!border-border flex min-h-0 flex-1 rounded-lg border">
+        <div className="!border-border flex w-[300px] shrink-0 flex-col border-r">
           <div className="min-h-0 flex-1">
             {isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded() && (
               <PipelineFlowDiagram
@@ -562,7 +576,7 @@ export default function PipelinePage() {
                 onAddConnector={(type) => setAddConnectorType(type)}
               />
               <div className="px-4 pb-4">
-                <Separator className="mb-3" />
+                <Separator className="mb-3" variant="subtle" />
                 <div className="flex flex-col gap-2">
                   <Heading className="mb-2 text-muted-foreground" level={5}>
                     Variables
@@ -575,7 +589,10 @@ export default function PipelinePage() {
                         <ArrowBigUpIcon />P
                       </Kbd>
                     }
-                    onClick={() => setIsCommandMenuOpen(true)}
+                    onClick={() => {
+                      slashCommand.close();
+                      setIsCommandMenuOpen(true);
+                    }}
                     size="xs"
                     variant="secondary-outline"
                   >
@@ -617,7 +634,7 @@ export default function PipelinePage() {
               <ResizablePanel defaultSize={70} minSize={30}>
                 <div className="relative h-full">
                   {slashTipVisible ? (
-                    <div className="absolute inset-x-0 top-0 z-10">
+                    <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
                       <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
                         <BannerContent>
                           Tip: use{' '}

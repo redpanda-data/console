@@ -279,21 +279,23 @@ export function ConnectorWizard({
         });
       }
 
-      const newYaml = getConnectTemplate({
-        connectionName: redpandaSetupConfig.connectionName,
-        connectionType: redpandaSetupConfig.connectionType,
-        components,
-        showAdvancedFields: false,
-        existingYaml: yamlContent,
-      });
+      try {
+        const newYaml = getConnectTemplate({
+          connectionName: redpandaSetupConfig.connectionName,
+          connectionType: redpandaSetupConfig.connectionType,
+          components,
+          showAdvancedFields: false,
+          existingYaml: yamlContent,
+        });
 
-      useOnboardingTopicDataStore.getState().reset();
-      useOnboardingUserDataStore.getState().reset();
-
-      if (newYaml) {
-        onYamlChange(newYaml);
+        if (newYaml) {
+          onYamlChange(newYaml);
+        }
+      } finally {
+        useOnboardingTopicDataStore.getState().reset();
+        useOnboardingUserDataStore.getState().reset();
+        setRedpandaSetupConfig(null);
       }
-      setRedpandaSetupConfig(null);
     },
     [redpandaSetupConfig, components, yamlContent, onYamlChange]
   );

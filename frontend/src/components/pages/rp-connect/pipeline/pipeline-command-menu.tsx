@@ -339,26 +339,32 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   const clickOutsideRef = useClickOutside(isPopover && open, () => onOpenChange(false));
 
   // Ref callback: when the popover div mounts, steal focus from Monaco into the cmdk input.
-  // Uses setTimeout(0) to defer past Monaco's keystroke processing, then retries via rAF
-  // if Monaco reclaims focus. Fires once per open (portal unmounts on close → remounts on open).
+  // Uses setTimeout(0) → rAF to defer past Monaco's keystroke processing.
+  // Fires once per open (portal unmounts on close → remounts on open).
+  const abortFocusRef = useRef(false);
   const popoverRef = useCallback(
     (node: HTMLDivElement | null) => {
       clickOutsideRef.current = node;
       if (!node) {
+        abortFocusRef.current = true;
         return;
       }
-      let attempts = 0;
-      const tryFocus = () => {
-        const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
-        if (input && document.activeElement !== input && attempts < 10) {
-          attempts += 1;
-          input.focus();
-          if (document.activeElement !== input) {
-            requestAnimationFrame(tryFocus);
+      abortFocusRef.current = false;
+
+      // Defer focus past Monaco's async keystroke processing.
+      // setTimeout(0) clears the current event loop task (keystroke handler),
+      // rAF defers past pending layout/paint.
+      // Single attempt — no retry loop needed.
+      setTimeout(() => {
+        if (abortFocusRef.current) return;
+        requestAnimationFrame(() => {
+          if (abortFocusRef.current) return;
+          const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
+          if (input && document.activeElement !== input) {
+            input.focus();
           }
-        }
-      };
-      setTimeout(tryFocus, 0);
+        });
+      }, 0);
     },
     [clickOutsideRef]
   );
@@ -612,7 +618,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
                   variant="elevated"
                   vimBindings={false}
                 >
-                  <CommandInput autoFocus placeholder="Filter..." />
+                  <CommandInput placeholder="Filter..." />
                   <CommandMenuContent {...contentProps} />
                 </Command>
               </div>,

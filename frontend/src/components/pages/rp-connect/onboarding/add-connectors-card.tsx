@@ -53,7 +53,7 @@ export const AddConnectorsCard = memo(
       : false;
 
     return (
-      <div className="border-t p-4">
+      <div className="!border-border border-t p-4">
         <div className="flex flex-col gap-2">
           <Heading className="mb-2 text-muted-foreground" level={5}>
             Connectors
