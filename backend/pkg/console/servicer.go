@@ -86,6 +86,10 @@ type Servicer interface {
 	DescribeClientQuotas(ctx context.Context, req *kmsg.DescribeClientQuotasRequest) (*kmsg.DescribeClientQuotasResponse, error)
 	// AlterClientQuotas proxies the request/response for altering client quotas via the Kafka API.
 	AlterClientQuotas(ctx context.Context, req *kmsg.AlterClientQuotasRequest) (*kmsg.AlterClientQuotasResponse, error)
+	// DescribeUserSCRAMCredentials describes SCRAM credentials for the given users (or all users if none specified).
+	DescribeUserSCRAMCredentials(ctx context.Context, users ...string) (kadm.DescribedUserSCRAMs, error)
+	// AlterUserSCRAMs upserts and/or deletes SCRAM credentials.
+	AlterUserSCRAMs(ctx context.Context, del []kadm.DeleteSCRAM, upsert []kadm.UpsertSCRAM) (kadm.AlteredUserSCRAMs, error)
 }
 
 // SchemaRegistryServicer is the interface for schema registry servicer
@@ -105,6 +109,7 @@ type SchemaRegistryServicer interface {
 	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema, params CreateSchemaRequestParams) (*CreateSchemaResponse, error)
 	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version int, schema sr.Schema) (*SchemaRegistrySchemaValidation, error)
 	GetSchemaUsagesByID(ctx context.Context, schemaID int, subject string) ([]SchemaVersion, error)
+	GetSchemaRegistryContexts(ctx context.Context) ([]SchemaRegistryContext, error)
 
 	// Custom Redpanda-only methods for managing ACLs within the schema registry.
 

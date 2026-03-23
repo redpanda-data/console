@@ -119,7 +119,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// v1
 	aclSvcV1 := apiaclsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_service"), api.ConsoleSvc)
 	topicSvcV1 := topicsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
-	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "user_service"), api.ConsoleSvc, api.RedpandaClientProvider)
+	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(loggerpkg.Named(api.Logger, "user_service"), api.ConsoleSvc)
 	quotaSvcV1 := quotasvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "quota_service"), api.ConsoleSvc)
 	transformSvcV1 := transformsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
@@ -130,7 +130,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	aclSvcV1alpha2 := apiaclsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_service"), api.ConsoleSvc)
 	topicSvcV1alpha2 := topicsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
-	var userSvcV1alpha2 dataplanev1alpha2connect.UserServiceHandler = apiusersvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "user_service"), api.RedpandaClientProvider, api.ConsoleSvc)
+	var userSvcV1alpha2 dataplanev1alpha2connect.UserServiceHandler = apiusersvcv1alpha2.NewService(loggerpkg.Named(api.Logger, "user_service"), api.ConsoleSvc)
 	transformSvcV1alpha2 := transformsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 	kafkaConnectSvcV1alpha2 := apikafkaconnectsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 
@@ -643,6 +643,7 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/schema-registry/config/{subject}", api.handleGetSchemaRegistrySubjectConfig())
 				r.Put("/schema-registry/config/{subject}", api.handlePutSchemaRegistrySubjectConfig())
 				r.Delete("/schema-registry/config/{subject}", api.handleDeleteSchemaRegistrySubjectConfig())
+				r.Get("/schema-registry/contexts", api.handleGetSchemaRegistryContexts())
 				r.Get("/schema-registry/subjects", api.handleGetSchemaSubjects())
 				r.Get("/schema-registry/schemas/types", api.handleGetSchemaRegistrySchemaTypes())
 				r.Get("/schema-registry/schemas/ids/{id}/versions", api.handleGetSchemaUsagesByID())

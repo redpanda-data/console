@@ -1,0 +1,335 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// --------------------------------------------------------------------------
+// Service
+// --------------------------------------------------------------------------
+
+// TranscriptService provides access to AI agent conversation transcripts.
+// Unlike the TracingService which offers general-purpose OpenTelemetry
+// distributed tracing, the TranscriptService is specifically designed for
+// AI agent conversation history. It provides turn-by-turn LLM interaction
+// records including tool calls, token usage, and cost tracking.
+// This service supports both managed Redpanda agents and bring-your-own-agent
+// (BYOA) deployments.
+service TranscriptService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Transcripts"
+    description: "Access and retrieve AI agent conversation transcripts, including turn-by-turn interaction history, tool calls, and usage metrics."
+  };
+
+  // ListTranscripts lists transcripts that belong to a specific AI agent.
+  // The agent_id is required and can refer to either a managed Redpanda agent
+  // or a BYOA agent that emits observability spans to the platform.
+  rpc ListTranscripts(ListTranscriptsRequest) returns (ListTranscriptsResponse) {
+    option (google.api.http) = {get: "/v1alpha3/transcripts"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Transcripts"
+      description: "List transcripts for a specific AI agent. The agent_id query parameter is required and can refer to either a managed Redpanda agent or a bring-your-own-agent (BYOA) deployment."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTranscriptsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_AI_AGENT
+    };
+  }
+
+  // GetTranscript gets a single transcript by ID.
+  // The agent_id is required and can refer to either a managed Redpanda agent
+  // or a BYOA agent that emits observability spans to the platform.
+  rpc GetTranscript(GetTranscriptRequest) returns (GetTranscriptResponse) {
+    option (google.api.http) = {get: "/v1alpha3/transcripts/{conversation_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Transcript"
+      description: "Get a single transcript by ID. The agent_id query parameter is required and can refer to either a managed Redpanda agent or a bring-your-own-agent (BYOA) deployment."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetTranscriptResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_AI_AGENT
+    };
+  }
+}
+
+// --------------------------------------------------------------------------
+// Resource Messages
+// --------------------------------------------------------------------------
+
+// Transcript execution status.
+// Derived from the OTel span status_code of the root agent span.
+enum TranscriptStatus {
+  TRANSCRIPT_STATUS_UNSPECIFIED = 0;
+  // The conversation is still in progress (root span has not ended).
+  TRANSCRIPT_STATUS_RUNNING = 1;
+  // The conversation completed successfully (status_code = OK or UNSET).
+  TRANSCRIPT_STATUS_COMPLETED = 2;
+  // The conversation ended with an error (status_code = ERROR).
+  TRANSCRIPT_STATUS_ERROR = 3;
+}
+
+// Transcript turn role.
+// Inferred from gen_ai.operation.name and the span's position in the hierarchy.
+enum TranscriptTurnRole {
+  TRANSCRIPT_TURN_ROLE_UNSPECIFIED = 0;
+  // System prompt / instructions.
+  TRANSCRIPT_TURN_ROLE_SYSTEM = 1;
+  // User input message.
+  TRANSCRIPT_TURN_ROLE_USER = 2;
+  // LLM assistant response (gen_ai.operation.name = "chat").
+  TRANSCRIPT_TURN_ROLE_ASSISTANT = 3;
+  // Tool execution result (gen_ai.operation.name = "execute_tool").
+  TRANSCRIPT_TURN_ROLE_TOOL = 4;
+}
+
+// Tool call status within a transcript turn.
+// Derived from the OTel span status_code of the tool execution span.
+enum TranscriptToolCallStatus {
+  TRANSCRIPT_TOOL_CALL_STATUS_UNSPECIFIED = 0;
+  // Tool call is currently executing (span has not ended).
+  TRANSCRIPT_TOOL_CALL_STATUS_RUNNING = 1;
+  // Tool call completed successfully.
+  TRANSCRIPT_TOOL_CALL_STATUS_COMPLETED = 2;
+  // Tool call ended with an error.
+  TRANSCRIPT_TOOL_CALL_STATUS_ERROR = 3;
+}
+
+// Token and cost usage for a transcript or turn.
+// Sourced from gen_ai.usage.input_tokens and gen_ai.usage.output_tokens
+// span attributes. For the summary level, values are aggregated across all turns.
+message TranscriptUsage {
+  // Number of input/prompt tokens. From gen_ai.usage.input_tokens.
+  int64 input_tokens = 1;
+  // Number of output/completion tokens. From gen_ai.usage.output_tokens.
+  int64 output_tokens = 2;
+  // Sum of input and output tokens.
+  int64 total_tokens = 3;
+  // Estimated cost in USD. May not be available for all providers.
+  double estimated_cost_usd = 4;
+}
+
+// Error information associated with a transcript or turn.
+// Sourced from OTel span status_code = ERROR and status_message.
+message TranscriptError {
+  // Error code or category.
+  string code = 1;
+  // Human-readable error description. From OTel span status_message.
+  string message = 2;
+}
+
+// Tool call information associated with a transcript turn.
+// Each tool call corresponds to a child span with
+// gen_ai.operation.name = "execute_tool".
+message TranscriptToolCall {
+  // Unique tool call identifier. Sourced from the OTel span ID.
+  string tool_call_id = 1 [(buf.validate.field).string.max_len = 128];
+  // Tool name. From gen_ai.tool.name span attribute.
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 256
+  ];
+  // Execution status. Derived from the span's status_code.
+  TranscriptToolCallStatus status = 3;
+  // Tool execution duration. Derived from the span's duration.
+  google.protobuf.Duration latency = 4;
+  // Tool invocation parameters (JSON-encoded).
+  string input = 5;
+  // Tool execution result (JSON-encoded).
+  string output = 6;
+  // Error details if the tool call failed.
+  TranscriptError error = 7;
+}
+
+// A single transcript turn representing one message in the conversation.
+// Each turn corresponds to an OTel span within the conversation trace.
+message TranscriptTurn {
+  // Unique turn identifier. Sourced from the OTel span ID.
+  string turn_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  // Role of this turn in the conversation.
+  TranscriptTurnRole role = 2;
+  // When this turn occurred. From the span's start_time.
+  google.protobuf.Timestamp timestamp = 3;
+  // Message content (user prompt, assistant response, or tool result).
+  string content = 4;
+  // LLM model used for this turn. From gen_ai.request.model.
+  string model = 5 [(buf.validate.field).string.max_len = 128];
+  // Turn duration. Derived from the span's duration.
+  google.protobuf.Duration latency = 6;
+  // Token usage for this turn.
+  TranscriptUsage usage = 7;
+  // Tool calls made during this turn (assistant turns only).
+  // Each entry corresponds to a child span with gen_ai.operation.name = "execute_tool".
+  repeated TranscriptToolCall tool_calls = 8;
+  // Error details if this turn failed.
+  TranscriptError error = 9;
+}
+
+// Summary information for a single transcript (conversation).
+// Aggregated from the spans sharing the same gen_ai.conversation.id.
+message TranscriptSummary {
+  // Conversation ID from the OTel GenAI semantic conventions
+  // (gen_ai.conversation.id).
+  string conversation_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+  // Agent that produced this conversation. For managed agents this is the
+  // Redpanda agent ID; for BYOA this is the agent identifier from the
+  // span's resource or span attributes.
+  string agent_id = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+  // Short description of the conversation, e.g. derived from the first
+  // user message or set by the agent.
+  string title = 3 [(buf.validate.field).string.max_len = 256];
+  // When the conversation started. From the earliest span start_time.
+  google.protobuf.Timestamp start_time = 4;
+  // When the conversation ended. From the latest span end_time.
+  google.protobuf.Timestamp end_time = 5;
+  // Total conversation duration (end_time - start_time).
+  google.protobuf.Duration duration = 6;
+  // Overall conversation status. Derived from the root span's status_code.
+  TranscriptStatus status = 7;
+  // Number of turns in the conversation.
+  int32 turn_count = 8;
+  // Aggregated token usage and cost across all turns.
+  TranscriptUsage usage = 9;
+  // Identifier of the user who initiated the conversation.
+  string user_id = 10 [(buf.validate.field).string.max_len = 128];
+  // Whether any turn in the conversation had an error.
+  bool has_errors = 11;
+}
+
+// --------------------------------------------------------------------------
+// RPC request/response messages
+// --------------------------------------------------------------------------
+
+// --- ListTranscripts RPC ---
+message ListTranscriptsRequest {
+  // Optional filters for narrowing the transcript list.
+  message Filter {
+    option (buf.validate.message).cel = {
+      id: "transcript_time_range_valid"
+      message: "end_time must be >= start_time when both are provided"
+      expression: "!has(this.start_time) || !has(this.end_time) || this.end_time >= this.start_time"
+    };
+
+    // Filter conversations that started after this time (inclusive).
+    google.protobuf.Timestamp start_time = 1 [(google.api.field_behavior) = OPTIONAL];
+    // Filter conversations that started before this time (exclusive).
+    google.protobuf.Timestamp end_time = 2 [(google.api.field_behavior) = OPTIONAL];
+    // Filter by conversation status.
+    TranscriptStatus status = 3 [(google.api.field_behavior) = OPTIONAL];
+    // Free-text search across conversation titles and content.
+    string query = 4 [
+      (google.api.field_behavior) = OPTIONAL,
+      (buf.validate.field).string.max_len = 256
+    ];
+    // Filter for conversations that contain errors.
+    optional bool has_errors = 5 [(google.api.field_behavior) = OPTIONAL];
+  }
+
+  // Agent ID to list conversations for. Required. Can be a managed Redpanda
+  // agent ID or a BYOA agent identifier.
+  string agent_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+  // Maximum number of items to return per page. Defaults to 50. Use -1 to
+  // disable pagination.
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 100
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 100
+    }
+  ];
+  // Pagination token from a previous ListTranscriptsResponse.
+  string page_token = 3;
+  // Optional filters.
+  Filter filter = 4;
+}
+
+message ListTranscriptsResponse {
+  // List of conversation summaries.
+  repeated TranscriptSummary transcripts = 1;
+  // Token for fetching the next page. Empty if no more results.
+  string next_page_token = 2;
+}
+
+// --- GetTranscript RPC ---
+message GetTranscriptRequest {
+  // Agent ID the conversation belongs to. Required. Can be a managed Redpanda
+  // agent ID or a BYOA agent identifier.
+  string agent_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+  // Conversation ID (gen_ai.conversation.id) to retrieve.
+  string conversation_id = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+}
+
+message GetTranscriptResponse {
+  // Conversation summary and metadata.
+  TranscriptSummary summary = 1;
+  // System prompt / instructions provided to the agent.
+  string system_prompt = 2;
+  // Ordered list of conversation turns.
+  repeated TranscriptTurn turns = 3;
+  // Top-level error if the entire conversation failed.
+  TranscriptError error = 4;
+}

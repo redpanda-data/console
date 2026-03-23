@@ -44,6 +44,14 @@ type SchemaRegistrySubject struct {
 	IsSoftDeleted bool   `json:"isSoftDeleted"`
 }
 
+// SchemaRegistryContext represents a schema registry context along with
+// its mode and compatibility settings.
+type SchemaRegistryContext struct {
+	Name          string `json:"name"`
+	Mode          string `json:"mode"`
+	Compatibility string `json:"compatibility"`
+}
+
 // For Schema Registry compatibility level and mode we have 2 custom responses:
 // - DEFAULT: there is no per-subject configuration set.
 // - UNKNOWN: there is an error, and we are unable to get the configuration.
@@ -674,7 +682,10 @@ func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName st
 		ctx = sr.WithParams(ctx, sr.Normalize)
 	}
 
-	subjectSchema, err := srClient.CreateSchema(ctx, subjectName, schema)
+	// Use RegisterSchema instead of CreateSchema to avoid a follow-up
+	// SchemaUsagesByID call that fails for named contexts (schema IDs
+	// are context-scoped, but the lookup doesn't include context).
+	schemaID, err := srClient.RegisterSchema(ctx, subjectName, schema, -1, -1)
 	if err != nil {
 		// If metadata was included and we got a parse error, retry without metadata.
 		// Older Redpanda versions don't support the metadata field.
@@ -682,16 +693,16 @@ func (s *Service) CreateSchemaRegistrySchema(ctx context.Context, subjectName st
 			s.logger.WarnContext(ctx, "retrying schema creation without metadata (unsupported by this Redpanda version)",
 				slog.String("subject", subjectName))
 			schema.SchemaMetadata = nil
-			subjectSchema, err = srClient.CreateSchema(ctx, subjectName, schema)
+			schemaID, err = srClient.RegisterSchema(ctx, subjectName, schema, -1, -1)
 			if err != nil {
 				return nil, err
 			}
-			return &CreateSchemaResponse{ID: subjectSchema.ID}, nil
+			return &CreateSchemaResponse{ID: schemaID}, nil
 		}
 		return nil, err
 	}
 
-	return &CreateSchemaResponse{ID: subjectSchema.ID}, nil
+	return &CreateSchemaResponse{ID: schemaID}, nil
 }
 
 // SchemaRegistrySchemaValidation is the response to a schema validation.
@@ -878,6 +889,46 @@ func (s *Service) CheckSchemaRegistryACLSupport(ctx context.Context) bool {
 	return true
 }
 
+// GetSchemaRegistryContexts returns all contexts available in the schema registry,
+// enriched with per-context mode and compatibility settings.
+func (s *Service) GetSchemaRegistryContexts(ctx context.Context) ([]SchemaRegistryContext, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	names, err := srClient.Contexts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]SchemaRegistryContext, len(names))
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(10)
+
+	for i, name := range names {
+		grp.Go(func() error {
+			// For default context ".", query with empty subject to get global values.
+			// For named contexts, use qualified syntax :.contextName:
+			qualifiedSubject := ""
+			if name != "." {
+				qualifiedSubject = ":" + name + ":"
+			}
+			results[i] = SchemaRegistryContext{
+				Name:          name,
+				Mode:          s.getSubjectMode(grpCtx, srClient, qualifiedSubject),
+				Compatibility: s.getSubjectCompatibilityLevel(grpCtx, srClient, qualifiedSubject),
+			}
+			return nil
+		})
+	}
+
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 // CheckSchemaRegistryContextsSupport checks if the Schema Registry supports
 // the Contexts feature. For Redpanda clusters with Admin API, it checks the
 // cluster config. For Kafka clusters, it probes the /contexts endpoint.
@@ -915,8 +966,7 @@ func (s *Service) CheckSchemaRegistryContextsSupport(ctx context.Context) bool {
 		return false
 	}
 
-	var contexts []string
-	err = srClient.Do(ctx, http.MethodGet, "/contexts", nil, &contexts)
+	_, err = srClient.Contexts(ctx)
 	if err != nil {
 		var se *sr.ResponseError
 		if errors.As(err, &se) && se.StatusCode == http.StatusNotFound {

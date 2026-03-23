@@ -657,8 +657,10 @@ const RolesTab = () => {
                   return (
                     <Flex flexDirection="row" gap={4}>
                       <button
+                        aria-label={`Edit role ${entry.name}`}
+                        data-testid={`edit-role-button-${entry.name}`}
                         onClick={() => {
-                          appGlobal.historyPush(`/security/roles/${entry.name}/edit`);
+                          appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
                         }}
                         type="button"
                       >

@@ -1,6 +1,6 @@
 import { cva } from 'class-variance-authority';
 import { type ClassValue, clsx } from 'clsx';
-import type React from 'react';
+import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {

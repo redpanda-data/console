@@ -1,6 +1,9 @@
-import { Link as TanStackRouterLink } from '@tanstack/react-router';
+'use client';
+
+import { Link as TanStackLink } from '@tanstack/react-router';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React, { forwardRef } from 'react';
+
 import { cn, type SharedProps } from '../lib/utils';
 
 // Heading variants using cva
@@ -228,36 +231,38 @@ type BaseLinkProps = SharedProps & {
   className?: string;
 };
 
-// Anchor link props
-type AnchorLinkProps = BaseLinkProps &
-  React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-    as?: never;
-    href: string;
-  };
-
-// TanStack Router link props - use a flexible record type for route params
-type TanStackRouterLinkProps = BaseLinkProps & {
-  as: typeof TanStackRouterLink;
-  to: string;
-  params?: Record<string, string>;
-  search?: Record<string, unknown>;
-  hash?: string;
-};
-
-type LinkProps = AnchorLinkProps | TanStackRouterLinkProps;
+// Discriminated union for link types
+// TanStack Router variant uses explicit props because ComponentProps<typeof TanStackLink>
+// ties params to a specific route literal, which breaks when `to` is a plain string.
+type LinkProps =
+  | (BaseLinkProps &
+      React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+        as?: never; // Default to anchor - don't allow 'as' when using anchor
+        href: string;
+      })
+  | (BaseLinkProps & {
+      as: typeof TanStackLink;
+      to: string;
+      params?: Record<string, string>;
+      search?: Record<string, unknown>;
+      hash?: string;
+      replace?: boolean;
+      preload?: false | 'intent' | 'render' | 'viewport';
+      [key: string]: unknown;
+    });
 
 // Link styles matching Figma: primary color, dotted underline with offset
 const linkStyles =
   'font-medium text-primary decoration-dotted underline underline-offset-[3px] hover:text-primary/80 transition-colors';
 
 export function Link({ className, children, testId, ...props }: LinkProps) {
-  if ('as' in props && props.as === TanStackRouterLink) {
+  if ('as' in props && props.as === TanStackLink) {
     // Render as TanStack Router Link when explicitly specified
     const { as: _, ...routerProps } = props;
     return (
-      <TanStackRouterLink className={cn(linkStyles, className)} data-testid={testId} {...routerProps}>
+      <TanStackLink className={cn(linkStyles, className)} data-testid={testId} {...routerProps}>
         {children}
-      </TanStackRouterLink>
+      </TanStackLink>
     );
   }
   // Render as anchor tag (default)
