@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { durationMs } from '@bufbuild/protobuf/wkt';
+import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -41,7 +41,7 @@ import { useGetTranscriptQuery } from 'react-query/api/transcript';
 import { uiState } from 'state/ui-state';
 
 import { ConversationStatusBadge } from './conversation-status-badge';
-import { formatDuration, formatTimestamp } from './transcript-utils';
+import { formatDuration as formatDurationMs, formatTimestamp as formatTimestampMs } from 'components/pages/transcripts/utils/transcript-formatters';
 
 // -- Helpers --
 
@@ -483,7 +483,7 @@ const ChatView = ({ systemPrompt, turns }: { systemPrompt: string; turns: Transc
                       {!isUser && !turn.isReconstructed && Boolean(turn.latency) && (
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />
-                          {formatDuration(turn.latency)}
+                          {formatDurationMs(durationMs(turn.latency!))}
                         </span>
                       )}
                     </div>
@@ -567,10 +567,10 @@ export const ConversationDetailPage = () => {
               {summary ? <ConversationStatusBadge status={summary.status} /> : null}
             </div>
             <div className="mt-1 flex items-center gap-4 text-muted-foreground text-xs">
-              <span>{formatTimestamp(summary?.startTime)}</span>
+              <span>{summary?.startTime ? formatTimestampMs(timestampDate(summary.startTime).getTime()) : '—'}</span>
               <span className="flex items-center gap-1">
                 <Clock className="size-3" />
-                {formatDuration(summary?.duration)}
+                {summary?.duration ? formatDurationMs(durationMs(summary.duration)) : '—'}
               </span>
               <span>{summary?.turnCount ?? 0} turns</span>
             </div>

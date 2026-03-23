@@ -28,7 +28,8 @@ import { type ChangeEvent, useMemo, useState } from 'react';
 import { useListTranscriptsQuery } from 'react-query/api/transcript';
 
 import { ConversationStatusBadge } from './conversation-status-badge';
-import { formatDuration, formatTimestamp } from './transcript-utils';
+import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
+import { formatDuration as formatDurationMs, formatTimestamp as formatTimestampMs } from 'components/pages/transcripts/utils/transcript-formatters';
 
 const routeApi = getRouteApi('/agents/$id/');
 
@@ -169,9 +170,9 @@ export const AIAgentTranscriptsTab = () => {
                       {transcript.conversationId}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {formatTimestamp(transcript.startTime)}
+                      {transcript.startTime ? formatTimestampMs(timestampDate(transcript.startTime).getTime()) : '—'}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{formatDuration(transcript.duration)}</TableCell>
+                    <TableCell className="font-mono text-sm">{transcript.duration ? formatDurationMs(durationMs(transcript.duration)) : '—'}</TableCell>
                     <TableCell className="text-center">{transcript.turnCount}</TableCell>
                     <TableCell>
                       <ConversationStatusBadge status={transcript.status} />
