@@ -233,11 +233,11 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
           interaction.userInput?.isReconstructed || interaction.agentResponses.some((r) => r.isReconstructed);
 
         const totalInputTokens = interaction.agentResponses.reduce(
-          (sum, r) => sum + Number(r.usage?.inputTokens ?? 0n),
+          (sum, r) => sum + Number(r.usage?.inputTokens ?? 0),
           0
         );
         const totalOutputTokens = interaction.agentResponses.reduce(
-          (sum, r) => sum + Number(r.usage?.outputTokens ?? 0n),
+          (sum, r) => sum + Number(r.usage?.outputTokens ?? 0),
           0
         );
         const totalTokens = totalInputTokens + totalOutputTokens;
