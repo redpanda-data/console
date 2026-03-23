@@ -11,7 +11,7 @@
 
 import { getRouteApi } from '@tanstack/react-router';
 
-const routeApi = getRouteApi('/agents/$id');
+const routeApi = getRouteApi('/agents/$id/');
 
 import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { AlertCircle, Check, Clock, Loader2, StopCircle } from 'lucide-react';
