@@ -369,7 +369,7 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Tokens</span>
                         <span className="font-mono">
-                          {totalInputTokens} in / {totalOutputTokens} out
+                          {totalInputTokens.toLocaleString()} in / {totalOutputTokens.toLocaleString()} out
                         </span>
                       </div>
 
