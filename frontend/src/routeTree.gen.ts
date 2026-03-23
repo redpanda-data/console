@@ -68,6 +68,7 @@ import { Route as ConnectClustersClusterNameConnectorRouteImport } from './route
 import { Route as SchemaRegistrySubjectsSubjectNameIndexRouteImport } from './routes/schema-registry/subjects/$subjectName/index';
 import { Route as SecurityUsersUserNameDetailsRouteImport } from './routes/security/users/$userName/details';
 import { Route as SecurityRolesRoleNameUpdateRouteImport } from './routes/security/roles/$roleName/update';
+import { Route as SecurityRolesRoleNameEditRouteImport } from './routes/security/roles/$roleName/edit';
 import { Route as SecurityRolesRoleNameDetailsRouteImport } from './routes/security/roles/$roleName/details';
 import { Route as SecurityAclsAclNameUpdateRouteImport } from './routes/security/acls/$aclName/update';
 import { Route as SecurityAclsAclNameDetailsRouteImport } from './routes/security/acls/$aclName/details';
@@ -386,6 +387,12 @@ const SecurityRolesRoleNameUpdateRoute =
     path: '/security/roles/$roleName/update',
     getParentRoute: () => rootRouteImport,
   } as any);
+const SecurityRolesRoleNameEditRoute =
+  SecurityRolesRoleNameEditRouteImport.update({
+    id: '/security/roles/$roleName/edit',
+    path: '/security/roles/$roleName/edit',
+    getParentRoute: () => rootRouteImport,
+  } as any);
 const SecurityRolesRoleNameDetailsRoute =
   SecurityRolesRoleNameDetailsRouteImport.update({
     id: '/security/roles/$roleName/details',
@@ -521,6 +528,7 @@ export interface FileRoutesByFullPath {
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
+  '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/security/users/$userName/details': typeof SecurityUsersUserNameDetailsRoute;
   '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
@@ -593,6 +601,7 @@ export interface FileRoutesByTo {
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
+  '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/security/users/$userName/details': typeof SecurityUsersUserNameDetailsRoute;
   '/schema-registry/subjects/$subjectName': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
@@ -666,6 +675,7 @@ export interface FileRoutesById {
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
+  '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/security/users/$userName/details': typeof SecurityUsersUserNameDetailsRoute;
   '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
@@ -740,6 +750,7 @@ export interface FileRouteTypes {
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
+    | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
     | '/security/users/$userName/details'
     | '/schema-registry/subjects/$subjectName/';
@@ -812,6 +823,7 @@ export interface FileRouteTypes {
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
+    | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
     | '/security/users/$userName/details'
     | '/schema-registry/subjects/$subjectName';
@@ -884,6 +896,7 @@ export interface FileRouteTypes {
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
+    | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
     | '/security/users/$userName/details'
     | '/schema-registry/subjects/$subjectName/';
@@ -957,6 +970,7 @@ export interface RootRouteChildren {
   SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
   SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
   SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
+  SecurityRolesRoleNameEditRoute: typeof SecurityRolesRoleNameEditRoute;
   SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
   SecurityUsersUserNameDetailsRoute: typeof SecurityUsersUserNameDetailsRoute;
   SchemaRegistrySubjectsSubjectNameIndexRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
@@ -1377,6 +1391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRolesRoleNameUpdateRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/security/roles/$roleName/edit': {
+      id: '/security/roles/$roleName/edit';
+      path: '/security/roles/$roleName/edit';
+      fullPath: '/security/roles/$roleName/edit';
+      preLoaderRoute: typeof SecurityRolesRoleNameEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/security/roles/$roleName/details': {
       id: '/security/roles/$roleName/details';
       path: '/security/roles/$roleName/details';
@@ -1535,6 +1556,7 @@ const rootRouteChildren: RootRouteChildren = {
   SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
   SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
   SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
+  SecurityRolesRoleNameEditRoute: SecurityRolesRoleNameEditRoute,
   SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
   SecurityUsersUserNameDetailsRoute: SecurityUsersUserNameDetailsRoute,
   SchemaRegistrySubjectsSubjectNameIndexRoute:
