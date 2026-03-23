@@ -15,7 +15,7 @@ import { Route } from './$roleName/edit';
 
 describe('role edit compatibility route', () => {
   test('redirects legacy edit URLs to the update route', () => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     try {
       Route.options.beforeLoad?.({
@@ -35,12 +35,13 @@ describe('role edit compatibility route', () => {
       expect(redirect.status).toBe(307);
       expect(redirect.options.to).toBe('/security/roles/$roleName/update');
       expect(redirect.options.params).toEqual({ roleName: 'topic-reader' });
+      expect(redirect.options.replace).toBe(true);
       expect(redirect.options.search).toEqual({});
     }
   });
 
   test('preserves host search params when redirecting to update', () => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     try {
       Route.options.beforeLoad?.({
@@ -60,6 +61,7 @@ describe('role edit compatibility route', () => {
       expect(redirect.status).toBe(307);
       expect(redirect.options.to).toBe('/security/roles/$roleName/update');
       expect(redirect.options.params).toEqual({ roleName: 'test-bretts' });
+      expect(redirect.options.replace).toBe(true);
       expect(redirect.options.search).toEqual({ host: 'host.example.com' });
     }
   });

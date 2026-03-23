@@ -20,6 +20,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/security/roles/$roleName/edit')({
   validateSearch: zodValidator(searchSchema),
   beforeLoad: ({ params, search }) => {
+    // Backward-compatibility shim — navigate to /update directly in new code.
     throw redirect({
       to: '/security/roles/$roleName/update',
       params,
