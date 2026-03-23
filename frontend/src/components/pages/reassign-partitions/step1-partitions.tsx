@@ -17,8 +17,14 @@ import Highlighter from 'react-highlight-words';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
+import queryClient from '../../../query-client';
 import { api } from '../../../state/backend-api';
-import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/rest-interfaces';
+import type {
+  GetTopicsResponse,
+  Partition,
+  PartitionReassignmentsPartition,
+  Topic,
+} from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
@@ -54,7 +60,8 @@ export class StepSelectPartitions extends Component<{
   }
 
   render() {
-    if (!api.topics) {
+    const topics = queryClient.getQueryData<GetTopicsResponse>(['topics']);
+    if (!topics) {
       return DefaultSkeleton;
     }
 
@@ -262,11 +269,13 @@ export class StepSelectPartitions extends Component<{
   }
 
   get topicPartitions(): TopicWithPartitions[] {
-    if (api.topics === null) {
+    const topicsData = queryClient.getQueryData<GetTopicsResponse>(['topics']);
+    const topicPartitionsAll = queryClient.getQueryData<Map<string, Partition[] | null>>(['topicPartitionsAll']);
+    if (topicsData === null || topicsData === undefined) {
       return [];
     }
-    return api.topics.flatMap((topic) => {
-      const partitions = api.topicPartitions.get(topic.topicName);
+    return (topicsData.topics ?? []).flatMap((topic) => {
+      const partitions = topicPartitionsAll?.get(topic.topicName);
       if (!partitions) {
         return []; // skip topics whose partitions haven't loaded yet (e.g. newly created)
       }

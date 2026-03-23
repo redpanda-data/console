@@ -11,6 +11,7 @@
 
 import React, { useState, useSyncExternalStore } from 'react';
 
+import { useTopicAclsQuery, useTopicConfigQuery, useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStore } from '../../../state/backend-api';
 import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interfaces';
@@ -139,36 +140,29 @@ const warnIcon = (
   </span>
 );
 
-function refreshTopicData(topicName: string, force: boolean) {
+import queryClient from '../../../query-client';
+
+function refreshTopicData(topicName: string, _force: boolean) {
   // must know what distribution we're working with; redpanda has some differences
   api.refreshClusterOverview();
 
-  // there is no single endpoint to refresh a single topic
-  api.refreshTopics(force);
-
-  // consumers are lazy loaded because they're (relatively) expensive
-  if (uiSettings.topicDetailsActiveTabKey === 'consumers') {
-    api.refreshTopicConsumers(topicName, force);
-  }
-
-  // partitions are required for the Partitions tab
-  api.refreshPartitionsForTopic(topicName, force);
-
-  // configuration is always required for the statistics bar
-  api.refreshTopicConfig(topicName, force);
+  // React Query handles topics, consumers, partitions, config, documentation, acls via hooks
+  queryClient.invalidateQueries({ queryKey: ['topics'] });
+  queryClient.invalidateQueries({ queryKey: ['topicPartitions', topicName] });
+  queryClient.invalidateQueries({ queryKey: ['topicConfig', topicName] });
 
   api.refreshClusterHealth().catch(() => {
     // Error handling managed by API layer
   });
 
-  // documentation can be lazy loaded
-  if (uiSettings.topicDetailsActiveTabKey === 'documentation') {
-    api.refreshTopicDocumentation(topicName, force);
+  if (uiSettings.topicDetailsActiveTabKey === 'consumers') {
+    queryClient.invalidateQueries({ queryKey: ['topicConsumers', topicName] });
   }
-
-  // ACL can be lazy loaded
+  if (uiSettings.topicDetailsActiveTabKey === 'documentation') {
+    queryClient.invalidateQueries({ queryKey: ['topicDocumentation', topicName] });
+  }
   if (uiSettings.topicDetailsActiveTabKey === 'topicacl') {
-    api.refreshTopicAcls(topicName, force);
+    queryClient.invalidateQueries({ queryKey: ['topicAcls', topicName] });
   }
 }
 
@@ -190,28 +184,36 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
   render() {
     const { topicName } = this.props;
-    // Read api.topics in the class render so PageComponent's forceUpdate() re-evaluates
-    // the loading state when the Zustand store delivers topics data.
-    if (!api.topics) {
-      return DefaultSkeleton;
-    }
-    const topic = api.topics.find((e) => e.topicName === topicName);
-    if (!topic) {
-      return topicNotFound(topicName);
-    }
-    return <TopicDetailsContent topic={topic} topicName={topicName} />;
+    return <TopicDetailsWrapper topicName={topicName} />;
   }
 }
+
+const TopicAclsTabWrapper = ({ topicName }: { topicName: string }) => {
+  const { data: aclData } = useTopicAclsQuery(topicName);
+  return <AclList acl={aclData ?? null} />;
+};
+
+const TopicDetailsWrapper = ({ topicName }: { topicName: string }) => {
+  const { data: topicsData, isLoading } = useTopicsQuery();
+  if (isLoading) return DefaultSkeleton;
+  const topic = topicsData?.topics?.find((e) => e.topicName === topicName);
+  if (!topic) return topicNotFound(topicName);
+  return <TopicDetailsContent topic={topic} topicName={topicName} />;
+};
 
 const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
   useSyncExternalStore(useApiStore.subscribe, useApiStore.getState);
 
   const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
 
-  // Derived: topicConfig
-  const config = api.topicConfig.get(topicName);
+  // Derived: topicConfig via React Query
+  const { data: topicConfigData } = useTopicConfigQuery(topicName);
   const topicConfig: ConfigEntry[] | null | undefined =
-    config === undefined ? undefined : config === null || config.error !== null ? null : config.configEntries;
+    topicConfigData === undefined
+      ? undefined
+      : topicConfigData === null || topicConfigData.error !== null
+        ? null
+        : topicConfigData.configEntries;
 
   setTimeout(() => topicConfig && addBaseFavs(topicConfig));
 
@@ -280,7 +282,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       'topicacl',
       'seeTopic',
       'ACL',
-      (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
+      (t) => <TopicAclsTabWrapper topicName={t.topicName} />,
       [
         () => {
           if (

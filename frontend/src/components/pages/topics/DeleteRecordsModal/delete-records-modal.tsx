@@ -34,10 +34,14 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import styles from './DeleteRecordsModal.module.scss';
-import { api } from '../../../../state/backend-api';
+import {
+  getTopicOffsetsByTimestamp,
+  useDeleteTopicRecordsMutation,
+  useTopicPartitionsQuery,
+} from '../../../../react-query/api/topic';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/rest-interfaces';
 import { RadioOptionGroup } from '../../../../utils/tsx-utils';
 import { prettyNumber } from '../../../../utils/utils';
@@ -252,25 +256,29 @@ const ManualOffsetContent = ({
     onOffsetSpecified(v);
   };
 
-  if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
-    const partitionErrors = api.topicPartitionErrors
-      .get(topicName)
-      ?.map(({ partitionError }) => <li key={`${topicName}-${partitionError}`}>{partitionError}</li>);
-    const waterMarksErrors = api.topicWatermarksErrors
-      .get(topicName)
-      ?.map(({ waterMarksError }) => <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>);
+  const { data: topicPartitionsResult } = useTopicPartitionsQuery(topicName);
+  const partitionErrors = topicPartitionsResult?.partitionErrors ?? [];
+  const waterMarkErrors = topicPartitionsResult?.waterMarkErrors ?? [];
+
+  if (partitionErrors.length > 0 || waterMarkErrors.length > 0) {
+    const partitionErrorItems = partitionErrors.map(({ partitionError }) => (
+      <li key={`${topicName}-${partitionError}`}>{partitionError}</li>
+    ));
+    const waterMarkErrorItems = waterMarkErrors.map(({ waterMarksError }) => (
+      <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>
+    ));
     const message = (
       <>
-        {partitionErrors && partitionErrors.length > 0 ? (
+        {partitionErrorItems.length > 0 ? (
           <>
             <strong>Partition Errors:</strong>
-            <ul>{partitionErrors}</ul>
+            <ul>{partitionErrorItems}</ul>
           </>
         ) : null}
-        {waterMarksErrors && waterMarksErrors.length > 0 ? (
+        {waterMarkErrorItems.length > 0 ? (
           <>
             <strong>Watermarks Errors:</strong>
-            <ul>{waterMarksErrors}</ul>
+            <ul>{waterMarkErrorItems}</ul>
           </>
         ) : null}
       </>
@@ -283,7 +291,7 @@ const ManualOffsetContent = ({
     );
   }
 
-  const partitions = api.topicPartitions?.get(topicName);
+  const partitions = topicPartitionsResult?.partitions;
 
   if (!partitions) {
     return <Spinner size="lg" />;
@@ -396,12 +404,8 @@ type DeleteRecordsModalProps = {
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
   const { visible, topic, onCancel, onFinish, afterClose } = props;
   const toast = useToast();
-
-  useEffect(() => {
-    if (topic?.topicName) {
-      api.refreshPartitionsForTopic(topic.topicName, true);
-    }
-  }, [topic?.topicName]);
+  const deleteTopicRecords = useDeleteTopicRecordsMutation();
+  const { data: topicPartitionsData } = useTopicPartitionsQuery(topic?.topicName ?? '', !!topic?.topicName);
 
   const [wizardState, setWizardState] = useState(() => ({
     partitionOption: null as PartitionOption,
@@ -489,24 +493,30 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     setOkButtonLoading(true);
 
     if (isAllPartitions && isHighWatermark) {
-      api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName)?.then(handleFinish);
+      const partitions = topicPartitionsData?.partitions ?? [];
+      const pairs = partitions.map(({ waterMarkHigh, id }) => ({ partitionId: id, offset: waterMarkHigh }));
+      deleteTopicRecords.mutateAsync({ topicName, pairs }).then(handleFinish);
     } else if (isSpecficPartition && isManualOffset) {
       // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-      api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(handleFinish);
+      deleteTopicRecords
+        .mutateAsync({ topicName, pairs: [{ partitionId: specifiedPartition!, offset: specifiedOffset }] })
+        .then(handleFinish);
     } else if (isTimestamp && timestamp !== null) {
-      api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
+      getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
         if (isAllPartitions) {
           const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
             partitionId,
             offset,
           }));
-          api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs)?.then(handleFinish);
+          deleteTopicRecords.mutateAsync({ topicName, pairs }).then(handleFinish);
         } else if (isSpecficPartition) {
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
           if (partitionOffset !== null && partitionOffset !== undefined) {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-            api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
+            deleteTopicRecords
+              .mutateAsync({ topicName, pairs: [{ partitionId: specifiedPartition!, offset: partitionOffset }] })
+              .then(handleFinish);
           } else {
             setErrors([
               'No partition offset was specified, this should not happen. Please contact your administrator.',

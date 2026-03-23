@@ -10,10 +10,11 @@
  */
 
 import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-data/ui';
+import { useQueryClient } from '@tanstack/react-query';
 
 import TopicConfigurationEditor from './topic-configuration';
+import { useTopicConfigQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
 import type { KafkaError, Topic } from '../../../state/rest-interfaces';
 import { toJson } from '../../../utils/json-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -24,15 +25,16 @@ import '../../../utils/array-extensions';
 
 // Full topic configuration
 export function TopicConfiguration(props: { topic: Topic }) {
-  const config = api.topicConfig.get(props.topic.topicName);
+  const queryClient = useQueryClient();
+  const { data: config, isLoading } = useTopicConfigQuery(props.topic.topicName);
 
-  if (config === undefined) {
+  if (isLoading) {
     return DefaultSkeleton;
   }
   if (config?.error) {
     return renderKafkaError(props.topic.topicName, config.error);
   }
-  if (config === null || config.configEntries.length === 0) {
+  if (config === null || config === undefined || config.configEntries.length === 0) {
     return <Empty description="No config entries" />;
   }
 
@@ -42,7 +44,7 @@ export function TopicConfiguration(props: { topic: Topic }) {
     <TopicConfigurationEditor
       entries={entries}
       onForceRefresh={() => {
-        api.refreshTopicConfig(props.topic.topicName, true);
+        queryClient.invalidateQueries({ queryKey: ['topicConfig', props.topic.topicName] });
       }}
       targetTopic={props.topic.topicName}
     />

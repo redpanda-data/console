@@ -9,18 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
+import queryClient from '../../../../query-client';
 import { api } from '../../../../state/backend-api';
 import type { Broker, Partition } from '../../../../state/rest-interfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';
 import type { PartitionSelection } from '../reassign-partitions';
 
 export function SelectionInfoBar(props: { partitionSelection: PartitionSelection; margin?: string }) {
-  if (api.topicPartitions === null) {
+  const topicPartitionsAll = queryClient.getQueryData<Map<string, Partition[] | null>>(['topicPartitionsAll']);
+  if (topicPartitionsAll === null) {
     return null;
   }
 
   const selectedPartitions: { topic: string; partitions: Partition[] }[] = [];
-  for (const [topic, partitions] of api.topicPartitions) {
+  for (const [topic, partitions] of topicPartitionsAll ?? new Map<string, Partition[] | null>()) {
     if (partitions === null) {
       continue;
     }

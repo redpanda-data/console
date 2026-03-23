@@ -19,9 +19,9 @@ import {
   isMultiValue,
   Select,
 } from '@redpanda-data/ui';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { api } from '../../../../../state/backend-api';
+import { useTopicsQuery } from '../../../../../react-query/api/topic';
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/expandable-text';
 
@@ -40,9 +40,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
 
   const [selected, setSelected] = useState(initialSelection);
 
-  useEffect(() => {
-    api.refreshTopics();
-  }, []);
+  const { data: topicsData } = useTopicsQuery();
 
   const property = propsMap.get(selected);
   const isRegex = selected === 'topics.regex';
@@ -97,7 +95,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
                 setPropertyValue(property, v.map(({ value }) => value)?.join(',') ?? []);
               }
             }}
-            options={api.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
+            options={topicsData?.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
             value={
               property.value
                 ? property.value

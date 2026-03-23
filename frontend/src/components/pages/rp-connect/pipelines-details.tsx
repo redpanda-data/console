@@ -31,9 +31,9 @@ import {
   type Pipeline_Resources,
   Pipeline_State,
 } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import {
-  api,
   createMessageSearch,
   type MessageSearch,
   type MessageSearchRequest,
@@ -264,7 +264,8 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
 
 export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; variant?: 'ghost' | 'card' }) => {
   const topicName = '__redpanda.connect.logs';
-  const topic = api.topics?.first((x) => x.topicName === topicName);
+  const { data: topicsData } = useTopicsQuery();
+  const topic = topicsData?.topics?.first((x) => x.topicName === topicName);
 
   const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
     messages: [],

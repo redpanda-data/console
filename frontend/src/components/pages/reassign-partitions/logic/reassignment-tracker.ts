@@ -13,6 +13,7 @@
 // - manages timers for refreshing current reassignments
 // - tracks progress history for each reassignment to estimate speed and ETA
 
+import queryClient from '../../../../query-client';
 import { api } from '../../../../state/backend-api';
 import type { PartitionReassignments } from '../../../../state/rest-interfaces';
 import { IsDev } from '../../../../utils/env';
@@ -114,7 +115,7 @@ export class ReassignmentTracker {
     // Update relevant topic-partitions
     const topics = liveReassignments.map((r) => r.topicName);
     if (topics.length > 0) {
-      await api.refreshPartitions(topics, true);
+      queryClient.invalidateQueries({ queryKey: ['topicPartitionsAll'] });
     }
 
     // Add new reassignments
@@ -189,7 +190,10 @@ export class ReassignmentTracker {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   updateReassignmentState(state: ReassignmentState) {
     // partition stats
-    const topicPartitions = api.topicPartitions.get(state.topicName);
+    const topicPartitionsAllData = queryClient.getQueryData<
+      Map<string, import('../../../../state/rest-interfaces').Partition[] | null>
+    >(['topicPartitionsAll']);
+    const topicPartitions = topicPartitionsAllData?.get(state.topicName);
     for (const p of state.partitions) {
       const logDirs = topicPartitions?.first((e) => e.id === p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
       if (!logDirs || logDirs.length === 0) {

@@ -13,7 +13,7 @@
 
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
+import { createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
 import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
 import {
   createFilterEntry,
@@ -662,8 +662,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const executeMessageSearch = useCallback(
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
     async (abortSignal?: AbortSignal): Promise<TopicMessage[]> => {
-      const canUseFilters =
-        (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
+      const canUseFilters = !isServerless();
 
       let filterCode = '';
       if (canUseFilters) {
@@ -1286,8 +1285,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   });
 
   // Search controls derived state
-  const canUseFilters =
-    (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
+  const canUseFilters = !isServerless();
   const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
 
   const startOffsetOptions = [

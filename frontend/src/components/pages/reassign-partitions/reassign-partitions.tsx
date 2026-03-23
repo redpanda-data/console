@@ -45,6 +45,7 @@ import {
 import { StepSelectPartitions } from './step1-partitions';
 import { StepSelectBrokers } from './step2-brokers';
 import { StepReview, type TopicWithMoves } from './step3-review';
+import queryClient from '../../../query-client';
 import { appGlobal } from '../../../state/app-global';
 import { api, partialTopicConfigs } from '../../../state/backend-api';
 import type {
@@ -185,8 +186,8 @@ class ReassignPartitions extends PageComponent {
 
   refreshData(force: boolean) {
     api.refreshCluster(force); // need to know brokers for reassignment calculation, will also refresh config
-    api.refreshTopics(force);
-    api.refreshPartitions('all', force);
+    queryClient.invalidateQueries({ queryKey: ['topics'] });
+    queryClient.invalidateQueries({ queryKey: ['topicPartitionsAll'] });
     api.refreshPartitionReassignments(force);
   }
 
@@ -200,16 +201,15 @@ class ReassignPartitions extends PageComponent {
     if (!api.clusterInfo) {
       return DefaultSkeleton;
     }
-    if (!api.topics) {
-      return DefaultSkeleton;
-    }
-
     if (api.partitionReassignments === undefined) {
       return DefaultSkeleton;
     }
 
-    const partitionCountLeaders = api.topics?.sum((t) => t.partitionCount);
-    const partitionCountOnlyReplicated = api.topics?.sum((t) => t.partitionCount * (t.replicationFactor - 1));
+    const cachedTopics = queryClient.getQueryData<import('../../../state/rest-interfaces').GetTopicsResponse>([
+      'topics',
+    ])?.topics;
+    const partitionCountLeaders = cachedTopics?.sum((t) => t.partitionCount);
+    const partitionCountOnlyReplicated = cachedTopics?.sum((t) => t.partitionCount * (t.replicationFactor - 1));
 
     const { currentStep, requestInProgress, partitionSelection, selectedBrokerIds, reassignmentRequest } = this.state;
 
@@ -236,7 +236,10 @@ class ReassignPartitions extends PageComponent {
                 <Statistic
                   title="Total Partitions"
                   value={
-                    partitionCountLeaders !== null && partitionCountOnlyReplicated !== null
+                    partitionCountLeaders !== null &&
+                    partitionCountLeaders !== undefined &&
+                    partitionCountOnlyReplicated !== null &&
+                    partitionCountOnlyReplicated !== undefined
                       ? partitionCountLeaders + partitionCountOnlyReplicated
                       : '...'
                   }
@@ -497,7 +500,11 @@ class ReassignPartitions extends PageComponent {
       }
 
       const apiTopicPartitions = new Map<string, Partition[]>();
-      for (const [topicName, partitions] of api.topicPartitions) {
+      const cachedTopicPartitions = queryClient.getQueryData<
+        Map<string, import('../../../state/rest-interfaces').Partition[] | null>
+      >(['topicPartitionsAll']);
+      for (const [topicName, partitions] of cachedTopicPartitions ??
+        new Map<string, import('../../../state/rest-interfaces').Partition[] | null>()) {
         if (!partitions) {
           continue;
         }
@@ -505,10 +512,12 @@ class ReassignPartitions extends PageComponent {
         apiTopicPartitions.set(topicName, validOnly);
       }
 
+      const cachedTopicsData =
+        queryClient.getQueryData<import('../../../state/rest-interfaces').GetTopicsResponse>(['topics'])?.topics ?? [];
       // error checking will happen inside computeReassignments
       const apiData: ApiData = {
         brokers: api.clusterInfo?.brokers ?? [],
-        topics: api.topics as Topic[],
+        topics: cachedTopicsData as Topic[],
         topicPartitions: apiTopicPartitions,
       };
 
@@ -634,7 +643,10 @@ class ReassignPartitions extends PageComponent {
       const followerReplicas: { partitionId: number; brokerId: number }[] = [];
       for (const p of t.partitions) {
         const partitionId = p.partitionId;
-        const brokersOld = api.topicPartitions
+        const cachedTpForTraffic = queryClient.getQueryData<
+          Map<string, import('../../../state/rest-interfaces').Partition[] | null>
+        >(['topicPartitionsAll']);
+        const brokersOld = cachedTpForTraffic
           ?.get(t.topicName)
           ?.first((partition) => partition.id === partitionId)?.replicas;
         const brokersNew = p.replicas;
@@ -773,8 +785,12 @@ class ReassignPartitions extends PageComponent {
   }
 
   get selectedTopicPartitions(): TopicPartitions[] | undefined {
-    const apiTopics = api.topics;
-    const apiPartitions = api.topicPartitions;
+    const apiTopics = queryClient.getQueryData<import('../../../state/rest-interfaces').GetTopicsResponse>([
+      'topics',
+    ])?.topics;
+    const apiPartitions = queryClient.getQueryData<
+      Map<string, import('../../../state/rest-interfaces').Partition[] | null>
+    >(['topicPartitionsAll']);
 
     if (!(apiTopics && apiPartitions)) {
       // biome-ignore lint/suspicious/useGetterReturn: early return for undefined case
@@ -788,7 +804,10 @@ class ReassignPartitions extends PageComponent {
     let maxRf = 0;
     for (const topicName in this.state.partitionSelection) {
       if (Object.hasOwn(this.state.partitionSelection, topicName)) {
-        const topic = api.topics?.first((x) => x.topicName === topicName);
+        const cachedTopicsForRf = queryClient.getQueryData<import('../../../state/rest-interfaces').GetTopicsResponse>([
+          'topics',
+        ])?.topics;
+        const topic = cachedTopicsForRf?.first((x) => x.topicName === topicName);
         if (topic && topic.replicationFactor > maxRf) {
           maxRf = topic.replicationFactor;
         }
@@ -801,14 +820,21 @@ class ReassignPartitions extends PageComponent {
     if (this.state.reassignmentRequest === null) {
       return [];
     }
-    if (api.topics === null) {
+    const cachedTopicsForMoves = queryClient.getQueryData<import('../../../state/rest-interfaces').GetTopicsResponse>([
+      'topics',
+    ])?.topics;
+    if (!cachedTopicsForMoves) {
       return [];
     }
+    const cachedTpForMoves =
+      queryClient.getQueryData<Map<string, import('../../../state/rest-interfaces').Partition[] | null>>([
+        'topicPartitionsAll',
+      ]) ?? new Map<string, import('../../../state/rest-interfaces').Partition[] | null>();
     return computeMovedReplicas(
       this.state.partitionSelection,
       this.state.reassignmentRequest,
-      api.topics,
-      api.topicPartitions
+      cachedTopicsForMoves,
+      cachedTpForMoves
     );
   }
 

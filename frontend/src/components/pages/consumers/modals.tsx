@@ -37,6 +37,8 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { Component } from 'react';
 
+import queryClient from '../../../query-client';
+import { getTopicOffsetsByTimestamp } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type {
@@ -496,7 +498,7 @@ export class EditOffsetsModal extends Component<{
 
           let offsetsForTimestamp: TopicOffset[];
           try {
-            offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(requiredTopics, this.state.timestampUtcMs);
+            offsetsForTimestamp = await getTopicOffsetsByTimestamp(requiredTopics, this.state.timestampUtcMs);
             toast.update(toastRef, {
               status: 'success',
               duration: 2000,
@@ -658,10 +660,9 @@ export class EditOffsetsModal extends Component<{
         // need all groups for "other groups" dropdown
         api.refreshConsumerGroups();
 
-        // need watermarks for all topics the group consumes
-        // in order to know earliest/latest offsets
+        // React Query handles partition data; invalidate to force refetch
         const topics = this.props.group.topicOffsets.map((x) => x.topic).distinct();
-        api.refreshPartitions(topics, true);
+        queryClient.invalidateQueries({ queryKey: ['topicPartitionsAll', ...topics.slice().sort()] });
 
         // reset settings
         this.setState({ page: 0, selectedOption: 'startOffset' });
@@ -785,7 +786,10 @@ class ColAfter extends Component<{
 
         // not found - no message after given timestamp
         // use 'latest'
-        const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
+        const partitionsAllData = queryClient.getQueryData<
+          Map<string, import('../../../state/rest-interfaces').Partition[] | null>
+        >(['topicPartitionsAll']);
+        const partition = partitionsAllData?.get(record.topicName)?.first((p) => p.id === record.partitionId);
         return (
           <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
             <InfoText
@@ -816,7 +820,10 @@ class ColAfter extends Component<{
       }
 
       // Get offset from current partition values
-      const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
+      const partitionsAllData2 = queryClient.getQueryData<
+        Map<string, import('../../../state/rest-interfaces').Partition[] | null>
+      >(['topicPartitionsAll']);
+      const partition = partitionsAllData2?.get(record.topicName)?.first((p) => p.id === record.partitionId);
 
       const content =
         val === -2
