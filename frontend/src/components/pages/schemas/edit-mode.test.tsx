@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 const mockNavigate = vi.fn();
 const mockMutateGlobal = vi.fn();
 const mockMutateSubject = vi.fn();
+const mockMutateContext = vi.fn();
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
@@ -31,24 +32,36 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
-vi.mock('react-query/api/schema-registry', () => ({
-  useSchemaModeQuery: vi.fn(() => ({
-    data: 'READWRITE',
-    isLoading: false,
-  })),
-  useSchemaDetailsQuery: vi.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
-    data: undefined,
-    isLoading: false,
-  })),
-  useUpdateGlobalModeMutation: vi.fn(() => ({
-    mutate: mockMutateGlobal,
-    isPending: false,
-  })),
-  useUpdateSubjectModeMutation: vi.fn(() => ({
-    mutate: mockMutateSubject,
-    isPending: false,
-  })),
-}));
+vi.mock('react-query/api/schema-registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-query/api/schema-registry')>();
+  return {
+    ...actual,
+    useSchemaModeQuery: vi.fn(() => ({
+      data: 'READWRITE',
+      isLoading: false,
+    })),
+    useSchemaDetailsQuery: vi.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
+      data: undefined,
+      isLoading: false,
+    })),
+    useUpdateGlobalModeMutation: vi.fn(() => ({
+      mutate: mockMutateGlobal,
+      isPending: false,
+    })),
+    useUpdateSubjectModeMutation: vi.fn(() => ({
+      mutate: mockMutateSubject,
+      isPending: false,
+    })),
+    useSchemaRegistryContextsQuery: vi.fn(() => ({
+      data: [],
+      isLoading: false,
+    })),
+    useUpdateContextModeMutation: vi.fn(() => ({
+      mutate: mockMutateContext,
+      isPending: false,
+    })),
+  };
+});
 
 vi.mock('state/backend-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('state/backend-api')>();
@@ -68,9 +81,14 @@ vi.mock('state/ui-state', () => ({
   },
 }));
 
-import { useSchemaDetailsQuery, useSchemaModeQuery } from 'react-query/api/schema-registry';
+import {
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useSchemaRegistryContextsQuery,
+} from 'react-query/api/schema-registry';
 import { toast } from 'sonner';
 import { api } from 'state/backend-api';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import EditSchemaModePage from './edit-mode';
 
@@ -259,6 +277,35 @@ describe('EditSchemaModePage', () => {
       renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
 
       expect(screen.getByText('Schema')).toBeInTheDocument();
+    });
+  });
+
+  describe('Per-context mode (with contextName)', () => {
+    beforeEach(() => {
+      useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
+    });
+
+    afterEach(() => {
+      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
+    });
+
+    test('shows not-supported page when contexts feature is disabled', () => {
+      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
+      renderWithFileRoutes(<EditSchemaModePage contextName=".test" />);
+
+      expect(screen.getByTestId('contexts-not-supported')).toBeInTheDocument();
+      expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
+    });
+
+    test('shows context name in header when editing context mode', () => {
+      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
+        isLoading: false,
+      } as never);
+
+      renderWithFileRoutes(<EditSchemaModePage contextName=".test" />);
+
+      expect(screen.getByTestId('edit-mode-context-name')).toHaveTextContent('.test');
     });
   });
 

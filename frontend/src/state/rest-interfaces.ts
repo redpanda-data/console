@@ -1459,6 +1459,9 @@ export type BrokerWithConfigAndStorage = {
 };
 
 // GET /schema-registry/mode
+export type SchemaRegistryMode = 'READWRITE' | 'READONLY' | 'IMPORT';
+export type SchemaRegistryModeWithDefault = 'DEFAULT' | SchemaRegistryMode;
+
 export type SchemaRegistryModeResponse = {
   isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
   mode: string;
@@ -1473,6 +1476,19 @@ export type SchemaRegistryCompatibilityMode =
   | 'FORWARD_TRANSITIVE'
   | 'FULL'
   | 'FULL_TRANSITIVE';
+
+export type SchemaRegistryCompatibilityModeWithDefault = 'DEFAULT' | SchemaRegistryCompatibilityMode;
+
+export const SchemaRegistryCompatibilityModes = {
+  DEFAULT: 'DEFAULT',
+  NONE: 'NONE',
+  BACKWARD: 'BACKWARD',
+  BACKWARD_TRANSITIVE: 'BACKWARD_TRANSITIVE',
+  FORWARD: 'FORWARD',
+  FORWARD_TRANSITIVE: 'FORWARD_TRANSITIVE',
+  FULL: 'FULL',
+  FULL_TRANSITIVE: 'FULL_TRANSITIVE',
+} as const satisfies Record<string, SchemaRegistryCompatibilityModeWithDefault>;
 export type SchemaRegistryConfigResponse = {
   isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
   compatibility: SchemaRegistryCompatibilityMode;
@@ -1500,8 +1516,8 @@ export type SchemaRegistrySchemaTypesResponse = {
 export type SchemaRegistrySubjectDetails = {
   name: string;
   type: SchemaTypeType;
-  compatibility: 'DEFAULT' | SchemaRegistryCompatibilityMode;
-  mode: string;
+  compatibility: SchemaRegistryCompatibilityModeWithDefault;
+  mode: SchemaRegistryModeWithDefault;
   versions: SchemaRegistrySubjectDetailsVersion[];
   latestActiveVersion: number;
   schemas: SchemaRegistryVersionedSchema[];

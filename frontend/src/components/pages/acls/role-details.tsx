@@ -101,7 +101,7 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
       <Flex gap="4">
         <Button
           onClick={() => {
-            appGlobal.historyPush(`/security/roles/${encodedRoleName}/edit`);
+            appGlobal.historyPush(`/security/roles/${encodedRoleName}/update`);
           }}
           variant="outline"
         >

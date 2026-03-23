@@ -237,6 +237,19 @@ export function KeyValueField({
           valueFieldProps={valueFieldProps}
         />
       ))}
+      {value.length === 0 && showAddButton && !isAtLimit ? (
+        <Button
+          data-slot="add-button"
+          data-testid={testId ? `${testId}-add` : undefined}
+          disabled={disabled}
+          onClick={handleAdd}
+          size="sm"
+          variant="outline"
+        >
+          <Plus size={14} />
+          {addButtonLabel}
+        </Button>
+      ) : null}
     </div>
   );
 }

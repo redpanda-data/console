@@ -17,24 +17,53 @@ import {
   AlertIcon,
   AlertTitle,
   Box,
-  Button,
   CloseButton,
   Flex,
   FormField,
-  Heading,
   IconButton,
-  Input,
-  RadioGroup,
-  Text,
   useToast,
 } from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
+import { Input } from 'components/redpanda-ui/components/input';
+import { KeyValueField } from 'components/redpanda-ui/components/key-value-field';
+import { Label } from 'components/redpanda-ui/components/label';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Separator } from 'components/redpanda-ui/components/separator';
+import { Switch } from 'components/redpanda-ui/components/switch';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { InfoIcon } from 'lucide-react';
-import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 
+import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
-import { useSchemaTypesQuery } from '../../../react-query/api/schema-registry';
+import {
+  ALL_CONTEXT_ID,
+  buildQualifiedReferences,
+  buildQualifiedSubjectName,
+  contextIdToLabel,
+  contextLabelToId,
+  contextNameToId,
+  deriveContexts,
+  isNamedContext,
+  parseSubjectContext,
+} from './schema-context-utils';
+import {
+  useListSchemasQuery,
+  useSchemaRegistryContextsQuery,
+  useSchemaTypesQuery,
+} from '../../../react-query/api/schema-registry';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import {
@@ -42,12 +71,10 @@ import {
   SchemaType,
   type SchemaTypeType,
 } from '../../../state/rest-interfaces';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
-import { SingleSelect } from '../../misc/select';
-import { Switch } from '../../redpanda-ui/components/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 import { PageComponent, type PageInitHelper } from '../page';
 
 // Regex for extracting record names from schema text
@@ -66,15 +93,17 @@ type SchemaEditorStateData = {
   keyOrValue: 'KEY' | 'VALUE' | undefined;
   format: 'AVRO' | 'PROTOBUF' | 'JSON';
   schemaText: string;
-  references: { id: string; name: string; subject: string; version: number }[];
+  references: { id: string; name: string; subject: string; version: number; context: string }[];
   normalize: boolean;
   metadataProperties: { id: string; key: string; value: string }[];
+  context: string;
 };
 
 type SchemaEditorStateHelper = SchemaEditorStateData & {
   computedMetadata: { properties: Record<string, string> } | undefined;
   isInvalidKeyOrValue: boolean;
   computedSubjectName: string;
+  qualifiedSubjectName: string;
 };
 
 type SetSchemaState = Dispatch<SetStateAction<SchemaEditorStateData>>;
@@ -86,9 +115,10 @@ function createInitialSchemaState(): SchemaEditorStateData {
     keyOrValue: undefined,
     format: 'AVRO',
     schemaText: exampleSchema.AVRO,
-    references: [{ id: crypto.randomUUID(), name: '', subject: '', version: 1 }],
+    references: [{ id: crypto.randomUUID(), name: '', subject: '', version: 1, context: '' }],
     normalize: false,
     metadataProperties: [{ id: crypto.randomUUID(), key: '', value: '' }],
+    context: '',
   };
 }
 
@@ -135,18 +165,25 @@ function deriveSchemaEditorState(state: SchemaEditorStateData): SchemaEditorStat
   } else {
     subjectName = state.userInput;
   }
-  if (state.strategy !== 'CUSTOM' && state.keyOrValue !== undefined) {
+  if (state.strategy !== 'CUSTOM' && state.keyOrValue !== undefined && subjectName) {
     subjectName += `-${state.keyOrValue.toLowerCase()}`;
   }
 
-  return { ...state, computedMetadata, isInvalidKeyOrValue, computedSubjectName: subjectName };
+  const qualifiedSubjectName = buildQualifiedSubjectName(state.context, subjectName);
+
+  return { ...state, computedMetadata, isInvalidKeyOrValue, computedSubjectName: subjectName, qualifiedSubjectName };
 }
 
-export class SchemaCreatePage extends PageComponent {
+export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
   initPage(p: PageInitHelper): void {
     p.title = 'Create schema';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
-    p.addBreadcrumb('Create schema', '/schema-registry');
+    const contextName = this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined;
+    if (contextName) {
+      p.addBreadcrumb('Create schema', `/schema-registry/contexts/${encodeURIComponent(contextName)}/create`);
+    } else {
+      p.addBreadcrumb('Create schema', '/schema-registry/create');
+    }
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
@@ -157,19 +194,24 @@ export class SchemaCreatePage extends PageComponent {
   }
 
   render() {
-    return <SchemaCreatePageContent />;
+    return (
+      <SchemaCreatePageContent
+        contextName={this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined}
+      />
+    );
   }
 }
 
 export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
   initPage(p: PageInitHelper): void {
-    const subjectName = this.props.subjectName;
+    const subjectName = decodeURIComponent(this.props.subjectName);
+    const encodedSubjectName = encodeURIComponent(subjectName);
     p.title = 'Add schema version';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
-    p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, undefined, {
+    p.addBreadcrumb(subjectName, `/schema-registry/subjects/${encodedSubjectName}`, undefined, {
       canBeTruncated: true,
     });
-    p.addBreadcrumb('Create schema', `/schema-registry/subjects/${subjectName}/add-version`);
+    p.addBreadcrumb('Create schema', `/schema-registry/subjects/${encodedSubjectName}/add-version`);
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
@@ -189,9 +231,25 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
   }
 }
 
-const SchemaCreatePageContent = () => {
-  const [stateData, setStateData] = useState<SchemaEditorStateData>(createInitialSchemaState);
+const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
+  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
+  const [stateData, setStateData] = useState<SchemaEditorStateData>(() => {
+    const initial = createInitialSchemaState();
+    if (contextName) {
+      const contextId = contextNameToId(contextName);
+      return {
+        ...initial,
+        context: contextId,
+        references: [{ id: crypto.randomUUID(), name: '', subject: '', version: 1, context: contextId }],
+      };
+    }
+    return initial;
+  });
   const state = deriveSchemaEditorState(stateData);
+
+  if (contextName && !srContextsEnabled) {
+    return <ContextsNotSupportedPage />;
+  }
 
   return (
     <PageContent key="b">
@@ -204,6 +262,7 @@ const SchemaCreatePageContent = () => {
 const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
   const [stateData, setStateData] = useState<SchemaEditorStateData | null>(null);
   const subject = api.schemaDetails.get(subjectName);
+  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   useEffect(() => {
     if (!subject || stateData !== null) return;
@@ -235,19 +294,31 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
         ]
       : [{ id: crypto.randomUUID(), key: '', value: '' }];
 
+    let userInput: string;
+    let contextId: string;
+    if (srContextsEnabled) {
+      const parsed = parseSubjectContext(subject.name);
+      contextId = contextNameToId(parsed.context);
+      userInput = parsed.displayName;
+    } else {
+      contextId = '';
+      userInput = subject.name;
+    }
+
     queueMicrotask(() =>
       setStateData({
         strategy: 'CUSTOM',
-        userInput: subject.name,
+        userInput,
         keyOrValue: undefined,
         format: schema.type as 'AVRO' | 'PROTOBUF',
         schemaText,
-        references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID() })),
+        references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID(), context: contextId })),
         normalize: false,
         metadataProperties,
+        context: contextId,
       })
     );
-  }, [subject, stateData]);
+  }, [subject, stateData, srContextsEnabled]);
 
   if (!subject || stateData === null) return DefaultSkeleton;
 
@@ -256,7 +327,7 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
 
   return (
     <PageContent key="b">
-      <Heading data-testid="schema-add-version-heading" variant="xl">
+      <Heading level={1} testId="schema-add-version-heading">
         Add schema version
       </Heading>
 
@@ -285,8 +356,10 @@ const SchemaPageButtons = (p: {
     isCompatible?: boolean;
     compatibilityError?: { errorType: string; description: string };
   } | null>(null);
+  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
+  const isMissingContext = srContextsEnabled && !editorState.context;
 
   return (
     <>
@@ -318,10 +391,7 @@ const SchemaPageButtons = (p: {
 
       <Flex gap="4" mt="4">
         <Button
-          data-testid="schema-create-save-btn"
-          isDisabled={isCreating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
-          isLoading={isCreating}
-          loadingText="Creating..."
+          disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
             // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
             setValidating(true);
@@ -342,12 +412,12 @@ const SchemaPageButtons = (p: {
             // try to create the schema
             setCreating(true);
             try {
-              const subjectName = editorState.computedSubjectName;
+              const subjectName = editorState.qualifiedSubjectName;
               await api
-                .createSchema(editorState.computedSubjectName, {
+                .createSchema(subjectName, {
                   schemaType: editorState.format as SchemaTypeType,
                   schema: editorState.schemaText,
-                  references: editorState.references.filter((x) => x.name && x.subject),
+                  references: buildQualifiedReferences(editorState.references, editorState.context),
                   metadata: editorState.computedMetadata,
                   params: {
                     normalize: editorState.normalize,
@@ -375,16 +445,14 @@ const SchemaPageButtons = (p: {
               });
             }
           }}
-          variant="solid"
+          testId="schema-create-save-btn"
+          variant="primary"
         >
-          Save
+          {isCreating ? 'Creating...' : 'Save'}
         </Button>
 
         <Button
-          data-testid="schema-create-validate-btn"
-          isDisabled={isValidating || isMissingName || isValidating || editorState.isInvalidKeyOrValue}
-          isLoading={isValidating}
-          loadingText="Validate"
+          disabled={isValidating || isMissingName || isMissingContext || editorState.isInvalidKeyOrValue}
           onClick={async () => {
             setValidating(true);
             const r = await validateSchema(editorState).finally(() => setValidating(false));
@@ -405,13 +473,13 @@ const SchemaPageButtons = (p: {
               });
             }
           }}
+          testId="schema-create-validate-btn"
           variant="outline"
         >
-          Validate
+          {isValidating ? 'Validating...' : 'Validate'}
         </Button>
 
         <Button
-          data-testid="schema-create-cancel-btn"
           onClick={() => {
             if (p.parentSubjectName) {
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
@@ -419,6 +487,7 @@ const SchemaPageButtons = (p: {
               appGlobal.historyReplace('/schema-registry');
             }
           }}
+          testId="schema-create-cancel-btn"
           variant="link"
         >
           Cancel
@@ -439,10 +508,10 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   }
 
   const r = await api
-    .validateSchema(state.computedSubjectName, 'latest', {
+    .validateSchema(state.qualifiedSubjectName, 'latest', {
       schemaType: state.format as SchemaTypeType,
       schema: state.schemaText,
-      references: state.references.filter((x) => x.name && x.subject),
+      references: buildQualifiedReferences(state.references, state.context),
     })
     .catch(
       (err) =>
@@ -467,6 +536,9 @@ const SchemaEditor = (p: {
   onStateChange: SetSchemaState;
 }) => {
   const { data: schemaTypes } = useSchemaTypesQuery();
+  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
+  const { data: apiContexts } = useSchemaRegistryContextsQuery(srContextsEnabled);
+  const { data: subjects } = useListSchemasQuery();
 
   useEffect(() => {
     api.refreshSchemaTypes(true);
@@ -474,6 +546,22 @@ const SchemaEditor = (p: {
 
   const { state, mode } = p;
   const isAddVersion = mode === 'ADD_VERSION';
+  const [contextWarning, setContextWarning] = useState('');
+
+  const availableContexts = useMemo(() => {
+    if (!(srContextsEnabled && apiContexts && subjects)) return [];
+    return deriveContexts(apiContexts, subjects).filter((c) => c.id !== ALL_CONTEXT_ID);
+  }, [srContextsEnabled, apiContexts, subjects]);
+
+  const contextOptions = useMemo(
+    () => availableContexts.map((c) => ({ value: c.label, label: c.label })),
+    [availableContexts]
+  );
+
+  const contextSelectOptions = useMemo(
+    () => availableContexts.map((c) => ({ value: c.id, label: c.label })),
+    [availableContexts]
+  );
 
   const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
   const isCustom = state.strategy === 'CUSTOM';
@@ -489,7 +577,7 @@ const SchemaEditor = (p: {
 
   return (
     <>
-      <Heading variant="lg">Settings</Heading>
+      <Heading level={2}>Subject Settings</Heading>
 
       {Boolean(isAddVersion) && (
         <Alert status="info">
@@ -500,107 +588,212 @@ const SchemaEditor = (p: {
       )}
 
       <Flex direction="column" gap="8" maxWidth="650px">
-        <Flex gap="8">
-          <FormField label="Strategy">
-            <SingleSelect<NamingStrategy>
-              data-testid="schema-create-strategy-select"
-              isDisabled={isAddVersion}
-              onChange={(e) => {
-                p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e }));
-              }}
-              options={[
-                { value: 'TOPIC', label: 'Topic Name' },
-                { value: 'RECORD_NAME', label: 'Record Name' },
-                { value: 'TOPIC_RECORD_NAME', label: 'Topic-Record Name' },
-                { value: 'CUSTOM', label: 'Custom' },
-              ]}
-              value={state.strategy}
-            />
-          </FormField>
-
-          {showTopicNameInput ? (
-            <FormField label="Topic name">
-              <SingleSelect
-                data-testid="schema-create-topic-select"
-                isDisabled={isAddVersion}
-                onChange={(e) => {
-                  p.onStateChange((prev) => ({ ...prev, userInput: e }));
-                }}
-                options={
-                  api.topics?.filter((x) => !x.topicName.startsWith('_')).map((x) => ({ value: x.topicName })) ?? []
-                }
-                value={state.userInput}
-              />
-            </FormField>
-          ) : (
-            // We don't want "Strategy" to expand
-            <Box width="100%" />
-          )}
-        </Flex>
-
-        <Flex gap="8">
-          <FormField errorText="Required" isInvalid={state.isInvalidKeyOrValue} label="Key or value" width="auto">
-            <Box data-testid="schema-create-key-value-radio">
-              <RadioGroup
-                isDisabled={isAddVersion}
-                name="keyOrValue"
-                onChange={(e) => {
-                  p.onStateChange((prev) => ({ ...prev, keyOrValue: e as 'KEY' | 'VALUE' }));
-                }}
-                options={[
-                  { value: 'KEY', label: 'Key' },
-                  { value: 'VALUE', label: 'Value' },
-                ]}
-                value={state.keyOrValue}
-              />
-            </Box>
-          </FormField>
-
+        {srContextsEnabled && !isAddVersion && (
           <FormField
-            errorText="Subject name is required"
-            isInvalid={!state.computedSubjectName}
-            label={isCustom ? 'Subject name' : 'Computed subject name'}
+            description="Select an existing context or type a new name to create one."
+            errorText="Context is required"
+            isInvalid={!state.context}
+            label="Context"
           >
+            <Combobox
+              // Our chakra UI has a global override for SVGs that make icons look off-center in UI registry components.
+              className="[&_svg]:block! [&_input]:pl-8!"
+              creatable
+              createLabel="context"
+              onChange={(value) => {
+                const contextId = contextLabelToId(value);
+                setContextWarning('');
+                p.onStateChange((prev) => ({
+                  ...prev,
+                  context: contextId,
+                  references: prev.references.map((r) => ({ ...r, context: contextId })),
+                }));
+              }}
+              onCreateOption={(value) => {
+                if (value.startsWith('.')) {
+                  setContextWarning('');
+                } else {
+                  setContextWarning('Context name must start with a dot (e.g. ".staging")');
+                }
+              }}
+              options={contextOptions}
+              placeholder="Select or create a context..."
+              testId="schema-create-context-select"
+              value={contextIdToLabel(state.context)}
+            />
+            {contextWarning && (
+              <Text className="mt-1 text-destructive" variant="bodyMedium">
+                {contextWarning}
+              </Text>
+            )}
+          </FormField>
+        )}
+
+        {srContextsEnabled && isAddVersion && (
+          <FormField label="Context">
+            <Input disabled value={contextIdToLabel(state.context) || 'None'} />
+          </FormField>
+        )}
+
+        <FormField label="Strategy">
+          <Select
+            disabled={isAddVersion}
+            onValueChange={(e) => {
+              p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
+            }}
+            value={state.strategy}
+          >
+            <SelectTrigger data-testid="schema-create-strategy-select">
+              <SelectValue placeholder="Select a strategy..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TOPIC">Topic Name</SelectItem>
+              <SelectItem value="RECORD_NAME">Record Name</SelectItem>
+              <SelectItem value="TOPIC_RECORD_NAME">Topic-Record Name</SelectItem>
+              <SelectItem value="CUSTOM">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        {showTopicNameInput && (
+          <FormField errorText="Topic name is required" isInvalid={!state.userInput} label="Topic name">
+            <Select
+              disabled={isAddVersion}
+              onValueChange={(e) => {
+                p.onStateChange((prev) => ({ ...prev, userInput: e }));
+              }}
+              value={state.userInput}
+            >
+              <SelectTrigger data-testid="schema-create-topic-select">
+                <SelectValue placeholder="Select a topic..." />
+              </SelectTrigger>
+              <SelectContent>
+                {(api.topics?.filter((x) => !x.topicName.startsWith('_')) ?? []).map((x) => (
+                  <SelectItem key={x.topicName} value={x.topicName}>
+                    {x.topicName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
+
+        {!isCustom && (
+          <FormField
+            errorText="Required"
+            footerDescription="Determines whether this schema is registered for the topic's key or value messages."
+            isInvalid={state.isInvalidKeyOrValue}
+            label="Schema applies to"
+            width="auto"
+          >
+            <RadioGroup
+              className="mt-3 w-fit"
+              data-testid="schema-create-key-value-radio"
+              disabled={isAddVersion}
+              onValueChange={(e) => {
+                p.onStateChange((prev) => ({ ...prev, keyOrValue: e as 'KEY' | 'VALUE' }));
+              }}
+              orientation="horizontal"
+              value={state.keyOrValue}
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem disabled={isAddVersion} id="key-or-value-key" value="KEY" />
+                <Label htmlFor="key-or-value-key">Key</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem disabled={isAddVersion} id="key-or-value-value" value="VALUE" />
+                <Label htmlFor="key-or-value-value">Value</Label>
+              </div>
+            </RadioGroup>
+          </FormField>
+        )}
+
+        {isCustom && (
+          <FormField errorText="Subject name is required" isInvalid={!state.computedSubjectName} label="Subject name">
             <Input
-              data-testid="schema-create-subject-name-input"
-              isDisabled={!isCustom || isAddVersion}
+              disabled={isAddVersion}
               onChange={(e) => {
                 p.onStateChange((prev) => ({ ...prev, userInput: e.target.value }));
               }}
+              testId="schema-create-subject-name-input"
               value={state.computedSubjectName}
             />
           </FormField>
-        </Flex>
+        )}
+
+        {!isCustom && state.computedSubjectName && (
+          <>
+            <Separator />
+            <div className="flex flex-col gap-0.5">
+              <Text className="uppercase" variant="labelStrongXSmall">
+                Subject name
+              </Text>
+              <Text className="font-mono" variant="bodyMedium">
+                {state.computedSubjectName}
+              </Text>
+            </div>
+          </>
+        )}
+
+        {srContextsEnabled &&
+          state.qualifiedSubjectName &&
+          state.qualifiedSubjectName !== state.computedSubjectName && (
+            <div className="flex flex-col gap-0.5">
+              <Text className="uppercase" variant="labelStrongXSmall">
+                Qualified subject name
+              </Text>
+              <Text className="font-mono" variant="bodyMedium">
+                {isNamedContext(state.context) ? (
+                  <>
+                    <Text as="span" className="font-mono text-gray-400" variant="bodyMedium">
+                      :{state.context}:
+                    </Text>
+                    <Text as="span" className="font-mono" variant="bodyMedium">
+                      {state.computedSubjectName}
+                    </Text>
+                  </>
+                ) : (
+                  state.qualifiedSubjectName
+                )}
+              </Text>
+            </div>
+          )}
       </Flex>
 
-      <Heading mt="8" variant="lg">
+      <Heading className="mt-8" level={2}>
         Schema definition
       </Heading>
 
       <Flex direction="column" gap="4" maxWidth="1000px">
         <FormField label="Format">
-          <Box data-testid="schema-create-format-radio">
-            <RadioGroup
-              isDisabled={isAddVersion}
-              name="format"
-              onChange={(e) => {
-                if (state.format === e) {
-                  return;
-                }
-
-                // Let user confirm
-                openSwitchSchemaFormatModal(() => {
-                  p.onStateChange((prev) => ({
-                    ...prev,
-                    format: e as 'AVRO' | 'PROTOBUF' | 'JSON',
-                    schemaText: exampleSchema[e as SchemaTypeType],
-                  }));
-                });
-              }}
-              options={formatOptions}
-              value={state.format}
-            />
-          </Box>
+          <ToggleGroup
+            className="w-fit divide-x divide-border p-0"
+            data-testid="schema-create-format-radio"
+            disabled={isAddVersion}
+            onValueChange={(e) => {
+              if (!e || state.format === e) {
+                return;
+              }
+              // Let user confirm
+              openSwitchSchemaFormatModal(() => {
+                p.onStateChange((prev) => ({
+                  ...prev,
+                  format: e as 'AVRO' | 'PROTOBUF' | 'JSON',
+                  schemaText: exampleSchema[e as SchemaTypeType],
+                }));
+              });
+            }}
+            transition={{ duration: 0 }}
+            type="single"
+            value={state.format}
+            variant="outline"
+          >
+            {formatOptions.map((opt) => (
+              <ToggleGroupItem className="px-4" disabled={isAddVersion} key={opt.value} value={opt.value}>
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </FormField>
 
         <div data-testid="schema-create-schema-editor">
@@ -637,129 +830,224 @@ const SchemaEditor = (p: {
           />
         </Flex>
 
-        <Heading mt="8" variant="lg">
+        <Heading className="mt-8" level={2}>
           Schema references
         </Heading>
-        {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
+        <Text>
+          Link other schemas that this schema depends on. References allow schemas to reuse types defined in other
+          subjects.
+        </Text>
 
-        <ReferencesEditor onStateChange={p.onStateChange} state={state} />
+        <ReferencesEditor
+          contextSelectOptions={contextSelectOptions}
+          onStateChange={p.onStateChange}
+          parentContext={state.context}
+          srContextsEnabled={srContextsEnabled}
+          state={state}
+        />
 
-        <Heading mt="8" variant="lg">
+        <Heading className="mt-8" level={2}>
           Schema metadata
         </Heading>
-        <Text>
+        <Text className="w-1/2">
           Optional key-value properties to associate with this schema. Metadata will be ignored if not supported by
           schema registry.
         </Text>
-
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </Flex>
     </>
   );
 };
 
-const ReferencesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: SetSchemaState }) => {
+const ReferencesEditor = (p: {
+  state: SchemaEditorStateHelper;
+  onStateChange: SetSchemaState;
+  srContextsEnabled: boolean;
+  parentContext: string;
+  contextSelectOptions: { value: string; label: string }[];
+}) => {
   const refs = p.state.references;
 
-  const renderRow = (ref: (typeof refs)[number], index: number) => (
-    <Flex alignItems="flex-end" gap="4" key={ref.id}>
-      <FormField label="Schema reference">
-        <Input
-          data-testid={`schema-create-reference-name-input-${index}`}
-          onChange={(e) => {
-            p.onStateChange((prev) => ({
-              ...prev,
-              references: prev.references.map((r, i) => (i === index ? { ...r, name: e.target.value } : r)),
-            }));
-          }}
-          value={ref.name}
-        />
-      </FormField>
-      <FormField label="Subject">
-        <SingleSelect
-          data-testid={`schema-create-reference-subject-select-${index}`}
-          onChange={async (e) => {
-            p.onStateChange((prev) => ({
-              ...prev,
-              references: prev.references.map((r, i) => (i === index ? { ...r, subject: e } : r)),
-            }));
+  const subjectsByContext = useMemo(() => {
+    const allSubjects = api.schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
+    if (!p.srContextsEnabled) return new Map([['__all__', allSubjects.map((x) => ({ value: x.name }))]]);
 
-            let details = api.schemaDetails.get(e);
-            if (!details) {
-              await api.refreshSchemaDetails(e, true);
-              details = api.schemaDetails.get(e);
-            }
+    const map = new Map<string, { value: string }[]>();
+    for (const s of allSubjects) {
+      const parsed = parseSubjectContext(s.name);
+      const key = contextNameToId(parsed.context);
+      const list = map.get(key) ?? [];
+      list.push({ value: parsed.displayName });
+      map.set(key, list);
+    }
+    return map;
+  }, [p.srContextsEnabled, api.schemaSubjects]);
 
-            if (!details) {
-              return; // failed to get details
-            }
+  const getSubjectsForContext = (contextId: string) => {
+    if (!p.srContextsEnabled) return subjectsByContext.get('__all__') ?? [];
+    return subjectsByContext.get(contextId) ?? [];
+  };
 
-            p.onStateChange((prev) => {
-              const r = prev.references[index];
-              // Need to make sure that, after refreshing, the subject is still the same
-              // otherwise, when the user switches between subjects very quickly, we might refresh 3 subjectDetails,
-              // and when the first one completes, we're setting its latest version, which now isn't valid for the outdated subject
-              if (r?.subject !== e) return prev;
-              return {
+  const renderRow = (ref: (typeof refs)[number], index: number) => {
+    const refQualified =
+      p.srContextsEnabled && ref.context !== p.parentContext
+        ? buildQualifiedSubjectName(ref.context, ref.subject)
+        : null;
+
+    return (
+      <Flex direction="column" gap="2" key={ref.id}>
+        <Flex alignItems="flex-end" gap="4">
+          <FormField label="Schema reference name">
+            <Input
+              data-testid={`schema-create-reference-name-input-${index}`}
+              onChange={(e) => {
+                p.onStateChange((prev) => ({
+                  ...prev,
+                  references: prev.references.map((r, i) => (i === index ? { ...r, name: e.target.value } : r)),
+                }));
+              }}
+              value={ref.name}
+            />
+          </FormField>
+          {p.srContextsEnabled && (
+            <FormField label="Context">
+              <Select
+                onValueChange={(contextId) => {
+                  p.onStateChange((prev) => ({
+                    ...prev,
+                    references: prev.references.map((r, i) =>
+                      i === index ? { ...r, context: contextId, subject: '' } : r
+                    ),
+                  }));
+                }}
+                value={ref.context}
+              >
+                <SelectTrigger data-testid={`schema-create-reference-context-select-${index}`}>
+                  <SelectValue placeholder="Context..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {p.contextSelectOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+          <FormField label="Subject">
+            <Select
+              onValueChange={async (e) => {
+                p.onStateChange((prev) => ({
+                  ...prev,
+                  references: prev.references.map((r, i) => (i === index ? { ...r, subject: e } : r)),
+                }));
+
+                // For fetching details, we need the qualified name
+                const qualifiedRefSubject = buildQualifiedSubjectName(ref.context, e);
+                let details = api.schemaDetails.get(qualifiedRefSubject);
+                if (!details) {
+                  await api.refreshSchemaDetails(qualifiedRefSubject, true);
+                  details = api.schemaDetails.get(qualifiedRefSubject);
+                }
+
+                if (!details) {
+                  return; // failed to get details
+                }
+
+                p.onStateChange((prev) => {
+                  const r = prev.references[index];
+                  // Need to make sure that, after refreshing, the subject is still the same
+                  if (r?.subject !== e) return prev;
+                  return {
+                    ...prev,
+                    references: prev.references.map((r, i) =>
+                      i === index ? { ...r, version: details.latestActiveVersion } : r
+                    ),
+                  };
+                });
+              }}
+              value={ref.subject}
+            >
+              <SelectTrigger data-testid={`schema-create-reference-subject-select-${index}`}>
+                <SelectValue placeholder="Select a subject..." />
+              </SelectTrigger>
+              <SelectContent>
+                {getSubjectsForContext(ref.context).map((x) => (
+                  <SelectItem key={x.value} value={x.value}>
+                    {x.value}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Version">
+            <Select
+              onValueChange={(e) => {
+                p.onStateChange((prev) => ({
+                  ...prev,
+                  references: prev.references.map((r, i) => (i === index ? { ...r, version: Number(e) } : r)),
+                }));
+              }}
+              value={String(ref.version)}
+            >
+              <SelectTrigger data-testid={`schema-create-reference-version-select-${index}`}>
+                <SelectValue placeholder="Version" />
+              </SelectTrigger>
+              <SelectContent>
+                {(
+                  api.schemaDetails
+                    .get(buildQualifiedSubjectName(ref.context, ref.subject))
+                    ?.versions.filter((v) => !v.isSoftDeleted) ?? []
+                ).map((x) => (
+                  <SelectItem key={x.version} value={String(x.version)}>
+                    {x.version}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <IconButton
+            aria-label="delete"
+            data-testid={`schema-create-reference-delete-btn-${index}`}
+            flexShrink={0}
+            icon={<TrashIcon size="12px" />}
+            onClick={() => {
+              p.onStateChange((prev) => ({
                 ...prev,
-                references: prev.references.map((r, i) =>
-                  i === index ? { ...r, version: details.latestActiveVersion } : r
-                ),
-              };
-            });
-          }}
-          options={api.schemaSubjects?.filter((x) => !x.isSoftDeleted).map((x) => ({ value: x.name })) ?? []}
-          value={ref.subject}
-        />
-      </FormField>
-      <FormField label="Version">
-        <SingleSelect<number>
-          data-testid={`schema-create-reference-version-select-${index}`}
-          onChange={(e) => {
-            p.onStateChange((prev) => ({
-              ...prev,
-              references: prev.references.map((r, i) => (i === index ? { ...r, version: e } : r)),
-            }));
-          }}
-          options={
-            api.schemaDetails
-              .get(ref.subject)
-              ?.versions.filter((v) => !v.isSoftDeleted)
-              ?.map((x) => ({ value: x.version })) ?? []
-          }
-          value={ref.version}
-        />
-      </FormField>
-      <IconButton
-        aria-label="delete"
-        data-testid={`schema-create-reference-delete-btn-${index}`}
-        icon={<TrashIcon fontSize="19px" />}
-        onClick={() => {
-          p.onStateChange((prev) => ({
-            ...prev,
-            references: prev.references.filter((_, i) => i !== index),
-          }));
-        }}
-        variant="ghost"
-      />
-    </Flex>
-  );
+                references: prev.references.filter((_, i) => i !== index),
+              }));
+            }}
+            variant="ghost"
+          />
+        </Flex>
+        {refQualified && (
+          <Text className="ml-1 font-mono text-muted-foreground" variant="bodySmall">
+            Reference subject: {refQualified}
+          </Text>
+        )}
+      </Flex>
+    );
+  };
 
   return (
     <Flex direction="column" gap="4">
       {refs.map((x, index) => renderRow(x, index))}
 
       <Button
-        data-testid="schema-create-add-reference-btn"
+        className="w-fit"
         onClick={() => {
           p.onStateChange((prev) => ({
             ...prev,
-            references: [...prev.references, { id: crypto.randomUUID(), name: '', subject: '', version: 1 }],
+            references: [
+              ...prev.references,
+              { id: crypto.randomUUID(), name: '', subject: '', version: 1, context: p.parentContext },
+            ],
           }));
         }}
         size="sm"
+        testId="schema-create-add-reference-btn"
         variant="outline"
-        width="fit-content"
       >
         Add reference
       </Button>
@@ -768,74 +1056,27 @@ const ReferencesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: Se
 };
 
 const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: SetSchemaState }) => {
-  const props = p.state.metadataProperties;
-
-  const renderRow = (prop: SchemaEditorStateData['metadataProperties'][number], index: number) => (
-    <Flex alignItems="flex-end" gap="4" key={prop.id}>
-      <FormField label="Key">
-        <Input
-          data-testid={`schema-create-metadata-key-input-${index}`}
-          onChange={(e) => {
-            p.onStateChange((prev) => ({
-              ...prev,
-              metadataProperties: prev.metadataProperties.map((mp, i) =>
-                i === index ? { ...mp, key: e.target.value } : mp
-              ),
-            }));
-          }}
-          placeholder="e.g. owner"
-          value={prop.key}
-        />
-      </FormField>
-      <FormField label="Value">
-        <Input
-          data-testid={`schema-create-metadata-value-input-${index}`}
-          onChange={(e) => {
-            p.onStateChange((prev) => ({
-              ...prev,
-              metadataProperties: prev.metadataProperties.map((mp, i) =>
-                i === index ? { ...mp, value: e.target.value } : mp
-              ),
-            }));
-          }}
-          placeholder="e.g. team-platform"
-          value={prop.value}
-        />
-      </FormField>
-      <IconButton
-        aria-label="delete"
-        data-testid={`schema-create-metadata-delete-btn-${index}`}
-        icon={<TrashIcon fontSize="19px" />}
-        onClick={() => {
-          p.onStateChange((prev) => ({
-            ...prev,
-            metadataProperties: prev.metadataProperties.filter((_, i) => i !== index),
-          }));
-        }}
-        variant="ghost"
-      />
-    </Flex>
-  );
+  const pairs = p.state.metadataProperties.map(({ key, value }) => ({ key, value }));
 
   return (
-    <Flex direction="column" gap="4">
-      {props.map((x, index) => renderRow(x, index))}
-
-      <Button
-        data-testid="schema-create-add-metadata-btn"
-        onClick={() => {
+    <div className="w-1/2">
+      <KeyValueField
+        addButtonLabel="Add property"
+        keyFieldProps={{ placeholder: 'e.g. owner' }}
+        onChange={(updated) => {
           p.onStateChange((prev) => ({
             ...prev,
-            metadataProperties: [...prev.metadataProperties, { id: crypto.randomUUID(), key: '', value: '' }],
+            metadataProperties: updated.map((pair, i) => ({
+              id: prev.metadataProperties[i]?.id ?? crypto.randomUUID(),
+              ...pair,
+            })),
           }));
         }}
-        size="sm"
-        variant="outline"
-        width="fit-content"
-      >
-        Add property
-      </Button>
-    </Flex>
+        testId="schema-create-metadata"
+        value={pairs}
+        valueFieldProps={{ placeholder: 'e.g. team-platform' }}
+      />
+    </div>
   );
 };
 
