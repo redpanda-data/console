@@ -9,10 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 
 import DeleteRecordsModal from './delete-records-modal';
 import type { Topic } from '../../../../state/rest-interfaces';
+
+const queryClient = new QueryClient();
 
 const testTopic: Topic = {
   allowedActions: ['all'],
@@ -32,7 +35,15 @@ const testTopic: Topic = {
 describe('DeleteRecordsModal', () => {
   test('renders all expected elements in step 1', () => {
     render(
-      <DeleteRecordsModal afterClose={vi.fn()} onCancel={vi.fn()} onFinish={vi.fn()} topic={testTopic} visible={true} />
+      <QueryClientProvider client={queryClient}>
+        <DeleteRecordsModal
+          afterClose={vi.fn()}
+          onCancel={vi.fn()}
+          onFinish={vi.fn()}
+          topic={testTopic}
+          visible={true}
+        />
+      </QueryClientProvider>
     );
 
     expect(screen.getByText('Delete records in topic')).toBeInTheDocument();
