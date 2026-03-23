@@ -54,13 +54,8 @@ import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
 import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
 import type { AclPrincipalGroup } from './models';
 import {
-  createEmptyClusterAcl,
-  createEmptyConsumerGroupAcl,
-  createEmptyTopicAcl,
-  createEmptyTransactionalIdAcl,
   principalGroupsView,
 } from './models';
-import { AclPrincipalGroupEditor } from './principal-group-editor';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
@@ -700,8 +695,6 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
   const invalidateUsersCache = useInvalidateUsersCache();
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
-  const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
-  const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigate = useNavigate();
@@ -768,18 +761,6 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
         width="300px"
       />
       <Section>
-        {edittingPrincipalGroup ? (
-          <AclPrincipalGroupEditor
-            onClose={() => {
-              setEdittingPrincipalGroup(null);
-              api.refreshAcls(AclRequestDefault, true);
-              api.refreshServiceAccounts();
-            }}
-            principalGroup={edittingPrincipalGroup}
-            type={editorType}
-          />
-        ) : null}
-
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 
         <Button
@@ -788,17 +769,6 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
             navigate({
               to: '/security/acls/create',
               search: { principalType: undefined, principalName: undefined },
-            });
-            setEditorType('create');
-            setEdittingPrincipalGroup({
-              host: '',
-              principalType: 'User',
-              principalName: '',
-              topicAcls: [createEmptyTopicAcl()],
-              consumerGroupAcls: [createEmptyConsumerGroupAcl()],
-              transactionalIdAcls: [createEmptyTransactionalIdAcl()],
-              clusterAcls: createEmptyClusterAcl(),
-              sourceEntries: [],
             });
           }}
         >
