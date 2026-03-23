@@ -1967,7 +1967,7 @@ components:
             user message or set by the agent.
           type: string
         turn_count:
-          description: Number of turns in the conversation.
+          description: Number of user turns (interactions) in the conversation.
           format: int32
           type: integer
         usage:

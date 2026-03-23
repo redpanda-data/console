@@ -591,7 +591,7 @@ type TranscriptSummary struct {
 	Duration *durationpb.Duration `protobuf:"bytes,6,opt,name=duration,proto3" json:"duration,omitempty"`
 	// Overall conversation status. Derived from the root span's status_code.
 	Status TranscriptStatus `protobuf:"varint,7,opt,name=status,proto3,enum=redpanda.api.dataplane.v1alpha3.TranscriptStatus" json:"status,omitempty"`
-	// Number of turns in the conversation.
+	// Number of user turns (interactions) in the conversation.
 	TurnCount int32 `protobuf:"varint,8,opt,name=turn_count,json=turnCount,proto3" json:"turn_count,omitempty"`
 	// Aggregated token usage and cost across all turns.
 	Usage *TranscriptUsage `protobuf:"bytes,9,opt,name=usage,proto3" json:"usage,omitempty"`

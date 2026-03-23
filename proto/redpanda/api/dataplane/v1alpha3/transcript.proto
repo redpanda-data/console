@@ -239,7 +239,7 @@ message TranscriptSummary {
   google.protobuf.Duration duration = 6;
   // Overall conversation status. Derived from the root span's status_code.
   TranscriptStatus status = 7;
-  // Number of turns in the conversation.
+  // Number of user turns (interactions) in the conversation.
   int32 turn_count = 8;
   // Aggregated token usage and cost across all turns.
   TranscriptUsage usage = 9;

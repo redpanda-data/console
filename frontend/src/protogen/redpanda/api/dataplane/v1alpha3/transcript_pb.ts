@@ -308,7 +308,7 @@ export type TranscriptSummary = Message<"redpanda.api.dataplane.v1alpha3.Transcr
   status: TranscriptStatus;
 
   /**
-   * Number of turns in the conversation.
+   * Number of user turns (interactions) in the conversation.
    *
    * @generated from field: int32 turn_count = 8;
    */
