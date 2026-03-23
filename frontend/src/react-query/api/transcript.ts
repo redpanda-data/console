@@ -32,7 +32,7 @@ export const useListTranscriptsQuery = (
 ) => {
   const request = create(ListTranscriptsRequestSchema, {
     agentId: input.agentId,
-    pageSize: -1,
+    pageSize: -1, // Fetch all; TODO: add server-side pagination for large conversation histories
   });
 
   return useQuery(listTranscripts, request, {

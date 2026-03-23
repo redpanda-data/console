@@ -227,7 +227,7 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
 
       {interactions.map((interaction) => {
         const allToolCalls = interaction.agentResponses.flatMap((r) => r.toolCalls);
-        const maxLatency = Math.max(...allToolCalls.map(toolCallLatencyMs), 0);
+        const maxLatency = allToolCalls.reduce((max, tc) => Math.max(max, toolCallLatencyMs(tc)), 0);
 
         const isReconstructed =
           interaction.userInput?.isReconstructed || interaction.agentResponses.some((r) => r.isReconstructed);
@@ -329,10 +329,10 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
                         Tools
                       </div>
                       <div className="space-y-1">
-                        {allToolCalls.map((tool) => (
+                        {allToolCalls.map((tool, toolIndex) => (
                           <ToolCallItem
                             isReconstructed={isReconstructed}
-                            key={tool.toolCallId}
+                            key={tool.toolCallId || `tool-${toolIndex}`}
                             maxLatency={maxLatency}
                             tool={tool}
                           />
@@ -399,7 +399,7 @@ const ChatView = ({ systemPrompt, turns }: { systemPrompt: string; turns: Transc
             <FileText className="size-3" />
             System Prompt
           </div>
-          <p className="mt-2 text-muted-foreground text-sm leading-relaxed">{systemPrompt}</p>
+          <ExpandableText className="mt-2 text-muted-foreground text-sm" maxLength={400} text={systemPrompt} />
         </div>
       )}
 
@@ -445,7 +445,7 @@ const ChatView = ({ systemPrompt, turns }: { systemPrompt: string; turns: Transc
                     className={`flex flex-wrap items-center gap-1.5 rounded-md border px-3 py-2 ${turn.isReconstructed ? 'border-dashed bg-muted/20' : 'bg-muted/30'}`}
                   >
                     <Wrench className="size-3.5 text-muted-foreground" />
-                    {turn.toolCalls.map((tool) => (
+                    {turn.toolCalls.map((tool, toolIndex) => (
                       <span
                         className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs ${
                           tool.status === TranscriptToolCallStatus.COMPLETED
@@ -454,7 +454,7 @@ const ChatView = ({ systemPrompt, turns }: { systemPrompt: string; turns: Transc
                               ? 'bg-red-500/10 text-red-700'
                               : 'bg-muted text-muted-foreground'
                         }`}
-                        key={tool.toolCallId}
+                        key={tool.toolCallId || `tool-${toolIndex}`}
                       >
                         {tool.status === TranscriptToolCallStatus.COMPLETED ? (
                           <CheckCircle className="size-3" />
@@ -604,7 +604,12 @@ export const ConversationDetailPage = () => {
       </div>
 
       {/* Content */}
-      {viewMode === 'detailed' ? (
+      {turns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+          <MessagesSquare className="size-8" />
+          <p className="text-sm">No turns recorded</p>
+        </div>
+      ) : viewMode === 'detailed' ? (
         <ThreeColumnView interactions={interactions} systemPrompt={systemPrompt} />
       ) : (
         <ChatView systemPrompt={systemPrompt} turns={turns} />
