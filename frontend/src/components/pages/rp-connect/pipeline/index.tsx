@@ -11,6 +11,7 @@
 
 'use no memo';
 
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
@@ -31,7 +32,6 @@ import { useDebounce } from 'hooks/use-debounce';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
-import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import {
   CreatePipelineRequestSchema,
   UpdatePipelineRequestSchema,
