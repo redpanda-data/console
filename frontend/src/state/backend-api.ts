@@ -79,7 +79,6 @@ import {
   type PatchConfigsResponse,
   type ProduceRecordsResponse,
   type PublishRecordsRequest,
-  type QuotaResponse,
   type ResourceConfig,
   type SchemaReferencedByEntry,
   type SchemaRegistryCompatibilityMode,
@@ -432,8 +431,6 @@ const _apiCreator = (set: any, get: any) => ({
 
   ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
-  Quotas: undefined as QuotaResponse | undefined | null,
-
   consumerGroups: new Map<string, GroupDescription>(),
   consumerGroupAcls: new Map<string, GetAclOverviewResponse | null>(),
 
@@ -645,12 +642,6 @@ const _apiCreator = (set: any, get: any) => ({
       },
       addError
     );
-  },
-
-  refreshQuotas(force?: boolean) {
-    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then((v) => {
-      set({ Quotas: v ?? null });
-    }, addError);
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
