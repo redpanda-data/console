@@ -88,7 +88,8 @@ test.describe('Schema Registry E2E Tests', () => {
       const checkbox = page.getByText('Show soft-deleted').locator('..');
       await checkbox.click();
 
-      await page.waitForTimeout(500);
+      // Wait for the table to update after toggling soft-deleted
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
     });
 
     test('should navigate to schema details page', async ({ page }) => {
@@ -136,7 +137,9 @@ test.describe('Schema Registry E2E Tests', () => {
       const initialCount = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
 
       await searchInput.clear();
-      await page.waitForTimeout(300);
+
+      // Wait for the table to repopulate after clearing search
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
 
       const finalCount = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
       expect(finalCount).toBeGreaterThanOrEqual(initialCount);
@@ -148,10 +151,8 @@ test.describe('Schema Registry E2E Tests', () => {
       const searchInput = page.getByPlaceholder('Filter by subject name or schema ID...');
       await searchInput.fill('non-existent-schema-12345-xyz');
 
-      await page.waitForTimeout(500);
-
-      const count = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
-      expect(count).toEqual(0);
+      // Wait for the table to show no results
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID)).toHaveCount(0);
     });
   });
 
@@ -378,7 +379,8 @@ test.describe('Schema Registry E2E Tests', () => {
       const checkbox = page.getByTestId('schema-list-show-soft-deleted-checkbox');
       await checkbox.check();
 
-      await page.waitForTimeout(500);
+      // Wait for the table to update after toggling soft-deleted
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
 
       // Look for any soft-deleted schema indicator
       const softDeletedIcon = page.getByTestId('schema-list-soft-deleted-icon').first();
@@ -588,11 +590,8 @@ test.describe('Schema Registry E2E Tests', () => {
 
       await schemaPage.searchSchemas('nonexistent-schema-xyz-12345');
 
-      // Wait for search to complete
-      await page.waitForTimeout(500);
-
-      const count = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
-      expect(count).toBe(0);
+      // Wait for the table to show no results
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID)).toHaveCount(0);
     });
 
     test('should show spinner during schema ID search', async ({ page }) => {

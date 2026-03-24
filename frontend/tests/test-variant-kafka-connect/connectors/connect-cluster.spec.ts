@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const CLUSTER = 'local-connect-cluster';
 const CREATE_URL = `/connect-clusters/${CLUSTER}/create-connector`;
-const CONNECTOR_NAME = 'e2e-heartbeat-test';
+const CONNECTOR_NAME = `e2e-heartbeat-${Date.now()}`;
 
 const HEARTBEAT_CONFIG = {
   name: CONNECTOR_NAME,

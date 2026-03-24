@@ -308,11 +308,9 @@ export class AclPage {
    * Form submission
    */
   async submitForm() {
-    await this.page.waitForTimeout(1000); // Give UI time to settle
     const submitButton = this.page.getByTestId('submit-acl-button').first();
     await submitButton.waitFor({ state: 'visible' });
     await submitButton.scrollIntoViewIfNeeded();
-    await this.page.waitForTimeout(500); // Brief pause before click
 
     // Wait for the ACL creation/update API call to complete
     // The API uses Connect RPC: /redpanda.api.dataplane.v1.ACLService/CreateACL or DeleteACLs
@@ -336,9 +334,6 @@ export class AclPage {
 
     await submitButton.click();
     await responsePromise; // Wait for API response
-
-    // Additional wait for ACL propagation to Kafka
-    await this.page.waitForTimeout(2000); // Increased for CI stability
   }
 
   /**

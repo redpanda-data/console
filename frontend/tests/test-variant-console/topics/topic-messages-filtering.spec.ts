@@ -54,9 +54,6 @@ test.describe('View and Filter Messages', () => {
         await searchInput.fill(searchTerm);
         await page.keyboard.press('Enter');
 
-        // Wait for filtering
-        await page.waitForTimeout(1000);
-
         // Message with search term should be visible
         await expect(page.getByText(message1)).toBeVisible();
 
@@ -90,7 +87,7 @@ test.describe('View and Filter Messages', () => {
           await partition0.click();
 
           // Messages should filter to selected partition
-          await page.waitForTimeout(1000);
+          await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
         }
       }
     });
@@ -119,9 +116,6 @@ test.describe('View and Filter Messages', () => {
         await offsetInput.fill('1');
         await page.keyboard.press('Enter');
 
-        // Wait for filtering
-        await page.waitForTimeout(1000);
-
         // Messages from offset 1 onwards should be visible
         await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
       }
@@ -145,7 +139,6 @@ test.describe('View and Filter Messages', () => {
       if (await searchInput.isVisible()) {
         await searchInput.fill('some-filter');
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(500);
       }
 
       // Look for clear filters button
@@ -199,9 +192,6 @@ test.describe('View and Filter Messages', () => {
         await searchInput.clear();
         await searchInput.fill('Test');
 
-        // Wait for final filter to apply
-        await page.waitForTimeout(1000);
-
         // Should handle gracefully without errors
         await expect(page.getByText('Test rapid filtering')).toBeVisible();
       }
@@ -225,7 +215,9 @@ test.describe('View and Filter Messages', () => {
       await expect(searchInput).toBeVisible({ timeout: 5000 });
       await searchInput.fill('test-search');
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(500);
+
+      // Wait for URL to update with filter parameters
+      await page.waitForURL(/q=test-search/);
 
       // URL should contain filter parameters (quick search uses 'q' param)
       const currentUrl = page.url();

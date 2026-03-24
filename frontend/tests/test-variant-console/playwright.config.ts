@@ -29,7 +29,7 @@ const config = defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   /* Number of parallel workers */
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 8 : undefined,
 
   /* Reporter to use */
   reporter: reporters,
@@ -70,17 +70,6 @@ const config = defineConfig({
     // OSS: Single project without authentication
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        permissions: ['clipboard-read', 'clipboard-write'],
-      },
-      testIgnore: '**/quotas/*.spec.ts',
-    },
-    // Isolated project for quota tests (avoid RPK conflicts)
-    {
-      name: 'quotas-isolated',
-      testMatch: '**/quotas/*.spec.ts',
-      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         permissions: ['clipboard-read', 'clipboard-write'],
