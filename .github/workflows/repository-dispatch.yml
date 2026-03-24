@@ -30,15 +30,6 @@ jobs:
     permissions:
       contents: read
 
-  ci:
-    needs: [backend-verify, frontend-verify]
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-    steps:
-      - name: Check all jobs passed
-        run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
-            exit 1
-          fi
   dispatch:
     needs: [backend-verify, frontend-verify]
     if: "!failure() && !cancelled()"
