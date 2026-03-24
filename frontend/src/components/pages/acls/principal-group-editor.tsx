@@ -11,23 +11,10 @@
 
 'use no memo';
 
-import {
-  Box,
-  Button,
-  Flex,
-  FormField,
-  Grid,
-  Icon,
-  Input,
-  InputGroup,
-  InputLeftAddon,
-  Text,
-} from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Grid, Icon, Input, InputGroup, InputLeftAddon, Text } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
 
-import {
-  type ResourceACLs,
-} from './models';
+import type { ResourceACLs } from './models';
 import { Operation } from './operation';
 import { AclOperation, type AclStrResourceType } from '../../../state/rest-interfaces';
 import { Label } from '../../../utils/tsx-utils';

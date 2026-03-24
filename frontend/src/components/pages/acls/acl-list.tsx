@@ -53,9 +53,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
 import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
 import type { AclPrincipalGroup } from './models';
-import {
-  principalGroupsView,
-} from './models';
+import { principalGroupsView } from './models';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { UserRoleTags } from './user-permission-assignments';
 import ErrorResult from '../../../components/misc/error-result';
