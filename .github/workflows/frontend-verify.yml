@@ -37,7 +37,14 @@ jobs:
       - name: Check Ultracite setup
         run: bun x ultracite doctor
       - name: Run Biome/Ultracite
-        run: bun run lint:check
+        run: |
+          bun run lint
+          CHANGED=$(git status --porcelain)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::Lint produced uncommitted changes. Run 'bun run lint' locally and commit the result."
+            echo "$CHANGED"
+            exit 1
+          fi
 
   type-check:
     timeout-minutes: 3
