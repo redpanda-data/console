@@ -1967,7 +1967,7 @@ components:
             user message or set by the agent.
           type: string
         turn_count:
-          description: Number of turns in the conversation.
+          description: Number of user turns (interactions) in the conversation.
           format: int32
           type: integer
         usage:
@@ -2029,6 +2029,14 @@ components:
           type: string
         error:
           $ref: '#/components/schemas/TranscriptError'
+        is_reconstructed:
+          description: |-
+            Whether this turn was reconstructed from conversation history embedded
+            in a later span's input messages. This happens when earlier spans were
+            evicted (e.g. due to retention) but the full conversation history was
+            preserved in subsequent LLM calls. Reconstructed turns lack precise
+            timestamps, latency, and usage metrics.
+          type: boolean
         latency:
           description: Turn duration. Derived from the span's duration.
           type: string

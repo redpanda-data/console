@@ -52,7 +52,7 @@ import JavaLogo from '../../../../assets/java.svg';
 import NodeLogo from '../../../../assets/node.svg';
 import PythonLogo from '../../../../assets/python.svg';
 
-const routeApi = getRouteApi('/agents/$id');
+const routeApi = getRouteApi('/agents/$id/');
 
 const AVAILABLE_LANGUAGES = ['python', 'javascript', 'java', 'go', 'curl'] as const;
 

@@ -11,7 +11,7 @@
 
 import { getRouteApi } from '@tanstack/react-router';
 
-const routeApi = getRouteApi('/agents/$id');
+const routeApi = getRouteApi('/agents/$id/');
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Loader2, Play, Square } from 'lucide-react';

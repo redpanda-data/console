@@ -11,7 +11,7 @@
 
 import { getRouteApi } from '@tanstack/react-router';
 
-const routeApi = getRouteApi('/agents/$id');
+const routeApi = getRouteApi('/agents/$id/');
 
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';

@@ -47,12 +47,12 @@ import { Route as KnowledgebasesCreateRouteImport } from './routes/knowledgebase
 import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId';
 import { Route as GetStartedApiRouteImport } from './routes/get-started/api';
 import { Route as AgentsCreateRouteImport } from './routes/agents/create';
-import { Route as AgentsIdRouteImport } from './routes/agents/$id';
 import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topicName/index';
 import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index';
 import { Route as RpConnectPipelineIdIndexRouteImport } from './routes/rp-connect/$pipelineId/index';
 import { Route as KnowledgebasesKnowledgebaseIdIndexRouteImport } from './routes/knowledgebases/$knowledgebaseId/index';
 import { Route as ConnectClustersClusterNameIndexRouteImport } from './routes/connect-clusters/$clusterName/index';
+import { Route as AgentsIdIndexRouteImport } from './routes/agents/$id/index';
 import { Route as TopicsTopicNameProduceRecordRouteImport } from './routes/topics/$topicName/produce-record';
 import { Route as ShadowlinksNameEditRouteImport } from './routes/shadowlinks/$name/edit';
 import { Route as SecurityUsersCreateRouteImport } from './routes/security/users/create';
@@ -80,6 +80,7 @@ import { Route as SchemaRegistryContextsContextNameEditCompatibilityRouteImport 
 import { Route as SchemaRegistryContextsContextNameCreateRouteImport } from './routes/schema-registry/contexts/$contextName/create';
 import { Route as RpConnectSecretsSecretIdEditRouteImport } from './routes/rp-connect/secrets/$secretId/edit';
 import { Route as KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport } from './routes/knowledgebases/$knowledgebaseId/documents/$documentId';
+import { Route as AgentsIdTranscriptsConversationIdRouteImport } from './routes/agents/$id/transcripts/$conversationId';
 
 const UploadLicenseRoute = UploadLicenseRouteImport.update({
   id: '/upload-license',
@@ -272,11 +273,6 @@ const AgentsCreateRoute = AgentsCreateRouteImport.update({
   path: '/agents/create',
   getParentRoute: () => rootRouteImport,
 } as any);
-const AgentsIdRoute = AgentsIdRouteImport.update({
-  id: '/agents/$id',
-  path: '/agents/$id',
-  getParentRoute: () => rootRouteImport,
-} as any);
 const TopicsTopicNameIndexRoute = TopicsTopicNameIndexRouteImport.update({
   id: '/topics/$topicName/',
   path: '/topics/$topicName/',
@@ -305,6 +301,11 @@ const ConnectClustersClusterNameIndexRoute =
     path: '/connect-clusters/$clusterName/',
     getParentRoute: () => rootRouteImport,
   } as any);
+const AgentsIdIndexRoute = AgentsIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgentsIdRoute,
+} as any);
 const TopicsTopicNameProduceRecordRoute =
   TopicsTopicNameProduceRecordRouteImport.update({
     id: '/topics/$topicName/produce-record',
@@ -459,6 +460,12 @@ const KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute =
     path: '/knowledgebases/$knowledgebaseId/documents/$documentId',
     getParentRoute: () => rootRouteImport,
   } as any);
+const AgentsIdTranscriptsConversationIdRoute =
+  AgentsIdTranscriptsConversationIdRouteImport.update({
+    id: '/transcripts/$conversationId',
+    path: '/transcripts/$conversationId',
+    getParentRoute: () => AgentsIdRoute,
+  } as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -467,7 +474,6 @@ export interface FileRoutesByFullPath {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/agents/$id': typeof AgentsIdRoute;
   '/agents/create': typeof AgentsCreateRoute;
   '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
@@ -512,11 +518,13 @@ export interface FileRoutesByFullPath {
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
   '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
+  '/agents/$id/': typeof AgentsIdIndexRoute;
   '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute;
@@ -540,7 +548,6 @@ export interface FileRoutesByTo {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/agents/$id': typeof AgentsIdRoute;
   '/agents/create': typeof AgentsCreateRoute;
   '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
@@ -585,11 +592,13 @@ export interface FileRoutesByTo {
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
   '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
+  '/agents/$id': typeof AgentsIdIndexRoute;
   '/connect-clusters/$clusterName': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
   '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute;
@@ -614,7 +623,6 @@ export interface FileRoutesById {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/agents/$id': typeof AgentsIdRoute;
   '/agents/create': typeof AgentsCreateRoute;
   '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
@@ -659,11 +667,13 @@ export interface FileRoutesById {
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
   '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
+  '/agents/$id/': typeof AgentsIdIndexRoute;
   '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
   '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
   '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute;
@@ -689,7 +699,6 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/agents/$id'
     | '/agents/create'
     | '/get-started/api'
     | '/groups/$groupId'
@@ -734,11 +743,13 @@ export interface FileRouteTypes {
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
     | '/topics/$topicName/produce-record'
+    | '/agents/$id/'
     | '/connect-clusters/$clusterName/'
     | '/knowledgebases/$knowledgebaseId/'
     | '/rp-connect/$pipelineId/'
     | '/shadowlinks/$name/'
     | '/topics/$topicName/'
+    | '/agents/$id/transcripts/$conversationId'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/contexts/$contextName/create'
@@ -762,7 +773,6 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/agents/$id'
     | '/agents/create'
     | '/get-started/api'
     | '/groups/$groupId'
@@ -807,11 +817,13 @@ export interface FileRouteTypes {
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
     | '/topics/$topicName/produce-record'
+    | '/agents/$id'
     | '/connect-clusters/$clusterName'
     | '/knowledgebases/$knowledgebaseId'
     | '/rp-connect/$pipelineId'
     | '/shadowlinks/$name'
     | '/topics/$topicName'
+    | '/agents/$id/transcripts/$conversationId'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/contexts/$contextName/create'
@@ -835,7 +847,6 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/agents/$id'
     | '/agents/create'
     | '/get-started/api'
     | '/groups/$groupId'
@@ -880,11 +891,13 @@ export interface FileRouteTypes {
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
     | '/topics/$topicName/produce-record'
+    | '/agents/$id/'
     | '/connect-clusters/$clusterName/'
     | '/knowledgebases/$knowledgebaseId/'
     | '/rp-connect/$pipelineId/'
     | '/shadowlinks/$name/'
     | '/topics/$topicName/'
+    | '/agents/$id/transcripts/$conversationId'
     | '/knowledgebases/$knowledgebaseId/documents/$documentId'
     | '/rp-connect/secrets/$secretId/edit'
     | '/schema-registry/contexts/$contextName/create'
@@ -909,7 +922,6 @@ export interface RootRouteChildren {
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
-  AgentsIdRoute: typeof AgentsIdRoute;
   AgentsCreateRoute: typeof AgentsCreateRoute;
   GetStartedApiRoute: typeof GetStartedApiRoute;
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute;
@@ -1244,13 +1256,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentsCreateRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/agents/$id': {
-      id: '/agents/$id';
-      path: '/agents/$id';
-      fullPath: '/agents/$id';
-      preLoaderRoute: typeof AgentsIdRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
     '/topics/$topicName/': {
       id: '/topics/$topicName/';
       path: '/topics/$topicName';
@@ -1285,6 +1290,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/connect-clusters/$clusterName/';
       preLoaderRoute: typeof ConnectClustersClusterNameIndexRouteImport;
       parentRoute: typeof rootRouteImport;
+    };
+    '/agents/$id/': {
+      id: '/agents/$id/';
+      path: '/';
+      fullPath: '/agents/$id/';
+      preLoaderRoute: typeof AgentsIdIndexRouteImport;
+      parentRoute: typeof AgentsIdRoute;
     };
     '/topics/$topicName/produce-record': {
       id: '/topics/$topicName/produce-record';
@@ -1475,6 +1487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/agents/$id/transcripts/$conversationId': {
+      id: '/agents/$id/transcripts/$conversationId';
+      path: '/transcripts/$conversationId';
+      fullPath: '/agents/$id/transcripts/$conversationId';
+      preLoaderRoute: typeof AgentsIdTranscriptsConversationIdRouteImport;
+      parentRoute: typeof AgentsIdRoute;
+    };
   }
 }
 
@@ -1485,7 +1504,6 @@ const rootRouteChildren: RootRouteChildren = {
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,
-  AgentsIdRoute: AgentsIdRoute,
   AgentsCreateRoute: AgentsCreateRoute,
   GetStartedApiRoute: GetStartedApiRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,

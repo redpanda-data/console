@@ -13,10 +13,10 @@
 
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
-const routeApi = getRouteApi('/agents/$id');
+const routeApi = getRouteApi('/agents/$id/');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { AlertCircle, Loader2, Network, Search, Settings } from 'lucide-react';
+import { AlertCircle, FileText, Loader2, Network, Search, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
@@ -25,6 +25,7 @@ import { AIAgentCardTab } from './ai-agent-card-tab';
 import { AIAgentConfigurationTab } from './ai-agent-configuration-tab';
 import { AIAgentDetailsHeader } from './ai-agent-details-header';
 import { AIAgentInspectorTab } from './ai-agent-inspector-tab';
+import { AIAgentTranscriptsTab } from './ai-agent-transcripts-tab';
 
 export const updatePageTitle = (agentName?: string) => {
   uiState.pageTitle = agentName ? `AI Agent - ${agentName}` : 'AI Agent Details';
@@ -36,7 +37,7 @@ export const updatePageTitle = (agentName?: string) => {
 
 export const AIAgentDetailsPage = () => {
   const { id } = routeApi.useParams();
-  const navigate = useNavigate({ from: '/agents/$id' });
+  const navigate = useNavigate({ from: '/agents/$id/' });
   // Use fine-grained selector to only re-render when tab changes
   const tab = routeApi.useSearch({ select: (s) => s.tab });
 
@@ -98,6 +99,12 @@ export const AIAgentDetailsPage = () => {
               A2A
             </div>
           </TabsTrigger>
+          <TabsTrigger className="gap-2" value="transcripts">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Transcripts
+            </div>
+          </TabsTrigger>
           <TabsTrigger className="gap-2" value="inspector">
             <Search className="h-4 w-4" />
             Inspector
@@ -109,6 +116,9 @@ export const AIAgentDetailsPage = () => {
         </TabsContent>
         <TabsContent value="agent-card">
           <AIAgentCardTab />
+        </TabsContent>
+        <TabsContent value="transcripts">
+          <AIAgentTranscriptsTab />
         </TabsContent>
         <TabsContent className="flex h-full flex-col" value="inspector">
           <AIAgentInspectorTab />
