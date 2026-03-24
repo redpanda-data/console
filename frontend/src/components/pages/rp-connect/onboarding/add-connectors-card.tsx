@@ -14,7 +14,7 @@ const SCANNER_SUPPORTED_INPUTS = ['aws_s3', 'gcp_cloud_storage', 'azure_blob_sto
 const AddConnectorButton = ({
   type,
   onClick,
-  variant = 'secondary-outline',
+  variant = 'outline',
 }: {
   type: ConnectComponentType;
   onClick: (type: ConnectComponentType) => void;

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -22,14 +21,8 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { InfoIcon } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useRef, useState } from 'react';
-import {
-  useOnboardingTopicDataStore,
-  useOnboardingUserDataStore,
-  useOnboardingWizardDataStore,
-} from 'state/onboarding-wizard-store';
 
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddTopicStep } from '../onboarding/add-topic-step';
@@ -43,7 +36,7 @@ import {
 } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard';
-import { getConnectTemplate } from '../utils/yaml';
+import { applyRedpandaSetup, getConnectTemplate } from '../utils/yaml';
 
 export type RedpandaSetupResult = {
   topicName?: string;
@@ -57,33 +50,31 @@ export type RedpandaSetupResult = {
 };
 
 /**
- * Stepper dialog content for configuring a Redpanda connector (topic + user).
- * Rendered inside a Dialog by ConnectorWizard when a Redpanda component is selected.
+ * Stepper dialog for configuring a Redpanda connector (topic + user).
  */
-function RedpandaSetupSteps({
+export function RedpandaConnectorSetupWizard({
   connectionName,
   connectionType,
-  methods,
+  initialStep = RedpandaConnectorSetupStep.ADD_TOPIC,
   onClose,
   onComplete,
-  serverlessHint,
 }: {
   connectionName: string;
   connectionType: ConnectComponentType;
-  methods: RedpandaConnectorSetupSteps;
+  initialStep?: (typeof RedpandaConnectorSetupStep)[keyof typeof RedpandaConnectorSetupStep];
   onClose: () => void;
   onComplete: (result: RedpandaSetupResult) => void;
-  serverlessHint?: string;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [topicName, setTopicName] = useState<string>();
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
-  const isTopicStep = methods.current.id === RedpandaConnectorSetupStep.ADD_TOPIC;
+  const isTopicStep = initialStep === RedpandaConnectorSetupStep.ADD_TOPIC;
 
-  const submitStep = async () => {
-    if (isTopicStep) {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: stepper submit logic with service-account vs SASL branching
+  const submitStep = async (methods: RedpandaConnectorSetupSteps) => {
+    if (methods.current.id === RedpandaConnectorSetupStep.ADD_TOPIC) {
       const topicRef = topicStepRef.current;
       if (topicRef) {
         const result = await topicRef.triggerSubmit();
@@ -98,33 +89,32 @@ function RedpandaSetupSteps({
         const result = await userRef.triggerSubmit();
         if (result.success && result.data) {
           const data = result.data;
-          onComplete({
-            topicName,
-            ...('authMethod' in data && data.authMethod === 'service-account'
-              ? {
-                  authMethod: 'service-account' as const,
-                  serviceAccountName: data.serviceAccountName,
-                  serviceAccountId: data.serviceAccountId,
-                  serviceAccountSecretName: data.serviceAccountSecretName,
-                }
-              : 'username' in data
-                ? {
-                    authMethod: 'sasl' as const,
-                    username: data.username,
-                    saslMechanism: data.saslMechanism,
-                    consumerGroup: data.consumerGroup,
-                  }
-                : {}),
-          });
+          let authData: Partial<RedpandaSetupResult> = {};
+          if ('authMethod' in data && data.authMethod === 'service-account') {
+            authData = {
+              authMethod: 'service-account',
+              serviceAccountName: data.serviceAccountName,
+              serviceAccountId: data.serviceAccountId,
+              serviceAccountSecretName: data.serviceAccountSecretName,
+            };
+          } else if ('username' in data) {
+            authData = {
+              authMethod: 'sasl',
+              username: data.username,
+              saslMechanism: data.saslMechanism,
+              consumerGroup: data.consumerGroup,
+            };
+          }
+          onComplete({ topicName, ...authData });
         }
       }
     }
   };
 
-  const handleNext = async () => {
+  const handleNext = async (methods: RedpandaConnectorSetupSteps) => {
     setIsSubmitting(true);
     try {
-      await submitStep();
+      await submitStep(methods);
       setIsSubmitting(false);
     } catch (e) {
       setIsSubmitting(false);
@@ -132,69 +122,81 @@ function RedpandaSetupSteps({
     }
   };
 
-  const handleSkip = () => {
-    if (isTopicStep) {
-      methods.next();
-    } else {
-      onComplete({ topicName });
-    }
-  };
-
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle className="capitalize">
-          Configure {connectionName} {connectionType}
-        </DialogTitle>
-        <DialogDescription className="mt-4">
-          {isTopicStep ? 'Select or create a topic.' : 'Configure user authentication.'}
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="mt-4">
-        <RedpandaConnectorSetupStepper.Navigation>
-          {methods.all.map((step) => (
-            <RedpandaConnectorSetupStepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
-              <RedpandaConnectorSetupStepper.Title>{step.title}</RedpandaConnectorSetupStepper.Title>
-            </RedpandaConnectorSetupStepper.Step>
-          ))}
-        </RedpandaConnectorSetupStepper.Navigation>
-        {methods.switch({
-          [RedpandaConnectorSetupStep.ADD_TOPIC]: () => (
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      open
+    >
+      <DialogContent size="xl">
+        <RedpandaConnectorSetupStepper.Provider initialStep={initialStep}>
+          {({ methods }) => (
             <>
-              {serverlessHint ? (
-                <Alert className="mt-4" icon={<InfoIcon className="h-4 w-4" />} variant="warning">
-                  <AlertDescription>{serverlessHint}</AlertDescription>
-                </Alert>
-              ) : null}
-              <AddTopicStep hideTitle ref={topicStepRef} {...stepMotionProps} />
+              <DialogHeader>
+                <DialogTitle className="capitalize">
+                  Configure {connectionName} {connectionType}
+                </DialogTitle>
+                <DialogDescription className="mt-4">
+                  {isTopicStep ? 'Select or create a topic.' : 'Configure user authentication.'}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogBody className="mt-4">
+                <RedpandaConnectorSetupStepper.Navigation>
+                  {methods.all.map((step) => (
+                    <RedpandaConnectorSetupStepper.Step
+                      key={step.id}
+                      of={step.id}
+                      onClick={() => methods.goTo(step.id)}
+                    >
+                      <RedpandaConnectorSetupStepper.Title>{step.title}</RedpandaConnectorSetupStepper.Title>
+                    </RedpandaConnectorSetupStepper.Step>
+                  ))}
+                </RedpandaConnectorSetupStepper.Navigation>
+                {methods.switch({
+                  [RedpandaConnectorSetupStep.ADD_TOPIC]: () => (
+                    <AddTopicStep hideTitle ref={topicStepRef} {...stepMotionProps} />
+                  ),
+                  [RedpandaConnectorSetupStep.ADD_USER]: () => (
+                    <AddUserStep
+                      hideTitle
+                      ref={userStepRef}
+                      showConsumerGroupFields={connectionType === 'input'}
+                      topicName={topicName}
+                      {...stepMotionProps}
+                    />
+                  ),
+                })}
+              </DialogBody>
+              <DialogFooter className="w-full" justify="between">
+                <Button
+                  disabled={isSubmitting}
+                  onClick={methods.isFirst ? onClose : methods.prev}
+                  variant="secondary-ghost"
+                >
+                  {methods.isFirst ? 'Cancel' : 'Back'}
+                </Button>
+                <Group className="w-auto">
+                  <Button
+                    disabled={isSubmitting}
+                    onClick={methods.isLast ? () => onComplete({}) : methods.next}
+                    variant="secondary-ghost"
+                  >
+                    Skip
+                  </Button>
+                  <Button className="min-w-[70px]" disabled={isSubmitting} onClick={() => handleNext(methods)}>
+                    {isSubmitting ? <Spinner /> : null}
+                    {!isSubmitting && (methods.isLast ? 'Done' : 'Next')}
+                  </Button>
+                </Group>
+              </DialogFooter>
             </>
-          ),
-          [RedpandaConnectorSetupStep.ADD_USER]: () => (
-            <AddUserStep
-              hideTitle
-              ref={userStepRef}
-              showConsumerGroupFields={connectionType === 'input'}
-              topicName={topicName}
-              {...stepMotionProps}
-            />
-          ),
-        })}
-      </DialogBody>
-      <DialogFooter className="w-full" justify="between">
-        <Button disabled={isSubmitting} onClick={methods.isFirst ? onClose : methods.prev} variant="secondary-ghost">
-          {methods.isFirst ? 'Cancel' : 'Back'}
-        </Button>
-        <Group className="w-auto">
-          <Button disabled={isSubmitting} onClick={handleSkip} variant="secondary-ghost">
-            Skip
-          </Button>
-          <Button className="min-w-[70px]" disabled={isSubmitting} onClick={handleNext}>
-            {isSubmitting ? <Spinner /> : null}
-            {!isSubmitting && (methods.isLast ? 'Done' : 'Next')}
-          </Button>
-        </Group>
-      </DialogFooter>
-    </>
+          )}
+        </RedpandaConnectorSetupStepper.Provider>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -205,7 +207,6 @@ type ConnectorWizardProps = {
   componentList?: ComponentList;
   yamlContent: string;
   onYamlChange: (yaml: string) => void;
-  autoOpenRedpandaSetup?: { connectionName: string; connectionType: ConnectComponentType };
 };
 
 export function ConnectorWizard({
@@ -215,27 +216,18 @@ export function ConnectorWizard({
   componentList,
   yamlContent,
   onYamlChange,
-  autoOpenRedpandaSetup,
 }: ConnectorWizardProps) {
-  const wizardInputName = useOnboardingWizardDataStore((state) => state.input?.connectionName);
-
-  const serverlessHint = autoOpenRedpandaSetup
-    ? wizardInputName === 'redpanda'
-      ? 'Create or select a topic you want to stream data from.'
-      : `Stream data to a Redpanda topic from your ${wizardInputName} input.`
-    : undefined;
-
-  const [redpandaSetupConfig, setRedpandaSetupConfig] = useState<{
+  const [redpandaConnectorConfig, setRedpandaConnectorConfig] = useState<{
     connectionName: string;
     connectionType: ConnectComponentType;
-  } | null>(autoOpenRedpandaSetup ?? null);
+  } | null>(null);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
       onClose();
 
       if (REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(connectionName)) {
-        setRedpandaSetupConfig({ connectionName, connectionType });
+        setRedpandaConnectorConfig({ connectionName, connectionType });
         return;
       }
 
@@ -255,55 +247,23 @@ export function ConnectorWizard({
 
   const handleRedpandaSetupComplete = useCallback(
     (result: RedpandaSetupResult) => {
-      if (!redpandaSetupConfig) {
+      if (!redpandaConnectorConfig) {
         return;
       }
 
-      // Populate onboarding stores so schemaToConfig can read topic/user data
-      if (result.topicName) {
-        useOnboardingTopicDataStore.getState().setTopicData({ topicName: result.topicName });
+      const newYaml = applyRedpandaSetup({
+        yamlContent,
+        connectionName: redpandaConnectorConfig.connectionName,
+        connectionType: redpandaConnectorConfig.connectionType as 'input' | 'output',
+        result,
+        components,
+      });
+      if (newYaml) {
+        onYamlChange(newYaml);
       }
-      if (result.authMethod === 'service-account' && result.serviceAccountId) {
-        useOnboardingUserDataStore.getState().setUserData({
-          authMethod: 'service-account',
-          serviceAccountName: result.serviceAccountName ?? '',
-          serviceAccountId: result.serviceAccountId,
-          serviceAccountSecretName: result.serviceAccountSecretName ?? '',
-        });
-      } else if (result.username) {
-        useOnboardingUserDataStore.getState().setUserData({
-          authMethod: 'sasl',
-          username: result.username,
-          saslMechanism: (result.saslMechanism as 'SCRAM-SHA-256' | 'SCRAM-SHA-512') ?? 'SCRAM-SHA-256',
-          consumerGroup: result.consumerGroup ?? '',
-        });
-      }
-
-      const resetStores = () => {
-        useOnboardingTopicDataStore.getState().reset();
-        useOnboardingUserDataStore.getState().reset();
-        setRedpandaSetupConfig(null);
-      };
-
-      try {
-        const newYaml = getConnectTemplate({
-          connectionName: redpandaSetupConfig.connectionName,
-          connectionType: redpandaSetupConfig.connectionType,
-          components,
-          showAdvancedFields: false,
-          existingYaml: yamlContent,
-        });
-
-        if (newYaml) {
-          onYamlChange(newYaml);
-        }
-        resetStores();
-      } catch (error) {
-        resetStores();
-        throw error;
-      }
+      setRedpandaConnectorConfig(null);
     },
-    [redpandaSetupConfig, components, yamlContent, onYamlChange]
+    [redpandaConnectorConfig, yamlContent, components, onYamlChange]
   );
 
   return (
@@ -322,24 +282,14 @@ export function ConnectorWizard({
         />
       ) : null}
 
-      {redpandaSetupConfig !== null && (
-        <Dialog onOpenChange={(open) => !open && setRedpandaSetupConfig(null)} open>
-          <DialogContent size="xl">
-            <RedpandaConnectorSetupStepper.Provider initialStep={RedpandaConnectorSetupStep.ADD_TOPIC}>
-              {({ methods }) => (
-                <RedpandaSetupSteps
-                  connectionName={redpandaSetupConfig.connectionName}
-                  connectionType={redpandaSetupConfig.connectionType}
-                  methods={methods}
-                  onClose={() => setRedpandaSetupConfig(null)}
-                  onComplete={handleRedpandaSetupComplete}
-                  serverlessHint={serverlessHint}
-                />
-              )}
-            </RedpandaConnectorSetupStepper.Provider>
-          </DialogContent>
-        </Dialog>
-      )}
+      {redpandaConnectorConfig !== null ? (
+        <RedpandaConnectorSetupWizard
+          connectionName={redpandaConnectorConfig.connectionName}
+          connectionType={redpandaConnectorConfig.connectionType}
+          onClose={() => setRedpandaConnectorConfig(null)}
+          onComplete={handleRedpandaSetupComplete}
+        />
+      ) : null}
     </>
   );
 }

@@ -25,12 +25,28 @@ import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
+
+function EditorSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <Skeleton variant="text" width="lg" />
+      <Skeleton variant="text" width="md" />
+      <Skeleton variant="text" width="lg" />
+      <Skeleton variant="text" width="sm" />
+      <Skeleton variant="text" width="md" />
+      <Skeleton variant="text" width="lg" />
+      <Skeleton variant="text" width="sm" />
+    </div>
+  );
+}
+
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
@@ -74,7 +90,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { ConfigDialog } from './config-dialog';
-import { ConnectorWizard } from './connector-wizard';
+import { ConnectorWizard, RedpandaConnectorSetupWizard, type RedpandaSetupResult } from './connector-wizard';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
@@ -85,10 +101,11 @@ import { extractLintHintsFromError } from '../errors';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
+import { RedpandaConnectorSetupStep } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
 import { parseSchema } from '../utils/schema';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { getConnectTemplate } from '../utils/yaml';
+import { applyRedpandaSetup, getConnectTemplate } from '../utils/yaml';
 
 const pipelineFormSchema = z.object({
   name: z
@@ -174,10 +191,16 @@ export default function PipelinePage() {
   const search = useSearch({ strict: false }) as { serverless?: string };
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
 
-  // Zustand store for wizard persistence (CREATE mode only)
   const isServerlessMode = search.serverless === 'true';
-  const hasInitializedServerless = useRef(false);
+  const [hasInitializedServerless, setHasInitializedServerless] = useState(false);
+  const isAwaitingServerlessInit = useMemo(
+    () => mode === 'create' && isServerlessMode && !hasInitializedServerless,
+    [mode, isServerlessMode, hasInitializedServerless]
+  );
+
+  const [serverlessInitTimedOut, setServerlessInitTimedOut] = useState(false);
   const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
+
   const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
 
   const form = useForm<PipelineFormValues>({
@@ -203,6 +226,14 @@ export default function PipelinePage() {
     setIsCommandMenuOpen(false);
   }, []);
   const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
+
+  useEffect(() => {
+    if (!isAwaitingServerlessInit) {
+      return;
+    }
+    const timer = setTimeout(() => setServerlessInitTimedOut(true), 3000);
+    return () => clearTimeout(timer);
+  }, [isAwaitingServerlessInit]);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -264,6 +295,10 @@ export default function PipelinePage() {
   const { data: lintResponse, isPending: isLintPending } = useLintPipelineConfigQuery(debouncedYamlContent, {
     enabled: mode !== 'view',
   });
+  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
+
+  const pipelineName = useWatch({ control: form.control, name: 'name' });
+  const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
   // Derive lint hints from response (replaces useEffect + setState)
   const responseLintHints = useMemo(() => {
@@ -307,26 +342,23 @@ export default function PipelinePage() {
   // Load persisted YAML from Zustand (CREATE mode only)
   const hasLoadedPersistedYaml = useRef(false);
   useEffect(() => {
+    if (isPipelineDiagramsEnabled) {
+      return; // single-route UX, no cross-route YAML persistence needed
+    }
     if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
       hasLoadedPersistedYaml.current = true;
       queueMicrotask(() => setYamlContent(persistedYamlContent));
     }
-  }, [mode, persistedYamlContent]);
+  }, [mode, persistedYamlContent, isPipelineDiagramsEnabled]);
 
   // Serverless mode initialization - generate YAML from onboarding wizard store on mount.
   // Cloud UI populates useOnboardingWizardDataStore (sessionStorage) with the selected
   // connector, then navigates here via the wizard redirect. Wait for hydration before reading.
   const wizardStoreHydrated = useOnboardingWizardDataStore((state) => state.hasHydrated);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, ref prevents re-initialization
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, state flag prevents re-initialization
   useEffect(() => {
-    if (
-      mode !== 'create' ||
-      !isServerlessMode ||
-      hasInitializedServerless.current ||
-      components.length === 0 ||
-      !wizardStoreHydrated
-    ) {
+    if (!isAwaitingServerlessInit || components.length === 0 || !wizardStoreHydrated) {
       return;
     }
 
@@ -356,37 +388,55 @@ export default function PipelinePage() {
       }
 
       if (generatedYaml) {
-        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: generatedYaml });
+        if (!isPipelineDiagramsEnabled) {
+          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: generatedYaml });
+        }
+        queueMicrotask(() => {
+          setYamlContent(generatedYaml);
+          setHasInitializedServerless(true);
+        });
+      } else {
+        queueMicrotask(() => setHasInitializedServerless(true));
       }
+    } else {
+      queueMicrotask(() => setHasInitializedServerless(true));
     }
-
-    hasInitializedServerless.current = true;
   }, [components, wizardStoreHydrated]);
 
-  // Auto-open redpanda setup dialog when arriving from serverless onboarding with a redpanda connector
-  const wizardInput = useOnboardingWizardDataStore((state) => state.input);
-  const wizardOutput = useOnboardingWizardDataStore((state) => state.output);
-  const autoOpenRedpandaSetup = useMemo(() => {
-    if (!isServerlessMode) {
-      return;
-    }
-    if (wizardInput?.connectionName === 'redpanda') {
-      return { connectionName: 'redpanda', connectionType: wizardInput.connectionType };
-    }
-    if (wizardOutput?.connectionName === 'redpanda') {
-      return { connectionName: 'redpanda', connectionType: wizardOutput.connectionType };
-    }
-    return;
-  }, [isServerlessMode, wizardInput, wizardOutput]);
+  // Direct Redpanda setup — opens RedpandaSetupSteps at a specific step (topic or auth)
+  // triggered by hint buttons in the pipeline flow diagram.
+  const [redpandaConnectorToSetup, setRedpandaConnectorToSetup] = useState<{
+    connectionName: string;
+    connectionType: ConnectComponentType;
+    initialStep: (typeof RedpandaConnectorSetupStep)[keyof typeof RedpandaConnectorSetupStep];
+  } | null>(null);
+
+  const handleAddTopic = useCallback((section: string, componentName: string) => {
+    setRedpandaConnectorToSetup({
+      connectionName: componentName,
+      connectionType: section as ConnectComponentType,
+      initialStep: RedpandaConnectorSetupStep.ADD_TOPIC,
+    });
+  }, []);
+
+  const handleAddSasl = useCallback((section: string, componentName: string) => {
+    setRedpandaConnectorToSetup({
+      connectionName: componentName,
+      connectionType: section as ConnectComponentType,
+      initialStep: RedpandaConnectorSetupStep.ADD_USER,
+    });
+  }, []);
 
   // Clear wizard store (CREATE mode)
   const clearWizardStore = useCallback(() => {
-    useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: '' });
+    if (!isPipelineDiagramsEnabled) {
+      useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: '' });
+    }
     useOnboardingWizardDataStore.getState().setWizardData({
       input: undefined,
       output: undefined,
     });
-  }, []);
+  }, [isPipelineDiagramsEnabled]);
 
   const handleCancel = useCallback(() => {
     if (mode === 'create') {
@@ -498,11 +548,11 @@ export default function PipelinePage() {
     (value: string) => {
       setErrorLintHints({});
       setYamlContent(value);
-      if (mode === 'create') {
+      if (mode === 'create' && !isPipelineDiagramsEnabled) {
         useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
       }
     },
-    [mode]
+    [mode, isPipelineDiagramsEnabled]
   );
 
   // After adding a connector via wizard, focus editor and move cursor to end of file
@@ -526,10 +576,25 @@ export default function PipelinePage() {
     [handleYamlChange, editorInstance]
   );
 
-  // Slash menu tip banner — dismissable
-  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
-
-  const pipelineName = useWatch({ control: form.control, name: 'name' });
+  const handleRedpandaConnectorSetupComplete = useCallback(
+    (result: RedpandaSetupResult) => {
+      if (!redpandaConnectorToSetup) {
+        return;
+      }
+      const newYaml = applyRedpandaSetup({
+        yamlContent,
+        connectionName: redpandaConnectorToSetup.connectionName,
+        connectionType: redpandaConnectorToSetup.connectionType as 'input' | 'output',
+        result,
+        components,
+      });
+      if (newYaml) {
+        handleConnectorYamlChange(newYaml);
+      }
+      setRedpandaConnectorToSetup(null);
+    },
+    [redpandaConnectorToSetup, yamlContent, components, handleConnectorYamlChange]
+  );
 
   return (
     <div
@@ -556,15 +621,17 @@ export default function PipelinePage() {
       <div className="!border-border flex min-h-0 flex-1 rounded-lg border">
         <div className="!border-border flex w-[300px] shrink-0 flex-col border-r">
           <div className="min-h-0 flex-1">
-            {isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded() && (
+            {isPipelineDiagramsEnabled ? (
               <PipelineFlowDiagram
                 configYaml={yamlContent}
                 hideZoomControls
                 onAddConnector={
                   mode !== 'view' ? (type) => setAddConnectorType(type as ConnectComponentType) : undefined
                 }
+                onAddSasl={mode !== 'view' ? handleAddSasl : undefined}
+                onAddTopic={mode !== 'view' ? handleAddTopic : undefined}
               />
-            )}
+            ) : null}
           </div>
           {mode !== 'view' && (
             <>
@@ -572,7 +639,7 @@ export default function PipelinePage() {
                 editorContent={yamlContent}
                 hasInput={yamlContent.includes('input:')}
                 hasOutput={yamlContent.includes('output:')}
-                hideInputOutput={isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()}
+                hideInputOutput={isPipelineDiagramsEnabled}
                 onAddConnector={(type) => setAddConnectorType(type)}
               />
               <div className="px-4 pb-4">
@@ -594,7 +661,7 @@ export default function PipelinePage() {
                       setIsCommandMenuOpen(true);
                     }}
                     size="xs"
-                    variant="secondary-outline"
+                    variant="outline"
                   >
                     Insert
                   </Button>
@@ -633,28 +700,34 @@ export default function PipelinePage() {
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={70} minSize={30}>
                 <div className="relative h-full">
-                  {slashTipVisible ? (
-                    <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
-                      <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
-                        <BannerContent>
-                          Tip: use{' '}
-                          <Kbd size="xs" variant="filled">
-                            /
-                          </Kbd>{' '}
-                          to insert variables
-                        </BannerContent>
-                        <BannerClose onClick={() => setSlashTipVisible(false)} variant="ghost" />
-                      </Banner>
-                    </div>
-                  ) : null}
-                  <YamlEditor
-                    onChange={(val) => handleYamlChange(val || '')}
-                    onEditorMount={(editorRef) => setEditorInstance(editorRef)}
-                    options={slashTipVisible ? { padding: { top: 32 } } : undefined}
-                    schema={yamlEditorSchema}
-                    transparentBackground
-                    value={yamlContent}
-                  />
+                  {isAwaitingServerlessInit && !serverlessInitTimedOut ? (
+                    <EditorSkeleton />
+                  ) : (
+                    <>
+                      {slashTipVisible ? (
+                        <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
+                          <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
+                            <BannerContent>
+                              Tip: use{' '}
+                              <Kbd size="xs" variant="filled">
+                                /
+                              </Kbd>{' '}
+                              to insert variables
+                            </BannerContent>
+                            <BannerClose onClick={() => setSlashTipVisible(false)} variant="ghost" />
+                          </Banner>
+                        </div>
+                      ) : null}
+                      <YamlEditor
+                        onChange={(val) => handleYamlChange(val || '')}
+                        onEditorMount={(editorRef) => setEditorInstance(editorRef)}
+                        options={slashTipVisible ? { padding: { top: 32 } } : undefined}
+                        schema={yamlEditorSchema}
+                        transparentBackground
+                        value={yamlContent}
+                      />
+                    </>
+                  )}
                 </div>
               </ResizablePanel>
               <ResizableHandle withHandle />
@@ -711,13 +784,22 @@ export default function PipelinePage() {
 
       <ConnectorWizard
         addConnectorType={addConnectorType}
-        autoOpenRedpandaSetup={autoOpenRedpandaSetup}
         componentList={componentListResponse?.components}
         components={components}
         onClose={() => setAddConnectorType(null)}
         onYamlChange={handleConnectorYamlChange}
         yamlContent={yamlContent}
       />
+
+      {redpandaConnectorToSetup ? (
+        <RedpandaConnectorSetupWizard
+          connectionName={redpandaConnectorToSetup.connectionName}
+          connectionType={redpandaConnectorToSetup.connectionType}
+          initialStep={redpandaConnectorToSetup.initialStep}
+          onClose={() => setRedpandaConnectorToSetup(null)}
+          onComplete={handleRedpandaConnectorSetupComplete}
+        />
+      ) : null}
     </div>
   );
 }

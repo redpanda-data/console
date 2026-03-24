@@ -49,7 +49,7 @@ vi.mock('../onboarding/add-connector-dialog', () => ({
 vi.mock('../onboarding/add-topic-step', async () => {
   const React = await import('react');
   return {
-    AddTopicStep: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<unknown>) => {
+    AddTopicStep: React.forwardRef((_props: Record<string, unknown>, ref: React.Ref<unknown>) => {
       React.useImperativeHandle(ref, () => ({
         triggerSubmit: mockTopicSubmit,
         isPending: false,
@@ -63,7 +63,7 @@ vi.mock('../onboarding/add-topic-step', async () => {
 vi.mock('../onboarding/add-user-step', async () => {
   const React = await import('react');
   return {
-    AddUserStep: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<unknown>) => {
+    AddUserStep: React.forwardRef((_props: Record<string, unknown>, ref: React.Ref<unknown>) => {
       React.useImperativeHandle(ref, () => ({
         triggerSubmit: mockUserSubmit,
         isPending: false,
@@ -73,42 +73,15 @@ vi.mock('../onboarding/add-user-step', async () => {
   };
 });
 
-// Mock getConnectTemplate
+// Mock yaml helpers
 vi.mock('../utils/yaml', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../utils/yaml')>();
   return {
     ...actual,
     getConnectTemplate: vi.fn(() => 'generated:\n  yaml: {}'),
+    applyRedpandaSetup: vi.fn(() => 'patched:\n  yaml: {}'),
   };
 });
-
-// Track store mock calls
-const mockSetTopicData = vi.fn();
-const mockTopicReset = vi.fn();
-const mockSetUserData = vi.fn();
-const mockUserReset = vi.fn();
-const mockSetWizardData = vi.fn();
-
-vi.mock('state/onboarding-wizard-store', () => ({
-  useOnboardingTopicDataStore: Object.assign(
-    vi.fn(() => ({})),
-    {
-      getState: () => ({ setTopicData: mockSetTopicData, reset: mockTopicReset }),
-    }
-  ),
-  useOnboardingUserDataStore: Object.assign(
-    vi.fn(() => ({})),
-    {
-      getState: () => ({ setUserData: mockSetUserData, reset: mockUserReset }),
-    }
-  ),
-  useOnboardingWizardDataStore: Object.assign(
-    vi.fn(() => ({ input: undefined })),
-    {
-      getState: () => ({ setWizardData: mockSetWizardData }),
-    }
-  ),
-}));
 
 import { create } from '@bufbuild/protobuf';
 // Import component and dependencies AFTER mocks
@@ -116,7 +89,7 @@ import { ComponentListSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 
 import { ConnectorWizard } from './connector-wizard';
-import { getConnectTemplate } from '../utils/yaml';
+import { applyRedpandaSetup, getConnectTemplate } from '../utils/yaml';
 
 // Minimal ComponentList needed as prop
 const emptyComponentList = create(ComponentListSchema, { components: [] });
@@ -139,6 +112,7 @@ describe('ConnectorWizard', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.mocked(getConnectTemplate).mockReturnValue('generated:\n  yaml: {}');
+    vi.mocked(applyRedpandaSetup).mockReturnValue('patched:\n  yaml: {}');
     mockTopicSubmit.mockResolvedValue({
       success: true,
       data: { topicName: 'test-topic' },
@@ -212,7 +186,7 @@ describe('ConnectorWizard', () => {
       });
     });
 
-    it('completing both steps generates YAML with the configured topic and user', async () => {
+    it('completing both steps calls applyRedpandaSetup and onYamlChange', async () => {
       const { props } = renderWizard();
 
       fireEvent.click(screen.getByTestId('select-redpanda'));
@@ -225,56 +199,120 @@ describe('ConnectorWizard', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Done' }));
 
       await waitFor(() => {
-        expect(mockSetTopicData).toHaveBeenCalledWith({ topicName: 'test-topic' });
+        expect(applyRedpandaSetup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            connectionName: 'redpanda',
+            connectionType: 'input',
+            result: expect.objectContaining({
+              topicName: 'test-topic',
+              authMethod: 'sasl',
+              username: 'test-user',
+            }),
+          })
+        );
       });
 
-      expect(mockSetUserData).toHaveBeenCalledWith(
-        expect.objectContaining({
-          authMethod: 'sasl',
-          username: 'test-user',
-          saslMechanism: 'SCRAM-SHA-256',
-        })
-      );
-
-      expect(props.onYamlChange).toHaveBeenCalledWith('generated:\n  yaml: {}');
+      expect(props.onYamlChange).toHaveBeenCalledWith('patched:\n  yaml: {}');
     });
 
-    it('cleans up temporary state after generating YAML', async () => {
+    it('closes the Redpanda dialog after completing setup', async () => {
       renderWizard();
 
       fireEvent.click(screen.getByTestId('select-redpanda'));
+      expect(screen.getByText('Configure redpanda input')).toBeInTheDocument();
+
+      // Complete topic step
       fireEvent.click(screen.getByRole('button', { name: 'Next' }));
       await waitFor(() => expect(screen.getByTestId('add-user-step')).toBeInTheDocument());
+
+      // Complete user step
       fireEvent.click(screen.getByRole('button', { name: 'Done' }));
 
       await waitFor(() => {
-        expect(mockTopicReset).toHaveBeenCalled();
-        expect(mockUserReset).toHaveBeenCalled();
+        expect(screen.queryByText('Configure redpanda input')).not.toBeInTheDocument();
       });
     });
 
-    it('cleans up temporary state even when YAML generation fails', async () => {
-      vi.mocked(getConnectTemplate).mockImplementation(() => {
-        throw new Error('template error');
+    it('closes the connector picker when a Redpanda component is selected', () => {
+      const { props } = renderWizard();
+
+      fireEvent.click(screen.getByTestId('select-redpanda'));
+
+      expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it('cancelling the setup dialog does not generate YAML', async () => {
+      const { props } = renderWizard();
+
+      fireEvent.click(screen.getByTestId('select-redpanda'));
+      expect(screen.getByText('Configure redpanda input')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Configure redpanda input')).not.toBeInTheDocument();
       });
-
-      const errorHandler = (event: ErrorEvent) => event.preventDefault();
-      window.addEventListener('error', errorHandler);
-
-      const { props } = renderWizard({
-        autoOpenRedpandaSetup: { connectionName: 'redpanda', connectionType: 'input' },
-      });
-
-      // Skip both steps
-      fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
-      await waitFor(() => expect(screen.getByTestId('add-user-step')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
-
-      expect(mockTopicReset).toHaveBeenCalled();
-      expect(mockUserReset).toHaveBeenCalled();
+      expect(applyRedpandaSetup).not.toHaveBeenCalled();
       expect(props.onYamlChange).not.toHaveBeenCalled();
+    });
 
-      window.removeEventListener('error', errorHandler);
+    it('does not call onYamlChange when applyRedpandaSetup returns undefined', async () => {
+      vi.mocked(applyRedpandaSetup).mockReturnValue(undefined);
+      const { props } = renderWizard();
+
+      fireEvent.click(screen.getByTestId('select-redpanda'));
+
+      // Complete topic step
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await waitFor(() => expect(screen.getByTestId('add-user-step')).toBeInTheDocument());
+
+      // Complete user step
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+      await waitFor(() => {
+        expect(applyRedpandaSetup).toHaveBeenCalled();
+      });
+      expect(props.onYamlChange).not.toHaveBeenCalled();
+      // Dialog should still close
+      await waitFor(() => {
+        expect(screen.queryByText('Configure redpanda input')).not.toBeInTheDocument();
+      });
+    });
+
+    it('passes service-account auth data to applyRedpandaSetup', async () => {
+      mockUserSubmit.mockResolvedValue({
+        success: true,
+        data: {
+          authMethod: 'service-account',
+          serviceAccountName: 'sa-name',
+          serviceAccountId: 'sa-id',
+          serviceAccountSecretName: 'sa-secret',
+        },
+      });
+
+      renderWizard();
+
+      fireEvent.click(screen.getByTestId('select-redpanda'));
+
+      // Complete topic step
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      await waitFor(() => expect(screen.getByTestId('add-user-step')).toBeInTheDocument());
+
+      // Complete user step
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+      await waitFor(() => {
+        expect(applyRedpandaSetup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            result: expect.objectContaining({
+              authMethod: 'service-account',
+              serviceAccountName: 'sa-name',
+              serviceAccountId: 'sa-id',
+              serviceAccountSecretName: 'sa-secret',
+            }),
+          })
+        );
+      });
     });
   });
 
@@ -306,23 +344,48 @@ describe('ConnectorWizard', () => {
         expect(screen.getByTestId('add-topic-step')).toBeInTheDocument();
       });
     });
-  });
 
-  describe('serverless onboarding', () => {
-    it('automatically opens Redpanda setup when arriving from serverless wizard', () => {
-      renderWizard({
-        autoOpenRedpandaSetup: { connectionName: 'redpanda', connectionType: 'input' },
+    it('skipping topic then completing user calls applyRedpandaSetup with user data only', async () => {
+      const { props } = renderWizard();
+
+      fireEvent.click(screen.getByTestId('select-redpanda'));
+
+      // Skip topic
+      fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+      await waitFor(() => expect(screen.getByTestId('add-user-step')).toBeInTheDocument());
+
+      // Complete user
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+      await waitFor(() => {
+        expect(applyRedpandaSetup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            result: expect.objectContaining({ authMethod: 'sasl', username: 'test-user' }),
+          })
+        );
+        // topicName should be undefined since topic step was skipped
+        const call = vi.mocked(applyRedpandaSetup).mock.calls[0][0];
+        expect(call.result.topicName).toBeUndefined();
       });
-
-      expect(screen.getByText('Configure redpanda input')).toBeInTheDocument();
+      expect(props.onYamlChange).toHaveBeenCalledWith('patched:\n  yaml: {}');
     });
 
-    it('shows a contextual hint explaining the serverless setup', () => {
-      renderWizard({
-        autoOpenRedpandaSetup: { connectionName: 'redpanda', connectionType: 'input' },
-      });
+    it('skipping all steps still inserts a base template', async () => {
+      const { props } = renderWizard();
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('select-redpanda'));
+
+      // Skip topic → user step
+      fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+      await waitFor(() => expect(screen.getByTestId('add-user-step')).toBeInTheDocument());
+
+      // Skip user (last step) → calls onComplete({}) which generates base template
+      fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+
+      await waitFor(() => {
+        expect(applyRedpandaSetup).toHaveBeenCalledWith(expect.objectContaining({ result: {} }));
+      });
+      expect(props.onYamlChange).toHaveBeenCalledWith('patched:\n  yaml: {}');
     });
   });
 });

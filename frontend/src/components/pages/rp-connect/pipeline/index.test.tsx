@@ -135,6 +135,7 @@ vi.mock('./connector-wizard', () => ({
     mockConnectorWizardProps(props);
     return null;
   },
+  RedpandaConnectorSetupWizard: () => null,
 }));
 
 // 6. Mock PipelineCommandMenu to render a simple testable version
@@ -650,47 +651,19 @@ describe('PipelinePage', () => {
         expect(yamlEditor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
       });
     });
+  });
 
-    it('serverless onboarding with a Redpanda connector auto-opens the setup wizard', async () => {
-      mockSearch.mockReturnValue({ serverless: 'true' });
+  // ── ConnectorWizard integration ─────────────────────────────────────
 
-      // Override the wizard data store to return redpanda input data
-      const { useOnboardingWizardDataStore } = await import('state/onboarding-wizard-store');
-      const originalImpl = useOnboardingWizardDataStore.getMockImplementation?.() ?? (() => ({ hasHydrated: true }));
-      (useOnboardingWizardDataStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-        (selector: (state: Record<string, unknown>) => unknown) =>
-          selector({
-            hasHydrated: true,
-            input: { connectionName: 'redpanda', connectionType: 'input' },
-            output: undefined,
-          })
-      );
+  it('does not pass removed redpandaConnectorConfig prop to ConnectorWizard', async () => {
+    render(<PipelinePage />, { transport: createTransport() });
 
-      render(<PipelinePage />, { transport: createTransport() });
-
-      await waitFor(() => {
-        expect(mockConnectorWizardProps).toHaveBeenCalledWith(
-          expect.objectContaining({
-            autoOpenRedpandaSetup: { connectionName: 'redpanda', connectionType: 'input' },
-          })
-        );
-      });
-
-      // Restore original implementation
-      (useOnboardingWizardDataStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(originalImpl);
+    await waitFor(() => {
+      expect(mockConnectorWizardProps).toHaveBeenCalled();
     });
 
-    it('standard mode does not auto-open the connector setup wizard', async () => {
-      // Default: search returns {} (no serverless flag)
-      render(<PipelinePage />, { transport: createTransport() });
-
-      await waitFor(() => {
-        expect(mockConnectorWizardProps).toHaveBeenCalledWith(
-          expect.objectContaining({
-            autoOpenRedpandaSetup: undefined,
-          })
-        );
-      });
-    });
+    const lastCall = mockConnectorWizardProps.mock.calls.at(-1)?.[0];
+    expect(lastCall).not.toHaveProperty('redpandaConnectorConfig');
+    expect(lastCall).not.toHaveProperty('onRedpandaConnectorDialogClose');
   });
 });
