@@ -178,7 +178,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
                 icon={<PlusIcon className="size-3" />}
                 onClick={() => data.onAddTopic?.(data.section ?? '', data.label)}
                 size="xs"
-                variant="outline"
+                variant="secondary"
               >
                 Topic
               </Button>
@@ -189,7 +189,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
                 icon={<PlusIcon className="size-3" />}
                 onClick={() => data.onAddSasl?.(data.section ?? '', data.label)}
                 size="xs"
-                variant="outline"
+                variant="secondary"
               >
                 User
               </Button>

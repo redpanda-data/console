@@ -824,3 +824,37 @@ export function extractAllTopics(yamlContent: string): string[] {
   walkForTopics(config);
   return [...topics];
 }
+
+/**
+ * Generates YAML from onboarding wizard connection data by composing
+ * input and (optionally) output templates via getConnectTemplate.
+ */
+export function generateYamlFromWizardData(
+  input: { connectionName: string; connectionType: string } | undefined,
+  output: { connectionName: string; connectionType: string } | undefined,
+  components: ConnectComponentSpec[]
+): string {
+  if (!(input?.connectionName && input?.connectionType)) {
+    return '';
+  }
+
+  let yaml =
+    getConnectTemplate({
+      connectionName: input.connectionName,
+      connectionType: input.connectionType,
+      components,
+      existingYaml: '',
+    }) || '';
+
+  if (output?.connectionName && output?.connectionType) {
+    yaml =
+      getConnectTemplate({
+        connectionName: output.connectionName,
+        connectionType: output.connectionType,
+        components,
+        existingYaml: yaml,
+      }) || yaml;
+  }
+
+  return yaml;
+}

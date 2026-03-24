@@ -64,7 +64,7 @@ export const AddConnectorsCard = memo(
             ))}
             {Boolean(inputSupportsScanner) && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
           </div>
-          {hideInputOutput || !(hasInput && hasOutput) ? null : (
+          {hideInputOutput || (hasInput && hasOutput) ? null : (
             <div className="flex flex-col gap-2">
               <Separator className="mb-2" />
               {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" variant="outline" />}

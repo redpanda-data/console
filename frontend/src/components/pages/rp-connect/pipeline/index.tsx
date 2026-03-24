@@ -79,7 +79,6 @@ import {
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { toast } from 'sonner';
 import {
-  getWizardConnectionData,
   useOnboardingUserDataStore,
   useOnboardingWizardDataStore,
   useOnboardingYamlContentStore,
@@ -104,8 +103,9 @@ import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { RedpandaConnectorSetupStep } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
 import { parseSchema } from '../utils/schema';
+import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { applyRedpandaSetup, getConnectTemplate } from '../utils/yaml';
+import { applyRedpandaSetup } from '../utils/yaml';
 
 const pipelineFormSchema = z.object({
   name: z
@@ -192,14 +192,6 @@ export default function PipelinePage() {
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
 
   const isServerlessMode = search.serverless === 'true';
-  const [hasInitializedServerless, setHasInitializedServerless] = useState(false);
-  const isAwaitingServerlessInit = useMemo(
-    () => mode === 'create' && isServerlessMode && !hasInitializedServerless,
-    [mode, isServerlessMode, hasInitializedServerless]
-  );
-
-  const [serverlessInitTimedOut, setServerlessInitTimedOut] = useState(false);
-  const persistedYamlContent = useOnboardingYamlContentStore((state) => state.yamlContent);
 
   const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
 
@@ -226,14 +218,6 @@ export default function PipelinePage() {
     setIsCommandMenuOpen(false);
   }, []);
   const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
-
-  useEffect(() => {
-    if (!isAwaitingServerlessInit) {
-      return;
-    }
-    const timer = setTimeout(() => setServerlessInitTimedOut(true), 3000);
-    return () => clearTimeout(timer);
-  }, [isAwaitingServerlessInit]);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
   useEffect(() => {
@@ -300,7 +284,6 @@ export default function PipelinePage() {
   const pipelineName = useWatch({ control: form.control, name: 'name' });
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
-  // Derive lint hints from response (replaces useEffect + setState)
   const responseLintHints = useMemo(() => {
     if (!lintResponse) {
       return {};
@@ -335,73 +318,17 @@ export default function PipelinePage() {
           .filter(([k]) => !isSystemTag(k))
           .map(([key, value]) => ({ key, value })),
       });
-      queueMicrotask(() => setYamlContent(pipeline.configYaml));
+      setYamlContent(pipeline.configYaml);
     }
   }, [pipeline, mode, form]);
 
-  // Load persisted YAML from Zustand (CREATE mode only)
-  const hasLoadedPersistedYaml = useRef(false);
-  useEffect(() => {
-    if (isPipelineDiagramsEnabled) {
-      return; // single-route UX, no cross-route YAML persistence needed
-    }
-    if (mode === 'create' && persistedYamlContent && !hasLoadedPersistedYaml.current) {
-      hasLoadedPersistedYaml.current = true;
-      queueMicrotask(() => setYamlContent(persistedYamlContent));
-    }
-  }, [mode, persistedYamlContent, isPipelineDiagramsEnabled]);
-
-  // Serverless mode initialization - generate YAML from onboarding wizard store on mount.
-  // Cloud UI populates useOnboardingWizardDataStore (sessionStorage) with the selected
-  // connector, then navigates here via the wizard redirect. Wait for hydration before reading.
-  const wizardStoreHydrated = useOnboardingWizardDataStore((state) => state.hasHydrated);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Only runs once after hydration, state flag prevents re-initialization
-  useEffect(() => {
-    if (!isAwaitingServerlessInit || components.length === 0 || !wizardStoreHydrated) {
-      return;
-    }
-
-    const { input: inputData, output: outputData } = getWizardConnectionData();
-
-    if (inputData?.connectionName && inputData?.connectionType) {
-      let generatedYaml = '';
-
-      // Generate input template
-      generatedYaml =
-        getConnectTemplate({
-          connectionName: inputData.connectionName,
-          connectionType: inputData.connectionType,
-          components,
-          existingYaml: generatedYaml,
-        }) || generatedYaml;
-
-      // Generate output template if exists
-      if (outputData?.connectionName && outputData?.connectionType) {
-        generatedYaml =
-          getConnectTemplate({
-            connectionName: outputData.connectionName,
-            connectionType: outputData.connectionType,
-            components,
-            existingYaml: generatedYaml,
-          }) || generatedYaml;
-      }
-
-      if (generatedYaml) {
-        if (!isPipelineDiagramsEnabled) {
-          useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: generatedYaml });
-        }
-        queueMicrotask(() => {
-          setYamlContent(generatedYaml);
-          setHasInitializedServerless(true);
-        });
-      } else {
-        queueMicrotask(() => setHasInitializedServerless(true));
-      }
-    } else {
-      queueMicrotask(() => setHasInitializedServerless(true));
-    }
-  }, [components, wizardStoreHydrated]);
+  const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
+    enabled: mode === 'create',
+    isServerlessMode,
+    components,
+    isPipelineDiagramsEnabled,
+    onResolved: setYamlContent,
+  });
 
   // Direct Redpanda setup — opens RedpandaSetupSteps at a specific step (topic or auth)
   // triggered by hint buttons in the pipeline flow diagram.
@@ -700,7 +627,7 @@ export default function PipelinePage() {
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={70} minSize={30}>
                 <div className="relative h-full">
-                  {isAwaitingServerlessInit && !serverlessInitTimedOut ? (
+                  {isServerlessInitializing ? (
                     <EditorSkeleton />
                   ) : (
                     <>

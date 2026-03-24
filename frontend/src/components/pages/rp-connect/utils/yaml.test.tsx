@@ -6,6 +6,7 @@ import {
   applyRedpandaSetup,
   configToYaml,
   extractAllTopics,
+  generateYamlFromWizardData,
   getConnectTemplate,
   mergeConnectConfigs,
   parseConfigComponents,
@@ -1390,6 +1391,47 @@ input:
       expect(result).toBeDefined();
       expect(result).toContain('topic: my-output-topic');
       expect(result).not.toContain('topics:');
+    });
+  });
+
+  describe('generateYamlFromWizardData', () => {
+    const allComponents = Object.values(mockComponents);
+
+    test('returns empty string when input is undefined', () => {
+      expect(generateYamlFromWizardData(undefined, undefined, allComponents)).toBe('');
+    });
+
+    test('returns empty string when connectionName is empty', () => {
+      expect(
+        generateYamlFromWizardData({ connectionName: '', connectionType: 'input' }, undefined, allComponents)
+      ).toBe('');
+    });
+
+    test('generates input-only YAML when no output provided', () => {
+      const yaml = generateYamlFromWizardData(
+        { connectionName: 'generate', connectionType: 'input' },
+        undefined,
+        allComponents
+      );
+      expect(yaml).toContain('input:');
+      expect(yaml).toContain('generate:');
+      expect(yaml).not.toContain('output:');
+    });
+
+    test('generates merged input+output YAML', () => {
+      const yaml = generateYamlFromWizardData(
+        { connectionName: 'generate', connectionType: 'input' },
+        { connectionName: 'kafka', connectionType: 'output' },
+        allComponents
+      );
+      expect(yaml).toContain('input:');
+      expect(yaml).toContain('output:');
+    });
+
+    test('returns empty string when components list is empty', () => {
+      expect(generateYamlFromWizardData({ connectionName: 'generate', connectionType: 'input' }, undefined, [])).toBe(
+        ''
+      );
     });
   });
 });
