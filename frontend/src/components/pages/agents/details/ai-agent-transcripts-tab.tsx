@@ -10,8 +10,14 @@
  */
 
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
+import {
+  formatProtoDuration,
+  formatProtoTimestamp,
+  formatTokenCount,
+} from 'components/pages/transcripts/utils/transcript-formatters';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Select,
@@ -22,14 +28,12 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { AlertCircle, Inbox, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, RefreshCw, Search } from 'lucide-react';
 import { TranscriptStatus } from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
 import { type ChangeEvent, useMemo, useState } from 'react';
 import { useListTranscriptsQuery } from 'react-query/api/transcript';
 
 import { ConversationStatusBadge } from './conversation-status-badge';
-import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
-import { formatDuration as formatDurationMs, formatTimestamp as formatTimestampMs } from 'components/pages/transcripts/utils/transcript-formatters';
 
 const routeApi = getRouteApi('/agents/$id/');
 
@@ -61,7 +65,7 @@ export const AIAgentTranscriptsTab = () => {
 
   const { data, isLoading, isFetching, error, dataUpdatedAt, refetch } = useListTranscriptsQuery({ agentId: id });
 
-  const transcripts = useMemo(() => data?.transcripts ?? [], [data?.transcripts]);
+  const transcripts = data?.transcripts ?? [];
 
   const filteredTranscripts = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -136,12 +140,16 @@ export const AIAgentTranscriptsTab = () => {
         </CardHeader>
         <CardContent className="p-0">
           {filteredTranscripts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-12">
-              <Inbox className="h-12 w-12 text-muted-foreground/40" strokeWidth={1.5} />
-              <p className="text-muted-foreground text-sm">
-                {transcripts.length > 0 ? 'No transcripts match your search criteria' : 'No transcripts yet'}
-              </p>
-            </div>
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>{transcripts.length > 0 ? 'No matching transcripts' : 'No transcripts yet'}</EmptyTitle>
+                <EmptyDescription>
+                  {transcripts.length > 0
+                    ? 'No transcripts match your search criteria'
+                    : 'Transcripts will appear here once this agent processes conversations'}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <Table variant="simple">
               <TableHeader>
@@ -170,17 +178,15 @@ export const AIAgentTranscriptsTab = () => {
                       {transcript.conversationId}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {transcript.startTime ? formatTimestampMs(timestampDate(transcript.startTime).getTime()) : '—'}
+                      {formatProtoTimestamp(transcript.startTime)}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{transcript.duration ? formatDurationMs(durationMs(transcript.duration)) : '—'}</TableCell>
+                    <TableCell className="font-mono text-sm">{formatProtoDuration(transcript.duration)}</TableCell>
                     <TableCell className="text-center">{transcript.turnCount}</TableCell>
                     <TableCell>
                       <ConversationStatusBadge status={transcript.status} />
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
-                      {transcript.usage?.totalTokens != null
-                        ? Number(transcript.usage.totalTokens).toLocaleString()
-                        : '—'}
+                      {formatTokenCount(transcript.usage?.totalTokens)}
                     </TableCell>
                   </TableRow>
                 ))}

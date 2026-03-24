@@ -15,17 +15,21 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ConversationDetailPage } from 'components/pages/agents/details/conversation-detail-page';
 import { GetTranscriptRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/transcript_pb';
 import { getTranscript } from 'protogen/redpanda/api/dataplane/v1alpha3/transcript-TranscriptService_connectquery';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 export const Route = createFileRoute('/agents/$id/transcripts/$conversationId')({
   staticData: {
     title: 'Conversation',
   },
   loader: ({ context: { queryClient, dataplaneTransport }, params: { id, conversationId } }) => {
+    if (!useSupportedFeaturesStore.getState().tracingService) {
+      return;
+    }
     // Prefetch without blocking — component handles loading/error states
     queryClient.prefetchQuery(
       createQueryOptions(getTranscript, create(GetTranscriptRequestSchema, { agentId: id, conversationId }), {
         transport: dataplaneTransport,
-      }),
+      })
     );
   },
   component: ConversationDetailPage,

@@ -9,8 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
+import { durationMs } from '@bufbuild/protobuf/wkt';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
+import {
+  formatProtoDuration,
+  formatProtoTime,
+  formatProtoTimestamp,
+  formatTokenCount,
+} from 'components/pages/transcripts/utils/transcript-formatters';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -41,7 +47,6 @@ import { useGetTranscriptQuery } from 'react-query/api/transcript';
 import { uiState } from 'state/ui-state';
 
 import { ConversationStatusBadge } from './conversation-status-badge';
-import { formatDuration as formatDurationMs, formatTimestamp as formatTimestampMs } from 'components/pages/transcripts/utils/transcript-formatters';
 
 // -- Helpers --
 
@@ -249,9 +254,7 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
         const llmCalls = interaction.agentResponses.filter((r) => r.role === TranscriptTurnRole.ASSISTANT).length;
         const toolCallCount = allToolCalls.length;
 
-        const userTimestamp = interaction.userInput?.timestamp
-          ? new Date(Number(interaction.userInput.timestamp.seconds) * 1000).toLocaleTimeString()
-          : '—';
+        const userTimestamp = formatProtoTime(interaction.userInput?.timestamp);
 
         return (
           <Card
@@ -273,15 +276,13 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
                 {!isReconstructed && (
                   <div className="flex items-center gap-1 text-muted-foreground text-xs">
                     <Zap className="size-3" />
-                    <span className="font-mono">{totalTokens.toLocaleString()}</span>
+                    <span className="font-mono">{formatTokenCount(totalTokens)}</span>
                   </div>
                 )}
                 {!isReconstructed && (
                   <div className="flex items-center gap-1 text-muted-foreground text-xs">
                     <Clock className="size-3" />
-                    <span className="font-mono">
-                      {endToEndMs > 0 ? `${(endToEndMs / 1000).toFixed(1)}s` : '—'}
-                    </span>
+                    <span className="font-mono">{endToEndMs > 0 ? `${(endToEndMs / 1000).toFixed(1)}s` : '—'}</span>
                   </div>
                 )}
               </div>
@@ -354,9 +355,7 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
 
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Latency</span>
-                        <span className="font-mono">
-                          {endToEndMs > 0 ? `${(endToEndMs / 1000).toFixed(1)}s` : '—'}
-                        </span>
+                        <span className="font-mono">{endToEndMs > 0 ? `${(endToEndMs / 1000).toFixed(1)}s` : '—'}</span>
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -369,7 +368,7 @@ const ThreeColumnView = ({ interactions, systemPrompt }: { systemPrompt: string;
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Tokens</span>
                         <span className="font-mono">
-                          {totalInputTokens.toLocaleString()} in / {totalOutputTokens.toLocaleString()} out
+                          {formatTokenCount(totalInputTokens)} in / {formatTokenCount(totalOutputTokens)} out
                         </span>
                       </div>
 
@@ -473,17 +472,11 @@ const ChatView = ({ systemPrompt, turns }: { systemPrompt: string; turns: Transc
                   >
                     <p className="whitespace-pre-wrap text-sm leading-relaxed">{turn.content}</p>
                     <div className="mt-2 flex items-center gap-3 text-muted-foreground text-xs">
-                      {!turn.isReconstructed && (
-                        <span>
-                          {turn.timestamp
-                            ? new Date(Number(turn.timestamp.seconds) * 1000).toLocaleTimeString()
-                            : ''}
-                        </span>
-                      )}
-                      {!isUser && !turn.isReconstructed && Boolean(turn.latency) && (
+                      {!turn.isReconstructed && <span>{formatProtoTime(turn.timestamp)}</span>}
+                      {!(isUser || turn.isReconstructed) && Boolean(turn.latency) && (
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />
-                          {formatDurationMs(durationMs(turn.latency!))}
+                          {formatProtoDuration(turn.latency)}
                         </span>
                       )}
                     </div>
@@ -567,10 +560,10 @@ export const ConversationDetailPage = () => {
               {summary ? <ConversationStatusBadge status={summary.status} /> : null}
             </div>
             <div className="mt-1 flex items-center gap-4 text-muted-foreground text-xs">
-              <span>{summary?.startTime ? formatTimestampMs(timestampDate(summary.startTime).getTime()) : '—'}</span>
+              <span>{formatProtoTimestamp(summary?.startTime)}</span>
               <span className="flex items-center gap-1">
                 <Clock className="size-3" />
-                {summary?.duration ? formatDurationMs(durationMs(summary.duration)) : '—'}
+                {formatProtoDuration(summary?.duration)}
               </span>
               <span>{summary?.turnCount ?? 0} turns</span>
             </div>
@@ -582,9 +575,7 @@ export const ConversationDetailPage = () => {
           {summary?.usage ? (
             <div className="flex items-center gap-1 rounded-md bg-muted px-2 py-1">
               <Zap className="size-3 text-muted-foreground" />
-              <span className="font-medium font-mono text-xs">
-                {Number(summary.usage.totalTokens).toLocaleString()}
-              </span>
+              <span className="font-medium font-mono text-xs">{formatTokenCount(summary.usage.totalTokens)}</span>
             </div>
           ) : null}
 
