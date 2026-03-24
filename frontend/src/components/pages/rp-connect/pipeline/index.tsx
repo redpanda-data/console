@@ -47,6 +47,8 @@ function EditorSkeleton() {
   );
 }
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
@@ -89,7 +91,6 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { ConfigDialog } from './config-dialog';
-import { ConnectorWizard, RedpandaConnectorSetupWizard, type RedpandaSetupResult } from './connector-wizard';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
@@ -97,15 +98,18 @@ import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { Toolbar } from './toolbar';
 import { useSlashCommand } from './use-slash-command';
 import { extractLintHintsFromError } from '../errors';
+import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
+import { AddTopicStep } from '../onboarding/add-topic-step';
+import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
-import { RedpandaConnectorSetupStep } from '../types/constants';
 import type { ConnectComponentType } from '../types/schema';
+import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { applyRedpandaSetup } from '../utils/yaml';
+import { getConnectTemplate, type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yaml';
 
 const pipelineFormSchema = z.object({
   name: z
@@ -307,7 +311,11 @@ export default function PipelinePage() {
     return merged;
   }, [errorLintHints, responseLintHints]);
 
-  // Initialize form data from pipeline (edit/view)
+  // Initialize form data from pipeline (edit/view).
+  // Synchronous setState is intentional: YAML has dual ownership (server data → local edits),
+  // so it can't be derived. queueMicrotask was tried but caused a flash (skeleton removed
+  // before editor had content). Bounded to one extra render per pipeline load.
+  // react-doctor: set-state-in-effect
   useEffect(() => {
     if (pipeline && mode !== 'create') {
       form.reset({
@@ -330,28 +338,26 @@ export default function PipelinePage() {
     onResolved: setYamlContent,
   });
 
-  // Direct Redpanda setup — opens RedpandaSetupSteps at a specific step (topic or auth)
-  // triggered by hint buttons in the pipeline flow diagram.
-  const [redpandaConnectorToSetup, setRedpandaConnectorToSetup] = useState<{
-    connectionName: string;
-    connectionType: ConnectComponentType;
-    initialStep: (typeof RedpandaConnectorSetupStep)[keyof typeof RedpandaConnectorSetupStep];
+  // Direct topic/user dialogs — triggered by hint buttons in the pipeline flow diagram.
+  const [topicDialogTarget, setTopicDialogTarget] = useState<{
+    section: 'input' | 'output';
+    componentName: string;
   } | null>(null);
+  const [userDialogTarget, setUserDialogTarget] = useState<{
+    section: 'input' | 'output';
+    componentName: string;
+  } | null>(null);
+  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
+  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
+  const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
+  const userStepRef = useRef<UserStepRef>(null);
 
   const handleAddTopic = useCallback((section: string, componentName: string) => {
-    setRedpandaConnectorToSetup({
-      connectionName: componentName,
-      connectionType: section as ConnectComponentType,
-      initialStep: RedpandaConnectorSetupStep.ADD_TOPIC,
-    });
+    setTopicDialogTarget({ section: section as 'input' | 'output', componentName });
   }, []);
 
   const handleAddSasl = useCallback((section: string, componentName: string) => {
-    setRedpandaConnectorToSetup({
-      connectionName: componentName,
-      connectionType: section as ConnectComponentType,
-      initialStep: RedpandaConnectorSetupStep.ADD_USER,
-    });
+    setUserDialogTarget({ section: section as 'input' | 'output', componentName });
   }, []);
 
   // Clear wizard store (CREATE mode)
@@ -503,24 +509,77 @@ export default function PipelinePage() {
     [handleYamlChange, editorInstance]
   );
 
-  const handleRedpandaConnectorSetupComplete = useCallback(
-    (result: RedpandaSetupResult) => {
-      if (!redpandaConnectorToSetup) {
-        return;
+  const handleTopicSubmit = useCallback(async () => {
+    const ref = topicStepRef.current;
+    if (!(ref && topicDialogTarget)) {
+      return;
+    }
+    setIsTopicSubmitting(true);
+    const result = await ref.triggerSubmit();
+    if (result.success && result.data?.topicName) {
+      const patched = tryPatchRedpandaYaml(yamlContent, topicDialogTarget.section, topicDialogTarget.componentName, {
+        topicName: result.data.topicName,
+      });
+      if (patched) {
+        handleConnectorYamlChange(patched);
       }
-      const newYaml = applyRedpandaSetup({
+      setTopicDialogTarget(null);
+    }
+    setIsTopicSubmitting(false);
+  }, [topicDialogTarget, yamlContent, handleConnectorYamlChange]);
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: handles service-account vs SASL branching from AddUserStep result
+  const handleUserSubmit = useCallback(async () => {
+    const ref = userStepRef.current;
+    if (!(ref && userDialogTarget)) {
+      return;
+    }
+    setIsUserSubmitting(true);
+    const result = await ref.triggerSubmit();
+    if (result.success && result.data) {
+      const data = result.data;
+      let setupResult: RedpandaSetupResultLike = {};
+      if ('authMethod' in data && data.authMethod === 'service-account') {
+        setupResult = {
+          authMethod: 'service-account',
+          serviceAccountSecretName: data.serviceAccountSecretName,
+        };
+      } else if ('username' in data) {
+        setupResult = {
+          authMethod: 'sasl',
+          username: data.username,
+          saslMechanism: data.saslMechanism,
+        };
+      }
+      const patched = tryPatchRedpandaYaml(
         yamlContent,
-        connectionName: redpandaConnectorToSetup.connectionName,
-        connectionType: redpandaConnectorToSetup.connectionType as 'input' | 'output',
-        result,
+        userDialogTarget.section,
+        userDialogTarget.componentName,
+        setupResult
+      );
+      if (patched) {
+        handleConnectorYamlChange(patched);
+      }
+      setUserDialogTarget(null);
+    }
+    setIsUserSubmitting(false);
+  }, [userDialogTarget, yamlContent, handleConnectorYamlChange]);
+
+  const handleConnectorSelected = useCallback(
+    (connectionName: string, connectionType: ConnectComponentType) => {
+      setAddConnectorType(null);
+      const newYaml = getConnectTemplate({
+        connectionName,
+        connectionType,
         components,
+        showAdvancedFields: false,
+        existingYaml: yamlContent,
       });
       if (newYaml) {
         handleConnectorYamlChange(newYaml);
       }
-      setRedpandaConnectorToSetup(null);
     },
-    [redpandaConnectorToSetup, yamlContent, components, handleConnectorYamlChange]
+    [components, yamlContent, handleConnectorYamlChange]
   );
 
   return (
@@ -709,22 +768,70 @@ export default function PipelinePage() {
         />
       ) : null}
 
-      <ConnectorWizard
-        addConnectorType={addConnectorType}
-        componentList={componentListResponse?.components}
-        components={components}
-        onClose={() => setAddConnectorType(null)}
-        onYamlChange={handleConnectorYamlChange}
-        yamlContent={yamlContent}
-      />
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setTopicDialogTarget(null);
+          }
+        }}
+        open={topicDialogTarget !== null}
+      >
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>Add topic</DialogTitle>
+          </DialogHeader>
+          <AddTopicStep hideTitle ref={topicStepRef} />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button disabled={isTopicSubmitting} onClick={() => setTopicDialogTarget(null)} variant="secondary-ghost">
+              Cancel
+            </Button>
+            <Button disabled={isTopicSubmitting} onClick={handleTopicSubmit}>
+              {isTopicSubmitting ? <Spinner /> : 'Add'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {redpandaConnectorToSetup ? (
-        <RedpandaConnectorSetupWizard
-          connectionName={redpandaConnectorToSetup.connectionName}
-          connectionType={redpandaConnectorToSetup.connectionType}
-          initialStep={redpandaConnectorToSetup.initialStep}
-          onClose={() => setRedpandaConnectorToSetup(null)}
-          onComplete={handleRedpandaConnectorSetupComplete}
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setUserDialogTarget(null);
+          }
+        }}
+        open={userDialogTarget !== null}
+      >
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>Add user</DialogTitle>
+          </DialogHeader>
+          <AddUserStep
+            hideTitle
+            ref={userStepRef}
+            showConsumerGroupFields={userDialogTarget?.section === 'input'}
+            topicName={undefined}
+          />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button disabled={isUserSubmitting} onClick={() => setUserDialogTarget(null)} variant="secondary-ghost">
+              Cancel
+            </Button>
+            <Button disabled={isUserSubmitting} onClick={handleUserSubmit}>
+              {isUserSubmitting ? <Spinner /> : 'Add'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {componentListResponse?.components ? (
+        <AddConnectorDialog
+          components={componentListResponse.components}
+          connectorType={
+            addConnectorType === 'resource'
+              ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
+              : (addConnectorType ?? undefined)
+          }
+          isOpen={addConnectorType !== null}
+          onAddConnector={handleConnectorSelected}
+          onCloseAddConnector={() => setAddConnectorType(null)}
         />
       ) : null}
     </div>

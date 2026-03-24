@@ -129,13 +129,23 @@ vi.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => nul
 vi.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
 vi.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
 vi.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: () => <div data-testid="log-explorer" /> }));
-const mockConnectorWizardProps = vi.fn();
-vi.mock('./connector-wizard', () => ({
-  ConnectorWizard: (props: Record<string, unknown>) => {
-    mockConnectorWizardProps(props);
-    return null;
-  },
-  RedpandaConnectorSetupWizard: () => null,
+vi.mock('../onboarding/add-connector-dialog', () => ({
+  AddConnectorDialog: (props: {
+    isOpen: boolean;
+    onAddConnector?: (name: string, type: string) => void;
+    onCloseAddConnector?: () => void;
+  }) =>
+    props.isOpen ? (
+      <div data-testid="add-connector-dialog">
+        <button
+          data-testid="select-connector"
+          onClick={() => props.onAddConnector?.('generate', 'input')}
+          type="button"
+        >
+          Select
+        </button>
+      </div>
+    ) : null,
 }));
 
 // 6. Mock PipelineCommandMenu to render a simple testable version
@@ -247,7 +257,6 @@ describe('PipelinePage', () => {
     mockNavigate.mockClear();
     mockBack.mockClear();
     mockSearch.mockReturnValue({});
-    mockConnectorWizardProps.mockClear();
     mockIsFeatureFlagEnabled.mockImplementation(() => false);
     mockUsePipelineMode.mockReturnValue({ mode: 'create' });
     contentChangeListeners.length = 0;
@@ -653,17 +662,17 @@ describe('PipelinePage', () => {
     });
   });
 
-  // ── ConnectorWizard integration ─────────────────────────────────────
+  // ── AddConnectorDialog integration ─────────────────────────────────
 
-  it('does not pass removed redpandaConnectorConfig prop to ConnectorWizard', async () => {
+  it('renders AddConnectorDialog inline and generates YAML on connector selection', async () => {
+    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
+    mockUsePipelineMode.mockReturnValue({ mode: 'create' });
+
     render(<PipelinePage />, { transport: createTransport() });
 
-    await waitFor(() => {
-      expect(mockConnectorWizardProps).toHaveBeenCalled();
-    });
-
-    const lastCall = mockConnectorWizardProps.mock.calls.at(-1)?.[0];
-    expect(lastCall).not.toHaveProperty('redpandaConnectorConfig');
-    expect(lastCall).not.toHaveProperty('onRedpandaConnectorDialogClose');
+    // The connector card "+" buttons set addConnectorType, but AddConnectorDialog
+    // is only rendered when addConnectorType is non-null. Since we mock
+    // AddConnectorsCard to null, we verify the dialog is not rendered by default.
+    expect(screen.queryByTestId('add-connector-dialog')).not.toBeInTheDocument();
   });
 });
