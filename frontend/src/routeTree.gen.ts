@@ -302,9 +302,9 @@ const ConnectClustersClusterNameIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any);
 const AgentsIdIndexRoute = AgentsIdIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AgentsIdRoute,
+  id: '/agents/$id/',
+  path: '/agents/$id/',
+  getParentRoute: () => rootRouteImport,
 } as any);
 const TopicsTopicNameProduceRecordRoute =
   TopicsTopicNameProduceRecordRouteImport.update({
@@ -462,9 +462,9 @@ const KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute =
   } as any);
 const AgentsIdTranscriptsConversationIdRoute =
   AgentsIdTranscriptsConversationIdRouteImport.update({
-    id: '/transcripts/$conversationId',
-    path: '/transcripts/$conversationId',
-    getParentRoute: () => AgentsIdRoute,
+    id: '/agents/$id/transcripts/$conversationId',
+    path: '/agents/$id/transcripts/$conversationId',
+    getParentRoute: () => rootRouteImport,
   } as any);
 
 export interface FileRoutesByFullPath {
@@ -966,11 +966,13 @@ export interface RootRouteChildren {
   SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
   ShadowlinksNameEditRoute: typeof ShadowlinksNameEditRoute;
   TopicsTopicNameProduceRecordRoute: typeof TopicsTopicNameProduceRecordRoute;
+  AgentsIdIndexRoute: typeof AgentsIdIndexRoute;
   ConnectClustersClusterNameIndexRoute: typeof ConnectClustersClusterNameIndexRoute;
   KnowledgebasesKnowledgebaseIdIndexRoute: typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   RpConnectPipelineIdIndexRoute: typeof RpConnectPipelineIdIndexRoute;
   ShadowlinksNameIndexRoute: typeof ShadowlinksNameIndexRoute;
   TopicsTopicNameIndexRoute: typeof TopicsTopicNameIndexRoute;
+  AgentsIdTranscriptsConversationIdRoute: typeof AgentsIdTranscriptsConversationIdRoute;
   KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
   RpConnectSecretsSecretIdEditRoute: typeof RpConnectSecretsSecretIdEditRoute;
   SchemaRegistryContextsContextNameCreateRoute: typeof SchemaRegistryContextsContextNameCreateRoute;
@@ -1293,10 +1295,10 @@ declare module '@tanstack/react-router' {
     };
     '/agents/$id/': {
       id: '/agents/$id/';
-      path: '/';
+      path: '/agents/$id';
       fullPath: '/agents/$id/';
       preLoaderRoute: typeof AgentsIdIndexRouteImport;
-      parentRoute: typeof AgentsIdRoute;
+      parentRoute: typeof rootRouteImport;
     };
     '/topics/$topicName/produce-record': {
       id: '/topics/$topicName/produce-record';
@@ -1489,10 +1491,10 @@ declare module '@tanstack/react-router' {
     };
     '/agents/$id/transcripts/$conversationId': {
       id: '/agents/$id/transcripts/$conversationId';
-      path: '/transcripts/$conversationId';
+      path: '/agents/$id/transcripts/$conversationId';
       fullPath: '/agents/$id/transcripts/$conversationId';
       preLoaderRoute: typeof AgentsIdTranscriptsConversationIdRouteImport;
-      parentRoute: typeof AgentsIdRoute;
+      parentRoute: typeof rootRouteImport;
     };
   }
 }
@@ -1550,12 +1552,15 @@ const rootRouteChildren: RootRouteChildren = {
   SecurityUsersCreateRoute: SecurityUsersCreateRoute,
   ShadowlinksNameEditRoute: ShadowlinksNameEditRoute,
   TopicsTopicNameProduceRecordRoute: TopicsTopicNameProduceRecordRoute,
+  AgentsIdIndexRoute: AgentsIdIndexRoute,
   ConnectClustersClusterNameIndexRoute: ConnectClustersClusterNameIndexRoute,
   KnowledgebasesKnowledgebaseIdIndexRoute:
     KnowledgebasesKnowledgebaseIdIndexRoute,
   RpConnectPipelineIdIndexRoute: RpConnectPipelineIdIndexRoute,
   ShadowlinksNameIndexRoute: ShadowlinksNameIndexRoute,
   TopicsTopicNameIndexRoute: TopicsTopicNameIndexRoute,
+  AgentsIdTranscriptsConversationIdRoute:
+    AgentsIdTranscriptsConversationIdRoute,
   KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute:
     KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute,
   RpConnectSecretsSecretIdEditRoute: RpConnectSecretsSecretIdEditRoute,
