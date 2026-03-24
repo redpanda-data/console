@@ -73,7 +73,7 @@ type ToolbarProps = {
   isSaving?: boolean;
   isLoading?: boolean;
   nameError?: string;
-  autoFocus?: boolean;
+  defaultEditing?: boolean;
 };
 
 type ButtonConfigFactoryParams = {
@@ -239,7 +239,7 @@ export const Toolbar = memo(
     isSaving,
     isLoading,
     nameError,
-    autoFocus,
+    defaultEditing,
   }: ToolbarProps) => {
     const navigate = useNavigate();
 
@@ -371,8 +371,8 @@ export const Toolbar = memo(
             ) : (
               <EditableText
                 as="heading"
-                autoFocus={autoFocus}
                 className="min-w-[280px]"
+                defaultEditing={defaultEditing}
                 error={!!nameError}
                 errorMessage={nameError}
                 headingLevel={1}

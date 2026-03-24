@@ -130,8 +130,9 @@ const ConnectTilesSkeleton = memo(
     gridCols?: number;
     tileCount?: number;
   }) => {
-    const skeletonTiles = Array.from({ length: tileCount }, (_, i) => (
-      <div className="h-[78px] rounded-lg border bg-card p-4" key={i}>
+    const skeletonIds = Array.from({ length: tileCount }, (_, i) => `skeleton-${i}`);
+    const skeletonTiles = skeletonIds.map((id) => (
+      <div className="h-[78px] rounded-lg border bg-card p-4" key={id}>
         <SkeletonGroup direction="horizontal">
           <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
             <Skeleton variant="heading" width="md" />

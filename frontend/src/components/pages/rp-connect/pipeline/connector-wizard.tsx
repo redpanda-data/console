@@ -279,6 +279,12 @@ export function ConnectorWizard({
         });
       }
 
+      const resetStores = () => {
+        useOnboardingTopicDataStore.getState().reset();
+        useOnboardingUserDataStore.getState().reset();
+        setRedpandaSetupConfig(null);
+      };
+
       try {
         const newYaml = getConnectTemplate({
           connectionName: redpandaSetupConfig.connectionName,
@@ -291,10 +297,10 @@ export function ConnectorWizard({
         if (newYaml) {
           onYamlChange(newYaml);
         }
-      } finally {
-        useOnboardingTopicDataStore.getState().reset();
-        useOnboardingUserDataStore.getState().reset();
-        setRedpandaSetupConfig(null);
+        resetStores();
+      } catch (error) {
+        resetStores();
+        throw error;
       }
     },
     [redpandaSetupConfig, components, yamlContent, onYamlChange]

@@ -539,7 +539,7 @@ export default function PipelinePage() {
       )}
     >
       <Toolbar
-        autoFocus={mode === 'create'}
+        defaultEditing={mode === 'create'}
         isLoading={isPipelineLoading}
         isSaving={isSaving}
         mode={mode}

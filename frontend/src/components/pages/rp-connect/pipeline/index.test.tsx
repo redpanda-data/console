@@ -181,7 +181,7 @@ vi.mock('state/onboarding-wizard-store', () => ({
 }));
 
 // Import the component under test AFTER all mocks are set up
-import PipelinePage from './index';
+import PipelinePage from '.';
 
 function createTransport(overrides?: {
   getPipelineMock?: ReturnType<typeof vi.fn>;
@@ -350,7 +350,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // EditableText with autoFocus starts in edit mode — use placeholder to find the input
+    // EditableText with defaultEditing starts in edit mode — use placeholder to find the input
     const nameInput = screen.getByPlaceholderText('Pipeline name');
     await user.clear(nameInput);
     await user.type(nameInput, 'my-pipeline');
@@ -639,7 +639,7 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // In edit mode, autoFocus is false so EditableText renders as a button showing the name
+      // In edit mode, defaultEditing is false so EditableText renders as a button showing the name
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Test Pipeline' })).toBeInTheDocument();
       });
