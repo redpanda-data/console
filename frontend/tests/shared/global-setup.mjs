@@ -1002,22 +1002,34 @@ export default async function globalSetup(config = {}) {
     // --- Group 2: Start services + backend in parallel (all depend on Redpanda being ready) ---
     const servicePromises = [
       startOwlShop(network, state),
-      createKafkaConnectTopics(state).then(() =>
-        needsConnect ? startKafkaConnect(network, state, ports) : null
-      ),
+      createKafkaConnectTopics(state).then(() => (needsConnect ? startKafkaConnect(network, state, ports) : null)),
     ];
 
     if (needsShadowlink) {
       const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
       const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
       servicePromises.push(
-        startBackendServerWithConfig(network, isEnterprise, imageTag, state, sourceBackendConfigPath, ports.backend, 'console-backend'),
-        startBackendServerWithConfig(network, isEnterprise, imageTag, state, destBackendConfigPath, ports.backendDest, 'console-backend-dest')
+        startBackendServerWithConfig(
+          network,
+          isEnterprise,
+          imageTag,
+          state,
+          sourceBackendConfigPath,
+          ports.backend,
+          'console-backend'
+        ),
+        startBackendServerWithConfig(
+          network,
+          isEnterprise,
+          imageTag,
+          state,
+          destBackendConfigPath,
+          ports.backendDest,
+          'console-backend-dest'
+        )
       );
     } else {
-      servicePromises.push(
-        startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports)
-      );
+      servicePromises.push(startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports));
     }
 
     await Promise.all(servicePromises);
@@ -1027,7 +1039,7 @@ export default async function globalSetup(config = {}) {
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {
       console.log('CI detected: Giving services 3 seconds to stabilize...');
-      await new Promise((resolve) => setTimeout(resolve, 3_000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       console.log('✓ Stabilization period complete');
     }
 
