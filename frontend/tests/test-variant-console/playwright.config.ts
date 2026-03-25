@@ -74,6 +74,18 @@ const config = defineConfig({
         ...devices['Desktop Chrome'],
         permissions: ['clipboard-read', 'clipboard-write'],
       },
+      testIgnore: '**/quotas/quota-pagination.spec.ts',
+    },
+    // Quota pagination tests must run in isolation — they create 55+ quotas
+    // and assert on page counts which break with concurrent quota creation.
+    {
+      name: 'quota-pagination',
+      testMatch: '**/quotas/quota-pagination.spec.ts',
+      workers: 1,
+      use: {
+        ...devices['Desktop Chrome'],
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
     },
   ],
 });

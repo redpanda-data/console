@@ -192,7 +192,7 @@ test.describe('Produce Messages', () => {
 
       // Message might be produced (empty is valid) or button might be disabled
       // Just verify no crash occurs by checking the page is still responsive
-      await expect(page.getByTestId('produce-button')).toBeVisible();
+      await expect(page.getByTestId('produce-button')).toBeVisible({ timeout: 10_000 });
     });
 
     await topicPage.deleteTopic(topicName);
