@@ -93,6 +93,13 @@ jobs:
             ${{ runner.os }}-bun-frontend-
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Restore Rspack build cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules/.cache
+          key: ${{ runner.os }}-rspack-${{ hashFiles('frontend/src/**', 'frontend/rsbuild.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-rspack-
       - name: Run build frontend
         run: |
           REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
@@ -100,6 +107,12 @@ jobs:
           REACT_APP_BUILD_TIMESTAMP=$(date +%s)
           REACT_APP_DEV_HINT=true
           bun run build
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build
+          retention-days: 1
 
   test-unit:
     timeout-minutes: 3
@@ -170,7 +183,7 @@ jobs:
   e2e-test:
     needs: ["lint", "type-check", "build"]
     timeout-minutes: 30
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: blacksmith-16vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
@@ -190,19 +203,27 @@ jobs:
             ${{ runner.os }}-bun-frontend-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Build frontend
-        run: |
-          REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
-          REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME
-          REACT_APP_BUILD_TIMESTAMP=$(date +%s)
-          REACT_APP_DEV_HINT=true
-          bun run build
+      - name: Download frontend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'backend/go.mod'
           cache-dependency-path: backend/go.sum
+      - name: Get Playwright version
+        id: pw-version
+        run: echo "version=$(jq -r '.devDependencies["@playwright/test"]' package.json)" >> $GITHUB_OUTPUT
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw-version.outputs.version }}
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bun run install:chromium
       - name: Run Playwright tests
         run: bun run e2e-test

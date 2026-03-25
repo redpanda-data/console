@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Build stage
 FROM golang:alpine AS builder
 
@@ -8,7 +9,8 @@ ENV GOTOOLCHAIN=auto
 
 # Copy go.mod and go.sum first for better caching
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 # Copy source code
 COPY . .
@@ -16,11 +18,15 @@ COPY . .
 # For enterprise workspace builds, go.work references .e2e-workspace/console-oss-backend/
 # which was temporarily copied into the build context by global-setup.mjs.
 # Run a second go mod download to fetch any additional workspace module deps.
-RUN if [ -f "go.work" ]; then go mod download; fi
+RUN --mount=type=cache,target=/go/pkg/mod \
+    if [ -f "go.work" ]; then go mod download; fi
 
 # Build the binary (works for both OSS and Enterprise structure)
 # OSS: cmd/api/main.go, Enterprise: cmd/main.go
-RUN if [ -d "/app/cmd/api" ]; then \
+# Cache the Go build cache across builds for faster recompilation.
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    if [ -d "/app/cmd/api" ]; then \
       cd /app/cmd/api && CGO_ENABLED=0 GOOS=linux go build -o /app/console-api .; \
     else \
       cd /app/cmd && CGO_ENABLED=0 GOOS=linux go build -o /app/console-api .; \

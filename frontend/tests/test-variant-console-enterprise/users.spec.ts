@@ -4,7 +4,7 @@ import { SecurityPage } from '../test-variant-console/utils/security-page';
 
 test.describe('Users', () => {
   test('should create an user, check that user exists, user can be deleted', async ({ page }) => {
-    const username = 'user-2';
+    const username = `user-e2e-${Date.now()}`;
 
     const securityPage = new SecurityPage(page);
     await securityPage.createUser(username);

@@ -18,10 +18,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     test: {
-      fileParallelism: false,
+      fileParallelism: true,
       isolate: true,
       pool: 'forks',
-      vmMemoryLimit: '3072Mb', // Force GC when memory limit is reached (3GB safe for 8GB runner with overhead)
+      vmMemoryLimit: '4096Mb', // Force GC when memory limit is reached (4GB allows headroom for parallel forks)
       testTimeout: 30_000,
       globals: true,
       environment: 'jsdom', // Integration tests use jsdom environment
