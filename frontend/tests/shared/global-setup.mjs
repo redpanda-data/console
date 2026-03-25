@@ -337,7 +337,7 @@ topic.creation.enable=false
   }
 }
 
-async function buildBackendImage(isEnterprise) {
+export async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
 
   let backendDir;
@@ -965,8 +965,11 @@ export default async function globalSetup(config = {}) {
   };
 
   try {
-    // Build backend Docker image
-    const imageTag = await buildBackendImage(isEnterprise);
+    // Use pre-built image tag if available (set by run-all-variants.mjs), otherwise build
+    const prebuiltTag = isEnterprise
+      ? process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE
+      : process.env.E2E_PREBUILT_IMAGE_TAG;
+    const imageTag = prebuiltTag || (await buildBackendImage(isEnterprise));
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);

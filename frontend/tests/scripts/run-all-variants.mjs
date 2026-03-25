@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildBackendImage } from '../shared/global-setup.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -90,6 +91,19 @@ async function runAllVariants(playwrightArgs = []) {
   if (runnableVariants.length === 0) {
     console.error('\nNo runnable variants found');
     process.exit(1);
+  }
+
+  // Pre-build backend Docker images once before launching variants in parallel.
+  // This avoids race conditions where multiple variants try to copy frontend assets
+  // and build the same Docker image concurrently.
+  console.log('\nPre-building backend Docker image(s)...');
+  const needsEnterprise = runnableVariants.some((v) => v.config.isEnterprise);
+  const ossImageTag = await buildBackendImage(false);
+  process.env.E2E_PREBUILT_IMAGE_TAG = ossImageTag;
+
+  if (needsEnterprise) {
+    const enterpriseImageTag = await buildBackendImage(true);
+    process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE = enterpriseImageTag;
   }
 
   console.log(`\nRunning ${runnableVariants.length} variant(s) in parallel...`);
