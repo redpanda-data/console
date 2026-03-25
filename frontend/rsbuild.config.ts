@@ -116,9 +116,6 @@ export default defineConfig({
       version: 'legacy',
     },
   },
-  performance: {
-    buildCache: true,
-  },
   output: {
     distPath: {
       root: 'build',
