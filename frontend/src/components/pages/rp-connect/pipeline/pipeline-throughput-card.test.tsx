@@ -246,4 +246,53 @@ describe('PipelineThroughputCard', () => {
     // Verify the empty state is NOT present
     expect(screen.queryByText('Throughput metrics not available')).not.toBeInTheDocument();
   });
+
+  it('passes pipeline_id filter in range query params', async () => {
+    const listQueriesMock = vi
+      .fn()
+      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
+
+    const executeRangeQueryMock = vi.fn().mockReturnValue(
+      create(ExecuteRangeQueryResponseSchema, {
+        results: [],
+      })
+    );
+
+    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
+
+    renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
+
+    await waitFor(() => {
+      expect(executeRangeQueryMock).toHaveBeenCalled();
+    });
+
+    // Every range query call must include the pipeline_id filter
+    for (const call of executeRangeQueryMock.mock.calls) {
+      expect(call[0].params?.filters).toEqual({ pipeline_id: PIPELINE_ID });
+    }
+  });
+
+  it('calls both ingress and egress range queries', async () => {
+    const listQueriesMock = vi
+      .fn()
+      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
+
+    const executeRangeQueryMock = vi.fn().mockReturnValue(
+      create(ExecuteRangeQueryResponseSchema, {
+        results: [],
+      })
+    );
+
+    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
+
+    renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
+
+    await waitFor(() => {
+      expect(executeRangeQueryMock).toHaveBeenCalledTimes(2);
+    });
+
+    const queryNames = executeRangeQueryMock.mock.calls.map((call) => call[0].queryName);
+    expect(queryNames).toContain('connect_input_received');
+    expect(queryNames).toContain('connect_output_sent');
+  });
 });

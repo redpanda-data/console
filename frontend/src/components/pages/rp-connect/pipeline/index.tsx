@@ -20,33 +20,18 @@ import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/compo
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
-
-function EditorSkeleton() {
-  return (
-    <div className="flex flex-col gap-3 p-4">
-      <Skeleton variant="text" width="lg" />
-      <Skeleton variant="text" width="md" />
-      <Skeleton variant="text" width="lg" />
-      <Skeleton variant="text" width="sm" />
-      <Skeleton variant="text" width="md" />
-      <Skeleton variant="text" width="lg" />
-      <Skeleton variant="text" width="sm" />
-    </div>
-  );
-}
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
-import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { useHotKey } from 'hooks/use-hot-key';
 import type { editor } from 'monaco-editor';
@@ -58,14 +43,15 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
+  type Pipeline,
   Pipeline_ServiceAccountSchema,
   Pipeline_State,
   PipelineCreateSchema,
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
   useLintPipelineConfigQuery,
@@ -110,6 +96,10 @@ import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml'
 import { usePipelineMode } from '../utils/use-pipeline-mode';
 import { getConnectTemplate, type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yaml';
 
+// ---------------------------------------------------------------------------
+// Schema + types
+// ---------------------------------------------------------------------------
+
 const pipelineFormSchema = z.object({
   name: z
     .string()
@@ -133,6 +123,10 @@ const pipelineFormSchema = z.object({
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
+// ---------------------------------------------------------------------------
+// Pure helpers
+// ---------------------------------------------------------------------------
+
 function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
   const userTags: Record<string, string> = {};
   for (const { key, value } of formTags) {
@@ -143,7 +137,7 @@ function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, str
   return userTags;
 }
 
-function warnIfResized(form: ReturnType<typeof useForm<PipelineFormValues>>, cpuShares: string | undefined) {
+function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: string | undefined) {
   const retUnits = cpuToTasks(cpuShares);
   const currentUnits = form.getValues('computeUnits');
   if (retUnits && currentUnits !== retUnits) {
@@ -186,202 +180,76 @@ function buildCreateRequest(opts: {
   });
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: pipeline page orchestrates many features
-export default function PipelinePage() {
-  const { mode, pipelineId } = usePipelineMode();
-  const navigate = useNavigate();
-  const router = useRouter();
-  const search = useSearch({ strict: false }) as { serverless?: string };
-  const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
+function parseYamlEditorSchema(configSchema: string | undefined) {
+  if (!configSchema) {
+    return;
+  }
+  try {
+    const parsed = JSON.parse(configSchema);
+    return {
+      definitions: parsed.definitions as Record<string, JSONSchema> | undefined,
+      properties: parsed.properties as Record<string, JSONSchema> | undefined,
+    };
+  } catch {
+    return;
+  }
+}
 
-  const isServerlessMode = search.serverless === 'true';
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
 
-  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
-
-  const form = useForm<PipelineFormValues>({
-    resolver: zodResolver(pipelineFormSchema),
-    mode: 'onChange',
-    defaultValues: {
-      name: '',
-      description: '',
-      computeUnits: MIN_TASKS,
-      tags: [],
-    },
-  });
-
-  const [yamlContent, setYamlContent] = useState('');
-  const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
-  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
-
-  // Slash command: inline command menu triggered by typing `/` in the editor
-  const handleSlashOpen = useCallback(() => {
-    setIsCommandMenuOpen(false);
-  }, []);
-  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
-
-  // Cmd+Shift+P keyboard shortcut for pipeline command menu
-  const handleCommandMenuOpen = useCallback(() => {
-    slashCommand.close();
-    setIsCommandMenuOpen(true);
-  }, [slashCommand]);
-
-  useHotKey({
-    key: 'p',
-    modifiers: ['meta', 'shift'],
-    enabled: mode !== 'view',
-    onTrigger: handleCommandMenuOpen,
-  });
-
-  const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
-    { id: pipelineId || '' },
-    {
-      enabled: mode !== 'create' && !!pipelineId,
-    }
-  );
-
-  const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
-
-  const { data: componentListResponse } = useListComponentsQuery();
-
-  const components = useMemo(
-    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-    [componentListResponse]
-  );
-
-  // Fetch JSON Schema from backend for YAML editor
-  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
-  const yamlEditorSchema = useMemo(() => {
-    if (!schemaResponse?.configSchema) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(schemaResponse.configSchema);
-      return {
-        definitions: parsed.definitions as Record<string, JSONSchema> | undefined,
-        properties: parsed.properties as Record<string, JSONSchema> | undefined,
-      };
-    } catch {
-      // Fallback to undefined if schema parsing fails - editor will use basic YAML schema
-      return;
-    }
-  }, [schemaResponse]);
-
-  const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
-  const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
-
-  const lintPanelRef = useRef<ImperativePanelHandle>(null);
-
+function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
   const { data: lintResponse, isPending: isLintPending } = useLintPipelineConfigQuery(debouncedYamlContent, {
-    enabled: mode !== 'view',
+    enabled,
   });
-  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
 
-  const pipelineName = useWatch({ control: form.control, name: 'name' });
-  const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
-
-  const responseLintHints = useMemo(() => {
-    if (!lintResponse) {
-      return {};
-    }
-    const hints: Record<string, LintHint> = {};
-    for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
-      hints[`hint_${idx}`] = hint;
-    }
-    return hints;
-  }, [lintResponse]);
-
-  // Merge both hint sources — namespace keys to avoid collision (both use hint_N)
   const lintHints = useMemo(() => {
     const merged: Record<string, LintHint> = {};
     for (const [key, hint] of Object.entries(errorLintHints)) {
       merged[`error_${key}`] = hint;
     }
-    for (const [key, hint] of Object.entries(responseLintHints)) {
-      merged[`lint_${key}`] = hint;
+    if (lintResponse) {
+      for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
+        merged[`lint_hint_${idx}`] = hint;
+      }
     }
     return merged;
-  }, [errorLintHints, responseLintHints]);
+  }, [errorLintHints, lintResponse]);
 
-  // Hydrate YAML when pipeline data arrives (edit mode only).
-  // setState during render — React re-renders before DOM commit, no flash.
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
-  if (pipeline && mode === 'edit' && pipeline.id !== hydratedPipelineId) {
-    setHydratedPipelineId(pipeline.id);
-    setYamlContent(pipeline.configYaml);
-  }
+  return { lintHints, isLintPending };
+}
 
-  // Sync RHF form with server data (edit mode only).
-  // form.reset() is an external system sync — effects are correct here.
-  useEffect(() => {
-    if (pipeline && mode === 'edit') {
-      form.reset({
-        name: pipeline.displayName,
-        description: pipeline.description || '',
-        computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
-        tags: Object.entries(pipeline.tags)
-          .filter(([k]) => !isSystemTag(k))
-          .map(([key, value]) => ({ key, value })),
-      });
-    }
-  }, [pipeline, mode, form]);
+function usePipelineSave({
+  form,
+  yamlContent,
+  mode,
+  pipelineId,
+  pipeline,
+  isPipelineDiagramsEnabled,
+}: {
+  form: UseFormReturn<PipelineFormValues>;
+  yamlContent: string;
+  mode: string;
+  pipelineId: string | undefined;
+  pipeline: Pipeline | undefined;
+  isPipelineDiagramsEnabled: boolean;
+}) {
+  const navigate = useNavigate();
+  const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
+  const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
+  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
+  const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
 
-  const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
-    enabled: mode === 'create',
-    isServerlessMode,
-    components,
-    isPipelineDiagramsEnabled,
-    onResolved: setYamlContent,
-  });
+  const clearErrorLintHints = useCallback(() => setErrorLintHints({}), []);
 
-  // Direct topic/user dialogs — triggered by hint buttons in the pipeline flow diagram.
-  const [topicDialogTarget, setTopicDialogTarget] = useState<{
-    section: 'input' | 'output';
-    componentName: string;
-  } | null>(null);
-  const [userDialogTarget, setUserDialogTarget] = useState<{
-    section: 'input' | 'output';
-    componentName: string;
-  } | null>(null);
-  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
-  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
-  const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
-  const userStepRef = useRef<UserStepRef>(null);
-
-  const handleAddTopic = useCallback((section: string, componentName: string) => {
-    setTopicDialogTarget({ section: section as 'input' | 'output', componentName });
-  }, []);
-
-  const handleAddSasl = useCallback((section: string, componentName: string) => {
-    setUserDialogTarget({ section: section as 'input' | 'output', componentName });
-  }, []);
-
-  // Clear wizard store (CREATE mode)
   const clearWizardStore = useCallback(() => {
     if (!isPipelineDiagramsEnabled) {
       useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: '' });
     }
-    useOnboardingWizardDataStore.getState().setWizardData({
-      input: undefined,
-      output: undefined,
-    });
+    useOnboardingWizardDataStore.getState().setWizardData({ input: undefined, output: undefined });
   }, [isPipelineDiagramsEnabled]);
-
-  const handleCancel = useCallback(() => {
-    if (mode === 'create') {
-      clearWizardStore();
-    }
-    if (mode === 'view') {
-      navigate({ to: '/connect-clusters' });
-    } else {
-      router.history.back();
-    }
-  }, [mode, clearWizardStore, navigate, router]);
 
   const handleSave = useCallback(async () => {
     const isValid = await form.trigger();
@@ -420,8 +288,6 @@ export default function PipelinePage() {
             configYaml: yamlContent,
             description: description || '',
             resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
-            // pipeline.tags is derived from useGetPipelineQuery and auto-refreshes;
-            // system tags here reflect the latest cached server state.
             tags: {
               ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
               ...userTags,
@@ -443,15 +309,9 @@ export default function PipelinePage() {
     }
   }, [form, yamlContent, mode, pipelineId, createMutation, updateMutation, navigate, clearWizardStore, pipeline]);
 
-  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
-  const isSaving = isCreatePending || isUpdatePending;
-
   const handleDelete = useCallback(
     (id: string) => {
-      const deleteRequest = create(DeletePipelineRequestSchema, {
-        request: { id },
-      });
-
+      const deleteRequest = create(DeletePipelineRequestSchema, { request: { id } });
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
@@ -459,11 +319,7 @@ export default function PipelinePage() {
         },
         onError: (err) => {
           toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'delete',
-              entity: 'pipeline',
-            })
+            formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'delete', entity: 'pipeline' })
           );
         },
       });
@@ -471,44 +327,38 @@ export default function PipelinePage() {
     [deleteMutation, navigate]
   );
 
-  const handleNameChange = useCallback(
-    (name: string) => {
-      form.setValue('name', name, { shouldValidate: true });
-    },
-    [form]
-  );
+  return {
+    handleSave,
+    handleDelete,
+    clearWizardStore,
+    errorLintHints,
+    clearErrorLintHints,
+    isSaving: isCreatePending || isUpdatePending,
+    isDeleting: isDeletePending,
+  };
+}
 
-  const handleYamlChange = useCallback(
-    (value: string) => {
-      setErrorLintHints({});
-      setYamlContent(value);
-      if (mode === 'create' && !isPipelineDiagramsEnabled) {
-        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
-      }
-    },
-    [mode, isPipelineDiagramsEnabled]
-  );
+function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml: string) => void) {
+  const [topicDialogTarget, setTopicDialogTarget] = useState<{
+    section: 'input' | 'output';
+    componentName: string;
+  } | null>(null);
+  const [userDialogTarget, setUserDialogTarget] = useState<{
+    section: 'input' | 'output';
+    componentName: string;
+  } | null>(null);
+  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
+  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
+  const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
+  const userStepRef = useRef<UserStepRef>(null);
 
-  // After adding a connector via wizard, focus editor and move cursor to end of file
-  const handleConnectorYamlChange = useCallback(
-    (yaml: string) => {
-      handleYamlChange(yaml);
-      // Defer until after React render so the editor has the new content
-      setTimeout(() => {
-        if (editorInstance) {
-          const model = editorInstance.getModel();
-          if (model) {
-            const lastLine = model.getLineCount();
-            const lastColumn = model.getLineMaxColumn(lastLine);
-            editorInstance.setPosition({ lineNumber: lastLine, column: lastColumn });
-            editorInstance.revealLine(lastLine);
-          }
-          editorInstance.focus();
-        }
-      }, 0);
-    },
-    [handleYamlChange, editorInstance]
-  );
+  const handleAddTopic = useCallback((section: string, componentName: string) => {
+    setTopicDialogTarget({ section: section as 'input' | 'output', componentName });
+  }, []);
+
+  const handleAddSasl = useCallback((section: string, componentName: string) => {
+    setUserDialogTarget({ section: section as 'input' | 'output', componentName });
+  }, []);
 
   const handleTopicSubmit = useCallback(async () => {
     const ref = topicStepRef.current;
@@ -566,6 +416,325 @@ export default function PipelinePage() {
     setIsUserSubmitting(false);
   }, [userDialogTarget, yamlContent, handleConnectorYamlChange]);
 
+  return {
+    topicDialogTarget,
+    setTopicDialogTarget,
+    userDialogTarget,
+    setUserDialogTarget,
+    topicStepRef,
+    userStepRef,
+    isTopicSubmitting,
+    isUserSubmitting,
+    handleAddTopic,
+    handleAddSasl,
+    handleTopicSubmit,
+    handleUserSubmit,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Render components
+// ---------------------------------------------------------------------------
+
+function EditorSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <Skeleton variant="text" width="lg" />
+      <Skeleton variant="text" width="md" />
+      <Skeleton variant="text" width="lg" />
+      <Skeleton variant="text" width="sm" />
+      <Skeleton variant="text" width="md" />
+      <Skeleton variant="text" width="lg" />
+      <Skeleton variant="text" width="sm" />
+    </div>
+  );
+}
+
+function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
+  if (!pipeline) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
+    );
+  }
+  return (
+    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
+      {isEmbedded() &&
+        (isServerless()
+          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+          : isFeatureFlagEnabled('enableDataplaneObservability')) && (
+          <PipelineThroughputCard pipelineId={pipeline.id} />
+        )}
+      <Card size="full" variant="outlined">
+        <CardContent className="pt-6">
+          {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+            <LogExplorer
+              enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+              pipeline={pipeline}
+              serverless={isServerless()}
+            />
+          ) : (
+            <LogsTab pipeline={pipeline} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function EditorPanel({
+  isServerlessInitializing,
+  slashTipVisible,
+  onDismissSlashTip,
+  yamlContent,
+  onYamlChange,
+  onEditorMount,
+  yamlEditorSchema,
+  lintHints,
+  isLintPending,
+  lintPanelRef,
+}: {
+  isServerlessInitializing: boolean;
+  slashTipVisible: boolean;
+  onDismissSlashTip: () => void;
+  yamlContent: string;
+  onYamlChange: (val: string) => void;
+  onEditorMount: (editorRef: editor.IStandaloneCodeEditor) => void;
+  yamlEditorSchema: ReturnType<typeof parseYamlEditorSchema>;
+  lintHints: Record<string, LintHint>;
+  isLintPending: boolean;
+  lintPanelRef: RefObject<ImperativePanelHandle>;
+}) {
+  return (
+    <ResizablePanelGroup direction="vertical">
+      <ResizablePanel defaultSize={70} minSize={30}>
+        <div className="relative h-full">
+          {isServerlessInitializing ? (
+            <EditorSkeleton />
+          ) : (
+            <>
+              {slashTipVisible ? (
+                <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
+                  <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
+                    <BannerContent>
+                      Tip: use{' '}
+                      <Kbd size="xs" variant="filled">
+                        /
+                      </Kbd>{' '}
+                      to insert variables
+                    </BannerContent>
+                    <BannerClose onClick={onDismissSlashTip} variant="ghost" />
+                  </Banner>
+                </div>
+              ) : null}
+              <YamlEditor
+                onChange={(val) => onYamlChange(val || '')}
+                onEditorMount={onEditorMount}
+                options={slashTipVisible ? { padding: { top: 32 } } : undefined}
+                schema={yamlEditorSchema}
+                transparentBackground
+                value={yamlContent}
+              />
+            </>
+          )}
+        </div>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
+        <div className="h-full overflow-auto p-4">
+          <div className="flex items-center gap-2">
+            <Heading className="text-muted-foreground" level={4}>
+              Lint issues
+            </Heading>
+            {Object.keys(lintHints).length > 0 ? (
+              <CountDot count={Object.keys(lintHints).length} variant="error" />
+            ) : null}
+          </div>
+          <LintHintList isPending={isLintPending} lintHints={lintHints} />
+        </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+}
+
+function SidebarPanel({
+  mode,
+  yamlContent,
+  isPipelineDiagramsEnabled,
+  onAddConnector,
+  onAddTopic,
+  onAddSasl,
+  onOpenCommandMenu,
+}: {
+  mode: string;
+  yamlContent: string;
+  isPipelineDiagramsEnabled: boolean;
+  onAddConnector: (type: ConnectComponentType | 'resource') => void;
+  onAddTopic: (section: string, componentName: string) => void;
+  onAddSasl: (section: string, componentName: string) => void;
+  onOpenCommandMenu: () => void;
+}) {
+  return (
+    <div className="flex w-[300px] shrink-0 flex-col border-border! border-r">
+      <div className="min-h-0 flex-1">
+        {isPipelineDiagramsEnabled ? (
+          <PipelineFlowDiagram
+            configYaml={yamlContent}
+            hideZoomControls
+            onAddConnector={mode !== 'view' ? (type) => onAddConnector(type as ConnectComponentType) : undefined}
+            onAddSasl={mode !== 'view' ? onAddSasl : undefined}
+            onAddTopic={mode !== 'view' ? onAddTopic : undefined}
+          />
+        ) : null}
+      </div>
+      {mode !== 'view' && (
+        <>
+          <AddConnectorsCard
+            editorContent={yamlContent}
+            hasInput={yamlContent.includes('input:')}
+            hasOutput={yamlContent.includes('output:')}
+            hideInputOutput={isPipelineDiagramsEnabled}
+            onAddConnector={onAddConnector}
+          />
+          <div className="px-4 pb-4">
+            <Separator className="mb-3" variant="subtle" />
+            <div className="flex flex-col gap-2">
+              <Heading className="mb-2 text-muted-foreground" level={5}>
+                Variables
+              </Heading>
+              <Button
+                className="max-w-fit"
+                icon={
+                  <Kbd variant="ghost">
+                    {isMacOS() ? <CommandIcon /> : 'Ctrl'}
+                    <ArrowBigUpIcon />P
+                  </Kbd>
+                }
+                onClick={onOpenCommandMenu}
+                size="xs"
+                variant="outline"
+              >
+                Insert
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page component
+// ---------------------------------------------------------------------------
+
+export default function PipelinePage() {
+  const { mode, pipelineId } = usePipelineMode();
+  const navigate = useNavigate();
+  const router = useRouter();
+  const search = useSearch({ strict: false }) as { serverless?: string };
+  const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
+  const isServerlessMode = search.serverless === 'true';
+  const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
+
+  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
+  const [yamlContent, setYamlContent] = useState('');
+  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
+  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
+  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
+  const lintPanelRef = useRef<ImperativePanelHandle>(null);
+
+  const form = useForm<PipelineFormValues>({
+    resolver: zodResolver(pipelineFormSchema),
+    mode: 'onChange',
+    defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
+  });
+
+  // --- Slash command + keyboard shortcut ---
+
+  const handleSlashOpen = useCallback(() => setIsCommandMenuOpen(false), []);
+  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
+
+  const handleCommandMenuOpen = useCallback(() => {
+    slashCommand.close();
+    setIsCommandMenuOpen(true);
+  }, [slashCommand]);
+
+  useHotKey({ key: 'p', modifiers: ['meta', 'shift'], enabled: mode !== 'view', onTrigger: handleCommandMenuOpen });
+
+  // --- Data queries ---
+
+  const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
+    { id: pipelineId || '' },
+    { enabled: mode !== 'create' && !!pipelineId }
+  );
+  const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
+
+  const { data: componentListResponse } = useListComponentsQuery();
+  const components = useMemo(
+    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
+    [componentListResponse]
+  );
+
+  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
+  const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
+
+  const pipelineName = useWatch({ control: form.control, name: 'name' });
+
+  // --- Extracted hooks ---
+
+  const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
+    usePipelineSave({ form, yamlContent, mode, pipelineId, pipeline, isPipelineDiagramsEnabled });
+  const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
+
+  // --- YAML change handlers ---
+
+  const handleYamlChange = useCallback(
+    (value: string) => {
+      clearErrorLintHints();
+      setYamlContent(value);
+      if (mode === 'create' && !isPipelineDiagramsEnabled) {
+        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
+      }
+    },
+    [mode, isPipelineDiagramsEnabled, clearErrorLintHints]
+  );
+
+  const handleConnectorYamlChange = useCallback(
+    (yaml: string) => {
+      handleYamlChange(yaml);
+      setTimeout(() => {
+        if (editorInstance) {
+          const model = editorInstance.getModel();
+          if (model) {
+            const lastLine = model.getLineCount();
+            const lastColumn = model.getLineMaxColumn(lastLine);
+            editorInstance.setPosition({ lineNumber: lastLine, column: lastColumn });
+            editorInstance.revealLine(lastLine);
+          }
+          editorInstance.focus();
+        }
+      }, 0);
+    },
+    [handleYamlChange, editorInstance]
+  );
+
+  const {
+    topicDialogTarget,
+    setTopicDialogTarget,
+    userDialogTarget,
+    setUserDialogTarget,
+    topicStepRef,
+    userStepRef,
+    isTopicSubmitting,
+    isUserSubmitting,
+    handleAddTopic,
+    handleAddSasl,
+    handleTopicSubmit,
+    handleUserSubmit,
+  } = useDiagramDialogs(yamlContent, handleConnectorYamlChange);
+
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
       setAddConnectorType(null);
@@ -582,6 +751,52 @@ export default function PipelinePage() {
     },
     [components, yamlContent, handleConnectorYamlChange]
   );
+
+  // --- Hydration (edit mode) ---
+
+  const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
+  if (pipeline && mode === 'edit' && pipeline.id !== hydratedPipelineId) {
+    setHydratedPipelineId(pipeline.id);
+    setYamlContent(pipeline.configYaml);
+  }
+
+  useEffect(() => {
+    if (pipeline && mode === 'edit') {
+      form.reset({
+        name: pipeline.displayName,
+        description: pipeline.description || '',
+        computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
+        tags: Object.entries(pipeline.tags)
+          .filter(([k]) => !isSystemTag(k))
+          .map(([key, value]) => ({ key, value })),
+      });
+    }
+  }, [pipeline, mode, form]);
+
+  const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
+    enabled: mode === 'create',
+    isServerlessMode,
+    components,
+    isPipelineDiagramsEnabled,
+    onResolved: setYamlContent,
+  });
+
+  // --- Navigation ---
+
+  const handleCancel = useCallback(() => {
+    if (mode === 'create') {
+      clearWizardStore();
+    }
+    if (mode === 'view') {
+      navigate({ to: '/connect-clusters' });
+    } else {
+      router.history.back();
+    }
+  }, [mode, clearWizardStore, navigate, router]);
+
+  const handleNameChange = useCallback((name: string) => form.setValue('name', name, { shouldValidate: true }), [form]);
+
+  // --- Render ---
 
   return (
     <div
@@ -605,133 +820,32 @@ export default function PipelinePage() {
         pipelineName={pipelineName}
         pipelineState={pipeline?.state}
       />
-      <div className="!border-border flex min-h-0 flex-1 rounded-lg border">
-        <div className="!border-border flex w-[300px] shrink-0 flex-col border-r">
-          <div className="min-h-0 flex-1">
-            {isPipelineDiagramsEnabled ? (
-              <PipelineFlowDiagram
-                configYaml={yamlContent}
-                hideZoomControls
-                onAddConnector={
-                  mode !== 'view' ? (type) => setAddConnectorType(type as ConnectComponentType) : undefined
-                }
-                onAddSasl={mode !== 'view' ? handleAddSasl : undefined}
-                onAddTopic={mode !== 'view' ? handleAddTopic : undefined}
-              />
-            ) : null}
-          </div>
-          {mode !== 'view' && (
-            <>
-              <AddConnectorsCard
-                editorContent={yamlContent}
-                hasInput={yamlContent.includes('input:')}
-                hasOutput={yamlContent.includes('output:')}
-                hideInputOutput={isPipelineDiagramsEnabled}
-                onAddConnector={(type) => setAddConnectorType(type)}
-              />
-              <div className="px-4 pb-4">
-                <Separator className="mb-3" variant="subtle" />
-                <div className="flex flex-col gap-2">
-                  <Heading className="mb-2 text-muted-foreground" level={5}>
-                    Variables
-                  </Heading>
-                  <Button
-                    className="max-w-fit"
-                    icon={
-                      <Kbd variant="ghost">
-                        {isMacOS() ? <CommandIcon /> : 'Ctrl'}
-                        <ArrowBigUpIcon />P
-                      </Kbd>
-                    }
-                    onClick={() => {
-                      slashCommand.close();
-                      setIsCommandMenuOpen(true);
-                    }}
-                    size="xs"
-                    variant="outline"
-                  >
-                    Insert
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+      <div className="flex min-h-0 flex-1 rounded-lg border border-border!">
+        <SidebarPanel
+          isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
+          mode={mode}
+          onAddConnector={(type) => setAddConnectorType(type)}
+          onAddSasl={handleAddSasl}
+          onAddTopic={handleAddTopic}
+          onOpenCommandMenu={handleCommandMenuOpen}
+          yamlContent={yamlContent}
+        />
         <div className="min-w-0 flex-1">
           {mode === 'view' ? (
-            <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-              {pipeline ? (
-                <>
-                  <PipelineThroughputCard pipelineId={pipeline.id} />
-                  <Card size="full" variant="outlined">
-                    <CardContent className="pt-6">
-                      {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-                        <LogExplorer
-                          enableLiveView={pipeline.state === Pipeline_State.RUNNING}
-                          pipeline={pipeline}
-                          serverless={isServerless()}
-                        />
-                      ) : (
-                        <LogsTab pipeline={pipeline} />
-                      )}
-                    </CardContent>
-                  </Card>
-                </>
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                  Loading pipeline...
-                </div>
-              )}
-            </div>
+            <ViewModePanel pipeline={pipeline} />
           ) : (
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={70} minSize={30}>
-                <div className="relative h-full">
-                  {isServerlessInitializing ? (
-                    <EditorSkeleton />
-                  ) : (
-                    <>
-                      {slashTipVisible ? (
-                        <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
-                          <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
-                            <BannerContent>
-                              Tip: use{' '}
-                              <Kbd size="xs" variant="filled">
-                                /
-                              </Kbd>{' '}
-                              to insert variables
-                            </BannerContent>
-                            <BannerClose onClick={() => setSlashTipVisible(false)} variant="ghost" />
-                          </Banner>
-                        </div>
-                      ) : null}
-                      <YamlEditor
-                        onChange={(val) => handleYamlChange(val || '')}
-                        onEditorMount={(editorRef) => setEditorInstance(editorRef)}
-                        options={slashTipVisible ? { padding: { top: 32 } } : undefined}
-                        schema={yamlEditorSchema}
-                        transparentBackground
-                        value={yamlContent}
-                      />
-                    </>
-                  )}
-                </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
-                <div className="h-full overflow-auto p-4">
-                  <div className="flex items-center gap-2">
-                    <Heading className="text-muted-foreground" level={4}>
-                      Lint issues
-                    </Heading>
-                    {Object.keys(lintHints).length > 0 ? (
-                      <CountDot count={Object.keys(lintHints).length} variant="error" />
-                    ) : null}
-                  </div>
-                  <LintHintList isPending={isLintPending} lintHints={lintHints} />
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+            <EditorPanel
+              isLintPending={isLintPending}
+              isServerlessInitializing={isServerlessInitializing}
+              lintHints={lintHints}
+              lintPanelRef={lintPanelRef}
+              onDismissSlashTip={() => setSlashTipVisible(false)}
+              onEditorMount={setEditorInstance}
+              onYamlChange={handleYamlChange}
+              slashTipVisible={slashTipVisible}
+              yamlContent={yamlContent}
+              yamlEditorSchema={yamlEditorSchema}
+            />
           )}
         </div>
       </div>
@@ -739,7 +853,7 @@ export default function PipelinePage() {
       <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />
 
       <DetailsDialog
-        isDeleting={isDeletePending}
+        isDeleting={isDeleting}
         onDelete={handleDelete}
         onOpenChange={setIsViewConfigDialogOpen}
         open={isViewConfigDialogOpen}
