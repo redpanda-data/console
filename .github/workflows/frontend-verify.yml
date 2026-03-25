@@ -93,6 +93,13 @@ jobs:
             ${{ runner.os }}-bun-frontend-
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Restore Rspack build cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules/.cache
+          key: ${{ runner.os }}-rspack-${{ hashFiles('frontend/src/**', 'frontend/rsbuild.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-rspack-
       - name: Run build frontend
         run: |
           REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
