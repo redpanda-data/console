@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
@@ -50,6 +48,7 @@ function EditorSkeleton() {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
+import { useHotKey } from 'hooks/use-hot-key';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -224,20 +223,17 @@ export default function PipelinePage() {
   const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
 
   // Cmd+Shift+P keyboard shortcut for pipeline command menu
-  useEffect(() => {
-    if (mode === 'view') {
-      return;
-    }
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'p') {
-        e.preventDefault();
-        slashCommand.close();
-        setIsCommandMenuOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [mode, slashCommand.close]);
+  const handleCommandMenuOpen = useCallback(() => {
+    slashCommand.close();
+    setIsCommandMenuOpen(true);
+  }, [slashCommand]);
+
+  useHotKey({
+    key: 'p',
+    modifiers: ['meta', 'shift'],
+    enabled: mode !== 'view',
+    onTrigger: handleCommandMenuOpen,
+  });
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -311,13 +307,19 @@ export default function PipelinePage() {
     return merged;
   }, [errorLintHints, responseLintHints]);
 
-  // Initialize form data from pipeline (edit/view).
-  // Synchronous setState is intentional: YAML has dual ownership (server data → local edits),
-  // so it can't be derived. queueMicrotask was tried but caused a flash (skeleton removed
-  // before editor had content). Bounded to one extra render per pipeline load.
-  // react-doctor: set-state-in-effect
+  // Hydrate YAML when pipeline data arrives (edit mode only).
+  // setState during render — React re-renders before DOM commit, no flash.
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
+  if (pipeline && mode === 'edit' && pipeline.id !== hydratedPipelineId) {
+    setHydratedPipelineId(pipeline.id);
+    setYamlContent(pipeline.configYaml);
+  }
+
+  // Sync RHF form with server data (edit mode only).
+  // form.reset() is an external system sync — effects are correct here.
   useEffect(() => {
-    if (pipeline && mode !== 'create') {
+    if (pipeline && mode === 'edit') {
       form.reset({
         name: pipeline.displayName,
         description: pipeline.description || '',
@@ -326,7 +328,6 @@ export default function PipelinePage() {
           .filter(([k]) => !isSystemTag(k))
           .map(([key, value]) => ({ key, value })),
       });
-      setYamlContent(pipeline.configYaml);
     }
   }, [pipeline, mode, form]);
 
