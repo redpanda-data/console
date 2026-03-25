@@ -22,12 +22,8 @@ jobs:
           args: --timeout=10m --config=.golangci.yaml
 
   test:
-    name: Test Backend (${{ matrix.shard }})
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [api, other]
+    name: Test Backend
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -41,15 +37,5 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Resolve test packages
-        id: resolve
-        working-directory: backend
-        run: |
-          if [ "${{ matrix.shard }}" = "api" ]; then
-            echo "packages=./pkg/api/..." >> "$GITHUB_OUTPUT"
-          else
-            PKGS=$(go list --tags=integration ./... | grep -v '/pkg/api$' | grep -v '/pkg/api/' | tr '\n' ' ')
-            echo "packages=$PKGS" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Integration Tests
-        run: task backend:test-integration -- ${{ steps.resolve.outputs.packages }}
+      - name: Unit & Integration Tests
+        run: task backend:test-integration
