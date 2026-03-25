@@ -14,7 +14,7 @@ import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { Pipeline_State, PipelineSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ComponentProps } from 'react';
 import { render, screen } from 'test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DetailsDialog } from './details-dialog';
 
@@ -41,6 +41,15 @@ function createPipeline(overrides: Record<string, unknown> = {}) {
 }
 
 describe('DetailsDialog', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
   it('renders pipeline ID with copy button', () => {
     renderDetailsDialog({ pipeline: createPipeline() });
     expect(screen.getByText('pipeline-123')).toBeInTheDocument();
