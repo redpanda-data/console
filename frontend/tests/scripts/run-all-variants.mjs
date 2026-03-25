@@ -25,7 +25,7 @@ function spawnPlaywright(variant, extraArgs, label) {
 
   if (isParallel) {
     mkdirSync(reportsDir, { recursive: true });
-    const logPath = join(reportsDir, `${label}.log`);
+    const logPath = join(reportsDir, `${label.replace(/\//g, '-')}.log`);
     logStream = createWriteStream(logPath);
 
     child = spawn('npx', args, {
@@ -218,7 +218,7 @@ async function runAllVariants(playwrightArgs = []) {
     }
 
     for (const label of failedLabels) {
-      const logPath = join(reportsDir, `${label}.log`);
+      const logPath = join(reportsDir, `${label.replace(/\//g, '-')}.log`);
       console.log(`\n${'='.repeat(60)}`);
       console.log(`Logs for failed: ${label}`);
       console.log(`${'='.repeat(60)}`);
