@@ -10,6 +10,7 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
+import { keepPreviousData } from '@tanstack/react-query';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -167,7 +168,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
       queryName: 'connect_input_received',
       params: { ...timeParams, filters: { pipeline_id: pipelineId } },
     },
-    { enabled: hasInputQuery }
+    { enabled: hasInputQuery, placeholderData: keepPreviousData }
   );
 
   const {
@@ -180,7 +181,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
       queryName: 'connect_output_sent',
       params: { ...timeParams, filters: { pipeline_id: pipelineId } },
     },
-    { enabled: hasOutputQuery }
+    { enabled: hasOutputQuery, placeholderData: keepPreviousData }
   );
 
   const handleRefresh = useCallback(() => {

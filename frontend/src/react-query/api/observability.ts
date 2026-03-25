@@ -39,7 +39,7 @@ export const useListQueries = (
 
 export const useExecuteRangeQuery = (
   request: MessageInit<ExecuteRangeQueryRequest>,
-  opts?: { enabled?: boolean; refetchInterval?: number | false }
+  opts?: { enabled?: boolean; refetchInterval?: number | false; placeholderData?: (previousData: unknown) => unknown }
 ) => {
   const executeRangeQueryRequest = create(ExecuteRangeQueryRequestSchema, request);
   return useQuery(executeRangeQuery, executeRangeQueryRequest, {
