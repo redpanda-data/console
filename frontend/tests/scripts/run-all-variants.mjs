@@ -9,23 +9,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const reportsDir = resolve(__dirname, '..', 'playwright-report');
 
-async function runVariant(variant, playwrightArgs = []) {
+// Number of shards for variants with many tests. Controlled via E2E_SHARD_COUNT env var.
+const SHARD_COUNT = Number.parseInt(process.env.E2E_SHARD_COUNT ?? '2', 10);
+// Minimum test file count to enable sharding (don't shard tiny variants)
+const SHARD_THRESHOLD = 5;
+
+function spawnPlaywright(variant, extraArgs, label) {
   const configPath = join(variant.path, 'playwright.config.ts');
   const startTime = Date.now();
+  const args = ['playwright', 'test', '--config', configPath, ...extraArgs];
 
-  console.log(`[${variant.name}] Starting...`);
-
-  const args = ['playwright', 'test', '--config', configPath, ...playwrightArgs];
-
-  // In CI with parallel variants, pipe output to log files to avoid interleaving.
-  // Locally or with a single variant, inherit stdio for immediate feedback.
   const isParallel = process.env.CI;
   let logStream;
   let child;
 
   if (isParallel) {
     mkdirSync(reportsDir, { recursive: true });
-    const logPath = join(reportsDir, `${variant.name}.log`);
+    const logPath = join(reportsDir, `${label}.log`);
     logStream = createWriteStream(logPath);
 
     child = spawn('npx', args, {
@@ -33,7 +33,6 @@ async function runVariant(variant, playwrightArgs = []) {
       cwd: variant.path,
       env: {
         ...process.env,
-        // Force IPv4 for testcontainers wait strategies
         TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
       },
     });
@@ -55,20 +54,85 @@ async function runVariant(variant, playwrightArgs = []) {
     child.on('close', (code) => {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       const status = code === 0 ? 'PASSED' : 'FAILED';
-      console.log(`[${variant.name}] ${status} (${elapsed}s)`);
+      console.log(`[${label}] ${status} (${elapsed}s)`);
       if (logStream) logStream.end();
-      resolve({ variant: variant.name, code, skipped: false });
+      resolve({ variant: label, code, skipped: false });
     });
     child.on('error', (error) => {
-      console.error(`[${variant.name}] Error: ${error.message}`);
+      console.error(`[${label}] Error: ${error.message}`);
       if (logStream) logStream.end();
-      resolve({ variant: variant.name, code: 1, skipped: false });
+      resolve({ variant: label, code: 1, skipped: false });
     });
   });
 }
 
+/**
+ * Count spec files for a variant to decide whether sharding is worthwhile.
+ */
+async function countSpecFiles(variantPath) {
+  const { readdirSync } = await import('node:fs');
+  let count = 0;
+  function walk(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(join(dir, entry.name));
+      else if (entry.name.endsWith('.spec.ts')) count++;
+    }
+  }
+  walk(variantPath);
+  return count;
+}
+
+async function runVariant(variant, playwrightArgs = []) {
+  const specCount = await countSpecFiles(variant.path);
+  const shouldShard = process.env.CI && SHARD_COUNT > 1 && specCount >= SHARD_THRESHOLD;
+
+  if (shouldShard) {
+    console.log(`[${variant.name}] Sharding into ${SHARD_COUNT} (${specCount} spec files)...`);
+
+    // Launch shard 1 first — it will run global setup and create containers.
+    // Then launch remaining shards which will find the state file and skip setup.
+    const shard1Label = `${variant.name}/shard-1`;
+    const shard1Result = await new Promise((resolve) => {
+      const p = spawnPlaywright(variant, [...playwrightArgs, `--shard=1/${SHARD_COUNT}`], shard1Label);
+      // Wait briefly for global setup to write the state file before launching other shards.
+      // We poll for the state file rather than waiting a fixed time.
+      const stateFile = join(dirname(variant.path), `.testcontainers-state-${variant.config.name}.json`);
+      const checkInterval = setInterval(async () => {
+        const { existsSync } = await import('node:fs');
+        if (existsSync(stateFile)) {
+          clearInterval(checkInterval);
+          // State file exists — launch remaining shards
+          const otherShards = [];
+          for (let i = 2; i <= SHARD_COUNT; i++) {
+            const label = `${variant.name}/shard-${i}`;
+            otherShards.push(spawnPlaywright(variant, [...playwrightArgs, `--shard=${i}/${SHARD_COUNT}`], label));
+          }
+          // Wait for shard 1 + all other shards
+          const [s1, ...rest] = await Promise.all([p, ...otherShards]);
+          resolve([s1, ...rest]);
+        }
+      }, 1000);
+
+      // Fallback: if shard 1 finishes before state file appears (e.g. setup failed),
+      // clear interval and return its result alone
+      p.then((result) => {
+        clearInterval(checkInterval);
+        resolve([result]);
+      });
+    });
+
+    // Flatten results — treat any shard failure as variant failure
+    const shardResults = Array.isArray(shard1Result) ? shard1Result : [shard1Result];
+    const worstCode = Math.max(...shardResults.map((r) => r.code));
+    return { variant: variant.name, code: worstCode, skipped: false, shardResults };
+  }
+
+  // No sharding — run directly
+  console.log(`[${variant.name}] Starting...`);
+  return spawnPlaywright(variant, playwrightArgs, variant.name);
+}
+
 async function runAllVariants(playwrightArgs = []) {
-  // Get all variants including unrunnable ones for display
   const allVariants = discoverVariants({ includeUnrunnable: true });
 
   if (allVariants.length === 0) {
@@ -94,8 +158,6 @@ async function runAllVariants(playwrightArgs = []) {
   }
 
   // Pre-build backend Docker images once before launching variants in parallel.
-  // This avoids race conditions where multiple variants try to copy frontend assets
-  // and build the same Docker image concurrently.
   console.log('\nPre-building backend Docker image(s)...');
   const needsEnterprise = runnableVariants.some((v) => v.config.isEnterprise);
   const ossImageTag = await buildBackendImage(false);
@@ -108,10 +170,9 @@ async function runAllVariants(playwrightArgs = []) {
 
   console.log(`\nRunning ${runnableVariants.length} variant(s) in parallel...`);
 
-  // Run all variants in parallel — each uses different ports and Docker networks
   const results = await Promise.all(runnableVariants.map((variant) => runVariant(variant, playwrightArgs)));
 
-  // Add skipped variants to results
+  // Add skipped variants
   for (const variant of skippedVariants) {
     results.push({ variant: variant.name, code: 0, skipped: true, skipReason: variant.skipReason });
   }
@@ -125,39 +186,53 @@ async function runAllVariants(playwrightArgs = []) {
   for (const result of results) {
     if (result.skipped) {
       console.log(`  \u23ED ${result.variant}: SKIPPED`);
+    } else if (result.shardResults) {
+      for (const shard of result.shardResults) {
+        const status = shard.code === 0 ? 'PASSED' : 'FAILED';
+        const icon = shard.code === 0 ? '\u2714' : '\u2718';
+        console.log(`  ${icon} ${shard.variant}: ${status}`);
+      }
+      if (result.code !== 0) hasFailures = true;
     } else {
       const status = result.code === 0 ? 'PASSED' : 'FAILED';
       const icon = result.code === 0 ? '\u2714' : '\u2718';
       console.log(`  ${icon} ${result.variant}: ${status}`);
-      if (result.code !== 0) {
-        hasFailures = true;
-      }
+      if (result.code !== 0) hasFailures = true;
     }
   }
 
   console.log('');
 
-  // On failure in CI, dump the log files for failed variants
+  // On failure in CI, dump log files for failed shards/variants
   if (hasFailures && process.env.CI) {
+    const failedLabels = [];
     for (const result of results) {
-      if (!result.skipped && result.code !== 0) {
-        const logPath = join(reportsDir, `${result.variant}.log`);
-        console.log(`\n${'='.repeat(60)}`);
-        console.log(`Logs for failed variant: ${result.variant}`);
-        console.log(`${'='.repeat(60)}`);
-        try {
-          const { readFileSync } = await import('node:fs');
-          const logContent = readFileSync(logPath, 'utf-8');
-          // Print last 200 lines to avoid overwhelming output
-          const lines = logContent.split('\n');
-          const tail = lines.slice(-200).join('\n');
-          if (lines.length > 200) {
-            console.log(`... (showing last 200 of ${lines.length} lines)`);
-          }
-          console.log(tail);
-        } catch {
-          console.log(`(could not read log file: ${logPath})`);
+      if (result.skipped) continue;
+      if (result.shardResults) {
+        for (const shard of result.shardResults) {
+          if (shard.code !== 0) failedLabels.push(shard.variant);
         }
+      } else if (result.code !== 0) {
+        failedLabels.push(result.variant);
+      }
+    }
+
+    for (const label of failedLabels) {
+      const logPath = join(reportsDir, `${label}.log`);
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`Logs for failed: ${label}`);
+      console.log(`${'='.repeat(60)}`);
+      try {
+        const { readFileSync } = await import('node:fs');
+        const logContent = readFileSync(logPath, 'utf-8');
+        const lines = logContent.split('\n');
+        const tail = lines.slice(-200).join('\n');
+        if (lines.length > 200) {
+          console.log(`... (showing last 200 of ${lines.length} lines)`);
+        }
+        console.log(tail);
+      } catch {
+        console.log(`(could not read log file: ${logPath})`);
       }
     }
   }

@@ -9,10 +9,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
+const getRefCountFile = (variantName) => resolve(__dirname, '..', `.testcontainers-refcount-${variantName}`);
 
 export default async function globalTeardown(config = {}) {
   const variantName = config?.metadata?.variantName ?? 'console';
   const CONTAINER_STATE_FILE = getStateFile(variantName);
+  const REF_COUNT_FILE = getRefCountFile(variantName);
 
   console.log(`\n🛑 TEARDOWN: ${variantName}...`);
 
@@ -20,6 +22,18 @@ export default async function globalTeardown(config = {}) {
     if (!fs.existsSync(CONTAINER_STATE_FILE)) {
       console.log('No container state file found, skipping teardown');
       return;
+    }
+
+    // If a ref count file exists, decrement it. Only the last shard tears down.
+    if (fs.existsSync(REF_COUNT_FILE)) {
+      const count = Number.parseInt(fs.readFileSync(REF_COUNT_FILE, 'utf8').trim(), 10) - 1;
+      if (count > 0) {
+        fs.writeFileSync(REF_COUNT_FILE, String(count));
+        console.log(`Other shard(s) still running (${count} remaining), skipping teardown`);
+        return;
+      }
+      // Last shard — clean up ref count file and proceed with teardown
+      fs.unlinkSync(REF_COUNT_FILE);
     }
 
     const state = JSON.parse(fs.readFileSync(CONTAINER_STATE_FILE, 'utf8'));

@@ -940,6 +940,24 @@ export default async function globalSetup(config = {}) {
   const variantConfig = loadVariantConfig(variantName);
   const ports = variantConfig.ports;
 
+  // If containers are already running (e.g. another shard started them), skip setup
+  const stateFile = getStateFile(variantName);
+  const refCountFile = resolve(__dirname, '..', `.testcontainers-refcount-${variantName}`);
+  if (existsSync(stateFile)) {
+    try {
+      // Verify the backend is actually reachable before skipping
+      await waitForPort(ports.backend, 3, 500);
+      // Increment ref count so teardown knows other shards are using the containers
+      const current = existsSync(refCountFile) ? Number.parseInt(readFileSync(refCountFile, 'utf-8').trim(), 10) : 0;
+      writeFileSync(refCountFile, String(current + 1));
+      console.log(`\n✅ Containers already running for ${variantName} (state file exists). Skipping setup.\n`);
+      return;
+    } catch {
+      // State file exists but backend unreachable — stale file, proceed with setup
+      console.log('State file exists but backend not reachable, proceeding with fresh setup...');
+    }
+  }
+
   console.log('\n\n========================================');
   console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`);
   console.log('========================================\n');
@@ -1047,6 +1065,8 @@ export default async function globalSetup(config = {}) {
     }
 
     writeFileSync(getStateFile(variantName), JSON.stringify(state, null, 2));
+    // Initialize ref count to 1 (this shard). Other shards increment it in the skip-setup path.
+    writeFileSync(refCountFile, '1');
 
     console.log('\n✅ All services ready! Starting tests...\n');
   } catch (error) {
