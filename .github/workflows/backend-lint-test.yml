@@ -52,4 +52,4 @@ jobs:
             echo "packages=$PKGS" >> "$GITHUB_OUTPUT"
           fi
       - name: Integration Tests
-        run: task backend:test-integration -- "${{ steps.resolve.outputs.packages }}"
+        run: task backend:test-integration -- ${{ steps.resolve.outputs.packages }}
