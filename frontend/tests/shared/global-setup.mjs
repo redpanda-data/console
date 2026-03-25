@@ -444,15 +444,16 @@ export async function buildBackendImage(isEnterprise) {
       }
     }
 
-    console.log('Building Docker image with testcontainers...');
+    console.log('Building Docker image with BuildKit...');
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
 
     try {
-      await GenericContainer.fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
-        .withBuildArgs({
-          BUILDKIT_INLINE_CACHE: '1',
-        })
-        .build(imageTag, { deleteOnExit: false });
+      // Use docker buildx with BuildKit cache mounts for Go module and build caches.
+      // This is significantly faster than testcontainers build on repeat runs.
+      await execAsync(`DOCKER_BUILDKIT=1 docker build -f .dockerfile.e2e.tmp -t ${imageTag} .`, {
+        cwd: backendDir,
+        maxBuffer: 50 * 1024 * 1024,
+      });
       console.log('✓ Backend image built');
     } finally {
       // Clean up temporary Dockerfile and workspace directory
