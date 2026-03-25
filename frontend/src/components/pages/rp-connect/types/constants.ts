@@ -47,7 +47,7 @@ export const REDPANDA_CONTEXTUAL_VARIABLES = {
   },
 } as const;
 
-export const getContextualVariableSyntax = (name: ContextualVariableName): string => `\${${name}}`;
+export const getContextualVariableSyntax = (name: string): string => `\${${name}}`;
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 
@@ -87,5 +87,19 @@ export const stepMotionProps: MotionProps = {
   exit: { opacity: 0, x: -20 },
   transition: { duration: 0.3, ease: 'easeInOut' },
 };
+
+export const RedpandaConnectorSetupStep = {
+  ADD_TOPIC: 'redpanda-connector-add-topic',
+  ADD_USER: 'redpanda-connector-add-user',
+} as const;
+
+export const redpandaConnectorSetupStepDefinitions = [
+  { id: RedpandaConnectorSetupStep.ADD_TOPIC, title: 'Add a topic' },
+  { id: RedpandaConnectorSetupStep.ADD_USER, title: 'Add permissions' },
+] as const;
+
+const RedpandaConnectorSetupStepDefinition = defineStepper(...redpandaConnectorSetupStepDefinitions);
+export const RedpandaConnectorSetupStepper = RedpandaConnectorSetupStepDefinition.Stepper;
+export type RedpandaConnectorSetupSteps = typeof RedpandaConnectorSetupStepDefinition.Steps;
 
 export type PipelineMode = 'create' | 'edit' | 'view';

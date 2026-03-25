@@ -32,6 +32,8 @@ export {
   AlertCircle as AlertIcon, // MdOutlineError, MdOutlineErrorOutline, AiOutlineExclamationCircle, AlertIcon (Octicons)
   AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber, WarningIcon (Chakra)
   Archive as ArchiveIcon, // ArchiveIcon (Heroicons)
+  ArrowBigUp as ArrowBigUpIcon,
+  ArrowLeft as ArrowLeftIcon,
   ArrowRight as TabIcon, // MdKeyboardTab (no direct Tab icon in lucide)
   Ban as BanIcon, // MdDoNotDisturb, CircleSlashIcon (Octicons)
   Beaker as BeakerIcon, // BeakerIcon (Heroicons)
@@ -46,6 +48,7 @@ export {
   ChevronRight as ChevronRightIcon, // ChevronRightIcon (Heroicons/Octicons)
   ChevronUp as ChevronUpIcon, // ChevronUpIcon (Chakra)
   Code as CodeIcon, // MdJavascript
+  Command as CommandIcon,
   Copy as CopyIcon, // MdContentCopy
   CopyPlus as CopyAllIcon, // MdOutlineCopyAll
   Crown as CrownIcon, // FaCrown
@@ -72,10 +75,12 @@ export {
   Pause as PauseIcon, // MdPause
   PauseCircle as PauseCircleIcon, // MdOutlinePauseCircle
   Pencil as EditIcon, // PencilIcon (Heroicons)
+  Play as PlayTriangleIcon,
   PlayCircle as PlayIcon, // MdPlayCircleOutline
   Plus as PlusIcon, // AiOutlinePlus, PlusIcon (Octicons)
   RefreshCw as RefreshIcon, // MdOutlineCached, SyncIcon (Octicons)
   Reply as ReplyIcon, // MdOutlineQuickreply
+  RotateCcw as RotateCcwIcon,
   RotateCw as RotateCwIcon, // MdRefresh
   Scale as ScaleIcon, // ScaleIcon (Heroicons)
   Settings as SettingsIcon, // MdOutlineSettings, GearIcon (Octicons)

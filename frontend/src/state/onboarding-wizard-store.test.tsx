@@ -155,13 +155,13 @@ describe('Onboarding Wizard Store', () => {
       expect(parsed.output).toBeUndefined();
     });
 
-    test('should initialize with _hasHydrated as false', () => {
+    test('should initialize with hasHydrated as false', () => {
       const { result } = renderHook(() => useOnboardingWizardDataStore());
 
-      expect(result.current._hasHydrated).toBe(false);
+      expect(result.current.hasHydrated).toBe(false);
     });
 
-    test('should reset _hasHydrated to false on reset', () => {
+    test('should reset hasHydrated to false on reset', () => {
       const { result } = renderHook(() => useOnboardingWizardDataStore());
 
       // Simulate hydration complete
@@ -169,7 +169,7 @@ describe('Onboarding Wizard Store', () => {
         result.current.setHasHydrated(true);
       });
 
-      expect(result.current._hasHydrated).toBe(true);
+      expect(result.current.hasHydrated).toBe(true);
 
       // Add some data
       act(() => {
@@ -182,10 +182,10 @@ describe('Onboarding Wizard Store', () => {
       });
 
       expect(result.current.input).toBeUndefined();
-      expect(result.current._hasHydrated).toBe(false);
+      expect(result.current.hasHydrated).toBe(false);
     });
 
-    test('should NOT persist _hasHydrated to sessionStorage', () => {
+    test('should NOT persist hasHydrated to sessionStorage', () => {
       const { result } = renderHook(() => useOnboardingWizardDataStore());
 
       act(() => {
@@ -199,20 +199,20 @@ describe('Onboarding Wizard Store', () => {
       if (stored) {
         const parsed = JSON.parse(stored);
         expect(parsed.input).toBeDefined();
-        expect(parsed._hasHydrated).toBeUndefined(); // Should NOT be persisted
+        expect(parsed.hasHydrated).toBeUndefined(); // Should NOT be persisted
       }
     });
 
-    test('should allow setting _hasHydrated', () => {
+    test('should allow setting hasHydrated', () => {
       const { result } = renderHook(() => useOnboardingWizardDataStore());
 
-      expect(result.current._hasHydrated).toBe(false);
+      expect(result.current.hasHydrated).toBe(false);
 
       act(() => {
         result.current.setHasHydrated(true);
       });
 
-      expect(result.current._hasHydrated).toBe(true);
+      expect(result.current.hasHydrated).toBe(true);
     });
   });
 
@@ -484,7 +484,7 @@ describe('Onboarding Wizard Store', () => {
       expect(onboardingWizardStore.hasHydrated()).toBe(true);
     });
 
-    test('getWizardData should NOT include _hasHydrated in returned data', () => {
+    test('getWizardData should NOT include hasHydrated in returned data', () => {
       act(() => {
         onboardingWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
         useOnboardingWizardDataStore.getState().setHasHydrated(true);
@@ -493,7 +493,7 @@ describe('Onboarding Wizard Store', () => {
       const data = onboardingWizardStore.getWizardData();
 
       expect(data.input).toBeDefined();
-      expect(Object.hasOwn(data, '_hasHydrated')).toBe(false);
+      expect(Object.hasOwn(data, 'hasHydrated')).toBe(false);
       expect(Object.hasOwn(data, 'setHasHydrated')).toBe(false);
     });
   });

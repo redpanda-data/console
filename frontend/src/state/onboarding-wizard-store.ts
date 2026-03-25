@@ -30,14 +30,14 @@ export const useOnboardingWizardDataStore = create<
   Partial<OnboardingWizardFormData> & {
     setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
     reset: () => void;
-    _hasHydrated: boolean;
+    hasHydrated: boolean;
     setHasHydrated: (state: boolean) => void;
   }
 >()(
   persist(
     (set, get) => ({
       ...initialWizardData,
-      _hasHydrated: false,
+      hasHydrated: false,
       setWizardData: (data) => set(data),
       reset: () => {
         sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
@@ -46,13 +46,13 @@ export const useOnboardingWizardDataStore = create<
             ...initialWizardData,
             setWizardData: get().setWizardData,
             reset: get().reset,
-            _hasHydrated: false,
+            hasHydrated: false,
             setHasHydrated: get().setHasHydrated,
           },
           true
         );
       },
-      setHasHydrated: (state) => set({ _hasHydrated: state }),
+      setHasHydrated: (state) => set({ hasHydrated: state }),
     }),
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
@@ -117,13 +117,41 @@ export const useResetOnboardingWizardStore = () =>
     useOnboardingYamlContentStore.getState().reset();
   }, []);
 
+/**
+ * Read wizard connection data from the Zustand store, falling back to session storage.
+ * The persist middleware hydrates once at store creation — if CloudV2 writes to session
+ * storage and then does a client-side navigation (no full reload), the store may have
+ * hydrated before the data was set. This function handles that race condition.
+ */
+export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
+  let input = useOnboardingWizardDataStore.getState().input;
+  let output = useOnboardingWizardDataStore.getState().output;
+
+  if (!(input || output)) {
+    try {
+      const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>;
+        input = parsed.input;
+        output = parsed.output;
+        // Sync the store so other consumers see the data
+        useOnboardingWizardDataStore.getState().setWizardData({ input, output });
+      }
+    } catch {
+      // Ignore malformed session storage
+    }
+  }
+
+  return { input, output };
+}
+
 // Imperative API for non-hook contexts (class components, utility functions)
 export const onboardingWizardStore = {
   getWizardData: () => {
     const {
       setWizardData: _,
       reset: __,
-      _hasHydrated: ___,
+      hasHydrated: ___,
       setHasHydrated: ____,
       ...data
     } = useOnboardingWizardDataStore.getState();
@@ -141,7 +169,7 @@ export const onboardingWizardStore = {
     const { setYamlContent: _, reset: __, ...data } = useOnboardingYamlContentStore.getState();
     return data;
   },
-  hasHydrated: () => useOnboardingWizardDataStore.getState()._hasHydrated,
+  hasHydrated: () => useOnboardingWizardDataStore.getState().hasHydrated,
   setWizardData: (data: Partial<OnboardingWizardFormData>) =>
     useOnboardingWizardDataStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingTopicDataStore.getState().setTopicData(data),

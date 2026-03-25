@@ -4,6 +4,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
+import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
 import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 // ============================================================================
@@ -597,6 +598,181 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
 // Topic extraction (for connectors display)
 // ============================================================================
 
+// ============================================================================
+// Surgical YAML patching for Redpanda components
+// ============================================================================
+
+export type RedpandaPatch = {
+  topicName?: string;
+  sasl?: { mechanism: string; username: string; password: string }[];
+};
+
+export type RedpandaSetupResultLike = {
+  topicName?: string;
+  username?: string;
+  saslMechanism?: string;
+  authMethod?: 'sasl' | 'service-account';
+  serviceAccountSecretName?: string;
+};
+
+/** Build a SASL patch array from setup result data. */
+export function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] | undefined {
+  if (result.authMethod === 'service-account' && result.serviceAccountSecretName) {
+    return [
+      {
+        mechanism: 'SCRAM-SHA-256',
+        username: getSecretSyntax(`${result.serviceAccountSecretName}.client_id`),
+        password: getSecretSyntax(`${result.serviceAccountSecretName}.client_secret`),
+      },
+    ];
+  }
+  if (result.username) {
+    const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(result.username)}`;
+    const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(result.username)}`;
+    return [
+      {
+        mechanism: result.saslMechanism || 'SCRAM-SHA-256',
+        username: getSecretSyntax(usernameSecretId),
+        password: getSecretSyntax(passwordSecretId),
+      },
+    ];
+  }
+  return;
+}
+
+/**
+ * Surgically patches topic and/or SASL fields in an existing YAML config
+ * without regenerating the entire component block.
+ *
+ * - Topics: sets `topics: [topicName]` or `topic: topicName` depending on which
+ *   field already exists in the component config. Defaults to `topics` array.
+ * - SASL: for `redpanda_common`, patches `redpanda.sasl` at root level.
+ *   For all other components, patches `[section].componentName.sasl`.
+ *
+ * Returns the patched YAML string, or undefined if parsing fails.
+ */
+export function patchRedpandaConfig(
+  existingYaml: string,
+  section: 'input' | 'output',
+  componentName: string,
+  patch: RedpandaPatch
+): string | undefined {
+  if (!existingYaml.trim()) {
+    return;
+  }
+
+  let doc: Document.Parsed;
+  try {
+    doc = parseDocument(existingYaml);
+  } catch {
+    return;
+  }
+
+  if (patch.topicName) {
+    // Inputs use `topics` (string array), outputs use `topic` (singular string) —
+    // matches the actual Redpanda component schemas.
+    if (section === 'output') {
+      doc.setIn([section, componentName, 'topic'], patch.topicName);
+    } else {
+      doc.setIn([section, componentName, 'topics'], [patch.topicName]);
+    }
+  }
+
+  if (patch.sasl) {
+    if (componentName === 'redpanda_common') {
+      // redpanda_common uses a top-level `redpanda:` block for SASL
+      doc.setIn(['redpanda', 'sasl'], patch.sasl);
+    } else {
+      doc.setIn([section, componentName, 'sasl'], patch.sasl);
+    }
+  }
+
+  try {
+    return yamlStringify(doc, yamlConfig);
+  } catch {
+    return;
+  }
+}
+
+/** Build a RedpandaPatch and apply it to existing YAML. Returns patched YAML or undefined. */
+export function tryPatchRedpandaYaml(
+  yamlContent: string,
+  section: 'input' | 'output',
+  componentName: string,
+  result: RedpandaSetupResultLike
+): string | undefined {
+  const patch: RedpandaPatch = {};
+  if (result.topicName) {
+    patch.topicName = result.topicName;
+  }
+  const sasl = buildSaslPatch(result);
+  if (sasl) {
+    patch.sasl = sasl;
+  }
+  if (!(patch.topicName || patch.sasl)) {
+    return;
+  }
+  return patchRedpandaConfig(yamlContent, section, componentName, patch);
+}
+
+/** Check whether a component already has an entry under [section][componentName] in the YAML. */
+function componentExistsInYaml(yamlContent: string, section: string, componentName: string): boolean {
+  if (!yamlContent.trim()) {
+    return false;
+  }
+  try {
+    const doc = parseDocument(yamlContent);
+    return doc.getIn([section, componentName]) != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Apply Redpanda setup result to YAML.
+ *
+ * - If the component already exists in the YAML, surgically patches only the
+ *   requested fields (topic / SASL) without touching anything else.
+ * - If the component is new (not yet in the YAML), generates a full template
+ *   via getConnectTemplate and then patches topic/user onto it.
+ */
+export function applyRedpandaSetup({
+  yamlContent,
+  connectionName,
+  connectionType,
+  result,
+  components,
+}: {
+  yamlContent: string;
+  connectionName: string;
+  connectionType: 'input' | 'output';
+  result: RedpandaSetupResultLike;
+  components: ConnectComponentSpec[];
+}): string | undefined {
+  // Only try surgical patch if the component already exists (Flow B — hint buttons).
+  // For new components (Flow A — picker), skip to template generation.
+  if (componentExistsInYaml(yamlContent, connectionType, connectionName)) {
+    const patched = tryPatchRedpandaYaml(yamlContent, connectionType, connectionName, result);
+    if (patched) {
+      return patched;
+    }
+  }
+
+  // Generate full template, then patch topic/user onto it
+  const base = getConnectTemplate({
+    connectionName,
+    connectionType,
+    components,
+    showAdvancedFields: false,
+    existingYaml: yamlContent,
+  });
+  if (!base) {
+    return;
+  }
+
+  return tryPatchRedpandaYaml(base, connectionType, connectionName, result) ?? base;
+}
+
 /** Extract all referenced topic names from input/output configs. */
 export function extractAllTopics(yamlContent: string): string[] {
   if (!yamlContent.trim()) {
@@ -647,4 +823,38 @@ export function extractAllTopics(yamlContent: string): string[] {
 
   walkForTopics(config);
   return [...topics];
+}
+
+/**
+ * Generates YAML from onboarding wizard connection data by composing
+ * input and (optionally) output templates via getConnectTemplate.
+ */
+export function generateYamlFromWizardData(
+  input: { connectionName: string; connectionType: string } | undefined,
+  output: { connectionName: string; connectionType: string } | undefined,
+  components: ConnectComponentSpec[]
+): string {
+  if (!(input?.connectionName && input?.connectionType)) {
+    return '';
+  }
+
+  let yaml =
+    getConnectTemplate({
+      connectionName: input.connectionName,
+      connectionType: input.connectionType,
+      components,
+      existingYaml: '',
+    }) || '';
+
+  if (output?.connectionName && output?.connectionType) {
+    yaml =
+      getConnectTemplate({
+        connectionName: output.connectionName,
+        connectionType: output.connectionType,
+        components,
+        existingYaml: yaml,
+      }) || yaml;
+  }
+
+  return yaml;
 }
