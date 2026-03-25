@@ -22,18 +22,34 @@ jobs:
           args: --timeout=10m --config=.golangci.yaml
 
   test:
-    name: Test Backend
+    name: Test Backend (${{ matrix.shard }})
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [api, other]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'backend/go.mod'
           cache-dependency-path: 'backend/go.sum'
+      - name: Setup Docker Builder
+        uses: useblacksmith/setup-docker-builder@v1
       - name: Install Task
         uses: arduino/setup-task@v1
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Unit & Integration Tests
-        run: task backend:test-integration
+      - name: Resolve test packages
+        id: resolve
+        working-directory: backend
+        run: |
+          if [ "${{ matrix.shard }}" = "api" ]; then
+            echo "packages=./pkg/api/..." >> "$GITHUB_OUTPUT"
+          else
+            PKGS=$(go list --tags=integration ./... | grep -v '/pkg/api$' | grep -v '/pkg/api/' | tr '\n' ' ')
+            echo "packages=$PKGS" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Integration Tests
+        run: task backend:test-integration -- "${{ steps.resolve.outputs.packages }}"
