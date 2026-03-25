@@ -15,24 +15,23 @@ import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { NotFoundContent } from 'components/misc/not-found-content';
+import { AIAgentDetailsPage } from 'components/pages/agents/details/ai-agent-details-page';
 import { GetAIAgentRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { getAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
 import { z } from 'zod';
-
-import { AIAgentDetailsPage } from '../../components/pages/agents/details/ai-agent-details-page';
 
 const searchSchema = z.object({
   tab: fallback(z.string().optional(), undefined),
 });
 
 function AIAgentNotFound() {
-  const { id } = useParams({ from: '/agents/$id' });
+  const { id } = useParams({ from: '/agents/$id/' });
   return (
     <NotFoundContent backLink="/agents" backLinkText="Back to AI Agents" resourceId={id} resourceType="AI Agent" />
   );
 }
 
-export const Route = createFileRoute('/agents/$id')({
+export const Route = createFileRoute('/agents/$id/')({
   staticData: {
     title: 'AI Agent Details',
   },

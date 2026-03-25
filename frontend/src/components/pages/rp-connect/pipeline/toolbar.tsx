@@ -12,6 +12,15 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
+import {
+  AlertIcon,
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  PlayIcon,
+  RotateCwIcon,
+  SettingsIcon,
+  StopCircleIcon,
+} from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -19,12 +28,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { EditableText } from 'components/redpanda-ui/components/editable-text';
 import { Group } from 'components/redpanda-ui/components/group';
-import { Heading } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { AlertCircle, Check, ChevronDown, Loader2, Pause, Pencil, Play, RotateCcw, Trash } from 'lucide-react';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import type { StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
+import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import {
-  DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
@@ -32,7 +42,7 @@ import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ReactNode } from 'react';
 import { memo, useCallback, useMemo } from 'react';
-import { useDeletePipelineMutation, useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
+import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -44,16 +54,26 @@ type DropdownOption = {
 };
 
 type ButtonConfig = {
-  icon: ReactNode;
+  icon?: ReactNode;
   text: string;
   action?: () => void;
   dropdown?: DropdownOption[];
 };
 
 type ToolbarProps = {
-  pipelineId: string;
+  pipelineId?: string;
   pipelineName?: string;
   pipelineState?: Pipeline_State;
+  mode: 'view' | 'edit' | 'create';
+  onEditConfig?: () => void;
+  onViewConfig?: () => void;
+  onNameChange?: (name: string) => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  isSaving?: boolean;
+  isLoading?: boolean;
+  nameError?: string;
+  defaultEditing?: boolean;
 };
 
 type ButtonConfigFactoryParams = {
@@ -63,17 +83,36 @@ type ButtonConfigFactoryParams = {
   isStopPending: boolean;
 };
 
+export function pipelineStateToVariant(state?: Pipeline_State): { variant: StatusBadgeVariant; pulsing: boolean } {
+  switch (state) {
+    case PipelineState.RUNNING:
+      return { variant: 'success', pulsing: true };
+    case PipelineState.STARTING:
+      return { variant: 'starting', pulsing: false };
+    case PipelineState.STOPPING:
+      return { variant: 'stopping', pulsing: false };
+    case PipelineState.STOPPED:
+      return { variant: 'disabled', pulsing: false };
+    case PipelineState.ERROR:
+      return { variant: 'error', pulsing: false };
+    case PipelineState.COMPLETED:
+      return { variant: 'success', pulsing: false };
+    default:
+      return { variant: 'info', pulsing: false };
+  }
+}
+
 function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStartPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />,
     text: isStartPending ? 'Starting' : 'Start',
     action: handleStart,
+    icon: <PlayIcon />,
   };
 }
 
 function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: isStopPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />,
+    icon: isStopPending ? <Spinner /> : <StopCircleIcon />,
     text: isStopPending ? 'Stopping' : 'Stop',
     action: handleStop,
   };
@@ -81,37 +120,37 @@ function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryP
 
 function createStartingConfig({ handleStart, handleStop }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    icon: <Spinner />,
     text: 'Starting',
     dropdown: [
-      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStart },
-      { label: 'Stop', icon: <Pause className="h-4 w-4" />, action: handleStop, variant: 'destructive' },
+      { label: 'Try again', icon: <RotateCwIcon />, action: handleStart },
+      { label: 'Stop', icon: <StopCircleIcon />, action: handleStop, variant: 'destructive' },
     ],
   };
 }
 
 function createStoppingConfig({ handleStop, handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Loader2 className="h-4 w-4 animate-spin" />,
+    icon: <Spinner />,
     text: 'Stopping',
     dropdown: [
-      { label: 'Try again', icon: <RotateCcw className="h-4 w-4" />, action: handleStop },
-      { label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart },
+      { label: 'Try again', icon: <RotateCwIcon />, action: handleStop },
+      { label: 'Start', icon: <PlayIcon />, action: handleStart },
     ],
   };
 }
 
 function createErrorConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <AlertCircle className="h-4 w-4" />,
+    icon: <AlertIcon className="h-4 w-4" />,
     text: 'Error',
-    dropdown: [{ label: 'Start', icon: <Play className="h-4 w-4" />, action: handleStart }],
+    dropdown: [{ label: 'Start', icon: <PlayIcon />, action: handleStart }],
   };
 }
 
 function createCompletedConfig({ handleStart }: ButtonConfigFactoryParams): ButtonConfig {
   return {
-    icon: <Check className="h-4 w-4" />,
+    icon: <RotateCwIcon />,
     text: 'Restart',
     action: handleStart,
   };
@@ -139,13 +178,15 @@ function getPipelineButtonConfig(
   }
 }
 
-type ActionButtonProps = {
+function PipelineActionButton({
+  buttonConfig,
+  isStartPending,
+  isStopPending,
+}: {
   buttonConfig: ButtonConfig | null;
   isStartPending: boolean;
   isStopPending: boolean;
-};
-
-function ActionButton({ buttonConfig, isStartPending, isStopPending }: ActionButtonProps) {
+}) {
   if (!buttonConfig) {
     return null;
   }
@@ -154,10 +195,10 @@ function ActionButton({ buttonConfig, isStartPending, isStopPending }: ActionBut
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="min-w-[110px]">
+          <Button variant="outline">
             {buttonConfig.icon}
             {buttonConfig.text}
-            <ChevronDown className="ml-1 h-3 w-3" />
+            <ChevronDownIcon className="ml-1 h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -173,126 +214,195 @@ function ActionButton({ buttonConfig, isStartPending, isStopPending }: ActionBut
   }
 
   return (
-    <Button disabled={isStartPending || isStopPending} icon={buttonConfig.icon} onClick={buttonConfig.action}>
+    <Button
+      disabled={isStartPending || isStopPending}
+      icon={buttonConfig.icon}
+      onClick={buttonConfig.action}
+      variant="outline"
+    >
       {buttonConfig.text}
     </Button>
   );
 }
 
-export const Toolbar = memo(({ pipelineId, pipelineName, pipelineState }: ToolbarProps) => {
-  const navigate = useNavigate();
+export const Toolbar = memo(
+  ({
+    pipelineId,
+    pipelineName,
+    pipelineState,
+    mode,
+    onEditConfig,
+    onViewConfig,
+    onNameChange,
+    onSave,
+    onCancel,
+    isSaving,
+    isLoading,
+    nameError,
+    defaultEditing,
+  }: ToolbarProps) => {
+    const navigate = useNavigate();
 
-  const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
-  const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
-  const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
+    const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
+    const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      const deleteRequest = create(DeletePipelineRequestSchema, {
-        request: { id },
+    const handleBack = useCallback(() => {
+      if (onCancel) {
+        onCancel();
+      } else {
+        navigate({ to: '/connect-clusters' });
+      }
+    }, [onCancel, navigate]);
+
+    const handleStart = useCallback(() => {
+      if (!pipelineId) {
+        return;
+      }
+      const startRequest = create(StartPipelineRequestSchema, {
+        request: { id: pipelineId },
       });
 
-      deleteMutation(deleteRequest, {
+      startMutation(startRequest, {
         onSuccess: () => {
-          toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters' });
+          toast.success('Pipeline started');
         },
         onError: (err) => {
           toast.error(
             formatToastErrorMessageGRPC({
               error: ConnectError.from(err),
-              action: 'delete',
+              action: 'start',
               entity: 'pipeline',
             })
           );
         },
       });
-    },
-    [deleteMutation, navigate]
-  );
+    }, [pipelineId, startMutation]);
 
-  const handleStart = useCallback(() => {
-    const startRequest = create(StartPipelineRequestSchema, {
-      request: { id: pipelineId },
-    });
+    const handleStop = useCallback(() => {
+      if (!pipelineId) {
+        return;
+      }
+      const stopRequest = create(StopPipelineRequestSchema, {
+        request: { id: pipelineId },
+      });
 
-    startMutation(startRequest, {
-      onSuccess: () => {
-        toast.success('Pipeline started');
-      },
-      onError: (err) => {
-        toast.error(
-          formatToastErrorMessageGRPC({
-            error: ConnectError.from(err),
-            action: 'start',
-            entity: 'pipeline',
-          })
-        );
-      },
-    });
-  }, [pipelineId, startMutation]);
+      stopMutation(stopRequest, {
+        onSuccess: () => {
+          toast.success('Pipeline stopped');
+        },
+        onError: (err) => {
+          toast.error(
+            formatToastErrorMessageGRPC({
+              error: ConnectError.from(err),
+              action: 'stop',
+              entity: 'pipeline',
+            })
+          );
+        },
+      });
+    }, [pipelineId, stopMutation]);
 
-  const handleStop = useCallback(() => {
-    const stopRequest = create(StopPipelineRequestSchema, {
-      request: { id: pipelineId },
-    });
+    const handleEditNavigate = useCallback(() => {
+      if (pipelineId) {
+        navigate({ to: `/rp-connect/${pipelineId}/edit` });
+      }
+    }, [pipelineId, navigate]);
 
-    stopMutation(stopRequest, {
-      onSuccess: () => {
-        toast.success('Pipeline stopped');
-      },
-      onError: (err) => {
-        toast.error(
-          formatToastErrorMessageGRPC({
-            error: ConnectError.from(err),
-            action: 'stop',
-            entity: 'pipeline',
-          })
-        );
-      },
-    });
-  }, [pipelineId, stopMutation]);
+    const handleGearClick = useCallback(() => {
+      if (mode === 'view') {
+        onViewConfig?.();
+      } else {
+        onEditConfig?.();
+      }
+    }, [mode, onViewConfig, onEditConfig]);
 
-  const handleEdit = useCallback(() => {
-    navigate({ to: `/rp-connect/${pipelineId}/edit` });
-  }, [navigate, pipelineId]);
+    const buttonConfig = useMemo(
+      () =>
+        getPipelineButtonConfig(pipelineState, {
+          handleStart,
+          handleStop,
+          isStartPending,
+          isStopPending,
+        }),
+      [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
+    );
 
-  const buttonConfig = useMemo(
-    () =>
-      getPipelineButtonConfig(pipelineState, {
-        handleStart,
-        handleStop,
-        isStartPending,
-        isStopPending,
-      }),
-    [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
-  );
+    const isEditable = mode === 'edit' || mode === 'create';
+    const displayName = pipelineName || pipelineId || '';
 
-  return (
-    <div className="mt-5 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+    if (mode === 'view') {
+      return (
+        <div className="mt-5 flex items-start justify-between">
+          <div className="flex gap-2">
+            <Button className="mt-1" onClick={handleBack} size="icon" variant="ghost">
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                {isLoading ? <Skeleton className="h-9 w-48" /> : <Heading level={1}>{displayName}</Heading>}
+                {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
+              </div>
+              <Text className="text-muted-foreground">Monitor pipeline status and performance.</Text>
+              <span className="mt-3">
+                <Button onClick={handleEditNavigate}>Edit pipeline</Button>
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <PipelineActionButton
+              buttonConfig={buttonConfig}
+              isStartPending={isStartPending}
+              isStopPending={isStopPending}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-5 flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Button onClick={handleBack} size="icon" variant="ghost">
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Button>
+            {isLoading ? (
+              <Skeleton className="h-9 w-48" />
+            ) : (
+              <EditableText
+                as="heading"
+                className="min-w-[280px]"
+                defaultEditing={defaultEditing}
+                error={!!nameError}
+                errorMessage={nameError}
+                headingLevel={1}
+                onChange={onNameChange}
+                placeholder="Pipeline name"
+                readOnly={!isEditable}
+                value={displayName}
+              />
+            )}
+            {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
+          </div>
+          <Text className="mt-4 ml-9">
+            Redpanda Connect builds data pipelines for real-time analytics and actionable business insights.{' '}
+            <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+              Learn more
+            </Link>
+          </Text>
+        </div>
+
+        <div>
+          <Group className="items-center gap-2">
+            <Button disabled={isSaving} onClick={onSave}>
+              Save
+              {Boolean(isSaving) && <Spinner />}
+            </Button>
+          </Group>
+        </div>
       </div>
-
-      <div>
-        <Group className="items-center">
-          <ActionButton buttonConfig={buttonConfig} isStartPending={isStartPending} isStopPending={isStopPending} />
-          <Button icon={<Pencil />} onClick={handleEdit} size="icon" variant="outline" />
-          <DeleteResourceAlertDialog
-            buttonIcon={<Trash />}
-            buttonText={undefined}
-            buttonVariant="destructive-outline"
-            isDeleting={isDeletePending}
-            onDelete={handleDelete}
-            resourceId={pipelineId}
-            resourceName={pipelineName || 'this pipeline'}
-            resourceType="Pipeline"
-            triggerVariant="button"
-          />
-        </Group>
-      </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 Toolbar.displayName = 'Toolbar';

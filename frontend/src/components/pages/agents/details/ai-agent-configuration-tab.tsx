@@ -15,7 +15,7 @@ import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { getRouteApi, Link } from '@tanstack/react-router';
 
-const routeApi = getRouteApi('/agents/$id');
+const routeApi = getRouteApi('/agents/$id/');
 
 import { CLOUD_MANAGED_TAG_KEYS, isCloudManagedTagKey } from 'components/constants';
 import {

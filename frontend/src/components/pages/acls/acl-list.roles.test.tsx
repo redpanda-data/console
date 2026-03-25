@@ -224,17 +224,9 @@ vi.mock('./delete-user-confirm-modal', () => ({
 }));
 
 vi.mock('./models', () => ({
-  createEmptyClusterAcl: vi.fn(),
-  createEmptyConsumerGroupAcl: vi.fn(),
-  createEmptyTopicAcl: vi.fn(),
-  createEmptyTransactionalIdAcl: vi.fn(),
   principalGroupsView: {
     principalGroups: [],
   },
-}));
-
-vi.mock('./principal-group-editor', () => ({
-  AclPrincipalGroupEditor: () => null,
 }));
 
 vi.mock('./user-edit-modals', () => ({

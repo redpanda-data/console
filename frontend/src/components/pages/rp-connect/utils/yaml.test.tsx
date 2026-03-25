@@ -2,7 +2,16 @@ import { describe, expect, test } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
 import { schemaToConfig } from './schema';
-import { configToYaml, extractAllTopics, getConnectTemplate, mergeConnectConfigs, parseConfigComponents } from './yaml';
+import {
+  applyRedpandaSetup,
+  configToYaml,
+  extractAllTopics,
+  generateYamlFromWizardData,
+  getConnectTemplate,
+  mergeConnectConfigs,
+  parseConfigComponents,
+  patchRedpandaConfig,
+} from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
 describe('yaml utils for creating connect configs', () => {
@@ -1099,6 +1108,330 @@ output:
     topic: shared_topic
 `;
       expect(extractAllTopics(yaml)).toEqual(['shared_topic']);
+    });
+  });
+
+  describe('patchRedpandaConfig', () => {
+    test('patches topic without touching existing SASL config', () => {
+      const yaml = `input:
+  kafka_franz:
+    seed_brokers:
+      - localhost:9092
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: alice
+        password: secret
+`;
+      const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { topicName: 'my-topic' });
+      expect(result).toBeDefined();
+      expect(result).toContain('my-topic');
+      expect(result).toContain('SCRAM-SHA-256');
+      expect(result).toContain('alice');
+    });
+
+    test('patches SASL without touching existing topics', () => {
+      const yaml = `input:
+  kafka_franz:
+    topics:
+      - existing-topic
+`;
+      const sasl = [{ mechanism: 'SCRAM-SHA-256', username: 'bob', password: 'pw' }];
+      const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { sasl });
+      expect(result).toBeDefined();
+      expect(result).toContain('existing-topic');
+      expect(result).toContain('SCRAM-SHA-256');
+      expect(result).toContain('bob');
+    });
+
+    test('patches root-level redpanda.sasl for redpanda_common', () => {
+      const yaml = `redpanda: {}
+input:
+  redpanda_common:
+    topics:
+      - test-topic
+`;
+      const sasl = [{ mechanism: 'SCRAM-SHA-256', username: 'user1', password: 'pass1' }];
+      const result = patchRedpandaConfig(yaml, 'input', 'redpanda_common', { sasl });
+      expect(result).toBeDefined();
+      expect(result).toContain('test-topic');
+      // SASL should be under redpanda.sasl, not input.redpanda_common.sasl
+      expect(result).toContain('redpanda:');
+      expect(result).toContain('SCRAM-SHA-256');
+    });
+
+    test('patches component-level sasl for kafka_franz output', () => {
+      const yaml = `output:
+  kafka_franz:
+    seed_brokers:
+      - localhost:9092
+    topics:
+      - out-topic
+`;
+      const sasl = [{ mechanism: 'SCRAM-SHA-512', username: 'admin', password: 'pw' }];
+      const result = patchRedpandaConfig(yaml, 'output', 'kafka_franz', { sasl });
+      expect(result).toBeDefined();
+      expect(result).toContain('out-topic');
+      expect(result).toContain('SCRAM-SHA-512');
+      expect(result).toContain('admin');
+    });
+
+    test('uses singular topic for output section', () => {
+      const yaml = `output:
+  kafka:
+    topic: old-topic
+`;
+      const result = patchRedpandaConfig(yaml, 'output', 'kafka', { topicName: 'new-topic' });
+      expect(result).toBeDefined();
+      expect(result).toContain('topic: new-topic');
+      expect(result).not.toContain('topics:');
+    });
+
+    test('uses topics array for input section', () => {
+      const yaml = `input:
+  redpanda_common: {}
+`;
+      const result = patchRedpandaConfig(yaml, 'input', 'redpanda_common', { topicName: 'new-topic' });
+      expect(result).toBeDefined();
+      expect(result).toContain('topics:');
+      expect(result).toContain('new-topic');
+    });
+
+    test('uses singular topic for output even when no existing topic field', () => {
+      const yaml = `output:
+  kafka_franz:
+    seed_brokers:
+      - localhost:9092
+`;
+      const result = patchRedpandaConfig(yaml, 'output', 'kafka_franz', { topicName: 'out-topic' });
+      expect(result).toBeDefined();
+      expect(result).toContain('topic: out-topic');
+      expect(result).not.toContain('topics:');
+    });
+
+    test('patches both topic and SASL at once', () => {
+      const yaml = `input:
+  kafka_franz:
+    seed_brokers:
+      - localhost:9092
+`;
+      const sasl = [{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }];
+      const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { topicName: 'both-topic', sasl });
+      expect(result).toBeDefined();
+      expect(result).toContain('both-topic');
+      expect(result).toContain('SCRAM-SHA-256');
+    });
+
+    test('returns undefined for unparseable YAML', () => {
+      const result = patchRedpandaConfig('{{{', 'input', 'kafka', { topicName: 'test' });
+      expect(result).toBeUndefined();
+    });
+
+    test('returns undefined for empty YAML', () => {
+      const result = patchRedpandaConfig('', 'input', 'kafka', { topicName: 'test' });
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('applyRedpandaSetup', () => {
+    const redpandaInputSpec = mockComponents.redpandaInput;
+
+    test('patches topic into existing YAML when component already present', () => {
+      const yaml = 'input:\n  kafka_franz:\n    seed_brokers: []\n    topics: []\n';
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: 'kafka_franz',
+        connectionType: 'input',
+        result: { topicName: 'my-topic' },
+        components: [],
+      });
+      expect(result).toBeDefined();
+      expect(result).toContain('my-topic');
+    });
+
+    test('patches SASL into existing YAML when component already present', () => {
+      const yaml = 'input:\n  kafka_franz:\n    seed_brokers: []\n    topics: []\n';
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: 'kafka_franz',
+        connectionType: 'input',
+        result: { username: 'admin', saslMechanism: 'SCRAM-SHA-256', authMethod: 'sasl' },
+        components: [],
+      });
+      expect(result).toBeDefined();
+      expect(result).toContain('sasl');
+    });
+
+    test('falls back to generate+patch when component not in YAML', () => {
+      if (!redpandaInputSpec) {
+        return;
+      }
+      const result = applyRedpandaSetup({
+        yamlContent: '',
+        connectionName: redpandaInputSpec.name,
+        connectionType: 'input',
+        result: { topicName: 'new-topic' },
+        components: [redpandaInputSpec],
+      });
+      // Should generate a template (non-empty) since the component spec exists
+      // Whether the topic gets patched depends on getConnectTemplate producing parseable YAML
+      expect(result).toBeDefined();
+    });
+
+    test('returns undefined when no result data to patch and component already exists', () => {
+      const yaml = 'input:\n  kafka_franz:\n    seed_brokers: []\n';
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: 'kafka_franz',
+        connectionType: 'input',
+        result: {},
+        components: [],
+      });
+      expect(result).toBeUndefined();
+    });
+
+    test('new component generates full template, not just patched fields', () => {
+      if (!redpandaInputSpec) {
+        return;
+      }
+      // YAML has a different section — the target component does NOT exist yet
+      const yaml = 'output:\n  stdout: {}\n';
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: redpandaInputSpec.name,
+        connectionType: 'input',
+        result: { topicName: 'my-topic' },
+        components: [redpandaInputSpec],
+      });
+      expect(result).toBeDefined();
+      // Should contain the topic we requested
+      expect(result).toContain('my-topic');
+      // Should also contain template fields from getConnectTemplate (not just the patched topic)
+      expect(result).toContain('input');
+    });
+
+    test('new component with empty result inserts base template', () => {
+      if (!redpandaInputSpec) {
+        return;
+      }
+      const result = applyRedpandaSetup({
+        yamlContent: '',
+        connectionName: redpandaInputSpec.name,
+        connectionType: 'input',
+        result: {},
+        components: [redpandaInputSpec],
+      });
+      // Should still generate a base template even with no topic/user
+      expect(result).toBeDefined();
+      expect(result).toContain('input');
+    });
+
+    test('surgical patch on existing component preserves all other fields', () => {
+      const yaml = [
+        'input:',
+        '  kafka_franz:',
+        '    seed_brokers:',
+        '      - broker:9092',
+        '    consumer_group: my-group',
+        '    tls:',
+        '      enabled: true',
+        '    topics: []',
+      ].join('\n');
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: 'kafka_franz',
+        connectionType: 'input',
+        result: { topicName: 'new-topic' },
+        components: [],
+      });
+      expect(result).toBeDefined();
+      // Patched field updated
+      expect(result).toContain('new-topic');
+      // All other fields preserved
+      expect(result).toContain('broker:9092');
+      expect(result).toContain('my-group');
+      expect(result).toContain('enabled: true');
+    });
+
+    test('surgical SASL patch preserves existing topic and other fields', () => {
+      const yaml = [
+        'input:',
+        '  kafka_franz:',
+        '    seed_brokers:',
+        '      - broker:9092',
+        '    topics:',
+        '      - existing-topic',
+        '    tls:',
+        '      enabled: true',
+      ].join('\n');
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: 'kafka_franz',
+        connectionType: 'input',
+        result: { username: 'admin', saslMechanism: 'SCRAM-SHA-256', authMethod: 'sasl' },
+        components: [],
+      });
+      expect(result).toBeDefined();
+      // SASL added
+      expect(result).toContain('sasl');
+      // Existing fields preserved
+      expect(result).toContain('existing-topic');
+      expect(result).toContain('broker:9092');
+      expect(result).toContain('enabled: true');
+    });
+
+    test('output section uses topic (singular) not topics (array)', () => {
+      const yaml = 'output:\n  kafka_franz:\n    seed_brokers: []\n';
+      const result = applyRedpandaSetup({
+        yamlContent: yaml,
+        connectionName: 'kafka_franz',
+        connectionType: 'output',
+        result: { topicName: 'my-output-topic' },
+        components: [],
+      });
+      expect(result).toBeDefined();
+      expect(result).toContain('topic: my-output-topic');
+      expect(result).not.toContain('topics:');
+    });
+  });
+
+  describe('generateYamlFromWizardData', () => {
+    const allComponents = Object.values(mockComponents);
+
+    test('returns empty string when input is undefined', () => {
+      expect(generateYamlFromWizardData(undefined, undefined, allComponents)).toBe('');
+    });
+
+    test('returns empty string when connectionName is empty', () => {
+      expect(
+        generateYamlFromWizardData({ connectionName: '', connectionType: 'input' }, undefined, allComponents)
+      ).toBe('');
+    });
+
+    test('generates input-only YAML when no output provided', () => {
+      const yaml = generateYamlFromWizardData(
+        { connectionName: 'generate', connectionType: 'input' },
+        undefined,
+        allComponents
+      );
+      expect(yaml).toContain('input:');
+      expect(yaml).toContain('generate:');
+      expect(yaml).not.toContain('output:');
+    });
+
+    test('generates merged input+output YAML', () => {
+      const yaml = generateYamlFromWizardData(
+        { connectionName: 'generate', connectionType: 'input' },
+        { connectionName: 'kafka', connectionType: 'output' },
+        allComponents
+      );
+      expect(yaml).toContain('input:');
+      expect(yaml).toContain('output:');
+    });
+
+    test('returns empty string when components list is empty', () => {
+      expect(generateYamlFromWizardData({ connectionName: 'generate', connectionType: 'input' }, undefined, [])).toBe(
+        ''
+      );
     });
   });
 });

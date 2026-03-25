@@ -57,6 +57,14 @@ function ZoomControls() {
 
 type PipelineFlowDiagramProps = {
   configYaml: string;
+  /** Callback when user clicks + on a placeholder node. Receives the section type ('input' | 'output'). */
+  onAddConnector?: (type: string) => void;
+  /** Callback when user clicks "+ topic" on a redpanda node missing topic config. */
+  onAddTopic?: (section: string, componentName: string) => void;
+  /** Callback when user clicks "+ auth" on a redpanda node missing SASL config. */
+  onAddSasl?: (section: string, componentName: string) => void;
+  /** Hide the zoom +/- controls. */
+  hideZoomControls?: boolean;
   /** Custom parser — defaults to `parsePipelineFlowTree`. */
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
   /** Custom layout — defaults to `computeTreeLayout`. */
@@ -111,6 +119,10 @@ function computeTranslateExtent(
 
 export const PipelineFlowDiagram = ({
   configYaml,
+  onAddConnector,
+  onAddTopic,
+  onAddSasl,
+  hideZoomControls,
   parseTree = defaultParseTree,
   computeLayout = defaultComputeLayout,
 }: PipelineFlowDiagramProps) => {
@@ -176,7 +188,7 @@ export const PipelineFlowDiagram = ({
   const { rfNodes, rfEdges } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
-    // Inject toggle callback into group nodes
+    // Inject callbacks into group, placeholder, and setup-hint leaf nodes.
     const nodesWithCallbacks = layout.rfNodes.map((node: Node) => {
       if (node.type === 'treeGroup') {
         return {
@@ -184,11 +196,32 @@ export const PipelineFlowDiagram = ({
           data: { ...node.data, onToggle: () => toggleCollapse(node.id) },
         };
       }
+      if (node.type === 'treeLeaf') {
+        const isPlaceholder = node.data.label === 'none';
+        // Placeholder nodes: show "+" connector button
+        if (isPlaceholder && onAddConnector && (node.data.section === 'input' || node.data.section === 'output')) {
+          return {
+            ...node,
+            data: { ...node.data, onAddConnector },
+          };
+        }
+        // Non-placeholder redpanda nodes: inject setup hint callbacks
+        if (!isPlaceholder && (node.data.missingTopic || node.data.missingSasl)) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...(onAddTopic && node.data.missingTopic ? { onAddTopic } : {}),
+              ...(onAddSasl && node.data.missingSasl ? { onAddSasl } : {}),
+            },
+          };
+        }
+      }
       return node;
     });
 
     return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges };
-  }, [nodes, collapsedIds, toggleCollapse, computeLayout]);
+  }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
   const translateExtent = useMemo(
     () => (containerSize ? computeTranslateExtent(rfNodes, containerSize.width, containerSize.height) : undefined),
@@ -227,7 +260,7 @@ export const PipelineFlowDiagram = ({
             zoomOnPinch={false}
             zoomOnScroll={false}
           />
-          <ZoomControls />
+          {hideZoomControls ? null : <ZoomControls />}
         </ReactFlowProvider>
       ) : null}
     </div>
