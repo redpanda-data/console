@@ -73,7 +73,7 @@ jobs:
 
   build:
     timeout-minutes: 5
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
