@@ -10,7 +10,6 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { keepPreviousData } from '@tanstack/react-query';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -161,27 +160,27 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const {
     data: ingressData,
     isError: isErrorIngress,
-    isLoading: isLoadingIngress,
+    isPending: isPendingIngress,
     isFetching: isFetchingIngress,
   } = useExecuteRangeQuery(
     {
       queryName: 'connect_input_received',
       params: { ...timeParams, filters: { pipeline_id: pipelineId } },
     },
-    { enabled: hasInputQuery, placeholderData: keepPreviousData }
+    { enabled: hasInputQuery }
   );
 
   const {
     data: egressData,
     isError: isErrorEgress,
-    isLoading: isLoadingEgress,
+    isPending: isPendingEgress,
     isFetching: isFetchingEgress,
   } = useExecuteRangeQuery(
     {
       queryName: 'connect_output_sent',
       params: { ...timeParams, filters: { pipeline_id: pipelineId } },
     },
-    { enabled: hasOutputQuery, placeholderData: keepPreviousData }
+    { enabled: hasOutputQuery }
   );
 
   const handleRefresh = useCallback(() => {
@@ -193,7 +192,9 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     [ingressData, egressData]
   );
 
-  const isLoading = isLoadingQueries || isLoadingIngress || isLoadingEgress;
+  // isPending stays true when enabled:false (query will never run), so only
+  // treat enabled queries as "still loading" to avoid an infinite skeleton.
+  const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
   const isError = isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
