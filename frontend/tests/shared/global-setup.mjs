@@ -1003,40 +1003,52 @@ export default async function globalSetup(config = {}) {
     console.log(`  - Kafka Connect: http://localhost:${ports.kafkaConnect}`);
     console.log('================================\n');
 
-    // --- Group 2: Start services + backend in parallel (all depend on Redpanda being ready) ---
+    // --- Group 2: Start services in parallel (all depend on Redpanda being ready) ---
     const servicePromises = [
       startOwlShop(network, state),
       createKafkaConnectTopics(state).then(() => (needsConnect ? startKafkaConnect(network, state, ports) : null)),
     ];
 
-    if (needsShadowlink) {
-      const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
-      const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
-      servicePromises.push(
-        startBackendServerWithConfig(
-          network,
-          isEnterprise,
-          imageTag,
-          state,
-          sourceBackendConfigPath,
-          ports.backend,
-          'console-backend'
-        ),
-        startBackendServerWithConfig(
-          network,
-          isEnterprise,
-          imageTag,
-          state,
-          destBackendConfigPath,
-          ports.backendDest,
-          'console-backend-dest'
-        )
-      );
-    } else {
-      servicePromises.push(startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports));
+    // For variants that need Kafka Connect, the backend must start AFTER Connect is ready
+    // (the backend proxies connector APIs and tests immediately hit those endpoints).
+    // For other variants, start the backend in parallel with services.
+    if (!needsConnect) {
+      if (needsShadowlink) {
+        const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
+        const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
+        servicePromises.push(
+          startBackendServerWithConfig(
+            network,
+            isEnterprise,
+            imageTag,
+            state,
+            sourceBackendConfigPath,
+            ports.backend,
+            'console-backend'
+          ),
+          startBackendServerWithConfig(
+            network,
+            isEnterprise,
+            imageTag,
+            state,
+            destBackendConfigPath,
+            ports.backendDest,
+            'console-backend-dest'
+          )
+        );
+      } else {
+        servicePromises.push(
+          startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports)
+        );
+      }
     }
 
     await Promise.all(servicePromises);
+
+    // Start backend after Kafka Connect for connect variants
+    if (needsConnect) {
+      await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
+    }
 
     console.log('Backend is ready');
 
