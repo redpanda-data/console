@@ -217,26 +217,12 @@ const KafkaConnectorMain = ({
                 <Flex m={4} mb={6}>
                   <Tooltip
                     hasArrow={true}
-                    isDisabled={canEdit === true}
-                    label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                    isDisabled={!!canEdit}
+                    label="You don't have 'canEditConnectCluster' permissions for this connect cluster"
                     placement="top"
                   >
                     <Button
-                      isDisabled={(() => {
-                        if (!canEdit) {
-                          return true;
-                        }
-                        if (!connector) {
-                          return true;
-                        }
-                        const connectorConfigObject = connectorStore?.getConfigObject();
-                        if (
-                          connectorConfigObject &&
-                          JSON.stringify(connector.config) === JSON.stringify(connectorConfigObject)
-                        ) {
-                          return true;
-                        }
-                      })()}
+                      isDisabled={!canEdit}
                       onClick={() => {
                         setS({ updatingConnector: { clusterName, connectorName } });
                       }}
