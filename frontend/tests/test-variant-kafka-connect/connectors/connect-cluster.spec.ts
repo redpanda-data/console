@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const CLUSTER = 'local-connect-cluster';
 const CREATE_URL = `/connect-clusters/${CLUSTER}/create-connector`;
-const CONNECTOR_NAME = 'e2e-heartbeat-test';
+const CONNECTOR_NAME = `e2e-heartbeat-${Date.now()}`;
 
 const HEARTBEAT_CONFIG = {
   name: CONNECTOR_NAME,
@@ -122,6 +122,41 @@ test.describe('Kafka Connect Connector Lifecycle', () => {
     await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
     await page.getByRole('tab', { name: /configuration/i }).click();
     await expect(page.getByRole('button', { name: /update config/i })).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('edit frequency of heartbeats and verify in JSON editor', async ({ page }) => {
+    await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
+    await page.getByRole('tab', { name: /configuration/i }).click();
+
+    const frequencyWrapper = page.locator('[data-testid="property-emit.heartbeats.interval.seconds"]');
+    const frequencyField = frequencyWrapper.getByRole('spinbutton');
+    await expect(frequencyField).toBeVisible({ timeout: 15_000 });
+    await frequencyField.clear();
+    await frequencyField.fill('33');
+
+    await page.getByRole('button', { name: /update config/i }).click();
+    await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
+
+    const updateResponse = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/api/kafka-connect/clusters/${CLUSTER}/connectors/${CONNECTOR_NAME}`) &&
+        res.request().method() === 'PUT',
+      { timeout: 15_000 }
+    );
+    await page.getByRole('button', { name: 'Yes' }).click();
+
+    const response = await updateResponse;
+    expect(response.ok()).toBe(true);
+    expect(response.request().postDataJSON()?.['config']['emit.heartbeats.interval.seconds']).toBe('33');
+
+    // Navigate back and open JSON view to verify the change
+    await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
+    await page.getByRole('tab', { name: /configuration/i }).click();
+    await page.locator('[data-testid="json_field"]').click();
+
+    await expect(page.locator('.view-lines')).toContainText('"emit.heartbeats.interval.seconds": "33",', {
+      timeout: 10_000,
+    });
   });
 
   test('delete connector', async ({ page }) => {

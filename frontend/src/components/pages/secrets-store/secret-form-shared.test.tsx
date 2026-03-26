@@ -19,7 +19,7 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
-import { useState } from 'react';
+import { useControllableState } from 'components/redpanda-ui/lib/use-controllable-state';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { SCOPE_OPTIONS } from './secret-form-shared';
@@ -29,12 +29,14 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
+const EMPTY_SCOPES: string[] = [];
+
 /**
  * Helper component that mirrors the scope MultiSelect usage in the
  * secret create / edit pages, but without any form or routing wiring.
  */
-function ScopeMultiSelect({ defaultValue = [] }: { defaultValue?: string[] }) {
-  const [value, setValue] = useState<string[]>(defaultValue);
+function ScopeMultiSelect({ defaultValue = EMPTY_SCOPES }: { defaultValue?: string[] }) {
+  const [value, setValue] = useControllableState({ defaultProp: defaultValue });
 
   return (
     <MultiSelect onValueChange={setValue} value={value}>

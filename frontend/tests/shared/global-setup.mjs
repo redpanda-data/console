@@ -33,7 +33,7 @@ function loadVariantConfig(variantName) {
   return config;
 }
 
-async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
+async function waitForPort(port, maxAttempts = 30, delayMs = 500) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const { stdout } = await execAsync(
@@ -126,27 +126,8 @@ async function startRedpandaContainer(network, state, ports) {
 }
 
 async function verifyRedpandaServices(state, ports) {
-  // Give Redpanda a moment to finish internal initialization
-  console.log('Waiting for Redpanda services to initialize...');
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-
-  // Check Admin API via docker exec (avoids macOS Docker Desktop port-forwarding latency)
-  // The health check already verified Redpanda is healthy; this confirms the admin HTTP API responds.
-  console.log('Checking if Admin API is ready...');
-  for (let i = 0; i < 30; i++) {
-    try {
-      await execAsync(`docker exec ${state.redpandaId} rpk cluster health`);
-      break;
-    } catch {
-      if ((i + 1) % 5 === 0) {
-        console.log(`  Still waiting for Admin API... (attempt ${i + 1}/30)`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-  }
-  console.log('✓ Admin API is ready');
-
-  // Check Schema Registry from inside the container to avoid macOS port-forwarding latency
+  // Docker health check already verified rpk cluster health passed.
+  // Just verify Schema Registry is responding (it can lag behind the broker).
   console.log('Checking if Schema Registry is ready...');
   for (let i = 0; i < 30; i++) {
     try {
@@ -158,7 +139,7 @@ async function verifyRedpandaServices(state, ports) {
       if ((i + 1) % 5 === 0) {
         console.log(`  Still waiting for Schema Registry... (attempt ${i + 1}/30)`);
       }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
   console.log('✓ Schema Registry is ready');
@@ -356,7 +337,7 @@ topic.creation.enable=false
   }
 }
 
-async function buildBackendImage(isEnterprise) {
+export async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
 
   let backendDir;
@@ -463,15 +444,16 @@ async function buildBackendImage(isEnterprise) {
       }
     }
 
-    console.log('Building Docker image with testcontainers...');
+    console.log('Building Docker image with BuildKit...');
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
 
     try {
-      await GenericContainer.fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
-        .withBuildArgs({
-          BUILDKIT_INLINE_CACHE: '1',
-        })
-        .build(imageTag, { deleteOnExit: false });
+      // Use docker buildx with BuildKit cache mounts for Go module and build caches.
+      // This is significantly faster than testcontainers build on repeat runs.
+      await execAsync(`DOCKER_BUILDKIT=1 docker build -f .dockerfile.e2e.tmp -t ${imageTag} .`, {
+        cwd: backendDir,
+        maxBuffer: 50 * 1024 * 1024,
+      });
       console.log('✓ Backend image built');
     } finally {
       // Clean up temporary Dockerfile and workspace directory
@@ -639,8 +621,6 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
     }
 
     console.log(`Container created with ID: ${containerId}`);
-    console.log('Waiting 5 seconds for container to fully initialize...');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Check if container is still running
     const { stdout: inspectOutput } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
@@ -784,7 +764,6 @@ async function startDestinationRedpandaContainer(network, state, ports) {
 
 async function verifyDestinationRedpandaServices(state, ports) {
   console.log('Waiting for destination Redpanda services...');
-  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   // Debug: Check if container is still running
   try {
@@ -987,26 +966,27 @@ export default async function globalSetup(config = {}) {
   };
 
   try {
-    // Build backend Docker image
-    const imageTag = await buildBackendImage(isEnterprise);
+    // Use pre-built image tag if available (set by run-all-variants.mjs), otherwise build
+    const prebuiltTag = isEnterprise
+      ? process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE
+      : process.env.E2E_PREBUILT_IMAGE_TAG;
+    const imageTag = prebuiltTag || (await buildBackendImage(isEnterprise));
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
 
-    // Start source cluster (existing cluster - has OwlShop data)
-    await startRedpandaContainer(network, state, ports);
-    await verifyRedpandaServices(state, ports);
-    await startOwlShop(network, state);
-    await createKafkaConnectTopics(state);
-    if (needsConnect) {
-      await startKafkaConnect(network, state, ports);
-    }
-
-    // Start destination cluster for shadowlink if needed
+    // --- Group 1: Start clusters in parallel ---
+    const clusterPromises = [
+      startRedpandaContainer(network, state, ports).then(() => verifyRedpandaServices(state, ports)),
+    ];
     if (isEnterprise && needsShadowlink) {
-      await startDestinationRedpandaContainer(network, state, ports);
-      await verifyDestinationRedpandaServices(state, ports);
+      clusterPromises.push(
+        startDestinationRedpandaContainer(network, state, ports).then(() =>
+          verifyDestinationRedpandaServices(state, ports)
+        )
+      );
     }
+    await Promise.all(clusterPromises);
 
     console.log('');
     console.log('=== Docker Environment Ready ===');
@@ -1023,33 +1003,50 @@ export default async function globalSetup(config = {}) {
     console.log(`  - Kafka Connect: http://localhost:${ports.kafkaConnect}`);
     console.log('================================\n');
 
-    // Start backend server(s)
-    if (needsShadowlink) {
-      // For shadowlink tests: start source backend on port ports.backend (existing data)
-      const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
-      await startBackendServerWithConfig(
-        network,
-        isEnterprise,
-        imageTag,
-        state,
-        sourceBackendConfigPath,
-        ports.backend,
-        'console-backend'
-      );
+    // --- Group 2: Start services in parallel (all depend on Redpanda being ready) ---
+    const servicePromises = [
+      startOwlShop(network, state),
+      createKafkaConnectTopics(state).then(() => (needsConnect ? startKafkaConnect(network, state, ports) : null)),
+    ];
 
-      // Start destination backend on port ports.backendDest (where shadowlinks are created)
-      const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
-      await startBackendServerWithConfig(
-        network,
-        isEnterprise,
-        imageTag,
-        state,
-        destBackendConfigPath,
-        ports.backendDest,
-        'console-backend-dest'
-      );
-    } else {
-      // Normal setup - single backend on existing cluster
+    // For variants that need Kafka Connect, the backend must start AFTER Connect is ready
+    // (the backend proxies connector APIs and tests immediately hit those endpoints).
+    // For other variants, start the backend in parallel with services.
+    if (!needsConnect) {
+      if (needsShadowlink) {
+        const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
+        const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
+        servicePromises.push(
+          startBackendServerWithConfig(
+            network,
+            isEnterprise,
+            imageTag,
+            state,
+            sourceBackendConfigPath,
+            ports.backend,
+            'console-backend'
+          ),
+          startBackendServerWithConfig(
+            network,
+            isEnterprise,
+            imageTag,
+            state,
+            destBackendConfigPath,
+            ports.backendDest,
+            'console-backend-dest'
+          )
+        );
+      } else {
+        servicePromises.push(
+          startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports)
+        );
+      }
+    }
+
+    await Promise.all(servicePromises);
+
+    // Start backend after Kafka Connect for connect variants
+    if (needsConnect) {
       await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
     }
 
@@ -1057,8 +1054,8 @@ export default async function globalSetup(config = {}) {
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {
-      console.log('CI detected: Giving services 10 seconds to stabilize...');
-      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      console.log('CI detected: Giving services 3 seconds to stabilize...');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       console.log('✓ Stabilization period complete');
     }
 

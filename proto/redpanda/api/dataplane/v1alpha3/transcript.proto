@@ -202,6 +202,12 @@ message TranscriptTurn {
   repeated TranscriptToolCall tool_calls = 8;
   // Error details if this turn failed.
   TranscriptError error = 9;
+  // Whether this turn was reconstructed from conversation history embedded
+  // in a later span's input messages. This happens when earlier spans were
+  // evicted (e.g. due to retention) but the full conversation history was
+  // preserved in subsequent LLM calls. Reconstructed turns lack precise
+  // timestamps, latency, and usage metrics.
+  bool is_reconstructed = 10;
 }
 
 // Summary information for a single transcript (conversation).
@@ -233,7 +239,7 @@ message TranscriptSummary {
   google.protobuf.Duration duration = 6;
   // Overall conversation status. Derived from the root span's status_code.
   TranscriptStatus status = 7;
-  // Number of turns in the conversation.
+  // Number of user turns (interactions) in the conversation.
   int32 turn_count = 8;
   // Aggregated token usage and cost across all turns.
   TranscriptUsage usage = 9;

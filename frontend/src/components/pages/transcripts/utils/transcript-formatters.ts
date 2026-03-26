@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import type { Duration, Timestamp } from '@bufbuild/protobuf/wkt';
+import { durationMs, timestampDate } from '@bufbuild/protobuf/wkt';
 import { formatDistanceToNow } from 'date-fns/formatDistanceToNow';
 import { getTextPreview, truncateWithEllipsis } from 'utils/string';
 
@@ -92,4 +94,36 @@ export const formatJsonContent = (content: string, truncate = false): string => 
   } catch {
     return truncate ? truncateContent(content) : content;
   }
+};
+
+/** Formats a protobuf Timestamp as relative time (e.g. "5 minutes ago"), or '—' if absent. */
+export const formatProtoTimestamp = (ts?: Timestamp): string => {
+  if (!ts) {
+    return '—';
+  }
+  return formatTimestamp(timestampDate(ts).getTime());
+};
+
+/** Formats a protobuf Timestamp as a local time string (e.g. "2:30:45 PM"), or '—' if absent. */
+export const formatProtoTime = (ts?: Timestamp): string => {
+  if (!ts) {
+    return '—';
+  }
+  return timestampDate(ts).toLocaleTimeString();
+};
+
+/** Formats a protobuf Duration to a human-readable string (e.g. "1.50s"), or '—' if absent. */
+export const formatProtoDuration = (d?: Duration): string => {
+  if (!d) {
+    return '—';
+  }
+  return formatDuration(durationMs(d));
+};
+
+/** Formats a token count with thousands separators (e.g. "1,234"), or '—' if absent. */
+export const formatTokenCount = (tokens?: bigint | number | null): string => {
+  if (tokens === null || tokens === undefined) {
+    return '—';
+  }
+  return Number(tokens).toLocaleString();
 };

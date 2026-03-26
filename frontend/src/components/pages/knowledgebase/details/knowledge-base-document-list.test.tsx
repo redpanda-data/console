@@ -41,8 +41,8 @@ describe('KnowledgeBaseDocumentList', () => {
       expect(screen.getByText('Page 1 of 3')).toBeVisible();
     });
 
-    const previousButton = screen.getByRole('button', { name: 'Previous Page' });
-    const nextButton = screen.getByRole('button', { name: 'Next Page' });
+    const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
+    const nextButton = screen.getByRole('button', { name: 'Go to next page' });
 
     expect(previousButton).toBeDisabled();
     expect(nextButton).toBeEnabled();
@@ -53,14 +53,14 @@ describe('KnowledgeBaseDocumentList', () => {
       expect(screen.getByText('Page 2 of 3')).toBeVisible();
     });
 
-    expect(screen.getByRole('button', { name: 'Previous Page' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
 
-    await user.click(screen.getByRole('button', { name: 'Next Page' }));
+    await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
     await waitFor(() => {
       expect(screen.getByText('Page 3 of 3')).toBeVisible();
     });
 
-    expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 });

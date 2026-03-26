@@ -177,7 +177,7 @@ export const PropertyComponent = (props: { property: Property }) => {
   inputComp = <ErrorWrapper input={inputComp} property={p} />;
   // Wrap name and input element
   return (
-    <Box className={inputSizeToClass[def.width]} mt="6">
+    <Box className={inputSizeToClass[def.width]} data-testid={`property-${p.name}`} mt="6">
       {inputComp}
     </Box>
   );

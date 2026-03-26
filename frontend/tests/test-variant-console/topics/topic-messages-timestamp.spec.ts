@@ -44,7 +44,9 @@ test.describe('Filter Messages by Timestamp', () => {
         const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
         await expect(dateTimeDisplay).toBeVisible();
         await dateTimeDisplay.click();
-        await page.waitForTimeout(500);
+
+        // Wait for the date/time picker popover to open
+        await expect(page.locator('input[type="time"]')).toBeVisible();
       });
 
       await test.step('Fill time input and wait for API request', async () => {

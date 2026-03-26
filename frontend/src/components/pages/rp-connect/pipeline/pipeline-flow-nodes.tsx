@@ -13,12 +13,25 @@ import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
+import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode } from 'components/ui/base-node';
+import { BookOpenIcon, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
 
 const invisibleHandle = '!w-0 !h-0 !border-0 !bg-transparent !min-w-0 !min-h-0';
+
+const DOCS_BASE = 'https://docs.redpanda.com/redpanda-cloud/develop/connect/components';
+const DOCS_SECTIONS = new Set(['input', 'output', 'processor']);
+
+export function getConnectorDocsUrl(section: string, connectorName: string): string | undefined {
+  if (!DOCS_SECTIONS.has(section)) {
+    return;
+  }
+  return `${DOCS_BASE}/${section}s/${connectorName}/`;
+}
 const ARROW_GAP = 8;
 const BRANCH_INDENT = 12;
 const SECTION_EDGE_GAP = 20;
@@ -37,7 +50,7 @@ export function PipelineFlowSkeleton({ error }: PipelineFlowSkeletonProps) {
   return (
     <div className="relative h-full w-full">
       {error ? (
-        <Banner variant="accent">
+        <Banner height="2rem" variant="accent">
           <BannerContent>Unable to visualize pipeline.</BannerContent>
           <BannerClose variant="ghost" />
         </Banner>
@@ -66,16 +79,24 @@ type TreeNodeData = {
   label: string;
   labelText?: string;
   topics?: string[];
+  section?: string;
   collapsed?: boolean;
   collapsible?: boolean;
   childCount?: number;
+  missingTopic?: boolean;
+  missingSasl?: boolean;
   onToggle?: () => void;
+  onAddConnector?: (type: string) => void;
+  onAddTopic?: (section: string, componentName: string) => void;
+  onAddSasl?: (section: string, componentName: string) => void;
 };
 
 const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
   <div className="flex h-7 items-center">
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
-    <span className="font-semibold text-muted-foreground text-sm uppercase tracking-wide">{data.label}</span>
+    <Text as="span" className="text-muted-foreground uppercase" variant="captionStrongMedium">
+      {data.label}
+    </Text>
     <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />
   </div>
 );
@@ -83,8 +104,12 @@ const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
 const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   <button className="nodrag nopan flex h-7 cursor-pointer items-center text-sm" onClick={data.onToggle} type="button">
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
-    <span className="font-medium text-foreground">{data.label}</span>
-    <span className="ml-1 text-subtle">{data.collapsed ? '\u25B8' : '\u25BE'}</span>
+    <Text as="span" variant="bodyStrongMedium">
+      {data.label}
+    </Text>
+    <Text as="span" className="ml-1 text-subtle" variant="bodySmall">
+      {data.collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+    </Text>
     {data.collapsed && data.childCount ? (
       <CountDot className="ml-1.5" count={data.childCount} size="sm" variant="disabled" />
     ) : null}
@@ -92,38 +117,96 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   </button>
 );
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: leaf node renders topics, setup hints, doc links, and placeholder add button
 const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   const hasTopics = data.topics && data.topics.length > 0;
   const isPlaceholder = data.label === 'none';
+  const showAddButton = isPlaceholder && data.onAddConnector && data.section;
+  const showSetupHints = !isPlaceholder && (data.missingTopic || data.missingSasl);
+  const docsUrl = isPlaceholder ? undefined : getConnectorDocsUrl(data.section ?? '', data.label);
   return (
     <BaseNode
       className={cn(
-        'min-w-[120px] px-3 py-1 font-medium transition-colors',
-        isPlaceholder
-          ? 'border-dashed! text-muted-foreground'
-          : 'border-transparent! bg-secondary/5 text-foreground hover:bg-secondary/10'
+        'group min-w-[120px] px-3 py-1 font-medium transition-colors',
+        isPlaceholder ? 'border-dashed! text-muted-foreground' : 'border-transparent! bg-secondary/5 text-foreground'
       )}
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
-      <div className={cn('text-sm', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}>
-        {isPlaceholder ? 'Not configured' : data.label}
+      <div className="flex items-center gap-1.5">
+        <Text
+          as="span"
+          className={isPlaceholder ? 'text-muted-foreground' : 'text-foreground'}
+          variant="bodyStrongMedium"
+        >
+          {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
+        </Text>
+        {docsUrl ? (
+          <Button
+            aria-label={`${data.label} documentation`}
+            as="a"
+            className="nodrag nopan opacity-0 transition-opacity group-hover:opacity-100"
+            href={docsUrl}
+            rel="noopener noreferrer"
+            size="icon-xs"
+            target="_blank"
+            variant="ghost"
+          >
+            <BookOpenIcon />
+          </Button>
+        ) : null}
       </div>
-      <div className={cn(data.labelText || (hasTopics && 'mt-2'), 'flex gap-1.5')}>
+      <div className={cn((data.labelText || hasTopics || showSetupHints) && 'mt-2', 'flex flex-wrap gap-1.5')}>
         {data.labelText ? (
-          <Badge size="sm" variant="primary-inverted">
+          <Badge size="sm" variant="info-inverted">
             {data.labelText}
           </Badge>
         ) : null}
         {hasTopics ? (
-          <BadgeGroup maxVisible={1} size="sm" variant="secondary-outline">
+          <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
             {data.topics?.map((t) => (
-              <Badge key={t} size="sm" variant="secondary-outline">
+              <Badge key={t} size="sm" variant="info-outline">
                 topic: {t}
               </Badge>
             ))}
           </BadgeGroup>
         ) : null}
+        {showSetupHints ? (
+          <>
+            {data.missingTopic ? (
+              <Button
+                className="nodrag nopan"
+                icon={<PlusIcon className="size-3" />}
+                onClick={() => data.onAddTopic?.(data.section ?? '', data.label)}
+                size="xs"
+                variant="secondary"
+              >
+                Topic
+              </Button>
+            ) : null}
+            {data.missingSasl ? (
+              <Button
+                className="nodrag nopan"
+                icon={<PlusIcon className="size-3" />}
+                onClick={() => data.onAddSasl?.(data.section ?? '', data.label)}
+                size="xs"
+                variant="secondary"
+              >
+                User
+              </Button>
+            ) : null}
+          </>
+        ) : null}
       </div>
+      {showAddButton ? (
+        <Button
+          className="nodrag nopan absolute top-1/2 -right-3 -translate-y-1/2 rounded-full"
+          onClick={() => data.onAddConnector?.(data.section ?? '')}
+          size="icon-xs"
+          variant="secondary"
+        >
+          <PlusIcon />
+        </Button>
+      ) : null}
     </BaseNode>
   );
 };

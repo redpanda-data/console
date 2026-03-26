@@ -29,7 +29,7 @@ const config = defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   /* Number of parallel workers */
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 8 : undefined,
 
   /* Reporter to use */
   reporter: reporters,
@@ -74,12 +74,13 @@ const config = defineConfig({
         ...devices['Desktop Chrome'],
         permissions: ['clipboard-read', 'clipboard-write'],
       },
-      testIgnore: '**/quotas/*.spec.ts',
+      testIgnore: '**/quotas/quota-pagination.spec.ts',
     },
-    // Isolated project for quota tests (avoid RPK conflicts)
+    // Quota pagination tests must run in isolation — they create 55+ quotas
+    // and assert on page counts which break with concurrent quota creation.
     {
-      name: 'quotas-isolated',
-      testMatch: '**/quotas/*.spec.ts',
+      name: 'quota-pagination',
+      testMatch: '**/quotas/quota-pagination.spec.ts',
       workers: 1,
       use: {
         ...devices['Desktop Chrome'],

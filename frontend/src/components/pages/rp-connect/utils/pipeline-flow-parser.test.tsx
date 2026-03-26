@@ -535,6 +535,78 @@ output:
     expect(nodes.filter((n) => n.kind === 'group')).toHaveLength(2);
     expect(nodes.filter((n) => n.kind === 'leaf')).toHaveLength(6);
   });
+
+  describe('redpanda missing config flags', () => {
+    it('sets missingTopic on redpanda_common input with empty topics', () => {
+      const yaml = 'input:\n  redpanda_common:\n    topics: []';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input).toMatchObject({ label: 'redpanda_common', missingTopic: true });
+    });
+
+    it('sets missingSasl on kafka_franz input without sasl config', () => {
+      const yaml = 'input:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]\n    topics: ["test"]';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input).toMatchObject({ label: 'kafka_franz', missingSasl: true });
+      expect(input?.missingTopic).toBeUndefined();
+    });
+
+    it('does not set missingSasl when component-level sasl is configured', () => {
+      const yaml =
+        'input:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]\n    topics: ["test"]\n    sasl:\n      - mechanism: SCRAM-SHA-256';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input?.missingSasl).toBeUndefined();
+    });
+
+    it('does not set missingSasl when root-level redpanda.sasl is configured', () => {
+      const yaml =
+        'redpanda:\n  sasl:\n    - mechanism: SCRAM-SHA-256\ninput:\n  redpanda_common:\n    topics: ["test"]';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input?.missingSasl).toBeUndefined();
+    });
+
+    it('does not set flags on non-redpanda components', () => {
+      const yaml = 'input:\n  http_client:\n    url: http://example.com';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input?.missingTopic).toBeUndefined();
+      expect(input?.missingSasl).toBeUndefined();
+    });
+
+    it('sets flags on redpanda output nodes', () => {
+      const yaml = 'output:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const output = nodes.find((n) => n.id === 'output-0');
+      expect(output).toMatchObject({ missingTopic: true, missingSasl: true });
+    });
+
+    it('sets both flags when topic and sasl are both missing', () => {
+      const yaml = 'input:\n  redpanda_common: {}';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input).toMatchObject({ missingTopic: true, missingSasl: true });
+    });
+
+    it('clears missingTopic when topics are present', () => {
+      const yaml = 'input:\n  kafka_franz:\n    topics: ["my-topic"]';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const input = nodes.find((n) => n.id === 'input-0');
+      expect(input?.missingTopic).toBeUndefined();
+      expect(input?.topics).toEqual(['my-topic']);
+    });
+
+    it('passes missingTopic/missingSasl through to layout rfNode data', () => {
+      const yaml = 'input:\n  redpanda_common: {}';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      const { rfNodes } = computeTreeLayout(nodes);
+      const inputRfNode = rfNodes.find((n) => n.id === 'input-0');
+      expect(inputRfNode?.data.missingTopic).toBe(true);
+      expect(inputRfNode?.data.missingSasl).toBe(true);
+    });
+  });
 });
 
 describe('computeTreeLayout', () => {

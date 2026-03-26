@@ -23,13 +23,15 @@ jobs:
 
   test:
     name: Test Backend
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'backend/go.mod'
           cache-dependency-path: 'backend/go.sum'
+      - name: Setup Docker Builder
+        uses: useblacksmith/setup-docker-builder@v1
       - name: Install Task
         uses: arduino/setup-task@v1
         with:

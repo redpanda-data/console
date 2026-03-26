@@ -37,15 +37,6 @@ vi.mock('config', async (importOriginal) => {
   };
 });
 
-vi.mock('components/redpanda-ui/components/data-table', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('components/redpanda-ui/components/data-table')>();
-
-  return {
-    ...actual,
-    DataTablePagination: React.memo(actual.DataTablePagination as React.ComponentType<any>),
-  };
-});
-
 Element.prototype.scrollIntoView = vi.fn();
 
 import { SecretsStoreListPage } from './secrets-store-list-page';
@@ -160,8 +151,8 @@ describe('SecretsStoreListPage', () => {
       expect(screen.getByText('Page 1 of 3')).toBeVisible();
     });
 
-    const previousButton = screen.getByRole('button', { name: 'Previous Page' });
-    const nextButton = screen.getByRole('button', { name: 'Next Page' });
+    const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
+    const nextButton = screen.getByRole('button', { name: 'Go to next page' });
 
     expect(previousButton).toBeDisabled();
     expect(nextButton).toBeEnabled();
@@ -172,15 +163,15 @@ describe('SecretsStoreListPage', () => {
       expect(screen.getByText('Page 2 of 3')).toBeVisible();
     });
 
-    expect(screen.getByRole('button', { name: 'Previous Page' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
 
-    await user.click(screen.getByRole('button', { name: 'Next Page' }));
+    await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
     await waitFor(() => {
       expect(screen.getByText('Page 3 of 3')).toBeVisible();
     });
 
-    expect(screen.getByRole('button', { name: 'Next Page' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 
   test('search input updates value on keystrokes', async () => {
