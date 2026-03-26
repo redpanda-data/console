@@ -65,7 +65,7 @@ const RoleUpdatePage = () => {
       });
     };
 
-  if (isLoading || !data || data.length === 0) {
+  if (isLoading) {
     return (
       <PageContent>
         <div className="flex h-96 items-center justify-center">
@@ -76,7 +76,7 @@ const RoleUpdatePage = () => {
   }
 
   // If multiple hosts exist and no host is selected, show host selector
-  if (data.length > 1 && !host) {
+  if (data && data.length > 1 && !host) {
     return (
       <PageContent>
         <HostSelector baseUrl={`/security/roles/${roleName}/update`} hosts={data} principalName={roleName} />
@@ -84,21 +84,12 @@ const RoleUpdatePage = () => {
     );
   }
 
-  // Get the ACL for the selected host (or the only one available)
-  const acl = host ? data.find((d) => d.sharedConfig.host === host) : data[0];
+  const acl = data && data.length > 0 ? (host ? data.find((d) => d.sharedConfig.host === host) : data[0]) : null;
 
-  if (!acl) {
-    return (
-      <PageContent>
-        <div className="flex h-96 items-center justify-center">
-          <div className="text-gray-500">No ACL data found for host: {host}</div>
-        </div>
-      </PageContent>
-    );
-  }
+  const emptySharedConfig = { principal: `${PrincipalTypeRedpandaRole}${roleName}`, host: host ?? '*' };
 
   // Ensure all operations are present for each rule
-  const rulesWithAllOperations = acl.rules.map((rule) => {
+  const rulesWithAllOperations = (acl?.rules ?? []).map((rule) => {
     const allOperations = getOperationsForResourceType(rule.resourceType);
     let mergedOperations = { ...allOperations };
 
@@ -132,10 +123,10 @@ const RoleUpdatePage = () => {
             search: { host },
           })
         }
-        onSubmit={updateRoleAclMutation(acl.rules, acl.sharedConfig)}
+        onSubmit={updateRoleAclMutation(acl?.rules ?? [], acl?.sharedConfig ?? emptySharedConfig)}
         principalType={PrincipalTypeRedpandaRole}
-        rules={rulesWithAllOperations}
-        sharedConfig={acl.sharedConfig}
+        rules={rulesWithAllOperations.length > 0 ? rulesWithAllOperations : undefined}
+        sharedConfig={acl?.sharedConfig ?? emptySharedConfig}
       />
     </PageContent>
   );
