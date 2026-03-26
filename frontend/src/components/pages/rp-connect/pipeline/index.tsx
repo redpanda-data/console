@@ -752,10 +752,10 @@ export default function PipelinePage() {
     [components, yamlContent, handleConnectorYamlChange]
   );
 
-  // --- Hydration (edit mode) ---
+  // --- Hydration (edit & view modes) ---
 
   const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
-  if (pipeline && mode === 'edit' && pipeline.id !== hydratedPipelineId) {
+  if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
     setHydratedPipelineId(pipeline.id);
     setYamlContent(pipeline.configYaml);
   }

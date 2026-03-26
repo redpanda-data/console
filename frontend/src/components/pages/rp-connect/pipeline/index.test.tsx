@@ -58,14 +58,15 @@ vi.mock('../utils/use-pipeline-mode', () => ({
   usePipelineMode: (...args: unknown[]) => mockUsePipelineMode(...args),
 }));
 
-// 2. Mock config — hoist isFeatureFlagEnabled so we can control it per-test
+// 2. Mock config — hoist isFeatureFlagEnabled and isEmbedded so we can control them per-test
 const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
+const mockIsEmbedded = vi.fn(() => false);
 vi.mock('config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('config')>();
   return {
     ...actual,
     isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
-    isEmbedded: vi.fn(() => false),
+    isEmbedded: (...args: unknown[]) => mockIsEmbedded(),
     isServerless: vi.fn(() => false),
   };
 });
@@ -124,7 +125,13 @@ vi.mock('components/ui/yaml/yaml-editor', async () => {
 });
 
 // 5. Mock complex sub-components that are irrelevant to our tests
-vi.mock('./pipeline-flow-diagram', () => ({ PipelineFlowDiagram: () => null }));
+vi.mock('./pipeline-flow-diagram', async () => {
+  const React = await import('react');
+  return {
+    PipelineFlowDiagram: (props: { configYaml: string }) =>
+      React.createElement('div', { 'data-testid': 'flow-diagram', 'data-configyaml': props.configYaml }),
+  };
+});
 vi.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
 vi.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
 vi.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
@@ -258,6 +265,7 @@ describe('PipelinePage', () => {
     mockBack.mockClear();
     mockSearch.mockReturnValue({});
     mockIsFeatureFlagEnabled.mockImplementation(() => false);
+    mockIsEmbedded.mockReturnValue(false);
     mockUsePipelineMode.mockReturnValue({ mode: 'create' });
     contentChangeListeners.length = 0;
   });
@@ -521,6 +529,19 @@ describe('PipelinePage', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/connect-clusters' }));
+    });
+  });
+
+  it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    await waitFor(() => {
+      const diagram = screen.getByTestId('flow-diagram');
+      expect(diagram.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
     });
   });
 
