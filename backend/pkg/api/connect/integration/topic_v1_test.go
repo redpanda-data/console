@@ -489,6 +489,73 @@ func (s *APISuite) TestCreateTopic_v1() {
 		assert.Contains(errResponse, "INVALID_ARGUMENT")
 		assert.Contains(errResponse, "name") // Check for field name
 	})
+
+	t.Run("create duplicate topic returns CodeAlreadyExists (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
+		defer cancel()
+
+		topicName := "console-integration-test-duplicate-v1-connect-go"
+		require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, topicName, 1))
+
+		t.Cleanup(func() {
+			deleteKafkaTopic(t.Context(), s.kafkaAdminClient, topicName) //nolint:errcheck // best-effort cleanup
+		})
+
+		client := v1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+		createReq := &v1.CreateTopicRequest{
+			Topic: &v1.CreateTopicRequest_Topic{
+				Name: topicName,
+			},
+		}
+		_, err := client.CreateTopic(ctx, connect.NewRequest(createReq))
+		require.Error(err)
+		assert.Equal(connect.CodeAlreadyExists.String(), connect.CodeOf(err).String())
+	})
+
+	t.Run("create duplicate topic returns HTTP 409 (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
+		defer cancel()
+
+		topicName := "console-integration-test-duplicate-v1-http"
+		require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, topicName, 1))
+
+		t.Cleanup(func() {
+			deleteKafkaTopic(t.Context(), s.kafkaAdminClient, topicName) //nolint:errcheck // best-effort cleanup
+		})
+
+		httpReq := struct {
+			Name           string `json:"name"`
+			PartitionCount int    `json:"partition_count"`
+		}{
+			Name:           topicName,
+			PartitionCount: 1,
+		}
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + "/v1/topics").
+			BodyJSON(&httpReq).
+			Post().
+			AddValidator(requests.ValidatorHandler(
+				func(res *http.Response) error {
+					assert.Equal(http.StatusConflict, res.StatusCode)
+					if res.StatusCode == http.StatusCreated {
+						return nil
+					}
+					return fmt.Errorf("unexpected status code: %d", res.StatusCode)
+				},
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+		assert.Error(err)
+		assert.NotEmpty(errResponse)
+		assert.Contains(errResponse, "ALREADY_EXISTS")
+	})
 }
 
 func (s *APISuite) TestDeleteTopic_v1() {
@@ -1019,7 +1086,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1() {
 		response, err := client.UpdateTopicConfigurations(ctx, connect.NewRequest(updateConfigReq))
 		assert.Nil(response)
 		require.Error(err)
-		assert.Equal(connect.CodeInternal.String(), connect.CodeOf(err).String())
+		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
 		assert.Contains(err.Error(), "cleanup.policy requires a value to be empty")
 	})
 
@@ -1308,7 +1375,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1() {
 		response, err := client.SetTopicConfigurations(ctx, connect.NewRequest(setConfigReq))
 		assert.Error(err)
 		assert.Nil(response)
-		assert.Equal(connect.CodeInternal.String(), connect.CodeOf(err).String())
+		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
 	})
 
 	t.Run("set topic configuration for a non existent topic (connect-go)", func(t *testing.T) {

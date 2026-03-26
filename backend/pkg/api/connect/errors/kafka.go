@@ -43,24 +43,59 @@ func NewConnectErrorFromKafkaErrorCode(code int16, msg *string) *connect.Error {
 	}
 
 	kafkaErr := kerr.ErrorForCode(code)
-	errMsg := resolveKafkaErrorMessage(code, kafkaErr, msg)
 
+	// Auth errors use a distinct reason; short-circuit before the general path.
 	if isKafkaAuthorizationError(kafkaErr) {
 		return NewConnectError(
 			connect.CodePermissionDenied,
-			errors.New("you are not authorized to call this endpoint"),
-			NewErrorInfo(
-				commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String(),
-				KeyValsFromKafkaError(kafkaErr)...,
-			),
+			errors.New(resolveKafkaErrorMessage(code, kafkaErr, msg)),
+			NewErrorInfo(commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String(), KeyValsFromKafkaError(kafkaErr)...),
 		)
 	}
 
 	return NewConnectError(
-		connect.CodeInternal,
+		connectCode,
 		errors.New(errMsg),
 		NewErrorInfo(v1alpha2.Reason_REASON_KAFKA_API_ERROR.String(), KeyValsFromKafkaError(kafkaErr)...),
 	)
+}
+
+// connectCodeFromKafkaError maps a Kafka error to the appropriate connect.Code.
+// This is a pure lookup — no message handling, no reason logic.
+func connectCodeFromKafkaError(kafkaErr error) connect.Code {
+	switch {
+	case errors.Is(kafkaErr, kerr.TopicAlreadyExists):
+		return connect.CodeAlreadyExists
+
+	case errors.Is(kafkaErr, kerr.UnknownTopicOrPartition),
+		errors.Is(kafkaErr, kerr.UnknownTopicID):
+		return connect.CodeNotFound
+
+	case errors.Is(kafkaErr, kerr.InvalidTopicException),
+		errors.Is(kafkaErr, kerr.InvalidPartitions),
+		errors.Is(kafkaErr, kerr.InvalidReplicationFactor),
+		errors.Is(kafkaErr, kerr.InvalidReplicaAssignment),
+		errors.Is(kafkaErr, kerr.InvalidConfig),
+		errors.Is(kafkaErr, kerr.InvalidRequest),
+		errors.Is(kafkaErr, kerr.PolicyViolation):
+		return connect.CodeInvalidArgument
+
+	case errors.Is(kafkaErr, kerr.RequestTimedOut):
+		return connect.CodeDeadlineExceeded
+
+	case errors.Is(kafkaErr, kerr.BrokerNotAvailable),
+		errors.Is(kafkaErr, kerr.LeaderNotAvailable),
+		errors.Is(kafkaErr, kerr.NotController),
+		errors.Is(kafkaErr, kerr.PreferredLeaderNotAvailable):
+		return connect.CodeUnavailable
+
+	case errors.Is(kafkaErr, kerr.UnsupportedVersion),
+		errors.Is(kafkaErr, kerr.SecurityDisabled):
+		return connect.CodeUnimplemented
+
+	default:
+		return connect.CodeInternal
+	}
 }
 
 // isAuthorizationError checks whether the Kafka error is an authorization error.
