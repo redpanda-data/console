@@ -58,7 +58,9 @@ function useAnchorPosition(
   const isActive = !!(editorInstance && slashPosition && open);
 
   useEffect(() => {
-    if (!(editorInstance && slashPosition && open)) return;
+    if (!(editorInstance && slashPosition && open)) {
+      return;
+    }
 
     const updatePosition = () => {
       const coords = editorInstance.getScrolledVisiblePosition(slashPosition);
@@ -89,7 +91,9 @@ function useAnchorPosition(
     };
   }, [editorInstance, slashPosition, open]);
 
-  if (!isActive) return HIDDEN_STYLE;
+  if (!isActive) {
+    return HIDDEN_STYLE;
+  }
   return style;
 }
 
@@ -356,9 +360,13 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       // rAF defers past pending layout/paint.
       // Single attempt — no retry loop needed.
       setTimeout(() => {
-        if (abortFocusRef.current) return;
+        if (abortFocusRef.current) {
+          return;
+        }
         requestAnimationFrame(() => {
-          if (abortFocusRef.current) return;
+          if (abortFocusRef.current) {
+            return;
+          }
           const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
           if (input && document.activeElement !== input) {
             input.focus();
@@ -480,7 +488,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
 
   const handleCreateTopic = useCallback(async () => {
     const ref = topicStepRef.current;
-    if (!ref) return;
+    if (!ref) {
+      return;
+    }
     setIsTopicSubmitting(true);
     const result = await ref.triggerSubmit();
     if (result.success) {
@@ -499,7 +509,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
 
   const handleCreateUser = useCallback(async () => {
     const ref = userStepRef.current;
-    if (!ref) return;
+    if (!ref) {
+      return;
+    }
     setIsUserSubmitting(true);
     const result = await ref.triggerSubmit();
     if (result.success) {
@@ -553,11 +565,11 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       />
 
       <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
-        <DialogContent size="xl">
+        <DialogContent className="max-h-screen overflow-y-scroll" size="lg">
           <DialogHeader>
             <DialogTitle>Create a topic</DialogTitle>
           </DialogHeader>
-          <AddTopicStep hideTitle ref={topicStepRef} selectionMode="new" />
+          <AddTopicStep className="border-1" hideTitle ref={topicStepRef} selectionMode="new" />
           <div className="flex justify-end gap-2 pt-4">
             <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
@@ -570,11 +582,11 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       </Dialog>
 
       <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
-        <DialogContent size="xl">
+        <DialogContent className="max-h-screen overflow-y-scroll" size="lg">
           <DialogHeader>
             <DialogTitle>Create a user</DialogTitle>
           </DialogHeader>
-          <AddUserStep hideTitle ref={userStepRef} selectionMode="new" />
+          <AddUserStep className="border-1" hideTitle ref={userStepRef} selectionMode="new" />
           <div className="flex justify-end gap-2 pt-4">
             <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
               Cancel

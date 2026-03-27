@@ -85,6 +85,7 @@ type AddUserStepProps = {
   pipelineName?: string;
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
+  className?: string;
 };
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
@@ -102,6 +103,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       pipelineName,
       selectionMode = 'both',
       hideTitle,
+      className,
       ...motionProps
     },
     ref
@@ -378,7 +380,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     }));
 
     return (
-      <Card size="full" {...motionProps} animated variant="ghost">
+      <Card size="full" {...motionProps} animated className={className} variant="ghost">
         {!hideTitle && (
           <CardHeader className="max-w-2xl">
             <CardTitle>

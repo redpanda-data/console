@@ -20,7 +20,13 @@ import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/compo
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
@@ -516,7 +522,7 @@ function EditorPanel({
                 <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
                   <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
                     <BannerContent>
-                      Tip: use{' '}
+                      Tip: Use{' '}
                       <Kbd size="xs" variant="filled">
                         /
                       </Kbd>{' '}
@@ -680,7 +686,8 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
-  const pipelineName = useWatch({ control: form.control, name: 'name' });
+  const formName = useWatch({ control: form.control, name: 'name' });
+  const pipelineName = mode === 'view' ? pipeline?.displayName : formName;
 
   // --- Extracted hooks ---
 
@@ -891,11 +898,15 @@ export default function PipelinePage() {
         }}
         open={topicDialogTarget !== null}
       >
-        <DialogContent size="xl">
+        <DialogContent className="max-h-screen overflow-y-scroll" size="lg">
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
+            <DialogDescription className="mt-4">
+              This component requires a Redpanda topic for logging the data. Select an existing topic, or create a new
+              one.
+            </DialogDescription>
           </DialogHeader>
-          <AddTopicStep hideTitle ref={topicStepRef} />
+          <AddTopicStep className="border-1" hideTitle ref={topicStepRef} />
           <div className="flex justify-end gap-2 pt-4">
             <Button disabled={isTopicSubmitting} onClick={() => setTopicDialogTarget(null)} variant="secondary-ghost">
               Cancel
@@ -915,11 +926,16 @@ export default function PipelinePage() {
         }}
         open={userDialogTarget !== null}
       >
-        <DialogContent size="xl">
+        <DialogContent className="max-h-screen overflow-y-scroll" size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
+            <DialogDescription className="mt-4">
+              This component requires a Redpanda user for logging the data. Select an existing user, or create a new
+              one.
+            </DialogDescription>
           </DialogHeader>
           <AddUserStep
+            className="border-1"
             hideTitle
             ref={userStepRef}
             showConsumerGroupFields={userDialogTarget?.section === 'input'}

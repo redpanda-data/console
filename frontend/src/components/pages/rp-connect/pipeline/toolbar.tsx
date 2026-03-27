@@ -327,9 +327,6 @@ export const Toolbar = memo(
       [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
     );
 
-    const isEditable = mode === 'edit' || mode === 'create';
-    const displayName = pipelineName || pipelineId || '';
-
     if (mode === 'view') {
       return (
         <div className="mt-5 flex items-start justify-between">
@@ -339,10 +336,16 @@ export const Toolbar = memo(
             </Button>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                {isLoading ? <Skeleton className="h-9 w-48" /> : <Heading level={1}>{displayName}</Heading>}
+                {isLoading ? (
+                  <Skeleton className="h-9 w-48" />
+                ) : (
+                  <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+                )}
                 {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
               </div>
-              <Text className="text-muted-foreground">Monitor pipeline status and performance.</Text>
+              <Text className="text-muted-foreground">
+                Monitor the pipeline, or edit the pipeline configuration to change functionality or improve performance.
+              </Text>
               <span className="mt-3">
                 <Button onClick={handleEditNavigate}>Edit pipeline</Button>
               </span>
@@ -378,14 +381,15 @@ export const Toolbar = memo(
                 headingLevel={1}
                 onChange={onNameChange}
                 placeholder="Pipeline name"
-                readOnly={!isEditable}
-                value={displayName}
+                value={pipelineName ?? ''}
               />
             )}
             {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
           </div>
           <Text className="mt-4 ml-9">
-            Redpanda Connect builds data pipelines for real-time analytics and actionable business insights.{' '}
+            Redpanda Connect builds data pipelines for real-time analytics and actionable business insights. Every
+            pipeline requires an input and an output in a config file. Select components, including processors, and
+            customize the configuration in the editor.{' '}
             <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
               Learn more
             </Link>
