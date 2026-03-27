@@ -327,8 +327,6 @@ export const Toolbar = memo(
       [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
     );
 
-    const isEditable = mode === 'edit' || mode === 'create';
-
     if (mode === 'view') {
       return (
         <div className="mt-5 flex items-start justify-between">
@@ -383,7 +381,6 @@ export const Toolbar = memo(
                 headingLevel={1}
                 onChange={onNameChange}
                 placeholder="Pipeline name"
-                readOnly={!isEditable}
                 value={pipelineName ?? ''}
               />
             )}
