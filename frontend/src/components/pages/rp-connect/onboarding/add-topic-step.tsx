@@ -53,11 +53,20 @@ type AddTopicStepProps = {
   onValidityChange?: (isValid: boolean) => void;
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
+  className?: string;
 };
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
   (
-    { defaultTopicName, hideInternal = true, onValidityChange, selectionMode = 'both', hideTitle, ...motionProps },
+    {
+      defaultTopicName,
+      hideInternal = true,
+      onValidityChange,
+      selectionMode = 'both',
+      hideTitle,
+      className,
+      ...motionProps
+    },
     ref
   ) => {
     const queryClient = useQueryClient();
@@ -133,7 +142,9 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     );
 
     useEffect(() => {
-      if (!existingTopicSelected) return;
+      if (!existingTopicSelected) {
+        return;
+      }
       if (topicConfig && !topicConfig.error) {
         const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
         form.reset(allTopicValues, { keepDefaultValues: false });
@@ -246,7 +257,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       topicSelectionType === CreatableSelectionOptions.CREATE && Boolean(existingTopicSelected);
 
     return (
-      <Card size="full" {...motionProps} animated variant="ghost">
+      <Card size="full" {...motionProps} animated className={className} variant="ghost">
         {!hideTitle && (
           <CardHeader className="max-w-2xl">
             <CardTitle>
@@ -337,14 +348,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                     )}
                   </div>
 
-                  {showExistingTopicAlert && (
+                  {showExistingTopicAlert ? (
                     <Alert variant="info">
                       <AlertDescription>
                         A topic named <b>{watchedTopicName}</b> already exists. A reference to the existing topic will
                         be used.
                       </AlertDescription>
                     </Alert>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
