@@ -680,7 +680,8 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
-  const pipelineName = useWatch({ control: form.control, name: 'name' });
+  const formName = useWatch({ control: form.control, name: 'name' });
+  const pipelineName = mode === 'view' ? pipeline?.displayName : formName;
 
   // --- Extracted hooks ---
 

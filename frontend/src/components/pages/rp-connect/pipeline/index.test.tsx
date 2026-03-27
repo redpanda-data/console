@@ -532,6 +532,18 @@ describe('PipelinePage', () => {
     });
   });
 
+  it('displays the pipeline display name (not the ID) in view mode', async () => {
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // The toolbar should show the displayName from the pipeline response, not the pipeline ID
+    await waitFor(() => {
+      expect(screen.getByText('Test Pipeline')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('test-pipeline')).not.toBeInTheDocument();
+  });
+
   it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');

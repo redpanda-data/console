@@ -328,7 +328,6 @@ export const Toolbar = memo(
     );
 
     const isEditable = mode === 'edit' || mode === 'create';
-    const displayName = pipelineName || pipelineId || '';
 
     if (mode === 'view') {
       return (
@@ -339,7 +338,11 @@ export const Toolbar = memo(
             </Button>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                {isLoading ? <Skeleton className="h-9 w-48" /> : <Heading level={1}>{displayName}</Heading>}
+                {isLoading ? (
+                  <Skeleton className="h-9 w-48" />
+                ) : (
+                  <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+                )}
                 {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
               </div>
               <Text className="text-muted-foreground">Monitor pipeline status and performance.</Text>
@@ -379,7 +382,7 @@ export const Toolbar = memo(
                 onChange={onNameChange}
                 placeholder="Pipeline name"
                 readOnly={!isEditable}
-                value={displayName}
+                value={pipelineName ?? ''}
               />
             )}
             {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
