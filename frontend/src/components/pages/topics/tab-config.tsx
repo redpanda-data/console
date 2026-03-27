@@ -42,6 +42,7 @@ export function TopicConfiguration(props: { topic: Topic }) {
 
   return (
     <TopicConfigurationEditor
+      allowedActions={props.topic.allowedActions}
       entries={entries}
       onForceRefresh={() => {
         queryClient.invalidateQueries({ queryKey: ['topicConfig', props.topic.topicName] });

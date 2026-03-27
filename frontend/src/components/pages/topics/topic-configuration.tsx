@@ -39,12 +39,14 @@ import './TopicConfiguration.scss';
 
 import { isServerless } from '../../../config';
 import { useUpdateTopicConfigMutation } from '../../../react-query/api/topic';
+import type { TopicAction } from '../../../state/rest-interfaces';
 import { SingleSelect } from '../../misc/select';
 
 type ConfigurationEditorProps = {
   targetTopic: string; // topic name, or null if default configs
   entries: ConfigEntryExtended[];
   onForceRefresh: () => void;
+  allowedActions?: TopicAction[]; // undefined means all actions allowed
 };
 
 type Inputs = {
@@ -234,7 +236,10 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
     setEditedEntry(configEntry);
   };
 
-  const hasEditPermissions = true;
+  const hasEditPermissions =
+    props.allowedActions === undefined ||
+    props.allowedActions.includes('editConfig') ||
+    props.allowedActions.includes('all');
 
   let entries = props.entries;
   if (filter) {
