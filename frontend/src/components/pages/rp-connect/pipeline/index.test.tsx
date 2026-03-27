@@ -635,7 +635,7 @@ describe('PipelinePage', () => {
       render(<PipelinePage />, { transport: createTransport() });
 
       await waitFor(() => {
-        expect(screen.getByText(/Tip: use/)).toBeInTheDocument();
+        expect(screen.getByText(/Tip: Use/)).toBeInTheDocument();
         expect(screen.getByText(/to insert variables/)).toBeInTheDocument();
       });
     });
@@ -648,7 +648,7 @@ describe('PipelinePage', () => {
         expect(screen.getByTestId('yaml-editor')).toBeInTheDocument();
       });
 
-      expect(screen.queryByText(/Tip: use/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Tip: Use/)).not.toBeInTheDocument();
     });
 
     it('uses the new log explorer when the feature flag is enabled', async () => {
