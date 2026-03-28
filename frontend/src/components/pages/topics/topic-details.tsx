@@ -146,8 +146,12 @@ function refreshTopicData(topicName: string, force: boolean) {
   // there is no single endpoint to refresh a single topic
   api.refreshTopics(force);
 
+  // Resolve the active tab: prefer the URL hash (direct navigation), fall back to stored setting
+  const urlHash = appGlobal.location.hash.replace('#', '') as TopicTabId;
+  const activeTab = TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
+
   // consumers are lazy loaded because they're (relatively) expensive
-  if (uiSettings.topicDetailsActiveTabKey === 'consumers') {
+  if (activeTab === 'consumers') {
     api.refreshTopicConsumers(topicName, force);
   }
 
@@ -162,12 +166,12 @@ function refreshTopicData(topicName: string, force: boolean) {
   });
 
   // documentation can be lazy loaded
-  if (uiSettings.topicDetailsActiveTabKey === 'documentation') {
+  if (activeTab === 'documentation') {
     api.refreshTopicDocumentation(topicName, force);
   }
 
   // ACL can be lazy loaded
-  if (uiSettings.topicDetailsActiveTabKey === 'topicacl') {
+  if (activeTab === 'topicacl') {
     api.refreshTopicAcls(topicName, force);
   }
 }
