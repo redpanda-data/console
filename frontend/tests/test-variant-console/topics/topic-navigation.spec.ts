@@ -82,7 +82,9 @@ test.describe('Topic Details - Navigation and Tabs', () => {
 
     await test.step('Navigate to Configuration tab', async () => {
       await page.goto(`/topics/${topicName}#configuration`);
-      await expect(page.getByTestId('config-group-table')).toBeVisible();
+      // Wait for the topic page to load before checking tab content
+      await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 15_000 });
 
       // Verify that configuration groups are present
       // Note: This test is flexible and will pass even if new groups are added

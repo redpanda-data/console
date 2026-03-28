@@ -146,8 +146,10 @@ function refreshTopicData(topicName: string, force: boolean) {
   // there is no single endpoint to refresh a single topic
   api.refreshTopics(force);
 
-  // Resolve the active tab: prefer the URL hash (direct navigation), fall back to stored setting
-  const urlHash = appGlobal.location.hash.replace('#', '') as TopicTabId;
+  // Resolve the active tab: prefer the browser URL hash (window.location is always current,
+  // unlike appGlobal.location which is synced asynchronously via RouterSync's useEffect),
+  // fall back to stored setting.
+  const urlHash = window.location.hash.replace('#', '') as TopicTabId;
   const activeTab = TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
 
   // consumers are lazy loaded because they're (relatively) expensive
