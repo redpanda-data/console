@@ -53,6 +53,9 @@ func NewConnectErrorFromKafkaErrorCode(code int16, msg *string) *connect.Error {
 		)
 	}
 
+	connectCode := connectCodeFromKafkaError(kafkaErr)
+	errMsg := resolveKafkaErrorMessage(code, kafkaErr, msg)
+
 	return NewConnectError(
 		connectCode,
 		errors.New(errMsg),
