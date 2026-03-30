@@ -2444,7 +2444,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			]
 		}`
 
-		schemaCache := avro.NewSchemaCache()
+		var schemaCache avro.SchemaCache
 
 		eventDataSchema, err := schemaCache.Parse(eventDataSchemaStr)
 		require.NoError(err)
@@ -4176,7 +4176,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			]
 		}`
 
-		schemaCache := avro.NewSchemaCache()
+		var schemaCache avro.SchemaCache
 
 		eventDataSchema, err := schemaCache.Parse(eventDataSchemaStr)
 		require.NoError(err)

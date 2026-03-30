@@ -320,8 +320,8 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema) (*avro.Schema, error) {
 	// Create temporary cache for this parsing operation to avoid cross-tenant leakage.
 	// The cache is only used during parsing to resolve references and is discarded after.
-	cache := avro.NewSchemaCache()
-	if err := c.parseAvroReferences(ctx, cache, schema, make(map[string]bool)); err != nil {
+	var cache avro.SchemaCache
+	if err := c.parseAvroReferences(ctx, &cache, schema, make(map[string]bool)); err != nil {
 		return nil, err
 	}
 	return cache.Parse(schema.Schema)
