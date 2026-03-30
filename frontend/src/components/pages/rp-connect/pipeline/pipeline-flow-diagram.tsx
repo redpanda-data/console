@@ -23,7 +23,6 @@ import {
   type PipelineFlowNode,
 } from '../utils/pipeline-flow-parser';
 
-const PAN_ON_SCROLL_MODE = PanOnScrollMode.Vertical;
 const EXTENT_PADDING = 40;
 const PARSE_DEBOUNCE_MS = 300;
 const MIN_ZOOM = 0.5;
@@ -74,6 +73,11 @@ type PipelineFlowDiagramProps = {
   ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number };
 };
 
+type TranslateExtentResult = {
+  extent: [[number, number], [number, number]];
+  overflowsX: boolean;
+};
+
 /**
  * Compute translate extent from layout node positions.
  *
@@ -81,12 +85,15 @@ type PipelineFlowDiagramProps = {
  * Without this, d3-zoom centers content that is shorter than the viewport,
  * which manifests as a large top margin in edit/create mode where the node
  * tree is typically shorter than the panel.
+ *
+ * Also returns whether the content exceeds the container width so the
+ * caller can enable horizontal panning only when needed.
  */
-function computeTranslateExtent(
+export function computeTranslateExtent(
   rfNodes: Node[],
   containerWidth: number,
   containerHeight: number
-): [[number, number], [number, number]] {
+): TranslateExtentResult {
   let minX = 0;
   let minY = 0;
   let maxX = 0;
@@ -111,10 +118,15 @@ function computeTranslateExtent(
     }
   }
 
-  return [
-    [minX - EXTENT_PADDING, minY - EXTENT_PADDING],
-    [Math.max(maxX + EXTENT_PADDING, containerWidth), Math.max(maxY + EXTENT_PADDING, containerHeight)],
-  ];
+  const contentRight = maxX + EXTENT_PADDING;
+
+  return {
+    extent: [
+      [minX - EXTENT_PADDING, minY - EXTENT_PADDING],
+      [Math.max(contentRight, containerWidth), Math.max(maxY + EXTENT_PADDING, containerHeight)],
+    ],
+    overflowsX: contentRight > containerWidth,
+  };
 }
 
 export const PipelineFlowDiagram = ({
@@ -223,10 +235,16 @@ export const PipelineFlowDiagram = ({
     return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges };
   }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
-  const translateExtent = useMemo(
-    () => (containerSize ? computeTranslateExtent(rfNodes, containerSize.width, containerSize.height) : undefined),
-    [rfNodes, containerSize]
-  );
+  const { translateExtent, panOnScrollMode } = useMemo(() => {
+    if (!containerSize) {
+      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical };
+    }
+    const { extent, overflowsX } = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
+    return {
+      translateExtent: extent,
+      panOnScrollMode: overflowsX ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
+    };
+  }, [rfNodes, containerSize]);
 
   if (rfNodes.length === 0) {
     return (
@@ -254,7 +272,7 @@ export const PipelineFlowDiagram = ({
             nodeTypes={pipelineNodeTypes}
             panOnDrag={false}
             panOnScroll
-            panOnScrollMode={PAN_ON_SCROLL_MODE}
+            panOnScrollMode={panOnScrollMode}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}
             zoomOnPinch={false}

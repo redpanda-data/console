@@ -769,4 +769,30 @@ output:
       expect(node.data.mode).toBeUndefined();
     }
   });
+
+  it('caps visual indent depth so deeply nested nodes do not overflow', () => {
+    // Triple-nested switch produces ~7 visual depth levels
+    const yaml = [
+      'pipeline:',
+      '  processors:',
+      '    - switch:',
+      "        - check: 'this.a > 1'",
+      '          processors:',
+      '            - switch:',
+      "                - check: 'this.b > 2'",
+      '                  processors:',
+      '                    - switch:',
+      "                        - check: 'this.c > 3'",
+      '                          processors:',
+      '                            - mapping: root = this',
+    ].join('\n');
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const { rfNodes } = computeTreeLayout(nodes);
+
+    // MAX_INDENT_DEPTH=5, INDENT_X=40, ROOT_X=8 → max X = 8 + 5*40 = 208
+    const maxX = Math.max(...rfNodes.map((n) => n.position.x));
+    expect(maxX).toBeLessThanOrEqual(208);
+    // Verify the deeply nested mapping leaf is present (parsing not truncated)
+    expect(rfNodes.some((n) => n.data.label === 'mapping')).toBe(true);
+  });
 });
