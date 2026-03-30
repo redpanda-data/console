@@ -12,4 +12,7 @@ package errors
 const (
 	// DomainDataplane defines the string for the proto error domain "dataplane".
 	DomainDataplane = "redpanda.com/dataplane"
+
+	// DomainDataplaneKafka defines the error domain for Kafka-specific error details.
+	DomainDataplaneKafka = "redpanda.com/dataplane/kafka"
 )
