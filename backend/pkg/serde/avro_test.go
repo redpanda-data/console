@@ -393,9 +393,8 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 
 		b, err := serde.SerializeObject(t.Context(), `{"p":"q","r":12}`, PayloadTypeValue, WithSchemaID(2000))
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "failed to serialize avro:")
-		assert.ErrorContains(t, err, "field a")
-		assert.ErrorContains(t, err, "missing key")
+		assert.ErrorContains(t, err, "deserializing:")
+		assert.ErrorContains(t, err, "missing required field \"a\"")
 		assert.Nil(t, b)
 	})
 
