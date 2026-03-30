@@ -181,6 +181,9 @@ type AdminAPIClient interface {
 	// ClusterService returns a client for listing kafka connections
 	ClusterService(opts ...connect.ClientOption) adminv2connect.ClusterServiceClient
 
+	// SecurityService returns a client for the SecurityService of the Admin API V2.
+	SecurityService(opts ...connect.ClientOption) adminv2connect.SecurityServiceClient
+
 	// SingleKeyConfig returns the value for a Redpanda Cluster config property
 	SingleKeyConfig(ctx context.Context, key string) (rpadmin.Config, error)
 }

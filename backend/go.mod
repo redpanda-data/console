@@ -7,7 +7,7 @@ require (
 	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260316210807-5d899910f714.1
-	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20251111205446-9c61b5cb371f.2
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20260226120209-2a07499aebcd.2
 	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260313213909-923579c57f1c.1
 	buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1
 	buf.build/go/protovalidate v1.0.1
@@ -44,7 +44,7 @@ require (
 	github.com/redpanda-data/benthos/v4 v4.56.0
 	github.com/redpanda-data/common-go/api v0.0.0-20260130192523-413455981e59
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
-	github.com/redpanda-data/common-go/rpadmin v0.2.0
+	github.com/redpanda-data/common-go/rpadmin v0.2.4
 	github.com/redpanda-data/common-go/rpsr v0.1.4
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.11.1
@@ -160,7 +160,7 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/miekg/dns v1.1.68 // indirect
+	github.com/miekg/dns v1.1.72 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -222,7 +222,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/time v0.13.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
