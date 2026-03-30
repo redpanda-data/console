@@ -589,6 +589,7 @@ export function parsePipelineFlowTree(
 // ============================================================================
 
 const INDENT_X = 40;
+const MAX_INDENT_DEPTH = 5;
 const NODE_H_DEFAULT = 28;
 const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
@@ -621,7 +622,7 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
   return {
     id: node.id,
     type: NODE_TYPE_MAP[node.kind],
-    position: { x: ROOT_X + depth * INDENT_X, y: nodeY },
+    position: { x: ROOT_X + Math.min(depth, MAX_INDENT_DEPTH) * INDENT_X, y: nodeY },
     style: {
       opacity: isHidden ? 0 : 1,
       pointerEvents: isHidden ? 'none' : undefined,
