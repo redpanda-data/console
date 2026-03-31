@@ -36,8 +36,7 @@ import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-// Local modals
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { SchemaContextSelector } from './schema-context-selector';
 import {
   ALL_CONTEXT_ID,
@@ -115,6 +114,7 @@ const SchemaList: FC = () => {
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
 
   // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
@@ -491,57 +491,7 @@ const SchemaList: FC = () => {
                         e.stopPropagation();
                         e.preventDefault();
 
-                        if (r.isSoftDeleted) {
-                          openPermanentDeleteModal(r.name, () => {
-                            deleteSchemaMutation.mutate(
-                              { subjectName: r.name, permanent: true },
-                              {
-                                onSuccess: () => {
-                                  toast({
-                                    status: 'success',
-                                    duration: 4000,
-                                    isClosable: false,
-                                    title: 'Subject permanently deleted',
-                                  });
-                                },
-                                onError: (err) => {
-                                  toast({
-                                    status: 'error',
-                                    duration: null,
-                                    isClosable: true,
-                                    title: 'Failed to permanently delete subject',
-                                    description: String(err),
-                                  });
-                                },
-                              }
-                            );
-                          });
-                        } else {
-                          openDeleteModal(r.name, () => {
-                            deleteSchemaMutation.mutate(
-                              { subjectName: r.name, permanent: false },
-                              {
-                                onSuccess: () => {
-                                  toast({
-                                    status: 'success',
-                                    duration: 4000,
-                                    isClosable: false,
-                                    title: 'Subject soft-deleted',
-                                  });
-                                },
-                                onError: (err) => {
-                                  toast({
-                                    status: 'error',
-                                    duration: null,
-                                    isClosable: true,
-                                    title: 'Failed to soft-delete subject',
-                                    description: String(err),
-                                  });
-                                },
-                              }
-                            );
-                          });
-                        }
+                        setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
                       }}
                       size="icon-sm"
                       variant="secondary-ghost"
@@ -560,6 +510,71 @@ const SchemaList: FC = () => {
           </Section>
         );
       })()}
+
+      <DeleteDialog
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteSchemaMutation.mutate(
+            { subjectName: deleteTarget.name, permanent: false },
+            {
+              onSuccess: () => {
+                toast({
+                  status: 'success',
+                  duration: 4000,
+                  isClosable: false,
+                  title: 'Subject soft-deleted',
+                });
+              },
+              onError: (err) => {
+                toast({
+                  status: 'error',
+                  duration: null,
+                  isClosable: true,
+                  title: 'Failed to soft-delete subject',
+                  description: String(err),
+                });
+              },
+            }
+          );
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget?.kind === 'soft'}
+        schemaVersionName={deleteTarget?.name ?? ''}
+      />
+      <PermanentDeleteDialog
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteSchemaMutation.mutate(
+            { subjectName: deleteTarget.name, permanent: true },
+            {
+              onSuccess: () => {
+                toast({
+                  status: 'success',
+                  duration: 4000,
+                  isClosable: false,
+                  title: 'Subject permanently deleted',
+                });
+              },
+              onError: (err) => {
+                toast({
+                  status: 'error',
+                  duration: null,
+                  isClosable: true,
+                  title: 'Failed to permanently delete subject',
+                  description: String(err),
+                });
+              },
+            }
+          );
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget?.kind === 'permanent'}
+        schemaVersionName={deleteTarget?.name ?? ''}
+      />
     </PageContent>
   );
 };

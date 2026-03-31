@@ -38,7 +38,7 @@ import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from
 import { toast } from 'sonner';
 
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
-import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
+import { SwitchSchemaFormatDialog, ValidationErrorsDialog } from './modals';
 import {
   ALL_CONTEXT_ID,
   buildQualifiedReferences,
@@ -346,6 +346,7 @@ const SchemaPageButtons = (p: {
     isCompatible?: boolean;
     compatibilityError?: { errorType: string; description: string };
   } | null>(null);
+  const [validationDialogResult, setValidationDialogResult] = useState<typeof persistentValidationError>(null);
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
@@ -390,9 +391,7 @@ const SchemaPageButtons = (p: {
             if (!validationResponse.isValid || validationResponse.isCompatible === false) {
               // Something is wrong with the schema, abort
               // Persist error only after user closes the modal
-              openValidationErrorsModal(validationResponse, () => {
-                setPersistentValidationError(validationResponse);
-              });
+              setValidationDialogResult(validationResponse);
               return;
             }
 
@@ -447,9 +446,7 @@ const SchemaPageButtons = (p: {
               toast.success('Schema validated successfully');
             } else {
               // Persist error only after user closes the modal
-              openValidationErrorsModal(r, () => {
-                setPersistentValidationError(r);
-              });
+              setValidationDialogResult(r);
             }
           }}
           testId="schema-create-validate-btn"
@@ -472,6 +469,19 @@ const SchemaPageButtons = (p: {
           Cancel
         </Button>
       </div>
+
+      <ValidationErrorsDialog
+        onClose={() => {
+          if (validationDialogResult) {
+            setPersistentValidationError(validationDialogResult);
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) setValidationDialogResult(null);
+        }}
+        open={validationDialogResult !== null}
+        result={validationDialogResult}
+      />
     </>
   );
 };
@@ -526,6 +536,8 @@ const SchemaEditor = (p: {
   const { state, mode } = p;
   const isAddVersion = mode === 'ADD_VERSION';
   const [contextWarning, setContextWarning] = useState('');
+  const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
+  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
 
   const availableContexts = useMemo(() => {
     if (!(srContextsEnabled && apiContexts && subjects)) return [];
@@ -760,13 +772,8 @@ const SchemaEditor = (p: {
                 return;
               }
               // Let user confirm
-              openSwitchSchemaFormatModal(() => {
-                p.onStateChange((prev) => ({
-                  ...prev,
-                  format: e as 'AVRO' | 'PROTOBUF' | 'JSON',
-                  schemaText: exampleSchema[e as SchemaTypeType],
-                }));
-              });
+              setPendingFormat(e);
+              setSwitchFormatOpen(true);
             }}
             transition={{ duration: 0 }}
             type="single"
@@ -840,6 +847,21 @@ const SchemaEditor = (p: {
         </Text>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </div>
+
+      <SwitchSchemaFormatDialog
+        onConfirm={() => {
+          if (pendingFormat) {
+            p.onStateChange((prev) => ({
+              ...prev,
+              format: pendingFormat as 'AVRO' | 'PROTOBUF' | 'JSON',
+              schemaText: exampleSchema[pendingFormat as SchemaTypeType],
+            }));
+            setPendingFormat(null);
+          }
+        }}
+        onOpenChange={setSwitchFormatOpen}
+        open={switchFormatOpen}
+      />
     </>
   );
 };

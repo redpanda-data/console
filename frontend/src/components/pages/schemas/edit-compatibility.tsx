@@ -284,7 +284,7 @@ function EditSchemaCompatibility(p: {
           <Choicebox
             className="w-full"
             data-testid="edit-compatibility-mode-radio"
-            onValueChange={setConfigMode}
+            onValueChange={(value) => setConfigMode(value as SchemaRegistryCompatibilityModeWithDefault)}
             value={configMode}
           >
             {allOptions.map((option) => (

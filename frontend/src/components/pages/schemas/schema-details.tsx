@@ -40,7 +40,7 @@ const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
 import React, { useEffect, useState } from 'react';
 
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { parseSubjectContext } from './schema-context-utils';
 import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { useGetIdentityQuery } from '../../../react-query/api/authentication';
@@ -89,6 +89,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   useSchemaTypesQuery(); // Fetch for other components
 
   const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
+  const [subjectDeleteKind, setSubjectDeleteKind] = useState<'soft' | 'permanent' | null>(null);
 
   type UserDataType = NonNullable<typeof userData>;
 
@@ -140,39 +141,35 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   );
 
   const handleDeleteSubject = (permanent: boolean) => {
-    const modalCallback = () => {
-      deleteSubjectMutation.mutate(
-        { subjectName: subjectNameRaw, permanent },
-        {
-          onSuccess: () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: permanent ? 'Subject permanently deleted' : 'Subject soft-deleted',
-            });
-            if (permanent) {
-              navigate({ to: '/schema-registry' });
-            }
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject',
-              description: String(err),
-            });
-          },
-        }
-      );
-    };
+    setSubjectDeleteKind(permanent ? 'permanent' : 'soft');
+  };
 
-    if (permanent) {
-      openPermanentDeleteModal(subjectNameRaw, modalCallback);
-    } else {
-      openDeleteModal(subjectNameRaw, modalCallback);
-    }
+  const executeDeleteSubject = (permanent: boolean) => {
+    deleteSubjectMutation.mutate(
+      { subjectName: subjectNameRaw, permanent },
+      {
+        onSuccess: () => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: permanent ? 'Subject permanently deleted' : 'Subject soft-deleted',
+          });
+          if (permanent) {
+            navigate({ to: '/schema-registry' });
+          }
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject',
+            description: String(err),
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -275,6 +272,23 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           },
         ]}
       />
+
+      <DeleteDialog
+        onConfirm={() => executeDeleteSubject(false)}
+        onOpenChange={(open) => {
+          if (!open) setSubjectDeleteKind(null);
+        }}
+        open={subjectDeleteKind === 'soft'}
+        schemaVersionName={subjectNameRaw}
+      />
+      <PermanentDeleteDialog
+        onConfirm={() => executeDeleteSubject(true)}
+        onOpenChange={(open) => {
+          if (!open) setSubjectDeleteKind(null);
+        }}
+        open={subjectDeleteKind === 'permanent'}
+        schemaVersionName={subjectNameRaw}
+      />
     </PageContent>
   );
 };
@@ -330,6 +344,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       ? versionNumber
       : (fallbackVersion ?? subjectData.versions[0]?.version ?? 1);
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
+  const [versionDeleteKind, setVersionDeleteKind] = useState<'soft' | 'permanent' | null>(null);
 
   // Show notification and update URL if requested version doesn't exist
   useEffect(() => {
@@ -373,47 +388,49 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   };
 
   const handlePermanentDelete = () => {
-    openPermanentDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
-      deleteVersionMutation.mutate(
-        { subjectName: subjectData.name, version: schema.version, permanent: true },
-        {
-          onSuccess: async () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: 'Schema version permanently deleted',
-            });
+    setVersionDeleteKind('permanent');
+  };
 
-            // Invalidate and refetch to get updated details
-            await queryClient.invalidateQueries({
-              queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
-            });
-            const newDetails = queryClient.getQueryData<SchemaRegistrySubjectDetails>([
-              'schemaRegistry',
-              'subjects',
-              subjectData.name,
-              'details',
-            ]);
+  const executePermanentDelete = () => {
+    deleteVersionMutation.mutate(
+      { subjectName: subjectData.name, version: schema.version, permanent: true },
+      {
+        onSuccess: async () => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: 'Schema version permanently deleted',
+          });
 
-            if (newDetails?.latestActiveVersion) {
-              setSelectedVersion(newDetails.latestActiveVersion);
-            } else {
-              navigate({ to: '/schema-registry' });
-            }
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to permanently delete schema version',
-              description: String(err),
-            });
-          },
-        }
-      );
-    });
+          // Invalidate and refetch to get updated details
+          await queryClient.invalidateQueries({
+            queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
+          });
+          const newDetails = queryClient.getQueryData<SchemaRegistrySubjectDetails>([
+            'schemaRegistry',
+            'subjects',
+            subjectData.name,
+            'details',
+          ]);
+
+          if (newDetails?.latestActiveVersion) {
+            setSelectedVersion(newDetails.latestActiveVersion);
+          } else {
+            navigate({ to: '/schema-registry' });
+          }
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to permanently delete schema version',
+            description: String(err),
+          });
+        },
+      }
+    );
   };
 
   const handleRecover = () => {
@@ -455,31 +472,33 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   };
 
   const handleSoftDelete = () => {
-    openDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
-      deleteVersionMutation.mutate(
-        { subjectName: subjectData.name, version: schema.version, permanent: false },
-        {
-          onSuccess: () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: 'Schema version deleted',
-              description: 'You can recover or permanently delete it.',
-            });
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to delete schema version',
-              description: String(err),
-            });
-          },
-        }
-      );
-    });
+    setVersionDeleteKind('soft');
+  };
+
+  const executeSoftDelete = () => {
+    deleteVersionMutation.mutate(
+      { subjectName: subjectData.name, version: schema.version, permanent: false },
+      {
+        onSuccess: () => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: 'Schema version deleted',
+            description: 'You can recover or permanently delete it.',
+          });
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to delete schema version',
+            description: String(err),
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -577,6 +596,23 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       <Box>
         <SchemaReferences schema={schema} subject={subjectData} />
       </Box>
+
+      <DeleteDialog
+        onConfirm={executeSoftDelete}
+        onOpenChange={(open) => {
+          if (!open) setVersionDeleteKind(null);
+        }}
+        open={versionDeleteKind === 'soft'}
+        schemaVersionName={`${subjectData.name} version ${schema.version}`}
+      />
+      <PermanentDeleteDialog
+        onConfirm={executePermanentDelete}
+        onOpenChange={(open) => {
+          if (!open) setVersionDeleteKind(null);
+        }}
+        open={versionDeleteKind === 'permanent'}
+        schemaVersionName={`${subjectData.name} version ${schema.version}`}
+      />
     </Flex>
   );
 };
