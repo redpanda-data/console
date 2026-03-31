@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
-import { api, useApiStore } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
@@ -204,12 +204,11 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 }
 
 const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
-  useSyncExternalStore(useApiStore.subscribe, useApiStore.getState);
-
   const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
 
   // Derived: topicConfig
-  const config = api.topicConfig.get(topicName);
+  const config = useApiStoreHook((s) => s.topicConfig.get(topicName));
+  const topicAcls = useApiStoreHook((s) => s.topicAcls.get(topicName));
   const topicConfig: ConfigEntry[] | null | undefined =
     config === undefined ? undefined : config === null || config.error !== null ? null : config.configEntries;
 
@@ -280,7 +279,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       'topicacl',
       'seeTopic',
       'ACL',
-      (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
+      () => <AclList acl={topicAcls} />,
       [
         () => {
           if (

@@ -38,7 +38,7 @@ import React, { useMemo, useState } from 'react';
 
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
@@ -103,9 +103,6 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
   }
 
   render() {
-    // Touch observables so PageComponent's Reaction tracks them for re-renders.
-    void api.consumerGroups;
-    void api.consumerGroupAcls;
     return (
       <GroupDetailsMain
         groupId={this.props.groupId}
@@ -139,12 +136,15 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const [quickSearch, setQuickSearch] = useState(search?.q ?? '');
   const [showWithLagOnly, setShowWithLagOnly] = useState(search?.withLag ?? false);
 
-  if (api.consumerGroups.size === 0) {
+  const groupId2 = decodeURIComponent(groupId);
+  const consumerGroupsSize = useApiStoreHook((s) => s.consumerGroups.size);
+  const group = useApiStoreHook((s) => s.consumerGroups.get(groupId2));
+  const consumerGroupAcl = useApiStoreHook((s) => s.consumerGroupAcls.get(group?.groupId ?? ''));
+
+  if (consumerGroupsSize === 0) {
     return DefaultSkeleton;
   }
 
-  const groupId2 = decodeURIComponent(groupId);
-  const group = api.consumerGroups.get(groupId2);
   if (!group) {
     return DefaultSkeleton;
   }
@@ -263,7 +263,7 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
             {
               key: 'acl',
               name: 'ACL',
-              component: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />,
+              component: <AclList acl={consumerGroupAcl} />,
             },
           ]}
           variant="fitted"

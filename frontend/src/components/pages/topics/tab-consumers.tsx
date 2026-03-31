@@ -19,7 +19,7 @@ import { DataTable } from '@redpanda-data/ui';
 
 import usePaginationParams from '../../../hooks/use-pagination-params';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { useApiStoreHook } from '../../../state/backend-api';
 import { uiState } from '../../../state/ui-state';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
@@ -28,7 +28,7 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 type TopicConsumersProps = { topic: Topic };
 
 export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
-  const rawConsumers = api.topicConsumers.get(topic.topicName);
+  const rawConsumers = useApiStoreHook((s) => s.topicConsumers.get(topic.topicName));
   const isLoading = rawConsumers === null;
   const consumers = rawConsumers ?? [];
 

@@ -11,7 +11,6 @@
 
 import type { FC } from 'react';
 
-import { api } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Alert, AlertIcon, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
@@ -19,6 +18,7 @@ import { WarningIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 
 import usePaginationParams from '../../../hooks/use-pagination-params';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import { uiState } from '../../../state/ui-state';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
@@ -34,7 +34,7 @@ const persistPartitionPageSize = (pageSize: number) => {
 };
 
 export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
-  const partitions = api.topicPartitions.get(topic.topicName);
+  const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
   const paginationParams = usePaginationParams(partitions?.length ?? 0, uiState.topicSettings.partitionPageSize);
 
   if (partitions === undefined) {
