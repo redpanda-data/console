@@ -9,32 +9,26 @@
  * by the Apache License, Version 2.0
  */
 
-// Redpanda UI (legacy)
-import {
-  Alert,
-  AlertIcon,
-  Badge,
-  Box,
-  Checkbox,
-  createStandaloneToast,
-  DataTable,
-  Divider,
-  Flex,
-  SearchField,
-  Spinner,
-  Text,
-  Tooltip,
-} from '@redpanda-data/ui';
-// Routing and state management
+// Redpanda UI (legacy — DataTable only, pending separate migration)
+import { DataTable } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-// Icons
 import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
+import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from 'components/redpanda-ui/components/drawer';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { SearchIcon } from 'lucide-react';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { SchemaContextSelector } from './schema-context-selector';
@@ -47,9 +41,7 @@ import {
   parseSubjectContext,
 } from './schema-context-utils';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
-// Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
-// API hooks
 import {
   useDeleteSchemaSubjectMutation,
   useListSchemasQuery,
@@ -59,21 +51,16 @@ import {
   useSchemaRegistryContextsQuery,
   useSchemaUsagesByIdQuery,
 } from '../../../react-query/api/schema-registry';
-// Global state
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
-// Utility components and functions
 import { encodeURIComponentPercents } from '../../../utils/utils';
-// Layout components
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
@@ -83,13 +70,18 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   return (
     <Section>
       {requestErrors.map((errorMessage) => (
-        <Alert key={errorMessage} marginTop="1em" status="error">
-          <AlertIcon />
-          <div>{errorMessage}</div>
+        <Alert className="mt-4" key={errorMessage} variant="destructive">
+          <AlertTitle>{errorMessage}</AlertTitle>
         </Alert>
       ))}
     </Section>
   );
+};
+
+const SCHEMA_TYPE_BADGE_VARIANT: Record<string, string> = {
+  AVRO: 'info-inverted',
+  PROTOBUF: 'accent-inverted',
+  JSON: 'warning-inverted',
 };
 
 const SchemaList: FC = () => {
@@ -216,38 +208,37 @@ const SchemaList: FC = () => {
 
   return (
     <PageContent key="b">
-      <ToastContainer />
       {/* Statistics Bar */}
-      <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
+      <div className="flex items-center gap-4" data-testid="schema-list-stats">
         <SmallStat title={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}>
-          <Flex alignItems="center" gap="1.5">
+          <div className="flex items-center gap-1.5">
             {displayMode ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip
-              hasArrow
-              isDisabled={api.userData?.canManageSchemaRegistry !== false}
-              label="You don't have the 'canManageSchemaRegistry' permission"
-              placement="top"
-            >
-              <Button
-                aria-label="Edit mode"
-                data-testid="schema-list-edit-mode-btn"
-                disabled={api.userData?.canManageSchemaRegistry === false}
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(
-                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                      )
-                    : appGlobal.historyPush('/schema-registry/edit-mode')
-                }
-                size="icon-xs"
-                variant="secondary-ghost"
-              >
-                <EditIcon />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label="Edit mode"
+                  data-testid="schema-list-edit-mode-btn"
+                  disabled={api.userData?.canManageSchemaRegistry === false}
+                  onClick={() =>
+                    isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                      ? appGlobal.historyPush(
+                          `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                        )
+                      : appGlobal.historyPush('/schema-registry/edit-mode')
+                  }
+                  size="icon-xs"
+                  variant="secondary-ghost"
+                >
+                  <EditIcon />
+                </Button>
+              </TooltipTrigger>
+              {api.userData?.canManageSchemaRegistry === false && (
+                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+              )}
             </Tooltip>
-          </Flex>
+          </div>
         </SmallStat>
-        <Divider height="2ch" orientation="vertical" />
+        <Separator className="h-[2ch]" orientation="vertical" />
         <SmallStat
           title={
             isNamedContext(selectedContext) && schemaRegistryContextsSupported
@@ -255,34 +246,34 @@ const SchemaList: FC = () => {
               : 'Compatibility'
           }
         >
-          <Flex alignItems="center" gap="1.5">
+          <div className="flex items-center gap-1.5">
             {displayCompat ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip
-              hasArrow
-              isDisabled={api.userData?.canManageSchemaRegistry !== false}
-              label="You don't have the 'canManageSchemaRegistry' permission"
-              placement="top"
-            >
-              <Button
-                aria-label="Edit compatibility"
-                data-testid="schema-list-edit-compatibility-btn"
-                disabled={api.userData?.canManageSchemaRegistry === false}
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(
-                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                      )
-                    : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                }
-                size="icon-xs"
-                variant="secondary-ghost"
-              >
-                <EditIcon />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label="Edit compatibility"
+                  data-testid="schema-list-edit-compatibility-btn"
+                  disabled={api.userData?.canManageSchemaRegistry === false}
+                  onClick={() =>
+                    isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                      ? appGlobal.historyPush(
+                          `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                        )
+                      : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                  }
+                  size="icon-xs"
+                  variant="secondary-ghost"
+                >
+                  <EditIcon />
+                </Button>
+              </TooltipTrigger>
+              {api.userData?.canManageSchemaRegistry === false && (
+                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+              )}
             </Tooltip>
-          </Flex>
+          </div>
         </SmallStat>
-      </Flex>
+      </div>
 
       {schemaRegistryContextsSupported && (
         <SchemaContextSelector
@@ -362,9 +353,8 @@ const SchemaList: FC = () => {
         if (isError) {
           return (
             <Section>
-              <Alert status="error">
-                <AlertIcon />
-                Error loading schemas
+              <Alert variant="destructive">
+                <AlertTitle>Error loading schemas</AlertTitle>
               </Alert>
             </Section>
           );
@@ -372,38 +362,43 @@ const SchemaList: FC = () => {
 
         return (
           <Section>
-            <Flex justifyContent={'space-between'} pb={3}>
-              <Flex alignItems="center" gap="2">
-                <SearchField
-                  data-testid="schema-list-search-field"
-                  placeholderText="Filter by subject name or schema ID..."
-                  searchText={quickSearch ?? ''}
-                  setSearchText={setQuickSearch}
-                  width="350px"
-                />
-                <Tooltip hasArrow label="Help with schema search" placement="top">
-                  <Box
-                    alignItems="center"
-                    cursor="pointer"
-                    data-testid="schema-search-help"
-                    display="inline-flex"
-                    onClick={() => setIsHelpSidebarOpen(true)}
-                  >
-                    <InfoIcon />
-                  </Box>
+            <div className="flex items-center justify-between pb-3">
+              <div className="flex items-center gap-2">
+                <div className="relative w-[350px]">
+                  <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    data-testid="schema-list-search-field"
+                    onChange={(e) => setQuickSearch(e.target.value)}
+                    placeholder="Filter by subject name or schema ID..."
+                    value={quickSearch ?? ''}
+                  />
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className="inline-flex cursor-pointer items-center"
+                      data-testid="schema-search-help"
+                      onClick={() => setIsHelpSidebarOpen(true)}
+                      type="button"
+                    >
+                      <InfoIcon />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Help with schema search</TooltipContent>
                 </Tooltip>
-                <Spinner display={isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
-              </Flex>
-              <Checkbox
-                data-testid="schema-list-show-soft-deleted-checkbox"
-                isChecked={showSoftDeleted}
-                onChange={(e) => {
-                  setShowSoftDeleted(e.target.checked);
-                }}
-              >
-                Show soft-deleted
-              </Checkbox>
-            </Flex>
+                {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={showSoftDeleted}
+                  data-testid="schema-list-show-soft-deleted-checkbox"
+                  id="show-soft-deleted"
+                  onCheckedChange={(checked) => setShowSoftDeleted(checked === true)}
+                />
+                <Label htmlFor="show-soft-deleted">Show soft-deleted</Label>
+              </div>
+            </div>
 
             <DataTable<SchemaRegistrySubject>
               columns={[
@@ -418,8 +413,8 @@ const SchemaList: FC = () => {
                   }) => {
                     const parsed = parseSubjectContext(name);
                     return (
-                      <Box whiteSpace="break-spaces" wordBreak="break-word">
-                        <Flex alignItems="center" gap={2}>
+                      <div className="whitespace-break-spaces break-words">
+                        <div className="flex items-center gap-2">
                           <Link
                             data-testid="schema-registry-table-name"
                             params={{ subjectName: encodeURIComponentPercents(name) }}
@@ -432,17 +427,19 @@ const SchemaList: FC = () => {
                             {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
                           </Link>
                           {isSoftDeleted && (
-                            <Tooltip
-                              hasArrow
-                              label="This subject has been soft-deleted. It can be restored or permanently deleted."
-                            >
-                              <Box data-testid="schema-list-soft-deleted-icon">
-                                <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
-                              </Box>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span data-testid="schema-list-soft-deleted-icon">
+                                  <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                This subject has been soft-deleted. It can be restored or permanently deleted.
+                              </TooltipContent>
                             </Tooltip>
                           )}
-                        </Flex>
-                      </Box>
+                        </div>
+                      </div>
                     );
                   },
                 },
@@ -455,7 +452,7 @@ const SchemaList: FC = () => {
                         cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
                           const { context } = parseSubjectContext(row.original.name);
                           return (
-                            <Badge bg="gray.50" color="gray.700" size="sm" variant="subtle">
+                            <Badge size="sm" variant="neutral-inverted">
                               {context === 'default' ? 'Default' : `.${context}`}
                             </Badge>
                           );
@@ -517,23 +514,8 @@ const SchemaList: FC = () => {
           deleteSchemaMutation.mutate(
             { subjectName: deleteTarget.name, permanent: false },
             {
-              onSuccess: () => {
-                toast({
-                  status: 'success',
-                  duration: 4000,
-                  isClosable: false,
-                  title: 'Subject soft-deleted',
-                });
-              },
-              onError: (err) => {
-                toast({
-                  status: 'error',
-                  duration: null,
-                  isClosable: true,
-                  title: 'Failed to soft-delete subject',
-                  description: String(err),
-                });
-              },
+              onSuccess: () => toast.success('Subject soft-deleted'),
+              onError: (err) => toast.error('Failed to soft-delete subject', { description: String(err) }),
             }
           );
         }}
@@ -549,23 +531,8 @@ const SchemaList: FC = () => {
           deleteSchemaMutation.mutate(
             { subjectName: deleteTarget.name, permanent: true },
             {
-              onSuccess: () => {
-                toast({
-                  status: 'success',
-                  duration: 4000,
-                  isClosable: false,
-                  title: 'Subject permanently deleted',
-                });
-              },
-              onError: (err) => {
-                toast({
-                  status: 'error',
-                  duration: null,
-                  isClosable: true,
-                  title: 'Failed to permanently delete subject',
-                  description: String(err),
-                });
-              },
+              onSuccess: () => toast.success('Subject permanently deleted'),
+              onError: (err) => toast.error('Failed to permanently delete subject', { description: String(err) }),
             }
           );
         }}
@@ -586,23 +553,10 @@ const SchemaTypeColumn: FC<{ name: string }> = ({ name }) => {
     return <Skeleton variant="text" />;
   }
 
-  const getSchemaTypeBadgeProps = (type: string) => {
-    switch (type) {
-      case 'AVRO':
-        return { bg: 'blue.50', color: 'blue.700', variant: 'subtle' as const };
-      case 'PROTOBUF':
-        return { bg: 'teal.50', color: 'teal.700', variant: 'subtle' as const };
-      case 'JSON':
-        return { bg: 'orange.50', color: 'orange.700', variant: 'subtle' as const };
-      default:
-        return { bg: 'gray.50', color: 'gray.700', variant: 'subtle' as const };
-    }
-  };
-
-  const badgeProps = getSchemaTypeBadgeProps(details.type);
+  const variant = SCHEMA_TYPE_BADGE_VARIANT[details.type] ?? 'neutral-inverted';
 
   return (
-    <Badge size="sm" {...badgeProps}>
+    <Badge size="sm" variant={variant as 'info-inverted'}>
       {details.type}
     </Badge>
   );
@@ -636,7 +590,7 @@ const LatestVersionColumn: FC<{ name: string }> = ({ name }) => {
   }
 
   if (details.latestActiveVersion < 0) {
-    return <Text color="gray.500">None</Text>;
+    return <span className="text-muted-foreground">None</span>;
   }
 
   return <>{details.latestActiveVersion}</>;
