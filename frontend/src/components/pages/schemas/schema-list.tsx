@@ -9,22 +9,32 @@
  * by the Apache License, Version 2.0
  */
 
-// Redpanda UI (legacy — DataTable only, pending separate migration)
-import { DataTable } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
 import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from 'components/redpanda-ui/components/drawer';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { SearchIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon, SearchIcon } from 'lucide-react';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -107,6 +117,8 @@ const SchemaList: FC = () => {
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
@@ -201,6 +213,127 @@ const SchemaList: FC = () => {
 
     return subjects;
   }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages, schemaRegistryContextsSupported, selectedContext]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isAllContext and selectedContext drive conditional columns
+  const columns = useMemo<ColumnDef<SchemaRegistrySubject>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+        cell: ({
+          row: {
+            original: { name, isSoftDeleted },
+          },
+        }) => {
+          const parsed = parseSubjectContext(name);
+          return (
+            <div className="whitespace-break-spaces break-words">
+              <div className="flex items-center gap-2">
+                <Link
+                  data-testid="schema-registry-table-name"
+                  params={{ subjectName: encodeURIComponentPercents(name) }}
+                  search={{ version: 'latest' }}
+                  to="/schema-registry/subjects/$subjectName"
+                >
+                  {isAllContext && parsed.context !== 'default' && (
+                    <span className="text-gray-400">:.{parsed.context}:</span>
+                  )}
+                  {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
+                </Link>
+                {isSoftDeleted && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span data-testid="schema-list-soft-deleted-icon">
+                        <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      This subject has been soft-deleted. It can be restored or permanently deleted.
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      ...(isAllContext
+        ? [
+            {
+              header: 'Context',
+              id: 'context',
+              enableSorting: false,
+              cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
+                const { context } = parseSubjectContext(row.original.name);
+                return (
+                  <Badge size="sm" variant="neutral-inverted">
+                    {context === 'default' ? 'Default' : `.${context}`}
+                  </Badge>
+                );
+              },
+            } satisfies ColumnDef<SchemaRegistrySubject>,
+          ]
+        : []),
+      {
+        header: 'Type',
+        id: 'type',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />,
+      },
+      {
+        header: 'Compatibility',
+        id: 'compatibility',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
+      },
+      {
+        header: 'Mode',
+        id: 'mode',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <SchemaModeColumn name={r.name} />,
+      },
+      {
+        header: 'Latest Version',
+        id: 'latestVersion',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
+      },
+      {
+        header: '',
+        id: 'actions',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => (
+          <Button
+            aria-label="Delete schema"
+            data-testid={`schema-list-delete-btn-${r.name}`}
+            disabled={api.userData?.canDeleteSchemas === false}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
+            }}
+            size="icon-sm"
+            variant="secondary-ghost"
+          >
+            <TrashIcon />
+          </Button>
+        ),
+      },
+    ],
+    [isAllContext, selectedContext]
+  );
+
+  const table = useReactTable({
+    data: filteredSubjects,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: true,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
 
   if (schemaMode === null) {
     return <SchemaNotConfiguredPage />;
@@ -400,110 +533,99 @@ const SchemaList: FC = () => {
               </div>
             </div>
 
-            <DataTable<SchemaRegistrySubject>
-              columns={[
-                {
-                  header: 'Name',
-                  accessorKey: 'name',
-                  size: Number.POSITIVE_INFINITY,
-                  cell: ({
-                    row: {
-                      original: { name, isSoftDeleted },
-                    },
-                  }) => {
-                    const parsed = parseSubjectContext(name);
-                    return (
-                      <div className="whitespace-break-spaces break-words">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            data-testid="schema-registry-table-name"
-                            params={{ subjectName: encodeURIComponentPercents(name) }}
-                            search={{ version: 'latest' }}
-                            to="/schema-registry/subjects/$subjectName"
-                          >
-                            {isAllContext && parsed.context !== 'default' && (
-                              <span className="text-gray-400">:.{parsed.context}:</span>
-                            )}
-                            {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
-                          </Link>
-                          {isSoftDeleted && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span data-testid="schema-list-soft-deleted-icon">
-                                  <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                This subject has been soft-deleted. It can be restored or permanently deleted.
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  },
-                },
-                ...(isAllContext
-                  ? [
-                      {
-                        header: 'Context',
-                        id: 'context',
-                        size: 120,
-                        cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
-                          const { context } = parseSubjectContext(row.original.name);
-                          return (
-                            <Badge size="sm" variant="neutral-inverted">
-                              {context === 'default' ? 'Default' : `.${context}`}
-                            </Badge>
-                          );
-                        },
-                      },
-                    ]
-                  : []),
-                { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
-                {
-                  header: 'Compatibility',
-                  cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
-                  size: 100,
-                },
-                {
-                  header: 'Mode',
-                  cell: ({ row: { original: r } }) => <SchemaModeColumn name={r.name} />,
-                  size: 100,
-                },
-                {
-                  header: 'Latest Version',
-                  cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
-                  size: 100,
-                },
-                {
-                  header: '',
-                  id: 'actions',
-                  cell: ({ row: { original: r } }) => (
-                    <Button
-                      aria-label="Delete schema"
-                      data-testid={`schema-list-delete-btn-${r.name}`}
-                      disabled={api.userData?.canDeleteSchemas === false}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
-                      }}
-                      size="icon-sm"
-                      variant="secondary-ghost"
-                    >
-                      <TrashIcon />
-                    </Button>
-                  ),
-                  size: 1,
-                },
-              ]}
-              data={filteredSubjects}
-              pagination
-              rowClassName={(row) => (row.original.isSoftDeleted ? 'text-gray-400' : '')}
-              sorting
-            />
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow className={row.original.isSoftDeleted ? 'text-gray-400' : ''} key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
+                      No schemas found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <div className="mt-4 flex items-center justify-end px-2">
+              <div className="flex items-center space-x-6 lg:space-x-8">
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium text-sm">Rows per page</span>
+                  <select
+                    className="h-8 w-[70px] rounded-md border bg-transparent px-2 text-sm"
+                    onChange={(e) => table.setPageSize(Number(e.target.value))}
+                    value={table.getState().pagination.pageSize}
+                  >
+                    {[10, 20, 25, 30, 40, 50].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    className="hidden size-8 lg:flex"
+                    disabled={!table.getCanPreviousPage()}
+                    onClick={() => table.setPageIndex(0)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to first page</span>
+                    <ChevronsLeftIcon />
+                  </Button>
+                  <Button
+                    className="size-8"
+                    disabled={!table.getCanPreviousPage()}
+                    onClick={() => table.previousPage()}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to previous page</span>
+                    <ChevronLeftIcon />
+                  </Button>
+                  <Button
+                    className="size-8"
+                    disabled={!table.getCanNextPage()}
+                    onClick={() => table.nextPage()}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to next page</span>
+                    <ChevronRightIcon />
+                  </Button>
+                  <Button
+                    className="hidden size-8 lg:flex"
+                    disabled={!table.getCanNextPage()}
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to last page</span>
+                    <ChevronsRightIcon />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </Section>
         );
       })()}
