@@ -47,6 +47,7 @@ import {
 import React, { Component, type FC, useRef, useState } from 'react';
 
 import { BandwidthSlider } from './bandwidth-slider';
+import queryClient from '../../../../query-client';
 import { api } from '../../../../state/backend-api';
 import type { ConfigEntry } from '../../../../state/rest-interfaces';
 import { QuickTable } from '../../../../utils/tsx-utils';
@@ -376,19 +377,17 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       // became visible or invisible
       // force update of topic config, so isThrottle has up to date information
       setTimeout(async () => {
-        api.topicConfig.delete(state.topicName);
-        await api.refreshTopicConfig(state.topicName, true);
+        await queryClient.invalidateQueries({ queryKey: ['topicConfig', state.topicName] });
         this.setState({ shouldThrottle: this.isThrottled() });
       });
     }
     this.wasVisible = visible;
 
-    const topicConfig = api.topicConfig.get(state.topicName);
-    if (!topicConfig) {
-      setTimeout(() => {
-        api.refreshTopicConfig(state.topicName);
-      });
-    }
+    const topicConfig =
+      queryClient.getQueryData<import('../../../../state/rest-interfaces').TopicDescription | null>([
+        'topicConfig',
+        state.topicName,
+      ]) ?? null;
 
     const replicas = state.partitions.flatMap((p) => p.replicas).distinct();
     const addingReplicas = state.partitions.flatMap((p) => p.addingReplicas).distinct();
@@ -463,7 +462,11 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     if (!this.lastState) {
       return false;
     }
-    const config = api.topicConfig.get(this.lastState.topicName);
+    const config =
+      queryClient.getQueryData<import('../../../../state/rest-interfaces').TopicDescription | null>([
+        'topicConfig',
+        this.lastState.topicName,
+      ]) ?? null;
     if (!config) {
       return false;
     }

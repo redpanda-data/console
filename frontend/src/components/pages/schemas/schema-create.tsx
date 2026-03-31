@@ -64,6 +64,7 @@ import {
   useSchemaRegistryContextsQuery,
   useSchemaTypesQuery,
 } from '../../../react-query/api/schema-registry';
+import { useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import {
@@ -190,7 +191,7 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
 
   refreshData(force?: boolean) {
     api.refreshSchemaSubjects(force); // for references editor -> subject selector
-    api.refreshTopics(force); // for the topics selector
+    // topics are fetched via useTopicsQuery hook
   }
 
   render() {
@@ -539,6 +540,7 @@ const SchemaEditor = (p: {
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { data: apiContexts } = useSchemaRegistryContextsQuery(srContextsEnabled);
   const { data: subjects } = useListSchemasQuery();
+  const { data: topicsData } = useTopicsQuery();
 
   useEffect(() => {
     api.refreshSchemaTypes(true);
@@ -668,7 +670,7 @@ const SchemaEditor = (p: {
                 <SelectValue placeholder="Select a topic..." />
               </SelectTrigger>
               <SelectContent>
-                {(api.topics?.filter((x) => !x.topicName.startsWith('_')) ?? []).map((x) => (
+                {(topicsData?.topics.filter((x) => !x.topicName.startsWith('_')) ?? []).map((x) => (
                   <SelectItem key={x.topicName} value={x.topicName}>
                     {x.topicName}
                   </SelectItem>

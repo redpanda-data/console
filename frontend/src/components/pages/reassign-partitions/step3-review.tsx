@@ -15,8 +15,14 @@ import { Component } from 'react';
 import { BandwidthSlider } from './components/bandwidth-slider';
 import type ReassignPartitions from './reassign-partitions';
 import type { PartitionSelection } from './reassign-partitions';
-import { api } from '../../../state/backend-api';
-import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/rest-interfaces';
+import queryClient from '../../../query-client';
+import type {
+  GetTopicsResponse,
+  Partition,
+  PartitionReassignmentRequest,
+  Topic,
+  TopicAssignment,
+} from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
@@ -46,10 +52,12 @@ export class StepReview extends Component<{
   reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
   render() {
-    if (!api.topics) {
+    const topics = queryClient.getQueryData<GetTopicsResponse>(['topics']);
+    const topicPartitionsAll = queryClient.getQueryData<Map<string, Partition[] | null>>(['topicPartitionsAll']);
+    if (!topics) {
       return DefaultSkeleton;
     }
-    if (api.topicPartitions.size === 0) {
+    if ((topicPartitionsAll?.size ?? 0) === 0) {
       return <Empty />;
     }
 

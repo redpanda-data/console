@@ -57,7 +57,6 @@ import {
   type DeleteConsumerGroupOffsetsResponse,
   type DeleteConsumerGroupOffsetsResponseTopic,
   type DeleteConsumerGroupOffsetsTopic,
-  type DeleteRecordsResponseData,
   type EditConsumerGroupOffsetsRequest,
   type EditConsumerGroupOffsetsResponse,
   type EditConsumerGroupOffsetsResponseTopic,
@@ -66,28 +65,20 @@ import {
   type EndpointCompatibilityResponse,
   type GetAclOverviewResponse,
   type GetAclsRequest,
-  type GetAllPartitionsResponse,
   type GetConsumerGroupResponse,
   type GetConsumerGroupsResponse,
-  type GetPartitionsResponse,
-  type GetTopicConsumersResponse,
-  type GetTopicOffsetsByTimestampResponse,
-  type GetTopicsResponse,
   type GetUsersResponse,
   type GroupDescription,
   isApiError,
   type KafkaConnectors,
   type PartialTopicConfigsResponse,
-  type Partition,
   type PartitionReassignmentRequest,
   type PartitionReassignments,
   type PartitionReassignmentsResponse,
   type PatchConfigsRequest,
   type PatchConfigsResponse,
-  type PatchTopicConfigsRequest,
   type ProduceRecordsResponse,
   type PublishRecordsRequest,
-  type QuotaResponse,
   type ResourceConfig,
   type SchemaReferencedByEntry,
   type SchemaRegistryCompatibilityMode,
@@ -104,15 +95,7 @@ import {
   type SchemaRegistrySubjectDetails,
   type SchemaRegistryValidateSchemaResponse,
   type SchemaVersion,
-  type Topic,
-  type TopicConfigResponse,
-  type TopicConsumer,
-  type TopicDescription,
-  type TopicDocumentation,
-  type TopicDocumentationResponse,
   type TopicMessage,
-  type TopicOffset,
-  type TopicPermissions,
   type UserData,
   WrappedApiError,
 } from './rest-interfaces';
@@ -170,13 +153,14 @@ import type {
   KnowledgeBaseCreate,
   KnowledgeBaseUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import queryClient from '../query-client';
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
 import { ObjToKv } from '../utils/tsx-utils';
-import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
+import { getOidcSubject, TimeSince } from '../utils/utils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -441,23 +425,11 @@ const _apiCreator = (set: any, get: any) => ({
   schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
   schemaUsagesById: new Map<number, SchemaVersion[]>(),
 
-  topics: null as Topic[] | null,
-  topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
-  topicDocumentation: new Map<string, TopicDocumentation>(),
-  topicPermissions: new Map<string, TopicPermissions | null>(),
-  topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
-  topicPartitionErrors: new Map<string, Array<{ id: number; partitionError: string }>>(),
-  topicWatermarksErrors: new Map<string, Array<{ id: number; waterMarksError: string }>>(),
-  topicConsumers: new Map<string, TopicConsumer[]>(),
-  topicAcls: new Map<string, GetAclOverviewResponse | null>(),
-
   serviceAccounts: undefined as GetUsersResponse | undefined | null,
   serviceAccountsLoading: false,
   serviceAccountsError: null as WrappedApiError | null,
 
   ACLs: undefined as GetAclOverviewResponse | undefined | null,
-
-  Quotas: undefined as QuotaResponse | undefined | null,
 
   consumerGroups: new Map<string, GroupDescription>(),
   consumerGroupAcls: new Map<string, GetAclOverviewResponse | null>(),
@@ -657,345 +629,6 @@ const _apiCreator = (set: any, get: any) => ({
 
   _msgSearchVersion: 0,
 
-  refreshTopics(force?: boolean): Promise<void> {
-    return cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
-      if (v?.topics !== null && v?.topics !== undefined) {
-        for (const t of v.topics) {
-          if (!t.allowedActions) {
-            // no op - allowedActions may not be set
-          }
-
-          // DEBUG: randomly remove some allowedActions
-          /*
-                        const numToRemove = Math.round(Math.random() * t.allowedActions.length);
-                        for (let i = 0; i < numToRemove; i++) {
-                            const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
-                            t.allowedActions.splice(randomIndex, 1);
-                        }
-                        */
-        }
-      }
-      set({ topics: v?.topics });
-    }, addError);
-  },
-
-  refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
-    const promise = cachedApiRequest<TopicConfigResponse | null>(
-      `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`,
-      force
-    ).then((v) => {
-      if (!v) {
-        set((s: any) => {
-          const m = new Map(s.topicConfig);
-          m.delete(topicName);
-          return { topicConfig: m };
-        });
-        return;
-      }
-
-      if (v.topicDescription.error) {
-        set((s: any) => ({ topicConfig: new Map(s.topicConfig).set(topicName, v.topicDescription) }));
-        return;
-      }
-
-      // add 'type' to each synonym
-      // in the raw data, only the root entries have 'type', but the nested synonyms do not
-      // we need 'type' on synonyms as well for filtering
-      const topicDescription = v.topicDescription;
-      prepareSynonyms(topicDescription.configEntries);
-      set((s: any) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
-    }, addError); // 403 -> null
-    return promise as Promise<void>;
-  },
-
-  async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
-    const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-offsets?${query}`, {
-      method: 'GET',
-      headers: [['Content-Type', 'application/json']],
-    });
-
-    const r = await parseOrUnwrap<GetTopicOffsetsByTimestampResponse>(response, null);
-    return r.topicOffsets;
-  },
-
-  refreshTopicDocumentation(topicName: string, force?: boolean) {
-    cachedApiRequest<TopicDocumentationResponse>(
-      `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/documentation`,
-      force
-    ).then((v) => {
-      const text = v.documentation.markdown === null ? null : decodeBase64(v.documentation.markdown);
-      v.documentation.text = text;
-      set((s: any) => ({ topicDocumentation: new Map(s.topicDocumentation).set(topicName, v.documentation) }));
-    }, addError);
-  },
-
-  async deleteTopic(topicName: string) {
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}`, {
-      method: 'DELETE',
-    });
-    return parseOrUnwrap<void>(response, null);
-  },
-
-  deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
-    const partitions =
-      partitionId !== undefined
-        ? [{ partitionId, offset }]
-        : get()
-            .topicPartitions?.get(topicName)
-            ?.map((partition: Partition) => ({ partitionId: partition.id, offset }));
-
-    if (!partitions || partitions.length === 0) {
-      addError(new Error(`Topic ${topicName} doesn't have partitions.`));
-      return;
-    }
-
-    return get().deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
-  },
-
-  deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
-    const partitions = get()
-      .topicPartitions?.get(topicName)
-      ?.map(({ waterMarkHigh, id }: Partition) => ({
-        partitionId: id,
-        offset: waterMarkHigh,
-      }));
-
-    if (!partitions || partitions.length === 0) {
-      addError(new Error(`Topic ${topicName} doesn't have partitions.`));
-      return;
-    }
-
-    return get().deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
-  },
-
-  deleteTopicRecordsFromMultiplePartitionOffsetPairs(
-    topicName: string,
-    pairs: Array<{ partitionId: number; offset: number }>
-  ) {
-    return rest<DeleteRecordsResponseData>(
-      `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/records`,
-      {
-        method: 'DELETE',
-        headers: [['Content-Type', 'application/json']],
-        body: JSON.stringify({ partitions: pairs }),
-      }
-    ).catch(addError);
-  },
-
-  refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
-    const processedTopics = Array.isArray(topics) ? topics.sort().map((t) => encodeURIComponent(t)) : topics;
-
-    const url =
-      processedTopics === 'all'
-        ? `${appConfig.restBasePath}/operations/topic-details`
-        : `${appConfig.restBasePath}/operations/topic-details?topicNames=${processedTopics.joinStr(',')}`;
-
-    return cachedApiRequest<GetAllPartitionsResponse | null>(url, force).then((response) => {
-      if (!response?.topics) {
-        return;
-      }
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
-      {
-        const errors: {
-          topicName: string;
-          partitionErrors: { partitionId: number; error: string }[];
-          waterMarkErrors: { partitionId: number; error: string }[];
-        }[] = [];
-
-        const newTopicPartitions = new Map(get().topicPartitions);
-
-        for (const t of response.topics) {
-          if (t.error !== null && t.error !== undefined) {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
-            continue;
-          }
-
-          // If any partition has any errors, don't set the result for that topic
-          const partitionErrors: Array<{ partitionId: number; error: string }> = [];
-          const waterMarkErrors: Array<{ partitionId: number; error: string }> = [];
-          for (const p of t.partitions) {
-            // topicName
-            p.topicName = t.topicName;
-
-            let partitionHasError = false;
-            if (p.partitionError) {
-              partitionErrors.push({
-                partitionId: p.id,
-                error: p.partitionError,
-              });
-              partitionHasError = true;
-            }
-            if (p.waterMarksError) {
-              waterMarkErrors.push({
-                partitionId: p.id,
-                error: p.waterMarksError,
-              });
-              partitionHasError = true;
-            }
-            if (partitionHasError) {
-              p.hasErrors = true;
-              continue;
-            }
-
-            // Add some local/cached properties to make working with the data easier
-            const validLogDirs = p.partitionLogDirs.filter((e) => !e.error && e.size >= 0);
-            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-          }
-
-          // Set partition
-          newTopicPartitions.set(t.topicName, t.partitions);
-
-          if (partitionErrors.length === 0 && waterMarkErrors.length === 0) {
-            // no op - no errors to track
-          } else {
-            errors.push({
-              topicName: t.topicName,
-              partitionErrors,
-              waterMarkErrors,
-            });
-          }
-        }
-
-        set({ topicPartitions: newTopicPartitions });
-      }
-    }, addError);
-  },
-
-  refreshPartitionsForTopic(topicName: string, force?: boolean) {
-    cachedApiRequest<GetPartitionsResponse | null>(
-      `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/partitions`,
-      force
-    )
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 46, refactor later
-      .then((response) => {
-        if (response?.partitions) {
-          const partitionErrors: Array<{ id: number; partitionError: string }> = [];
-          const waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
-
-          // Add some local/cached properties to make working with the data easier
-          for (const p of response.partitions) {
-            // topicName
-            p.topicName = topicName;
-
-            if (p.partitionError) {
-              partitionErrors.push({
-                id: p.id,
-                partitionError: p.partitionError,
-              });
-            }
-            if (p.waterMarksError) {
-              waterMarksErrors.push({
-                id: p.id,
-                waterMarksError: p.waterMarksError,
-              });
-            }
-            if (partitionErrors.length || waterMarksErrors.length) {
-              continue;
-            }
-
-            // replicaSize
-            const validLogDirs = p.partitionLogDirs.filter((e) => (e.error === null || e.error === '') && e.size >= 0);
-            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-          }
-
-          if (partitionErrors.length === 0 && waterMarksErrors.length === 0) {
-            // Set partitions
-            set((s: any) => {
-              const tpe = new Map(s.topicPartitionErrors);
-              tpe.delete(topicName);
-              const twe = new Map(s.topicWatermarksErrors);
-              twe.delete(topicName);
-              return {
-                topicPartitionErrors: tpe,
-                topicWatermarksErrors: twe,
-                topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions),
-              };
-            });
-          } else {
-            set((s: any) => ({
-              topicPartitionErrors: new Map(s.topicPartitionErrors).set(topicName, partitionErrors),
-              topicWatermarksErrors: new Map(s.topicWatermarksErrors).set(topicName, waterMarksErrors),
-            }));
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error(
-              `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`
-            );
-          }
-        } else {
-          // Set null to indicate that we're not allowed to see the partitions
-          set((s: any) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, null) }));
-          return;
-        }
-
-        let partitionErrors = 0;
-        let waterMarkErrors = 0;
-
-        // Add some local/cached properties to make working with the data easier
-        for (const p of response.partitions) {
-          // topicName
-          p.topicName = topicName;
-
-          if (p.partitionError) {
-            partitionErrors += 1;
-          }
-          if (p.waterMarksError) {
-            waterMarkErrors += 1;
-          }
-          if (partitionErrors || waterMarkErrors) {
-            p.hasErrors = true;
-            continue;
-          }
-
-          // replicaSize
-          const validLogDirs = p.partitionLogDirs.filter((e) => (e.error === null || e.error === '') && e.size >= 0);
-          const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-          p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-        }
-
-        // Set partitions
-        set((s: any) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions) }));
-
-        if (partitionErrors > 0 || waterMarkErrors > 0) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.warn(
-            `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`
-          );
-        }
-      }, addError);
-  },
-
-  refreshTopicAcls(topicName: string, force?: boolean) {
-    const query = aclRequestToQuery({
-      ...AclRequestDefault,
-      resourcePatternTypeFilter: 'Match',
-      resourceType: 'Topic',
-      resourceName: topicName,
-    });
-    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
-      .then((v) => {
-        if (v) {
-          normalizeAcls(v.aclResources);
-        }
-        set((s: any) => ({ topicAcls: new Map(s.topicAcls).set(topicName, v) }));
-      })
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      .catch(console.error);
-  },
-
-  refreshTopicConsumers(topicName: string, force?: boolean) {
-    cachedApiRequest<GetTopicConsumersResponse>(
-      `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/consumers`,
-      force
-    ).then(
-      (v) => set((s: any) => ({ topicConsumers: new Map(s.topicConsumers).set(topicName, v.topicConsumers) })),
-      addError
-    );
-  },
-
   async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
     const query = aclRequestToQuery(request);
     await cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force).then(
@@ -1009,12 +642,6 @@ const _apiCreator = (set: any, get: any) => ({
       },
       addError
     );
-  },
-
-  refreshQuotas(force?: boolean) {
-    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then((v) => {
-      set({ Quotas: v ?? null });
-    }, addError);
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
@@ -1736,21 +1363,6 @@ const _apiCreator = (set: any, get: any) => ({
         set({ connectConnectorsError: error });
       }
     );
-  },
-
-  // PATCH /topics/{topicName}/configuration   //
-  // PATCH /topics/configuration               // default config
-  async changeTopicConfig(topicName: string | null, configs: PatchTopicConfigsRequest['configs']): Promise<void> {
-    const url = topicName
-      ? `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`
-      : `${appConfig.restBasePath}/topics/configuration`;
-
-    const response = await appConfig.fetch(url, {
-      method: 'PATCH',
-      headers: [['Content-Type', 'application/json']],
-      body: toJson({ configs }),
-    });
-    await parseOrUnwrap<void>(response, null);
   },
 
   // AdditionalInfo = list of plugins
@@ -3152,7 +2764,8 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return s.clusterOverview?.redpanda !== null;
       case 'getTopicPartitionArray': {
         const result: string[] = [];
-        s.topicPartitions.forEach((partitions: any, topicName: string) => {
+        const topicPartitionsAll = queryClient.getQueryData<Map<string, any[] | null>>(['topicPartitionsAll']);
+        topicPartitionsAll?.forEach((partitions, topicName) => {
           if (partitions !== null) {
             for (const partition of partitions) {
               result.push(`${topicName}/${partition.id}`);

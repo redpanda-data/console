@@ -36,7 +36,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useDeleteTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 
 import { CreateTopicModal } from './CreateTopicModal/create-topic-modal';
 import colors from '../../../colors';
@@ -412,6 +412,7 @@ function ConfirmDeletionModal({
   const [error, setError] = useState<string | Error | null>(null);
   const toast = useToast();
   const cancelRef = useRef<HTMLButtonElement | null>(null);
+  const deleteTopic = useDeleteTopicMutation();
 
   const cleanup = () => {
     setDeletionPending(false);
@@ -475,8 +476,8 @@ function ConfirmDeletionModal({
               onClick={() => {
                 if (topicToDelete?.topicName) {
                   setDeletionPending(true);
-                  api
-                    .deleteTopic(topicToDelete?.topicName)
+                  deleteTopic
+                    .mutateAsync(topicToDelete?.topicName)
                     .then(finish)
                     .catch((err) => {
                       toast({

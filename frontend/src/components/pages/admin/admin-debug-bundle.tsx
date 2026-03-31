@@ -44,6 +44,7 @@ import {
   type SCRAMAuth,
   SCRAMAuth_Mechanism,
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import queryClient from '../../../query-client';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { BrokerWithConfigAndStorage } from '../../../state/rest-interfaces';
@@ -216,9 +217,7 @@ const NewDebugBundleForm: FC<{
 
   useEffect(() => {
     api.refreshBrokers(true);
-    api.refreshPartitions('all', true).catch(() => {
-      // Error handling managed by API layer
-    });
+    queryClient.invalidateQueries({ queryKey: ['topicPartitionsAll'] });
   }, []);
 
   const fieldViolationsMap = error?.details

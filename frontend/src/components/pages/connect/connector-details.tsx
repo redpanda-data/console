@@ -14,6 +14,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';
+import { useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../state/backend-api';
 import { ConnectClusterStore } from '../../../state/connect/state';
@@ -89,7 +90,8 @@ const KafkaConnectorMain = ({
 }) => {
   const [connectClusterStore] = useState(() => ConnectClusterStore.getInstance(clusterName));
 
-  const logsTopic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
+  const { data: topicsData } = useTopicsQuery();
+  const logsTopic = topicsData?.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
 
   useEffect(() => {
     const init = async () => {
@@ -480,7 +482,8 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
 
   const errorType = p.error.type === 'ERROR' ? 'error' : 'warning';
 
-  const hasConnectorLogs = api.topics?.any((x) => x.topicName === LOGS_TOPIC_NAME);
+  const { data: connectorTopicsData } = useTopicsQuery();
+  const hasConnectorLogs = connectorTopicsData?.topics?.any((x) => x.topicName === LOGS_TOPIC_NAME);
 
   return (
     <>
@@ -538,13 +541,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
-  async refreshData(force: boolean): Promise<void> {
+  async refreshData(_force: boolean): Promise<void> {
     ConnectClusterStore.connectClusters.clear();
     await api.refreshConnectClusters();
 
-    // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
-    // and show the logs tab
-    api.refreshTopics(force);
+    // React Query handles topics fetching via useTopicsQuery hooks in child components
   }
 
   render() {
@@ -554,9 +555,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     if (api.connectConnectors?.isConfigured === false) {
       return <NotConfigured />;
     }
-
-    // Touch observables so PageComponent's Reaction tracks them for re-renders.
-    void api.topics;
 
     return (
       <PageContent>
@@ -660,7 +658,8 @@ const LogsTab = (p: {
   const { connector } = p;
   const connectorName = connector.name;
   const topicName = LOGS_TOPIC_NAME;
-  const topic = api.topics?.first((x) => x.topicName === topicName);
+  const { data: logsTopicsData } = useTopicsQuery();
+  const topic = logsTopicsData?.topics?.first((x) => x.topicName === topicName);
 
   const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
     messages: [],

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { api } from '../../../state/backend-api';
 import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
@@ -17,6 +16,7 @@ import { InfoIcon } from 'components/icons';
 import type { ReactNode } from 'react';
 
 import type { CleanupPolicyType } from './types';
+import { useTopicConfigQuery, useTopicPartitionsQuery } from '../../../react-query/api/topic';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
 import { numberToThousandsString } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
@@ -27,21 +27,23 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
   // Messages
-  const partitions = api.topicPartitions.get(topic.topicName);
+  const { data: partitionsResult, isLoading: partitionsLoading } = useTopicPartitionsQuery(topic.topicName);
 
   let messageSum: ReactNode;
 
-  if (partitions === undefined) {
+  if (partitionsLoading) {
     messageSum = '...'; // no response yet
-  } else if (partitions === null) {
+  } else if (partitionsResult?.partitions === null) {
     messageSum = 'N/A'; // explicit null -> not allowed
   } else {
+    const partitions = partitionsResult?.partitions ?? [];
     const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
     messageSum = numberToThousandsString(totalMessages);
   }
 
   // Config Entries / Separator
-  const configEntries = api.topicConfig.get(topic.topicName)?.configEntries;
+  const { data: topicConfigData } = useTopicConfigQuery(topic.topicName);
+  const configEntries = topicConfigData?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
 

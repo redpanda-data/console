@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
+import type { FC } from 'react';
 
 import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
@@ -21,7 +21,7 @@ import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
 
-import { api } from '../../../state/backend-api';
+import { useTopicDocumentationQuery } from '../../../react-query/api/topic';
 import { animProps } from '../../../utils/animation-props';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 
@@ -30,13 +30,6 @@ const CODE_LANGUAGE_REGEX = /language-(\w+)/;
 
 // Regex for removing trailing newlines
 const TRAILING_NEWLINE_REGEX = /\n$/;
-
-// Test for link sanitizer
-/*
-<a href="javascript:alert('h4x0red!');">
-My nonsuspious link
-</a>
-*/
 
 const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
@@ -59,66 +52,68 @@ function sanitizeUrl(uri: string): string {
   return ''; // didn't match any allowed protocol, remove the link
 }
 
-export class TopicDocumentation extends Component<{ topic: Topic }> {
-  private readonly components = {
-    // biome-ignore lint/suspicious/noExplicitAny: react-markdown component props are complex and dynamic
-    code({ inline, className, children, ...props }: any) {
-      const match = CODE_LANGUAGE_REGEX.exec(className || '');
-      return !inline && match ? (
-        <SyntaxHighlighter
-          customStyle={{
-            backgroundColor: null,
-            border: null,
-            margin: null,
-            padding: null,
-          }}
-          language={match[1]}
-          PreTag="div"
-          style={vs}
-          {...props}
-        >
-          {String(children).replace(TRAILING_NEWLINE_REGEX, '')}
-        </SyntaxHighlighter>
-      ) : (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    },
-  };
+// biome-ignore lint/suspicious/noExplicitAny: react-markdown component props are complex and dynamic
+const CodeBlock = ({ inline, className, children, ...props }: any) => {
+  const match = CODE_LANGUAGE_REGEX.exec(className || '');
+  return !inline && match ? (
+    <SyntaxHighlighter
+      customStyle={{
+        backgroundColor: null,
+        border: null,
+        margin: null,
+        padding: null,
+      }}
+      language={match[1]}
+      PreTag="div"
+      style={vs}
+      {...props}
+    >
+      {String(children).replace(TRAILING_NEWLINE_REGEX, '')}
+    </SyntaxHighlighter>
+  ) : (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+};
 
-  render() {
-    const docu = api.topicDocumentation.get(this.props.topic.topicName);
-    if (docu === undefined) {
-      return DefaultSkeleton; // not yet loaded
-    }
-    if (!docu.isEnabled) {
-      return errorNotConfigured;
-    }
+const markdownComponents = { code: CodeBlock };
 
-    const markdown = docu?.text;
-    if (markdown === null || markdown === undefined) {
-      return errorNotFound;
-    }
+export const TopicDocumentation: FC<{ topic: Topic }> = ({ topic }) => {
+  const { data: docu, isLoading } = useTopicDocumentationQuery(topic.topicName);
 
-    if (markdown === '') {
-      return errorEmpty;
-    }
-
-    return (
-      <div className="topicDocumentation">
-        <ReactMarkdown
-          components={this.components}
-          remarkPlugins={[remarkGfm, remarkEmoji]}
-          skipHtml={false}
-          urlTransform={sanitizeUrl}
-        >
-          {markdown}
-        </ReactMarkdown>
-      </div>
-    );
+  if (isLoading) {
+    return DefaultSkeleton;
   }
-}
+  if (!docu) {
+    return DefaultSkeleton;
+  }
+  if (!docu.isEnabled) {
+    return errorNotConfigured;
+  }
+
+  const markdown = docu?.text;
+  if (markdown === null || markdown === undefined) {
+    return errorNotFound;
+  }
+
+  if (markdown === '') {
+    return errorEmpty;
+  }
+
+  return (
+    <div className="topicDocumentation">
+      <ReactMarkdown
+        components={markdownComponents}
+        remarkPlugins={[remarkGfm, remarkEmoji]}
+        skipHtml={false}
+        urlTransform={sanitizeUrl}
+      >
+        {markdown}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 const errorNotConfigured = renderDocuError(
   'Not Configured',
@@ -155,8 +150,6 @@ const errorEmpty = renderDocuError(
   </>
 );
 
-// todo: use common renderError function everywhere
-// todo: use <MotionAlways> for them
 function renderDocuError(title: string, body: JSX.Element) {
   return (
     <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>

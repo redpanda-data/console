@@ -24,9 +24,9 @@ import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
 } from '../../../protogen/redpanda/api/dataplane/v1/transform_pb';
+import { useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import {
-  api,
   createMessageSearch,
   type MessageSearch,
   type MessageSearchRequest,
@@ -189,7 +189,8 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
 
 const LogsTab = (p: { transform: TransformMetadata }) => {
   const topicName = '_redpanda.transform_logs';
-  const topic = api.topics?.first((x) => x.topicName === topicName);
+  const { data: topicsData } = useTopicsQuery();
+  const topic = topicsData?.topics?.first((x) => x.topicName === topicName);
 
   const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
     messages: [],

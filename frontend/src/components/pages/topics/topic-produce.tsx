@@ -32,6 +32,7 @@ import {
   PublishMessagePayloadOptionsSchema,
   PublishMessageRequestSchema,
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import { useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { uiState } from '../../../state/ui-state';
@@ -131,6 +132,7 @@ const persistCompressionType = (compressionType: CompressionType) => {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const toast = useToast();
+  const { data: topicsData } = useTopicsQuery();
 
   const {
     control,
@@ -202,7 +204,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const availablePartitions = (() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
 
-    const count = api.topics?.first((t) => t.topicName === topicName)?.partitionCount;
+    const count = topicsData?.topics?.first((t) => t.topicName === topicName)?.partitionCount;
     if (count === undefined) {
       // topic not found
       return partitions;

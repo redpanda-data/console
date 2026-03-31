@@ -38,13 +38,15 @@ import {
 import './TopicConfiguration.scss';
 
 import { isServerless } from '../../../config';
-import { api } from '../../../state/backend-api';
+import { useUpdateTopicConfigMutation } from '../../../react-query/api/topic';
+import type { TopicAction } from '../../../state/rest-interfaces';
 import { SingleSelect } from '../../misc/select';
 
 type ConfigurationEditorProps = {
   targetTopic: string; // topic name, or null if default configs
   entries: ConfigEntryExtended[];
   onForceRefresh: () => void;
+  allowedActions?: TopicAction[]; // undefined means all actions allowed
 };
 
 type Inputs = {
@@ -59,6 +61,7 @@ const ConfigEditorForm: FC<{
   targetTopic: string;
 }> = ({ editedEntry, onClose, targetTopic, onSuccess }) => {
   const toast = useToast();
+  const updateTopicConfig = useUpdateTopicConfigMutation();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const defaultValueType = (() => {
@@ -113,13 +116,16 @@ const ConfigEditorForm: FC<{
 
     const configValue = operation === 'SET' ? String(value) : undefined;
     try {
-      await api.changeTopicConfig(targetTopic, [
-        {
-          key: editedEntry.name,
-          op: operation,
-          value: configValue,
-        },
-      ]);
+      await updateTopicConfig.mutateAsync({
+        topicName: targetTopic,
+        configs: [
+          {
+            key: editedEntry.name,
+            op: operation,
+            value: configValue,
+          },
+        ],
+      });
       toast({
         status: 'success',
         description: (
@@ -230,8 +236,10 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
     setEditedEntry(configEntry);
   };
 
-  const topic = props.targetTopic;
-  const hasEditPermissions = topic ? (api.topicPermissions.get(topic)?.canEditTopicConfig ?? true) : true;
+  const hasEditPermissions =
+    props.allowedActions === undefined ||
+    props.allowedActions.includes('editConfig') ||
+    props.allowedActions.includes('all');
 
   let entries = props.entries;
   if (filter) {
