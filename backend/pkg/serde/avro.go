@@ -12,7 +12,6 @@ package serde
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -62,7 +61,7 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 		return &RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
 	}
 
-	jsonBytes, err := json.Marshal(obj)
+	jsonBytes, err := avroSch.EncodeJSON(obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
 	}
@@ -102,8 +101,8 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 
 		if startsWithJSON {
 			var native any
-			if err := json.Unmarshal(trimmed, &native); err != nil {
-				return nil, fmt.Errorf("deserializing avro json: %w", err)
+			if err := schema.DecodeJSON(trimmed, &native); err != nil {
+				return nil, fmt.Errorf("deserializing: %w", err)
 			}
 			obj = native
 		}
@@ -115,8 +114,8 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 
 		if startsWithJSON {
 			var native any
-			if err := json.Unmarshal([]byte(trimmed), &native); err != nil {
-				return nil, fmt.Errorf("deserializing avro json: %w", err)
+			if err := schema.DecodeJSON([]byte(trimmed), &native); err != nil {
+				return nil, fmt.Errorf("deserializing: %w", err)
 			}
 			obj = native
 		}

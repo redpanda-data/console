@@ -38,7 +38,7 @@ import {
 import './TopicConfiguration.scss';
 
 import { isServerless } from '../../../config';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import { SingleSelect } from '../../misc/select';
 
 type ConfigurationEditorProps = {
@@ -225,13 +225,14 @@ const ConfigEditorForm: FC<{
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const [filter, setFilter] = useState<string>('');
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
+  const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
 
   const editConfig = (configEntry: ConfigEntryExtended) => {
     setEditedEntry(configEntry);
   };
 
   const topic = props.targetTopic;
-  const hasEditPermissions = topic ? (api.topicPermissions.get(topic)?.canEditTopicConfig ?? true) : true;
+  const hasEditPermissions = topic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 
   let entries = props.entries;
   if (filter) {

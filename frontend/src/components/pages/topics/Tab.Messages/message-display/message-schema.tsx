@@ -11,10 +11,10 @@
 
 import { Link } from '@tanstack/react-router';
 
-import { api } from '../../../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../../../state/backend-api';
 
 export const MessageSchema = (p: { schemaId: number }) => {
-  const subjects = api.schemaUsagesById.get(p.schemaId);
+  const subjects = useApiStoreHook((s) => s.schemaUsagesById.get(p.schemaId));
   if (!subjects || subjects.length === 0) {
     api.refreshSchemaUsagesById(p.schemaId);
     return <>ID {p.schemaId} (unknown subject)</>;

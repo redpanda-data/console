@@ -9,18 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import { api } from '../../../../state/backend-api';
+import { useApiStoreHook } from '../../../../state/backend-api';
 import type { Broker, Partition } from '../../../../state/rest-interfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';
 import type { PartitionSelection } from '../reassign-partitions';
 
 export function SelectionInfoBar(props: { partitionSelection: PartitionSelection; margin?: string }) {
-  if (api.topicPartitions === null) {
+  const topicPartitions = useApiStoreHook((s) => s.topicPartitions);
+  const clusterInfo = useApiStoreHook((s) => s.clusterInfo);
+
+  if (topicPartitions === null) {
     return null;
   }
 
   const selectedPartitions: { topic: string; partitions: Partition[] }[] = [];
-  for (const [topic, partitions] of api.topicPartitions) {
+  for (const [topic, partitions] of topicPartitions) {
     if (partitions === null) {
       continue;
     }
@@ -32,7 +35,7 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
   }
 
   let involvedBrokers: Broker[] | null = null;
-  if (api.clusterInfo !== null) {
+  if (clusterInfo !== null) {
     const brokerIds = new Set<number>();
     for (const t of selectedPartitions) {
       for (const p of t.partitions) {
@@ -42,7 +45,7 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
         }
       }
     }
-    involvedBrokers = api.clusterInfo.brokers.filter((b) => brokerIds.has(b.brokerId));
+    involvedBrokers = clusterInfo.brokers.filter((b) => brokerIds.has(b.brokerId));
   }
 
   const allSelectedPartitions = selectedPartitions.flatMap((p) => p.partitions);

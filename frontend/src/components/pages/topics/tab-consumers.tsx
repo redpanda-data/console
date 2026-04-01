@@ -30,6 +30,7 @@ type TopicConsumersProps = { topic: Topic };
 export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
   const rawConsumers = useApiStoreHook((s) => s.topicConsumers.get(topic.topicName));
   const isLoading = rawConsumers === undefined;
+
   const consumers = rawConsumers ?? [];
 
   const paginationParams = usePaginationParams(consumers.length, uiState.topicSettings.consumerPageSize);
