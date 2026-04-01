@@ -5,14 +5,10 @@
 ## v3.7.0 / 2026-03-30
 - [IMPROVEMENT] Add pipeline page with view, edit, and create modes including an interactive flow diagram visualizer.
 - [IMPROVEMENT] Add Schema Registry context support: filter schema list, create schemas, and edit compatibility by context.
-- [IMPROVEMENT] Add intellisense and autocomplete to the Redpanda Connect pipeline editor.
-- [IMPROVEMENT] Improve Avro serialization by using EncodeJSON and DecodeJSON for more accurate JSON representation.
 - [CHANGE] Replace Redpanda Admin API with Kafka SCRAM API for user management.
 - [BUGFIX] Fix Kafka Connect JSON editor not applying configuration changes.
 - [BUGFIX] Fix security role edit route and role update page loading state.
-- [BUGFIX] Fix ACL pages routing after removal of AclPrincipalGroupEditor.
-- [BUGFIX] Fix consumer groups data fetching and reassign partitions loading.
-- [SECURITY] Resolve Snyk dependency vulnerabilities in backend and frontend dependencies.
+- [SECURITY] Resolve security vulnerabilities in backend and frontend dependencies.
 
 ## v3.6.0 / 2026-03-10
 - [IMPROVEMENT] Add unlimited and continuous pagination for Kafka message listing.
