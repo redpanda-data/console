@@ -2,6 +2,14 @@
 
 ## Master / Unreleased
 
+## v3.7.0 / 2026-03-30
+- [IMPROVEMENT] Add pipeline page with view, edit, and create modes including an interactive flow diagram visualizer.
+- [IMPROVEMENT] Add Schema Registry context support: filter schema list, create schemas, and edit compatibility by context.
+- [CHANGE] Replace Redpanda Admin API with Kafka SCRAM API for user management.
+- [BUGFIX] Fix Kafka Connect JSON editor not applying configuration changes.
+- [BUGFIX] Fix security role edit route and role update page loading state.
+- [SECURITY] Resolve security vulnerabilities in backend and frontend dependencies.
+
 ## v3.6.0 / 2026-03-10
 - [IMPROVEMENT] Add unlimited and continuous pagination for Kafka message listing.
 - [IMPROVEMENT] Group sidebar navigation items into sections for better organization.
