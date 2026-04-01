@@ -65,7 +65,7 @@ import {
   useSchemaTypesQuery,
 } from '../../../react-query/api/schema-registry';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import {
   type SchemaRegistryValidateSchemaResponse,
   SchemaType,
@@ -261,7 +261,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
 
 const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
   const [stateData, setStateData] = useState<SchemaEditorStateData | null>(null);
-  const subject = api.schemaDetails.get(subjectName);
+  const subject = useApiStoreHook((s) => s.schemaDetails.get(subjectName));
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   useEffect(() => {

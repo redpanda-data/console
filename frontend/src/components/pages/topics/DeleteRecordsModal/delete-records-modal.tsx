@@ -37,7 +37,7 @@ import {
 import { useEffect, useState } from 'react';
 
 import styles from './DeleteRecordsModal.module.scss';
-import { api } from '../../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../../state/backend-api';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/rest-interfaces';
 import { RadioOptionGroup } from '../../../../utils/tsx-utils';
 import { prettyNumber } from '../../../../utils/utils';
@@ -246,19 +246,22 @@ const ManualOffsetContent = ({
   onOffsetSpecified: (v: number) => void;
 }) => {
   const [sliderValue, setSliderValue] = useState(0);
+  const topicPartitionErrors = useApiStoreHook((s) => s.topicPartitionErrors.get(topicName));
+  const topicWatermarksErrors = useApiStoreHook((s) => s.topicWatermarksErrors.get(topicName));
+  const partitions = useApiStoreHook((s) => s.topicPartitions.get(topicName));
 
   const updateOffsetFromSlider = (v: number) => {
     setSliderValue(v);
     onOffsetSpecified(v);
   };
 
-  if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
-    const partitionErrors = api.topicPartitionErrors
-      .get(topicName)
-      ?.map(({ partitionError }) => <li key={`${topicName}-${partitionError}`}>{partitionError}</li>);
-    const waterMarksErrors = api.topicWatermarksErrors
-      .get(topicName)
-      ?.map(({ waterMarksError }) => <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>);
+  if (topicPartitionErrors || topicWatermarksErrors) {
+    const partitionErrors = topicPartitionErrors?.map(({ partitionError }) => (
+      <li key={`${topicName}-${partitionError}`}>{partitionError}</li>
+    ));
+    const waterMarksErrors = topicWatermarksErrors?.map(({ waterMarksError }) => (
+      <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>
+    ));
     const message = (
       <>
         {partitionErrors && partitionErrors.length > 0 ? (
@@ -282,8 +285,6 @@ const ManualOffsetContent = ({
       </Alert>
     );
   }
-
-  const partitions = api.topicPartitions?.get(topicName);
 
   if (!partitions) {
     return <Spinner size="lg" />;

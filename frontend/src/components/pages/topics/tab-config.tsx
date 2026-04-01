@@ -13,7 +13,7 @@ import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-dat
 
 import TopicConfigurationEditor from './topic-configuration';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { KafkaError, Topic } from '../../../state/rest-interfaces';
 import { toJson } from '../../../utils/json-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -24,7 +24,7 @@ import '../../../utils/array-extensions';
 
 // Full topic configuration
 export function TopicConfiguration(props: { topic: Topic }) {
-  const config = api.topicConfig.get(props.topic.topicName);
+  const config = useApiStoreHook((s) => s.topicConfig.get(props.topic.topicName));
 
   if (config === undefined) {
     return DefaultSkeleton;
