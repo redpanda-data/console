@@ -49,7 +49,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
-import { Features } from 'state/supported-features';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -353,6 +353,7 @@ export const updatePageTitle = () => {
 
 export const KnowledgeBaseListPage = () => {
   'use no memo';
+  const featurePipelinesApi = useSupportedFeaturesStore((s) => s.pipelinesApi);
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -367,14 +368,14 @@ export const KnowledgeBaseListPage = () => {
   } = useListKnowledgeBasesQuery(
     {},
     {
-      enabled: Features.pipelinesApi,
+      enabled: featurePipelinesApi,
     }
   );
 
   // Fetch all available topics to match against knowledge base patterns
   const { data: topicsData } = useListTopicsQuery(
     undefined,
-    { enabled: Features.pipelinesApi },
+    { enabled: featurePipelinesApi },
     { hideInternalTopics: true }
   );
 
@@ -395,7 +396,7 @@ export const KnowledgeBaseListPage = () => {
   }, []);
 
   useEffect(() => {
-    if (error && Features.pipelinesApi) {
+    if (error && featurePipelinesApi) {
       const errorStr = String(error);
       if (!errorStr.includes('404')) {
         toast.error('Failed to load knowledge bases', {
@@ -403,7 +404,7 @@ export const KnowledgeBaseListPage = () => {
         });
       }
     }
-  }, [error]);
+  }, [error, featurePipelinesApi]);
 
   const handleDelete = useCallback(
     async (knowledgeBaseId: string) => {
@@ -517,7 +518,7 @@ export const KnowledgeBaseListPage = () => {
                 </TableRow>
               );
             }
-            if (error && Features.pipelinesApi) {
+            if (error && featurePipelinesApi) {
               const errorStr = String(error);
               if (!errorStr.includes('404')) {
                 return (
