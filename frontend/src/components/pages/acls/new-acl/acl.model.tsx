@@ -22,13 +22,15 @@ export type HostType = 'Allow all hosts' | 'Specific host';
 export const HostTypeAllowAllHosts: HostType = 'Allow all hosts';
 export const HostTypeSpecificHost: HostType = 'Specific host';
 
-export type PrincipalType = 'User:' | 'RedpandaRole:';
+export type PrincipalType = 'User:' | 'RedpandaRole:' | 'Group:';
 export const PrincipalTypeUser: PrincipalType = 'User:';
 export const PrincipalTypeRedpandaRole: PrincipalType = 'RedpandaRole:';
+export const PrincipalTypeGroup: PrincipalType = 'Group:';
 
-export type RoleType = 'RedpandaRole' | 'User';
+export type RoleType = 'RedpandaRole' | 'User' | 'Group';
 export const RoleTypeRedpandaRole: RoleType = 'RedpandaRole';
 export const RoleTypeUser: RoleType = 'User';
+export const RoleTypeGroup: RoleType = 'Group';
 
 export type ModeType = 'custom' | 'allowAll' | 'denyAll';
 export const ModeCustom: ModeType = 'custom';

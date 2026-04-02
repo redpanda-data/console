@@ -147,25 +147,33 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
         <DataTable<RolePrincipal>
           columns={[
             {
+              id: 'principalType',
+              header: 'Type',
+              cell: (ctx) => ctx.row.original.principalType,
+            },
+            {
               id: 'name',
               size: Number.POSITIVE_INFINITY,
-              header: 'User',
+              header: 'Name',
               cell: (ctx) => {
                 const entry = ctx.row.original;
-                return (
-                  <Link
-                    className="no-underline"
-                    params={{ userName: entry.name }}
-                    to="/security/users/$userName/details"
-                  >
-                    {entry.name}
-                  </Link>
-                );
+                if (entry.principalType === 'User') {
+                  return (
+                    <Link
+                      className="no-underline"
+                      params={{ userName: entry.name }}
+                      to="/security/users/$userName/details"
+                    >
+                      {entry.name}
+                    </Link>
+                  );
+                }
+                return entry.name;
               },
             },
           ]}
           data={members ?? []}
-          emptyText="No users found"
+          emptyText="No principals found"
           pagination
           sorting
         />

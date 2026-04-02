@@ -17,7 +17,7 @@ import type {
   AclStrResourceType,
 } from '../../../state/rest-interfaces';
 
-export type PrincipalType = 'User' | 'RedpandaRole';
+export type PrincipalType = 'User' | 'RedpandaRole' | 'Group';
 export type AclFlat = {
   // AclResource
   resourceType: AclStrResourceType;

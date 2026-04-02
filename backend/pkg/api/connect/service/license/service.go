@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -140,5 +141,44 @@ func (s Service) ListEnterpriseFeatures(ctx context.Context, _ *connect.Request[
 
 	featuresProto := s.mapper.enterpriseFeaturesToProto(features)
 
+	// Synthesize the gbac (Group-Based Access Control) feature. GBAC is supported
+	// when the cluster is running Redpanda >= 26.1. We check the first broker
+	// returned — all brokers in a cluster run the same version.
+	gbacEnabled := false
+	brokers, err := adminCl.Brokers(ctx)
+	if err != nil {
+		s.logger.WarnContext(ctx, "failed to retrieve brokers for gbac feature check, defaulting to disabled", slog.Any("error", err))
+	} else if len(brokers) > 0 {
+		gbacEnabled = brokerAtLeastVersion(brokers[0].Version, 26, 1)
+	}
+	featuresProto.Features = append(featuresProto.Features, &v1alpha1.ListEnterpriseFeaturesResponse_Feature{
+		Name:    "gbac",
+		Enabled: gbacEnabled,
+	})
+
 	return connect.NewResponse(featuresProto), nil
+}
+
+// brokerAtLeastVersion parses a broker version string of the form
+// "v26.1.4 - <commit>" and checks whether it is >= major.minor.
+func brokerAtLeastVersion(version string, major, minor int) bool {
+	// Version may look like: "v26.1.4 - 491e56900d2316fcbb22aa1d37e7195897878309"
+	v := strings.SplitN(version, " ", 2)[0]
+	v = strings.TrimPrefix(v, "v")
+	parts := strings.Split(v, ".")
+	if len(parts) < 2 {
+		return false
+	}
+	maj, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false
+	}
+	mnr, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return false
+	}
+	if maj != major {
+		return maj > major
+	}
+	return mnr >= minor
 }

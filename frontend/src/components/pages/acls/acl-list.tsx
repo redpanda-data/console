@@ -73,6 +73,20 @@ import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
+/** Filters items by name using a case-insensitive regex match (falls back to substring if the query is an invalid regex). Returns all items if the query is empty. */
+function filterByName<T>(items: T[], query: string, getName: (item: T) => string): T[] {
+  if (!query) {
+    return items;
+  }
+  try {
+    const re = new RegExp(query, 'i'); // nosemgrep: detect-non-literal-regexp -- client-side UI filter, user only affects their own session
+    return items.filter((item) => re.test(getName(item)));
+  } catch {
+    const lowerQuery = query.toLowerCase();
+    return items.filter((item) => getName(item).toLowerCase().includes(lowerQuery));
+  }
+}
+
 const { ToastContainer, toast } = createStandaloneToast({
   theme: redpandaTheme,
   defaultOptions: {
@@ -282,19 +296,7 @@ const PermissionsListTab = () => {
     }
   }
 
-  const usersFiltered = users.filter((u) => {
-    const filter = searchQuery;
-    if (!filter) {
-      return true;
-    }
-
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return u.name.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
-  });
+  const usersFiltered = filterByName(users, searchQuery, (u) => u.name);
 
   return (
     <Flex flexDirection="column" gap="4">
@@ -383,19 +385,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
     type: 'SERVICE_ACCOUNT',
   }));
 
-  const usersFiltered = users.filter((u) => {
-    const filter = searchQuery;
-    if (!filter) {
-      return true;
-    }
-
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return u.name.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
-  });
+  const usersFiltered = filterByName(users, searchQuery, (u) => u.name);
 
   if (isError && error) {
     return (
@@ -506,7 +496,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
       if (members.any((m) => m.name === user.name)) {
         // is this user part of this role?
         // then remove it
-        promises.push(rolesApi.updateRoleMembership(roleName, [], [user.name]));
+        promises.push(rolesApi.updateRoleMembership(roleName, [], [{ name: user.name, principalType: 'User' }]));
       }
     }
 
@@ -567,18 +557,7 @@ const RolesTab = () => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const roles = (rolesApi.roles ?? []).filter((u) => {
-    const filter = searchQuery;
-    if (!filter) {
-      return true;
-    }
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return u.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
-  });
+  const roles = filterByName(rolesApi.roles ?? [], searchQuery, (r) => r);
 
   const rolesWithMembers = roles.map((r) => {
     const members = rolesApi.roleMembers.get(r) ?? [];
@@ -729,14 +708,11 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
     });
   };
 
-  let groups = principalGroups?.filter((g) => g.principalType === 'User') || [];
+  const gbacEnabled = api.enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
-  try {
-    const quickSearchRegExp = new RegExp(searchQuery, 'i');
-    groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
-  } catch (_e) {
-    // Invalid regex, skip filtering
-  }
+  const aclPrincipalGroups =
+    principalGroups?.filter((g) => g.principalType === 'User' || (gbacEnabled && g.principalType === 'Group')) || [];
+  const groups = filterByName(aclPrincipalGroups, searchQuery, (g) => g.principalName);
 
   if (isError && error) {
     return <ErrorResult error={error} />;
@@ -794,35 +770,30 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                 size: Number.POSITIVE_INFINITY,
                 header: 'Principal',
                 accessorKey: 'principal',
-                cell: ({ row: { original: record } }) => {
-                  //   const principalType = record.principalType=='User' && record.principalName.endsWith('*')
-                  //     ? 'User Group'
-                  //     :record.principalType;
-                  return (
-                    <button
-                      className="hoverLink"
-                      onClick={() => {
-                        navigate({
-                          to: `/security/acls/${record.principalName}/details`,
-                          search: (prev) => ({ ...prev, host: record.host }),
-                        });
-                      }}
-                      type="button"
-                    >
-                      <Flex>
-                        {/* <Badge variant="subtle" mr="2">{principalType}</Badge> */}
-                        <Text
-                          as="span"
-                          data-testid={`acl-list-item-${record.principalName}-${record.host}`}
-                          whiteSpace="break-spaces"
-                          wordBreak="break-word"
-                        >
-                          {record.principalName}
-                        </Text>
-                      </Flex>
-                    </button>
-                  );
-                },
+                cell: ({ row: { original: record } }) => (
+                  <button
+                    className="hoverLink"
+                    onClick={() => {
+                      navigate({
+                        to: `/security/acls/${record.principalType === 'User' ? record.principalName : record.principal}/details`,
+                        search: (prev) => ({ ...prev, host: record.host }),
+                      });
+                    }}
+                    type="button"
+                  >
+                    <Flex alignItems="center" gap={1}>
+                      <Text
+                        as="span"
+                        data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+                        whiteSpace="break-spaces"
+                        wordBreak="break-word"
+                      >
+                        {record.principalName}
+                      </Text>
+                      {record.principalType === 'Group' && <Badge variant="subtle">Group</Badge>}
+                    </Flex>
+                  </button>
+                ),
               },
               {
                 header: 'Host',
@@ -916,7 +887,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                 },
               },
             ]}
-            data={groups || []}
+            data={groups}
             pagination
             sorting
           />

@@ -86,18 +86,16 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
-  const originalUsernames = useMemo(
-    () => initialData?.principals?.map(({ name }) => name) ?? [],
-    [initialData?.principals]
-  );
-  const currentUsernames = formState.principals.map(({ name }) => name) ?? [];
+  const originalPrincipals = useMemo(() => initialData?.principals ?? [], [initialData?.principals]);
   const editMode: boolean = Boolean(initialData?.roleName);
 
   const roleNameAlreadyExist = rolesApi.roles.includes(formState.roleName) && !editMode;
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    const usersToRemove = originalUsernames.filter((item) => currentUsernames.indexOf(item) === -1);
+    const principalsToRemove = originalPrincipals.filter(
+      (op) => !formState.principals.some((cp) => cp.principalType === op.principalType && cp.name === op.name)
+    );
     const principalType: AclStrResourceType = 'RedpandaRole';
     const isEditMode = editMode;
     const roleName = formState.roleName;
@@ -111,7 +109,6 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
       clusterAcls: formState.clusterACLs,
       sourceEntries: [],
     };
-    const principalNames = formState.principals.map((x) => x.name);
     const deleteAclsArgs = isEditMode
       ? {
           resourceType: 'Any' as const,
@@ -127,7 +124,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
     let newRoleResult: Awaited<ReturnType<typeof rolesApi.updateRoleMembership>> | null = null;
     try {
       await deleteAclsPromise;
-      newRoleResult = await rolesApi.updateRoleMembership(roleName, principalNames, usersToRemove, true);
+      newRoleResult = await rolesApi.updateRoleMembership(roleName, formState.principals, principalsToRemove, true);
     } catch (err) {
       toast({
         status: 'error',
@@ -387,57 +384,42 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
         </Flex>
 
         <Flex gap={4} mt={8}>
-          {editMode ? (
-            <Button
-              isDisabled={roleNameAlreadyExist || !isFormValid}
-              isLoading={isLoading}
-              loadingText="Editing..."
-              onClick={handleSubmit}
-              type="button"
-            >
-              Update
-            </Button>
-          ) : (
-            <Button
-              isDisabled={roleNameAlreadyExist || !isFormValid}
-              isLoading={isLoading}
-              loadingText="Creating..."
-              onClick={handleSubmit}
-              type="button"
-            >
-              Create
-            </Button>
-          )}
-          {editMode ? (
-            <Button
-              onClick={() => {
-                appGlobal.historyPush(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
-              }}
-              variant="link"
-            >
-              Go back
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                appGlobal.historyPush('/security/roles/');
-              }}
-              variant="link"
-            >
-              Go back
-            </Button>
-          )}
+          <Button
+            isDisabled={roleNameAlreadyExist || !isFormValid}
+            isLoading={isLoading}
+            loadingText={editMode ? 'Editing...' : 'Creating...'}
+            onClick={handleSubmit}
+            type="button"
+          >
+            {editMode ? 'Update' : 'Create'}
+          </Button>
+          <Button
+            onClick={() => {
+              const path = editMode
+                ? `/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`
+                : '/security/roles/';
+              appGlobal.historyPush(path);
+            }}
+            variant="link"
+          >
+            Go back
+          </Button>
         </Flex>
       </div>
     </Box>
   );
 };
 
+const rbacTypeSearchFilter = (_option: unknown, inputValue: string) => inputValue.length > 0;
+
 const PrincipalSelector = (p: {
   principals: RolePrincipal[];
   onPrincipalsChange: (principals: RolePrincipal[]) => void;
 }) => {
-  const [searchValue, setSearchValue] = useState<string>('');
+  const [userSearchValue, setUserSearchValue] = useState<string>('');
+  const [groupSearchValue, setGroupSearchValue] = useState<string>('');
+
+  const gbacEnabled = api.enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   useEffect(() => {
     api.refreshServiceAccounts().catch(() => {
@@ -468,36 +450,80 @@ const PrincipalSelector = (p: {
 
   for (const [_, roleMembers] of rolesApi.roleMembers) {
     for (const roleMember of roleMembers) {
-      if (!availableUsers.any((u) => u.value === roleMember.name)) {
-        // make sure that user isn't already in the list
+      if (roleMember.principalType === 'User' && !availableUsers.any((u) => u.value === roleMember.name)) {
         availableUsers.push({ value: roleMember.name });
       }
     }
   }
 
+  const availableGroups: { value: string }[] = [];
+  for (const [_, roleMembers] of rolesApi.roleMembers) {
+    for (const roleMember of roleMembers) {
+      if (roleMember.principalType === 'Group' && !availableGroups.any((g) => g.value === roleMember.name)) {
+        availableGroups.push({ value: roleMember.name });
+      }
+    }
+  }
+
+  const addPrincipal = (name: string, principalType: RolePrincipal['principalType']) => {
+    if (name && !principals.some((p) => p.name === name && p.principalType === principalType)) {
+      onPrincipalsChange([...principals, { name, principalType }]);
+    }
+  };
+
   return (
     <Flex direction="column" gap={4}>
-      <Box w={200}>
-        <Select<string>
-          creatable={true}
-          inputValue={searchValue}
-          isMulti={false}
-          onChange={(val) => {
-            if (val && isSingleValue(val) && val.value) {
-              onPrincipalsChange([...principals, { name: val.value, principalType: 'User' }]);
-              setSearchValue('');
+      <Flex direction="column" gap={2}>
+        <Box w={300}>
+          <Select<string>
+            creatable={true}
+            filterOption={rbacTypeSearchFilter}
+            inputValue={userSearchValue}
+            isMulti={false}
+            noOptionsMessage={({ inputValue }: { inputValue: string }) =>
+              inputValue ? 'No users found' : 'Type to search users...'
             }
-          }}
-          onInputChange={setSearchValue}
-          options={availableUsers}
-          placeholder="Find users"
-        />
-      </Box>
+            onChange={(val) => {
+              if (val && isSingleValue(val) && val.value) {
+                addPrincipal(val.value, 'User');
+                setUserSearchValue('');
+              }
+            }}
+            onInputChange={setUserSearchValue}
+            options={availableUsers}
+            placeholder="Add user"
+          />
+        </Box>
+        {gbacEnabled && (
+          <Box w={300}>
+            <Select<string>
+              creatable={true}
+              filterOption={rbacTypeSearchFilter}
+              inputValue={groupSearchValue}
+              isMulti={false}
+              noOptionsMessage={({ inputValue }: { inputValue: string }) =>
+                inputValue ? 'No groups found' : 'Type to search groups...'
+              }
+              onChange={(val) => {
+                if (val && isSingleValue(val) && val.value) {
+                  addPrincipal(val.value, 'Group');
+                  setGroupSearchValue('');
+                }
+              }}
+              onInputChange={setGroupSearchValue}
+              options={availableGroups}
+              placeholder="Add group"
+            />
+          </Box>
+        )}
+      </Flex>
 
-      <Flex gap={2}>
+      <Flex flexWrap="wrap" gap={2}>
         {principals.map((principal) => (
-          <Tag cursor="pointer" key={principal.name}>
-            <TagLabel>{principal.name}</TagLabel>
+          <Tag cursor="pointer" key={`${principal.principalType}:${principal.name}`}>
+            <TagLabel>
+              {principal.principalType}: {principal.name}
+            </TagLabel>
             <TagCloseButton onClick={() => onPrincipalsChange(principals.filter((pr) => pr !== principal))} />
           </Tag>
         ))}

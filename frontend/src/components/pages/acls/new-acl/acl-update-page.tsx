@@ -21,14 +21,14 @@ import {
   ModeDenyAll,
   OperationTypeAllow,
   OperationTypeDeny,
-  PrincipalTypeUser,
+  type PrincipalType,
   type Rule,
-  type SharedConfig,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
 import { useEffect } from 'react';
 
+import { parsePrincipalFromParam } from './principal-utils';
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
 import { uiState } from '../../../../state/ui-state';
 import PageContent from '../../../misc/page-content';
@@ -40,32 +40,36 @@ const AclUpdatePage = () => {
   const search = routeApi.useSearch();
   const host = search.host ?? undefined;
 
+  const { principalType, principalName } = parsePrincipalFromParam(aclName);
+
   useEffect(() => {
     uiState.pageBreadcrumbs = [
       { title: 'Security', linkTo: '/security' },
       { title: 'ACLs', linkTo: '/security/acls' },
-      { title: aclName, linkTo: `/security/acls/${aclName}/details` },
+      { title: principalName, linkTo: `/security/acls/${aclName}/details` },
       { title: 'Update ACL', linkTo: '', heading: '' },
     ];
-  }, [aclName]);
+  }, [aclName, principalName]);
 
   // Fetch existing ACL data
-  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host);
+  const { data, isLoading } = useGetAclsByPrincipal(`${principalType}:${principalName}`, host);
 
   const { applyUpdates } = useUpdateAclMutation();
 
   const [acls, ...hosts] = data || [];
 
-  const updateAclMutation =
-    (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
-      const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
-      handleResponses(toast, applyResult.errors, applyResult.created);
+  const handleUpdate = async (_principal: string, _host: string, rules: Rule[]) => {
+    if (!acls) {
+      return;
+    }
+    const applyResult = await applyUpdates(acls.rules, acls.sharedConfig, rules);
+    handleResponses(toast, applyResult.errors, applyResult.created);
 
-      navigate({
-        to: `/security/acls/${aclName}/details`,
-        search: { host },
-      });
-    };
+    navigate({
+      to: `/security/acls/${aclName}/details`,
+      search: { host },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -84,7 +88,7 @@ const AclUpdatePage = () => {
   if (hosts.length > 1) {
     return (
       <PageContent>
-        <HostSelector baseUrl={`/security/acls/${aclName}/update`} hosts={data} principalName={aclName} />
+        <HostSelector baseUrl={`/security/acls/${aclName}/update`} hosts={data} principalName={principalName} />
       </PageContent>
     );
   }
@@ -117,15 +121,15 @@ const AclUpdatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        edit={true}
+        edit
         onCancel={() =>
           navigate({
             to: `/security/acls/${aclName}/details`,
             search: { host },
           })
         }
-        onSubmit={updateAclMutation(acls.rules, acls.sharedConfig)}
-        principalType={PrincipalTypeUser}
+        onSubmit={handleUpdate}
+        principalType={`${principalType}:` as PrincipalType}
         rules={rulesWithAllOperations}
         sharedConfig={acls.sharedConfig}
       />

@@ -142,7 +142,7 @@ const UserCreatePage = () => {
     }
 
     const roleAddPromises: Promise<unknown>[] = selectedRoles.map((r) =>
-      rolesApi.updateRoleMembership(r, [username], [], false)
+      rolesApi.updateRoleMembership(r, [{ name: username, principalType: 'User' }], [], false)
     );
 
     try {
