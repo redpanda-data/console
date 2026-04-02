@@ -155,8 +155,8 @@ const PipelineListSkeleton = () => (
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: 5 }).map(() => (
-          <TableRow key={crypto.randomUUID()}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TableRow key={i}>
             <TableCell>
               <div className="flex flex-col gap-1">
                 <Skeleton className="h-4 w-40" />
@@ -288,7 +288,6 @@ const ActionsCell = memo(
             {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
             {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
             {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
-            {isStopping ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
             {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
             <DropdownMenuSeparator />
             <DeleteResourceAlertDialog
