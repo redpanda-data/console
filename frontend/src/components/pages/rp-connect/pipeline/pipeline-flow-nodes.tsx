@@ -102,14 +102,21 @@ const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
 );
 
 const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
-  <button className="nodrag nopan flex h-7 cursor-pointer items-center text-sm" onClick={data.onToggle} type="button">
+  <button
+    className={cn('nodrag nopan flex h-7 max-w-[220px] items-center text-sm', data.collapsible && 'cursor-pointer')}
+    disabled={!data.collapsible}
+    onClick={data.collapsible ? data.onToggle : undefined}
+    type="button"
+  >
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
-    <Text as="span" variant="bodyStrongMedium">
+    <Text as="span" className="min-w-0 truncate" title={data.label} variant="bodyStrongMedium">
       {data.label}
     </Text>
-    <Text as="span" className="ml-1 text-subtle" variant="bodySmall">
-      {data.collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-    </Text>
+    {data.collapsible ? (
+      <Text as="span" className="ml-1 text-subtle" variant="bodySmall">
+        {data.collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </Text>
+    ) : null}
     {data.collapsed && data.childCount ? (
       <CountDot className="ml-1.5" count={data.childCount} size="sm" variant="disabled" />
     ) : null}
@@ -127,7 +134,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   return (
     <BaseNode
       className={cn(
-        'group min-w-[120px] px-3 py-1 font-medium transition-colors',
+        'group min-w-[120px] max-w-[220px] px-3 py-1 font-medium transition-colors',
         isPlaceholder ? 'border-dashed! text-muted-foreground' : 'border-transparent! bg-secondary/5 text-foreground'
       )}
     >
@@ -135,7 +142,8 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
       <div className="flex items-center gap-1.5">
         <Text
           as="span"
-          className={isPlaceholder ? 'text-muted-foreground' : 'text-foreground'}
+          className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}
+          title={isPlaceholder ? undefined : data.label}
           variant="bodyStrongMedium"
         >
           {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
@@ -144,7 +152,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
           <Button
             aria-label={`${data.label} documentation`}
             as="a"
-            className="nodrag nopan opacity-0 transition-opacity group-hover:opacity-100"
+            className="nodrag nopan shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
             href={docsUrl}
             rel="noopener noreferrer"
             size="icon-xs"
@@ -157,15 +165,19 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
       </div>
       <div className={cn((data.labelText || hasTopics || showSetupHints) && 'mt-2', 'flex flex-wrap gap-1.5')}>
         {data.labelText ? (
-          <Badge size="sm" variant="info-inverted">
-            {data.labelText}
+          <Badge className="max-w-1/2" size="sm" variant="info-inverted">
+            <span className="truncate" title={data.labelText}>
+              {data.labelText}
+            </span>
           </Badge>
         ) : null}
         {hasTopics ? (
           <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
             {data.topics?.map((t) => (
-              <Badge key={t} size="sm" variant="info-outline">
-                topic: {t}
+              <Badge className="max-w-1/2" key={t} size="sm" variant="info-outline">
+                <span className="truncate" title={t}>
+                  topic: {t}
+                </span>
               </Badge>
             ))}
           </BadgeGroup>

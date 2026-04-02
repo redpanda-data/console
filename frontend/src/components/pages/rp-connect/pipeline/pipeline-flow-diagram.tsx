@@ -19,6 +19,7 @@ import { PipelineFlowSkeleton, pipelineEdgeTypes, pipelineNodeTypes } from './pi
 import {
   computeTreeLayout as defaultComputeLayout,
   parsePipelineFlowTree as defaultParseTree,
+  MAX_NESTING_DEPTH,
   type ParsePipelineFlowTreeResult,
   type PipelineFlowNode,
 } from '../utils/pipeline-flow-parser';
@@ -62,7 +63,7 @@ type PipelineFlowDiagramProps = {
   onAddTopic?: (section: string, componentName: string) => void;
   /** Callback when user clicks "+ auth" on a redpanda node missing SASL config. */
   onAddSasl?: (section: string, componentName: string) => void;
-  /** Hide the zoom +/- controls. */
+  /** Hide the zoom +/- controls and lock zoom to 1. */
   hideZoomControls?: boolean;
   /** Custom parser — defaults to `parsePipelineFlowTree`. */
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
@@ -70,12 +71,7 @@ type PipelineFlowDiagramProps = {
   computeLayout?: (
     nodes: PipelineFlowNode[],
     collapsedIds: ReadonlySet<string>
-  ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number };
-};
-
-type TranslateExtentResult = {
-  extent: [[number, number], [number, number]];
-  overflowsX: boolean;
+  ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number; maxDepth?: number };
 };
 
 /**
@@ -85,15 +81,12 @@ type TranslateExtentResult = {
  * Without this, d3-zoom centers content that is shorter than the viewport,
  * which manifests as a large top margin in edit/create mode where the node
  * tree is typically shorter than the panel.
- *
- * Also returns whether the content exceeds the container width so the
- * caller can enable horizontal panning only when needed.
  */
 export function computeTranslateExtent(
   rfNodes: Node[],
   containerWidth: number,
   containerHeight: number
-): TranslateExtentResult {
+): [[number, number], [number, number]] {
   let minX = 0;
   let minY = 0;
   let maxX = 0;
@@ -118,15 +111,10 @@ export function computeTranslateExtent(
     }
   }
 
-  const contentRight = maxX + EXTENT_PADDING;
-
-  return {
-    extent: [
-      [minX - EXTENT_PADDING, minY - EXTENT_PADDING],
-      [Math.max(contentRight, containerWidth), Math.max(maxY + EXTENT_PADDING, containerHeight)],
-    ],
-    overflowsX: contentRight > containerWidth,
-  };
+  return [
+    [minX - EXTENT_PADDING, minY - EXTENT_PADDING],
+    [Math.max(maxX + EXTENT_PADDING, containerWidth), Math.max(maxY + EXTENT_PADDING, containerHeight)],
+  ];
 }
 
 export const PipelineFlowDiagram = ({
@@ -197,7 +185,7 @@ export const PipelineFlowDiagram = ({
     [debouncedYaml, parseTree, instanceId]
   );
 
-  const { rfNodes, rfEdges } = useMemo(() => {
+  const { rfNodes, rfEdges, maxDepth } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
     // Inject callbacks into group, placeholder, and setup-hint leaf nodes.
@@ -232,19 +220,19 @@ export const PipelineFlowDiagram = ({
       return node;
     });
 
-    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges };
+    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges, maxDepth: layout.maxDepth ?? 0 };
   }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
   const { translateExtent, panOnScrollMode } = useMemo(() => {
     if (!containerSize) {
       return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical };
     }
-    const { extent, overflowsX } = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
+    const extent = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
     return {
       translateExtent: extent,
-      panOnScrollMode: overflowsX ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
+      panOnScrollMode: maxDepth > MAX_NESTING_DEPTH ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
     };
-  }, [rfNodes, containerSize]);
+  }, [rfNodes, containerSize, maxDepth]);
 
   if (rfNodes.length === 0) {
     return (
@@ -263,8 +251,8 @@ export const PipelineFlowDiagram = ({
             edges={rfEdges}
             edgeTypes={pipelineEdgeTypes}
             elementsSelectable={false}
-            maxZoom={MAX_ZOOM}
-            minZoom={MIN_ZOOM}
+            maxZoom={hideZoomControls ? 1 : MAX_ZOOM}
+            minZoom={hideZoomControls ? 1 : MIN_ZOOM}
             nodes={rfNodes}
             nodesConnectable={false}
             nodesDraggable={false}

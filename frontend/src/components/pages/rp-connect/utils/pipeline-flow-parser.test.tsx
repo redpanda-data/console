@@ -770,8 +770,8 @@ output:
     }
   });
 
-  it('caps visual indent depth so deeply nested nodes do not overflow', () => {
-    // Triple-nested switch produces ~7 visual depth levels
+  it('auto-collapses groups beyond MAX_NESTING_DEPTH with descendant count', () => {
+    // Triple-nested switch: depth 0=section, 1=switch, 2=case, 3=switch, 4=case, 5=switch (>=5 → auto-collapsed)
     const yaml = [
       'pipeline:',
       '  processors:',
@@ -789,10 +789,31 @@ output:
     const { nodes } = parsePipelineFlowTree(yaml);
     const { rfNodes } = computeTreeLayout(nodes);
 
-    // MAX_INDENT_DEPTH=5, INDENT_X=40, ROOT_X=8 → max X = 8 + 5*40 = 208
-    const maxX = Math.max(...rfNodes.map((n) => n.position.x));
-    expect(maxX).toBeLessThanOrEqual(208);
-    // Verify the deeply nested mapping leaf is present (parsing not truncated)
-    expect(rfNodes.some((n) => n.data.label === 'mapping')).toBe(true);
+    // The innermost switch group (at depth >= 5) should be auto-collapsed
+    const visibleNodes = rfNodes.filter((n) => (n.style as Record<string, unknown>)?.opacity !== 0);
+    // The deeply nested mapping leaf should be hidden (opacity 0)
+    const mappingNode = rfNodes.find((n) => n.data.label === 'mapping');
+    expect(mappingNode).toBeDefined();
+    expect((mappingNode?.style as Record<string, unknown>)?.opacity).toBe(0);
+
+    // An auto-collapsed group should have collapsed=true and childCount > 0
+    const autoCollapsedGroups = visibleNodes.filter((n) => n.data.collapsed === true && n.data.childCount > 0);
+    expect(autoCollapsedGroups.length).toBeGreaterThan(0);
+  });
+
+  it('returns maxDepth tracking the deepest visual nesting level', () => {
+    const yaml = [
+      'pipeline:',
+      '  processors:',
+      '    - switch:',
+      "        - check: 'this.a > 1'",
+      '          processors:',
+      '            - mapping: root = this',
+    ].join('\n');
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const { maxDepth } = computeTreeLayout(nodes);
+
+    // processors section (0) → switch group (1) → case group (2) → mapping leaf (3)
+    expect(maxDepth).toBe(3);
   });
 });
