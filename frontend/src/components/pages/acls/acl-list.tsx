@@ -64,7 +64,7 @@ import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
-import { Features, useSupportedFeaturesStore } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsx-utils';
 import { FeatureLicenseNotification } from '../../license/feature-license-notification';
@@ -84,14 +84,14 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
-const getCreateUserButtonProps = (isAdminApiConfigured: boolean) => {
+const getCreateUserButtonProps = (isAdminApiConfigured: boolean, featureCreateUser: boolean) => {
   const hasRBAC = api.userData?.canManageUsers !== undefined;
 
   return {
-    isDisabled: !(isAdminApiConfigured && Features.createUser) || (hasRBAC && api.userData?.canManageUsers === false),
+    isDisabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && api.userData?.canManageUsers === false),
     tooltip: [
       !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-      !Features.createUser && "Your cluster doesn't support this feature.",
+      !featureCreateUser && "Your cluster doesn't support this feature.",
       hasRBAC &&
         api.userData?.canManageUsers === false &&
         'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
@@ -228,6 +228,7 @@ type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: permissions list has complex conditional rendering
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
 
   // Check if Redpanda Admin API is configured using React Query
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
@@ -341,7 +342,7 @@ const PermissionsListTab = () => {
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps(isAdminApiConfigured)}
+                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -358,6 +359,7 @@ const PermissionsListTab = () => {
 };
 
 const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) => {
+  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
   const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
     {
       onUpdate: () => {
@@ -422,13 +424,13 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
       <Section>
         <Tooltip
           hasArrow
-          isDisabled={Features.createUser}
+          isDisabled={featureCreateUser}
           label="The cluster does not support this feature"
           placement="top"
         >
           <Button
             data-testid="create-user-button"
-            {...getCreateUserButtonProps(isAdminApiConfigured)}
+            {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser)}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
             Create user
@@ -473,7 +475,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps(isAdminApiConfigured)}
+                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -490,6 +492,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
 };
 
 const UserActions = ({ user }: { user: UsersEntry }) => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
   const invalidateUsersCache = useInvalidateUsersCache();
@@ -520,7 +523,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
           userName={user.name}
         />
       )}
-      {Boolean(Features.rolesApi) && (
+      {Boolean(featureRolesApi) && (
         <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
 
@@ -539,7 +542,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
               Change password
             </MenuItem>
           )}
-          {Boolean(Features.rolesApi) && (
+          {Boolean(featureRolesApi) && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -561,6 +564,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 };
 
 const RolesTab = () => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [searchQuery, setSearchQuery] = useState('');
 
   const roles = (rolesApi.roles ?? []).filter((u) => {
@@ -604,12 +608,12 @@ const RolesTab = () => {
       <Section>
         <Button
           data-testid="create-role-button"
-          isDisabled={api.userData?.canCreateRoles === false || !Features.rolesApi}
+          isDisabled={api.userData?.canCreateRoles === false || !featureRolesApi}
           onClick={() => appGlobal.historyPush('/security/roles/create')}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
-            !Features.rolesApi && 'This feature is not enabled.',
+            !featureRolesApi && 'This feature is not enabled.',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -691,6 +695,8 @@ const RolesTab = () => {
 };
 
 const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
@@ -748,7 +754,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
         identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
         complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
       </Box>
-      {Boolean(Features.rolesApi) && (
+      {Boolean(featureRolesApi) && (
         <Alert status="info">
           <AlertIcon />
           Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
@@ -873,7 +879,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                       </MenuButton>
                       <MenuList>
                         <MenuItem
-                          isDisabled={!(userExists && Features.deleteUser)}
+                          isDisabled={!(userExists && featureDeleteUser)}
                           onClick={(e) => {
                             onDelete(true, true).catch(() => {
                               // Error handling managed by API layer
@@ -884,7 +890,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                           Delete (User and ACLs)
                         </MenuItem>
                         <MenuItem
-                          isDisabled={!(userExists && Features.deleteUser)}
+                          isDisabled={!(userExists && featureDeleteUser)}
                           onClick={(e) => {
                             onDelete(true, false).catch(() => {
                               // Error handling managed by API layer

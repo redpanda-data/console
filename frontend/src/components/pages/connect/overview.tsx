@@ -35,7 +35,7 @@ import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/da
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
-import { Features } from '../../../state/supported-features';
+import { Features, useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { Code, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
@@ -95,6 +95,11 @@ const WrapKafkaConnectOverview: FunctionComponent<{
       matchedPath={props.matchedPath}
     />
   );
+};
+
+const RpConnectTabContent = () => {
+  const featurePipelinesApi = useSupportedFeaturesStore((s) => s.pipelinesApi);
+  return featurePipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />;
 };
 
 class KafkaConnectOverview extends PageComponent<{
@@ -164,7 +169,7 @@ class KafkaConnectOverview extends PageComponent<{
                 Learn more
               </Link>
             </Text>
-            {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
+            <RpConnectTabContent />
           </div>
         ),
       },

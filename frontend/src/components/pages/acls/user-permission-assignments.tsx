@@ -16,7 +16,7 @@ import { TagsValue } from 'components/redpanda-ui/components/tags';
 import type { ListACLsRequest } from '../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { rolesApi } from '../../../state/backend-api';
-import { Features } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const UserRoleTags = ({
@@ -32,6 +32,7 @@ export const UserRoleTags = ({
   let numberOfVisibleElements = 0;
   let numberOfHiddenElements = 0;
 
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const navigate = useNavigate();
 
   const { data: hasAcls } = useQuery(
@@ -53,7 +54,7 @@ export const UserRoleTags = ({
     );
   }
 
-  if (Features.rolesApi) {
+  if (featureRolesApi) {
     // Get all roles, and ACL sets that apply to this user
     const roles: string[] = [];
     for (const [roleName, members] of rolesApi.roleMembers) {

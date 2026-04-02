@@ -32,7 +32,7 @@ import { generatePassword, StateRoleSelector } from './user-create';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
 import { useUpdateUserMutationWithToast } from '../../../react-query/api/user';
 import { rolesApi } from '../../../state/backend-api';
-import { Features } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { formatToastErrorMessageGRPC, showToast } from '../../../utils/toast.utils';
 import { SingleSelect } from '../../misc/select';
 
@@ -184,6 +184,7 @@ type ChangeRolesModalProps = {
 };
 
 export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesModalProps) => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const toast = useToast();
   const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
   const { mutateAsync: updateRoleMembership, isPending: isUpdateMembershipPending } = useUpdateRoleMembershipMutation();
@@ -197,7 +198,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
   }, [originalRoles, isLoading, selectedRoles]);
 
   const onSaveRoles = async () => {
-    if (!Features.rolesApi) {
+    if (!featureRolesApi) {
       return;
     }
     let formattedSelectedRoles: string[] = [];
@@ -261,7 +262,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
         <ModalBody>
           <FormField
             description="Assign roles to this user. This is optional and can be changed later."
-            isDisabled={!Features.rolesApi}
+            isDisabled={!featureRolesApi}
             label="Assign roles"
           >
             <StateRoleSelector roles={selectedRoles || []} setRoles={setSelectedRoles} />

@@ -42,7 +42,7 @@ import { invalidateUsersCache, useLegacyListUsersQuery } from '../../../react-qu
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
-import { Features } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import {
   PASSWORD_MAX_LENGTH,
@@ -228,6 +228,7 @@ type CreateUserModalProps = {
 };
 
 const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userAlreadyExists = state.users.includes(state.username);
 
   const errorText = useMemo(() => {
@@ -323,10 +324,10 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
           />
         </FormField>
 
-        {Boolean(Features.rolesApi) && (
+        {Boolean(featureRolesApi) && (
           <FormField
             description="Assign roles to this user. This is optional and can be changed later."
-            isDisabled={!Features.rolesApi}
+            isDisabled={!featureRolesApi}
             label="Assign roles"
           >
             <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
