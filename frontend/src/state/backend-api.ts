@@ -2186,7 +2186,7 @@ type apiStoreType = ReturnType<typeof _apiCreator> & {
   debugBundleStatus: DebugBundleStatus | undefined;
 };
 
-export type RolePrincipal = { name: string; principalType: 'User' };
+export type RolePrincipal = { name: string; principalType: 'User' | 'Group' };
 
 const _rolesCreator = (set: any, get: any) => ({
   roles: [] as string[],
@@ -2272,18 +2272,10 @@ const _rolesCreator = (set: any, get: any) => ({
             });
             return null;
           }
-          const principalType = principalParts[0];
+          const principalType = principalParts[0] as RolePrincipal['principalType'];
           const name = principalParts[1];
 
-          if (principalType !== 'User') {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error('unexpected principal type in refreshRoleMembers', {
-              roleName,
-              principal: x.principal,
-            });
-          }
-
-          return { principalType, name } as RolePrincipal;
+          return { principalType, name };
         })
         .filterNull();
 
@@ -2314,7 +2306,7 @@ const _rolesCreator = (set: any, get: any) => ({
     }
   },
 
-  async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], createRole = false) {
+  async updateRoleMembership(roleName: string, add: RolePrincipal[], remove: RolePrincipal[], createRole = false) {
     const client = appConfig.securityClient;
     if (!client) {
       throw new Error('security client is not initialized');
@@ -2323,8 +2315,8 @@ const _rolesCreator = (set: any, get: any) => ({
     return await client.updateRoleMembership({
       request: {
         roleName,
-        add: addUsers.map((u) => ({ principal: `User:${u}` })),
-        remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
+        add: add.map((p) => ({ principal: `${p.principalType}:${p.name}` })),
+        remove: remove.map((p) => ({ principal: `${p.principalType}:${p.name}` })),
         create: createRole,
       },
     });

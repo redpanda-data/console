@@ -18,17 +18,24 @@ import {
   convertRulesToCreateACLRequests,
   handleResponses,
   type PrincipalType,
+  PrincipalTypeGroup,
   PrincipalTypeRedpandaRole,
   PrincipalTypeUser,
-  parsePrincipal,
   type Rule,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
+import { parsePrincipalFromParam } from 'components/pages/acls/new-acl/principal-utils';
 import { useEffect } from 'react';
 import { uiState } from 'state/ui-state';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import PageContent from '../../../misc/page-content';
+
+const principalTypeMap: Record<string, PrincipalType> = {
+  redpandarole: PrincipalTypeRedpandaRole,
+  user: PrincipalTypeUser,
+  group: PrincipalTypeGroup,
+};
 
 const AclCreatePage = () => {
   const toast = useToast();
@@ -37,12 +44,6 @@ const AclCreatePage = () => {
 
   const principalTypeParam = search.principalType?.toLowerCase();
   const principalName = search.principalName;
-
-  const principalTypeMap: Record<string, PrincipalType> = {
-    redpandarole: PrincipalTypeRedpandaRole,
-    user: PrincipalTypeUser,
-  };
-
   const principalType = principalTypeParam ? principalTypeMap[principalTypeParam] : undefined;
 
   const sharedConfig =
@@ -63,9 +64,11 @@ const AclCreatePage = () => {
     const applyResult = await createAcls(result);
     handleResponses(toast, applyResult.errors, applyResult.created);
 
+    const { principalType, principalName } = parsePrincipalFromParam(principal);
+    const aclName = principalType === 'User' ? principalName : principal;
     navigate({
       to: '/security/acls/$aclName/details',
-      params: { aclName: parsePrincipal(principal).name },
+      params: { aclName },
       search: { host: undefined },
     });
   };

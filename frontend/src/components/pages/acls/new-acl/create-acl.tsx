@@ -24,6 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { api } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
@@ -56,6 +57,7 @@ import {
   ResourceTypeSubject,
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
+  RoleTypeGroup,
   RoleTypeRedpandaRole,
   RoleTypeUser,
   type Rule,
@@ -485,7 +487,6 @@ const AclRules = ({
                 {Object.entries(rule.operations).map(([operation, operationValue]) => (
                   <div className="flex items-center gap-1" key={operation}>
                     <Select
-                      disabled={false}
                       onValueChange={(value) => handleOperationChange(rule.id, operation, value)}
                       value={operationValue}
                     >
@@ -572,6 +573,7 @@ const SharedConfiguration = ({
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
   const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
+  const gbacEnabled = api.enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   return (
     <Card size={'full'}>
@@ -624,6 +626,7 @@ const SharedConfiguration = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={RoleTypeUser}>User</SelectItem>
+                  {gbacEnabled && <SelectItem value={RoleTypeGroup}>Group</SelectItem>}
                   <SelectItem value={RoleTypeRedpandaRole}>Redpanda role</SelectItem>
                 </SelectContent>
               </Select>
@@ -823,7 +826,7 @@ export default function CreateACL({
       });
     });
 
-    setRules(() => newRules);
+    setRules(newRules);
   };
 
   const removeRule = (id: number) => {

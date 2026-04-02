@@ -114,7 +114,9 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                 const promises: Promise<UpdateRoleMembershipResponse>[] = [];
                 for (const [roleName, members] of rolesApi.roleMembers) {
                   if (members.any((m) => m.name === userName)) {
-                    promises.push(rolesApi.updateRoleMembership(roleName, [], [userName]));
+                    promises.push(
+                      rolesApi.updateRoleMembership(roleName, [], [{ name: userName, principalType: 'User' }])
+                    );
                   }
                 }
                 await Promise.allSettled(promises);

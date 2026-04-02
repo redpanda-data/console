@@ -19,6 +19,7 @@ import { uiState } from 'state/ui-state';
 
 import { ACLDetails } from './acl-details';
 import { HostSelector } from './host-selector';
+import { parsePrincipalFromParam } from './principal-utils';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Text } from '../../../redpanda-ui/components/typography';
@@ -29,7 +30,8 @@ const AclDetailPage = () => {
   const search = routeApi.useSearch();
   const host = search.host || undefined;
 
-  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host);
+  const { principalType, principalName } = parsePrincipalFromParam(aclName);
+  const { data, isLoading } = useGetAclsByPrincipal(`${principalType}:${principalName}`, host);
 
   const [acls, ...hosts] = data || [];
 
@@ -37,10 +39,10 @@ const AclDetailPage = () => {
     uiState.pageBreadcrumbs = [
       { title: 'Security', linkTo: '/security' },
       { title: 'ACLs', linkTo: '/security/acls' },
-      { title: aclName, linkTo: `/security/acls/${aclName}/details` },
+      { title: principalName, linkTo: `/security/acls/${aclName}/details` },
       { title: 'ACL Configuration Details', linkTo: '', heading: '' },
     ];
-  }, [aclName]);
+  }, [aclName, principalName]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -50,15 +52,15 @@ const AclDetailPage = () => {
     return <div>No ACL data found</div>;
   }
 
-  if (!!hosts && hosts.length > 0) {
-    return <HostSelector baseUrl={`/security/acls/${aclName}/details`} hosts={data} principalName={aclName} />;
+  if (hosts.length > 0) {
+    return <HostSelector baseUrl={`/security/acls/${aclName}/details`} hosts={data} principalName={principalName} />;
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <Text>
-          ACL Configuration Details for <strong>{aclName}</strong>
+          ACL Configuration Details for <strong>{principalName}</strong>
         </Text>
         <Button
           data-testid="update-acl-button"
