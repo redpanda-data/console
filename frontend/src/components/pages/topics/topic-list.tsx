@@ -158,13 +158,27 @@ const TopicList: FC = () => {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search
+                className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                data-testid="search-field-search-icon"
+              />
               <Input
-                className="w-[350px] pl-8"
+                className="w-[350px] pr-8 pl-8"
                 onChange={(e) => setLocalSearchValue(e.target.value)}
                 placeholder="Enter search term/regex"
+                testId="search-field-input"
                 value={localSearchValue}
               />
+              {Boolean(localSearchValue) && (
+                <button
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  data-testid="search-field-reset-icon"
+                  onClick={() => setLocalSearchValue('')}
+                  type="button"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <AnimatePresence>
               {Boolean(localSearchValue) && (
@@ -368,7 +382,9 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell data-testid="data-table-cell" key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
