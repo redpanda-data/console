@@ -249,29 +249,36 @@ vi.mock('../../../state/app-global', () => ({
   },
 }));
 
-vi.mock('../../../state/backend-api', () => ({
-  api: {
-    ACLs: {
-      isAuthorizerEnabled: true,
-    },
-    refreshClusterOverview: vi.fn().mockResolvedValue(undefined),
-    refreshUserData: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../../state/backend-api', () => {
+  const store = {
+    ACLs: { isAuthorizerEnabled: true },
     userData: {
       canCreateRoles: true,
       canListAcls: true,
       canManageUsers: true,
       canViewPermissionsList: true,
     },
-  },
-  rolesApi: {
-    deleteRole: vi.fn().mockResolvedValue(undefined),
-    refreshRoleMembers: refreshRoleMembersMock,
-    refreshRoles: refreshRolesMock,
-    roleMembers: new Map([['topic reader/qa', [{ name: 'alice', principalType: 'User' }]]]),
-    roles: ['topic reader/qa'],
-    rolesError: null,
-  },
-}));
+    enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
+    serviceAccounts: null as null | { users: string[] },
+    isAdminApiConfigured: false,
+  };
+  return {
+    api: {
+      ...store,
+      refreshClusterOverview: vi.fn().mockResolvedValue(undefined),
+      refreshUserData: vi.fn().mockResolvedValue(undefined),
+    },
+    useApiStoreHook: <T,>(selector: (s: typeof store) => T) => selector(store),
+    rolesApi: {
+      deleteRole: vi.fn().mockResolvedValue(undefined),
+      refreshRoleMembers: refreshRoleMembersMock,
+      refreshRoles: refreshRolesMock,
+      roleMembers: new Map([['topic reader/qa', [{ name: 'alice', principalType: 'User' }]]]),
+      roles: ['topic reader/qa'],
+      rolesError: null,
+    },
+  };
+});
 
 vi.mock('../../../state/supported-features', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../state/supported-features')>();

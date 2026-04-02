@@ -62,7 +62,7 @@ import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../reac
 import { useGetRedpandaInfoQuery } from '../../../react-query/api/cluster-status';
 import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
-import { api, rolesApi } from '../../../state/backend-api';
+import { api, rolesApi, useApiStoreHook } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
@@ -98,17 +98,19 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
-const getCreateUserButtonProps = (isAdminApiConfigured: boolean, featureCreateUser: boolean) => {
-  const hasRBAC = api.userData?.canManageUsers !== undefined;
+const getCreateUserButtonProps = (
+  isAdminApiConfigured: boolean,
+  featureCreateUser: boolean,
+  canManageUsers: boolean | undefined
+) => {
+  const hasRBAC = canManageUsers !== undefined;
 
   return {
-    isDisabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && api.userData?.canManageUsers === false),
+    isDisabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
     tooltip: [
       !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
       !featureCreateUser && "Your cluster doesn't support this feature.",
-      hasRBAC &&
-        api.userData?.canManageUsers === false &&
-        'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+      hasRBAC && canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
     ]
       .filter(Boolean)
       .join(' '),
@@ -125,6 +127,8 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const userData = useApiStoreHook((s) => s.userData);
+  const acls = useApiStoreHook((s) => s.ACLs);
 
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery(undefined, {
     enabled: isAdminApiConfigured,
@@ -161,7 +165,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
   }
 
   const warning =
-    api.ACLs === null ? (
+    acls === null ? (
       <Alert status="warning" style={{ marginBottom: '1em' }}>
         <AlertIcon />
         You do not have the necessary permissions to view ACLs
@@ -169,7 +173,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
     ) : null;
 
   const noAclAuthorizer =
-    api.ACLs?.isAuthorizerEnabled === false ? (
+    acls?.isAuthorizerEnabled === false ? (
       <Alert status="warning" style={{ marginBottom: '1em' }}>
         <AlertIcon />
         There's no authorizer configured in your Kafka cluster
@@ -184,8 +188,8 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
       isDisabled:
         (!isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
         (!featureCreateUser && "Your cluster doesn't support this feature.") ||
-        (api.userData?.canManageUsers !== undefined &&
-          api.userData?.canManageUsers === false &&
+        (userData?.canManageUsers !== undefined &&
+          userData?.canManageUsers === false &&
           'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
     },
     isServerless()
@@ -196,19 +200,19 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
           component: <RolesTab data-testid="roles-tab" />,
           isDisabled:
             (!featureRolesApi && "Your cluster doesn't support this feature.") ||
-            (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+            (userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
         },
     {
       key: 'acls' as AclListTab,
       name: 'ACLs',
       component: <AclsTab data-testid="acls-tab" principalGroups={principalGroupsView.principalGroups} />,
-      isDisabled: api.userData?.canListAcls ? false : 'You do not have the necessary permissions to view ACLs.',
+      isDisabled: userData?.canListAcls ? false : 'You do not have the necessary permissions to view ACLs.',
     },
     {
       key: 'permissions-list' as AclListTab,
       name: 'Permissions List',
       component: <PermissionsListTab data-testid="permissions-list-tab" />,
-      isDisabled: api.userData?.canViewPermissionsList
+      isDisabled: userData?.canViewPermissionsList
         ? false
         : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
     },
@@ -243,6 +247,7 @@ type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const userData = useApiStoreHook((s) => s.userData);
 
   // Check if Redpanda Admin API is configured using React Query
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
@@ -344,7 +349,7 @@ const PermissionsListTab = () => {
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser)}
+                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser, userData?.canManageUsers)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -362,6 +367,7 @@ const PermissionsListTab = () => {
 
 const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) => {
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const userData = useApiStoreHook((s) => s.userData);
   const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
     {
       onUpdate: () => {
@@ -420,7 +426,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
         >
           <Button
             data-testid="create-user-button"
-            {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser)}
+            {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser, userData?.canManageUsers)}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
             Create user
@@ -465,7 +471,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
             emptyAction={
               <Button
                 variant="outline"
-                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser)}
+                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser, userData?.canManageUsers)}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
               >
                 Create user
@@ -483,6 +489,8 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
 
 const UserActions = ({ user }: { user: UsersEntry }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
   const invalidateUsersCache = useInvalidateUsersCache();
@@ -506,7 +514,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
   return (
     <>
-      {Boolean(api.isAdminApiConfigured) && !isServerless() && (
+      {Boolean(isAdminApiConfigured) && !isServerless() && (
         <ChangePasswordModal
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
@@ -522,7 +530,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
           <Icon as={MoreHorizontalIcon} />
         </MenuButton>
         <MenuList>
-          {Boolean(api.isAdminApiConfigured) && !isServerless() && (
+          {Boolean(isAdminApiConfigured) && !isServerless() && (
             <MenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -555,6 +563,7 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
 const RolesTab = () => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const userData = useApiStoreHook((s) => s.userData);
   const [searchQuery, setSearchQuery] = useState('');
 
   const roles = filterByName(rolesApi.roles ?? [], searchQuery, (r) => r);
@@ -587,10 +596,10 @@ const RolesTab = () => {
       <Section>
         <Button
           data-testid="create-role-button"
-          isDisabled={api.userData?.canCreateRoles === false || !featureRolesApi}
+          isDisabled={userData?.canCreateRoles === false || !featureRolesApi}
           onClick={() => appGlobal.historyPush('/security/roles/create')}
           tooltip={[
-            api.userData?.canCreateRoles === false &&
+            userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
             !featureRolesApi && 'This feature is not enabled.',
           ]
@@ -676,6 +685,8 @@ const RolesTab = () => {
 const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
+  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
+  const serviceAccounts = useApiStoreHook((s) => s.serviceAccounts);
   const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
@@ -708,7 +719,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
     });
   };
 
-  const gbacEnabled = api.enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
+  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   const aclPrincipalGroups =
     principalGroups?.filter((g) => g.principalType === 'User' || (gbacEnabled && g.principalType === 'Group')) || [];
@@ -809,7 +820,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                 id: 'menu',
                 header: '',
                 cell: ({ row: { original: record } }) => {
-                  const userExists = api.serviceAccounts?.users.includes(record.principalName);
+                  const userExists = serviceAccounts?.users.includes(record.principalName);
 
                   const onDelete = async (user: boolean, acls: boolean) => {
                     if (acls) {
