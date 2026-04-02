@@ -1,0 +1,32 @@
+[build]
+  base = "frontend"
+  command = "bun install && NODE_OPTIONS=--max_old_space_size=16384 bun run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+    X-Content-Type-Options = "nosniff"
+
+# MF remote entry and manifest must never be cached
+[[headers]]
+  for = "/embedded.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/mf-manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Hashed static assets are immutable
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
