@@ -2,7 +2,7 @@
 
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -127,6 +127,7 @@ const HowToConnectStep = ({ topicName, username, saslMechanism }: HowToConnectPr
 
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { reset: resetApiWizardStore } = useAPIWizardStore();
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
@@ -171,9 +172,8 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     resetApiWizardStore();
-    navigate({ to: '/overview' });
-    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
-  }, [navigate, resetApiWizardStore]);
+    router.history.back();
+  }, [router, resetApiWizardStore]);
 
   useEffect(() => {
     uiState.pageTitle = 'Connect to your cluster';
@@ -214,7 +214,7 @@ export const APIConnectWizard = () => {
                       of={step.id}
                       onClick={() => {
                         if (step.id === APIWizardStep.ADD_DATA) {
-                          window.location.href = '/get-started?type=input'; // Required because we want to load Cloud UI's get-started page.
+                          router.history.back();
                         } else {
                           methods.goTo(step.id);
                         }
@@ -242,7 +242,7 @@ export const APIConnectWizard = () => {
                     onClick={
                       methods.current.id === APIWizardStep.ADD_TOPIC
                         ? () => {
-                            window.location.href = '/get-started?type=input';
+                            router.history.back();
                           }
                         : methods.prev
                     }
