@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   type GetRoleRequest,
@@ -12,6 +13,7 @@ import {
   type ListRolesRequest,
   ListRolesRequestSchema,
   type ListRolesResponse,
+  RoleMembershipSchema,
   SecurityService,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import {
@@ -136,9 +138,49 @@ export const useDeleteRoleMutation = () => {
 export const useUpdateRoleMembershipMutation = () => {
   const queryClient = useQueryClient();
 
+  const listRoleMembersQueryFilter = {
+    queryKey: createConnectQueryKey({
+      schema: SecurityService.method.listRoleMembers,
+      cardinality: 'infinite',
+    }),
+    exact: false,
+  } as const;
+
   return useMutation(updateRoleMembership, {
+    onMutate: async (variables) => {
+      // Cancel in-flight fetches so they don't overwrite the optimistic data
+      await queryClient.cancelQueries(listRoleMembersQueryFilter);
+
+      // Snapshot for rollback on error
+      const previousData =
+        queryClient.getQueriesData<InfiniteData<ListRoleMembersResponse>>(listRoleMembersQueryFilter);
+
+      const toAdd = new Set((variables.add ?? []).map((m) => m.principal));
+      const toRemove = new Set((variables.remove ?? []).map((m) => m.principal));
+
+      queryClient.setQueriesData<InfiniteData<ListRoleMembersResponse>>(listRoleMembersQueryFilter, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page, i) => ({
+            ...page,
+            members: [
+              ...page.members.filter((m) => !toRemove.has(m.principal)),
+              // Append new members to the first page only
+              ...(i === 0 ? [...toAdd].map((principal) => create(RoleMembershipSchema, { principal })) : []),
+            ],
+          })),
+        };
+      });
+
+      return { previousData };
+    },
+
     onSuccess: async () => {
-      // Invalidate both role lists and role member lists
+      // Only invalidate the roles list (to refresh member counts).
+      // The listRoleMembers cache already reflects the correct state via the
+      // optimistic update in onMutate — invalidating it here would trigger a
+      // refetch that may return stale data before the backend catches up.
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecurityService.method.listRoles,
@@ -146,20 +188,20 @@ export const useUpdateRoleMembershipMutation = () => {
         }),
         exact: false,
       });
-
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: SecurityService.method.listRoleMembers,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
     },
-    onError: (error) =>
+
+    onError: (error, _variables, context) => {
+      // Rollback optimistic update
+      if (context?.previousData) {
+        for (const [queryKey, data] of context.previousData) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
       formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'role membership',
-      }),
+      });
+    },
   });
 };
