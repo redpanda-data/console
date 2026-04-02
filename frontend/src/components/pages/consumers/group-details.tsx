@@ -159,7 +159,9 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
         (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
       )
     );
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
     setEditedTopic(null);
     setEditedPartition(null);
     setEdittingOffsets(groupOffsets);
@@ -171,7 +173,9 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
         (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
       )
     );
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
     setDeletingOffsets(groupOffsets);
     setDeletingMode('group');
   };
@@ -179,10 +183,18 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   return (
     <PageContent className="groupDetails">
       <Flex gap={2}>
-        <Button disabledReason={cannotEditGroupReason(group, featurePatchGroup)} onClick={() => editGroup()} variant="outline">
+        <Button
+          disabledReason={cannotEditGroupReason(group, featurePatchGroup)}
+          onClick={() => editGroup()}
+          variant="outline"
+        >
           Edit Group
         </Button>
-        <Button disabledReason={cannotDeleteGroupReason(group, featureDeleteGroup)} onClick={() => deleteGroup()} variant="outline">
+        <Button
+          disabledReason={cannotDeleteGroupReason(group, featureDeleteGroup)}
+          onClick={() => deleteGroup()}
+          variant="outline"
+        >
           Delete Group
         </Button>
       </Flex>
@@ -624,7 +636,10 @@ function cannotDeleteGroupReason(group: GroupDescription, featureDeleteGroup: bo
   }
 }
 
-function cannotDeleteGroupOffsetsReason(group: GroupDescription, featureDeleteGroupOffsets: boolean): string | undefined {
+function cannotDeleteGroupOffsetsReason(
+  group: GroupDescription,
+  featureDeleteGroupOffsets: boolean
+): string | undefined {
   if (group.noEditPerms) {
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }

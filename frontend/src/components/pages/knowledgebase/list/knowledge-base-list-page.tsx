@@ -404,7 +404,7 @@ export const KnowledgeBaseListPage = () => {
         });
       }
     }
-  }, [error]);
+  }, [error, featurePipelinesApi]);
 
   const handleDelete = useCallback(
     async (knowledgeBaseId: string) => {
