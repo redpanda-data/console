@@ -64,7 +64,7 @@ import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
-import { Features } from '../../../state/supported-features';
+import { Features, useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsx-utils';
 import { FeatureLicenseNotification } from '../../license/feature-license-notification';
@@ -108,6 +108,9 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
   // Admin API is configured if the query succeeded and returned data (even if it's an empty object)
   // This matches the MobX logic where api.isAdminApiConfigured checks if clusterOverview.redpanda !== null
   const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
 
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery(undefined, {
     enabled: isAdminApiConfigured,
@@ -166,7 +169,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
       component: <UsersTab data-testid="users-tab" isAdminApiConfigured={isAdminApiConfigured} />,
       isDisabled:
         (!isAdminApiConfigured && 'The Redpanda Admin API is not configured.') ||
-        (!Features.createUser && "Your cluster doesn't support this feature.") ||
+        (!featureCreateUser && "Your cluster doesn't support this feature.") ||
         (api.userData?.canManageUsers !== undefined &&
           api.userData?.canManageUsers === false &&
           'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
@@ -178,7 +181,7 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
           name: 'Roles',
           component: <RolesTab data-testid="roles-tab" />,
           isDisabled:
-            (!Features.rolesApi && "Your cluster doesn't support this feature.") ||
+            (!featureRolesApi && "Your cluster doesn't support this feature.") ||
             (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
         },
     {
