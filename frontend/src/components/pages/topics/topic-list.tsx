@@ -9,44 +9,52 @@
  * by the Apache License, Version 2.0
  */
 
+import { useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import {
-  Alert,
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import {
   AlertDialog,
-  AlertDialogBody,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogOverlay,
-  AlertIcon,
-  Box,
-  Button,
-  Checkbox,
-  DataTable,
-  Flex,
-  Icon,
-  Popover,
-  SearchField,
-  Text,
-  Tooltip,
-  useToast,
-} from '@redpanda-data/ui';
-import { Link } from '@tanstack/react-router';
-import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { DataTableColumnHeader, DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
+import { Loader2, Search, XCircle } from 'lucide-react';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
-import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { type FC, useEffect, useMemo, useState } from 'react';
+import { useGetAllClusterStatusQuery } from 'react-query/api/cluster-status';
+import { useGetClusterHealthQuery } from 'react-query/api/debug-bundle';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { toast } from 'sonner';
 
 import { CreateTopicModal } from './CreateTopicModal/create-topic-modal';
-import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/use-pagination-params';
-import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
-import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsx-utils';
 import { renderLogDirSummary } from '../../misc/common';
@@ -75,22 +83,12 @@ const TopicList: FC = () => {
     parseAsBoolean
   );
 
-  const { data, isLoading, isError, refetch: refetchTopics } = useLegacyListTopicsQuery();
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError } = useLegacyListTopicsQuery();
+  useGetAllClusterStatusQuery();
+  useGetClusterHealthQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
-
-  const refreshData = useCallback(() => {
-    api.refreshClusterOverview();
-    api.refreshClusterHealth().catch(() => {
-      // Error handling managed by API layer
-    });
-
-    refetchTopics();
-  }, [refetchTopics]);
-
-  useEffect(() => {
-    appGlobal.onRefresh = refreshData;
-  }, [refreshData]);
 
   const topics = useMemo(() => {
     let filteredTopics = data.topics ?? [];
@@ -140,11 +138,11 @@ const TopicList: FC = () => {
   return (
     <PageContent>
       <Section>
-        <Flex>
+        <div className="flex gap-4">
           <Statistic title="Total topics" value={statistics.topicCount} />
           <Statistic title="Total partitions" value={statistics.partitionCount} />
           <Statistic title="Total replicas" value={statistics.replicaCount} />
-        </Flex>
+        </div>
       </Section>
 
       <div className="mt-2 mb-4">
@@ -152,66 +150,67 @@ const TopicList: FC = () => {
           className="min-w-[160px]"
           data-testid="create-topic-button"
           onClick={() => setIsCreateTopicModalOpen(true)}
-          variant="solid"
         >
           Create topic
         </Button>
       </div>
       <Section>
         <div className="flex items-center justify-between gap-4">
-          <Flex gap={2}>
-            <SearchField
-              placeholderText="Enter search term/regex"
-              searchText={localSearchValue}
-              setSearchText={setLocalSearchValue}
-              width="350px"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="w-[350px] pl-8"
+                onChange={(e) => setLocalSearchValue(e.target.value)}
+                placeholder="Enter search term/regex"
+                value={localSearchValue}
+              />
+            </div>
             <AnimatePresence>
               {Boolean(localSearchValue) && (
                 <motion.div
                   animate={{ opacity: 1 }}
+                  className="flex items-center"
                   exit={{ opacity: 0 }}
                   initial={{ opacity: 0 }}
-                  style={{ display: 'flex', alignItems: 'center' }}
                   transition={{ duration: 0.12 }}
                 >
-                  <Text alignSelf="center" lineHeight="1" ml={4} whiteSpace="nowrap">
-                    <Text display="inline" fontWeight="bold">
-                      {topics.length}
-                    </Text>{' '}
-                    {topics.length === 1 ? 'result' : 'results'}
-                  </Text>
+                  <span className="ml-4 whitespace-nowrap text-sm">
+                    <strong>{topics.length}</strong> {topics.length === 1 ? 'result' : 'results'}
+                  </span>
                 </motion.div>
               )}
             </AnimatePresence>
-          </Flex>
-          <Checkbox
-            data-testid="show-internal-topics-checkbox"
-            isChecked={showInternalTopics}
-            onChange={(x) => {
-              setShowInternalTopics(x.target.checked);
-            }}
-          >
-            Show internal topics
-          </Checkbox>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={showInternalTopics ?? false}
+              data-testid="show-internal-topics-checkbox"
+              id="show-internal-topics"
+              onCheckedChange={(checked) => {
+                setShowInternalTopics(Boolean(checked));
+              }}
+            />
+            <Label htmlFor="show-internal-topics">Show internal topics</Label>
+          </div>
 
           <CreateTopicModal isOpen={isCreateTopicModalOpen} onClose={() => setIsCreateTopicModalOpen(false)} />
         </div>
-        <Box my={4}>
+        <div className="my-4">
           <TopicsTable
             onDelete={(record) => {
               setTopicToDelete(record);
             }}
             topics={topics}
           />
-        </Box>
+        </div>
       </Section>
 
       <ConfirmDeletionModal
         onCancel={() => setTopicToDelete(null)}
         onFinish={async () => {
           setTopicToDelete(null);
-          await refreshData();
+          await queryClient.invalidateQueries();
         }}
         topicToDelete={topicToDelete}
       />
@@ -219,112 +218,172 @@ const TopicList: FC = () => {
   );
 };
 
+const staticTopicsTableColumns: ColumnDef<Topic>[] = [
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Partitions" />,
+    accessorKey: 'partitionCount',
+    enableResizing: true,
+    cell: ({ row: { original: topic } }) => topic.partitionCount,
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Replicas" />,
+    accessorKey: 'replicationFactor',
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="CleanupPolicy" />,
+    accessorKey: 'cleanupPolicy',
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
+    accessorKey: 'logDirSummary.totalSizeBytes',
+    cell: ({ row: { original: topic } }) => renderLogDirSummary(topic.logDirSummary),
+  },
+  {
+    id: 'action',
+    header: '',
+    cell: ({ row: { original: record }, table }) => {
+      const { onDelete } = table.options.meta as { onDelete: (record: Topic) => void };
+      return (
+        <div className="flex gap-1">
+          <DeleteDisabledTooltip topic={record}>
+            <button
+              data-testid={`delete-topic-button-${record.topicName}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(record);
+              }}
+              type="button"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </DeleteDisabledTooltip>
+        </div>
+      );
+    },
+  },
+];
+
 const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
+  const { data: clusterHealth } = useGetClusterHealthQuery();
   const paginationParams = usePaginationParams(topics.length, uiSettings.topicList.pageSize);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: paginationParams.pageIndex,
+    pageSize: paginationParams.pageSize,
+  });
+
+  const columns = useMemo<ColumnDef<Topic>[]>(
+    () => [
+      {
+        header: 'Name',
+        accessorKey: 'topicName',
+        cell: ({ row: { original: topic } }) => {
+          const leaderLessPartitions = clusterHealth?.leaderlessPartitions?.find(
+            ({ topicName }) => topicName === topic.topicName
+          )?.partitionIds;
+          const underReplicatedPartitions = clusterHealth?.underReplicatedPartitions?.find(
+            ({ topicName }) => topicName === topic.topicName
+          )?.partitionIds;
+
+          return (
+            <div className="flex items-center gap-2 whitespace-pre-wrap break-words">
+              <Link
+                data-testid={`topic-link-${topic.topicName}`}
+                params={{ topicName: encodeURIComponent(topic.topicName) }}
+                to="/topics/$topicName"
+              >
+                <TopicName topic={topic} />
+              </Link>
+              {!!leaderLessPartitions && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <ErrorIcon className="text-destructive" size={18} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {!!underReplicatedPartitions && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <WarningIcon className="text-warning" size={18} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          );
+        },
+        size: Number.POSITIVE_INFINITY,
+      },
+      ...staticTopicsTableColumns,
+    ],
+    [clusterHealth]
+  );
+
+  const table = useReactTable({
+    data: topics,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: (updater) => {
+      const newPagination = typeof updater === 'function' ? updater(pagination) : updater;
+      setPagination(newPagination);
+      Object.assign(uiSettings.topicList, { pageSize: newPagination.pageSize });
+      editQuery((query) => {
+        query.page = String(newPagination.pageIndex);
+        query.pageSize = String(newPagination.pageSize);
+      });
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    meta: { onDelete },
+  });
 
   return (
-    <div data-testid="topics-table">
-      <DataTable<Topic>
-        columns={[
-          {
-            header: 'Name',
-            accessorKey: 'topicName',
-            cell: ({ row: { original: topic } }) => {
-              const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-                ({ topicName }) => topicName === topic.topicName
-              )?.partitionIds;
-              const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-                ({ topicName }) => topicName === topic.topicName
-              )?.partitionIds;
-
-              return (
-                <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
-                  <Link
-                    data-testid={`topic-link-${topic.topicName}`}
-                    params={{ topicName: encodeURIComponent(topic.topicName) }}
-                    to="/topics/$topicName"
-                  >
-                    <TopicName topic={topic} />
-                  </Link>
-                  {!!leaderLessPartitions && (
-                    <Tooltip
-                      hasArrow
-                      label={`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
-                      placement="top"
-                    >
-                      <Box>
-                        <ErrorIcon color={colors.brandError} size={18} />
-                      </Box>
-                    </Tooltip>
-                  )}
-                  {!!underReplicatedPartitions && (
-                    <Tooltip
-                      hasArrow
-                      label={`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
-                      placement="top"
-                    >
-                      <Box>
-                        <WarningIcon color={colors.brandWarning} size={18} />
-                      </Box>
-                    </Tooltip>
-                  )}
-                </Flex>
-              );
-            },
-            size: Number.POSITIVE_INFINITY,
-          },
-          {
-            header: 'Partitions',
-            accessorKey: 'partitionCount',
-            enableResizing: true,
-            cell: ({ row: { original: topic } }) => topic.partitionCount,
-          },
-          {
-            header: 'Replicas',
-            accessorKey: 'replicationFactor',
-          },
-          {
-            header: 'CleanupPolicy',
-            accessorKey: 'cleanupPolicy',
-          },
-          {
-            header: 'Size',
-            accessorKey: 'logDirSummary.totalSizeBytes',
-            cell: ({ row: { original: topic } }) => renderLogDirSummary(topic.logDirSummary),
-          },
-          {
-            id: 'action',
-            header: '',
-            cell: ({ row: { original: record } }) => (
-              <Flex gap={1}>
-                <DeleteDisabledTooltip topic={record}>
-                  <button
-                    data-testid={`delete-topic-button-${record.topicName}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDelete(record);
-                    }}
-                    type="button"
-                  >
-                    <Icon as={TrashIcon} />
-                  </button>
-                </DeleteDisabledTooltip>
-              </Flex>
-            ),
-          },
-        ]}
-        data={topics}
-        onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-          Object.assign(uiSettings.topicList, { pageSize });
-          editQuery((query) => {
-            query.page = String(pageIndex);
-            query.pageSize = String(pageSize);
-          });
-        })}
-        pagination={paginationParams}
-        sorting={true}
-      />
-    </div>
+    <TooltipProvider>
+      <div data-testid="topics-table">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
+                  No topics found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <DataTablePagination table={table} />
+      </div>
+    </TooltipProvider>
   );
 };
 
@@ -388,14 +447,17 @@ const TopicName = ({ topic }: { topic: Topic }) => {
   );
 
   return (
-    <Box whiteSpace="break-spaces" wordBreak="break-word">
-      <Popover closeDelay={10} content={popoverContent} hideCloseButton placement="right" size="stretch">
-        <span>
-          {topic.topicName}
-          {iconClosedEye}
-        </span>
+    <div className="break-words">
+      <Popover>
+        <PopoverTrigger asChild>
+          <span>
+            {topic.topicName}
+            {iconClosedEye}
+          </span>
+        </PopoverTrigger>
+        <PopoverContent side="right">{popoverContent}</PopoverContent>
       </Popover>
-    </Box>
+    </div>
   );
 };
 
@@ -410,8 +472,6 @@ function ConfirmDeletionModal({
 }) {
   const [deletionPending, setDeletionPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
-  const toast = useToast();
-  const cancelRef = useRef<HTMLButtonElement | null>(null);
 
   const cleanup = () => {
     setDeletionPending(false);
@@ -422,14 +482,12 @@ function ConfirmDeletionModal({
     onFinish();
     cleanup();
 
-    toast({
-      title: 'Topic Deleted',
+    toast.success('Topic Deleted', {
       description: (
-        <Text as="span">
+        <span>
           Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully
-        </Text>
+        </span>
       ),
-      status: 'success',
     });
   };
 
@@ -439,63 +497,72 @@ function ConfirmDeletionModal({
   };
 
   return (
-    <AlertDialog isOpen={topicToDelete !== null} leastDestructiveRef={cancelRef} onClose={cancel}>
-      <AlertDialogOverlay>
-        <AlertDialogContent>
-          <AlertDialogHeader>Delete Topic</AlertDialogHeader>
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!open) {
+          cancel();
+        }
+      }}
+      open={topicToDelete !== null}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Topic</AlertDialogTitle>
+        </AlertDialogHeader>
 
-          <AlertDialogBody>
-            {Boolean(error) && (
-              <Alert mb={2} status="error">
-                <AlertIcon />
+        <div>
+          {Boolean(error) && (
+            <Alert className="mb-2" variant="destructive">
+              <XCircle />
+              <AlertDescription>
                 {`An error occurred: ${typeof error === 'string' ? error : (error?.message ?? 'Unknown error')}`}
-              </Alert>
-            )}
-            {Boolean(topicToDelete?.isInternal) && (
-              <Alert mb={2} status="error">
-                <AlertIcon />
+              </AlertDescription>
+            </Alert>
+          )}
+          {Boolean(topicToDelete?.isInternal) && (
+            <Alert className="mb-2" variant="destructive">
+              <XCircle />
+              <AlertDescription>
                 This is an internal topic, deleting it might have unintended side-effects!
-              </Alert>
-            )}
-            <Text>
-              Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br />
-              This action cannot be undone.
-            </Text>
-          </AlertDialogBody>
+              </AlertDescription>
+            </Alert>
+          )}
+          <Text>
+            Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br />
+            This action cannot be undone.
+          </Text>
+        </div>
 
-          <AlertDialogFooter>
-            <Button onClick={cancel} ref={cancelRef} variant="ghost">
-              Cancel
-            </Button>
-            <Button
-              colorScheme="brand"
-              data-testid="delete-topic-confirm-button"
-              isLoading={deletionPending}
-              ml={3}
-              onClick={() => {
-                if (topicToDelete?.topicName) {
-                  setDeletionPending(true);
-                  api
-                    .deleteTopic(topicToDelete?.topicName)
-                    .then(finish)
-                    .catch((err) => {
-                      toast({
-                        title: 'Failed to delete topic',
-                        description: <Text as="span">{err.message}</Text>,
-                        status: 'error',
-                      });
-                    })
-                    .finally(() => {
-                      setDeletionPending(false);
+        <AlertDialogFooter>
+          <Button onClick={cancel} variant="ghost">
+            Cancel
+          </Button>
+          <Button
+            className="ml-3"
+            data-testid="delete-topic-confirm-button"
+            disabled={deletionPending}
+            onClick={() => {
+              if (topicToDelete?.topicName) {
+                setDeletionPending(true);
+                api
+                  .deleteTopic(topicToDelete?.topicName)
+                  .then(finish)
+                  .catch((err) => {
+                    toast.error('Failed to delete topic', {
+                      description: String(err.message),
                     });
-                }
-              }}
-            >
-              Delete
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
+                  })
+                  .finally(() => {
+                    setDeletionPending(false);
+                  });
+              }
+            }}
+          >
+            {deletionPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Delete
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
     </AlertDialog>
   );
 }
@@ -504,12 +571,15 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
   const deleteButton = props.children;
 
   const wrap = (button: JSX.Element, message: string) => (
-    <Tooltip hasArrow label={message} placement="left">
-      {React.cloneElement(button, {
-        disabled: true,
-        className: `${button.props.className ?? ''} disabled`,
-        onClick: undefined,
-      })}
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {React.cloneElement(button, {
+          disabled: true,
+          className: `${button.props.className ?? ''} disabled`,
+          onClick: undefined,
+        })}
+      </TooltipTrigger>
+      <TooltipContent side="left">{message}</TooltipContent>
     </Tooltip>
   );
 

@@ -164,9 +164,21 @@ export const useGetAllClusterStatusQuery = (options?: {
     kafkaConnectInfoQuery.isError ||
     schemaRegistryInfoQuery.isError;
 
+  const refetch = () =>
+    Promise.allSettled([
+      kafkaInfoQuery.refetch(),
+      authorizerInfoQuery.refetch(),
+      redpandaInfoQuery.refetch(),
+      partitionBalancerQuery.refetch(),
+      consoleInfoQuery.refetch(),
+      kafkaConnectInfoQuery.refetch(),
+      schemaRegistryInfoQuery.refetch(),
+    ]);
+
   return {
     isLoading,
     isError,
+    refetch,
     kafka: kafkaInfoQuery.data,
     authorizer: authorizerInfoQuery.data,
     redpanda: redpandaInfoQuery.data,

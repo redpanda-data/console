@@ -10,6 +10,7 @@
  */
 
 import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { PauseIcon, PlayIcon, RefreshIcon } from 'components/icons';
 import { useEffect, useRef, useState } from 'react';
 
@@ -19,6 +20,7 @@ import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 
 export const DataRefreshButton = () => {
+  const queryClient = useQueryClient();
   const [isActive, setIsActive] = useState(false);
   const [refreshState, setRefreshState] = useState({ remainingSeconds: 0, activeRequests: 0, maxRequestCount: 0 });
   const { remainingSeconds, activeRequests, maxRequestCount } = refreshState;
@@ -52,6 +54,7 @@ export const DataRefreshButton = () => {
           } else {
             stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
             appGlobal.onRefresh();
+            queryClient.invalidateQueries();
           }
         }
       } else if (stateRef.current.isActive && currentRequests > 0) {
@@ -75,6 +78,7 @@ export const DataRefreshButton = () => {
       stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
     } else {
       appGlobal.onRefresh();
+      queryClient.invalidateQueries();
     }
     setIsActive(newActive);
   };
@@ -126,7 +130,10 @@ export const DataRefreshButton = () => {
             <IconButton
               aria-label="Force Refresh"
               icon={<RefreshIcon size={18} />}
-              onClick={() => appGlobal.onRefresh()}
+              onClick={() => {
+                appGlobal.onRefresh();
+                queryClient.invalidateQueries();
+              }}
               p={0}
               size="xs"
               variant="ghost"
