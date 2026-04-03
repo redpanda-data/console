@@ -175,6 +175,7 @@ import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
+import { notifyEmbeddedAuthError } from '../utils/notify-embedded-auth-error';
 import { ObjToKv } from '../utils/tsx-utils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
@@ -256,11 +257,7 @@ async function handle401(res: Response) {
   if (inEmbeddedContext) {
     // In embedded mode, emit an event for the host to handle re-authentication
     // instead of redirecting, which breaks the embedded experience
-    window.dispatchEvent(
-      new CustomEvent('console:auth-error', {
-        detail: { clusterId: appConfig.clusterId, path: window.location.pathname },
-      })
-    );
+    notifyEmbeddedAuthError({ clusterId: appConfig.clusterId });
     // Don't redirect - let the request fail gracefully and allow the host to handle auth
     return;
   }
