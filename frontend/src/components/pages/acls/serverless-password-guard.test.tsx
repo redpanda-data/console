@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// biome-ignore-all lint/style/noNamespaceImport: test file
-
 import { render, screen } from '@testing-library/react';
 import { UserInformationCard } from 'components/pages/roles/user-information-card';
 
