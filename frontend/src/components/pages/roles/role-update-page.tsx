@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useToast } from '@redpanda-data/ui';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/roles/$roleName/update');
@@ -34,7 +33,6 @@ import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
 
 const RoleUpdatePage = () => {
-  const toast = useToast();
   const navigate = useNavigate({ from: '/security/roles/$roleName/update' });
   const { roleName } = routeApi.useParams();
   const search = routeApi.useSearch();
@@ -57,7 +55,7 @@ const RoleUpdatePage = () => {
   const updateRoleAclMutation =
     (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
       const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
-      handleResponses(toast, applyResult.errors, applyResult.created);
+      handleResponses(applyResult.errors, applyResult.created);
 
       navigate({
         to: `/security/roles/${roleName}/details`,

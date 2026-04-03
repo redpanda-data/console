@@ -2263,8 +2263,8 @@ const _rolesCreator = (set: any, get: any) => ({
 
       const members = res.response.members
         .map((x) => {
-          const principalParts = x.principal.split(':');
-          if (principalParts.length !== 2) {
+          const colonIdx = x.principal.indexOf(':');
+          if (colonIdx < 0) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('failed to split principal of role', {
               roleName,
@@ -2272,8 +2272,17 @@ const _rolesCreator = (set: any, get: any) => ({
             });
             return null;
           }
-          const principalType = principalParts[0] as RolePrincipal['principalType'];
-          const name = principalParts[1];
+          const principalTypeRaw = x.principal.slice(0, colonIdx);
+          if (principalTypeRaw !== 'User' && principalTypeRaw !== 'Group') {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.warn('unsupported principal type in refreshRoleMembers, skipping', {
+              roleName,
+              principal: x.principal,
+            });
+            return null;
+          }
+          const principalType = principalTypeRaw as RolePrincipal['principalType'];
+          const name = x.principal.slice(colonIdx + 1);
 
           return { principalType, name };
         })

@@ -10,35 +10,12 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Badge,
-  Box,
-  Button,
-  Link as ChakraLink,
-  CloseButton,
-  createStandaloneToast,
-  DataTable,
-  Flex,
-  Icon,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  redpandaTheme,
-  redpandaToastOptions,
-  SearchField,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@redpanda-data/ui';
+import { DataTable, SearchField, Tabs } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { isServerless } from 'config';
+import { InfoIcon, X } from 'lucide-react';
 import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
@@ -48,7 +25,9 @@ import {
   type DeleteACLsRequest,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { type FC, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
 import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
@@ -60,6 +39,7 @@ import ErrorResult from '../../../components/misc/error-result';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
 import { useGetRedpandaInfoQuery } from '../../../react-query/api/cluster-status';
+import { useDeleteRoleMutation, useListRolesQuery } from '../../../react-query/api/security';
 import { useInvalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi, useApiStoreHook } from '../../../state/backend-api';
@@ -71,6 +51,16 @@ import { FeatureLicenseNotification } from '../../license/feature-license-notifi
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
+import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
+import { Badge } from '../../redpanda-ui/components/badge';
+import { Button } from '../../redpanda-ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../redpanda-ui/components/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 /** Filters items by name using a case-insensitive regex match (falls back to substring if the query is an invalid regex). Returns all items if the query is empty. */
@@ -87,15 +77,6 @@ function filterByName<T>(items: T[], query: string, getName: (item: T) => string
   }
 }
 
-const { ToastContainer, toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: {
-    ...redpandaToastOptions.defaultOptions,
-    isClosable: false,
-    duration: 2000,
-  },
-});
-
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 const getCreateUserButtonProps = (
@@ -106,7 +87,7 @@ const getCreateUserButtonProps = (
   const hasRBAC = canManageUsers !== undefined;
 
   return {
-    isDisabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
+    disabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
     tooltip: [
       !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
       !featureCreateUser && "Your cluster doesn't support this feature.",
@@ -166,17 +147,15 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
   const warning =
     acls === null ? (
-      <Alert status="warning" style={{ marginBottom: '1em' }}>
-        <AlertIcon />
-        You do not have the necessary permissions to view ACLs
+      <Alert className="mb-4" variant="warning">
+        <AlertDescription>You do not have the necessary permissions to view ACLs</AlertDescription>
       </Alert>
     ) : null;
 
   const noAclAuthorizer =
     acls?.isAuthorizerEnabled === false ? (
-      <Alert status="warning" style={{ marginBottom: '1em' }}>
-        <AlertIcon />
-        There's no authorizer configured in your Kafka cluster
+      <Alert className="mb-4" variant="warning">
+        <AlertDescription>There's no authorizer configured in your Kafka cluster</AlertDescription>
       </Alert>
     ) : null;
 
@@ -222,8 +201,6 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
   return (
     <>
-      <ToastContainer />
-
       {warning}
       {noAclAuthorizer}
 
@@ -243,11 +220,79 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 export default AclList;
 
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
+
+const PermissionsListActions = ({
+  entry,
+  canDeleteUser,
+  onDelete,
+}: {
+  entry: UsersEntry;
+  canDeleteUser: boolean;
+  onDelete: (entry: UsersEntry, deleteUser: boolean, deleteAcls: boolean) => Promise<void>;
+}) => {
+  const [pendingAction, setPendingAction] = useState<'user-and-acls' | 'user-only' | null>(null);
+
+  return (
+    <>
+      <DeleteUserConfirmModal
+        onConfirm={async () => {
+          if (pendingAction === 'user-and-acls') await onDelete(entry, true, true);
+          if (pendingAction === 'user-only') await onDelete(entry, true, false);
+        }}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+        open={pendingAction !== null}
+        userName={entry.name}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon-sm" variant="destructive-ghost">
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            disabled={!canDeleteUser}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPendingAction('user-and-acls');
+            }}
+          >
+            Delete (User and ACLs)
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={!canDeleteUser}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPendingAction('user-only');
+            }}
+          >
+            Delete (User only)
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(entry, false, true).catch(() => {});
+            }}
+          >
+            Delete (ACLs only)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: permissions list has complex conditional rendering
 const PermissionsListTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const userData = useApiStoreHook((s) => s.userData);
+  const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
+  const invalidateUsersCache = useInvalidateUsersCache();
 
   // Check if Redpanda Admin API is configured using React Query
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
@@ -263,11 +308,53 @@ const PermissionsListTab = () => {
 
   const { data: principalGroupsData, isError: isAclsError, error: aclsError } = useListACLAsPrincipalGroups();
 
+  const deleteACLsForPrincipal = async (principalName: string) => {
+    const deleteRequest = create(DeleteACLsRequestSchema, {
+      filter: {
+        principal: `User:${principalName}`,
+        resourceType: ACL_ResourceType.ANY,
+        resourceName: undefined,
+        host: undefined,
+        operation: ACL_Operation.ANY,
+        permissionType: ACL_PermissionType.ANY,
+        resourcePatternType: ACL_ResourcePatternType.ANY,
+      },
+    });
+    await deleteACLMutation(deleteRequest);
+    toast.success(
+      <span>
+        Deleted ACLs for <CodeEl>{principalName}</CodeEl>
+      </span>
+    );
+  };
+
+  const onDelete = async (entry: UsersEntry, deleteUser: boolean, deleteAcls: boolean) => {
+    if (deleteAcls) {
+      try {
+        await deleteACLsForPrincipal(entry.name);
+      } catch (err: unknown) {
+        setAclFailed({ err });
+      }
+    }
+    if (deleteUser) {
+      try {
+        await api.deleteServiceAccount(entry.name);
+        toast.success(
+          <span>
+            Deleted user <CodeEl>{entry.name}</CodeEl>
+          </span>
+        );
+      } catch (err: unknown) {
+        setAclFailed({ err });
+      }
+    }
+    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
+  };
+
   // Check for errors from both queries
   if (isUsersError && usersError) {
     return (
-      <Alert status="error">
-        <AlertIcon />
+      <Alert variant="destructive">
         <AlertTitle>Failed to load users</AlertTitle>
         <AlertDescription>{usersError.message}</AlertDescription>
       </Alert>
@@ -304,13 +391,13 @@ const PermissionsListTab = () => {
   const usersFiltered = filterByName(users, searchQuery, (u) => u.name);
 
   return (
-    <Flex flexDirection="column" gap="4">
-      <Box>
+    <div className="flex flex-col gap-4">
+      <div>
         This page provides a detailed overview of all effective permissions for each principal, including those derived
         from assigned roles. While the ACLs tab shows permissions directly granted to principals, this tab also
         incorporates roles that may assign additional permissions to a principal. This gives you a complete picture of
         what each principal can do within your cluster.
-      </Box>
+      </div>
 
       <SearchField
         placeholderText="Filter by name"
@@ -320,7 +407,8 @@ const PermissionsListTab = () => {
       />
 
       <Section>
-        <Box my={4}>
+        <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
+        <div className="my-4">
           <DataTable<UsersEntry>
             columns={[
               {
@@ -330,9 +418,13 @@ const PermissionsListTab = () => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={Link} textDecoration="none" to={`/security/users/${entry.name}/details`}>
+                    <Link
+                      className="text-inherit no-underline hover:no-underline"
+                      params={{ userName: entry.name }}
+                      to="/security/users/$userName/details"
+                    >
                       {entry.name}
-                    </ChakraLink>
+                    </Link>
                   );
                 },
               },
@@ -344,24 +436,50 @@ const PermissionsListTab = () => {
                   return <UserRoleTags showMaxItems={2} userName={entry.name} />;
                 },
               },
+              {
+                size: 60,
+                id: 'menu',
+                header: '',
+                cell: ({ row: { original: entry } }) => (
+                  <PermissionsListActions
+                    canDeleteUser={Boolean(featureDeleteUser)}
+                    entry={entry}
+                    onDelete={onDelete}
+                  />
+                ),
+              },
             ]}
             data={usersFiltered}
-            emptyAction={
-              <Button
-                variant="outline"
-                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser, userData?.canManageUsers)}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-              >
-                Create user
-              </Button>
-            }
+            emptyAction={(() => {
+              const { disabled, tooltip } = getCreateUserButtonProps(
+                isAdminApiConfigured,
+                featureCreateUser,
+                userData?.canManageUsers
+              );
+              return (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        disabled={disabled}
+                        onClick={() => appGlobal.historyPush('/security/users/create')}
+                        variant="outline"
+                      >
+                        Create user
+                      </Button>
+                    </TooltipTrigger>
+                    {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })()}
             emptyText="No principals yet"
             pagination
             sorting
           />
-        </Box>
+        </div>
       </Section>
-    </Flex>
+    </div>
   );
 };
 
@@ -395,19 +513,25 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
 
   if (isError && error) {
     return (
-      <Alert status="error">
-        <AlertIcon />
+      <Alert variant="destructive">
         <AlertTitle>Failed to load users</AlertTitle>
         <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     );
   }
+
+  const { disabled: createDisabled, tooltip: createTooltip } = getCreateUserButtonProps(
+    isAdminApiConfigured,
+    featureCreateUser,
+    userData?.canManageUsers
+  );
+
   return (
-    <Flex flexDirection="column" gap="4">
-      <Box>
+    <div className="flex flex-col gap-4">
+      <div>
         These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
         (for example, OIDC, mTLS) on the Permissions List page.
-      </Box>
+      </div>
 
       <SearchField
         data-testid="search-field-input"
@@ -418,22 +542,22 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
       />
 
       <Section>
-        <Tooltip
-          hasArrow
-          isDisabled={featureCreateUser}
-          label="The cluster does not support this feature"
-          placement="top"
-        >
-          <Button
-            data-testid="create-user-button"
-            {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser, userData?.canManageUsers)}
-            onClick={() => appGlobal.historyPush('/security/users/create')}
-          >
-            Create user
-          </Button>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-testid="create-user-button"
+                disabled={createDisabled}
+                onClick={() => appGlobal.historyPush('/security/users/create')}
+              >
+                Create user
+              </Button>
+            </TooltipTrigger>
+            {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
+          </Tooltip>
+        </TooltipProvider>
 
-        <Box my={4}>
+        <div className="my-4">
           <DataTable<UsersEntry>
             columns={[
               {
@@ -443,9 +567,13 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={Link} textDecoration="none" to={`/security/users/${entry.name}/details`}>
+                    <Link
+                      className="text-inherit no-underline hover:no-underline"
+                      params={{ userName: entry.name }}
+                      to="/security/users/$userName/details"
+                    >
                       {entry.name}
-                    </ChakraLink>
+                    </Link>
                   );
                 },
               },
@@ -463,16 +591,16 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
                 header: '',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return <UserActions user={entry} />;
+                  return <UserActions isAdminApiConfigured={isAdminApiConfigured} user={entry} />;
                 },
               },
             ]}
             data={usersFiltered}
             emptyAction={
               <Button
-                variant="outline"
-                {...getCreateUserButtonProps(isAdminApiConfigured, featureCreateUser, userData?.canManageUsers)}
+                disabled={createDisabled}
                 onClick={() => appGlobal.historyPush('/security/users/create')}
+                variant="outline"
               >
                 Create user
               </Button>
@@ -481,18 +609,17 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
             pagination
             sorting
           />
-        </Box>
+        </div>
       </Section>
-    </Flex>
+    </div>
   );
 };
 
-const UserActions = ({ user }: { user: UsersEntry }) => {
+const UserActions = ({ user, isAdminApiConfigured }: { user: UsersEntry; isAdminApiConfigured: boolean }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
-  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
-  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const invalidateUsersCache = useInvalidateUsersCache();
 
   const onConfirmDelete = async () => {
@@ -524,39 +651,50 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
       {Boolean(featureRolesApi) && (
         <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
+      <DeleteUserConfirmModal
+        onConfirm={onConfirmDelete}
+        onOpenChange={setIsDeleteModalOpen}
+        open={isDeleteModalOpen}
+        userName={user.name}
+      />
 
-      <Menu>
-        <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
-          <Icon as={MoreHorizontalIcon} />
-        </MenuButton>
-        <MenuList>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="deleteButton" size="icon-sm" variant="ghost">
+            <MoreHorizontalIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
           {Boolean(isAdminApiConfigured) && !isServerless() && (
-            <MenuItem
+            <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 setIsChangePasswordModalOpen(true);
               }}
             >
               Change password
-            </MenuItem>
+            </DropdownMenuItem>
           )}
           {Boolean(featureRolesApi) && (
-            <MenuItem
+            <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 setIsChangeRolesModalOpen(true);
               }}
             >
               Change roles
-            </MenuItem>
+            </DropdownMenuItem>
           )}
-          <DeleteUserConfirmModal
-            buttonEl={<MenuItem type="button">Delete</MenuItem>}
-            onConfirm={onConfirmDelete}
-            userName={user.name}
-          />
-        </MenuList>
-      </Menu>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDeleteModalOpen(true);
+            }}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 };
@@ -565,25 +703,36 @@ const RolesTab = () => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: rolesData, isError: rolesIsError, error: rolesError } = useListRolesQuery();
+  const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
 
-  const roles = filterByName(rolesApi.roles ?? [], searchQuery, (r) => r);
+  const roles = filterByName(rolesData?.roles ?? [], searchQuery, (r) => r.name);
 
   const rolesWithMembers = roles.map((r) => {
-    const members = rolesApi.roleMembers.get(r) ?? [];
-    return { name: r, members };
+    const members = rolesApi.roleMembers.get(r.name) ?? [];
+    return { name: r.name, members };
   });
 
-  if (rolesApi.rolesError) {
-    return <ErrorResult error={rolesApi.rolesError} />;
+  if (rolesIsError) {
+    return <ErrorResult error={rolesError} />;
   }
 
+  const createRoleDisabled = userData?.canCreateRoles === false || !featureRolesApi;
+  const createRoleTooltip = [
+    userData?.canCreateRoles === false &&
+      'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
+    !featureRolesApi && 'This feature is not enabled.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <Flex flexDirection="column" gap="4">
-      <Box>
+    <div className="flex flex-col gap-4">
+      <div>
         This tab displays all roles. Roles are groups of access control lists (ACLs) that can be assigned to principals.
         A principal represents any entity that can be authenticated, such as a user, service, or system (for example, a
         SASL-SCRAM user, OIDC identity, or mTLS client).
-      </Box>
+      </div>
       <NullFallbackBoundary>
         <FeatureLicenseNotification featureName="rbac" />
       </NullFallbackBoundary>
@@ -594,23 +743,23 @@ const RolesTab = () => {
         width="300px"
       />
       <Section>
-        <Button
-          data-testid="create-role-button"
-          isDisabled={userData?.canCreateRoles === false || !featureRolesApi}
-          onClick={() => appGlobal.historyPush('/security/roles/create')}
-          tooltip={[
-            userData?.canCreateRoles === false &&
-              'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
-            !featureRolesApi && 'This feature is not enabled.',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          variant="outline"
-        >
-          Create role
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-testid="create-role-button"
+                disabled={createRoleDisabled}
+                onClick={() => appGlobal.historyPush('/security/roles/create')}
+                variant="outline"
+              >
+                Create role
+              </Button>
+            </TooltipTrigger>
+            {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
+          </Tooltip>
+        </TooltipProvider>
 
-        <Box my={4}>
+        <div className="my-4">
           <DataTable
             columns={[
               {
@@ -620,14 +769,14 @@ const RolesTab = () => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink
-                      as={Link}
+                    <Link
+                      className="text-inherit no-underline hover:no-underline"
                       data-testid={`role-list-item-${entry.name}`}
-                      textDecoration="none"
-                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
+                      params={{ roleName: encodeURIComponent(entry.name) }}
+                      to="/security/roles/$roleName/details"
                     >
                       {entry.name}
-                    </ChakraLink>
+                    </Link>
                   );
                 },
               },
@@ -643,31 +792,38 @@ const RolesTab = () => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <Flex flexDirection="row" gap={4}>
-                      <button
+                    <div className="flex flex-row gap-4">
+                      <Button
                         aria-label={`Edit role ${entry.name}`}
                         data-testid={`edit-role-button-${entry.name}`}
                         onClick={() => {
                           appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
                         }}
-                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
                       >
-                        <Icon as={EditIcon} />
-                      </button>
+                        <EditIcon className="h-4 w-4" />
+                      </Button>
                       <DeleteRoleConfirmModal
                         buttonEl={
-                          <button type="button">
-                            <Icon as={TrashIcon} />
-                          </button>
+                          <Button
+                            aria-label={`Delete role ${entry.name}`}
+                            data-testid={`delete-role-button-${entry.name}`}
+                            size="icon-sm"
+                            variant="destructive-ghost"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
                         }
                         numberOfPrincipals={entry.members.length}
                         onConfirm={async () => {
-                          await rolesApi.deleteRole(entry.name, true);
-                          await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+                          await deleteRoleMutation(
+                            create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true })
+                          );
                         }}
                         roleName={entry.name}
                       />
-                    </Flex>
+                    </div>
                   );
                 },
               },
@@ -676,9 +832,9 @@ const RolesTab = () => {
             pagination
             sorting
           />
-        </Box>
+        </div>
       </Section>
-    </Flex>
+    </div>
   );
 };
 
@@ -686,7 +842,9 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
-  const serviceAccounts = useApiStoreHook((s) => s.serviceAccounts);
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+  const { data: usersData } = useLegacyListUsersQuery(undefined, { enabled: isAdminApiConfigured });
   const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
@@ -709,14 +867,11 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
       },
     });
     await deleteACLMutation(deleteRequest);
-    toast({
-      status: 'success',
-      description: (
-        <Text as="span">
-          Deleted ACLs for <CodeEl>{principal}</CodeEl>
-        </Text>
-      ),
-    });
+    toast.success(
+      <span>
+        Deleted ACLs for <CodeEl>{principal}</CodeEl>
+      </span>
+    );
   };
 
   const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
@@ -734,18 +889,19 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
   }
 
   return (
-    <Flex flexDirection="column" gap="4">
-      <Box>
+    <div className="flex flex-col gap-4">
+      <div>
         This tab displays all access control lists (ACLs), grouped by principal and host. A principal represents any
         entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC
         identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
         complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
-      </Box>
+      </div>
       {Boolean(featureRolesApi) && (
-        <Alert status="info">
-          <AlertIcon />
-          Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
-          hierarchies or large numbers of users.
+        <Alert icon={<InfoIcon />} variant="warning">
+          <AlertDescription>
+            Roles are a more flexible and efficient way to manage user permissions, especially with complex
+            organizational hierarchies or large numbers of users.
+          </AlertDescription>
         </Alert>
       )}
       <SearchField
@@ -769,7 +925,7 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
           Create ACLs
         </Button>
 
-        <Box py={4}>
+        <div className="py-4">
           <DataTable<{
             principal: string;
             host: string;
@@ -782,28 +938,22 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                 header: 'Principal',
                 accessorKey: 'principal',
                 cell: ({ row: { original: record } }) => (
-                  <button
-                    className="hoverLink"
-                    onClick={() => {
-                      navigate({
-                        to: `/security/acls/${record.principalType === 'User' ? record.principalName : record.principal}/details`,
-                        search: (prev) => ({ ...prev, host: record.host }),
-                      });
-                    }}
-                    type="button"
+                  <Link
+                    className="cursor-pointer no-underline hover:text-primary"
+                    params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
+                    search={(prev) => ({ ...prev, host: record.host })}
+                    to="/security/acls/$aclName/details"
                   >
-                    <Flex alignItems="center" gap={1}>
-                      <Text
-                        as="span"
+                    <span className="flex items-center gap-1">
+                      <span
+                        className="whitespace-normal break-words"
                         data-testid={`acl-list-item-${record.principalName}-${record.host}`}
-                        whiteSpace="break-spaces"
-                        wordBreak="break-word"
                       >
                         {record.principalName}
-                      </Text>
-                      {record.principalType === 'Group' && <Badge variant="subtle">Group</Badge>}
-                    </Flex>
-                  </button>
+                      </span>
+                      {record.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
+                    </span>
+                  </Link>
                 ),
               },
               {
@@ -813,14 +963,14 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                   row: {
                     original: { host },
                   },
-                }) => (!host || host === '*' ? <Badge variant="subtle">Any</Badge> : host),
+                }) => (!host || host === '*' ? <Badge variant="neutral">Any</Badge> : host),
               },
               {
                 size: 60,
                 id: 'menu',
                 header: '',
                 cell: ({ row: { original: record } }) => {
-                  const userExists = serviceAccounts?.users.includes(record.principalName);
+                  const userExists = usersData?.users?.some((u) => u.name === record.principalName) ?? false;
 
                   const onDelete = async (user: boolean, acls: boolean) => {
                     if (acls) {
@@ -836,14 +986,11 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                     if (user) {
                       try {
                         await api.deleteServiceAccount(record.principalName);
-                        toast({
-                          status: 'success',
-                          description: (
-                            <Text as="span">
-                              Deleted user <CodeEl>{record.principalName}</CodeEl>
-                            </Text>
-                          ),
-                        });
+                        toast.success(
+                          <span>
+                            Deleted user <CodeEl>{record.principalName}</CodeEl>
+                          </span>
+                        );
                       } catch (err: unknown) {
                         // biome-ignore lint/suspicious/noConsole: error logging
                         console.error('failed to delete acls', { error: err });
@@ -855,13 +1002,15 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                   };
 
                   return (
-                    <Menu>
-                      <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
-                        <Icon as={TrashIcon} />
-                      </MenuButton>
-                      <MenuList>
-                        <MenuItem
-                          isDisabled={!(userExists && featureDeleteUser)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button className="deleteButton" size="icon-sm" variant="destructive-ghost">
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem
+                          disabled={!(userExists && featureDeleteUser)}
                           onClick={(e) => {
                             onDelete(true, true).catch(() => {
                               // Error handling managed by API layer
@@ -870,9 +1019,9 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                           }}
                         >
                           Delete (User and ACLs)
-                        </MenuItem>
-                        <MenuItem
-                          isDisabled={!(userExists && featureDeleteUser)}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!(userExists && featureDeleteUser)}
                           onClick={(e) => {
                             onDelete(true, false).catch(() => {
                               // Error handling managed by API layer
@@ -881,8 +1030,8 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                           }}
                         >
                           Delete (User only)
-                        </MenuItem>
-                        <MenuItem
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={(e) => {
                             onDelete(false, true).catch(() => {
                               // Error handling managed by API layer
@@ -891,9 +1040,9 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
                           }}
                         >
                           Delete (ACLs only)
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   );
                 },
               },
@@ -902,9 +1051,9 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
             pagination
             sorting
           />
-        </Box>
+        </div>
       </Section>
-    </Flex>
+    </div>
   );
 };
 
@@ -919,23 +1068,22 @@ const AlertDeleteFailed: FC<{
   }
 
   return (
-    <Alert mb={4} ref={ref} status="error">
-      <AlertIcon />
+    <Alert className="relative mb-4" ref={ref} variant="destructive">
       <AlertTitle>Failed to delete</AlertTitle>
       <AlertDescription>
-        <Text>
-          {(() => {
-            if (aclFailed.err instanceof Error) {
-              return aclFailed.err.message;
-            }
-            if (typeof aclFailed.err === 'string') {
-              return aclFailed.err;
-            }
-            return 'Unknown error';
-          })()}
-        </Text>
+        {(() => {
+          if (aclFailed.err instanceof Error) {
+            return aclFailed.err.message;
+          }
+          if (typeof aclFailed.err === 'string') {
+            return aclFailed.err;
+          }
+          return 'Unknown error';
+        })()}
       </AlertDescription>
-      <CloseButton onClick={onClose} position="absolute" right="8px" top="8px" />
+      <Button className="absolute top-2 right-2" onClick={onClose} size="icon-sm" variant="ghost">
+        <X className="h-4 w-4" />
+      </Button>
     </Alert>
   );
 };

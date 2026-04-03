@@ -14,10 +14,11 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { historyPushMock, refreshRoleMembersMock, refreshRolesMock } = vi.hoisted(() => ({
+const { historyPushMock, refreshRoleMembersMock, refreshRolesMock, deleteRoleMutationMock } = vi.hoisted(() => ({
   historyPushMock: vi.fn(),
   refreshRoleMembersMock: vi.fn().mockResolvedValue(undefined),
   refreshRolesMock: vi.fn().mockResolvedValue(undefined),
+  deleteRoleMutationMock: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@redpanda-data/ui', () => {
@@ -216,7 +217,22 @@ vi.mock('config', async (importOriginal) => {
 });
 
 vi.mock('./delete-role-confirm-modal', () => ({
-  DeleteRoleConfirmModal: ({ buttonEl }: { buttonEl: ReactNode }) => <>{buttonEl}</>,
+  DeleteRoleConfirmModal: ({
+    buttonEl,
+    onConfirm,
+    roleName,
+  }: {
+    buttonEl: ReactNode;
+    onConfirm: () => Promise<void> | void;
+    roleName: string;
+  }) => (
+    <div>
+      {buttonEl}
+      <button data-testid={`mock-confirm-delete-${roleName}`} onClick={() => onConfirm()}>
+        Confirm delete
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('./delete-user-confirm-modal', () => ({
@@ -345,6 +361,19 @@ vi.mock('react-query/api/acl', () => ({
   }),
 }));
 
+vi.mock('react-query/api/security', () => ({
+  useDeleteRoleMutation: () => ({
+    mutateAsync: deleteRoleMutationMock,
+  }),
+  useListRolesQuery: () => ({
+    data: {
+      roles: [{ name: 'topic reader/qa' }],
+    },
+    error: null,
+    isError: false,
+  }),
+}));
+
 import AclList from './acl-list';
 
 describe('AclList role navigation', () => {
@@ -360,5 +389,23 @@ describe('AclList role navigation', () => {
     await user.click(await screen.findByLabelText('Edit role topic reader/qa'));
 
     expect(historyPushMock).toHaveBeenCalledWith('/security/roles/topic%20reader%2Fqa/update');
+  });
+
+  test('renders role list from useListRolesQuery', async () => {
+    render(<AclList tab="roles" />);
+
+    await expect(screen.findByTestId('role-list-item-topic reader/qa')).resolves.toBeInTheDocument();
+  });
+
+  test('delete role calls deleteRoleMutation with correct arguments', async () => {
+    const user = userEvent.setup();
+
+    render(<AclList tab="roles" />);
+
+    await user.click(await screen.findByTestId('mock-confirm-delete-topic reader/qa'));
+
+    expect(deleteRoleMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ roleName: 'topic reader/qa', deleteAcls: true })
+    );
   });
 });
