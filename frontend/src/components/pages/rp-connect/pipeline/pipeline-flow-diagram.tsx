@@ -19,11 +19,11 @@ import { PipelineFlowSkeleton, pipelineEdgeTypes, pipelineNodeTypes } from './pi
 import {
   computeTreeLayout as defaultComputeLayout,
   parsePipelineFlowTree as defaultParseTree,
+  MAX_NESTING_DEPTH,
   type ParsePipelineFlowTreeResult,
   type PipelineFlowNode,
 } from '../utils/pipeline-flow-parser';
 
-const PAN_ON_SCROLL_MODE = PanOnScrollMode.Vertical;
 const EXTENT_PADDING = 40;
 const PARSE_DEBOUNCE_MS = 300;
 const MIN_ZOOM = 0.5;
@@ -63,7 +63,7 @@ type PipelineFlowDiagramProps = {
   onAddTopic?: (section: string, componentName: string) => void;
   /** Callback when user clicks "+ auth" on a redpanda node missing SASL config. */
   onAddSasl?: (section: string, componentName: string) => void;
-  /** Hide the zoom +/- controls. */
+  /** Hide the zoom +/- controls and lock zoom to 1. */
   hideZoomControls?: boolean;
   /** Custom parser — defaults to `parsePipelineFlowTree`. */
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
@@ -71,7 +71,7 @@ type PipelineFlowDiagramProps = {
   computeLayout?: (
     nodes: PipelineFlowNode[],
     collapsedIds: ReadonlySet<string>
-  ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number };
+  ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number; maxDepth?: number };
 };
 
 /**
@@ -82,7 +82,7 @@ type PipelineFlowDiagramProps = {
  * which manifests as a large top margin in edit/create mode where the node
  * tree is typically shorter than the panel.
  */
-function computeTranslateExtent(
+export function computeTranslateExtent(
   rfNodes: Node[],
   containerWidth: number,
   containerHeight: number
@@ -185,7 +185,7 @@ export const PipelineFlowDiagram = ({
     [debouncedYaml, parseTree, instanceId]
   );
 
-  const { rfNodes, rfEdges } = useMemo(() => {
+  const { rfNodes, rfEdges, maxDepth } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
     // Inject callbacks into group, placeholder, and setup-hint leaf nodes.
@@ -220,13 +220,19 @@ export const PipelineFlowDiagram = ({
       return node;
     });
 
-    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges };
+    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges, maxDepth: layout.maxDepth ?? 0 };
   }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
-  const translateExtent = useMemo(
-    () => (containerSize ? computeTranslateExtent(rfNodes, containerSize.width, containerSize.height) : undefined),
-    [rfNodes, containerSize]
-  );
+  const { translateExtent, panOnScrollMode } = useMemo(() => {
+    if (!containerSize) {
+      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical };
+    }
+    const extent = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
+    return {
+      translateExtent: extent,
+      panOnScrollMode: maxDepth > MAX_NESTING_DEPTH ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
+    };
+  }, [rfNodes, containerSize, maxDepth]);
 
   if (rfNodes.length === 0) {
     return (
@@ -245,8 +251,8 @@ export const PipelineFlowDiagram = ({
             edges={rfEdges}
             edgeTypes={pipelineEdgeTypes}
             elementsSelectable={false}
-            maxZoom={MAX_ZOOM}
-            minZoom={MIN_ZOOM}
+            maxZoom={hideZoomControls ? 1 : MAX_ZOOM}
+            minZoom={hideZoomControls ? 1 : MIN_ZOOM}
             nodes={rfNodes}
             nodesConnectable={false}
             nodesDraggable={false}
@@ -254,7 +260,7 @@ export const PipelineFlowDiagram = ({
             nodeTypes={pipelineNodeTypes}
             panOnDrag={false}
             panOnScroll
-            panOnScrollMode={PAN_ON_SCROLL_MODE}
+            panOnScrollMode={panOnScrollMode}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}
             zoomOnPinch={false}

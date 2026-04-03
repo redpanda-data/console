@@ -589,6 +589,7 @@ export function parsePipelineFlowTree(
 // ============================================================================
 
 const INDENT_X = 40;
+export const MAX_NESTING_DEPTH = 5;
 const NODE_H_DEFAULT = 28;
 const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
@@ -605,6 +606,7 @@ type LayoutState = {
   rfNodes: Node[];
   rfEdges: Edge[];
   y: number;
+  maxDepth: number;
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
   collapsedIds: ReadonlySet<string>;
 };
@@ -614,10 +616,23 @@ type RfNodeParams = {
   depth: number;
   nodeY: number;
   isHidden: boolean;
+  isCollapsed: boolean;
 };
 
+function countDescendants(nodeId: string, childrenMap: Map<string | undefined, PipelineFlowNode[]>): number {
+  const children = childrenMap.get(nodeId);
+  if (!children) {
+    return 0;
+  }
+  let count = children.length;
+  for (const child of children) {
+    count += countDescendants(child.id, childrenMap);
+  }
+  return count;
+}
+
 function createRfNode(params: RfNodeParams, state: LayoutState): Node {
-  const { node, depth, nodeY, isHidden } = params;
+  const { node, depth, nodeY, isHidden, isCollapsed } = params;
   return {
     id: node.id,
     type: NODE_TYPE_MAP[node.kind],
@@ -629,14 +644,14 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
     },
     data: {
       label: node.label,
-      collapsed: state.collapsedIds.has(node.id),
+      collapsed: isCollapsed,
       collapsible: node.collapsible ?? false,
       ...(node.labelText ? { labelText: node.labelText } : {}),
       ...(node.topics ? { topics: node.topics } : {}),
       ...(node.section ? { section: node.section } : {}),
       ...(node.missingTopic ? { missingTopic: true } : {}),
       ...(node.missingSasl ? { missingSasl: true } : {}),
-      ...(state.collapsedIds.has(node.id) ? { childCount: state.childrenMap.get(node.id)?.length ?? 0 } : {}),
+      ...(isCollapsed ? { childCount: countDescendants(node.id, state.childrenMap) } : {}),
     },
   };
 }
@@ -666,8 +681,26 @@ function layoutDfs(params: DfsParams, state: LayoutState): void {
     state.y += SECTION_GAP;
   }
 
+  if (depth > state.maxDepth) {
+    state.maxDepth = depth;
+  }
+
+  const autoCollapsed = node.kind === 'group' && depth >= MAX_NESTING_DEPTH;
+  const isCollapsed = state.collapsedIds.has(node.id) || autoCollapsed;
+
   const nodeY = hiddenByParent ? snapY : state.y;
-  state.rfNodes.push(createRfNode({ node, depth, nodeY, isHidden: hiddenByParent }, state));
+  state.rfNodes.push(
+    createRfNode(
+      {
+        node: autoCollapsed ? { ...node, collapsible: false } : node,
+        depth,
+        nodeY,
+        isHidden: hiddenByParent,
+        isCollapsed,
+      },
+      state
+    )
+  );
 
   if (node.parentId) {
     state.rfEdges.push(createTreeEdge(node.parentId, node, hiddenByParent));
@@ -680,7 +713,7 @@ function layoutDfs(params: DfsParams, state: LayoutState): void {
 
   const children = state.childrenMap.get(node.id);
   if (children) {
-    const childHidden = hiddenByParent || state.collapsedIds.has(node.id);
+    const childHidden = hiddenByParent || isCollapsed;
     for (const child of children) {
       layoutDfs({ node: child, depth: depth + 1, hiddenByParent: childHidden, snapY: nodeY }, state);
     }
@@ -690,9 +723,9 @@ function layoutDfs(params: DfsParams, state: LayoutState): void {
 export function computeTreeLayout(
   nodes: PipelineFlowNode[],
   collapsedIds: ReadonlySet<string> = new Set()
-): { rfNodes: Node[]; rfEdges: Edge[]; height: number } {
+): { rfNodes: Node[]; rfEdges: Edge[]; height: number; maxDepth: number } {
   if (nodes.length === 0) {
-    return { rfNodes: [], rfEdges: [], height: 200 };
+    return { rfNodes: [], rfEdges: [], height: 200, maxDepth: 0 };
   }
 
   const childrenMap = new Map<string | undefined, PipelineFlowNode[]>();
@@ -705,7 +738,7 @@ export function computeTreeLayout(
     }
   }
 
-  const state: LayoutState = { rfNodes: [], rfEdges: [], y: 0, childrenMap, collapsedIds };
+  const state: LayoutState = { rfNodes: [], rfEdges: [], y: 0, maxDepth: 0, childrenMap, collapsedIds };
 
   const roots = childrenMap.get(undefined);
   if (roots) {
@@ -727,5 +760,10 @@ export function computeTreeLayout(
   }
 
   const MIN_HEIGHT = 200;
-  return { rfNodes: state.rfNodes, rfEdges: state.rfEdges, height: Math.max(MIN_HEIGHT, state.y + 8) };
+  return {
+    rfNodes: state.rfNodes,
+    rfEdges: state.rfEdges,
+    height: Math.max(MIN_HEIGHT, state.y + 8),
+    maxDepth: state.maxDepth,
+  };
 }

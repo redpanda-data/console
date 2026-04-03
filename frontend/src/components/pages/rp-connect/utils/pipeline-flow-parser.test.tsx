@@ -769,4 +769,51 @@ output:
       expect(node.data.mode).toBeUndefined();
     }
   });
+
+  it('auto-collapses groups beyond MAX_NESTING_DEPTH with descendant count', () => {
+    // Triple-nested switch: depth 0=section, 1=switch, 2=case, 3=switch, 4=case, 5=switch (>=5 → auto-collapsed)
+    const yaml = [
+      'pipeline:',
+      '  processors:',
+      '    - switch:',
+      "        - check: 'this.a > 1'",
+      '          processors:',
+      '            - switch:',
+      "                - check: 'this.b > 2'",
+      '                  processors:',
+      '                    - switch:',
+      "                        - check: 'this.c > 3'",
+      '                          processors:',
+      '                            - mapping: root = this',
+    ].join('\n');
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const { rfNodes } = computeTreeLayout(nodes);
+
+    // The innermost switch group (at depth >= 5) should be auto-collapsed
+    const visibleNodes = rfNodes.filter((n) => (n.style as Record<string, unknown>)?.opacity !== 0);
+    // The deeply nested mapping leaf should be hidden (opacity 0)
+    const mappingNode = rfNodes.find((n) => n.data.label === 'mapping');
+    expect(mappingNode).toBeDefined();
+    expect((mappingNode?.style as Record<string, unknown>)?.opacity).toBe(0);
+
+    // An auto-collapsed group should have collapsed=true and childCount > 0
+    const autoCollapsedGroups = visibleNodes.filter((n) => n.data.collapsed === true && n.data.childCount > 0);
+    expect(autoCollapsedGroups.length).toBeGreaterThan(0);
+  });
+
+  it('returns maxDepth tracking the deepest visual nesting level', () => {
+    const yaml = [
+      'pipeline:',
+      '  processors:',
+      '    - switch:',
+      "        - check: 'this.a > 1'",
+      '          processors:',
+      '            - mapping: root = this',
+    ].join('\n');
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const { maxDepth } = computeTreeLayout(nodes);
+
+    // processors section (0) → switch group (1) → case group (2) → mapping leaf (3)
+    expect(maxDepth).toBe(3);
+  });
 });
