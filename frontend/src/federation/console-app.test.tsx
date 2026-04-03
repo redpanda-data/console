@@ -314,7 +314,7 @@ describe('ConsoleApp', () => {
       rerender(<ConsoleApp {...defaultProps} navigateTo="/groups?search=my-group" />);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups?search=my-group' });
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups', search: { search: 'my-group' } });
       });
     });
 
@@ -339,7 +339,7 @@ describe('ConsoleApp', () => {
       rerender(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups' });
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups', search: undefined });
       });
     });
 
