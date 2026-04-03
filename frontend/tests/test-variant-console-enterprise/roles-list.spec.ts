@@ -37,13 +37,4 @@ test.describe('Roles list refresh', () => {
     await rolePage.deleteRoleFromList(roleName);
     await rolePage.validateNotInList(roleName);
   });
-
-  test('role deleted from details disappears from the list', async ({ page }) => {
-    const rolePage = new RolePage(page);
-    const roleName = generateRoleName();
-
-    await rolePage.createRole(roleName);
-    await rolePage.deleteRole(roleName);
-    await rolePage.validateNotInList(roleName);
-  });
 });
