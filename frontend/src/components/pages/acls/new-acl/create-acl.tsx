@@ -24,7 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { api } from 'state/backend-api';
+import { useApiStoreHook } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
@@ -169,7 +169,7 @@ const ResourceTypeSelection = ({
       {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
         <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <Button
                 className={
                   rule.resourceType === resourceType
@@ -573,7 +573,8 @@ const SharedConfiguration = ({
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
   const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
-  const gbacEnabled = api.enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
+  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
+  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   return (
     <Card size={'full'}>

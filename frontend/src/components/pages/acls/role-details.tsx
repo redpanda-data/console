@@ -11,13 +11,16 @@
 
 'use no memo';
 
+import { create } from '@bufbuild/protobuf';
 import { Box, Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useState } from 'react';
 
 import { DeleteRoleConfirmModal } from './delete-role-confirm-modal';
 import { principalGroupsView } from './models';
 import { AclPrincipalGroupPermissionsTable } from './user-details';
+import { useDeleteRoleMutation } from '../../../react-query/api/security';
 import { appGlobal } from '../../../state/app-global';
 import { api, type RolePrincipal, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
@@ -60,6 +63,8 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
   const roleName = decodeURIComponent(encodedRoleName);
   const [isDeleting, setIsDeleting] = useState(false);
   const [principalSearch, setPrincipalSearch] = useState('');
+  const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
+  const navigate = useNavigate();
 
   if (api.ACLs?.aclResources === undefined) {
     return DefaultSkeleton;
@@ -71,13 +76,10 @@ const RoleDetailsPageContent = ({ roleName: encodedRoleName }: { roleName: strin
   const deleteRole = async () => {
     setIsDeleting(true);
     try {
-      await rolesApi.deleteRole(roleName, true);
-      await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+      await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName, deleteAcls: true }));
+      navigate({ to: '/security/$tab', params: { tab: 'roles' } });
+    } finally {
       setIsDeleting(false);
-      appGlobal.historyPush('/security/roles/');
-    } catch (e) {
-      setIsDeleting(false);
-      throw e;
     }
   };
 

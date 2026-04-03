@@ -147,17 +147,39 @@ export class RolePage extends AclPage {
   }
 
   /**
-   * Deletes a role with the given name through the UI
+   * Deletes a role from the details page
    */
   async deleteRole(roleName: string) {
-    return await test.step('Delete role', async () => {
+    return await test.step('Delete role from details', async () => {
       await this.gotoDetail(roleName);
-      await this.page.getByRole('button').getByText('Delete').click();
-      await this.page.getByPlaceholder(`Type "${roleName}" to confirm`).fill(roleName);
-      await this.page.getByTestId('test-delete-item').click();
-      await this.page.waitForURL(`/security/roles/${roleName}/details`, {
-        waitUntil: 'domcontentloaded',
-      });
+      await this.page.getByRole('button', { name: 'Delete' }).click();
+      await this.page.getByPlaceholder(roleName).fill(roleName);
+      await this.page.getByTestId('confirm-role-delete-button').click();
+      await this.page.waitForURL('/security/roles', { waitUntil: 'domcontentloaded' });
+    });
+  }
+
+  /**
+   * Deletes a role from the roles list
+   */
+  async deleteRoleFromList(roleName: string) {
+    return await test.step('Delete role from list', async () => {
+      await this.gotoList();
+      await this.page.getByTestId(`delete-role-button-${roleName}`).click();
+      await this.page.getByPlaceholder(roleName).fill(roleName);
+      await this.page.getByTestId('confirm-role-delete-button').click();
+      await this.page.waitForURL('/security/roles', { waitUntil: 'domcontentloaded' });
+    });
+  }
+
+  /**
+   * Validates that a role is NOT present in the roles list
+   */
+  async validateNotInList(roleName: string) {
+    return await test.step(`Validate role "${roleName}" not in list`, async () => {
+      await this.gotoList();
+      await this.page.getByTestId('search-field-input').fill(roleName);
+      await expect(this.page.getByTestId(`role-list-item-${roleName}`)).not.toBeVisible();
     });
   }
 }

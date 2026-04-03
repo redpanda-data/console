@@ -10,10 +10,12 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { useToast } from '@redpanda-data/ui';
 import { parsePrincipal } from 'components/pages/acls/new-acl/acl.model';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
+import { Empty, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import {
   ListRoleMembersRequestSchema,
@@ -21,10 +23,11 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
 import { useListUsersQuery } from '../../../react-query/api/user';
-import { api } from '../../../state/backend-api';
+import { useApiStoreHook } from '../../../state/backend-api';
 import { AutocompleteInput } from '../acls/new-acl/autocomplete-input';
 
 type MatchingUsersCardProps = {
@@ -40,9 +43,8 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
   const [principalTypeToAdd, setPrincipalTypeToAdd] = useState<'User' | 'Group'>('User');
   const [deletingPrincipal, setDeletingPrincipal] = useState<string | null>(null);
 
-  const toast = useToast();
-
-  const gbacEnabled = api.enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
+  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
+  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   const { data: membersData, isLoading } = useListRoleMembersQuery(create(ListRoleMembersRequestSchema, { roleName }));
 
@@ -55,10 +57,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
   const handleAddMember = async () => {
     if (!newUserName.trim()) {
-      toast({
-        status: 'error',
-        description: `Please enter a ${principalTypeToAdd === 'Group' ? 'group name' : 'username'}`,
-      });
+      toast.error(`Please enter a ${principalTypeToAdd === 'Group' ? 'group name' : 'username'}`);
       return;
     }
 
@@ -71,10 +70,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           create: true,
         })
       );
-      toast({
-        status: 'success',
-        description: `${principalTypeToAdd} "${newUserName}" added to role successfully`,
-      });
+      toast.success(`${principalTypeToAdd} "${newUserName}" added to role successfully`);
       setNewUserName('');
       setIsAddingUser(false);
       setPrincipalTypeToAdd('User');
@@ -94,10 +90,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           create: false,
         })
       );
-      toast({
-        status: 'success',
-        description: 'Member removed from role successfully',
-      });
+      toast.success('Member removed from role successfully');
       setDeletingPrincipal(null);
     } catch (_error) {
       // Error handling is done in onError callback
@@ -117,9 +110,8 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
     const isDeleting = deletingPrincipal === memberPrincipal;
     return (
       <div
-        className="group flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white/40 font-normal text-gray-900 text-sm transition-colors hover:bg-white/60"
+        className="group flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white/40 px-[10px] py-2 font-normal text-gray-900 text-sm transition-colors hover:bg-white/60"
         key={memberPrincipal}
-        style={{ padding: '8px 10px' }}
       >
         <span className="flex-1 text-left">{displayName}</span>
         <Button
@@ -151,27 +143,35 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
             {principalType === 'RedpandaRole' && !isLoading && (
               <>
                 {/* Users section */}
-                <p className="font-medium text-gray-700 text-xs uppercase tracking-wide">Users</p>
+                <Text as="span" className="text-gray-700 uppercase tracking-wide" variant="labelStrongXSmall">
+                  Users
+                </Text>
                 {userMembers.length > 0 ? (
                   userMembers.map((member) => {
                     const name = parsePrincipal(member.principal).name || member.principal;
                     return renderMemberRow(member.principal, name, 'user');
                   })
                 ) : (
-                  <div className="text-gray-500 text-sm italic">No user members</div>
+                  <Empty>
+                    <EmptyTitle>No user members</EmptyTitle>
+                  </Empty>
                 )}
 
                 {/* Groups section — only when GBAC is enabled */}
                 {gbacEnabled && (
                   <>
-                    <p className="mt-2 font-medium text-gray-700 text-xs uppercase tracking-wide">Groups</p>
+                    <Text as="span" className="mt-2 text-gray-700 uppercase tracking-wide" variant="labelStrongXSmall">
+                      Groups
+                    </Text>
                     {groupMembers.length > 0 ? (
                       groupMembers.map((member) => {
                         const name = parsePrincipal(member.principal).name || member.principal;
                         return renderMemberRow(member.principal, name, 'group');
                       })
                     ) : (
-                      <div className="text-gray-500 text-sm italic">No group members</div>
+                      <Empty>
+                        <EmptyTitle>No group members</EmptyTitle>
+                      </Empty>
                     )}
                   </>
                 )}
@@ -222,11 +222,12 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                         value={newUserName}
                       />
                     ) : (
-                      <input
-                        className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm"
+                      <Input
+                        containerClassName="flex-1"
                         data-testid="add-group-input"
                         onChange={(e) => setNewUserName(e.target.value)}
                         placeholder="Enter group name..."
+                        size="sm"
                         value={newUserName}
                       />
                     )}

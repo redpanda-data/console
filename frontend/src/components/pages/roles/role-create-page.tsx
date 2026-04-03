@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { useToast } from '@redpanda-data/ui';
 import { useNavigate } from '@tanstack/react-router';
 import {
   convertRulesToCreateACLRequests,
@@ -22,6 +21,7 @@ import {
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { useCreateAcls } from '../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../react-query/api/security';
@@ -29,7 +29,6 @@ import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
 
 const RoleCreatePage = () => {
-  const toast = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,10 +47,7 @@ const RoleCreatePage = () => {
     const roleName = parsePrincipal(principal).name;
 
     if (!roleName || roleName.trim() === '') {
-      toast({
-        status: 'error',
-        description: 'Please enter a role name',
-      });
+      toast.error('Please enter a role name');
       return;
     }
 
@@ -65,22 +61,16 @@ const RoleCreatePage = () => {
         })
       );
 
-      toast({
-        status: 'success',
-        description: `Role "${roleName}" created successfully`,
-      });
+      toast.success(`Role "${roleName}" created successfully`);
 
       // Then create the ACLs for the role
       const result = convertRulesToCreateACLRequests(rules, principal, host);
       const applyResult = await createAcls(result);
-      handleResponses(toast, applyResult.errors, applyResult.created);
+      handleResponses(applyResult.errors, applyResult.created);
 
       navigate({ to: `/security/roles/${roleName}/details` });
     } catch (error) {
-      toast({
-        status: 'error',
-        description: `Failed to create role: ${error}`,
-      });
+      toast.error(`Failed to create role: ${error}`);
     }
   };
 

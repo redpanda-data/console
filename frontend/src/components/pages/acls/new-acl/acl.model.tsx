@@ -1,5 +1,4 @@
 import type { ConnectError } from '@connectrpc/connect';
-import type { UseToastOptions } from '@redpanda-data/ui';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -9,6 +8,7 @@ import {
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 
 const UNDERSCORE_REGEX = /_/g;
 const FIRST_CHAR_REGEX = /^\w/;
@@ -606,27 +606,17 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
   };
 }
 
-export const handleResponses = (toast: (op: UseToastOptions) => void, errors: ConnectError[], created: boolean) => {
+export const handleResponses = (errors: ConnectError[], created: boolean) => {
   if (errors.length > 0 && created) {
     for (const er of errors) {
-      toast({
-        status: 'warning',
-        title: 'Some ACLs were created, but there were errors',
-        description: er.message,
-      });
+      toast.warning('Some ACLs were created, but there were errors', { description: er.message });
     }
   } else if (errors.length > 0 && !created) {
     for (const er of errors) {
-      toast({
-        status: 'error',
-        description: er.message,
-      });
+      toast.error(er.message);
     }
   } else {
-    toast({
-      status: 'success',
-      description: 'ACLs created successfully',
-    });
+    toast.success('ACLs created successfully');
   }
 };
 

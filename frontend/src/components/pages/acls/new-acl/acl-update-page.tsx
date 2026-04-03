@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useToast } from '@redpanda-data/ui';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/$aclName/update');
@@ -22,6 +21,9 @@ import {
   OperationTypeAllow,
   OperationTypeDeny,
   type PrincipalType,
+  PrincipalTypeGroup,
+  PrincipalTypeRedpandaRole,
+  PrincipalTypeUser,
   type Rule,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
@@ -33,8 +35,13 @@ import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-q
 import { uiState } from '../../../../state/ui-state';
 import PageContent from '../../../misc/page-content';
 
+const VALID_PRINCIPAL_TYPES: Record<string, PrincipalType> = {
+  User: PrincipalTypeUser,
+  Group: PrincipalTypeGroup,
+  RedpandaRole: PrincipalTypeRedpandaRole,
+};
+
 const AclUpdatePage = () => {
-  const toast = useToast();
   const navigate = useNavigate({ from: '/security/acls/$aclName/update' });
   const { aclName } = routeApi.useParams();
   const search = routeApi.useSearch();
@@ -63,7 +70,7 @@ const AclUpdatePage = () => {
       return;
     }
     const applyResult = await applyUpdates(acls.rules, acls.sharedConfig, rules);
-    handleResponses(toast, applyResult.errors, applyResult.created);
+    handleResponses(applyResult.errors, applyResult.created);
 
     navigate({
       to: `/security/acls/${aclName}/details`,
@@ -129,7 +136,7 @@ const AclUpdatePage = () => {
           })
         }
         onSubmit={handleUpdate}
-        principalType={`${principalType}:` as PrincipalType}
+        principalType={VALID_PRINCIPAL_TYPES[principalType] ?? PrincipalTypeUser}
         rules={rulesWithAllOperations}
         sharedConfig={acls.sharedConfig}
       />

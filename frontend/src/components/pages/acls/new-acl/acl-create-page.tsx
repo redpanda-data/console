@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useToast } from '@redpanda-data/ui';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/create');
@@ -38,7 +37,6 @@ const principalTypeMap: Record<string, PrincipalType> = {
 };
 
 const AclCreatePage = () => {
-  const toast = useToast();
   const navigate = useNavigate({ from: '/security/acls/create' });
   const search = routeApi.useSearch();
 
@@ -62,7 +60,7 @@ const AclCreatePage = () => {
   const createAclMutation = async (principal: string, host: string, rules: Rule[]) => {
     const result = convertRulesToCreateACLRequests(rules, principal, host);
     const applyResult = await createAcls(result);
-    handleResponses(toast, applyResult.errors, applyResult.created);
+    handleResponses(applyResult.errors, applyResult.created);
 
     const { principalType, principalName } = parsePrincipalFromParam(principal);
     const aclName = principalType === 'User' ? principalName : principal;
