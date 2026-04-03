@@ -366,7 +366,7 @@ const CreateUserConfirmationModal = ({
   closeModal,
 }: CreateUserConfirmationModalProps) => (
   <>
-    <Heading as="h1" mb={8} mt={4}>
+    <Heading as="h1" data-testid="user-created-successfully" mb={8} mt={4}>
       <Flex alignItems="center">User created successfully</Flex>
     </Heading>
 

@@ -587,7 +587,7 @@ const SharedConfiguration = ({
           <CardField>
             <div className="flex items-center gap-1">
               <Label className="font-medium text-gray-700 text-sm" htmlFor="principal">
-                User / principal
+                {principalType === RoleTypeRedpandaRole ? 'Role name' : 'User / principal'}
               </Label>
               <TooltipProvider>
                 <Tooltip>

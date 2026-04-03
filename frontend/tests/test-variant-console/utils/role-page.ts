@@ -140,7 +140,7 @@ export class RolePage extends AclPage {
         waitUntil: 'domcontentloaded',
       });
       await this.page.getByLabel('Role name').fill(roleName);
-      await this.page.getByTestId('roles-allow-all-operations').click();
+      await this.page.getByTestId('add-allow-all-operations-button').click();
       await this.page.getByRole('button').getByText('Create').click();
       await this.page.waitForURL(`/security/roles/${roleName}/details`);
     });
