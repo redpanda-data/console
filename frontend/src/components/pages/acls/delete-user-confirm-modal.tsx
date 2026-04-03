@@ -52,11 +52,8 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
   };
 
   const handleConfirm = async () => {
-    try {
-      await onConfirm();
-    } finally {
-      handleOpenChange(false);
-    }
+    await onConfirm();
+    handleOpenChange(false);
   };
 
   return (

@@ -39,11 +39,8 @@ export const DeleteRoleConfirmModal: FC<{
   };
 
   const handleConfirm = async () => {
-    try {
-      await onConfirm();
-    } finally {
-      handleOpenChange(false);
-    }
+    await onConfirm();
+    handleOpenChange(false);
   };
 
   return (
