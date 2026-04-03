@@ -289,7 +289,11 @@ function ConsoleAppInner({
     if (navigateTo !== currentPath) {
       // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      router.navigate({ to: navigateTo });
+      const [toPath, toSearch] = navigateTo.split('?');
+      router.navigate({
+        to: toPath,
+        search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
+      });
     }
   }, [navigateTo, isInitialized, router]);
 
