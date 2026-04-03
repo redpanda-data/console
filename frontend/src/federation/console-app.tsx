@@ -263,7 +263,8 @@ function ConsoleAppInner({
     }
 
     const unsubscribe = router.subscribe('onResolved', ({ toLocation }) => {
-      const newPath = toLocation.pathname;
+      // Include search params so tab state and filters sync to Cloud UI's URL
+      const newPath = toLocation.pathname + (toLocation.searchStr || '');
 
       // Skip if path hasn't changed (prevents loops)
       if (newPath === lastNotifiedPathRef.current) {
@@ -279,17 +280,24 @@ function ConsoleAppInner({
     };
   }, [router, onRouteChange]);
 
-  // Handle navigation from host via navigateTo prop (browser back/forward)
+  // Handle navigation from host via navigateTo prop (browser back/forward).
+  // navigateTo may include search params (e.g., '/topics?tab=messages').
   useEffect(() => {
     if (!(navigateTo && isInitialized && router)) {
       return;
     }
 
-    const currentPath = router.state.location.pathname;
+    const currentPath = router.state.location.pathname + (router.state.location.searchStr || '');
     if (navigateTo !== currentPath) {
       // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      router.navigate({ to: navigateTo });
+      const qIdx = navigateTo.indexOf('?');
+      const toPath = qIdx >= 0 ? navigateTo.slice(0, qIdx) : navigateTo;
+      const toSearch = qIdx >= 0 ? navigateTo.slice(qIdx + 1) : undefined;
+      router.navigate({
+        to: toPath,
+        search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
+      });
     }
   }, [navigateTo, isInitialized, router]);
 
