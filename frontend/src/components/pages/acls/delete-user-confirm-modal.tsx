@@ -70,7 +70,12 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
           This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need
           to be recreated and reassigned to them to be used again. To confirm, type the user name in the box below.
         </DialogDescription>
-        <Input onChange={(e) => setConfirmText(e.target.value)} placeholder={userName} value={confirmText} />
+        <Input
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder={`Type "${userName}" to confirm`}
+          testId="txt-confirmation-delete"
+          value={confirmText}
+        />
         <DialogFooter>
           <Button onClick={() => handleOpenChange(false)} variant="outline">
             Cancel
