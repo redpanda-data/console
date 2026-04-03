@@ -19,7 +19,7 @@ vi.mock('@tanstack/react-router', async () => {
     createRouter: vi.fn(() => ({
       subscribe: vi.fn(() => vi.fn()), // Returns unsubscribe function
       load: vi.fn().mockResolvedValue(undefined),
-      state: { location: { pathname: '/topics' } },
+      state: { location: { pathname: '/topics', searchStr: '' } },
       navigate: vi.fn(),
     })),
     createMemoryHistory: vi.fn(() => ({
@@ -341,6 +341,31 @@ describe('ConsoleApp', () => {
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups' });
       });
+    });
+
+    test('navigateTo matching current path + searchStr is a no-op', async () => {
+      const { createRouter } = await import('@tanstack/react-router');
+      const mockNavigate = vi.fn();
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn(() => vi.fn()),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '?tab=messages' } },
+        navigate: mockNavigate,
+      } as unknown as ReturnType<typeof createRouter>);
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // navigateTo equals currentPath + currentSearchStr, so navigate should NOT be called
+      rerender(<ConsoleApp {...defaultProps} navigateTo="/topics?tab=messages" />);
+
+      // Give it a tick to process the effect
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
   });
 
