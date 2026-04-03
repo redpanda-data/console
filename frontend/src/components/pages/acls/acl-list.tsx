@@ -800,7 +800,7 @@ const RolesTab = () => {
                           appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
                         }}
                         size="icon-sm"
-                        variant="ghost"
+                        variant="secondary-ghost"
                       >
                         <EditIcon className="h-4 w-4" />
                       </Button>

@@ -147,19 +147,6 @@ export class RolePage extends AclPage {
   }
 
   /**
-   * Deletes a role from the details page
-   */
-  async deleteRole(roleName: string) {
-    return await test.step('Delete role from details', async () => {
-      await this.gotoDetail(roleName);
-      await this.page.getByRole('button', { name: 'Delete' }).click();
-      await this.page.getByPlaceholder(roleName).fill(roleName);
-      await this.page.getByTestId('confirm-role-delete-button').click();
-      await this.page.waitForURL('/security/roles', { waitUntil: 'domcontentloaded' });
-    });
-  }
-
-  /**
    * Deletes a role from the roles list
    */
   async deleteRoleFromList(roleName: string) {
