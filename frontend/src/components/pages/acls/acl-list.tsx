@@ -641,13 +641,11 @@ const UserActions = ({ user, isAdminApiConfigured }: { user: UsersEntry; isAdmin
 
   return (
     <>
-      {Boolean(isAdminApiConfigured) && !isServerless() && (
-        <ChangePasswordModal
-          isOpen={isChangePasswordModalOpen}
-          setIsOpen={setIsChangePasswordModalOpen}
-          userName={user.name}
-        />
-      )}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        setIsOpen={setIsChangePasswordModalOpen}
+        userName={user.name}
+      />
       {Boolean(featureRolesApi) && (
         <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
@@ -665,16 +663,14 @@ const UserActions = ({ user, isAdminApiConfigured }: { user: UsersEntry; isAdmin
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          {Boolean(isAdminApiConfigured) && !isServerless() && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsChangePasswordModalOpen(true);
-              }}
-            >
-              Change password
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsChangePasswordModalOpen(true);
+            }}
+          >
+            Change password
+          </DropdownMenuItem>
           {Boolean(featureRolesApi) && (
             <DropdownMenuItem
               onClick={(e) => {
