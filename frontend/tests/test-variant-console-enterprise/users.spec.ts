@@ -30,6 +30,8 @@ test.describe('Users', () => {
       waitUntil: 'domcontentloaded',
     });
     await page.getByPlaceholder('Filter by name').fill(`user-${r}-regexp-[1,2]`);
+    // Wait for nuqs to push the filter into the URL (TanStack Router navigate is async)
+    await page.waitForURL(/[?&]q=/);
 
     await expect(
       page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`)
