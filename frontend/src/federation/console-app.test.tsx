@@ -262,6 +262,88 @@ describe('ConsoleApp', () => {
     });
   });
 
+  describe('Search Params Handling', () => {
+    test('onRouteChange includes searchStr when route resolves with search params', async () => {
+      // Get a reference to the subscribe callback so we can invoke it manually
+      const { createRouter } = await import('@tanstack/react-router');
+      let subscribedCallback: ((event: unknown) => void) | undefined;
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn((event: string, cb: (event: unknown) => void) => {
+          subscribedCallback = cb;
+          return vi.fn(); // unsubscribe
+        }),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '' } },
+        navigate: vi.fn(),
+      } as unknown as ReturnType<typeof createRouter>);
+
+      render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Simulate a route resolution with search params (e.g., ?tab=messages)
+      expect(subscribedCallback).toBeDefined();
+      subscribedCallback!({
+        toLocation: { pathname: '/topics/my-topic', searchStr: '?tab=messages' },
+      });
+
+      expect(mockOnRouteChange).toHaveBeenCalledWith('/topics/my-topic?tab=messages');
+    });
+
+    test('navigateTo with search params triggers router navigation', async () => {
+      const { createRouter } = await import('@tanstack/react-router');
+      const mockNavigate = vi.fn();
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn(() => vi.fn()),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '' } },
+        navigate: mockNavigate,
+      } as unknown as ReturnType<typeof createRouter>);
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Rerender with navigateTo containing search params
+      rerender(<ConsoleApp {...defaultProps} navigateTo="/groups?search=my-group" />);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups?search=my-group' });
+      });
+    });
+
+    test('navigateTo without search params still works (backwards compat)', async () => {
+      const { createRouter } = await import('@tanstack/react-router');
+      const mockNavigate = vi.fn();
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn(() => vi.fn()),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '' } },
+        navigate: mockNavigate,
+      } as unknown as ReturnType<typeof createRouter>);
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Rerender with navigateTo without search params
+      rerender(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups' });
+      });
+    });
+  });
+
   describe('Config Overrides', () => {
     test('applies URL overrides from config', async () => {
       const customConfig = {
