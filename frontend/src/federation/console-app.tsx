@@ -291,7 +291,9 @@ function ConsoleAppInner({
     if (navigateTo !== currentPath) {
       // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      const [toPath, toSearch] = navigateTo.split('?');
+      const qIdx = navigateTo.indexOf('?');
+      const toPath = qIdx >= 0 ? navigateTo.slice(0, qIdx) : navigateTo;
+      const toSearch = qIdx >= 0 ? navigateTo.slice(qIdx + 1) : undefined;
       router.navigate({
         to: toPath,
         search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
