@@ -21,6 +21,7 @@ import {
 } from 'components/redpanda-ui/components/choicebox';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -276,14 +277,21 @@ function EditSchemaMode({
           </Choicebox>
 
           <div className="mt-6 flex items-center gap-4">
-            <Button
-              data-testid="edit-mode-save-btn"
-              disabled={api.userData?.canManageSchemaRegistry === false}
-              onClick={onSave}
-              variant="primary"
-            >
-              Save
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="edit-mode-save-btn"
+                  disabled={api.userData?.canManageSchemaRegistry === false}
+                  onClick={onSave}
+                  variant="primary"
+                >
+                  Save
+                </Button>
+              </TooltipTrigger>
+              {api.userData?.canManageSchemaRegistry === false && (
+                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+              )}
+            </Tooltip>
             <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="secondary-ghost">
               Cancel
             </Button>

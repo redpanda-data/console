@@ -303,20 +303,27 @@ const SchemaList: FC = () => {
         id: 'actions',
         enableSorting: false,
         cell: ({ row: { original: r } }) => (
-          <Button
-            aria-label="Delete schema"
-            data-testid={`schema-list-delete-btn-${r.name}`}
-            disabled={api.userData?.canDeleteSchemas === false}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
-            }}
-            size="icon-sm"
-            variant="secondary-ghost"
-          >
-            <TrashIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Delete schema"
+                data-testid={`schema-list-delete-btn-${r.name}`}
+                disabled={api.userData?.canDeleteSchemas === false}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
+                }}
+                size="icon-sm"
+                variant="secondary-ghost"
+              >
+                <TrashIcon />
+              </Button>
+            </TooltipTrigger>
+            {api.userData?.canDeleteSchemas === false && (
+              <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
+            )}
+          </Tooltip>
         ),
       },
     ],
@@ -417,18 +424,25 @@ const SchemaList: FC = () => {
       )}
 
       <div className="my-4 flex items-center gap-2">
-        <Button
-          data-testid="schema-list-create-btn"
-          disabled={api.userData?.canCreateSchemas === false}
-          onClick={() =>
-            isNamedContext(selectedContext) && schemaRegistryContextsSupported
-              ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
-              : appGlobal.historyPush('/schema-registry/create')
-          }
-          variant="primary"
-        >
-          Create new schema
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              data-testid="schema-list-create-btn"
+              disabled={api.userData?.canCreateSchemas === false}
+              onClick={() =>
+                isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                  ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
+                  : appGlobal.historyPush('/schema-registry/create')
+              }
+              variant="primary"
+            >
+              Create new schema
+            </Button>
+          </TooltipTrigger>
+          {api.userData?.canCreateSchemas === false && (
+            <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+          )}
+        </Tooltip>
       </div>
 
       <RequestErrors />
