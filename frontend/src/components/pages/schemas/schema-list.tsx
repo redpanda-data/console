@@ -243,8 +243,8 @@ const SchemaList: FC = () => {
                 {isSoftDeleted && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span data-testid="schema-list-soft-deleted-icon">
-                        <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
+                      <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
+                        <ArchiveIcon aria-hidden="true" height={16} style={{ color: 'dimgrey' }} width={16} />
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -497,9 +497,13 @@ const SchemaList: FC = () => {
           <Section>
             <div className="flex items-center justify-between pb-3">
               <div className="flex items-center gap-2">
-                <div className="relative w-[350px]">
-                  <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="relative w-[350px]" data-testid="schema-list-search-field">
+                  <SearchIcon
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  />
                   <Input
+                    aria-label="Filter by subject name or schema ID"
                     className="pl-9"
                     data-testid="schema-list-search-field"
                     onChange={(e) => setQuickSearch(e.target.value)}
@@ -510,12 +514,13 @@ const SchemaList: FC = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      aria-label="Search help"
                       className="inline-flex cursor-pointer items-center"
                       data-testid="schema-search-help"
                       onClick={() => setIsHelpSidebarOpen(true)}
                       type="button"
                     >
-                      <InfoIcon />
+                      <InfoIcon aria-hidden="true" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">Help with schema search</TooltipContent>
@@ -568,6 +573,7 @@ const SchemaList: FC = () => {
                 <div className="flex items-center space-x-2">
                   <span className="font-medium text-sm">Rows per page</span>
                   <select
+                    aria-label="Rows per page"
                     className="h-8 w-[70px] rounded-md border bg-transparent px-2 text-sm"
                     onChange={(e) => table.setPageSize(Number(e.target.value))}
                     value={table.getState().pagination.pageSize}

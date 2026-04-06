@@ -268,7 +268,7 @@ function EditSchemaCompatibility(p: {
       <div className="flex-1">
         {!!contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-compatibility-context-name">
-            <InfoIcon className="size-4 text-muted-foreground" />
+            <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
             <Text className="font-bold text-lg">
               Editing compatibility for context: <span className="text-muted-foreground">{contextName}</span>
             </Text>
@@ -282,6 +282,7 @@ function EditSchemaCompatibility(p: {
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
+            aria-label="Schema compatibility mode"
             className="w-full"
             data-testid="edit-compatibility-mode-radio"
             onValueChange={(value) => setConfigMode(value as SchemaRegistryCompatibilityModeWithDefault)}

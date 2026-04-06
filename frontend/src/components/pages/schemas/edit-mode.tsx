@@ -236,7 +236,7 @@ function EditSchemaMode({
       <div className="flex-1">
         {contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-mode-context-name">
-            <InfoIcon className="size-4 text-muted-foreground" />
+            <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
             <Text className="font-bold text-lg">
               Editing mode for context: <span className="text-muted-foreground">{contextName}</span>
             </Text>
@@ -248,6 +248,7 @@ function EditSchemaMode({
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
+            aria-label="Schema registry mode"
             className="w-full"
             data-testid="edit-mode-radio"
             onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}
@@ -265,7 +266,7 @@ function EditSchemaMode({
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
                   {option.warning && (
                     <div className="mt-2 flex items-start gap-2 text-amber-700 text-sm">
-                      <WarningIcon className="mt-0.5 size-4 shrink-0" />
+                      <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                       <span>{option.warning}</span>
                     </div>
                   )}
