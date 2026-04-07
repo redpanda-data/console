@@ -11764,7 +11764,12 @@ path-scurry@^2.0.0:
     lru-cache "^11.0.0"
     minipass "^7.1.2"
 
-path-to-regexp@0.1.12, path-to-regexp@8.4.0, path-to-regexp@^8.0.0:
+path-to-regexp@0.1.12:
+  version "0.1.12"
+  resolved "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.12.tgz"
+  integrity sha512-RA1GjUVMnvYFxuqovrEqZoxxW5NUZqbwKtYz/Tt7nXerk0LbLblQmrsgdeOxV5SFHf0UDggjS/bSeOZwt1pmEQ==
+
+path-to-regexp@8.4.0, path-to-regexp@^8.0.0:
   version "8.4.0"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-8.4.0.tgz#8e98fcd94826aff01a90c544ef74ffbaca3a78ed"
   integrity sha512-PuseHIvAnz3bjrM2rGJtSgo1zjgxapTLZ7x2pjhzWwlp4SJQgK3f3iZIQwkpEnBaKz6seKBADpM4B4ySkuYypg==

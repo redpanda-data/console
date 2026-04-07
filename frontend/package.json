@@ -53,7 +53,12 @@
     "lodash": "^4.17.23",
     "lodash-es": "^4.17.23",
     "qs": "^6.14.2",
-    "path-to-regexp": "8.4.0",
+    "minimatch": {
+      "brace-expansion": "^5.0.5"
+    },
+    "router": {
+      "path-to-regexp": "8.4.0"
+    },
     "yaml": "^2.8.3",
     "cosmiconfig": {
       "yaml": "1.10.3"
@@ -220,6 +225,6 @@
     "qs": "^6.14.2",
     "prismjs": "^1.30.0",
     "**/cosmiconfig/yaml": "1.10.3",
-    "path-to-regexp": "8.4.0"
+    "**/router/path-to-regexp": "8.4.0"
   }
 }
