@@ -794,7 +794,8 @@ async function startBackendServerWithConfig(
   state,
   configPath,
   externalPort,
-  networkAlias
+  networkAlias,
+  extraHosts = []
 ) {
   console.log(`Starting backend server container on port ${externalPort} with alias ${networkAlias}...`);
 
@@ -837,13 +838,18 @@ async function startBackendServerWithConfig(
 
   let containerId;
   try {
-    const backend = await new GenericContainer(imageTag)
+    let container = new GenericContainer(imageTag)
       .withNetwork(network)
       .withNetworkAliases(networkAlias)
       .withExposedPorts({ container: 3000, host: externalPort })
       .withBindMounts(bindMounts)
-      .withCommand(['--config.filepath=/etc/console/config.yaml'])
-      .start();
+      .withCommand(['--config.filepath=/etc/console/config.yaml']);
+
+    if (extraHosts.length > 0) {
+      container = container.withExtraHosts(extraHosts);
+    }
+
+    const backend = await container.start();
 
     containerId = backend.getId();
     state.backendId = containerId;
@@ -882,7 +888,112 @@ async function startBackendServerWithConfig(
   }
 }
 
+/**
+ * Start the Console backend as a host process (not in Docker).
+ * Used for OIDC tests where the backend must reach both localhost services
+ * (Zitadel) and port-mapped Docker services (Redpanda).
+ */
+async function startBackendProcess(state, configPath, ports) {
+  console.log('Starting backend as host process...');
+
+  // Rewrite the config to use localhost ports instead of Docker hostnames
+  const fs = await import('node:fs');
+  let config = fs.readFileSync(configPath, 'utf-8');
+  config = config.replace('redpanda:9092', `localhost:${ports.redpandaKafka}`);
+  config = config.replace('http://redpanda:9644', `http://localhost:${ports.redpandaAdmin}`);
+  config = config.replace('http://redpanda:8081', `http://localhost:${ports.redpandaSchemaRegistry}`);
+  config = config.replace('listenPort: 3000', `listenPort: ${ports.backend}`);
+
+  // Resolve the license file path to the host filesystem
+  const defaultLicensePath = resolve(
+    __dirname,
+    '../../../../console-enterprise/frontend/tests/config/redpanda.license'
+  );
+  const hostLicensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+  config = config.replace(/licenseFilepath:.*/, `licenseFilepath: ${hostLicensePath}`);
+
+  fs.writeFileSync(configPath, config);
+
+  // Find the enterprise backend binary or build it
+  const backendDir = process.env.ENTERPRISE_BACKEND_DIR
+    ? resolve(process.env.ENTERPRISE_BACKEND_DIR)
+    : resolve(__dirname, '../../../../console-enterprise/backend');
+
+  const cmdDir = join(backendDir, 'cmd');
+
+  // Copy frontend assets into the embed directory for the Go binary
+  const frontendBuildDir = resolve(__dirname, '../../build');
+  const embedDir = join(backendDir, 'pkg', 'embed', 'frontend');
+  if (fs.existsSync(frontendBuildDir)) {
+    console.log('  Copying frontend assets for host binary...');
+    await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
+  }
+
+  // Build the binary
+  console.log(`  Building backend from ${cmdDir}...`);
+  await execAsync('go build -o /tmp/console-enterprise-e2e .', { cwd: cmdDir, maxBuffer: 50 * 1024 * 1024 });
+  console.log('  ✓ Backend binary built');
+
+  // Clean up the copied frontend assets
+  await execAsync(`find "${embedDir}" -mindepth 1 ! -name '.gitignore' -delete`).catch(() => {});
+
+  // If a license is available, inject it as the REDPANDA_LICENSE env var
+  // so the backend can use it without a filepath.
+  let licenseEnv = {};
+  if (process.env.ENTERPRISE_LICENSE_CONTENT) {
+    licenseEnv.REDPANDA_LICENSE = process.env.ENTERPRISE_LICENSE_CONTENT;
+  } else {
+    const defaultLicensePath = resolve(
+      __dirname,
+      '../../../../console-enterprise/frontend/tests/config/redpanda.license'
+    );
+    const licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
+    if (fs.existsSync(licensePath)) {
+      licenseEnv.REDPANDA_LICENSE = fs.readFileSync(licensePath, 'utf-8').trim();
+    }
+  }
+
+  // Start the backend process
+  const { spawn } = await import('node:child_process');
+  const args = [`--config.filepath=${configPath}`];
+
+  const proc = spawn('/tmp/console-enterprise-e2e', args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
+    env: { ...process.env, ...licenseEnv },
+  });
+
+  state.backendProcess = proc;
+  state.backendPid = proc.pid;
+
+  // Log output for debugging
+  proc.stdout.on('data', (data) => {
+    const line = data.toString().trim();
+    if (line) console.log(`[backend] ${line}`);
+  });
+  proc.stderr.on('data', (data) => {
+    const line = data.toString().trim();
+    if (line) console.error(`[backend] ${line}`);
+  });
+
+  proc.on('exit', (code) => {
+    if (code !== null && code !== 0) {
+      console.error(`Backend process exited with code ${code}`);
+    }
+  });
+
+  // Wait for backend to be ready
+  console.log(`  Waiting for backend on port ${ports.backend}...`);
+  await waitForPort(ports.backend, 60, 1000);
+  console.log(`  ✓ Backend ready at http://localhost:${ports.backend}`);
+}
+
 async function cleanupOnFailure(state) {
+  if (state.backendProcess) {
+    console.log('Stopping backend process...');
+    try { state.backendProcess.kill('SIGTERM'); } catch { /* ignore */ }
+  }
+
   if (state.sourceBackendContainer) {
     console.log('Stopping source backend container using testcontainers API...');
     await state.sourceBackendContainer.stop().catch((error) => {
@@ -908,6 +1019,19 @@ async function cleanupOnFailure(state) {
     await state.owlshopContainer.stop().catch((error) => {
       console.log(`Failed to stop OwlShop container: ${error.message}`);
     });
+  }
+  for (const [key, label] of [
+    ['zitadelProxyContainer', 'Zitadel proxy'],
+    ['zitadelLoginContainer', 'Zitadel Login'],
+    ['zitadelContainer', 'Zitadel API'],
+    ['zitadelDbContainer', 'Zitadel DB'],
+  ]) {
+    if (state[key]) {
+      console.log(`Stopping ${label} container using testcontainers API...`);
+      await state[key].stop().catch((error) => {
+        console.log(`Failed to stop ${label} container: ${error.message}`);
+      });
+    }
   }
   if (state.destRedpandaContainer) {
     console.log('Stopping destination Redpanda container using testcontainers API...');
@@ -936,19 +1060,21 @@ export default async function globalSetup(config = {}) {
   const isEnterprise = config?.metadata?.isEnterprise ?? false;
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
   const needsConnect = config?.metadata?.needsConnect ?? false;
+  const needsZitadel = config?.metadata?.needsZitadel ?? false;
 
   // Load ports from variant's config/variant.json
   const variantConfig = loadVariantConfig(variantName);
   const ports = variantConfig.ports;
 
   console.log('\n\n========================================');
-  console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`);
+  console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}${needsZitadel ? ' + ZITADEL' : ''}`);
   console.log('========================================\n');
   console.log('DEBUG - Config metadata:', {
     variantName,
     configFile,
     isEnterprise,
     needsShadowlink,
+    needsZitadel,
     ports,
   });
   console.log('Starting testcontainers environment...');
@@ -963,6 +1089,7 @@ export default async function globalSetup(config = {}) {
     sourceBackendId: '',
     isEnterprise,
     needsShadowlink,
+    needsZitadel,
   };
 
   try {
@@ -1003,6 +1130,22 @@ export default async function globalSetup(config = {}) {
     console.log(`  - Kafka Connect: http://localhost:${ports.kafkaConnect}`);
     console.log('================================\n');
 
+    // --- Zitadel OIDC provider (must start before backend so config can be rewritten) ---
+    let zitadelConfig = null;
+    let effectiveConfigFile = configFile;
+    if (needsZitadel) {
+      const { startZitadel, rewriteConsoleConfig } = await import('./zitadel-setup.mjs');
+      zitadelConfig = await startZitadel(network, state, ports);
+
+      // Rewrite the Console config template with real Zitadel values
+      const originalConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
+      const rewrittenConfigPath = rewriteConsoleConfig(originalConfigPath, zitadelConfig);
+      // Store rewritten path for the backend to use
+      state.zitadelConfig = zitadelConfig;
+      state.rewrittenConfigPath = rewrittenConfigPath;
+      console.log(`  ✓ Console config rewritten: ${rewrittenConfigPath}`);
+    }
+
     // --- Group 2: Start services in parallel (all depend on Redpanda being ready) ---
     const servicePromises = [
       startOwlShop(network, state),
@@ -1035,6 +1178,13 @@ export default async function globalSetup(config = {}) {
             ports.backendDest,
             'console-backend-dest'
           )
+        );
+      } else if (needsZitadel && state.rewrittenConfigPath) {
+        // For OIDC tests, the Console backend must reach both Zitadel (on localhost)
+        // and Redpanda (on Docker network). Run the backend as a host process
+        // with the config rewritten to use localhost-accessible ports for all services.
+        servicePromises.push(
+          startBackendProcess(state, state.rewrittenConfigPath, ports)
         );
       } else {
         servicePromises.push(
