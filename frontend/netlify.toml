@@ -1,8 +1,8 @@
 [build]
   base = "frontend"
-  # NODE_OPTIONS: 16 GB is a V8 heap ceiling guard, not actual memory usage.
+  # NODE_OPTIONS: 4 GB is a V8 heap ceiling guard, not actual memory usage.
   # It prevents OOM kills during large builds; real RSS stays well below this.
-  command = "bun install && NODE_OPTIONS=--max_old_space_size=16384 bun run build"
+  command = "bun install && NODE_OPTIONS=--max_old_space_size=4096 bun run build"
   publish = "build"
 
 [build.environment]
