@@ -35,7 +35,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Plus, Search, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Trash2, Users } from 'lucide-react';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -307,11 +307,20 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-8 pt-2">
         {/* Page Header */}
-        <Text className="max-w-3xl text-base leading-6" variant="muted">
-          Manage the ACLs and principals assigned to this role.
-        </Text>
+        <div>
+          <Button asChild className="mb-4 -ml-3 text-muted-foreground" variant="ghost">
+            <Link params={{ tab: 'roles' }} to="/security/$tab">
+              <ArrowLeft className="size-4" />
+              Roles
+            </Link>
+          </Button>
+          <h1 className="min-w-0 truncate font-semibold text-2xl tracking-tight" title={roleName}>
+            {roleName}
+          </h1>
+          <p className="mt-1 text-muted-foreground text-sm">Manage the ACLs and principals assigned to this role.</p>
+        </div>
 
         {/* ACLs Section */}
         <ACLTableSection acls={acls} context="role" onAdd={() => setAclDialogOpen(true)} onRemove={handleRemoveAcl} />
@@ -328,16 +337,18 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
                 {members.length} {members.length === 1 ? 'principal' : 'principals'}
               </Text>
             </div>
-            <Button
-              onClick={() => {
-                setAddPrincipalDialogOpen(true);
-                setNewPrincipal('');
-                setPrincipalError(null);
-              }}
-            >
-              <Plus className="size-4" />
-              Add Principal
-            </Button>
+            {members.length > 0 && (
+              <Button
+                onClick={() => {
+                  setAddPrincipalDialogOpen(true);
+                  setNewPrincipal('');
+                  setPrincipalError(null);
+                }}
+              >
+                <Plus className="size-4" />
+                Add Principal
+              </Button>
+            )}
           </div>
 
           {/* Principal search (shown when > threshold) */}

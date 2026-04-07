@@ -41,7 +41,7 @@ export function SecurityPage({ tab }: SecurityPageProps) {
   const activeTabLabel = tabs.find((t) => t.id === activeTab)?.label ?? 'Users';
 
   useEffect(() => {
-    uiState.pageTitle = activeTabLabel;
+    uiState.pageTitle = 'Security';
     uiState.pageBreadcrumbs = [
       { title: 'Security', linkTo: `/security/${activeTab}` },
       { title: activeTabLabel, linkTo: `/security/${activeTab}` },

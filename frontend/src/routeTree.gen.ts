@@ -8,621 +8,621 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as UploadLicenseRouteImport } from './routes/upload-license'
-import { Route as TrialExpiredRouteImport } from './routes/trial-expired'
-import { Route as TransformsSetupRouteImport } from './routes/transforms-setup'
-import { Route as ReassignPartitionsRouteImport } from './routes/reassign-partitions'
-import { Route as QuotasRouteImport } from './routes/quotas'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as TransformsIndexRouteImport } from './routes/transforms/index'
-import { Route as TranscriptsIndexRouteImport } from './routes/transcripts/index'
-import { Route as TopicsIndexRouteImport } from './routes/topics/index'
-import { Route as ShadowlinksIndexRouteImport } from './routes/shadowlinks/index'
-import { Route as SecurityIndexRouteImport } from './routes/security/index'
-import { Route as SecretsIndexRouteImport } from './routes/secrets/index'
-import { Route as SchemaRegistryIndexRouteImport } from './routes/schema-registry/index'
-import { Route as OverviewIndexRouteImport } from './routes/overview/index'
-import { Route as ObservabilityIndexRouteImport } from './routes/observability/index'
-import { Route as McpServersIndexRouteImport } from './routes/mcp-servers/index'
-import { Route as LoginIndexRouteImport } from './routes/login/index'
-import { Route as KnowledgebasesIndexRouteImport } from './routes/knowledgebases/index'
-import { Route as GroupsIndexRouteImport } from './routes/groups/index'
-import { Route as DebugBundleIndexRouteImport } from './routes/debug-bundle/index'
-import { Route as ConnectClustersIndexRouteImport } from './routes/connect-clusters/index'
-import { Route as AgentsIndexRouteImport } from './routes/agents/index'
-import { Route as TransformsTransformNameRouteImport } from './routes/transforms/$transformName'
-import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create'
-import { Route as SecurityTabRouteImport } from './routes/security/$tab'
-import { Route as SecretsCreateRouteImport } from './routes/secrets/create'
-import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode'
-import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility'
-import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create'
-import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard'
-import { Route as RpConnectCreateRouteImport } from './routes/rp-connect/create'
-import { Route as OverviewBrokerIdRouteImport } from './routes/overview/$brokerId'
-import { Route as McpServersCreateRouteImport } from './routes/mcp-servers/create'
-import { Route as McpServersIdRouteImport } from './routes/mcp-servers/$id'
-import { Route as KnowledgebasesCreateRouteImport } from './routes/knowledgebases/create'
-import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId'
-import { Route as GetStartedApiRouteImport } from './routes/get-started/api'
-import { Route as AgentsCreateRouteImport } from './routes/agents/create'
-import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topicName/index'
-import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index'
-import { Route as RpConnectPipelineIdIndexRouteImport } from './routes/rp-connect/$pipelineId/index'
-import { Route as KnowledgebasesKnowledgebaseIdIndexRouteImport } from './routes/knowledgebases/$knowledgebaseId/index'
-import { Route as ConnectClustersClusterNameIndexRouteImport } from './routes/connect-clusters/$clusterName/index'
-import { Route as AgentsIdIndexRouteImport } from './routes/agents/$id/index'
-import { Route as TopicsTopicNameProduceRecordRouteImport } from './routes/topics/$topicName/produce-record'
-import { Route as ShadowlinksNameEditRouteImport } from './routes/shadowlinks/$name/edit'
-import { Route as SecurityUsersUserNameRouteImport } from './routes/security/users/$userName'
-import { Route as SecurityRolesRoleNameRouteImport } from './routes/security/roles/$roleName'
-import { Route as SecretsIdEditRouteImport } from './routes/secrets/$id/edit'
-import { Route as RpConnectSecretsCreateRouteImport } from './routes/rp-connect/secrets/create'
-import { Route as RpConnectPipelineIdEditRouteImport } from './routes/rp-connect/$pipelineId/edit'
-import { Route as LoginCallbacksProviderRouteImport } from './routes/login/callbacks/$provider'
-import { Route as DebugBundleProgressJobIdRouteImport } from './routes/debug-bundle/progress/$jobId'
-import { Route as ConnectClustersClusterNameCreateConnectorRouteImport } from './routes/connect-clusters/$clusterName/create-connector'
-import { Route as ConnectClustersClusterNameConnectorRouteImport } from './routes/connect-clusters/$clusterName/$connector'
-import { Route as SchemaRegistrySubjectsSubjectNameIndexRouteImport } from './routes/schema-registry/subjects/$subjectName/index'
-import { Route as SchemaRegistrySubjectsSubjectNameEditModeRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-mode'
-import { Route as SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-compatibility'
-import { Route as SchemaRegistrySubjectsSubjectNameAddVersionRouteImport } from './routes/schema-registry/subjects/$subjectName/add-version'
-import { Route as SchemaRegistryContextsContextNameEditModeRouteImport } from './routes/schema-registry/contexts/$contextName/edit-mode'
-import { Route as SchemaRegistryContextsContextNameEditCompatibilityRouteImport } from './routes/schema-registry/contexts/$contextName/edit-compatibility'
-import { Route as SchemaRegistryContextsContextNameCreateRouteImport } from './routes/schema-registry/contexts/$contextName/create'
-import { Route as RpConnectSecretsSecretIdEditRouteImport } from './routes/rp-connect/secrets/$secretId/edit'
-import { Route as KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport } from './routes/knowledgebases/$knowledgebaseId/documents/$documentId'
-import { Route as AgentsIdTranscriptsConversationIdRouteImport } from './routes/agents/$id/transcripts/$conversationId'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as UploadLicenseRouteImport } from './routes/upload-license';
+import { Route as TrialExpiredRouteImport } from './routes/trial-expired';
+import { Route as TransformsSetupRouteImport } from './routes/transforms-setup';
+import { Route as ReassignPartitionsRouteImport } from './routes/reassign-partitions';
+import { Route as QuotasRouteImport } from './routes/quotas';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as TransformsIndexRouteImport } from './routes/transforms/index';
+import { Route as TranscriptsIndexRouteImport } from './routes/transcripts/index';
+import { Route as TopicsIndexRouteImport } from './routes/topics/index';
+import { Route as ShadowlinksIndexRouteImport } from './routes/shadowlinks/index';
+import { Route as SecurityIndexRouteImport } from './routes/security/index';
+import { Route as SecretsIndexRouteImport } from './routes/secrets/index';
+import { Route as SchemaRegistryIndexRouteImport } from './routes/schema-registry/index';
+import { Route as OverviewIndexRouteImport } from './routes/overview/index';
+import { Route as ObservabilityIndexRouteImport } from './routes/observability/index';
+import { Route as McpServersIndexRouteImport } from './routes/mcp-servers/index';
+import { Route as LoginIndexRouteImport } from './routes/login/index';
+import { Route as KnowledgebasesIndexRouteImport } from './routes/knowledgebases/index';
+import { Route as GroupsIndexRouteImport } from './routes/groups/index';
+import { Route as DebugBundleIndexRouteImport } from './routes/debug-bundle/index';
+import { Route as ConnectClustersIndexRouteImport } from './routes/connect-clusters/index';
+import { Route as AgentsIndexRouteImport } from './routes/agents/index';
+import { Route as TransformsTransformNameRouteImport } from './routes/transforms/$transformName';
+import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create';
+import { Route as SecurityTabRouteImport } from './routes/security/$tab';
+import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
+import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
+import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility';
+import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create';
+import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard';
+import { Route as RpConnectCreateRouteImport } from './routes/rp-connect/create';
+import { Route as OverviewBrokerIdRouteImport } from './routes/overview/$brokerId';
+import { Route as McpServersCreateRouteImport } from './routes/mcp-servers/create';
+import { Route as McpServersIdRouteImport } from './routes/mcp-servers/$id';
+import { Route as KnowledgebasesCreateRouteImport } from './routes/knowledgebases/create';
+import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId';
+import { Route as GetStartedApiRouteImport } from './routes/get-started/api';
+import { Route as AgentsCreateRouteImport } from './routes/agents/create';
+import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topicName/index';
+import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index';
+import { Route as RpConnectPipelineIdIndexRouteImport } from './routes/rp-connect/$pipelineId/index';
+import { Route as KnowledgebasesKnowledgebaseIdIndexRouteImport } from './routes/knowledgebases/$knowledgebaseId/index';
+import { Route as ConnectClustersClusterNameIndexRouteImport } from './routes/connect-clusters/$clusterName/index';
+import { Route as AgentsIdIndexRouteImport } from './routes/agents/$id/index';
+import { Route as TopicsTopicNameProduceRecordRouteImport } from './routes/topics/$topicName/produce-record';
+import { Route as ShadowlinksNameEditRouteImport } from './routes/shadowlinks/$name/edit';
+import { Route as SecurityUsersUserNameRouteImport } from './routes/security/users/$userName';
+import { Route as SecurityRolesRoleNameRouteImport } from './routes/security/roles/$roleName';
+import { Route as SecretsIdEditRouteImport } from './routes/secrets/$id/edit';
+import { Route as RpConnectSecretsCreateRouteImport } from './routes/rp-connect/secrets/create';
+import { Route as RpConnectPipelineIdEditRouteImport } from './routes/rp-connect/$pipelineId/edit';
+import { Route as LoginCallbacksProviderRouteImport } from './routes/login/callbacks/$provider';
+import { Route as DebugBundleProgressJobIdRouteImport } from './routes/debug-bundle/progress/$jobId';
+import { Route as ConnectClustersClusterNameCreateConnectorRouteImport } from './routes/connect-clusters/$clusterName/create-connector';
+import { Route as ConnectClustersClusterNameConnectorRouteImport } from './routes/connect-clusters/$clusterName/$connector';
+import { Route as SchemaRegistrySubjectsSubjectNameIndexRouteImport } from './routes/schema-registry/subjects/$subjectName/index';
+import { Route as SchemaRegistrySubjectsSubjectNameEditModeRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-mode';
+import { Route as SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-compatibility';
+import { Route as SchemaRegistrySubjectsSubjectNameAddVersionRouteImport } from './routes/schema-registry/subjects/$subjectName/add-version';
+import { Route as SchemaRegistryContextsContextNameEditModeRouteImport } from './routes/schema-registry/contexts/$contextName/edit-mode';
+import { Route as SchemaRegistryContextsContextNameEditCompatibilityRouteImport } from './routes/schema-registry/contexts/$contextName/edit-compatibility';
+import { Route as SchemaRegistryContextsContextNameCreateRouteImport } from './routes/schema-registry/contexts/$contextName/create';
+import { Route as RpConnectSecretsSecretIdEditRouteImport } from './routes/rp-connect/secrets/$secretId/edit';
+import { Route as KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport } from './routes/knowledgebases/$knowledgebaseId/documents/$documentId';
+import { Route as AgentsIdTranscriptsConversationIdRouteImport } from './routes/agents/$id/transcripts/$conversationId';
 
 const UploadLicenseRoute = UploadLicenseRouteImport.update({
   id: '/upload-license',
   path: '/upload-license',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TrialExpiredRoute = TrialExpiredRouteImport.update({
   id: '/trial-expired',
   path: '/trial-expired',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TransformsSetupRoute = TransformsSetupRouteImport.update({
   id: '/transforms-setup',
   path: '/transforms-setup',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ReassignPartitionsRoute = ReassignPartitionsRouteImport.update({
   id: '/reassign-partitions',
   path: '/reassign-partitions',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const QuotasRoute = QuotasRouteImport.update({
   id: '/quotas',
   path: '/quotas',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TransformsIndexRoute = TransformsIndexRouteImport.update({
   id: '/transforms/',
   path: '/transforms/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TranscriptsIndexRoute = TranscriptsIndexRouteImport.update({
   id: '/transcripts/',
   path: '/transcripts/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TopicsIndexRoute = TopicsIndexRouteImport.update({
   id: '/topics/',
   path: '/topics/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ShadowlinksIndexRoute = ShadowlinksIndexRouteImport.update({
   id: '/shadowlinks/',
   path: '/shadowlinks/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecurityIndexRoute = SecurityIndexRouteImport.update({
   id: '/security/',
   path: '/security/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecretsIndexRoute = SecretsIndexRouteImport.update({
   id: '/secrets/',
   path: '/secrets/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SchemaRegistryIndexRoute = SchemaRegistryIndexRouteImport.update({
   id: '/schema-registry/',
   path: '/schema-registry/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OverviewIndexRoute = OverviewIndexRouteImport.update({
   id: '/overview/',
   path: '/overview/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ObservabilityIndexRoute = ObservabilityIndexRouteImport.update({
   id: '/observability/',
   path: '/observability/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const McpServersIndexRoute = McpServersIndexRouteImport.update({
   id: '/mcp-servers/',
   path: '/mcp-servers/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginIndexRoute = LoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const KnowledgebasesIndexRoute = KnowledgebasesIndexRouteImport.update({
   id: '/knowledgebases/',
   path: '/knowledgebases/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GroupsIndexRoute = GroupsIndexRouteImport.update({
   id: '/groups/',
   path: '/groups/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const DebugBundleIndexRoute = DebugBundleIndexRouteImport.update({
   id: '/debug-bundle/',
   path: '/debug-bundle/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ConnectClustersIndexRoute = ConnectClustersIndexRouteImport.update({
   id: '/connect-clusters/',
   path: '/connect-clusters/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AgentsIndexRoute = AgentsIndexRouteImport.update({
   id: '/agents/',
   path: '/agents/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TransformsTransformNameRoute = TransformsTransformNameRouteImport.update({
   id: '/transforms/$transformName',
   path: '/transforms/$transformName',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ShadowlinksCreateRoute = ShadowlinksCreateRouteImport.update({
   id: '/shadowlinks/create',
   path: '/shadowlinks/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecurityTabRoute = SecurityTabRouteImport.update({
   id: '/security/$tab',
   path: '/security/$tab',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecretsCreateRoute = SecretsCreateRouteImport.update({
   id: '/secrets/create',
   path: '/secrets/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SchemaRegistryEditModeRoute = SchemaRegistryEditModeRouteImport.update({
   id: '/schema-registry/edit-mode',
   path: '/schema-registry/edit-mode',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SchemaRegistryEditCompatibilityRoute =
   SchemaRegistryEditCompatibilityRouteImport.update({
     id: '/schema-registry/edit-compatibility',
     path: '/schema-registry/edit-compatibility',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistryCreateRoute = SchemaRegistryCreateRouteImport.update({
   id: '/schema-registry/create',
   path: '/schema-registry/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RpConnectWizardRoute = RpConnectWizardRouteImport.update({
   id: '/rp-connect/wizard',
   path: '/rp-connect/wizard',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RpConnectCreateRoute = RpConnectCreateRouteImport.update({
   id: '/rp-connect/create',
   path: '/rp-connect/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OverviewBrokerIdRoute = OverviewBrokerIdRouteImport.update({
   id: '/overview/$brokerId',
   path: '/overview/$brokerId',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const McpServersCreateRoute = McpServersCreateRouteImport.update({
   id: '/mcp-servers/create',
   path: '/mcp-servers/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const McpServersIdRoute = McpServersIdRouteImport.update({
   id: '/mcp-servers/$id',
   path: '/mcp-servers/$id',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const KnowledgebasesCreateRoute = KnowledgebasesCreateRouteImport.update({
   id: '/knowledgebases/create',
   path: '/knowledgebases/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   id: '/groups/$groupId',
   path: '/groups/$groupId',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GetStartedApiRoute = GetStartedApiRouteImport.update({
   id: '/get-started/api',
   path: '/get-started/api',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AgentsCreateRoute = AgentsCreateRouteImport.update({
   id: '/agents/create',
   path: '/agents/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TopicsTopicNameIndexRoute = TopicsTopicNameIndexRouteImport.update({
   id: '/topics/$topicName/',
   path: '/topics/$topicName/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ShadowlinksNameIndexRoute = ShadowlinksNameIndexRouteImport.update({
   id: '/shadowlinks/$name/',
   path: '/shadowlinks/$name/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RpConnectPipelineIdIndexRoute =
   RpConnectPipelineIdIndexRouteImport.update({
     id: '/rp-connect/$pipelineId/',
     path: '/rp-connect/$pipelineId/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const KnowledgebasesKnowledgebaseIdIndexRoute =
   KnowledgebasesKnowledgebaseIdIndexRouteImport.update({
     id: '/knowledgebases/$knowledgebaseId/',
     path: '/knowledgebases/$knowledgebaseId/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const ConnectClustersClusterNameIndexRoute =
   ConnectClustersClusterNameIndexRouteImport.update({
     id: '/connect-clusters/$clusterName/',
     path: '/connect-clusters/$clusterName/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const AgentsIdIndexRoute = AgentsIdIndexRouteImport.update({
   id: '/agents/$id/',
   path: '/agents/$id/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TopicsTopicNameProduceRecordRoute =
   TopicsTopicNameProduceRecordRouteImport.update({
     id: '/topics/$topicName/produce-record',
     path: '/topics/$topicName/produce-record',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const ShadowlinksNameEditRoute = ShadowlinksNameEditRouteImport.update({
   id: '/shadowlinks/$name/edit',
   path: '/shadowlinks/$name/edit',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecurityUsersUserNameRoute = SecurityUsersUserNameRouteImport.update({
   id: '/security/users/$userName',
   path: '/security/users/$userName',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecurityRolesRoleNameRoute = SecurityRolesRoleNameRouteImport.update({
   id: '/security/roles/$roleName',
   path: '/security/roles/$roleName',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SecretsIdEditRoute = SecretsIdEditRouteImport.update({
   id: '/secrets/$id/edit',
   path: '/secrets/$id/edit',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RpConnectSecretsCreateRoute = RpConnectSecretsCreateRouteImport.update({
   id: '/rp-connect/secrets/create',
   path: '/rp-connect/secrets/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RpConnectPipelineIdEditRoute = RpConnectPipelineIdEditRouteImport.update({
   id: '/rp-connect/$pipelineId/edit',
   path: '/rp-connect/$pipelineId/edit',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginCallbacksProviderRoute = LoginCallbacksProviderRouteImport.update({
   id: '/login/callbacks/$provider',
   path: '/login/callbacks/$provider',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const DebugBundleProgressJobIdRoute =
   DebugBundleProgressJobIdRouteImport.update({
     id: '/debug-bundle/progress/$jobId',
     path: '/debug-bundle/progress/$jobId',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const ConnectClustersClusterNameCreateConnectorRoute =
   ConnectClustersClusterNameCreateConnectorRouteImport.update({
     id: '/connect-clusters/$clusterName/create-connector',
     path: '/connect-clusters/$clusterName/create-connector',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const ConnectClustersClusterNameConnectorRoute =
   ConnectClustersClusterNameConnectorRouteImport.update({
     id: '/connect-clusters/$clusterName/$connector',
     path: '/connect-clusters/$clusterName/$connector',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistrySubjectsSubjectNameIndexRoute =
   SchemaRegistrySubjectsSubjectNameIndexRouteImport.update({
     id: '/schema-registry/subjects/$subjectName/',
     path: '/schema-registry/subjects/$subjectName/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistrySubjectsSubjectNameEditModeRoute =
   SchemaRegistrySubjectsSubjectNameEditModeRouteImport.update({
     id: '/schema-registry/subjects/$subjectName/edit-mode',
     path: '/schema-registry/subjects/$subjectName/edit-mode',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute =
   SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport.update({
     id: '/schema-registry/subjects/$subjectName/edit-compatibility',
     path: '/schema-registry/subjects/$subjectName/edit-compatibility',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistrySubjectsSubjectNameAddVersionRoute =
   SchemaRegistrySubjectsSubjectNameAddVersionRouteImport.update({
     id: '/schema-registry/subjects/$subjectName/add-version',
     path: '/schema-registry/subjects/$subjectName/add-version',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistryContextsContextNameEditModeRoute =
   SchemaRegistryContextsContextNameEditModeRouteImport.update({
     id: '/schema-registry/contexts/$contextName/edit-mode',
     path: '/schema-registry/contexts/$contextName/edit-mode',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistryContextsContextNameEditCompatibilityRoute =
   SchemaRegistryContextsContextNameEditCompatibilityRouteImport.update({
     id: '/schema-registry/contexts/$contextName/edit-compatibility',
     path: '/schema-registry/contexts/$contextName/edit-compatibility',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const SchemaRegistryContextsContextNameCreateRoute =
   SchemaRegistryContextsContextNameCreateRouteImport.update({
     id: '/schema-registry/contexts/$contextName/create',
     path: '/schema-registry/contexts/$contextName/create',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const RpConnectSecretsSecretIdEditRoute =
   RpConnectSecretsSecretIdEditRouteImport.update({
     id: '/rp-connect/secrets/$secretId/edit',
     path: '/rp-connect/secrets/$secretId/edit',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute =
   KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport.update({
     id: '/knowledgebases/$knowledgebaseId/documents/$documentId',
     path: '/knowledgebases/$knowledgebaseId/documents/$documentId',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const AgentsIdTranscriptsConversationIdRoute =
   AgentsIdTranscriptsConversationIdRouteImport.update({
     id: '/agents/$id/transcripts/$conversationId',
     path: '/agents/$id/transcripts/$conversationId',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/quotas': typeof QuotasRoute
-  '/reassign-partitions': typeof ReassignPartitionsRoute
-  '/transforms-setup': typeof TransformsSetupRoute
-  '/trial-expired': typeof TrialExpiredRoute
-  '/upload-license': typeof UploadLicenseRoute
-  '/agents/create': typeof AgentsCreateRoute
-  '/get-started/api': typeof GetStartedApiRoute
-  '/groups/$groupId': typeof GroupsGroupIdRoute
-  '/knowledgebases/create': typeof KnowledgebasesCreateRoute
-  '/mcp-servers/$id': typeof McpServersIdRoute
-  '/mcp-servers/create': typeof McpServersCreateRoute
-  '/overview/$brokerId': typeof OverviewBrokerIdRoute
-  '/rp-connect/create': typeof RpConnectCreateRoute
-  '/rp-connect/wizard': typeof RpConnectWizardRoute
-  '/schema-registry/create': typeof SchemaRegistryCreateRoute
-  '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute
-  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute
-  '/secrets/create': typeof SecretsCreateRoute
-  '/security/$tab': typeof SecurityTabRoute
-  '/shadowlinks/create': typeof ShadowlinksCreateRoute
-  '/transforms/$transformName': typeof TransformsTransformNameRoute
-  '/agents/': typeof AgentsIndexRoute
-  '/connect-clusters/': typeof ConnectClustersIndexRoute
-  '/debug-bundle/': typeof DebugBundleIndexRoute
-  '/groups/': typeof GroupsIndexRoute
-  '/knowledgebases/': typeof KnowledgebasesIndexRoute
-  '/login/': typeof LoginIndexRoute
-  '/mcp-servers/': typeof McpServersIndexRoute
-  '/observability/': typeof ObservabilityIndexRoute
-  '/overview/': typeof OverviewIndexRoute
-  '/schema-registry/': typeof SchemaRegistryIndexRoute
-  '/secrets/': typeof SecretsIndexRoute
-  '/security/': typeof SecurityIndexRoute
-  '/shadowlinks/': typeof ShadowlinksIndexRoute
-  '/topics/': typeof TopicsIndexRoute
-  '/transcripts/': typeof TranscriptsIndexRoute
-  '/transforms/': typeof TransformsIndexRoute
-  '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute
-  '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute
-  '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute
-  '/login/callbacks/$provider': typeof LoginCallbacksProviderRoute
-  '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute
-  '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute
-  '/secrets/$id/edit': typeof SecretsIdEditRoute
-  '/security/roles/$roleName': typeof SecurityRolesRoleNameRoute
-  '/security/users/$userName': typeof SecurityUsersUserNameRoute
-  '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute
-  '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute
-  '/agents/$id/': typeof AgentsIdIndexRoute
-  '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute
-  '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute
-  '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute
-  '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute
-  '/topics/$topicName/': typeof TopicsTopicNameIndexRoute
-  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute
-  '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute
-  '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute
-  '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute
-  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute
-  '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute
-  '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute
-  '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute
-  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute
-  '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute
+  '/': typeof IndexRoute;
+  '/quotas': typeof QuotasRoute;
+  '/reassign-partitions': typeof ReassignPartitionsRoute;
+  '/transforms-setup': typeof TransformsSetupRoute;
+  '/trial-expired': typeof TrialExpiredRoute;
+  '/upload-license': typeof UploadLicenseRoute;
+  '/agents/create': typeof AgentsCreateRoute;
+  '/get-started/api': typeof GetStartedApiRoute;
+  '/groups/$groupId': typeof GroupsGroupIdRoute;
+  '/knowledgebases/create': typeof KnowledgebasesCreateRoute;
+  '/mcp-servers/$id': typeof McpServersIdRoute;
+  '/mcp-servers/create': typeof McpServersCreateRoute;
+  '/overview/$brokerId': typeof OverviewBrokerIdRoute;
+  '/rp-connect/create': typeof RpConnectCreateRoute;
+  '/rp-connect/wizard': typeof RpConnectWizardRoute;
+  '/schema-registry/create': typeof SchemaRegistryCreateRoute;
+  '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
+  '/secrets/create': typeof SecretsCreateRoute;
+  '/security/$tab': typeof SecurityTabRoute;
+  '/shadowlinks/create': typeof ShadowlinksCreateRoute;
+  '/transforms/$transformName': typeof TransformsTransformNameRoute;
+  '/agents/': typeof AgentsIndexRoute;
+  '/connect-clusters/': typeof ConnectClustersIndexRoute;
+  '/debug-bundle/': typeof DebugBundleIndexRoute;
+  '/groups/': typeof GroupsIndexRoute;
+  '/knowledgebases/': typeof KnowledgebasesIndexRoute;
+  '/login/': typeof LoginIndexRoute;
+  '/mcp-servers/': typeof McpServersIndexRoute;
+  '/observability/': typeof ObservabilityIndexRoute;
+  '/overview/': typeof OverviewIndexRoute;
+  '/schema-registry/': typeof SchemaRegistryIndexRoute;
+  '/secrets/': typeof SecretsIndexRoute;
+  '/security/': typeof SecurityIndexRoute;
+  '/shadowlinks/': typeof ShadowlinksIndexRoute;
+  '/topics/': typeof TopicsIndexRoute;
+  '/transcripts/': typeof TranscriptsIndexRoute;
+  '/transforms/': typeof TransformsIndexRoute;
+  '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
+  '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
+  '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute;
+  '/login/callbacks/$provider': typeof LoginCallbacksProviderRoute;
+  '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
+  '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
+  '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/roles/$roleName': typeof SecurityRolesRoleNameRoute;
+  '/security/users/$userName': typeof SecurityUsersUserNameRoute;
+  '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
+  '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
+  '/agents/$id/': typeof AgentsIdIndexRoute;
+  '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
+  '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
+  '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
+  '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
+  '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
+  '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
+  '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute;
+  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
+  '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute;
+  '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
+  '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
+  '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/quotas': typeof QuotasRoute
-  '/reassign-partitions': typeof ReassignPartitionsRoute
-  '/transforms-setup': typeof TransformsSetupRoute
-  '/trial-expired': typeof TrialExpiredRoute
-  '/upload-license': typeof UploadLicenseRoute
-  '/agents/create': typeof AgentsCreateRoute
-  '/get-started/api': typeof GetStartedApiRoute
-  '/groups/$groupId': typeof GroupsGroupIdRoute
-  '/knowledgebases/create': typeof KnowledgebasesCreateRoute
-  '/mcp-servers/$id': typeof McpServersIdRoute
-  '/mcp-servers/create': typeof McpServersCreateRoute
-  '/overview/$brokerId': typeof OverviewBrokerIdRoute
-  '/rp-connect/create': typeof RpConnectCreateRoute
-  '/rp-connect/wizard': typeof RpConnectWizardRoute
-  '/schema-registry/create': typeof SchemaRegistryCreateRoute
-  '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute
-  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute
-  '/secrets/create': typeof SecretsCreateRoute
-  '/security/$tab': typeof SecurityTabRoute
-  '/shadowlinks/create': typeof ShadowlinksCreateRoute
-  '/transforms/$transformName': typeof TransformsTransformNameRoute
-  '/agents': typeof AgentsIndexRoute
-  '/connect-clusters': typeof ConnectClustersIndexRoute
-  '/debug-bundle': typeof DebugBundleIndexRoute
-  '/groups': typeof GroupsIndexRoute
-  '/knowledgebases': typeof KnowledgebasesIndexRoute
-  '/login': typeof LoginIndexRoute
-  '/mcp-servers': typeof McpServersIndexRoute
-  '/observability': typeof ObservabilityIndexRoute
-  '/overview': typeof OverviewIndexRoute
-  '/schema-registry': typeof SchemaRegistryIndexRoute
-  '/secrets': typeof SecretsIndexRoute
-  '/security': typeof SecurityIndexRoute
-  '/shadowlinks': typeof ShadowlinksIndexRoute
-  '/topics': typeof TopicsIndexRoute
-  '/transcripts': typeof TranscriptsIndexRoute
-  '/transforms': typeof TransformsIndexRoute
-  '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute
-  '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute
-  '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute
-  '/login/callbacks/$provider': typeof LoginCallbacksProviderRoute
-  '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute
-  '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute
-  '/secrets/$id/edit': typeof SecretsIdEditRoute
-  '/security/roles/$roleName': typeof SecurityRolesRoleNameRoute
-  '/security/users/$userName': typeof SecurityUsersUserNameRoute
-  '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute
-  '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute
-  '/agents/$id': typeof AgentsIdIndexRoute
-  '/connect-clusters/$clusterName': typeof ConnectClustersClusterNameIndexRoute
-  '/knowledgebases/$knowledgebaseId': typeof KnowledgebasesKnowledgebaseIdIndexRoute
-  '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute
-  '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute
-  '/topics/$topicName': typeof TopicsTopicNameIndexRoute
-  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute
-  '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute
-  '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute
-  '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute
-  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute
-  '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute
-  '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute
-  '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute
-  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute
-  '/schema-registry/subjects/$subjectName': typeof SchemaRegistrySubjectsSubjectNameIndexRoute
+  '/': typeof IndexRoute;
+  '/quotas': typeof QuotasRoute;
+  '/reassign-partitions': typeof ReassignPartitionsRoute;
+  '/transforms-setup': typeof TransformsSetupRoute;
+  '/trial-expired': typeof TrialExpiredRoute;
+  '/upload-license': typeof UploadLicenseRoute;
+  '/agents/create': typeof AgentsCreateRoute;
+  '/get-started/api': typeof GetStartedApiRoute;
+  '/groups/$groupId': typeof GroupsGroupIdRoute;
+  '/knowledgebases/create': typeof KnowledgebasesCreateRoute;
+  '/mcp-servers/$id': typeof McpServersIdRoute;
+  '/mcp-servers/create': typeof McpServersCreateRoute;
+  '/overview/$brokerId': typeof OverviewBrokerIdRoute;
+  '/rp-connect/create': typeof RpConnectCreateRoute;
+  '/rp-connect/wizard': typeof RpConnectWizardRoute;
+  '/schema-registry/create': typeof SchemaRegistryCreateRoute;
+  '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
+  '/secrets/create': typeof SecretsCreateRoute;
+  '/security/$tab': typeof SecurityTabRoute;
+  '/shadowlinks/create': typeof ShadowlinksCreateRoute;
+  '/transforms/$transformName': typeof TransformsTransformNameRoute;
+  '/agents': typeof AgentsIndexRoute;
+  '/connect-clusters': typeof ConnectClustersIndexRoute;
+  '/debug-bundle': typeof DebugBundleIndexRoute;
+  '/groups': typeof GroupsIndexRoute;
+  '/knowledgebases': typeof KnowledgebasesIndexRoute;
+  '/login': typeof LoginIndexRoute;
+  '/mcp-servers': typeof McpServersIndexRoute;
+  '/observability': typeof ObservabilityIndexRoute;
+  '/overview': typeof OverviewIndexRoute;
+  '/schema-registry': typeof SchemaRegistryIndexRoute;
+  '/secrets': typeof SecretsIndexRoute;
+  '/security': typeof SecurityIndexRoute;
+  '/shadowlinks': typeof ShadowlinksIndexRoute;
+  '/topics': typeof TopicsIndexRoute;
+  '/transcripts': typeof TranscriptsIndexRoute;
+  '/transforms': typeof TransformsIndexRoute;
+  '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
+  '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
+  '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute;
+  '/login/callbacks/$provider': typeof LoginCallbacksProviderRoute;
+  '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
+  '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
+  '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/roles/$roleName': typeof SecurityRolesRoleNameRoute;
+  '/security/users/$userName': typeof SecurityUsersUserNameRoute;
+  '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
+  '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
+  '/agents/$id': typeof AgentsIdIndexRoute;
+  '/connect-clusters/$clusterName': typeof ConnectClustersClusterNameIndexRoute;
+  '/knowledgebases/$knowledgebaseId': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
+  '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
+  '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute;
+  '/topics/$topicName': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
+  '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
+  '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
+  '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute;
+  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
+  '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute;
+  '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
+  '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
+  '/schema-registry/subjects/$subjectName': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/quotas': typeof QuotasRoute
-  '/reassign-partitions': typeof ReassignPartitionsRoute
-  '/transforms-setup': typeof TransformsSetupRoute
-  '/trial-expired': typeof TrialExpiredRoute
-  '/upload-license': typeof UploadLicenseRoute
-  '/agents/create': typeof AgentsCreateRoute
-  '/get-started/api': typeof GetStartedApiRoute
-  '/groups/$groupId': typeof GroupsGroupIdRoute
-  '/knowledgebases/create': typeof KnowledgebasesCreateRoute
-  '/mcp-servers/$id': typeof McpServersIdRoute
-  '/mcp-servers/create': typeof McpServersCreateRoute
-  '/overview/$brokerId': typeof OverviewBrokerIdRoute
-  '/rp-connect/create': typeof RpConnectCreateRoute
-  '/rp-connect/wizard': typeof RpConnectWizardRoute
-  '/schema-registry/create': typeof SchemaRegistryCreateRoute
-  '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute
-  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute
-  '/secrets/create': typeof SecretsCreateRoute
-  '/security/$tab': typeof SecurityTabRoute
-  '/shadowlinks/create': typeof ShadowlinksCreateRoute
-  '/transforms/$transformName': typeof TransformsTransformNameRoute
-  '/agents/': typeof AgentsIndexRoute
-  '/connect-clusters/': typeof ConnectClustersIndexRoute
-  '/debug-bundle/': typeof DebugBundleIndexRoute
-  '/groups/': typeof GroupsIndexRoute
-  '/knowledgebases/': typeof KnowledgebasesIndexRoute
-  '/login/': typeof LoginIndexRoute
-  '/mcp-servers/': typeof McpServersIndexRoute
-  '/observability/': typeof ObservabilityIndexRoute
-  '/overview/': typeof OverviewIndexRoute
-  '/schema-registry/': typeof SchemaRegistryIndexRoute
-  '/secrets/': typeof SecretsIndexRoute
-  '/security/': typeof SecurityIndexRoute
-  '/shadowlinks/': typeof ShadowlinksIndexRoute
-  '/topics/': typeof TopicsIndexRoute
-  '/transcripts/': typeof TranscriptsIndexRoute
-  '/transforms/': typeof TransformsIndexRoute
-  '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute
-  '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute
-  '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute
-  '/login/callbacks/$provider': typeof LoginCallbacksProviderRoute
-  '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute
-  '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute
-  '/secrets/$id/edit': typeof SecretsIdEditRoute
-  '/security/roles/$roleName': typeof SecurityRolesRoleNameRoute
-  '/security/users/$userName': typeof SecurityUsersUserNameRoute
-  '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute
-  '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute
-  '/agents/$id/': typeof AgentsIdIndexRoute
-  '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute
-  '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute
-  '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute
-  '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute
-  '/topics/$topicName/': typeof TopicsTopicNameIndexRoute
-  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute
-  '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute
-  '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute
-  '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute
-  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute
-  '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute
-  '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute
-  '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute
-  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute
-  '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/quotas': typeof QuotasRoute;
+  '/reassign-partitions': typeof ReassignPartitionsRoute;
+  '/transforms-setup': typeof TransformsSetupRoute;
+  '/trial-expired': typeof TrialExpiredRoute;
+  '/upload-license': typeof UploadLicenseRoute;
+  '/agents/create': typeof AgentsCreateRoute;
+  '/get-started/api': typeof GetStartedApiRoute;
+  '/groups/$groupId': typeof GroupsGroupIdRoute;
+  '/knowledgebases/create': typeof KnowledgebasesCreateRoute;
+  '/mcp-servers/$id': typeof McpServersIdRoute;
+  '/mcp-servers/create': typeof McpServersCreateRoute;
+  '/overview/$brokerId': typeof OverviewBrokerIdRoute;
+  '/rp-connect/create': typeof RpConnectCreateRoute;
+  '/rp-connect/wizard': typeof RpConnectWizardRoute;
+  '/schema-registry/create': typeof SchemaRegistryCreateRoute;
+  '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
+  '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
+  '/secrets/create': typeof SecretsCreateRoute;
+  '/security/$tab': typeof SecurityTabRoute;
+  '/shadowlinks/create': typeof ShadowlinksCreateRoute;
+  '/transforms/$transformName': typeof TransformsTransformNameRoute;
+  '/agents/': typeof AgentsIndexRoute;
+  '/connect-clusters/': typeof ConnectClustersIndexRoute;
+  '/debug-bundle/': typeof DebugBundleIndexRoute;
+  '/groups/': typeof GroupsIndexRoute;
+  '/knowledgebases/': typeof KnowledgebasesIndexRoute;
+  '/login/': typeof LoginIndexRoute;
+  '/mcp-servers/': typeof McpServersIndexRoute;
+  '/observability/': typeof ObservabilityIndexRoute;
+  '/overview/': typeof OverviewIndexRoute;
+  '/schema-registry/': typeof SchemaRegistryIndexRoute;
+  '/secrets/': typeof SecretsIndexRoute;
+  '/security/': typeof SecurityIndexRoute;
+  '/shadowlinks/': typeof ShadowlinksIndexRoute;
+  '/topics/': typeof TopicsIndexRoute;
+  '/transcripts/': typeof TranscriptsIndexRoute;
+  '/transforms/': typeof TransformsIndexRoute;
+  '/connect-clusters/$clusterName/$connector': typeof ConnectClustersClusterNameConnectorRoute;
+  '/connect-clusters/$clusterName/create-connector': typeof ConnectClustersClusterNameCreateConnectorRoute;
+  '/debug-bundle/progress/$jobId': typeof DebugBundleProgressJobIdRoute;
+  '/login/callbacks/$provider': typeof LoginCallbacksProviderRoute;
+  '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
+  '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
+  '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/roles/$roleName': typeof SecurityRolesRoleNameRoute;
+  '/security/users/$userName': typeof SecurityUsersUserNameRoute;
+  '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
+  '/topics/$topicName/produce-record': typeof TopicsTopicNameProduceRecordRoute;
+  '/agents/$id/': typeof AgentsIdIndexRoute;
+  '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
+  '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
+  '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
+  '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
+  '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
+  '/knowledgebases/$knowledgebaseId/documents/$documentId': typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
+  '/rp-connect/secrets/$secretId/edit': typeof RpConnectSecretsSecretIdEditRoute;
+  '/schema-registry/contexts/$contextName/create': typeof SchemaRegistryContextsContextNameCreateRoute;
+  '/schema-registry/contexts/$contextName/edit-compatibility': typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
+  '/schema-registry/contexts/$contextName/edit-mode': typeof SchemaRegistryContextsContextNameEditModeRoute;
+  '/schema-registry/subjects/$subjectName/add-version': typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
+  '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
+  '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/quotas'
@@ -688,8 +688,8 @@ export interface FileRouteTypes {
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
     | '/schema-registry/subjects/$subjectName/edit-mode'
-    | '/schema-registry/subjects/$subjectName/'
-  fileRoutesByTo: FileRoutesByTo
+    | '/schema-registry/subjects/$subjectName/';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/quotas'
@@ -755,7 +755,7 @@ export interface FileRouteTypes {
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
     | '/schema-registry/subjects/$subjectName/edit-mode'
-    | '/schema-registry/subjects/$subjectName'
+    | '/schema-registry/subjects/$subjectName';
   id:
     | '__root__'
     | '/'
@@ -822,534 +822,534 @@ export interface FileRouteTypes {
     | '/schema-registry/subjects/$subjectName/add-version'
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
     | '/schema-registry/subjects/$subjectName/edit-mode'
-    | '/schema-registry/subjects/$subjectName/'
-  fileRoutesById: FileRoutesById
+    | '/schema-registry/subjects/$subjectName/';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  QuotasRoute: typeof QuotasRoute
-  ReassignPartitionsRoute: typeof ReassignPartitionsRoute
-  TransformsSetupRoute: typeof TransformsSetupRoute
-  TrialExpiredRoute: typeof TrialExpiredRoute
-  UploadLicenseRoute: typeof UploadLicenseRoute
-  AgentsCreateRoute: typeof AgentsCreateRoute
-  GetStartedApiRoute: typeof GetStartedApiRoute
-  GroupsGroupIdRoute: typeof GroupsGroupIdRoute
-  KnowledgebasesCreateRoute: typeof KnowledgebasesCreateRoute
-  McpServersIdRoute: typeof McpServersIdRoute
-  McpServersCreateRoute: typeof McpServersCreateRoute
-  OverviewBrokerIdRoute: typeof OverviewBrokerIdRoute
-  RpConnectCreateRoute: typeof RpConnectCreateRoute
-  RpConnectWizardRoute: typeof RpConnectWizardRoute
-  SchemaRegistryCreateRoute: typeof SchemaRegistryCreateRoute
-  SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute
-  SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute
-  SecretsCreateRoute: typeof SecretsCreateRoute
-  SecurityTabRoute: typeof SecurityTabRoute
-  ShadowlinksCreateRoute: typeof ShadowlinksCreateRoute
-  TransformsTransformNameRoute: typeof TransformsTransformNameRoute
-  AgentsIndexRoute: typeof AgentsIndexRoute
-  ConnectClustersIndexRoute: typeof ConnectClustersIndexRoute
-  DebugBundleIndexRoute: typeof DebugBundleIndexRoute
-  GroupsIndexRoute: typeof GroupsIndexRoute
-  KnowledgebasesIndexRoute: typeof KnowledgebasesIndexRoute
-  LoginIndexRoute: typeof LoginIndexRoute
-  McpServersIndexRoute: typeof McpServersIndexRoute
-  ObservabilityIndexRoute: typeof ObservabilityIndexRoute
-  OverviewIndexRoute: typeof OverviewIndexRoute
-  SchemaRegistryIndexRoute: typeof SchemaRegistryIndexRoute
-  SecretsIndexRoute: typeof SecretsIndexRoute
-  SecurityIndexRoute: typeof SecurityIndexRoute
-  ShadowlinksIndexRoute: typeof ShadowlinksIndexRoute
-  TopicsIndexRoute: typeof TopicsIndexRoute
-  TranscriptsIndexRoute: typeof TranscriptsIndexRoute
-  TransformsIndexRoute: typeof TransformsIndexRoute
-  ConnectClustersClusterNameConnectorRoute: typeof ConnectClustersClusterNameConnectorRoute
-  ConnectClustersClusterNameCreateConnectorRoute: typeof ConnectClustersClusterNameCreateConnectorRoute
-  DebugBundleProgressJobIdRoute: typeof DebugBundleProgressJobIdRoute
-  LoginCallbacksProviderRoute: typeof LoginCallbacksProviderRoute
-  RpConnectPipelineIdEditRoute: typeof RpConnectPipelineIdEditRoute
-  RpConnectSecretsCreateRoute: typeof RpConnectSecretsCreateRoute
-  SecretsIdEditRoute: typeof SecretsIdEditRoute
-  SecurityRolesRoleNameRoute: typeof SecurityRolesRoleNameRoute
-  SecurityUsersUserNameRoute: typeof SecurityUsersUserNameRoute
-  ShadowlinksNameEditRoute: typeof ShadowlinksNameEditRoute
-  TopicsTopicNameProduceRecordRoute: typeof TopicsTopicNameProduceRecordRoute
-  AgentsIdIndexRoute: typeof AgentsIdIndexRoute
-  ConnectClustersClusterNameIndexRoute: typeof ConnectClustersClusterNameIndexRoute
-  KnowledgebasesKnowledgebaseIdIndexRoute: typeof KnowledgebasesKnowledgebaseIdIndexRoute
-  RpConnectPipelineIdIndexRoute: typeof RpConnectPipelineIdIndexRoute
-  ShadowlinksNameIndexRoute: typeof ShadowlinksNameIndexRoute
-  TopicsTopicNameIndexRoute: typeof TopicsTopicNameIndexRoute
-  AgentsIdTranscriptsConversationIdRoute: typeof AgentsIdTranscriptsConversationIdRoute
-  KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute
-  RpConnectSecretsSecretIdEditRoute: typeof RpConnectSecretsSecretIdEditRoute
-  SchemaRegistryContextsContextNameCreateRoute: typeof SchemaRegistryContextsContextNameCreateRoute
-  SchemaRegistryContextsContextNameEditCompatibilityRoute: typeof SchemaRegistryContextsContextNameEditCompatibilityRoute
-  SchemaRegistryContextsContextNameEditModeRoute: typeof SchemaRegistryContextsContextNameEditModeRoute
-  SchemaRegistrySubjectsSubjectNameAddVersionRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute
-  SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute
-  SchemaRegistrySubjectsSubjectNameEditModeRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRoute
-  SchemaRegistrySubjectsSubjectNameIndexRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRoute
+  IndexRoute: typeof IndexRoute;
+  QuotasRoute: typeof QuotasRoute;
+  ReassignPartitionsRoute: typeof ReassignPartitionsRoute;
+  TransformsSetupRoute: typeof TransformsSetupRoute;
+  TrialExpiredRoute: typeof TrialExpiredRoute;
+  UploadLicenseRoute: typeof UploadLicenseRoute;
+  AgentsCreateRoute: typeof AgentsCreateRoute;
+  GetStartedApiRoute: typeof GetStartedApiRoute;
+  GroupsGroupIdRoute: typeof GroupsGroupIdRoute;
+  KnowledgebasesCreateRoute: typeof KnowledgebasesCreateRoute;
+  McpServersIdRoute: typeof McpServersIdRoute;
+  McpServersCreateRoute: typeof McpServersCreateRoute;
+  OverviewBrokerIdRoute: typeof OverviewBrokerIdRoute;
+  RpConnectCreateRoute: typeof RpConnectCreateRoute;
+  RpConnectWizardRoute: typeof RpConnectWizardRoute;
+  SchemaRegistryCreateRoute: typeof SchemaRegistryCreateRoute;
+  SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute;
+  SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute;
+  SecretsCreateRoute: typeof SecretsCreateRoute;
+  SecurityTabRoute: typeof SecurityTabRoute;
+  ShadowlinksCreateRoute: typeof ShadowlinksCreateRoute;
+  TransformsTransformNameRoute: typeof TransformsTransformNameRoute;
+  AgentsIndexRoute: typeof AgentsIndexRoute;
+  ConnectClustersIndexRoute: typeof ConnectClustersIndexRoute;
+  DebugBundleIndexRoute: typeof DebugBundleIndexRoute;
+  GroupsIndexRoute: typeof GroupsIndexRoute;
+  KnowledgebasesIndexRoute: typeof KnowledgebasesIndexRoute;
+  LoginIndexRoute: typeof LoginIndexRoute;
+  McpServersIndexRoute: typeof McpServersIndexRoute;
+  ObservabilityIndexRoute: typeof ObservabilityIndexRoute;
+  OverviewIndexRoute: typeof OverviewIndexRoute;
+  SchemaRegistryIndexRoute: typeof SchemaRegistryIndexRoute;
+  SecretsIndexRoute: typeof SecretsIndexRoute;
+  SecurityIndexRoute: typeof SecurityIndexRoute;
+  ShadowlinksIndexRoute: typeof ShadowlinksIndexRoute;
+  TopicsIndexRoute: typeof TopicsIndexRoute;
+  TranscriptsIndexRoute: typeof TranscriptsIndexRoute;
+  TransformsIndexRoute: typeof TransformsIndexRoute;
+  ConnectClustersClusterNameConnectorRoute: typeof ConnectClustersClusterNameConnectorRoute;
+  ConnectClustersClusterNameCreateConnectorRoute: typeof ConnectClustersClusterNameCreateConnectorRoute;
+  DebugBundleProgressJobIdRoute: typeof DebugBundleProgressJobIdRoute;
+  LoginCallbacksProviderRoute: typeof LoginCallbacksProviderRoute;
+  RpConnectPipelineIdEditRoute: typeof RpConnectPipelineIdEditRoute;
+  RpConnectSecretsCreateRoute: typeof RpConnectSecretsCreateRoute;
+  SecretsIdEditRoute: typeof SecretsIdEditRoute;
+  SecurityRolesRoleNameRoute: typeof SecurityRolesRoleNameRoute;
+  SecurityUsersUserNameRoute: typeof SecurityUsersUserNameRoute;
+  ShadowlinksNameEditRoute: typeof ShadowlinksNameEditRoute;
+  TopicsTopicNameProduceRecordRoute: typeof TopicsTopicNameProduceRecordRoute;
+  AgentsIdIndexRoute: typeof AgentsIdIndexRoute;
+  ConnectClustersClusterNameIndexRoute: typeof ConnectClustersClusterNameIndexRoute;
+  KnowledgebasesKnowledgebaseIdIndexRoute: typeof KnowledgebasesKnowledgebaseIdIndexRoute;
+  RpConnectPipelineIdIndexRoute: typeof RpConnectPipelineIdIndexRoute;
+  ShadowlinksNameIndexRoute: typeof ShadowlinksNameIndexRoute;
+  TopicsTopicNameIndexRoute: typeof TopicsTopicNameIndexRoute;
+  AgentsIdTranscriptsConversationIdRoute: typeof AgentsIdTranscriptsConversationIdRoute;
+  KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRoute;
+  RpConnectSecretsSecretIdEditRoute: typeof RpConnectSecretsSecretIdEditRoute;
+  SchemaRegistryContextsContextNameCreateRoute: typeof SchemaRegistryContextsContextNameCreateRoute;
+  SchemaRegistryContextsContextNameEditCompatibilityRoute: typeof SchemaRegistryContextsContextNameEditCompatibilityRoute;
+  SchemaRegistryContextsContextNameEditModeRoute: typeof SchemaRegistryContextsContextNameEditModeRoute;
+  SchemaRegistrySubjectsSubjectNameAddVersionRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
+  SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
+  SchemaRegistrySubjectsSubjectNameEditModeRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
+  SchemaRegistrySubjectsSubjectNameIndexRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/upload-license': {
-      id: '/upload-license'
-      path: '/upload-license'
-      fullPath: '/upload-license'
-      preLoaderRoute: typeof UploadLicenseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/upload-license';
+      path: '/upload-license';
+      fullPath: '/upload-license';
+      preLoaderRoute: typeof UploadLicenseRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/trial-expired': {
-      id: '/trial-expired'
-      path: '/trial-expired'
-      fullPath: '/trial-expired'
-      preLoaderRoute: typeof TrialExpiredRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/trial-expired';
+      path: '/trial-expired';
+      fullPath: '/trial-expired';
+      preLoaderRoute: typeof TrialExpiredRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/transforms-setup': {
-      id: '/transforms-setup'
-      path: '/transforms-setup'
-      fullPath: '/transforms-setup'
-      preLoaderRoute: typeof TransformsSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/transforms-setup';
+      path: '/transforms-setup';
+      fullPath: '/transforms-setup';
+      preLoaderRoute: typeof TransformsSetupRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/reassign-partitions': {
-      id: '/reassign-partitions'
-      path: '/reassign-partitions'
-      fullPath: '/reassign-partitions'
-      preLoaderRoute: typeof ReassignPartitionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/reassign-partitions';
+      path: '/reassign-partitions';
+      fullPath: '/reassign-partitions';
+      preLoaderRoute: typeof ReassignPartitionsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/quotas': {
-      id: '/quotas'
-      path: '/quotas'
-      fullPath: '/quotas'
-      preLoaderRoute: typeof QuotasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/quotas';
+      path: '/quotas';
+      fullPath: '/quotas';
+      preLoaderRoute: typeof QuotasRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/transforms/': {
-      id: '/transforms/'
-      path: '/transforms'
-      fullPath: '/transforms/'
-      preLoaderRoute: typeof TransformsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/transforms/';
+      path: '/transforms';
+      fullPath: '/transforms/';
+      preLoaderRoute: typeof TransformsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/transcripts/': {
-      id: '/transcripts/'
-      path: '/transcripts'
-      fullPath: '/transcripts/'
-      preLoaderRoute: typeof TranscriptsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/transcripts/';
+      path: '/transcripts';
+      fullPath: '/transcripts/';
+      preLoaderRoute: typeof TranscriptsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/topics/': {
-      id: '/topics/'
-      path: '/topics'
-      fullPath: '/topics/'
-      preLoaderRoute: typeof TopicsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/topics/';
+      path: '/topics';
+      fullPath: '/topics/';
+      preLoaderRoute: typeof TopicsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/shadowlinks/': {
-      id: '/shadowlinks/'
-      path: '/shadowlinks'
-      fullPath: '/shadowlinks/'
-      preLoaderRoute: typeof ShadowlinksIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/shadowlinks/';
+      path: '/shadowlinks';
+      fullPath: '/shadowlinks/';
+      preLoaderRoute: typeof ShadowlinksIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/security/': {
-      id: '/security/'
-      path: '/security'
-      fullPath: '/security/'
-      preLoaderRoute: typeof SecurityIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/security/';
+      path: '/security';
+      fullPath: '/security/';
+      preLoaderRoute: typeof SecurityIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/secrets/': {
-      id: '/secrets/'
-      path: '/secrets'
-      fullPath: '/secrets/'
-      preLoaderRoute: typeof SecretsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/secrets/';
+      path: '/secrets';
+      fullPath: '/secrets/';
+      preLoaderRoute: typeof SecretsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/': {
-      id: '/schema-registry/'
-      path: '/schema-registry'
-      fullPath: '/schema-registry/'
-      preLoaderRoute: typeof SchemaRegistryIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/';
+      path: '/schema-registry';
+      fullPath: '/schema-registry/';
+      preLoaderRoute: typeof SchemaRegistryIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/overview/': {
-      id: '/overview/'
-      path: '/overview'
-      fullPath: '/overview/'
-      preLoaderRoute: typeof OverviewIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/overview/';
+      path: '/overview';
+      fullPath: '/overview/';
+      preLoaderRoute: typeof OverviewIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/observability/': {
-      id: '/observability/'
-      path: '/observability'
-      fullPath: '/observability/'
-      preLoaderRoute: typeof ObservabilityIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/observability/';
+      path: '/observability';
+      fullPath: '/observability/';
+      preLoaderRoute: typeof ObservabilityIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/mcp-servers/': {
-      id: '/mcp-servers/'
-      path: '/mcp-servers'
-      fullPath: '/mcp-servers/'
-      preLoaderRoute: typeof McpServersIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/mcp-servers/';
+      path: '/mcp-servers';
+      fullPath: '/mcp-servers/';
+      preLoaderRoute: typeof McpServersIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login/': {
-      id: '/login/'
-      path: '/login'
-      fullPath: '/login/'
-      preLoaderRoute: typeof LoginIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login/';
+      path: '/login';
+      fullPath: '/login/';
+      preLoaderRoute: typeof LoginIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/knowledgebases/': {
-      id: '/knowledgebases/'
-      path: '/knowledgebases'
-      fullPath: '/knowledgebases/'
-      preLoaderRoute: typeof KnowledgebasesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/knowledgebases/';
+      path: '/knowledgebases';
+      fullPath: '/knowledgebases/';
+      preLoaderRoute: typeof KnowledgebasesIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/groups/': {
-      id: '/groups/'
-      path: '/groups'
-      fullPath: '/groups/'
-      preLoaderRoute: typeof GroupsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/groups/';
+      path: '/groups';
+      fullPath: '/groups/';
+      preLoaderRoute: typeof GroupsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/debug-bundle/': {
-      id: '/debug-bundle/'
-      path: '/debug-bundle'
-      fullPath: '/debug-bundle/'
-      preLoaderRoute: typeof DebugBundleIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/debug-bundle/';
+      path: '/debug-bundle';
+      fullPath: '/debug-bundle/';
+      preLoaderRoute: typeof DebugBundleIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/connect-clusters/': {
-      id: '/connect-clusters/'
-      path: '/connect-clusters'
-      fullPath: '/connect-clusters/'
-      preLoaderRoute: typeof ConnectClustersIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/connect-clusters/';
+      path: '/connect-clusters';
+      fullPath: '/connect-clusters/';
+      preLoaderRoute: typeof ConnectClustersIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/agents/': {
-      id: '/agents/'
-      path: '/agents'
-      fullPath: '/agents/'
-      preLoaderRoute: typeof AgentsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/agents/';
+      path: '/agents';
+      fullPath: '/agents/';
+      preLoaderRoute: typeof AgentsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/transforms/$transformName': {
-      id: '/transforms/$transformName'
-      path: '/transforms/$transformName'
-      fullPath: '/transforms/$transformName'
-      preLoaderRoute: typeof TransformsTransformNameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/transforms/$transformName';
+      path: '/transforms/$transformName';
+      fullPath: '/transforms/$transformName';
+      preLoaderRoute: typeof TransformsTransformNameRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/shadowlinks/create': {
-      id: '/shadowlinks/create'
-      path: '/shadowlinks/create'
-      fullPath: '/shadowlinks/create'
-      preLoaderRoute: typeof ShadowlinksCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/shadowlinks/create';
+      path: '/shadowlinks/create';
+      fullPath: '/shadowlinks/create';
+      preLoaderRoute: typeof ShadowlinksCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/security/$tab': {
-      id: '/security/$tab'
-      path: '/security/$tab'
-      fullPath: '/security/$tab'
-      preLoaderRoute: typeof SecurityTabRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/security/$tab';
+      path: '/security/$tab';
+      fullPath: '/security/$tab';
+      preLoaderRoute: typeof SecurityTabRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/secrets/create': {
-      id: '/secrets/create'
-      path: '/secrets/create'
-      fullPath: '/secrets/create'
-      preLoaderRoute: typeof SecretsCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/secrets/create';
+      path: '/secrets/create';
+      fullPath: '/secrets/create';
+      preLoaderRoute: typeof SecretsCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/edit-mode': {
-      id: '/schema-registry/edit-mode'
-      path: '/schema-registry/edit-mode'
-      fullPath: '/schema-registry/edit-mode'
-      preLoaderRoute: typeof SchemaRegistryEditModeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/edit-mode';
+      path: '/schema-registry/edit-mode';
+      fullPath: '/schema-registry/edit-mode';
+      preLoaderRoute: typeof SchemaRegistryEditModeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/edit-compatibility': {
-      id: '/schema-registry/edit-compatibility'
-      path: '/schema-registry/edit-compatibility'
-      fullPath: '/schema-registry/edit-compatibility'
-      preLoaderRoute: typeof SchemaRegistryEditCompatibilityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/edit-compatibility';
+      path: '/schema-registry/edit-compatibility';
+      fullPath: '/schema-registry/edit-compatibility';
+      preLoaderRoute: typeof SchemaRegistryEditCompatibilityRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/create': {
-      id: '/schema-registry/create'
-      path: '/schema-registry/create'
-      fullPath: '/schema-registry/create'
-      preLoaderRoute: typeof SchemaRegistryCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/create';
+      path: '/schema-registry/create';
+      fullPath: '/schema-registry/create';
+      preLoaderRoute: typeof SchemaRegistryCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/wizard': {
-      id: '/rp-connect/wizard'
-      path: '/rp-connect/wizard'
-      fullPath: '/rp-connect/wizard'
-      preLoaderRoute: typeof RpConnectWizardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/rp-connect/wizard';
+      path: '/rp-connect/wizard';
+      fullPath: '/rp-connect/wizard';
+      preLoaderRoute: typeof RpConnectWizardRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/create': {
-      id: '/rp-connect/create'
-      path: '/rp-connect/create'
-      fullPath: '/rp-connect/create'
-      preLoaderRoute: typeof RpConnectCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/rp-connect/create';
+      path: '/rp-connect/create';
+      fullPath: '/rp-connect/create';
+      preLoaderRoute: typeof RpConnectCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/overview/$brokerId': {
-      id: '/overview/$brokerId'
-      path: '/overview/$brokerId'
-      fullPath: '/overview/$brokerId'
-      preLoaderRoute: typeof OverviewBrokerIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/overview/$brokerId';
+      path: '/overview/$brokerId';
+      fullPath: '/overview/$brokerId';
+      preLoaderRoute: typeof OverviewBrokerIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/mcp-servers/create': {
-      id: '/mcp-servers/create'
-      path: '/mcp-servers/create'
-      fullPath: '/mcp-servers/create'
-      preLoaderRoute: typeof McpServersCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/mcp-servers/create';
+      path: '/mcp-servers/create';
+      fullPath: '/mcp-servers/create';
+      preLoaderRoute: typeof McpServersCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/mcp-servers/$id': {
-      id: '/mcp-servers/$id'
-      path: '/mcp-servers/$id'
-      fullPath: '/mcp-servers/$id'
-      preLoaderRoute: typeof McpServersIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/mcp-servers/$id';
+      path: '/mcp-servers/$id';
+      fullPath: '/mcp-servers/$id';
+      preLoaderRoute: typeof McpServersIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/knowledgebases/create': {
-      id: '/knowledgebases/create'
-      path: '/knowledgebases/create'
-      fullPath: '/knowledgebases/create'
-      preLoaderRoute: typeof KnowledgebasesCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/knowledgebases/create';
+      path: '/knowledgebases/create';
+      fullPath: '/knowledgebases/create';
+      preLoaderRoute: typeof KnowledgebasesCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/groups/$groupId': {
-      id: '/groups/$groupId'
-      path: '/groups/$groupId'
-      fullPath: '/groups/$groupId'
-      preLoaderRoute: typeof GroupsGroupIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/groups/$groupId';
+      path: '/groups/$groupId';
+      fullPath: '/groups/$groupId';
+      preLoaderRoute: typeof GroupsGroupIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/get-started/api': {
-      id: '/get-started/api'
-      path: '/get-started/api'
-      fullPath: '/get-started/api'
-      preLoaderRoute: typeof GetStartedApiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/get-started/api';
+      path: '/get-started/api';
+      fullPath: '/get-started/api';
+      preLoaderRoute: typeof GetStartedApiRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/agents/create': {
-      id: '/agents/create'
-      path: '/agents/create'
-      fullPath: '/agents/create'
-      preLoaderRoute: typeof AgentsCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/agents/create';
+      path: '/agents/create';
+      fullPath: '/agents/create';
+      preLoaderRoute: typeof AgentsCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/topics/$topicName/': {
-      id: '/topics/$topicName/'
-      path: '/topics/$topicName'
-      fullPath: '/topics/$topicName/'
-      preLoaderRoute: typeof TopicsTopicNameIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/topics/$topicName/';
+      path: '/topics/$topicName';
+      fullPath: '/topics/$topicName/';
+      preLoaderRoute: typeof TopicsTopicNameIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/shadowlinks/$name/': {
-      id: '/shadowlinks/$name/'
-      path: '/shadowlinks/$name'
-      fullPath: '/shadowlinks/$name/'
-      preLoaderRoute: typeof ShadowlinksNameIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/shadowlinks/$name/';
+      path: '/shadowlinks/$name';
+      fullPath: '/shadowlinks/$name/';
+      preLoaderRoute: typeof ShadowlinksNameIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/$pipelineId/': {
-      id: '/rp-connect/$pipelineId/'
-      path: '/rp-connect/$pipelineId'
-      fullPath: '/rp-connect/$pipelineId/'
-      preLoaderRoute: typeof RpConnectPipelineIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/rp-connect/$pipelineId/';
+      path: '/rp-connect/$pipelineId';
+      fullPath: '/rp-connect/$pipelineId/';
+      preLoaderRoute: typeof RpConnectPipelineIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/knowledgebases/$knowledgebaseId/': {
-      id: '/knowledgebases/$knowledgebaseId/'
-      path: '/knowledgebases/$knowledgebaseId'
-      fullPath: '/knowledgebases/$knowledgebaseId/'
-      preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/knowledgebases/$knowledgebaseId/';
+      path: '/knowledgebases/$knowledgebaseId';
+      fullPath: '/knowledgebases/$knowledgebaseId/';
+      preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/connect-clusters/$clusterName/': {
-      id: '/connect-clusters/$clusterName/'
-      path: '/connect-clusters/$clusterName'
-      fullPath: '/connect-clusters/$clusterName/'
-      preLoaderRoute: typeof ConnectClustersClusterNameIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/connect-clusters/$clusterName/';
+      path: '/connect-clusters/$clusterName';
+      fullPath: '/connect-clusters/$clusterName/';
+      preLoaderRoute: typeof ConnectClustersClusterNameIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/agents/$id/': {
-      id: '/agents/$id/'
-      path: '/agents/$id'
-      fullPath: '/agents/$id/'
-      preLoaderRoute: typeof AgentsIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/agents/$id/';
+      path: '/agents/$id';
+      fullPath: '/agents/$id/';
+      preLoaderRoute: typeof AgentsIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/topics/$topicName/produce-record': {
-      id: '/topics/$topicName/produce-record'
-      path: '/topics/$topicName/produce-record'
-      fullPath: '/topics/$topicName/produce-record'
-      preLoaderRoute: typeof TopicsTopicNameProduceRecordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/topics/$topicName/produce-record';
+      path: '/topics/$topicName/produce-record';
+      fullPath: '/topics/$topicName/produce-record';
+      preLoaderRoute: typeof TopicsTopicNameProduceRecordRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/shadowlinks/$name/edit': {
-      id: '/shadowlinks/$name/edit'
-      path: '/shadowlinks/$name/edit'
-      fullPath: '/shadowlinks/$name/edit'
-      preLoaderRoute: typeof ShadowlinksNameEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/shadowlinks/$name/edit';
+      path: '/shadowlinks/$name/edit';
+      fullPath: '/shadowlinks/$name/edit';
+      preLoaderRoute: typeof ShadowlinksNameEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/security/users/$userName': {
-      id: '/security/users/$userName'
-      path: '/security/users/$userName'
-      fullPath: '/security/users/$userName'
-      preLoaderRoute: typeof SecurityUsersUserNameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/security/users/$userName';
+      path: '/security/users/$userName';
+      fullPath: '/security/users/$userName';
+      preLoaderRoute: typeof SecurityUsersUserNameRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/security/roles/$roleName': {
-      id: '/security/roles/$roleName'
-      path: '/security/roles/$roleName'
-      fullPath: '/security/roles/$roleName'
-      preLoaderRoute: typeof SecurityRolesRoleNameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/security/roles/$roleName';
+      path: '/security/roles/$roleName';
+      fullPath: '/security/roles/$roleName';
+      preLoaderRoute: typeof SecurityRolesRoleNameRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/secrets/$id/edit': {
-      id: '/secrets/$id/edit'
-      path: '/secrets/$id/edit'
-      fullPath: '/secrets/$id/edit'
-      preLoaderRoute: typeof SecretsIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/secrets/$id/edit';
+      path: '/secrets/$id/edit';
+      fullPath: '/secrets/$id/edit';
+      preLoaderRoute: typeof SecretsIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/secrets/create': {
-      id: '/rp-connect/secrets/create'
-      path: '/rp-connect/secrets/create'
-      fullPath: '/rp-connect/secrets/create'
-      preLoaderRoute: typeof RpConnectSecretsCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/rp-connect/secrets/create';
+      path: '/rp-connect/secrets/create';
+      fullPath: '/rp-connect/secrets/create';
+      preLoaderRoute: typeof RpConnectSecretsCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/$pipelineId/edit': {
-      id: '/rp-connect/$pipelineId/edit'
-      path: '/rp-connect/$pipelineId/edit'
-      fullPath: '/rp-connect/$pipelineId/edit'
-      preLoaderRoute: typeof RpConnectPipelineIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/rp-connect/$pipelineId/edit';
+      path: '/rp-connect/$pipelineId/edit';
+      fullPath: '/rp-connect/$pipelineId/edit';
+      preLoaderRoute: typeof RpConnectPipelineIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login/callbacks/$provider': {
-      id: '/login/callbacks/$provider'
-      path: '/login/callbacks/$provider'
-      fullPath: '/login/callbacks/$provider'
-      preLoaderRoute: typeof LoginCallbacksProviderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login/callbacks/$provider';
+      path: '/login/callbacks/$provider';
+      fullPath: '/login/callbacks/$provider';
+      preLoaderRoute: typeof LoginCallbacksProviderRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/debug-bundle/progress/$jobId': {
-      id: '/debug-bundle/progress/$jobId'
-      path: '/debug-bundle/progress/$jobId'
-      fullPath: '/debug-bundle/progress/$jobId'
-      preLoaderRoute: typeof DebugBundleProgressJobIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/debug-bundle/progress/$jobId';
+      path: '/debug-bundle/progress/$jobId';
+      fullPath: '/debug-bundle/progress/$jobId';
+      preLoaderRoute: typeof DebugBundleProgressJobIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/connect-clusters/$clusterName/create-connector': {
-      id: '/connect-clusters/$clusterName/create-connector'
-      path: '/connect-clusters/$clusterName/create-connector'
-      fullPath: '/connect-clusters/$clusterName/create-connector'
-      preLoaderRoute: typeof ConnectClustersClusterNameCreateConnectorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/connect-clusters/$clusterName/create-connector';
+      path: '/connect-clusters/$clusterName/create-connector';
+      fullPath: '/connect-clusters/$clusterName/create-connector';
+      preLoaderRoute: typeof ConnectClustersClusterNameCreateConnectorRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/connect-clusters/$clusterName/$connector': {
-      id: '/connect-clusters/$clusterName/$connector'
-      path: '/connect-clusters/$clusterName/$connector'
-      fullPath: '/connect-clusters/$clusterName/$connector'
-      preLoaderRoute: typeof ConnectClustersClusterNameConnectorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/connect-clusters/$clusterName/$connector';
+      path: '/connect-clusters/$clusterName/$connector';
+      fullPath: '/connect-clusters/$clusterName/$connector';
+      preLoaderRoute: typeof ConnectClustersClusterNameConnectorRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/subjects/$subjectName/': {
-      id: '/schema-registry/subjects/$subjectName/'
-      path: '/schema-registry/subjects/$subjectName'
-      fullPath: '/schema-registry/subjects/$subjectName/'
-      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/subjects/$subjectName/';
+      path: '/schema-registry/subjects/$subjectName';
+      fullPath: '/schema-registry/subjects/$subjectName/';
+      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/subjects/$subjectName/edit-mode': {
-      id: '/schema-registry/subjects/$subjectName/edit-mode'
-      path: '/schema-registry/subjects/$subjectName/edit-mode'
-      fullPath: '/schema-registry/subjects/$subjectName/edit-mode'
-      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/subjects/$subjectName/edit-mode';
+      path: '/schema-registry/subjects/$subjectName/edit-mode';
+      fullPath: '/schema-registry/subjects/$subjectName/edit-mode';
+      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/subjects/$subjectName/edit-compatibility': {
-      id: '/schema-registry/subjects/$subjectName/edit-compatibility'
-      path: '/schema-registry/subjects/$subjectName/edit-compatibility'
-      fullPath: '/schema-registry/subjects/$subjectName/edit-compatibility'
-      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/subjects/$subjectName/edit-compatibility';
+      path: '/schema-registry/subjects/$subjectName/edit-compatibility';
+      fullPath: '/schema-registry/subjects/$subjectName/edit-compatibility';
+      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/subjects/$subjectName/add-version': {
-      id: '/schema-registry/subjects/$subjectName/add-version'
-      path: '/schema-registry/subjects/$subjectName/add-version'
-      fullPath: '/schema-registry/subjects/$subjectName/add-version'
-      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/subjects/$subjectName/add-version';
+      path: '/schema-registry/subjects/$subjectName/add-version';
+      fullPath: '/schema-registry/subjects/$subjectName/add-version';
+      preLoaderRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/contexts/$contextName/edit-mode': {
-      id: '/schema-registry/contexts/$contextName/edit-mode'
-      path: '/schema-registry/contexts/$contextName/edit-mode'
-      fullPath: '/schema-registry/contexts/$contextName/edit-mode'
-      preLoaderRoute: typeof SchemaRegistryContextsContextNameEditModeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/contexts/$contextName/edit-mode';
+      path: '/schema-registry/contexts/$contextName/edit-mode';
+      fullPath: '/schema-registry/contexts/$contextName/edit-mode';
+      preLoaderRoute: typeof SchemaRegistryContextsContextNameEditModeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/contexts/$contextName/edit-compatibility': {
-      id: '/schema-registry/contexts/$contextName/edit-compatibility'
-      path: '/schema-registry/contexts/$contextName/edit-compatibility'
-      fullPath: '/schema-registry/contexts/$contextName/edit-compatibility'
-      preLoaderRoute: typeof SchemaRegistryContextsContextNameEditCompatibilityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/contexts/$contextName/edit-compatibility';
+      path: '/schema-registry/contexts/$contextName/edit-compatibility';
+      fullPath: '/schema-registry/contexts/$contextName/edit-compatibility';
+      preLoaderRoute: typeof SchemaRegistryContextsContextNameEditCompatibilityRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/schema-registry/contexts/$contextName/create': {
-      id: '/schema-registry/contexts/$contextName/create'
-      path: '/schema-registry/contexts/$contextName/create'
-      fullPath: '/schema-registry/contexts/$contextName/create'
-      preLoaderRoute: typeof SchemaRegistryContextsContextNameCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/schema-registry/contexts/$contextName/create';
+      path: '/schema-registry/contexts/$contextName/create';
+      fullPath: '/schema-registry/contexts/$contextName/create';
+      preLoaderRoute: typeof SchemaRegistryContextsContextNameCreateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/rp-connect/secrets/$secretId/edit': {
-      id: '/rp-connect/secrets/$secretId/edit'
-      path: '/rp-connect/secrets/$secretId/edit'
-      fullPath: '/rp-connect/secrets/$secretId/edit'
-      preLoaderRoute: typeof RpConnectSecretsSecretIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/rp-connect/secrets/$secretId/edit';
+      path: '/rp-connect/secrets/$secretId/edit';
+      fullPath: '/rp-connect/secrets/$secretId/edit';
+      preLoaderRoute: typeof RpConnectSecretsSecretIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/knowledgebases/$knowledgebaseId/documents/$documentId': {
-      id: '/knowledgebases/$knowledgebaseId/documents/$documentId'
-      path: '/knowledgebases/$knowledgebaseId/documents/$documentId'
-      fullPath: '/knowledgebases/$knowledgebaseId/documents/$documentId'
-      preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/knowledgebases/$knowledgebaseId/documents/$documentId';
+      path: '/knowledgebases/$knowledgebaseId/documents/$documentId';
+      fullPath: '/knowledgebases/$knowledgebaseId/documents/$documentId';
+      preLoaderRoute: typeof KnowledgebasesKnowledgebaseIdDocumentsDocumentIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/agents/$id/transcripts/$conversationId': {
-      id: '/agents/$id/transcripts/$conversationId'
-      path: '/agents/$id/transcripts/$conversationId'
-      fullPath: '/agents/$id/transcripts/$conversationId'
-      preLoaderRoute: typeof AgentsIdTranscriptsConversationIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/agents/$id/transcripts/$conversationId';
+      path: '/agents/$id/transcripts/$conversationId';
+      fullPath: '/agents/$id/transcripts/$conversationId';
+      preLoaderRoute: typeof AgentsIdTranscriptsConversationIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -1431,7 +1431,7 @@ const rootRouteChildren: RootRouteChildren = {
     SchemaRegistrySubjectsSubjectNameEditModeRoute,
   SchemaRegistrySubjectsSubjectNameIndexRoute:
     SchemaRegistrySubjectsSubjectNameIndexRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

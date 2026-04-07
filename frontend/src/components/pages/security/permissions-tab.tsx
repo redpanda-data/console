@@ -693,18 +693,19 @@ function PrincipalGroupCard({
               </tbody>
             </table>
           ) : (
-            <div className="px-4 py-6 text-center">
-              <p className="text-muted-foreground text-sm">No ACLs defined for this principal.</p>
-              <Button
-                className="mt-2 bg-transparent"
-                onClick={() => onCreate(group.principal)}
-                size="sm"
-                variant="outline"
-              >
-                <Plus className="size-3.5" />
+            <Empty className="py-8">
+              <EmptyMedia variant="icon">
+                <Shield className="size-6" />
+              </EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>No ACLs defined</EmptyTitle>
+                <EmptyDescription>No ACLs defined for this principal.</EmptyDescription>
+              </EmptyHeader>
+              <Button onClick={() => onCreate(group.principal)}>
+                <Plus className="size-4" />
                 Add ACL
               </Button>
-            </div>
+            </Empty>
           )}
         </div>
       )}

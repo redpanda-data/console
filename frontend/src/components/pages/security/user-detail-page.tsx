@@ -33,7 +33,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Check, ChevronRight, Copy, Key, Shield, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Copy, Key, Shield, Trash2 } from 'lucide-react';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -86,7 +86,7 @@ function PrincipalCopyField({ value }: { value: string }) {
 
   return (
     <button
-      className="group inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-sm transition-colors hover:bg-muted"
+      className="group inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-1 text-xs transition-colors hover:bg-muted"
       onClick={handleCopy}
       title={copied ? 'Copied!' : `Copy: ${value}`}
       type="button"
@@ -338,46 +338,53 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
   return (
     <>
       <div className="flex flex-col gap-8 pt-2">
-        {/* Description */}
-        <Text className="max-w-3xl text-base leading-6" variant="muted">
-          Manage roles, ACLs, and credentials for this user.
-        </Text>
-
-        {/* Properties */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Principal</span>
-            <PrincipalCopyField value={`User:${userName}`} />
-          </div>
-          <div className="h-4 w-px bg-border" />
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Mechanism</span>
-            <Badge className="font-mono font-normal text-sm" variant="outline">
-              {mechanismLabel}
-            </Badge>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button onClick={() => setPasswordDialogOpen(true)} variant="outline">
-              <Key className="size-4" />
-              Change Password
-            </Button>
-            {Boolean(Features.deleteUser) && (
-              <Button
-                className="text-destructive hover:text-destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                variant="outline"
-              >
-                <Trash2 className="size-4" />
-                Delete User
+        {/* Page Header */}
+        <div>
+          <Button asChild className="mb-4 -ml-3 text-muted-foreground" variant="ghost">
+            <Link params={{ tab: 'users' }} to="/security/$tab">
+              <ArrowLeft className="size-4" />
+              Users
+            </Link>
+          </Button>
+          <div className="flex items-center gap-4">
+            <h1 className="min-w-0 flex-1 truncate font-semibold text-2xl tracking-tight" title={userName}>
+              {userName}
+            </h1>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button onClick={() => setPasswordDialogOpen(true)} variant="outline">
+                <Key className="size-4" />
+                Change Password
               </Button>
-            )}
+              {Boolean(Features.deleteUser) && (
+                <Button
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  variant="outline"
+                >
+                  <Trash2 className="size-4" />
+                  Delete User
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">Principal</span>
+              <PrincipalCopyField value={`User:${userName}`} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">Mechanism</span>
+              <Badge className="font-mono font-normal text-sm" variant="outline">
+                {mechanismLabel}
+              </Badge>
+            </div>
           </div>
         </div>
 
         {/* Roles Section */}
         {Boolean(Features.rolesApi) && (
           <div>
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="size-4 text-muted-foreground" />
                 <Text as="span" className="font-semibold text-base">
@@ -387,51 +394,68 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
                   {userRoles.length} assigned
                 </Text>
               </div>
-              {availableToAssign.length > 0 ? (
-                <Select onValueChange={handleAssignRole} value="">
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Assign a role..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableToAssign.map((role) => (
-                      <SelectItem key={role.name} value={role.name}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Select disabled value="">
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Assign a role..." />
-                          </SelectTrigger>
-                        </Select>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {allRoles.length === 0
-                        ? 'No roles available. Create a role first.'
-                        : 'All roles are already assigned to this user.'}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              {userRoles.length > 0 &&
+                (availableToAssign.length > 0 ? (
+                  <Select onValueChange={handleAssignRole} value="">
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Assign a role..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableToAssign.map((role) => (
+                        <SelectItem key={role.name} value={role.name}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Select disabled value="">
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder="Assign a role..." />
+                            </SelectTrigger>
+                          </Select>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {allRoles.length === 0
+                          ? 'No roles available. Create a role first.'
+                          : 'All roles are already assigned to this user.'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
             </div>
 
             {userRoles.length === 0 ? (
-              <Empty className="py-8">
-                <EmptyMedia variant="icon">
-                  <Shield className="size-6" />
-                </EmptyMedia>
-                <EmptyHeader>
-                  <EmptyTitle>No roles assigned</EmptyTitle>
-                  <EmptyDescription>Assign roles to grant this user predefined sets of permissions.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
+              <div className="overflow-hidden rounded-lg border">
+                <Empty className="py-8">
+                  <EmptyMedia variant="icon">
+                    <Shield className="size-6" />
+                  </EmptyMedia>
+                  <EmptyHeader>
+                    <EmptyTitle>No roles assigned</EmptyTitle>
+                    <EmptyDescription>Assign roles to grant this user predefined sets of permissions.</EmptyDescription>
+                  </EmptyHeader>
+                  {availableToAssign.length > 0 && (
+                    <Select onValueChange={handleAssignRole} value="">
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Assign a role..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableToAssign.map((role) => (
+                          <SelectItem key={role.name} value={role.name}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </Empty>
+              </div>
             ) : (
               <div className="rounded-lg border">
                 {userRoles.map((role, idx) => (

@@ -439,10 +439,12 @@ export function ACLTableSection({ acls, context = 'role', onAdd, onRemove }: ACL
             {acls.length} {acls.length === 1 ? 'rule' : 'rules'}
           </Text>
         </div>
-        <Button onClick={onAdd}>
-          <Plus className="size-4" />
-          Add ACL
-        </Button>
+        {acls.length > 0 && (
+          <Button onClick={onAdd}>
+            <Plus className="size-4" />
+            Add ACL
+          </Button>
+        )}
       </div>
       <div className="overflow-hidden rounded-lg border">
         {acls.length > 0 ? (
