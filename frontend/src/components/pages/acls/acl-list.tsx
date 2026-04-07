@@ -591,7 +591,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
                 header: '',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return <UserActions isAdminApiConfigured={isAdminApiConfigured} user={entry} />;
+                  return <UserActions user={entry} />;
                 },
               },
             ]}
@@ -615,7 +615,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
   );
 };
 
-const UserActions = ({ user, isAdminApiConfigured }: { user: UsersEntry; isAdminApiConfigured: boolean }) => {
+const UserActions = ({ user }: { user: UsersEntry }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
@@ -641,13 +641,11 @@ const UserActions = ({ user, isAdminApiConfigured }: { user: UsersEntry; isAdmin
 
   return (
     <>
-      {Boolean(isAdminApiConfigured) && !isServerless() && (
-        <ChangePasswordModal
-          isOpen={isChangePasswordModalOpen}
-          setIsOpen={setIsChangePasswordModalOpen}
-          userName={user.name}
-        />
-      )}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        setIsOpen={setIsChangePasswordModalOpen}
+        userName={user.name}
+      />
       {Boolean(featureRolesApi) && (
         <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
@@ -665,16 +663,14 @@ const UserActions = ({ user, isAdminApiConfigured }: { user: UsersEntry; isAdmin
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          {Boolean(isAdminApiConfigured) && !isServerless() && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsChangePasswordModalOpen(true);
-              }}
-            >
-              Change password
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsChangePasswordModalOpen(true);
+            }}
+          >
+            Change password
+          </DropdownMenuItem>
           {Boolean(featureRolesApi) && (
             <DropdownMenuItem
               onClick={(e) => {
