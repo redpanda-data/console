@@ -17,7 +17,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   type PaginationState,
-  type SortingState,
+  type Updater,
   useReactTable,
 } from '@tanstack/react-table';
 import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
@@ -35,10 +35,11 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon, SearchIcon } from 'lucide-react';
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { sortingParser } from 'utils/sorting-parser';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { SchemaContextSelector } from './schema-context-selector';
@@ -117,8 +118,20 @@ const SchemaList: FC = () => {
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
+  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
+  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(10));
+
+  const pagination = useMemo<PaginationState>(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
+
+  const handlePaginationChange = useCallback(
+    (updater: Updater<PaginationState>) => {
+      const next = typeof updater === 'function' ? updater(pagination) : updater;
+      setPageIndex(next.pageIndex);
+      setPageSize(next.pageSize);
+    },
+    [pagination, setPageIndex, setPageSize]
+  );
 
   // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
@@ -335,8 +348,8 @@ const SchemaList: FC = () => {
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
-    autoResetPageIndex: true,
+    onPaginationChange: handlePaginationChange,
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -418,7 +431,10 @@ const SchemaList: FC = () => {
       {schemaRegistryContextsSupported && (
         <SchemaContextSelector
           contexts={derivedContexts}
-          onContextChange={setSelectedContext}
+          onContextChange={(ctx) => {
+            setSelectedContext(ctx);
+            setPageIndex(0);
+          }}
           selectedContext={selectedContext}
         />
       )}
@@ -519,8 +535,10 @@ const SchemaList: FC = () => {
                   <Input
                     aria-label="Filter by subject name or schema ID"
                     className="pl-9"
-                    data-testid="schema-list-search-field"
-                    onChange={(e) => setQuickSearch(e.target.value)}
+                    onChange={(e) => {
+                      setQuickSearch(e.target.value);
+                      setPageIndex(0);
+                    }}
                     placeholder="Filter by subject name or schema ID..."
                     value={quickSearch ?? ''}
                   />
@@ -546,7 +564,10 @@ const SchemaList: FC = () => {
                   checked={showSoftDeleted}
                   data-testid="schema-list-show-soft-deleted-checkbox"
                   id="show-soft-deleted"
-                  onCheckedChange={(checked) => setShowSoftDeleted(checked === true)}
+                  onCheckedChange={(checked) => {
+                    setShowSoftDeleted(checked === true);
+                    setPageIndex(0);
+                  }}
                 />
                 <Label htmlFor="show-soft-deleted">Show soft-deleted</Label>
               </div>
