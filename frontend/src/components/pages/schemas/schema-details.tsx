@@ -11,36 +11,25 @@
 
 'use no memo';
 
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  CodeBlock,
-  createStandaloneToast,
-  Divider,
-  Flex,
-  Grid,
-  GridItem,
-  ListItem,
-  Tabs,
-  Text,
-  UnorderedList,
-  useToast,
-} from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { EditIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { Separator } from 'components/redpanda-ui/components/separator';
+import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { parseSubjectContext } from './schema-context-utils';
 import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { useGetIdentityQuery } from '../../../react-query/api/authentication';
@@ -57,20 +46,17 @@ import {
 } from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
-import { DefaultSkeleton, Label, Button as LegacyButton } from '../../../utils/tsx-utils';
+import { Label } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeURIComponentPercents } from '../../../utils/utils';
 import { KowlDiffEditor } from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
 
-const { ToastContainer } = createStandaloneToast();
-
 const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
   const { subjectName: subjectNameParam } = routeApi.useParams();
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const search = routeApi.useSearch();
-  const toast = useToast();
 
   // Use prop if provided (for routing), otherwise use URL param
   const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
@@ -89,6 +75,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   useSchemaTypesQuery(); // Fetch for other components
 
   const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
+  const [subjectDeleteKind, setSubjectDeleteKind] = useState<'soft' | 'permanent' | null>(null);
 
   type UserDataType = NonNullable<typeof userData>;
 
@@ -124,7 +111,15 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   }, [search.version, navigate]);
 
   if (isLoadingSubject || !subject) {
-    return DefaultSkeleton;
+    return (
+      <PageContent>
+        <SkeletonGroup direction="vertical" spacing="lg">
+          <Skeleton variant="heading" width="lg" />
+          <Skeleton variant="text" width="full" />
+          <Skeleton size="xl" width="full" />
+        </SkeletonGroup>
+      </PageContent>
+    );
   }
 
   const isSoftDeleted = schemaSubjects?.find((x) => x.name === subjectNameRaw)?.isSoftDeleted;
@@ -140,52 +135,37 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   );
 
   const handleDeleteSubject = (permanent: boolean) => {
-    const modalCallback = () => {
-      deleteSubjectMutation.mutate(
-        { subjectName: subjectNameRaw, permanent },
-        {
-          onSuccess: () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: permanent ? 'Subject permanently deleted' : 'Subject soft-deleted',
-            });
-            if (permanent) {
-              navigate({ to: '/schema-registry' });
-            }
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject',
-              description: String(err),
-            });
-          },
-        }
-      );
-    };
+    setSubjectDeleteKind(permanent ? 'permanent' : 'soft');
+  };
 
-    if (permanent) {
-      openPermanentDeleteModal(subjectNameRaw, modalCallback);
-    } else {
-      openDeleteModal(subjectNameRaw, modalCallback);
-    }
+  const executeDeleteSubject = (permanent: boolean) => {
+    deleteSubjectMutation.mutate(
+      { subjectName: subjectNameRaw, permanent },
+      {
+        onSuccess: () => {
+          toast.success(permanent ? 'Subject permanently deleted' : 'Subject soft-deleted');
+          if (permanent) {
+            navigate({ to: '/schema-registry' });
+          }
+        },
+        onError: (err) => {
+          toast.error(permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject', {
+            description: String(err),
+          });
+        },
+      }
+    );
   };
 
   return (
     <PageContent key="b">
-      <ToastContainer />
-
       {/* Statistics Bar */}
-      <Flex alignItems="center" gap="1rem">
+      <div className="flex items-center gap-4">
         <SmallStat title="Format">{subject.type}</SmallStat>
-        <Divider height="2ch" orientation="vertical" />
+        <Separator className="h-[2ch]" orientation="vertical" />
 
         <SmallStat title="Mode">
-          <Flex alignItems="center" gap="1">
+          <div className="flex items-center gap-1">
             {subject.mode}
             {canManageSchemaRegistry !== false && (
               <Button
@@ -202,12 +182,12 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                 <EditIcon />
               </Button>
             )}
-          </Flex>
+          </div>
         </SmallStat>
-        <Divider height="2ch" orientation="vertical" />
+        <Separator className="h-[2ch]" orientation="vertical" />
 
         <SmallStat title="Compatibility">
-          <Flex alignItems="center" gap="1">
+          <div className="flex items-center gap-1">
             {subject.compatibility}
             {canManageSchemaRegistry !== false && (
               <Button
@@ -224,56 +204,83 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                 <EditIcon />
               </Button>
             )}
-          </Flex>
+          </div>
         </SmallStat>
-        <Divider height="2ch" orientation="vertical" />
+        <Separator className="h-[2ch]" orientation="vertical" />
 
         <SmallStat title="Active Versions">
           {subject.schemas.count((x: { isSoftDeleted?: boolean }) => !x.isSoftDeleted)}
         </SmallStat>
-      </Flex>
+      </div>
 
       {/* Buttons */}
-      <Flex gap="2">
-        <LegacyButton
-          data-testid="schema-details-add-version-btn"
-          disabledReason={canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined}
-          onClick={() =>
-            navigate({
-              to: '/schema-registry/subjects/$subjectName/add-version',
-              params: { subjectName: subjectNameEncoded },
-            })
-          }
-          variant="outline"
-        >
-          Add new version
-        </LegacyButton>
-        <LegacyButton
-          data-testid="schema-details-delete-subject-btn"
-          disabledReason={canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined}
-          onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
-          variant="outline"
-        >
-          Delete subject
-        </LegacyButton>
-      </Flex>
+      <div className="flex gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              data-testid="schema-details-add-version-btn"
+              disabled={canCreateSchemas === false}
+              onClick={() =>
+                navigate({
+                  to: '/schema-registry/subjects/$subjectName/add-version',
+                  params: { subjectName: subjectNameEncoded },
+                })
+              }
+              variant="outline"
+            >
+              Add new version
+            </Button>
+          </TooltipTrigger>
+          {canCreateSchemas === false && (
+            <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+          )}
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              data-testid="schema-details-delete-subject-btn"
+              disabled={canDeleteSchemas === false}
+              onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
+              variant="outline"
+            >
+              Delete subject
+            </Button>
+          </TooltipTrigger>
+          {canDeleteSchemas === false && (
+            <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
+          )}
+        </Tooltip>
+      </div>
 
       {/* Definition / Diff */}
-      <Tabs
-        data-testid="schema-details-tabs"
-        isFitted
-        items={[
-          {
-            key: 'definition',
-            name: 'Definition',
-            component: <SubjectDefinition subject={subject} />,
-          },
-          {
-            key: 'diff',
-            name: 'Version diff',
-            component: <VersionDiff subject={subject} />,
-          },
-        ]}
+      <Tabs data-testid="schema-details-tabs" defaultValue="definition">
+        <TabsList variant="underline">
+          <TabsTrigger value="definition">Definition</TabsTrigger>
+          <TabsTrigger value="diff">Version diff</TabsTrigger>
+        </TabsList>
+        <TabsContent value="definition">
+          <SubjectDefinition subject={subject} />
+        </TabsContent>
+        <TabsContent value="diff">
+          <VersionDiff subject={subject} />
+        </TabsContent>
+      </Tabs>
+
+      <DeleteDialog
+        onConfirm={() => executeDeleteSubject(false)}
+        onOpenChange={(open) => {
+          if (!open) setSubjectDeleteKind(null);
+        }}
+        open={subjectDeleteKind === 'soft'}
+        schemaVersionName={subjectNameRaw}
+      />
+      <PermanentDeleteDialog
+        onConfirm={() => executeDeleteSubject(true)}
+        onOpenChange={(open) => {
+          if (!open) setSubjectDeleteKind(null);
+        }}
+        open={subjectDeleteKind === 'permanent'}
+        schemaVersionName={subjectNameRaw}
       />
     </PageContent>
   );
@@ -300,7 +307,6 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
-  const toast = useToast();
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const search = routeApi.useSearch();
   const queryClient = useQueryClient();
@@ -330,20 +336,17 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       ? versionNumber
       : (fallbackVersion ?? subjectData.versions[0]?.version ?? 1);
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
+  const [versionDeleteKind, setVersionDeleteKind] = useState<'soft' | 'permanent' | null>(null);
 
   // Show notification and update URL if requested version doesn't exist
   useEffect(() => {
     if (versionNumber && !requestedVersionExists) {
-      toast({
-        status: 'warning',
-        title: `Version ${versionNumber} not found`,
+      toast.warning(`Version ${versionNumber} not found`, {
         description: `Showing version ${fallbackVersion} instead`,
-        duration: 5000,
-        isClosable: true,
       });
       navigate({ search: { version: String(fallbackVersion) }, replace: true });
     }
-  }, [versionNumber, requestedVersionExists, fallbackVersion, toast, navigate]);
+  }, [versionNumber, requestedVersionExists, fallbackVersion, navigate]);
 
   // When URL is "latest", sync selectedVersion with the actual latest version from data
   if (queryVersion === 'latest' && fallbackVersion && selectedVersion !== fallbackVersion) {
@@ -373,47 +376,38 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   };
 
   const handlePermanentDelete = () => {
-    openPermanentDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
-      deleteVersionMutation.mutate(
-        { subjectName: subjectData.name, version: schema.version, permanent: true },
-        {
-          onSuccess: async () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: 'Schema version permanently deleted',
-            });
+    setVersionDeleteKind('permanent');
+  };
 
-            // Invalidate and refetch to get updated details
-            await queryClient.invalidateQueries({
-              queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
-            });
-            const newDetails = queryClient.getQueryData<SchemaRegistrySubjectDetails>([
-              'schemaRegistry',
-              'subjects',
-              subjectData.name,
-              'details',
-            ]);
+  const executePermanentDelete = () => {
+    deleteVersionMutation.mutate(
+      { subjectName: subjectData.name, version: schema.version, permanent: true },
+      {
+        onSuccess: async () => {
+          toast.success('Schema version permanently deleted');
 
-            if (newDetails?.latestActiveVersion) {
-              setSelectedVersion(newDetails.latestActiveVersion);
-            } else {
-              navigate({ to: '/schema-registry' });
-            }
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to permanently delete schema version',
-              description: String(err),
-            });
-          },
-        }
-      );
-    });
+          // Invalidate and refetch to get updated details
+          await queryClient.invalidateQueries({
+            queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
+          });
+          const newDetails = queryClient.getQueryData<SchemaRegistrySubjectDetails>([
+            'schemaRegistry',
+            'subjects',
+            subjectData.name,
+            'details',
+          ]);
+
+          if (newDetails?.latestActiveVersion) {
+            setSelectedVersion(newDetails.latestActiveVersion);
+          } else {
+            navigate({ to: '/schema-registry' });
+          }
+        },
+        onError: (err) => {
+          toast.error('Failed to permanently delete schema version', { description: String(err) });
+        },
+      }
+    );
   };
 
   const handleRecover = () => {
@@ -426,11 +420,7 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       },
       {
         onSuccess: (result) => {
-          toast({
-            status: 'success',
-            duration: 4000,
-            isClosable: false,
-            title: `Schema ${subjectData.name} ${schema.version} has been recovered`,
+          toast.success(`Schema ${subjectData.name} ${schema.version} has been recovered`, {
             description: `Schema ID: ${result.id}`,
           });
 
@@ -442,12 +432,8 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
           });
         },
         onError: (err) => {
-          toast({
-            status: 'error',
-            duration: null,
-            isClosable: true,
-            title: `Failed to recover schema ${subjectData.name} ${schema.version}`,
-            description: `Error: ${String(err)}`,
+          toast.error(`Failed to recover schema ${subjectData.name} ${schema.version}`, {
+            description: String(err),
           });
         },
       }
@@ -455,41 +441,31 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
   };
 
   const handleSoftDelete = () => {
-    openDeleteModal(`${subjectData.name} version ${schema.version}`, () => {
-      deleteVersionMutation.mutate(
-        { subjectName: subjectData.name, version: schema.version, permanent: false },
-        {
-          onSuccess: () => {
-            toast({
-              status: 'success',
-              duration: 4000,
-              isClosable: false,
-              title: 'Schema version deleted',
-              description: 'You can recover or permanently delete it.',
-            });
-          },
-          onError: (err) => {
-            toast({
-              status: 'error',
-              duration: null,
-              isClosable: true,
-              title: 'Failed to delete schema version',
-              description: String(err),
-            });
-          },
-        }
-      );
-    });
+    setVersionDeleteKind('soft');
+  };
+
+  const executeSoftDelete = () => {
+    deleteVersionMutation.mutate(
+      { subjectName: subjectData.name, version: schema.version, permanent: false },
+      {
+        onSuccess: () => {
+          toast.success('Schema version deleted', { description: 'You can recover or permanently delete it.' });
+        },
+        onError: (err) => {
+          toast.error('Failed to delete schema version', { description: String(err) });
+        },
+      }
+    );
   };
 
   return (
-    <Flex gap="10">
+    <div className="flex gap-10">
       {/* Left Side */}
-      <Flex direction="column" flexGrow="1" gap="4" minWidth="0">
+      <div className="flex min-w-0 grow flex-col gap-4">
         {/* Version Select / Delete / Recover */}
-        <Flex alignItems="flex-end" gap="2">
+        <div className="flex items-end gap-2">
           <Label text="Version">
-            <Box width="200px">
+            <div className="w-[200px]">
               <SingleSelect
                 data-testid="schema-definition-version-select"
                 isDisabled={subjectData.versions.length === 0}
@@ -503,81 +479,107 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
                 }))}
                 value={selectedVersion}
               />
-            </Box>
+            </div>
           </Label>
-          <Flex alignItems="center" data-testid="schema-definition-schema-id" height="36px" ml="4">
+          <div className="ml-4 flex h-9 items-center" data-testid="schema-definition-schema-id">
             Schema ID: {schema.id}
-          </Flex>
+          </div>
 
           {schema.isSoftDeleted ? (
             <>
-              <LegacyButton
-                data-testid="schema-definition-permanent-delete-btn"
-                disabledReason={
-                  canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
-                }
-                ml="auto"
-                onClick={handlePermanentDelete}
-                variant="outline"
-              >
-                Permanent delete
-              </LegacyButton>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="ml-auto"
+                    data-testid="schema-definition-permanent-delete-btn"
+                    disabled={canDeleteSchemas === false}
+                    onClick={handlePermanentDelete}
+                    variant="outline"
+                  >
+                    Permanent delete
+                  </Button>
+                </TooltipTrigger>
+                {canDeleteSchemas === false && (
+                  <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
+                )}
+              </Tooltip>
 
-              <LegacyButton
-                data-testid="schema-definition-recover-btn"
-                disabledReason={
-                  canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
-                }
-                onClick={handleRecover}
-                variant="outline"
-              >
-                Recover
-              </LegacyButton>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="schema-definition-recover-btn"
+                    disabled={canCreateSchemas === false}
+                    onClick={handleRecover}
+                    variant="outline"
+                  >
+                    Recover
+                  </Button>
+                </TooltipTrigger>
+                {canCreateSchemas === false && (
+                  <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+                )}
+              </Tooltip>
             </>
           ) : (
-            <LegacyButton
-              data-testid="schema-definition-delete-version-btn"
-              disabledReason={
-                canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
-              }
-              ml="auto"
-              onClick={handleSoftDelete}
-              variant="outline"
-            >
-              Delete
-            </LegacyButton>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className="ml-auto"
+                  data-testid="schema-definition-delete-version-btn"
+                  disabled={canDeleteSchemas === false}
+                  onClick={handleSoftDelete}
+                  variant="outline"
+                >
+                  Delete
+                </Button>
+              </TooltipTrigger>
+              {canDeleteSchemas === false && (
+                <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
+              )}
+            </Tooltip>
           )}
-        </Flex>
+        </div>
 
         {/* Deleted Hint */}
         {Boolean(schema.isSoftDeleted) && (
-          <Alert data-testid="schema-definition-soft-deleted-alert" status="warning" variant="left-accent">
-            <AlertIcon />
-            <Box>
-              <AlertTitle>Soft-deleted schema</AlertTitle>
-              <AlertDescription>
-                This schema has been soft-deleted. It is still required by other schemas. It remains readable.
-              </AlertDescription>
-            </Box>
+          <Alert data-testid="schema-definition-soft-deleted-alert" variant="warning">
+            <AlertTitle>Soft-deleted schema</AlertTitle>
+            <AlertDescription>
+              This schema has been soft-deleted. It is still required by other schemas. It remains readable.
+            </AlertDescription>
           </Alert>
         )}
 
         {/* Code Block */}
-        <CodeBlock
-          codeString={getFormattedSchemaText(schema)}
-          data-testid="schema-definition-code-block"
-          language={schemaTypeToCodeBlockLanguage(schema.type)}
-          showCopyButton={false}
-          showLineNumbers
-          theme="light"
+        <DynamicCodeBlock
+          code={getFormattedSchemaText(schema)}
+          lang={schemaTypeToCodeBlockLanguage(schema.type)}
+          testId="schema-definition-code-block"
         />
-      </Flex>
+      </div>
 
       {/* References Box */}
-      <Box>
+      <div>
         <SchemaReferences schema={schema} subject={subjectData} />
-      </Box>
-    </Flex>
+      </div>
+
+      <DeleteDialog
+        onConfirm={executeSoftDelete}
+        onOpenChange={(open) => {
+          if (!open) setVersionDeleteKind(null);
+        }}
+        open={versionDeleteKind === 'soft'}
+        schemaVersionName={`${subjectData.name} version ${schema.version}`}
+      />
+      <PermanentDeleteDialog
+        onConfirm={executePermanentDelete}
+        onOpenChange={(open) => {
+          if (!open) setVersionDeleteKind(null);
+        }}
+        open={versionDeleteKind === 'permanent'}
+        schemaVersionName={`${subjectData.name} version ${schema.version}`}
+      />
+    </div>
   );
 };
 
@@ -607,14 +609,13 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
   }
 
   return (
-    <Flex direction="column" gap="10">
+    <div className="flex flex-col gap-10">
       {/* Two version selectors */}
-      <Grid gap="4" minWidth="0" templateColumns="repeat(2, 1fr)" width="100%">
-        <GridItem w="100%">
-          {/* Version Select / Delete / Recover */}
-          <Flex alignItems="flex-end" gap="2">
+      <div className="grid min-w-0 grid-cols-2 gap-4">
+        <div className="w-full">
+          <div className="flex items-end gap-2">
             <Label text="Version">
-              <Box width="200px">
+              <div className="w-[200px]">
                 <SingleSelect
                   data-testid="schema-diff-version-left-select"
                   isDisabled={subject.versions.length === 0}
@@ -630,19 +631,18 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
                   }))}
                   value={selectedVersionLeft}
                 />
-              </Box>
+              </div>
             </Label>
-            <Flex alignItems="center" data-testid="schema-diff-schema-id-left" height="36px" ml="4">
+            <div className="ml-4 flex h-9 items-center" data-testid="schema-diff-schema-id-left">
               Schema ID: {schemaLeft.id}
-            </Flex>
-          </Flex>
-        </GridItem>
+            </div>
+          </div>
+        </div>
 
-        <GridItem w="100%">
-          {/* Version Select / Delete / Recover */}
-          <Flex alignItems="flex-end" gap="2">
+        <div className="w-full">
+          <div className="flex items-end gap-2">
             <Label text="Version">
-              <Box width="200px">
+              <div className="w-[200px]">
                 <SingleSelect
                   data-testid="schema-diff-version-right-select"
                   isDisabled={subject.versions.length === 0}
@@ -658,14 +658,14 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
                   }))}
                   value={selectedVersionRight}
                 />
-              </Box>
+              </div>
             </Label>
-            <Flex alignItems="center" data-testid="schema-diff-schema-id-right" height="36px" ml="4">
+            <div className="ml-4 flex h-9 items-center" data-testid="schema-diff-schema-id-right">
               Schema ID: {schemaRight.id}
-            </Flex>
-          </Flex>
-        </GridItem>
-      </Grid>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Diff View */}
       <KowlDiffEditor
@@ -678,7 +678,7 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
         }}
         original={getFormattedSchemaText(schemaLeft)}
       />
-    </Flex>
+    </div>
   );
 };
 
@@ -689,14 +689,12 @@ const SchemaMetadataSection = ({ schema }: { schema: SchemaRegistryVersionedSche
 
   return (
     <>
-      <Text data-testid="schema-metadata-heading" fontSize="lg" fontWeight="bold" mt="20">
+      <h3 className="mt-20 font-bold text-lg" data-testid="schema-metadata-heading">
         Metadata
-      </Text>
-      <Text mb="4">Metadata associated with this schema version.</Text>
+      </h3>
+      <p className="mb-4">Metadata associated with this schema version.</p>
 
-      <Text fontSize="md" fontWeight="bold" mb="3">
-        Properties
-      </Text>
+      <p className="mb-3 font-bold">Properties</p>
 
       {hasProperties ? (
         <Table testId="schema-metadata-properties">
@@ -738,31 +736,17 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
     <>
       <SchemaMetadataSection schema={schema} />
 
-      <Text data-testid="schema-references-heading" fontSize="lg" fontWeight="bold" mt="20">
+      <h3 className="mt-20 font-bold text-lg" data-testid="schema-references-heading">
         References
-      </Text>
-      <Text mb="6">
-        Schemas that are required by this version.
-        {/* <Link as={Link} to="/home">Learn More</Link> */}
-      </Text>
+      </h3>
+      <p className="mb-6">Schemas that are required by this version.</p>
 
       {schema.references.length > 0 ? (
-        <UnorderedList data-testid="schema-references-list">
+        <ul className="list-disc pl-5" data-testid="schema-references-list">
           {schema.references.map((ref) => {
-            // Schema references contain two distinct identifiers:
-            // - ref.name: The import string used within the schema (e.g., "foo/bar/baz.proto")
-            // - ref.subject: The actual Schema Registry subject name (e.g., "foo.bar.baz")
-            //
-            // For consistent UX, we display the subject name (what users navigate to)
-            // rather than the import string. Both "References" and "Referenced By"
-            // sections now consistently show subject names.
-            //
-            // Navigation uses encodeURIComponentPercents() instead of encodeURIComponent()
-            // because schema subject names with periods/slashes cause URL parsing issues
-            // in React Router. The special encoder replaces % with ﹪ to avoid conflicts.
             const parsed = parseSubjectContext(ref.subject);
             return (
-              <ListItem key={ref.name + ref.subject + ref.version}>
+              <li key={ref.name + ref.subject + ref.version}>
                 <Link
                   data-testid={`schema-reference-link-${ref.subject}`}
                   params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
@@ -772,34 +756,27 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                   {parsed.context !== 'default' && <span className="text-gray-400">:.{parsed.context}:</span>}
                   {parsed.displayName}
                 </Link>
-              </ListItem>
+              </li>
             );
           })}
-        </UnorderedList>
+        </ul>
       ) : (
-        <Text>This schema has no references.</Text>
+        <p>This schema has no references.</p>
       )}
 
-      <Text data-testid="schema-referenced-by-heading" fontSize="lg" fontWeight="bold" mt="20">
+      <h3 className="mt-20 font-bold text-lg" data-testid="schema-referenced-by-heading">
         Referenced By
-      </Text>
-      <Text mb="6">
-        Schemas that reference this version.
-        {/* <Link as={Link} to="/home">Learn More</Link> */}
-      </Text>
+      </h3>
+      <p className="mb-6">Schemas that reference this version.</p>
 
       {referencedByData && referencedByData.length > 0 ? (
-        <UnorderedList data-testid="schema-referenced-by-list">
+        <ul className="list-disc pl-5" data-testid="schema-referenced-by-list">
           {referencedByData
             .flatMap((x) => x.usages)
             .map((ref) => {
-              // Referenced By data only contains subject names (not import strings),
-              // so this section was already displaying correctly. However, we use
-              // encodeURIComponentPercents() for consistent navigation behavior
-              // with the References section above.
               const parsed = parseSubjectContext(ref.subject);
               return (
-                <ListItem key={ref.subject + ref.version}>
+                <li key={ref.subject + ref.version}>
                   <Link
                     data-testid={`schema-referenced-by-link-${ref.subject}`}
                     params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
@@ -809,12 +786,12 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                     {parsed.context !== 'default' && <span className="text-gray-400">:.{parsed.context}:</span>}
                     {parsed.displayName}
                   </Link>
-                </ListItem>
+                </li>
               );
             })}
-        </UnorderedList>
+        </ul>
       ) : (
-        <Text>This schema has no incoming references.</Text>
+        <p>This schema has no incoming references.</p>
       )}
     </>
   );

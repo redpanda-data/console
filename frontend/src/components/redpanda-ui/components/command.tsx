@@ -85,7 +85,11 @@ function CommandDialog({
   );
 }
 
-function CommandInput({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Input>) {
+function CommandInput({
+  className,
+  testId,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Input> & SharedProps) {
   return (
     <div className="!border-input flex h-9 items-center gap-2 border-b px-3" data-slot="command-input-wrapper">
       <SearchIcon className="size-4 shrink-0 opacity-50" />
@@ -95,6 +99,7 @@ function CommandInput({ className, ...props }: React.ComponentProps<typeof Comma
           className
         )}
         data-slot="command-input"
+        data-testid={testId}
         {...props}
       />
     </div>
@@ -115,7 +120,11 @@ function CommandEmpty({ ...props }: React.ComponentProps<typeof CommandPrimitive
   return <CommandPrimitive.Empty className="py-6 text-center text-sm" data-slot="command-empty" {...props} />;
 }
 
-function CommandGroup({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Group>) {
+function CommandGroup({
+  className,
+  testId,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Group> & SharedProps) {
   return (
     <CommandPrimitive.Group
       className={cn(
@@ -123,6 +132,7 @@ function CommandGroup({ className, ...props }: React.ComponentProps<typeof Comma
         className
       )}
       data-slot="command-group"
+      data-testid={testId}
       {...props}
     />
   );
@@ -138,7 +148,11 @@ function CommandSeparator({ className, ...props }: React.ComponentProps<typeof C
   );
 }
 
-function CommandItem({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Item>) {
+function CommandItem({
+  className,
+  testId,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Item> & SharedProps) {
   return (
     <CommandPrimitive.Item
       className={cn(
@@ -146,6 +160,7 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
         className
       )}
       data-slot="command-item"
+      data-testid={testId}
       {...props}
     />
   );
