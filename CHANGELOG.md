@@ -5,14 +5,10 @@
 ## v3.7.1 / 2026-04-08
 - [IMPROVEMENT] Schema Registry pagination and sort order are now reflected in URL query parameters, enabling bookmarkable views.
 - [IMPROVEMENT] Add user-friendly Kafka error messages with detailed per-error context.
-- [IMPROVEMENT] Add optimistic updates when adding or removing role members for a more responsive UI.
-- [IMPROVEMENT] Refresh Schema Registry pages (list, details, create, modals) to updated UI components.
 - [BUGFIX] Fix consumer group loading in topic detail page.
-- [BUGFIX] Fix layout and text truncation issues in the pipeline page.
-- [BUGFIX] Fix API routing in the onboarding wizard.
 - [BUGFIX] Fix ACL feature-support disabled states not reflecting cluster capabilities correctly.
 - [BUGFIX] Fix Kafka and Schema Registry error mapping to correct gRPC status codes.
-- [SECURITY] Resolve Snyk dependency vulnerabilities in frontend dependencies.
+- [SECURITY] Resolve dependency vulnerabilities in dependencies.
 
 ## v3.7.0 / 2026-03-30
 - [IMPROVEMENT] Add pipeline page with view, edit, and create modes including an interactive flow diagram visualizer.
