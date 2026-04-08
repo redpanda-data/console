@@ -2186,7 +2186,7 @@ type apiStoreType = ReturnType<typeof _apiCreator> & {
   debugBundleStatus: DebugBundleStatus | undefined;
 };
 
-export type RolePrincipal = { name: string; principalType: 'User' };
+export type RolePrincipal = { name: string; principalType: 'User' | 'Group' };
 
 const _rolesCreator = (set: any, get: any) => ({
   roles: [] as string[],
@@ -2263,8 +2263,8 @@ const _rolesCreator = (set: any, get: any) => ({
 
       const members = res.response.members
         .map((x) => {
-          const principalParts = x.principal.split(':');
-          if (principalParts.length !== 2) {
+          const colonIdx = x.principal.indexOf(':');
+          if (colonIdx < 0) {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('failed to split principal of role', {
               roleName,
@@ -2272,18 +2272,19 @@ const _rolesCreator = (set: any, get: any) => ({
             });
             return null;
           }
-          const principalType = principalParts[0];
-          const name = principalParts[1];
-
-          if (principalType !== 'User') {
+          const principalTypeRaw = x.principal.slice(0, colonIdx);
+          if (principalTypeRaw !== 'User' && principalTypeRaw !== 'Group') {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error('unexpected principal type in refreshRoleMembers', {
+            console.warn('unsupported principal type in refreshRoleMembers, skipping', {
               roleName,
               principal: x.principal,
             });
+            return null;
           }
+          const principalType = principalTypeRaw as RolePrincipal['principalType'];
+          const name = x.principal.slice(colonIdx + 1);
 
-          return { principalType, name } as RolePrincipal;
+          return { principalType, name };
         })
         .filterNull();
 
@@ -2314,7 +2315,7 @@ const _rolesCreator = (set: any, get: any) => ({
     }
   },
 
-  async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], createRole = false) {
+  async updateRoleMembership(roleName: string, add: RolePrincipal[], remove: RolePrincipal[], createRole = false) {
     const client = appConfig.securityClient;
     if (!client) {
       throw new Error('security client is not initialized');
@@ -2323,8 +2324,8 @@ const _rolesCreator = (set: any, get: any) => ({
     return await client.updateRoleMembership({
       request: {
         roleName,
-        add: addUsers.map((u) => ({ principal: `User:${u}` })),
-        remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
+        add: add.map((p) => ({ principal: `${p.principalType}:${p.name}` })),
+        remove: remove.map((p) => ({ principal: `${p.principalType}:${p.name}` })),
         create: createRole,
       },
     });

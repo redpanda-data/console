@@ -9,31 +9,68 @@
  * by the Apache License, Version 2.0
  */
 
-import { ConfirmItemDeleteModal, Text } from '@redpanda-data/ui';
 import type { FC } from 'react';
+import { useState } from 'react';
+
+import { Button } from '../../redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../redpanda-ui/components/dialog';
+import { Input } from '../../redpanda-ui/components/input';
 
 export const DeleteRoleConfirmModal: FC<{
   roleName: string;
   numberOfPrincipals: number;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void> | void;
   buttonEl: React.ReactElement;
-}> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => (
-  <ConfirmItemDeleteModal
-    heading={`Delete role ${roleName}`}
-    inputMatchText={roleName}
-    itemType="role"
-    onConfirm={onConfirm}
-    primaryActionLabel="Delete"
-    secondaryActionLabel="Cancel"
-    trigger={buttonEl}
-  >
-    <Text>
-      This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}. Deleting it
-      will remove it from these principals and take those permissions away. The ACLs will all be deleted.
-    </Text>
-    <Text>
-      To restore the permissions, the role will need to be recreated and reassigned to these principals. To confirm,
-      type the role name in the confirmation box below.
-    </Text>
-  </ConfirmItemDeleteModal>
-);
+}> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => {
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+
+  const handleOpenChange = (o: boolean) => {
+    setOpen(o);
+    if (!o) setConfirmText('');
+  };
+
+  const handleConfirm = async () => {
+    await onConfirm();
+    handleOpenChange(false);
+  };
+
+  return (
+    <Dialog onOpenChange={handleOpenChange} open={open}>
+      <DialogTrigger asChild>{buttonEl}</DialogTrigger>
+      <DialogContent variant="destructive">
+        <DialogHeader>
+          <DialogTitle>Delete role {roleName}</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
+          This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}.
+          Deleting it will remove it from these principals and take those permissions away. The ACLs will all be
+          deleted. To restore the permissions, the role will need to be recreated and reassigned to these principals. To
+          confirm, type the role name in the confirmation box below.
+        </DialogDescription>
+        <Input onChange={(e) => setConfirmText(e.target.value)} placeholder={roleName} value={confirmText} />
+        <DialogFooter>
+          <Button onClick={() => handleOpenChange(false)} variant="outline">
+            Cancel
+          </Button>
+          <Button
+            data-testid="confirm-role-delete-button"
+            disabled={confirmText !== roleName}
+            onClick={handleConfirm}
+            variant="destructive"
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

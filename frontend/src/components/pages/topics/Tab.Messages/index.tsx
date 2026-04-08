@@ -13,7 +13,7 @@
 
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { api, createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
+import { api, createMessageSearch, type MessageSearchRequest, useApiStoreHook } from '../../../../state/backend-api';
 import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
 import {
   createFilterEntry,
@@ -338,6 +338,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   // Zustand store for topic settings
   const { setSorting, getSorting, setTopicSettings, perTopicSettings, setSearchParams, getSearchParams } =
     useTopicSettingsStore();
+
+  const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.topic.topicName));
 
   // Access perTopicSettings directly to trigger re-renders when Zustand state changes
   const topicSettings = perTopicSettings.find((t) => t.topicName === props.topic.topicName);
@@ -1286,8 +1288,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   });
 
   // Search controls derived state
-  const canUseFilters =
-    (api.topicPermissions.get(props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
+  const canUseFilters = (topicPermissions?.canUseSearchFilters ?? true) && !isServerless();
   const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
 
   const startOffsetOptions = [

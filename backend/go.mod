@@ -50,7 +50,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.38.0
-	github.com/twmb/avro v1.3.0
+	github.com/twmb/avro v1.3.4
 	github.com/twmb/franz-go v1.20.6
 	github.com/twmb/franz-go/pkg/kadm v1.17.2
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251115002817-3affad808a82
@@ -160,7 +160,6 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/miekg/dns v1.1.72 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect

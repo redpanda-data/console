@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
-import { api, useApiStore } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
@@ -146,8 +146,14 @@ function refreshTopicData(topicName: string, force: boolean) {
   // there is no single endpoint to refresh a single topic
   api.refreshTopics(force);
 
+  // Resolve the active tab: prefer the browser URL hash (window.location is always current,
+  // unlike appGlobal.location which is synced asynchronously via RouterSync's useEffect),
+  // fall back to stored setting.
+  const urlHash = window.location.hash.replace('#', '') as TopicTabId;
+  const activeTab = TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
+
   // consumers are lazy loaded because they're (relatively) expensive
-  if (uiSettings.topicDetailsActiveTabKey === 'consumers') {
+  if (activeTab === 'consumers') {
     api.refreshTopicConsumers(topicName, force);
   }
 
@@ -162,12 +168,12 @@ function refreshTopicData(topicName: string, force: boolean) {
   });
 
   // documentation can be lazy loaded
-  if (uiSettings.topicDetailsActiveTabKey === 'documentation') {
+  if (activeTab === 'documentation') {
     api.refreshTopicDocumentation(topicName, force);
   }
 
   // ACL can be lazy loaded
-  if (uiSettings.topicDetailsActiveTabKey === 'topicacl') {
+  if (activeTab === 'topicacl') {
     api.refreshTopicAcls(topicName, force);
   }
 }
@@ -204,12 +210,11 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 }
 
 const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
-  useSyncExternalStore(useApiStore.subscribe, useApiStore.getState);
-
   const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
 
   // Derived: topicConfig
-  const config = api.topicConfig.get(topicName);
+  const config = useApiStoreHook((s) => s.topicConfig.get(topicName));
+  const topicAcls = useApiStoreHook((s) => s.topicAcls.get(topicName));
   const topicConfig: ConfigEntry[] | null | undefined =
     config === undefined ? undefined : config === null || config.error !== null ? null : config.configEntries;
 
@@ -280,7 +285,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       'topicacl',
       'seeTopic',
       'ACL',
-      (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
+      () => <AclList acl={topicAcls} />,
       [
         () => {
           if (

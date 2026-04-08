@@ -33,7 +33,7 @@ import {
   PublishMessageRequestSchema,
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import { uiState } from '../../../state/ui-state';
 import { Label } from '../../../utils/tsx-utils';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
@@ -231,6 +231,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   const keySchemaName = useWatch({ control, name: 'key.schemaName' });
   const valueSchemaName = useWatch({ control, name: 'value.schemaName' });
+  const keySchemaDetail = useApiStoreHook((s) => (keySchemaName ? s.schemaDetails.get(keySchemaName) : undefined));
+  const valueSchemaDetail = useApiStoreHook((s) =>
+    valueSchemaName ? s.schemaDetails.get(valueSchemaName) : undefined
+  );
 
   // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -474,7 +478,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                     control={control}
                     name="key.schemaVersion"
                     render={({ field: { onChange, value } }) => {
-                      const schemaDetail = keySchemaName ? api.schemaDetails.get(keySchemaName) : undefined;
+                      const schemaDetail = keySchemaDetail;
                       return (
                         <SingleSelect<number | undefined>
                           onChange={onChange}
@@ -597,7 +601,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                       control={control}
                       name="value.schemaVersion"
                       render={({ field: { onChange, value } }) => {
-                        const schemaDetail = valueSchemaName ? api.schemaDetails.get(valueSchemaName) : undefined;
+                        const schemaDetail = valueSchemaDetail;
                         return (
                           <SingleSelect<number | undefined>
                             onChange={onChange}

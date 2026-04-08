@@ -11,23 +11,15 @@
 
 'use no memo';
 
-import {
-  Box,
-  Button,
-  Flex,
-  FormField,
-  Heading,
-  HStack,
-  Input,
-  isSingleValue,
-  Select,
-  Tag,
-  TagCloseButton,
-  TagLabel,
-  useToast,
-} from '@redpanda-data/ui';
 import { useNavigate } from '@tanstack/react-router';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   type AclPrincipalGroup,
@@ -44,7 +36,7 @@ import {
 } from './models';
 import { ResourceACLsEditor } from './principal-group-editor';
 import { appGlobal } from '../../../state/app-global';
-import { api, type RolePrincipal, rolesApi } from '../../../state/backend-api';
+import { api, type RolePrincipal, rolesApi, useApiStoreHook } from '../../../state/backend-api';
 import type { AclStrOperation, AclStrResourceType } from '../../../state/rest-interfaces';
 
 type CreateRoleFormState = {
@@ -84,20 +76,17 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
 
   const [isFormValid, setIsFormValid] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const toast = useToast();
 
-  const originalUsernames = useMemo(
-    () => initialData?.principals?.map(({ name }) => name) ?? [],
-    [initialData?.principals]
-  );
-  const currentUsernames = formState.principals.map(({ name }) => name) ?? [];
+  const originalPrincipals = useMemo(() => initialData?.principals ?? [], [initialData?.principals]);
   const editMode: boolean = Boolean(initialData?.roleName);
 
   const roleNameAlreadyExist = rolesApi.roles.includes(formState.roleName) && !editMode;
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    const usersToRemove = originalUsernames.filter((item) => currentUsernames.indexOf(item) === -1);
+    const principalsToRemove = originalPrincipals.filter(
+      (op) => !formState.principals.some((cp) => cp.principalType === op.principalType && cp.name === op.name)
+    );
     const principalType: AclStrResourceType = 'RedpandaRole';
     const isEditMode = editMode;
     const roleName = formState.roleName;
@@ -111,7 +100,6 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
       clusterAcls: formState.clusterACLs,
       sourceEntries: [],
     };
-    const principalNames = formState.principals.map((x) => x.name);
     const deleteAclsArgs = isEditMode
       ? {
           resourceType: 'Any' as const,
@@ -127,15 +115,9 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
     let newRoleResult: Awaited<ReturnType<typeof rolesApi.updateRoleMembership>> | null = null;
     try {
       await deleteAclsPromise;
-      newRoleResult = await rolesApi.updateRoleMembership(roleName, principalNames, usersToRemove, true);
+      newRoleResult = await rolesApi.updateRoleMembership(roleName, formState.principals, principalsToRemove, true);
     } catch (err) {
-      toast({
-        status: 'error',
-        duration: null,
-        isClosable: true,
-        title: `Failed to update role ${formState.roleName}`,
-        description: String(err),
-      });
+      toast.error(`Failed to update role ${formState.roleName}`, { description: String(err) });
       setIsLoading(false);
       return;
     }
@@ -157,49 +139,42 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
       try {
         await Promise.all(aclCreatePromises);
       } catch (err) {
-        toast({
-          status: 'error',
-          duration: null,
-          isClosable: true,
-          title: `Failed to update role ${formState.roleName}`,
-          description: String(err),
-        });
+        toast.error(`Failed to update role ${formState.roleName}`, { description: String(err) });
         setIsLoading(false);
         return;
       }
       setIsLoading(false);
-      toast({
-        status: 'success',
-        title: `Role ${roleResponse.roleName} successfully ${actionLabel}`,
-      });
+      toast.success(`Role ${roleResponse.roleName} successfully ${actionLabel}`);
       navigate({ to: `/security/roles/${encodeURIComponent(roleResponse.roleName)}/details` });
     }
   };
 
   return (
-    <Box>
+    <div>
       <div>
-        <Flex flexDirection="column" gap={10}>
-          <Flex flexDirection="row" gap={20}>
-            <Box>
-              <FormField errorText="Role name already exist" isInvalid={roleNameAlreadyExist} label="Role name">
+        <div className="flex flex-col gap-10">
+          <div className="flex flex-row gap-20">
+            <div>
+              <Field>
+                <FieldLabel>Role name</FieldLabel>
                 <Input
+                  className="w-[300px]"
                   data-testid="create-role__role-name"
-                  isDisabled={editMode}
-                  isRequired
+                  disabled={editMode}
                   onChange={(v) => {
                     setFormState((prev) => ({ ...prev, roleName: v.target.value }));
                   }}
                   pattern="^[^,=]+$"
+                  required
                   title="Please avoid using commas or equal signs."
                   value={formState.roleName}
-                  width={300}
                 />
-              </FormField>
-            </Box>
+                {roleNameAlreadyExist && <FieldError>Role name already exist</FieldError>}
+              </Field>
+            </div>
 
             <Button
-              alignSelf="self-end"
+              className="self-end"
               data-testid="roles-allow-all-operations"
               onClick={() => {
                 setFormState((prev) => {
@@ -231,23 +206,24 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
             >
               Allow all operations
             </Button>
-          </Flex>
+          </div>
 
-          <FormField
-            description="The host the user needs to connect from in order for the permissions to apply."
-            label="Host"
-          >
+          <Field>
+            <FieldLabel>Host</FieldLabel>
+            <FieldDescription>
+              The host the user needs to connect from in order for the permissions to apply.
+            </FieldDescription>
             <Input
+              className="w-[600px]"
               onChange={(v) => {
                 setFormState((prev) => ({ ...prev, host: v.target.value }));
               }}
               value={formState.host}
-              width={600}
             />
-          </FormField>
+          </Field>
 
-          <Flex data-testid="create-role-topics-section" flexDirection="column" gap={4}>
-            <Heading>Topics</Heading>
+          <div className="flex flex-col gap-4" data-testid="create-role-topics-section">
+            <Heading level={3}>Topics</Heading>
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
                 key={topicACL._key}
@@ -269,7 +245,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               />
             ))}
 
-            <Box>
+            <div>
               <Button
                 onClick={() => {
                   setFormState((prev) => ({ ...prev, topicACLs: [...prev.topicACLs, createEmptyTopicAcl()] }));
@@ -278,11 +254,11 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               >
                 Add Topic ACL
               </Button>
-            </Box>
-          </Flex>
+            </div>
+          </div>
 
-          <Flex data-testid="create-role-consumer-groups-section" flexDirection="column" gap={4}>
-            <Heading>Consumer Groups</Heading>
+          <div className="flex flex-col gap-4" data-testid="create-role-consumer-groups-section">
+            <Heading level={3}>Consumer Groups</Heading>
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={acl._key}
@@ -306,7 +282,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               />
             ))}
 
-            <Box>
+            <div>
               <Button
                 onClick={() => {
                   setFormState((prev) => ({
@@ -318,11 +294,11 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               >
                 Add consumer group ACL
               </Button>
-            </Box>
-          </Flex>
+            </div>
+          </div>
 
-          <Flex data-testid="create-role-transactional-ids-section" flexDirection="column" gap={4}>
-            <Heading>Transactional IDs</Heading>
+          <div className="flex flex-col gap-4" data-testid="create-role-transactional-ids-section">
+            <Heading level={3}>Transactional IDs</Heading>
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={acl._key}
@@ -346,7 +322,7 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               />
             ))}
 
-            <Box>
+            <div>
               <Button
                 onClick={() => {
                   setFormState((prev) => ({
@@ -358,78 +334,54 @@ export const RoleForm = ({ initialData }: RoleFormProps) => {
               >
                 Add Transactional ID ACL
               </Button>
-            </Box>
-          </Flex>
+            </div>
+          </div>
 
-          <Flex data-testid="create-role-cluster-section" flexDirection="column" gap={4}>
-            <Heading>Cluster</Heading>
-            <HStack>
-              <Box flexGrow={1}>
+          <div className="flex flex-col gap-4" data-testid="create-role-cluster-section">
+            <Heading level={3}>Cluster</Heading>
+            <div className="flex items-center">
+              <div className="flex-grow">
                 <ResourceACLsEditor
                   onChange={(updated) => setFormState((prev) => ({ ...prev, clusterACLs: updated as ClusterACLs }))}
                   resource={formState.clusterACLs}
                   resourceType="Cluster"
                   setIsFormValid={setIsFormValid}
                 />
-              </Box>
-            </HStack>
-          </Flex>
+              </div>
+            </div>
+          </div>
 
-          <Flex flexDirection="column" gap={4}>
-            <Heading>Principals</Heading>
-            <FormField description="This can be edited later" label="Assign this role to principals">
+          <div className="flex flex-col gap-4">
+            <Heading level={3}>Principals</Heading>
+            <Field>
+              <FieldLabel>Assign this role to principals</FieldLabel>
+              <FieldDescription>This can be edited later</FieldDescription>
               <PrincipalSelector
                 onPrincipalsChange={(principals) => setFormState((prev) => ({ ...prev, principals }))}
                 principals={formState.principals}
               />
-            </FormField>
-          </Flex>
-        </Flex>
+            </Field>
+          </div>
+        </div>
 
-        <Flex gap={4} mt={8}>
-          {editMode ? (
-            <Button
-              isDisabled={roleNameAlreadyExist || !isFormValid}
-              isLoading={isLoading}
-              loadingText="Editing..."
-              onClick={handleSubmit}
-              type="button"
-            >
-              Update
-            </Button>
-          ) : (
-            <Button
-              isDisabled={roleNameAlreadyExist || !isFormValid}
-              isLoading={isLoading}
-              loadingText="Creating..."
-              onClick={handleSubmit}
-              type="button"
-            >
-              Create
-            </Button>
-          )}
-          {editMode ? (
-            <Button
-              onClick={() => {
-                appGlobal.historyPush(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
-              }}
-              variant="link"
-            >
-              Go back
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                appGlobal.historyPush('/security/roles/');
-              }}
-              variant="link"
-            >
-              Go back
-            </Button>
-          )}
-        </Flex>
+        <div className="mt-8 flex gap-4">
+          <Button disabled={isLoading || roleNameAlreadyExist || !isFormValid} onClick={handleSubmit} type="button">
+            {isLoading ? (editMode ? 'Editing...' : 'Creating...') : editMode ? 'Update' : 'Create'}
+          </Button>
+          <Button
+            onClick={() => {
+              const path = editMode
+                ? `/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`
+                : '/security/roles/';
+              appGlobal.historyPush(path);
+            }}
+            variant="link"
+          >
+            Go back
+          </Button>
+        </div>
       </div>
-    </Box>
+    </div>
   );
 };
 
@@ -437,7 +389,8 @@ const PrincipalSelector = (p: {
   principals: RolePrincipal[];
   onPrincipalsChange: (principals: RolePrincipal[]) => void;
 }) => {
-  const [searchValue, setSearchValue] = useState<string>('');
+  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
+  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   useEffect(() => {
     api.refreshServiceAccounts().catch(() => {
@@ -468,40 +421,74 @@ const PrincipalSelector = (p: {
 
   for (const [_, roleMembers] of rolesApi.roleMembers) {
     for (const roleMember of roleMembers) {
-      if (!availableUsers.any((u) => u.value === roleMember.name)) {
-        // make sure that user isn't already in the list
+      if (roleMember.principalType === 'User' && !availableUsers.any((u) => u.value === roleMember.name)) {
         availableUsers.push({ value: roleMember.name });
       }
     }
   }
 
-  return (
-    <Flex direction="column" gap={4}>
-      <Box w={200}>
-        <Select<string>
-          creatable={true}
-          inputValue={searchValue}
-          isMulti={false}
-          onChange={(val) => {
-            if (val && isSingleValue(val) && val.value) {
-              onPrincipalsChange([...principals, { name: val.value, principalType: 'User' }]);
-              setSearchValue('');
-            }
-          }}
-          onInputChange={setSearchValue}
-          options={availableUsers}
-          placeholder="Find users"
-        />
-      </Box>
+  const availableGroups: { value: string }[] = [];
+  for (const [_, roleMembers] of rolesApi.roleMembers) {
+    for (const roleMember of roleMembers) {
+      if (roleMember.principalType === 'Group' && !availableGroups.any((g) => g.value === roleMember.name)) {
+        availableGroups.push({ value: roleMember.name });
+      }
+    }
+  }
 
-      <Flex gap={2}>
+  const addPrincipal = (name: string, principalType: RolePrincipal['principalType']) => {
+    if (name && !principals.some((p) => p.name === name && p.principalType === principalType)) {
+      onPrincipalsChange([...principals, { name, principalType }]);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <div className="w-[300px]">
+          <Combobox
+            creatable
+            onChange={(val) => {
+              if (val) addPrincipal(val, 'User');
+            }}
+            options={availableUsers.map((u) => ({ value: u.value, label: u.value }))}
+            placeholder="Add user"
+          />
+        </div>
+        {gbacEnabled && (
+          <div className="w-[300px]">
+            <Combobox
+              creatable
+              onChange={(val) => {
+                if (val) addPrincipal(val, 'Group');
+              }}
+              options={availableGroups.map((g) => ({ value: g.value, label: g.value }))}
+              placeholder="Add group"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
         {principals.map((principal) => (
-          <Tag cursor="pointer" key={principal.name}>
-            <TagLabel>{principal.name}</TagLabel>
-            <TagCloseButton onClick={() => onPrincipalsChange(principals.filter((pr) => pr !== principal))} />
-          </Tag>
+          <span
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+            key={`${principal.principalType}:${principal.name}`}
+          >
+            <span>
+              {principal.principalType}: {principal.name}
+            </span>
+            <Button
+              className="h-auto p-0"
+              onClick={() => onPrincipalsChange(principals.filter((pr) => pr !== principal))}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </span>
         ))}
-      </Flex>
-    </Flex>
+      </div>
+    </div>
   );
 };

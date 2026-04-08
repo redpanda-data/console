@@ -104,7 +104,7 @@ function AppContent() {
         <ErrorModalsRenderer />
 
         {/* Toaster for notifications */}
-        <Toaster />
+        <Toaster position="top-right" richColors />
       </TooltipProvider>
     </div>
   );

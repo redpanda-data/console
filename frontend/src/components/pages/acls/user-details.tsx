@@ -14,7 +14,6 @@ import { UserAclsCard } from 'components/pages/roles/user-acls-card';
 import { UserInformationCard } from 'components/pages/roles/user-information-card';
 import { UserRolesCard } from 'components/pages/roles/user-roles-card';
 import { Button } from 'components/redpanda-ui/components/button';
-import { isServerless } from 'config';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { useEffect, useState } from 'react';
 
@@ -27,7 +26,7 @@ import { invalidateUsersCache, useLegacyListUsersQuery } from '../../../react-qu
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
-import { Features } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
@@ -39,6 +38,7 @@ type UserDetailsPageProps = {
 const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
 
   const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
@@ -79,18 +79,14 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
     <PageContent>
       <div className="flex flex-col gap-4">
         <UserInformationCard
-          onEditPassword={
-            api.isAdminApiConfigured && !isServerless()
-              ? () => {
-                  setIsChangePasswordModalOpen(true);
-                }
-              : undefined
-          }
+          onEditPassword={() => {
+            setIsChangePasswordModalOpen(true);
+          }}
           username={userName}
         />
         <UserPermissionDetailsContent
           onChangeRoles={
-            Features.rolesApi
+            featureRolesApi
               ? () => {
                   setIsChangeRolesModalOpen(true);
                 }
@@ -113,7 +109,9 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                 const promises: Promise<UpdateRoleMembershipResponse>[] = [];
                 for (const [roleName, members] of rolesApi.roleMembers) {
                   if (members.any((m) => m.name === userName)) {
-                    promises.push(rolesApi.updateRoleMembership(roleName, [], [userName]));
+                    promises.push(
+                      rolesApi.updateRoleMembership(roleName, [], [{ name: userName, principalType: 'User' }])
+                    );
                   }
                 }
                 await Promise.allSettled(promises);
@@ -125,15 +123,13 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
           )}
         </div>
 
-        {Boolean(api.isAdminApiConfigured) && !isServerless() && (
-          <ChangePasswordModal
-            isOpen={isChangePasswordModalOpen}
-            setIsOpen={setIsChangePasswordModalOpen}
-            userName={userName}
-          />
-        )}
+        <ChangePasswordModal
+          isOpen={isChangePasswordModalOpen}
+          setIsOpen={setIsChangePasswordModalOpen}
+          userName={userName}
+        />
 
-        {Boolean(Features.rolesApi) && (
+        {Boolean(featureRolesApi) && (
           <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={userName} />
         )}
       </div>
@@ -150,10 +146,11 @@ const UserPermissionDetailsContent = ({
   userName: string;
   onChangeRoles?: () => void;
 }) => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const { data: rolesData } = useListRolesQuery({ filter: { principal: userName } });
   const { data: acls } = useGetAclsByPrincipal(`User:${userName}`);
 
-  const roles = Features.rolesApi
+  const roles = featureRolesApi
     ? (rolesData?.roles ?? []).map((r) => ({
         principalType: 'RedpandaRole',
         principalName: r.name,

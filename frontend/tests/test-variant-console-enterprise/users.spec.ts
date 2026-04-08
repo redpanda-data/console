@@ -9,8 +9,7 @@ test.describe('Users', () => {
     const securityPage = new SecurityPage(page);
     await securityPage.createUser(username);
 
-    const userInfoEl = page.locator("text='User created successfully'");
-    await expect(userInfoEl).toBeVisible();
+    await expect(page.getByTestId('user-created-successfully')).toBeVisible();
 
     await securityPage.deleteUser(username);
   });
@@ -31,16 +30,18 @@ test.describe('Users', () => {
       waitUntil: 'domcontentloaded',
     });
     await page.getByPlaceholder('Filter by name').fill(`user-${r}-regexp-[1,2]`);
+    // Wait for nuqs to push the filter into the URL (TanStack Router navigate is async)
+    await page.waitForURL(/[?&]q=/);
 
-    expect(
-      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`).count()
-    ).toEqual(1);
-    expect(
-      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName2}/details']`).count()
-    ).toEqual(1);
-    expect(
-      await page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName3}/details']`).count()
-    ).toEqual(0);
+    await expect(
+      page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`)
+    ).toHaveCount(1);
+    await expect(
+      page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName2}/details']`)
+    ).toHaveCount(1);
+    await expect(
+      page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName3}/details']`)
+    ).toHaveCount(0);
 
     await securityPage.deleteUser(userName1);
     await securityPage.deleteUser(userName2);

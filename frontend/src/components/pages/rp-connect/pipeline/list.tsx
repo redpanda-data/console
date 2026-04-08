@@ -155,8 +155,8 @@ const PipelineListSkeleton = () => (
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: 5 }).map(() => (
-          <TableRow key={crypto.randomUUID()}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TableRow key={i}>
             <TableCell>
               <div className="flex flex-col gap-1">
                 <Skeleton className="h-4 w-40" />
@@ -288,7 +288,6 @@ const ActionsCell = memo(
             {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
             {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
             {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
-            {isStopping ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
             {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
             <DropdownMenuSeparator />
             <DeleteResourceAlertDialog
@@ -331,11 +330,12 @@ const createColumns = ({
     header: 'Pipeline Name',
     filterFn: createFilterFn('text'),
     cell: ({ row }) => (
-      <div className="flex min-w-[160px] items-center gap-4">
+      <div className="max-w-[200px] overflow-hidden">
         <Link
           as={TanStackRouterLink}
-          className="max-w-[200px] text-base text-primary text-truncate"
+          className="block truncate text-base text-primary"
           params={{ pipelineId: encodeURIComponent(row.original.id) }}
+          title={row.getValue('name')}
           to="/rp-connect/$pipelineId"
         >
           {row.getValue('name')}

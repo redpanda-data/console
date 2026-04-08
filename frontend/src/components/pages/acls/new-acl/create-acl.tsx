@@ -24,6 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useApiStoreHook } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
@@ -56,6 +57,7 @@ import {
   ResourceTypeSubject,
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
+  RoleTypeGroup,
   RoleTypeRedpandaRole,
   RoleTypeUser,
   type Rule,
@@ -167,7 +169,7 @@ const ResourceTypeSelection = ({
       {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
         <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <Button
                 className={
                   rule.resourceType === resourceType
@@ -485,7 +487,6 @@ const AclRules = ({
                 {Object.entries(rule.operations).map(([operation, operationValue]) => (
                   <div className="flex items-center gap-1" key={operation}>
                     <Select
-                      disabled={false}
                       onValueChange={(value) => handleOperationChange(rule.id, operation, value)}
                       value={operationValue}
                     >
@@ -572,6 +573,8 @@ const SharedConfiguration = ({
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
   const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
+  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
+  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
 
   return (
     <Card size={'full'}>
@@ -584,7 +587,7 @@ const SharedConfiguration = ({
           <CardField>
             <div className="flex items-center gap-1">
               <Label className="font-medium text-gray-700 text-sm" htmlFor="principal">
-                User / principal
+                {principalType === RoleTypeRedpandaRole ? 'Role name' : 'User / principal'}
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -624,6 +627,7 @@ const SharedConfiguration = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={RoleTypeUser}>User</SelectItem>
+                  {gbacEnabled && <SelectItem value={RoleTypeGroup}>Group</SelectItem>}
                   <SelectItem value={RoleTypeRedpandaRole}>Redpanda role</SelectItem>
                 </SelectContent>
               </Select>
@@ -823,7 +827,7 @@ export default function CreateACL({
       });
     });
 
-    setRules(() => newRules);
+    setRules(newRules);
   };
 
   const removeRule = (id: number) => {

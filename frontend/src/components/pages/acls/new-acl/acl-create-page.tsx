@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useToast } from '@redpanda-data/ui';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/create');
@@ -18,31 +17,31 @@ import {
   convertRulesToCreateACLRequests,
   handleResponses,
   type PrincipalType,
+  PrincipalTypeGroup,
   PrincipalTypeRedpandaRole,
   PrincipalTypeUser,
-  parsePrincipal,
   type Rule,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
+import { parsePrincipalFromParam } from 'components/pages/acls/new-acl/principal-utils';
 import { useEffect } from 'react';
 import { uiState } from 'state/ui-state';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import PageContent from '../../../misc/page-content';
 
+const principalTypeMap: Record<string, PrincipalType> = {
+  redpandarole: PrincipalTypeRedpandaRole,
+  user: PrincipalTypeUser,
+  group: PrincipalTypeGroup,
+};
+
 const AclCreatePage = () => {
-  const toast = useToast();
   const navigate = useNavigate({ from: '/security/acls/create' });
   const search = routeApi.useSearch();
 
   const principalTypeParam = search.principalType?.toLowerCase();
   const principalName = search.principalName;
-
-  const principalTypeMap: Record<string, PrincipalType> = {
-    redpandarole: PrincipalTypeRedpandaRole,
-    user: PrincipalTypeUser,
-  };
-
   const principalType = principalTypeParam ? principalTypeMap[principalTypeParam] : undefined;
 
   const sharedConfig =
@@ -61,11 +60,13 @@ const AclCreatePage = () => {
   const createAclMutation = async (principal: string, host: string, rules: Rule[]) => {
     const result = convertRulesToCreateACLRequests(rules, principal, host);
     const applyResult = await createAcls(result);
-    handleResponses(toast, applyResult.errors, applyResult.created);
+    handleResponses(applyResult.errors, applyResult.created);
 
+    const { principalType, principalName } = parsePrincipalFromParam(principal);
+    const aclName = principalType === 'User' ? principalName : principal;
     navigate({
       to: '/security/acls/$aclName/details',
-      params: { aclName: parsePrincipal(principal).name },
+      params: { aclName },
       search: { host: undefined },
     });
   };

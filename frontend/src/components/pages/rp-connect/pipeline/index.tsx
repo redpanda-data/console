@@ -808,7 +808,7 @@ export default function PipelinePage() {
   return (
     <div
       className={cn(
-        'flex flex-col gap-4',
+        'flex max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4',
         mode === 'view' ? 'h-full min-h-[calc(100dvh-10rem)]' : 'h-[calc(100dvh-10rem)]'
       )}
     >

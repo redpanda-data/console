@@ -42,7 +42,7 @@ export const ISSUE_FILTER_OPTIONS = [
 /**
  * States where a pipeline can be started.
  */
-export const STARTABLE_STATES = [Pipeline_State.STOPPED, Pipeline_State.ERROR, Pipeline_State.COMPLETED] as const;
+export const STARTABLE_STATES = [Pipeline_State.STOPPED, Pipeline_State.ERROR, Pipeline_State.COMPLETED, Pipeline_State.STOPPING] as const;
 
 /**
  * States where a pipeline can be stopped.

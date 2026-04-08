@@ -161,13 +161,16 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
 
     await test.step('View empty topic', async () => {
-      await page.goto(`/topics/${topicName}`);
+      await page.goto(`/topics/${topicName}#messages`);
 
-      // Should show empty state message
-      await expect(page.getByText(/No messages|empty/i).first()).toBeVisible({ timeout: 5000 });
+      // Wait for the topic page to load (tablist indicates TopicDetailsContent is rendered)
+      await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
 
-      // Produce button should still be available
-      await expect(page.getByRole('button', { name: /produce/i }).first()).toBeVisible({ timeout: 5000 });
+      // Produce button should be available
+      await expect(page.getByTestId('produce-record-button')).toBeVisible({ timeout: 10_000 });
+
+      // Should show empty state message once search completes
+      await expect(page.getByText('No messages')).toBeVisible({ timeout: 10_000 });
     });
 
     await topicPage.deleteTopic(topicName);
@@ -208,7 +211,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.produceMessage(topicName, 'URL filter test');
 
     await test.step('Apply filter and check URL', async () => {
-      await page.goto(`/topics/${topicName}`);
+      await page.goto(`/topics/${topicName}#messages`);
 
       // Use the specific testId for message quick search
       const searchInput = page.getByTestId('message-quick-search-input');

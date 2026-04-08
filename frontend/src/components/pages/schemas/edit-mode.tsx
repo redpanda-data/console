@@ -21,6 +21,7 @@ import {
 } from 'components/redpanda-ui/components/choicebox';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -236,7 +237,7 @@ function EditSchemaMode({
       <div className="flex-1">
         {contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-mode-context-name">
-            <InfoIcon className="size-4 text-muted-foreground" />
+            <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
             <Text className="font-bold text-lg">
               Editing mode for context: <span className="text-muted-foreground">{contextName}</span>
             </Text>
@@ -248,6 +249,7 @@ function EditSchemaMode({
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
+            aria-label="Schema registry mode"
             className="w-full"
             data-testid="edit-mode-radio"
             onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}
@@ -265,7 +267,7 @@ function EditSchemaMode({
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
                   {option.warning && (
                     <div className="mt-2 flex items-start gap-2 text-amber-700 text-sm">
-                      <WarningIcon className="mt-0.5 size-4 shrink-0" />
+                      <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                       <span>{option.warning}</span>
                     </div>
                   )}
@@ -275,14 +277,21 @@ function EditSchemaMode({
           </Choicebox>
 
           <div className="mt-6 flex items-center gap-4">
-            <Button
-              data-testid="edit-mode-save-btn"
-              disabled={api.userData?.canManageSchemaRegistry === false}
-              onClick={onSave}
-              variant="primary"
-            >
-              Save
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="edit-mode-save-btn"
+                  disabled={api.userData?.canManageSchemaRegistry === false}
+                  onClick={onSave}
+                  variant="primary"
+                >
+                  Save
+                </Button>
+              </TooltipTrigger>
+              {api.userData?.canManageSchemaRegistry === false && (
+                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+              )}
+            </Tooltip>
             <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="secondary-ghost">
               Cancel
             </Button>

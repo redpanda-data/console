@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { api } from '../../../state/backend-api';
+import { useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
@@ -27,7 +27,7 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
   // Messages
-  const partitions = api.topicPartitions.get(topic.topicName);
+  const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
 
   let messageSum: ReactNode;
 
@@ -41,7 +41,7 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   }
 
   // Config Entries / Separator
-  const configEntries = api.topicConfig.get(topic.topicName)?.configEntries;
+  const configEntries = useApiStoreHook((s) => s.topicConfig.get(topic.topicName))?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
 

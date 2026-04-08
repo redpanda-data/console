@@ -16,6 +16,7 @@ import {
   AlertIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
+  EditIcon,
   PlayIcon,
   RotateCwIcon,
   SettingsIcon,
@@ -330,24 +331,28 @@ export const Toolbar = memo(
     if (mode === 'view') {
       return (
         <div className="mt-5 flex items-start justify-between">
-          <div className="flex gap-2">
+          <div className="flex w-full gap-2">
             <Button className="mt-1" onClick={handleBack} size="icon" variant="ghost">
               <ArrowLeftIcon className="h-5 w-5" />
             </Button>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
+            <div className="flex w-full flex-col gap-1">
+              <div className="flex min-w-0 items-center gap-2">
                 {isLoading ? (
                   <Skeleton className="h-9 w-48" />
                 ) : (
-                  <Heading level={1}>{pipelineName ?? pipelineId}</Heading>
+                  <Heading className="max-w-[280px] truncate" level={1}>
+                    {pipelineName ?? pipelineId}
+                  </Heading>
                 )}
                 {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
               </div>
-              <Text className="text-muted-foreground">
+              <Text className="text-muted-foreground md:max-w-1/2">
                 Monitor the pipeline, or edit the pipeline configuration to change functionality or improve performance.
               </Text>
               <span className="mt-3">
-                <Button onClick={handleEditNavigate}>Edit pipeline</Button>
+                <Button icon={<EditIcon />} onClick={handleEditNavigate}>
+                  Edit pipeline
+                </Button>
               </span>
             </div>
           </div>
@@ -363,7 +368,7 @@ export const Toolbar = memo(
     }
 
     return (
-      <div className="mt-5 flex items-center justify-between">
+      <div className="mt-5 flex items-center justify-between gap-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Button onClick={handleBack} size="icon" variant="ghost">
@@ -374,7 +379,7 @@ export const Toolbar = memo(
             ) : (
               <EditableText
                 as="heading"
-                className="min-w-[280px]"
+                className="w-[280px]"
                 defaultEditing={defaultEditing}
                 error={!!nameError}
                 errorMessage={nameError}
@@ -386,7 +391,7 @@ export const Toolbar = memo(
             )}
             {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
           </div>
-          <Text className="mt-4 ml-9">
+          <Text className="mt-4 ml-9 md:max-w-1/2">
             Redpanda Connect builds data pipelines for real-time analytics and actionable business insights. Every
             pipeline requires an input and an output in a config file. Select components, including processors, and
             customize the configuration in the editor.{' '}
