@@ -52,7 +52,17 @@
     "@hono/node-server": "^1.19.10",
     "lodash": "^4.17.23",
     "lodash-es": "^4.17.23",
-    "qs": "^6.14.2"
+    "qs": "^6.14.2",
+    "minimatch": {
+      "brace-expansion": "^5.0.5"
+    },
+    "router": {
+      "path-to-regexp": "8.4.0"
+    },
+    "yaml": "^2.8.3",
+    "cosmiconfig": {
+      "yaml": "1.10.3"
+    }
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.10",
@@ -147,7 +157,7 @@
     "use-stick-to-bottom": "^1.1.1",
     "uuid": "^13.0.0",
     "vaul": "^1.1.2",
-    "yaml": "^2.8.1",
+    "yaml": "^2.8.3",
     "zod": "^3.25.76",
     "zustand": "^5.0.8"
   },
@@ -213,6 +223,8 @@
     "lodash-es": "^4.17.23",
     "mdast-util-to-hast": "^13.2.1",
     "qs": "^6.14.2",
-    "prismjs": "^1.30.0"
+    "prismjs": "^1.30.0",
+    "**/cosmiconfig/yaml": "1.10.3",
+    "**/router/path-to-regexp": "8.4.0"
   }
 }
