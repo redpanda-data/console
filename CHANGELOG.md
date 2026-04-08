@@ -2,6 +2,14 @@
 
 ## Master / Unreleased
 
+## v3.7.1 / 2026-04-08
+- [IMPROVEMENT] Schema Registry pagination and sort order are now reflected in URL query parameters, enabling bookmarkable views.
+- [IMPROVEMENT] Add user-friendly Kafka error messages with detailed per-error context.
+- [BUGFIX] Fix consumer group loading in topic detail page.
+- [BUGFIX] Fix ACL feature-support disabled states not reflecting cluster capabilities correctly.
+- [BUGFIX] Fix Kafka and Schema Registry error mapping to correct gRPC status codes.
+- [SECURITY] Resolve dependency vulnerabilities in dependencies.
+
 ## v3.7.0 / 2026-03-30
 - [IMPROVEMENT] Add pipeline page with view, edit, and create modes including an interactive flow diagram visualizer.
 - [IMPROVEMENT] Add Schema Registry context support: filter schema list, create schemas, and edit compatibility by context.
