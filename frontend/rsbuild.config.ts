@@ -52,6 +52,7 @@ export default defineConfig({
     pluginYaml(),
     pluginModuleFederation({
       ...moduleFederationConfig,
+      dts: false,
     }),
     pluginNodePolyfill({
       globals: { process: true },
