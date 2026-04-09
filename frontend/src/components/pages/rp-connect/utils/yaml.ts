@@ -656,7 +656,7 @@ export function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['
  * E.g. if `topics` was patched, strip `# topics: Required - ...` so the
  * user doesn't see both the comment placeholder and the real value.
  */
-function stripCommentedKeys(yaml: string, keys: string[], section: string): string {
+function stripCommentedKeys(yaml: string, keys: string[], section: string, componentName: string): string {
   if (keys.length === 0) {
     return yaml;
   }
@@ -665,23 +665,42 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string): stri
   const keyPattern = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
 
-  // Find the section block boundaries so we only strip comments within the patched section
+  // Find the section start (e.g., `input:`)
   const sectionRegex = new RegExp(`^${section}:`);
   const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
   if (sectionStart === -1) return yaml;
 
-  // Section ends at the next top-level key (no leading whitespace)
-  let sectionEnd = lines.length;
+  // Find the specific component within the section (e.g., `  kafka_franz:`)
+  const componentRegex = new RegExp(`^  ${componentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:`);
+  let componentStart = -1;
   for (let i = sectionStart + 1; i < lines.length; i++) {
-    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) {
-      sectionEnd = i;
+    // Stop if we hit another top-level key (left the section)
+    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) break;
+    if (componentRegex.test(lines[i])) {
+      componentStart = i;
+      break;
+    }
+  }
+  if (componentStart === -1) return yaml;
+
+  // Component block ends at the next sibling at the same indent level (2-space indent)
+  let componentEnd = lines.length;
+  for (let i = componentStart + 1; i < lines.length; i++) {
+    const line = lines[i];
+    // Stop at next top-level key or next sibling component (2-space indent, non-comment, non-empty)
+    if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#')) {
+      componentEnd = i;
+      break;
+    }
+    if (line.length > 0 && line.startsWith('  ') && !line.startsWith('    ') && !line.startsWith('  #')) {
+      componentEnd = i;
       break;
     }
   }
 
   return lines
     .filter((line, i) => {
-      if (i < sectionStart || i >= sectionEnd) return true;
+      if (i <= componentStart || i >= componentEnd) return true;
       return !commentRegex.test(line);
     })
     .join('\n');
@@ -730,7 +749,7 @@ export function patchRedpandaConfig(
 
   try {
     const result = yamlStringify(doc, yamlConfig);
-    return stripCommentedKeys(result, patchedKeys, section);
+    return stripCommentedKeys(result, patchedKeys, section, componentName);
   } catch {
     return;
   }

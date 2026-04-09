@@ -113,8 +113,8 @@ describe('LogExplorer', () => {
     renderExplorer({ enableLiveView: true });
     const tooltipTrigger = screen.getByTestId('log-live-tooltip-trigger');
     expect(tooltipTrigger).toBeInTheDocument();
-    // Info icon renders as an SVG element directly (TooltipTrigger asChild)
-    expect(tooltipTrigger.tagName.toLowerCase()).toBe('svg');
+    // Tooltip trigger wraps the info icon in a span (asChild on non-interactive wrapper)
+    expect(tooltipTrigger.tagName.toLowerCase()).toBe('span');
   });
 
   test('shows filter mismatch text when messages exist but are filtered out', () => {

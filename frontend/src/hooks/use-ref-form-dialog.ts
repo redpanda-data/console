@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 /** Minimal contract a ref-based form must satisfy. */
 type RefFormSubmittable<TData> = {
-  triggerSubmit: () => Promise<{ success: boolean; data?: TData }>;
+  triggerSubmit: (signal?: AbortSignal) => Promise<{ success: boolean; data?: TData }>;
 };
 
 type UseRefFormDialogOptions<TData, TTarget> = {
@@ -79,7 +79,7 @@ function useRefFormDialog<TData, TTarget = boolean>(
     setIsSubmitting(true);
 
     try {
-      const result = await raceWithTimeout(formRef.triggerSubmit(), timeout);
+      const result = await raceWithTimeout(formRef.triggerSubmit(abort.signal), timeout);
 
       if (abort.signal.aborted) {
         return;

@@ -640,7 +640,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     );
   }
 
-  // ── Dialog variant (existing Cmd+Shift+P behavior) ─────────────────
+  // ── Dialog variant ─────────────────────────────────────────────────
 
   // TODO: fix dialog close button in ui-registry, temporarily replicating Command Dialog here
   return (

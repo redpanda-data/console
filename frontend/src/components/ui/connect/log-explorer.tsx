@@ -35,7 +35,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { Progress } from 'components/redpanda-ui/components/progress';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -209,12 +209,15 @@ interface LogExplorerProps {
 export function LogExplorer({ pipeline, serverless, enableLiveView = false }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
 
-  // Sync live mode bidirectionally when enableLiveView changes
-  const [prevEnableLiveView, setPrevEnableLiveView] = useState(enableLiveView);
-  if (enableLiveView !== prevEnableLiveView) {
-    setPrevEnableLiveView(enableLiveView);
-    setLiveViewEnabled(enableLiveView);
-  }
+  // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
+  // Skip mount — always start in history mode; only react to subsequent transitions.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (mountedRef.current) {
+      setLiveViewEnabled(enableLiveView);
+    }
+    mountedRef.current = true;
+  }, [enableLiveView]);
 
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -359,12 +362,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
+          <Label className="cursor-pointer" htmlFor="live-view-toggle">
+            {liveViewEnabled ? 'Live logs enabled' : 'Enable live logs'}
+          </Label>
           <Tooltip>
-            <TooltipTrigger>
-              <Label className="cursor-pointer" htmlFor="live-view-toggle">
-                {liveViewEnabled ? 'Live logs enabled' : 'Enable live logs'}  
-              </Label>
-              <InfoIcon className="size-4 ml-1 text-muted-foreground" data-testid="log-live-tooltip-trigger" />
+            <TooltipTrigger asChild>
+              <span className="inline-flex cursor-help" data-testid="log-live-tooltip-trigger">
+                <InfoIcon className="size-4 text-muted-foreground" />
+              </span>
             </TooltipTrigger>
             <TooltipContent side="top" testId="log-live-tooltip-content">
               {liveViewEnabled
