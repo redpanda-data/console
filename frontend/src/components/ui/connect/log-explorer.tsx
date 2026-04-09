@@ -43,7 +43,7 @@ import type { TopicMessage } from '../../../state/rest-interfaces';
 import { TimestampDisplay } from '../../../utils/tsx-utils';
 import { cullText, prettyBytes } from '../../../utils/utils';
 import { RefreshIcon } from 'components/icons';
-import { InfoIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -209,13 +209,11 @@ interface LogExplorerProps {
 export function LogExplorer({ pipeline, serverless, enableLiveView = false }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
 
-  // Auto-enable live mode when pipeline transitions to RUNNING
+  // Sync live mode bidirectionally when enableLiveView changes
   const [prevEnableLiveView, setPrevEnableLiveView] = useState(enableLiveView);
   if (enableLiveView !== prevEnableLiveView) {
     setPrevEnableLiveView(enableLiveView);
-    if (enableLiveView) {
-      setLiveViewEnabled(true);
-    }
+    setLiveViewEnabled(enableLiveView);
   }
 
   const [pageIndex, setPageIndex] = useState(0);
@@ -303,12 +301,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
           const logPayload = getLogPayload(original);
           const text = logPayload?.message ?? original.valueJson ?? '';
           return (
-            <Text as="span" variant="bodyMedium">
+            <Text as="span" className="block truncate" variant="bodyMedium">
               {cullText(text, 200)}
             </Text>
           );
         },
-        size: Number.POSITIVE_INFINITY,
       },
     ],
     [liveViewEnabled],
@@ -412,7 +409,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
           </div>
         )}
         <div className="overflow-auto">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -424,8 +421,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getIsSorted() === 'asc' && ' \u2191'}
-                    {header.column.getIsSorted() === 'desc' && ' \u2193'}
+                    {header.column.getIsSorted() === 'asc' && <ArrowUp className="ml-1 inline size-3.5" />}
+                    {header.column.getIsSorted() === 'desc' && <ArrowDown className="ml-1 inline size-3.5" />}
                   </TableHead>
                 ))}
               </TableRow>

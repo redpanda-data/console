@@ -751,7 +751,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         // Discard results from a superseded search
         if (searchGen !== searchGenRef.current) {
-          return result;
+          return [];
         }
 
         setSearchState((prev) => ({ ...prev, messages: result, windowStartPage: 0 }));

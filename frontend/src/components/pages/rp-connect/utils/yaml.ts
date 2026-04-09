@@ -766,17 +766,16 @@ export function extractConnectorTopics(
   yamlContent: string,
   section: 'input' | 'output',
   componentName: string
-): string[] | undefined {
+): { topics: string[] | undefined; parseError: boolean } {
   if (!yamlContent.trim()) {
-    return;
+    return { topics: undefined, parseError: false };
   }
 
   let doc: Document.Parsed;
   try {
     doc = parseDocument(yamlContent);
   } catch {
-    toast.error('Failed to parse pipeline YAML');
-    return;
+    return { topics: undefined, parseError: true };
   }
 
   const topicsNode = doc.getIn([section, componentName, 'topics']);
@@ -787,15 +786,15 @@ export function extractConnectorTopics(
       : topicsNode;
   if (Array.isArray(topics)) {
     const filtered = topics.filter((t): t is string => typeof t === 'string' && t !== '');
-    return filtered.length > 0 ? filtered : undefined;
+    return { topics: filtered.length > 0 ? filtered : undefined, parseError: false };
   }
 
   const topic = doc.getIn([section, componentName, 'topic']);
   if (typeof topic === 'string' && topic !== '') {
-    return [topic];
+    return { topics: [topic], parseError: false };
   }
 
-  return;
+  return { topics: undefined, parseError: false };
 }
 
 /** Check whether a component already has an entry under [section][componentName] in the YAML. */

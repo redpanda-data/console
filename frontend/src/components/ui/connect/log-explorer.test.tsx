@@ -226,4 +226,29 @@ describe('LogExplorer', () => {
     expect(screen.getByTestId('pipeline-stopped-banner')).toBeInTheDocument();
     expect(screen.getByText(/pipeline is not running/i)).toBeInTheDocument();
   });
+
+  test('auto-disables live mode when enableLiveView transitions to false', () => {
+    const { rerender } = renderExplorer({ enableLiveView: false });
+
+    // Simulate pipeline starting: enableLiveView transitions false → true
+    rerender(
+      <TooltipProvider delayDuration={0}>
+        <LogExplorer enableLiveView={true} pipeline={pipeline} />
+      </TooltipProvider>,
+    );
+
+    // Live mode was auto-enabled
+    const liveSwitch = screen.getByTestId('log-live-toggle');
+    expect(liveSwitch).toBeChecked();
+
+    // Simulate pipeline stopping: enableLiveView goes false
+    rerender(
+      <TooltipProvider delayDuration={0}>
+        <LogExplorer enableLiveView={false} pipeline={pipeline} />
+      </TooltipProvider>,
+    );
+
+    // Live mode should be auto-disabled
+    expect(liveSwitch).not.toBeChecked();
+  });
 });

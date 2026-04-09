@@ -31,7 +31,6 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -390,11 +389,14 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
+  const yamlContentRef = useRef(yamlContent);
+  yamlContentRef.current = yamlContent;
+
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
       if (data.topicName) {
-        const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, {
+        const patched = tryPatchRedpandaYaml(yamlContentRef.current, target.section, target.componentName, {
           topicName: data.topicName,
         });
         if (patched) {
@@ -420,19 +422,14 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
           saslMechanism: (data as AddUserFormData).saslMechanism,
         };
       }
-      const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, setupResult);
+      const patched = tryPatchRedpandaYaml(yamlContentRef.current, target.section, target.componentName, setupResult);
       if (patched) {
         handleConnectorYamlChange(patched);
       }
     },
   });
 
-  const connectorTopics = useMemo(() => {
-    if (!userDialog.target) {
-      return;
-    }
-    return extractConnectorTopics(yamlContent, userDialog.target.section, userDialog.target.componentName);
-  }, [userDialog.target, yamlContent]);
+  const [connectorTopics, setConnectorTopics] = useState<string[] | undefined>();
 
   const openTopicDialog = topicDialog.open;
   const openUserDialog = userDialog.open;
@@ -451,6 +448,15 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
     ),
     handleAddSasl: useCallback(
       (section: string, componentName: string) => {
+        const { topics, parseError } = extractConnectorTopics(
+          yamlContentRef.current,
+          section as 'input' | 'output',
+          componentName
+        );
+        if (parseError) {
+          toast.error('Failed to parse pipeline YAML');
+        }
+        setConnectorTopics(topics);
         openUserDialog({ section: section as 'input' | 'output', componentName });
       },
       [openUserDialog]
@@ -1012,7 +1018,6 @@ export default function PipelinePage() {
               </Button>
             </div>
           </div>
-          <Toaster position="bottom-right" richColors />
         </DialogContent>
       </Dialog>
 
