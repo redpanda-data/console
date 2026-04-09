@@ -434,6 +434,9 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
     return extractConnectorTopics(yamlContent, userDialog.target.section, userDialog.target.componentName);
   }, [userDialog.target, yamlContent]);
 
+  const openTopicDialog = topicDialog.open;
+  const openUserDialog = userDialog.open;
+
   return {
     topicDialog,
     userDialog,
@@ -442,15 +445,15 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
     connectorTopics,
     handleAddTopic: useCallback(
       (section: string, componentName: string) => {
-        topicDialog.open({ section: section as 'input' | 'output', componentName });
+        openTopicDialog({ section: section as 'input' | 'output', componentName });
       },
-      [topicDialog.open]
+      [openTopicDialog]
     ),
     handleAddSasl: useCallback(
       (section: string, componentName: string) => {
-        userDialog.open({ section: section as 'input' | 'output', componentName });
+        openUserDialog({ section: section as 'input' | 'output', componentName });
       },
-      [userDialog.open]
+      [openUserDialog]
     ),
   };
 }
