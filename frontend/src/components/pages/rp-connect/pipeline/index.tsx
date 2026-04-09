@@ -15,7 +15,6 @@ import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
-import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -32,15 +31,18 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
+import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { useHotKey } from 'hooks/use-hot-key';
+import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
+import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -77,7 +79,6 @@ import {
   useOnboardingWizardDataStore,
   useOnboardingYamlContentStore,
 } from 'state/onboarding-wizard-store';
-import { isMacOS } from 'utils/platform';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
@@ -97,7 +98,13 @@ import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import type { ConnectComponentType } from '../types/schema';
-import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard';
+import type {
+  AddTopicFormData,
+  AddUserFormData,
+  BaseStepRef,
+  ServiceAccountSubmissionData,
+  UserStepRef,
+} from '../types/wizard';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -107,6 +114,33 @@ import {
   type RedpandaSetupResultLike,
   tryPatchRedpandaYaml,
 } from '../utils/yaml';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
+  if (type === 'resource') {
+    return 'Add a resource';
+  }
+  if (type === 'input') {
+    return 'Add an input';
+  }
+  if (type) {
+    return `Add a ${type}`;
+  }
+  return;
+}
+
+function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null): string | undefined {
+  if (type === 'resource') {
+    return 'Search resources...';
+  }
+  if (type) {
+    return `Search ${type}s...`;
+  }
+  return;
+}
 
 // ---------------------------------------------------------------------------
 // Schema + types
@@ -350,105 +384,74 @@ function usePipelineSave({
   };
 }
 
+type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
+
 function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml: string) => void) {
-  const [topicDialogTarget, setTopicDialogTarget] = useState<{
-    section: 'input' | 'output';
-    componentName: string;
-  } | null>(null);
-  const [userDialogTarget, setUserDialogTarget] = useState<{
-    section: 'input' | 'output';
-    componentName: string;
-  } | null>(null);
-  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
-  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
-  const handleAddTopic = useCallback((section: string, componentName: string) => {
-    setTopicDialogTarget({ section: section as 'input' | 'output', componentName });
-  }, []);
-
-  const handleAddSasl = useCallback((section: string, componentName: string) => {
-    setUserDialogTarget({ section: section as 'input' | 'output', componentName });
-  }, []);
-
-  const handleTopicSubmit = useCallback(async () => {
-    const ref = topicStepRef.current;
-    if (!(ref && topicDialogTarget)) {
-      return;
-    }
-    setIsTopicSubmitting(true);
-    const result = await ref.triggerSubmit();
-    if (result.success && result.data?.topicName) {
-      const patched = tryPatchRedpandaYaml(yamlContent, topicDialogTarget.section, topicDialogTarget.componentName, {
-        topicName: result.data.topicName,
-      });
-      if (patched) {
-        handleConnectorYamlChange(patched);
+  const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
+    ref: topicStepRef,
+    onSuccess: (data, target) => {
+      if (data.topicName) {
+        const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, {
+          topicName: data.topicName,
+        });
+        if (patched) {
+          handleConnectorYamlChange(patched);
+        }
       }
-      setTopicDialogTarget(null);
-    }
-    setIsTopicSubmitting(false);
-  }, [topicDialogTarget, yamlContent, handleConnectorYamlChange]);
+    },
+  });
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: handles service-account vs SASL branching from AddUserStep result
-  const handleUserSubmit = useCallback(async () => {
-    const ref = userStepRef.current;
-    if (!(ref && userDialogTarget)) {
-      return;
-    }
-    setIsUserSubmitting(true);
-    const result = await ref.triggerSubmit();
-    if (result.success && result.data) {
-      const data = result.data;
+  const userDialog = useRefFormDialog<AddUserFormData | ServiceAccountSubmissionData, DiagramDialogTarget>({
+    ref: userStepRef,
+    onSuccess: (data, target) => {
       let setupResult: RedpandaSetupResultLike = {};
       if ('authMethod' in data && data.authMethod === 'service-account') {
         setupResult = {
           authMethod: 'service-account',
-          serviceAccountSecretName: data.serviceAccountSecretName,
+          serviceAccountSecretName: (data as ServiceAccountSubmissionData).serviceAccountSecretName,
         };
       } else if ('username' in data) {
         setupResult = {
           authMethod: 'sasl',
-          username: data.username,
-          saslMechanism: data.saslMechanism,
+          username: (data as AddUserFormData).username,
+          saslMechanism: (data as AddUserFormData).saslMechanism,
         };
       }
-      const patched = tryPatchRedpandaYaml(
-        yamlContent,
-        userDialogTarget.section,
-        userDialogTarget.componentName,
-        setupResult
-      );
+      const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, setupResult);
       if (patched) {
         handleConnectorYamlChange(patched);
       }
-      setUserDialogTarget(null);
-    }
-    setIsUserSubmitting(false);
-  }, [userDialogTarget, yamlContent, handleConnectorYamlChange]);
+    },
+  });
 
   const connectorTopics = useMemo(() => {
-    if (!userDialogTarget) {
+    if (!userDialog.target) {
       return;
     }
-    return extractConnectorTopics(yamlContent, userDialogTarget.section, userDialogTarget.componentName);
-  }, [userDialogTarget, yamlContent]);
+    return extractConnectorTopics(yamlContent, userDialog.target.section, userDialog.target.componentName);
+  }, [userDialog.target, yamlContent]);
 
   return {
-    topicDialogTarget,
-    setTopicDialogTarget,
-    userDialogTarget,
-    setUserDialogTarget,
-    connectorTopics,
+    topicDialog,
+    userDialog,
     topicStepRef,
     userStepRef,
-    isTopicSubmitting,
-    isUserSubmitting,
-    handleAddTopic,
-    handleAddSasl,
-    handleTopicSubmit,
-    handleUserSubmit,
+    connectorTopics,
+    handleAddTopic: useCallback(
+      (section: string, componentName: string) => {
+        topicDialog.open({ section: section as 'input' | 'output', componentName });
+      },
+      [topicDialog.open]
+    ),
+    handleAddSasl: useCallback(
+      (section: string, componentName: string) => {
+        userDialog.open({ section: section as 'input' | 'output', componentName });
+      },
+      [userDialog.open]
+    ),
   };
 }
 
@@ -562,7 +565,7 @@ function EditorPanel({
       <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
         <div className="h-full overflow-auto p-4">
           <div className="flex items-center gap-2">
-            <Heading className="text-muted-foreground" level={4}>
+            <Heading className="mb-2 text-muted-foreground" level={5}>
               Lint issues
             </Heading>
             {Object.keys(lintHints).length > 0 ? (
@@ -591,7 +594,7 @@ function SidebarPanel({
   onAddConnector: (type: ConnectComponentType | 'resource') => void;
   onAddTopic: (section: string, componentName: string) => void;
   onAddSasl: (section: string, componentName: string) => void;
-  onOpenCommandMenu: () => void;
+  onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
 }) {
   return (
     <div className="flex w-[300px] shrink-0 flex-col border-border! border-r">
@@ -621,20 +624,48 @@ function SidebarPanel({
               <Heading className="mb-2 text-muted-foreground" level={5}>
                 Variables
               </Heading>
-              <Button
-                className="max-w-fit"
-                icon={
-                  <Kbd variant="ghost">
-                    {isMacOS() ? <CommandIcon /> : 'Ctrl'}
-                    <ArrowBigUpIcon />P
-                  </Kbd>
-                }
-                onClick={onOpenCommandMenu}
-                size="xs"
-                variant="outline"
-              >
-                Insert
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('variables')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <Zap />
+                  Variables
+                </Button>
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('secrets')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <KeyRound />
+                  Secrets
+                </Button>
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('topics')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <LayoutGrid />
+                  Topics
+                </Button>
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('users')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <User />
+                  Users
+                </Button>
+              </div>
             </div>
           </div>
         </>
@@ -658,7 +689,9 @@ export default function PipelinePage() {
 
   const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
   const [yamlContent, setYamlContent] = useState('');
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [commandMenuFilter, setCommandMenuFilter] = useState<
+    'all' | 'variables' | 'secrets' | 'topics' | 'users' | null
+  >(null);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
@@ -671,17 +704,16 @@ export default function PipelinePage() {
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
 
-  // --- Slash command + keyboard shortcut ---
-
-  const handleSlashOpen = useCallback(() => setIsCommandMenuOpen(false), []);
+  const handleSlashOpen = useCallback(() => setCommandMenuFilter(null), []);
   const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
 
-  const handleCommandMenuOpen = useCallback(() => {
-    slashCommand.close();
-    setIsCommandMenuOpen(true);
-  }, [slashCommand]);
-
-  useHotKey({ key: 'p', modifiers: ['meta', 'shift'], enabled: mode !== 'view', onTrigger: handleCommandMenuOpen });
+  const handleCommandMenuOpen = useCallback(
+    (filter: 'all' | 'variables' | 'secrets' | 'topics' | 'users' = 'all') => {
+      slashCommand.close();
+      setCommandMenuFilter(filter);
+    },
+    [slashCommand]
+  );
 
   // --- Data queries ---
 
@@ -741,21 +773,8 @@ export default function PipelinePage() {
     [handleYamlChange, editorInstance]
   );
 
-  const {
-    topicDialogTarget,
-    setTopicDialogTarget,
-    userDialogTarget,
-    setUserDialogTarget,
-    connectorTopics,
-    topicStepRef,
-    userStepRef,
-    isTopicSubmitting,
-    isUserSubmitting,
-    handleAddTopic,
-    handleAddSasl,
-    handleTopicSubmit,
-    handleUserSubmit,
-  } = useDiagramDialogs(yamlContent, handleConnectorYamlChange);
+  const { topicDialog, userDialog, topicStepRef, userStepRef, connectorTopics, handleAddTopic, handleAddSasl } =
+    useDiagramDialogs(yamlContent, handleConnectorYamlChange);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -884,8 +903,13 @@ export default function PipelinePage() {
 
       <PipelineCommandMenu
         editorInstance={editorInstance}
-        onOpenChange={setIsCommandMenuOpen}
-        open={isCommandMenuOpen}
+        initialFilter={commandMenuFilter ?? undefined}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCommandMenuFilter(null);
+          }
+        }}
+        open={commandMenuFilter !== null}
         yamlContent={yamlContent}
       />
 
@@ -908,12 +932,13 @@ export default function PipelinePage() {
       <Dialog
         onOpenChange={(open) => {
           if (!open) {
-            setTopicDialogTarget(null);
+            topicDialog.close();
           }
         }}
-        open={topicDialogTarget !== null}
+        open={topicDialog.isOpen}
       >
-        <DialogContent className="max-h-screen overflow-y-scroll" size="lg">
+        <DialogContent className="max-h-screen overflow-y-scroll" showCloseButton={false} size="lg">
+          <DialogCloseButton />
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
             <DialogDescription className="mt-4">
@@ -923,11 +948,15 @@ export default function PipelinePage() {
           </DialogHeader>
           <AddTopicStep className="border" hideTitle ref={topicStepRef} />
           <div className="flex justify-end gap-2 pt-4">
-            <Button disabled={isTopicSubmitting} onClick={() => setTopicDialogTarget(null)} variant="secondary-ghost">
+            <Button onClick={topicDialog.close} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button disabled={isTopicSubmitting} onClick={handleTopicSubmit}>
-              {isTopicSubmitting ? <Spinner /> : 'Add'}
+            <Button
+              disabled={topicDialog.isSubmitting}
+              icon={topicDialog.isSubmitting ? <Spinner /> : undefined}
+              onClick={topicDialog.submit}
+            >
+              Add
             </Button>
           </div>
         </DialogContent>
@@ -936,43 +965,51 @@ export default function PipelinePage() {
       <Dialog
         onOpenChange={(open) => {
           if (!open) {
-            setUserDialogTarget(null);
+            userDialog.close();
           }
         }}
-        open={userDialogTarget !== null}
+        open={userDialog.isOpen}
       >
-        <DialogContent className="max-h-screen overflow-y-scroll" size="lg">
-          <DialogHeader>
-            <DialogTitle>Add user</DialogTitle>
-            <DialogDescription className="mt-4">
-              Select or create a user for this connector. ACLs will be configured automatically for the topic when
-              creating a new user.
-            </DialogDescription>
-          </DialogHeader>
-          {connectorTopics && connectorTopics.length > 1 && (
-            <Alert variant="warning">
-              <AlertTitle>Multiple topics configured</AlertTitle>
-              <AlertDescription>
-                This connector uses multiple topics ({connectorTopics.join(', ')}). You will need to configure topic
-                ACLs for this user manually in the Security settings.
-              </AlertDescription>
-            </Alert>
-          )}
-          <AddUserStep
-            className="border"
-            hideTitle
-            ref={userStepRef}
-            showConsumerGroupFields={userDialogTarget?.section === 'input'}
-            topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
-          />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button disabled={isUserSubmitting} onClick={() => setUserDialogTarget(null)} variant="secondary-ghost">
-              Cancel
-            </Button>
-            <Button disabled={isUserSubmitting} onClick={handleUserSubmit}>
-              {isUserSubmitting ? <Spinner /> : 'Add'}
-            </Button>
+        <DialogContent className="max-h-screen overflow-hidden" showCloseButton={false} size="lg">
+          <DialogCloseButton />
+          <div className="overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add user</DialogTitle>
+              <DialogDescription className="mt-4">
+                Select or create a user for this connector. ACLs will be configured automatically for the topic when
+                creating a new user.
+              </DialogDescription>
+            </DialogHeader>
+            {connectorTopics && connectorTopics.length > 1 && (
+              <Alert variant="warning">
+                <AlertTitle>Multiple topics configured</AlertTitle>
+                <AlertDescription>
+                  This connector uses multiple topics ({connectorTopics.join(', ')}). You will need to configure topic
+                  ACLs for this user manually in the Security settings.
+                </AlertDescription>
+              </Alert>
+            )}
+            <AddUserStep
+              className="border"
+              hideTitle
+              ref={userStepRef}
+              showConsumerGroupFields={userDialog.target?.section === 'input'}
+              topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
+            />
+            <div className="flex justify-end gap-2 pt-4">
+              <Button onClick={userDialog.close} variant="secondary-ghost">
+                Cancel
+              </Button>
+              <Button
+                disabled={userDialog.isSubmitting}
+                icon={userDialog.isSubmitting ? <Spinner /> : undefined}
+                onClick={userDialog.submit}
+              >
+                Add
+              </Button>
+            </div>
           </div>
+          <Toaster position="bottom-right" richColors />
         </DialogContent>
       </Dialog>
 
@@ -987,6 +1024,8 @@ export default function PipelinePage() {
           isOpen={addConnectorType !== null}
           onAddConnector={handleConnectorSelected}
           onCloseAddConnector={() => setAddConnectorType(null)}
+          searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
+          title={getConnectorDialogTitle(addConnectorType)}
         />
       ) : null}
     </div>

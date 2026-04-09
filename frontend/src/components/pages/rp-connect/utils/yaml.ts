@@ -775,6 +775,7 @@ export function extractConnectorTopics(
   try {
     doc = parseDocument(yamlContent);
   } catch {
+    toast.error('Failed to parse pipeline YAML');
     return;
   }
 

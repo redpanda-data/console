@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Link } from 'components/redpanda-ui/components/typography';
+import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectTiles } from './connect-tiles';
@@ -26,12 +27,16 @@ export const AddConnectorDialog = ({
   connectorType,
   onAddConnector,
   components,
+  title,
+  searchPlaceholder,
 }: {
   isOpen: boolean;
   onCloseAddConnector: () => void;
   connectorType?: ConnectComponentType | ConnectComponentType[];
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   components: ComponentList;
+  title?: string;
+  searchPlaceholder?: string;
 }) => {
   let typeFilter: ConnectComponentType[] | undefined;
   if (Array.isArray(connectorType)) {
@@ -44,9 +49,10 @@ export const AddConnectorDialog = ({
 
   return (
     <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
-      <DialogContent size="xl">
+      <DialogContent showCloseButton={false} size="xl">
+        <DialogCloseButton />
         <DialogHeader>
-          <DialogTitle>Add a connector</DialogTitle>
+          <DialogTitle>{title ?? 'Add a connector'}</DialogTitle>
           <DialogDescription className="mt-4">
             Configure your pipeline.{' '}
             {docsUrl ? (
@@ -64,6 +70,7 @@ export const AddConnectorDialog = ({
             gridCols={3}
             hideHeader
             onChange={onAddConnector}
+            searchPlaceholder={searchPlaceholder}
             variant="ghost"
           />
         </DialogBody>

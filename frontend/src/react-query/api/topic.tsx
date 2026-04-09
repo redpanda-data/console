@@ -15,6 +15,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
+import { toast } from 'sonner';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -126,12 +127,15 @@ export const useCreateTopicMutation = () => {
         }),
       ]);
     },
-    onError: (error) =>
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'create',
-        entity: 'topic',
-      }),
+    onError: (error) => {
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error,
+          action: 'create',
+          entity: 'topic',
+        })
+      );
+    },
   });
 };
 

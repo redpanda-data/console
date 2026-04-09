@@ -356,26 +356,28 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Label className="cursor-pointer" htmlFor="live-view-toggle">
-            {liveViewEnabled ? 'Live logs' : 'Recent logs (5h)'}
-          </Label>
+          {!liveViewEnabled && (
+            <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
           <Tooltip>
-            <TooltipTrigger asChild>
-              <InfoIcon className="size-4 text-muted-foreground" data-testid="log-live-tooltip-trigger" />
+            <TooltipTrigger>
+              <Label className="cursor-pointer" htmlFor="live-view-toggle">
+                {liveViewEnabled ? 'Live logs enabled' : 'Enable live logs'}  
+              </Label>
+              <InfoIcon className="size-4 ml-1 text-muted-foreground" data-testid="log-live-tooltip-trigger" />
             </TooltipTrigger>
-            <TooltipContent className="max-w-xs" side="top" testId="log-live-tooltip-content">
+            <TooltipContent side="top" testId="log-live-tooltip-content">
               {liveViewEnabled
                 ? 'Showing new log messages as they arrive in real time.'
                 : 'Showing log messages from the last 5 hours. Toggle on to see live logs as they arrive.'}
             </TooltipContent>
           </Tooltip>
-          {!liveViewEnabled && (
-            <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
-          )}
-        </div>
-        <div className="flex items-center gap-2">
           <Switch
             checked={liveViewEnabled}
+            // overriding size to make it more prominent, user feedback showed it was not discoverable
             className="h-5 w-9 **:data-[slot=switch-thumb]:size-4.5"
             data-testid="log-live-toggle"
             disabled={!enableLiveView}
@@ -388,6 +390,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
               }
             }}
           />
+          </div>
           <Button
             data-testid="log-refresh-button"
             disabled={isSearching}
@@ -486,7 +489,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
                 if (messages.length > 0) {
                   emptyText = 'No messages match the current filters';
                 } else if (liveViewEnabled) {
-                  emptyText = 'Listening for new log messages\u2026 Switch to Recent Logs to view historical logs.';
+                  emptyText = 'Listening for new log messages… Switch to Recent Logs to view historical logs.';
                 } else {
                   emptyText = 'No logs found in the last 5 hours for this pipeline.';
                 }

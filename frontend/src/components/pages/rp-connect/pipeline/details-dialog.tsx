@@ -19,6 +19,7 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
+import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { InfoIcon, List } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -81,7 +82,8 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleti
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent size="lg">
+      <DialogContent showCloseButton={false} size="lg">
+        <DialogCloseButton />
         <DialogHeader>
           <DialogTitle>Pipeline details</DialogTitle>
         </DialogHeader>
