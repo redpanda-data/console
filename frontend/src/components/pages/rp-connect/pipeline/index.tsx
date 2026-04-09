@@ -389,14 +389,11 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
-  const yamlContentRef = useRef(yamlContent);
-  yamlContentRef.current = yamlContent;
-
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
       if (data.topicName) {
-        const patched = tryPatchRedpandaYaml(yamlContentRef.current, target.section, target.componentName, {
+        const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, {
           topicName: data.topicName,
         });
         if (patched) {
@@ -422,7 +419,7 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
           saslMechanism: (data as AddUserFormData).saslMechanism,
         };
       }
-      const patched = tryPatchRedpandaYaml(yamlContentRef.current, target.section, target.componentName, setupResult);
+      const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, setupResult);
       if (patched) {
         handleConnectorYamlChange(patched);
       }
@@ -449,7 +446,7 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
     handleAddSasl: useCallback(
       (section: string, componentName: string) => {
         const { topics, parseError } = extractConnectorTopics(
-          yamlContentRef.current,
+          yamlContent,
           section as 'input' | 'output',
           componentName
         );
@@ -459,7 +456,7 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
         setConnectorTopics(topics);
         openUserDialog({ section: section as 'input' | 'output', componentName });
       },
-      [openUserDialog]
+      [openUserDialog, yamlContent]
     ),
   };
 }
