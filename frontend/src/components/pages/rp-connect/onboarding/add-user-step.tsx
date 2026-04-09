@@ -135,7 +135,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         username: defaultUsername || '',
         password: generatePassword(30, false),
         saslMechanism: defaultSaslMechanism || 'SCRAM-SHA-256',
-        superuser: true,
+        grantTopicPermissions: true,
         specialCharactersEnabled: false,
         passwordLength: 30,
         consumerGroup: defaultConsumerGroup || '',
@@ -512,7 +512,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         )}
                       </div>
 
-                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && (
+                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
                         <Alert variant="info">
                           <AlertDescription>
                             A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will
@@ -661,7 +661,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         <FormField
                           control={form.control}
                           disabled={isPending || isReadOnly}
-                          name="superuser"
+                          name="grantTopicPermissions"
                           render={({ field }) => (
                             <FormItem>
                               <div className="flex flex-col gap-2">

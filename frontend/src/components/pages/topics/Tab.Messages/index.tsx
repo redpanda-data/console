@@ -556,6 +556,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     return () => clearTimeout(timer);
   }, [loadMorePhase]);
   const currentSearchRunRef = useRef<string | null>(null);
+  const searchGenRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const prevStartOffsetRef = useRef<number>(startOffset);
   const prevMaxResultsRef = useRef<number>(maxResults);
@@ -597,6 +598,21 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   useEffect(() => {
     currentMessageSearchRef.current = messageSearch;
   }, [messageSearch]);
+
+  // Poll search object for live progress during streaming
+  useEffect(() => {
+    if (searchPhase === null) {
+      return;
+    }
+    const interval = setInterval(() => {
+      const search = currentMessageSearchRef.current;
+      if (search) {
+        setBytesConsumed(search.bytesConsumed);
+        setTotalMessagesConsumed(search.totalMessagesConsumed);
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, [searchPhase]);
 
   // Keep virtualStartIndexRef in sync
   useEffect(() => {
@@ -716,6 +732,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       try {
         setFetchError(null);
         setSearchPhase('Searching...');
+        const searchGen = searchGenRef.current;
 
         const search = createMessageSearch();
         setSearchState((prev) => ({ ...prev, messageSearch: search }));
@@ -731,6 +748,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         });
 
         const endTime = Date.now();
+
+        // Discard results from a superseded search
+        if (searchGen !== searchGenRef.current) {
+          return result;
+        }
+
         setSearchState((prev) => ({ ...prev, messages: result, windowStartPage: 0 }));
         windowStartPageRef.current = 0;
         if (maxResults < pageSize) {
@@ -783,6 +806,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
       // Start new search
       currentSearchRunRef.current = searchParams;
+      searchGenRef.current += 1;
       abortControllerRef.current = new AbortController();
 
       // Clear messages immediately when starting new search
@@ -824,10 +848,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   // Auto search when parameters change
   // biome-ignore lint/correctness/useExhaustiveDependencies: forceRefresh is intentionally watched to trigger forced re-search
   useEffect(() => {
-    // Set up auto-search with 100ms delay
+    // Set up auto-search with 300ms delay to let rapid multi-param URL changes settle
     const timer = setTimeout(() => {
       searchFunc('auto');
-    }, 100);
+    }, 300);
 
     appGlobal.searchMessagesFunc = searchFunc;
 
@@ -1714,10 +1738,20 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               <TableBody>
                 {(() => {
                   if (searchPhase !== null && filteredMessages.length === 0) {
+                    const hasProgress = bytesConsumed > 0 || totalMessagesConsumed > 0;
                     return (
                       <TableRow>
                         <TableCell className="py-10 text-center" colSpan={table.getVisibleFlatColumns().length}>
-                          <Spinner size="md" />
+                          <div className="mx-auto flex max-w-xs flex-col items-center gap-3">
+                            {hasProgress ? (
+                              <span className="text-muted-foreground text-sm">
+                                {prettyBytes(bytesConsumed)} scanned, {totalMessagesConsumed.toLocaleString()} messages
+                                checked
+                              </span>
+                            ) : (
+                              <Spinner size="md" />
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

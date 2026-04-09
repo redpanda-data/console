@@ -651,6 +651,42 @@ export function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['
  *
  * Returns the patched YAML string, or undefined if parsing fails.
  */
+/**
+ * Remove commented-out lines for keys that have just been patched.
+ * E.g. if `topics` was patched, strip `# topics: Required - ...` so the
+ * user doesn't see both the comment placeholder and the real value.
+ */
+function stripCommentedKeys(yaml: string, keys: string[], section: string): string {
+  if (keys.length === 0) {
+    return yaml;
+  }
+
+  const lines = yaml.split('\n');
+  const keyPattern = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
+
+  // Find the section block boundaries so we only strip comments within the patched section
+  const sectionRegex = new RegExp(`^${section}:`);
+  const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
+  if (sectionStart === -1) return yaml;
+
+  // Section ends at the next top-level key (no leading whitespace)
+  let sectionEnd = lines.length;
+  for (let i = sectionStart + 1; i < lines.length; i++) {
+    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) {
+      sectionEnd = i;
+      break;
+    }
+  }
+
+  return lines
+    .filter((line, i) => {
+      if (i < sectionStart || i >= sectionEnd) return true;
+      return !commentRegex.test(line);
+    })
+    .join('\n');
+}
+
 export function patchRedpandaConfig(
   existingYaml: string,
   section: 'input' | 'output',
@@ -668,13 +704,17 @@ export function patchRedpandaConfig(
     return;
   }
 
+  const patchedKeys: string[] = [];
+
   if (patch.topicName) {
     // Inputs use `topics` (string array), outputs use `topic` (singular string) —
     // matches the actual Redpanda component schemas.
     if (section === 'output') {
       doc.setIn([section, componentName, 'topic'], patch.topicName);
+      patchedKeys.push('topic');
     } else {
       doc.setIn([section, componentName, 'topics'], [patch.topicName]);
+      patchedKeys.push('topics');
     }
   }
 
@@ -685,10 +725,12 @@ export function patchRedpandaConfig(
     } else {
       doc.setIn([section, componentName, 'sasl'], patch.sasl);
     }
+    patchedKeys.push('sasl');
   }
 
   try {
-    return yamlStringify(doc, yamlConfig);
+    const result = yamlStringify(doc, yamlConfig);
+    return stripCommentedKeys(result, patchedKeys, section);
   } catch {
     return;
   }
@@ -713,6 +755,46 @@ export function tryPatchRedpandaYaml(
     return;
   }
   return patchRedpandaConfig(yamlContent, section, componentName, patch);
+}
+
+/**
+ * Extract topic(s) configured on a Redpanda connector from YAML.
+ * Works for all Redpanda component types — topics are always at
+ * `[section].[componentName].topics[]` (inputs) or `.topic` (outputs).
+ */
+export function extractConnectorTopics(
+  yamlContent: string,
+  section: 'input' | 'output',
+  componentName: string
+): string[] | undefined {
+  if (!yamlContent.trim()) {
+    return;
+  }
+
+  let doc: Document.Parsed;
+  try {
+    doc = parseDocument(yamlContent);
+  } catch {
+    return;
+  }
+
+  const topicsNode = doc.getIn([section, componentName, 'topics']);
+  // doc.getIn returns a YAMLSeq node for sequences, not a plain JS array — convert first
+  const topics =
+    topicsNode != null && typeof topicsNode === 'object' && 'toJSON' in topicsNode
+      ? (topicsNode as { toJSON(): unknown }).toJSON()
+      : topicsNode;
+  if (Array.isArray(topics)) {
+    const filtered = topics.filter((t): t is string => typeof t === 'string' && t !== '');
+    return filtered.length > 0 ? filtered : undefined;
+  }
+
+  const topic = doc.getIn([section, componentName, 'topic']);
+  if (typeof topic === 'string' && topic !== '') {
+    return [topic];
+  }
+
+  return;
 }
 
 /** Check whether a component already has an entry under [section][componentName] in the YAML. */

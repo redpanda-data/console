@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
 import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -100,7 +101,12 @@ import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { getConnectTemplate, type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yaml';
+import {
+  extractConnectorTopics,
+  getConnectTemplate,
+  type RedpandaSetupResultLike,
+  tryPatchRedpandaYaml,
+} from '../utils/yaml';
 
 // ---------------------------------------------------------------------------
 // Schema + types
@@ -422,11 +428,19 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
     setIsUserSubmitting(false);
   }, [userDialogTarget, yamlContent, handleConnectorYamlChange]);
 
+  const connectorTopics = useMemo(() => {
+    if (!userDialogTarget) {
+      return;
+    }
+    return extractConnectorTopics(yamlContent, userDialogTarget.section, userDialogTarget.componentName);
+  }, [userDialogTarget, yamlContent]);
+
   return {
     topicDialogTarget,
     setTopicDialogTarget,
     userDialogTarget,
     setUserDialogTarget,
+    connectorTopics,
     topicStepRef,
     userStepRef,
     isTopicSubmitting,
@@ -732,6 +746,7 @@ export default function PipelinePage() {
     setTopicDialogTarget,
     userDialogTarget,
     setUserDialogTarget,
+    connectorTopics,
     topicStepRef,
     userStepRef,
     isTopicSubmitting,
@@ -906,7 +921,7 @@ export default function PipelinePage() {
               one.
             </DialogDescription>
           </DialogHeader>
-          <AddTopicStep className="border-1" hideTitle ref={topicStepRef} />
+          <AddTopicStep className="border" hideTitle ref={topicStepRef} />
           <div className="flex justify-end gap-2 pt-4">
             <Button disabled={isTopicSubmitting} onClick={() => setTopicDialogTarget(null)} variant="secondary-ghost">
               Cancel
@@ -930,16 +945,25 @@ export default function PipelinePage() {
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
             <DialogDescription className="mt-4">
-              This component requires a Redpanda user for logging the data. Select an existing user, or create a new
-              one.
+              Select or create a user for this connector. ACLs will be configured automatically for the topic when
+              creating a new user.
             </DialogDescription>
           </DialogHeader>
+          {connectorTopics && connectorTopics.length > 1 && (
+            <Alert variant="warning">
+              <AlertTitle>Multiple topics configured</AlertTitle>
+              <AlertDescription>
+                This connector uses multiple topics ({connectorTopics.join(', ')}). You will need to configure topic
+                ACLs for this user manually in the Security settings.
+              </AlertDescription>
+            </Alert>
+          )}
           <AddUserStep
-            className="border-1"
+            className="border"
             hideTitle
             ref={userStepRef}
             showConsumerGroupFields={userDialogTarget?.section === 'input'}
-            topicName={undefined}
+            topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
           />
           <div className="flex justify-end gap-2 pt-4">
             <Button disabled={isUserSubmitting} onClick={() => setUserDialogTarget(null)} variant="secondary-ghost">

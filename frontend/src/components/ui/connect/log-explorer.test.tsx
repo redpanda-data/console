@@ -44,7 +44,7 @@ const pipeline = { id: 'pipeline-1', displayName: 'Test Pipeline' } as unknown a
 
 function renderExplorer(props?: Partial<React.ComponentProps<typeof LogExplorer>>) {
   return render(
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <LogExplorer pipeline={pipeline} {...props} />
     </TooltipProvider>,
   );
@@ -62,19 +62,30 @@ describe('LogExplorer', () => {
     };
   });
 
-  test('shows spinner while searching with no messages', () => {
+  test('shows spinner while searching with no progress data', () => {
     mockReturn.phase = 'Searching...';
+    mockReturn.progress = { bytesConsumed: 0, messagesConsumed: 0 };
     renderExplorer();
     expect(screen.getByTestId('log-loading-spinner')).toBeInTheDocument();
+    expect(screen.queryByTestId('log-progress-bar')).not.toBeInTheDocument();
   });
 
-  test('shows search progress during loading', () => {
+  test('shows progress bar (no spinner) when backend provides progress data', () => {
     mockReturn.phase = 'Searching...';
     mockReturn.progress = { bytesConsumed: 2_500_000, messagesConsumed: 150 };
     renderExplorer();
-    expect(screen.getByTestId('log-loading-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('log-search-progress')).toHaveTextContent('150 messages checked');
+    expect(screen.queryByTestId('log-loading-spinner')).not.toBeInTheDocument();
     expect(screen.getByTestId('log-progress-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('log-search-progress')).toHaveTextContent('150 messages checked');
+  });
+
+  test('progress bar renders above the table, not inside a table cell', () => {
+    mockReturn.phase = 'Searching...';
+    mockReturn.progress = { bytesConsumed: 1_000, messagesConsumed: 10 };
+    renderExplorer();
+    const progressBar = screen.getByTestId('log-progress-bar');
+    // Progress bar should be a sibling/overlay of the table, not inside a <td>
+    expect(progressBar.closest('td')).toBeNull();
   });
 
   test('shows history empty state when no messages and search complete', () => {
@@ -85,11 +96,25 @@ describe('LogExplorer', () => {
   test('shows live empty state when live mode enabled and no messages', async () => {
     const user = userEvent.setup();
     renderExplorer({ enableLiveView: true });
-    const liveTailButton = screen.getByRole('radio', { name: /live tail/i });
-    await user.click(liveTailButton);
+    const liveSwitch = screen.getByTestId('log-live-toggle');
+    await user.click(liveSwitch);
     expect(
       screen.getByText('Listening for new log messages\u2026 Switch to Recent Logs to view historical logs.'),
     ).toBeInTheDocument();
+  });
+
+  test('live toggle is disabled when enableLiveView is false', () => {
+    renderExplorer({ enableLiveView: false });
+    const liveSwitch = screen.getByTestId('log-live-toggle');
+    expect(liveSwitch).toBeDisabled();
+  });
+
+  test('live toggle has tooltip trigger with info icon', () => {
+    renderExplorer({ enableLiveView: true });
+    const tooltipTrigger = screen.getByTestId('log-live-tooltip-trigger');
+    expect(tooltipTrigger).toBeInTheDocument();
+    // Info icon renders as an SVG element directly (TooltipTrigger asChild)
+    expect(tooltipTrigger.tagName.toLowerCase()).toBe('svg');
   });
 
   test('shows filter mismatch text when messages exist but are filtered out', () => {
@@ -184,5 +209,21 @@ describe('LogExplorer', () => {
     expect(screen.getByText('Level')).toBeInTheDocument();
     expect(screen.getByText('Component')).toBeInTheDocument();
     expect(screen.getByText('Message')).toBeInTheDocument();
+  });
+
+  test('no pipeline-stopped banner when live mode is off', () => {
+    const stoppedPipeline = { id: 'pipeline-1', displayName: 'Test Pipeline', state: 4 } as unknown as Pipeline;
+    renderExplorer({ pipeline: stoppedPipeline, enableLiveView: true });
+    expect(screen.queryByTestId('pipeline-stopped-banner')).not.toBeInTheDocument();
+  });
+
+  test('shows pipeline-stopped banner after enabling live mode on stopped pipeline', async () => {
+    const stoppedPipeline = { id: 'pipeline-1', displayName: 'Test Pipeline', state: 4 } as unknown as Pipeline;
+    const user = userEvent.setup();
+    renderExplorer({ pipeline: stoppedPipeline, enableLiveView: true });
+    const liveSwitch = screen.getByTestId('log-live-toggle');
+    await user.click(liveSwitch);
+    expect(screen.getByTestId('pipeline-stopped-banner')).toBeInTheDocument();
+    expect(screen.getByText(/pipeline is not running/i)).toBeInTheDocument();
   });
 });
