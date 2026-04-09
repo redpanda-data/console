@@ -237,8 +237,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     }, [form]);
 
     useImperativeHandle(ref, () => ({
-      triggerSubmit: async () => {
+      triggerSubmit: async (signal?: AbortSignal) => {
+        if (signal?.aborted) {
+          return { success: false };
+        }
         const isValid = await form.trigger();
+        if (signal?.aborted) {
+          return { success: false };
+        }
         if (isValid) {
           const data = form.getValues();
           return handleSubmit(data);

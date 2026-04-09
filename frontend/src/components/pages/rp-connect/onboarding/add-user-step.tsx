@@ -360,14 +360,20 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     }, [form]);
 
     useImperativeHandle(ref, () => ({
-      triggerSubmit: async () => {
+      triggerSubmit: async (signal?: AbortSignal) => {
+        if (signal?.aborted) {
+          return { success: false };
+        }
+
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
-          // Service account doesn't use form validation
-          const userData = form.getValues(); // Pass dummy data
+          const userData = form.getValues();
           return handleSubmit(userData);
         }
 
         const isUserFormValid = await form.trigger();
+        if (signal?.aborted) {
+          return { success: false };
+        }
         if (isUserFormValid) {
           const userData = form.getValues();
           return handleSubmit(userData);

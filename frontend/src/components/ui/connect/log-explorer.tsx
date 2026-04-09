@@ -349,7 +349,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
   const isSearching = phase !== null;
   const filteredRowCount = table.getFilteredRowModel().rows.length;
   const hasProgress = progress.bytesConsumed > 0 || progress.messagesConsumed > 0;
-  const pipelineNotRunning = pipeline.state === Pipeline_State.STOPPED || pipeline.state === Pipeline_State.ERROR || pipeline.state === Pipeline_State.COMPLETED;
+  const pipelineNotRunning = pipeline.state !== Pipeline_State.RUNNING;
 
   return (
     <div className="flex min-h-0 flex-col gap-4">

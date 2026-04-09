@@ -2,7 +2,7 @@ import type React from 'react';
 import { render, screen, waitFor } from 'test-utils';
 import { userEvent } from '@testing-library/user-event';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
-import type { Pipeline } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { TopicMessage } from '../../../state/rest-interfaces';
 
 const mockRefresh = vi.fn();
@@ -40,7 +40,7 @@ function makeMessage(overrides: Partial<TopicMessage> & { valuePayload?: Record<
   } as TopicMessage;
 }
 
-const pipeline = { id: 'pipeline-1', displayName: 'Test Pipeline' } as unknown as Pipeline;
+const pipeline = { id: 'pipeline-1', displayName: 'Test Pipeline', state: Pipeline_State.RUNNING } as unknown as Pipeline;
 
 function renderExplorer(props?: Partial<React.ComponentProps<typeof LogExplorer>>) {
   return render(
