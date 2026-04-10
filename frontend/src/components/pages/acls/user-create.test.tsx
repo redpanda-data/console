@@ -52,13 +52,9 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock generatePassword for deterministic tests
-vi.mock('components/pages/acls/user-create', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./user-create')>();
-  return {
-    ...actual,
-    generatePassword: vi.fn(() => 'mock-password-1234567890'),
-  };
-});
+vi.mock('utils/password', () => ({
+  generatePassword: vi.fn(() => 'mock-password-1234567890'),
+}));
 
 let mockRolesApiEnabled = false;
 
