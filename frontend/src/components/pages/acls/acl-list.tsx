@@ -219,16 +219,16 @@ const AclList: FC<{ tab?: AclListTab }> = ({ tab }) => {
 
 export default AclList;
 
-type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
+type PrincipalEntry = { name: string; principalType: 'User' | 'Group'; isScramUser: boolean };
 
 const PermissionsListActions = ({
   entry,
   canDeleteUser,
   onDelete,
 }: {
-  entry: UsersEntry;
+  entry: PrincipalEntry;
   canDeleteUser: boolean;
-  onDelete: (entry: UsersEntry, deleteUser: boolean, deleteAcls: boolean) => Promise<void>;
+  onDelete: (entry: PrincipalEntry, deleteUser: boolean, deleteAcls: boolean) => Promise<void>;
 }) => {
   const [pendingAction, setPendingAction] = useState<'user-and-acls' | 'user-only' | null>(null);
 
@@ -252,25 +252,32 @@ const PermissionsListActions = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
+          {entry.principalType !== 'Group' && (
+            <>
+              <DropdownMenuItem
+                data-testid="delete-user-and-acls"
+                disabled={!canDeleteUser}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPendingAction('user-and-acls');
+                }}
+              >
+                Delete (User and ACLs)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                data-testid="delete-user-only"
+                disabled={!canDeleteUser}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPendingAction('user-only');
+                }}
+              >
+                Delete (User only)
+              </DropdownMenuItem>
+            </>
+          )}
           <DropdownMenuItem
-            disabled={!canDeleteUser}
-            onClick={(e) => {
-              e.stopPropagation();
-              setPendingAction('user-and-acls');
-            }}
-          >
-            Delete (User and ACLs)
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={!canDeleteUser}
-            onClick={(e) => {
-              e.stopPropagation();
-              setPendingAction('user-only');
-            }}
-          >
-            Delete (User only)
-          </DropdownMenuItem>
-          <DropdownMenuItem
+            data-testid="delete-acls-only"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(entry, false, true).catch(() => {});
@@ -308,10 +315,10 @@ const PermissionsListTab = () => {
 
   const { data: principalGroupsData, isError: isAclsError, error: aclsError } = useListACLAsPrincipalGroups();
 
-  const deleteACLsForPrincipal = async (principalName: string) => {
+  const deleteACLsForPrincipal = async (principalName: string, principalType: 'User' | 'Group' = 'User') => {
     const deleteRequest = create(DeleteACLsRequestSchema, {
       filter: {
-        principal: `User:${principalName}`,
+        principal: `${principalType}:${principalName}`,
         resourceType: ACL_ResourceType.ANY,
         resourceName: undefined,
         host: undefined,
@@ -328,10 +335,10 @@ const PermissionsListTab = () => {
     );
   };
 
-  const onDelete = async (entry: UsersEntry, deleteUser: boolean, deleteAcls: boolean) => {
+  const onDelete = async (entry: PrincipalEntry, deleteUser: boolean, deleteAcls: boolean) => {
     if (deleteAcls) {
       try {
-        await deleteACLsForPrincipal(entry.name);
+        await deleteACLsForPrincipal(entry.name, entry.principalType);
       } catch (err: unknown) {
         setAclFailed({ err });
       }
@@ -365,25 +372,33 @@ const PermissionsListTab = () => {
     return <ErrorResult error={aclsError} />;
   }
 
-  const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
+  const scramUserNames = new Set((usersData?.users ?? []).map((u) => u.name));
+
+  const users: PrincipalEntry[] = (usersData?.users ?? []).map((u) => ({
     name: u.name,
-    type: 'SERVICE_ACCOUNT',
+    principalType: 'User' as const,
+    isScramUser: true,
   }));
 
-  // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
+  // Add principals referenced by ACLs that are not already listed as SCRAM users
   for (const g of principalGroupsData ?? []) {
-    if (g.principalType === 'User' && !g.principalName.includes('*') && !users.any((u) => u.name === g.principalName)) {
-      // is it a user that is being referenced?
-      // is the user already listed as a service account?
-      users.push({ name: g.principalName, type: 'PRINCIPAL' });
+    if (
+      (g.principalType === 'User' || g.principalType === 'Group') &&
+      !g.principalName.includes('*') &&
+      !users.any((u) => u.name === g.principalName && u.principalType === g.principalType)
+    ) {
+      users.push({
+        name: g.principalName,
+        principalType: g.principalType as 'User' | 'Group',
+        isScramUser: scramUserNames.has(g.principalName),
+      });
     }
   }
 
   for (const [_, roleMembers] of rolesApi.roleMembers ?? []) {
     for (const roleMember of roleMembers) {
       if (!users.any((u) => u.name === roleMember.name)) {
-        // make sure that user isn't already in the list
-        users.push({ name: roleMember.name, type: 'PRINCIPAL' });
+        users.push({ name: roleMember.name, principalType: 'User', isScramUser: scramUserNames.has(roleMember.name) });
       }
     }
   }
@@ -409,7 +424,7 @@ const PermissionsListTab = () => {
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
         <div className="my-4">
-          <DataTable<UsersEntry>
+          <DataTable<PrincipalEntry>
             columns={[
               {
                 id: 'name',
@@ -417,6 +432,21 @@ const PermissionsListTab = () => {
                 header: 'Principal',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
+                  if (entry.principalType === 'Group') {
+                    return (
+                      <Link
+                        className="text-inherit no-underline hover:no-underline"
+                        params={{ aclName: `Group:${entry.name}` }}
+                        search={{ host: undefined }}
+                        to="/security/acls/$aclName/details"
+                      >
+                        <span className="flex items-center gap-1">
+                          {entry.name}
+                          <Badge variant="neutral">Group</Badge>
+                        </span>
+                      </Link>
+                    );
+                  }
                   return (
                     <Link
                       className="text-inherit no-underline hover:no-underline"
@@ -442,8 +472,9 @@ const PermissionsListTab = () => {
                 header: '',
                 cell: ({ row: { original: entry } }) => (
                   <PermissionsListActions
-                    canDeleteUser={Boolean(featureDeleteUser)}
+                    canDeleteUser={Boolean(featureDeleteUser) && entry.isScramUser}
                     entry={entry}
+                    key={`${entry.principalType}-${entry.name}`}
                     onDelete={onDelete}
                   />
                 ),
@@ -504,9 +535,10 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
     enabled: isAdminApiConfigured,
   });
 
-  const users: UsersEntry[] = (usersData?.users ?? []).map((u) => ({
+  const users: PrincipalEntry[] = (usersData?.users ?? []).map((u) => ({
     name: u.name,
-    type: 'SERVICE_ACCOUNT',
+    principalType: 'User' as const,
+    isScramUser: true,
   }));
 
   const usersFiltered = filterByName(users, searchQuery, (u) => u.name);
@@ -558,7 +590,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
         </TooltipProvider>
 
         <div className="my-4">
-          <DataTable<UsersEntry>
+          <DataTable<PrincipalEntry>
             columns={[
               {
                 id: 'name',
@@ -615,7 +647,7 @@ const UsersTab = ({ isAdminApiConfigured }: { isAdminApiConfigured: boolean }) =
   );
 };
 
-const UserActions = ({ user }: { user: UsersEntry }) => {
+const UserActions = ({ user }: { user: PrincipalEntry }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
@@ -837,7 +869,6 @@ const RolesTab = () => {
 const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
-  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
   const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
   const { data: usersData } = useLegacyListUsersQuery(undefined, { enabled: isAdminApiConfigured });
@@ -870,10 +901,8 @@ const AclsTab = (_: { principalGroups: AclPrincipalGroup[] }) => {
     );
   };
 
-  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
-
   const aclPrincipalGroups =
-    principalGroups?.filter((g) => g.principalType === 'User' || (gbacEnabled && g.principalType === 'Group')) || [];
+    principalGroups?.filter((g) => g.principalType === 'User' || g.principalType === 'Group') || [];
   const groups = filterByName(aclPrincipalGroups, searchQuery, (g) => g.principalName);
 
   if (isError && error) {
