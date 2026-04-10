@@ -96,7 +96,7 @@ export const CreateUserConfirmationModal = ({
       <ModalFooter>
         <ButtonGroup>
           <Button variant="link">
-            <Link params={{ tab: 'acls' }} rel="noopener noreferrer" target="_blank" to="/security/$tab">
+            <Link rel="noopener noreferrer" target="_blank" to="/security/acls">
               Create ACLs
             </Link>
           </Button>
