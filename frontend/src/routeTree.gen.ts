@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root';
 import { Route as UploadLicenseRouteImport } from './routes/upload-license';
 import { Route as TrialExpiredRouteImport } from './routes/trial-expired';
 import { Route as TransformsSetupRouteImport } from './routes/transforms-setup';
+import { Route as SecurityRouteImport } from './routes/security';
 import { Route as ReassignPartitionsRouteImport } from './routes/reassign-partitions';
 import { Route as QuotasRouteImport } from './routes/quotas';
 import { Route as IndexRouteImport } from './routes/index';
@@ -33,7 +34,6 @@ import { Route as ConnectClustersIndexRouteImport } from './routes/connect-clust
 import { Route as AgentsIndexRouteImport } from './routes/agents/index';
 import { Route as TransformsTransformNameRouteImport } from './routes/transforms/$transformName';
 import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create';
-import { Route as SecurityTabRouteImport } from './routes/security/$tab';
 import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
 import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
 import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility';
@@ -49,6 +49,10 @@ import { Route as GetStartedApiRouteImport } from './routes/get-started/api';
 import { Route as AgentsCreateRouteImport } from './routes/agents/create';
 import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topicName/index';
 import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index';
+import { Route as SecurityUsersIndexRouteImport } from './routes/security/users/index';
+import { Route as SecurityRolesIndexRouteImport } from './routes/security/roles/index';
+import { Route as SecurityPermissionsListIndexRouteImport } from './routes/security/permissions-list/index';
+import { Route as SecurityAclsIndexRouteImport } from './routes/security/acls/index';
 import { Route as RpConnectPipelineIdIndexRouteImport } from './routes/rp-connect/$pipelineId/index';
 import { Route as KnowledgebasesKnowledgebaseIdIndexRouteImport } from './routes/knowledgebases/$knowledgebaseId/index';
 import { Route as ConnectClustersClusterNameIndexRouteImport } from './routes/connect-clusters/$clusterName/index';
@@ -97,6 +101,11 @@ const TransformsSetupRoute = TransformsSetupRouteImport.update({
   path: '/transforms-setup',
   getParentRoute: () => rootRouteImport,
 } as any);
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const ReassignPartitionsRoute = ReassignPartitionsRouteImport.update({
   id: '/reassign-partitions',
   path: '/reassign-partitions',
@@ -133,9 +142,9 @@ const ShadowlinksIndexRoute = ShadowlinksIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any);
 const SecurityIndexRoute = SecurityIndexRouteImport.update({
-  id: '/security/',
-  path: '/security/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => SecurityRoute,
 } as any);
 const SecretsIndexRoute = SecretsIndexRouteImport.update({
   id: '/secrets/',
@@ -200,11 +209,6 @@ const TransformsTransformNameRoute = TransformsTransformNameRouteImport.update({
 const ShadowlinksCreateRoute = ShadowlinksCreateRouteImport.update({
   id: '/shadowlinks/create',
   path: '/shadowlinks/create',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const SecurityTabRoute = SecurityTabRouteImport.update({
-  id: '/security/$tab',
-  path: '/security/$tab',
   getParentRoute: () => rootRouteImport,
 } as any);
 const SecretsCreateRoute = SecretsCreateRouteImport.update({
@@ -283,6 +287,27 @@ const ShadowlinksNameIndexRoute = ShadowlinksNameIndexRouteImport.update({
   path: '/shadowlinks/$name/',
   getParentRoute: () => rootRouteImport,
 } as any);
+const SecurityUsersIndexRoute = SecurityUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => SecurityRoute,
+} as any);
+const SecurityRolesIndexRoute = SecurityRolesIndexRouteImport.update({
+  id: '/roles/',
+  path: '/roles/',
+  getParentRoute: () => SecurityRoute,
+} as any);
+const SecurityPermissionsListIndexRoute =
+  SecurityPermissionsListIndexRouteImport.update({
+    id: '/permissions-list/',
+    path: '/permissions-list/',
+    getParentRoute: () => SecurityRoute,
+  } as any);
+const SecurityAclsIndexRoute = SecurityAclsIndexRouteImport.update({
+  id: '/acls/',
+  path: '/acls/',
+  getParentRoute: () => SecurityRoute,
+} as any);
 const RpConnectPipelineIdIndexRoute =
   RpConnectPipelineIdIndexRouteImport.update({
     id: '/rp-connect/$pipelineId/',
@@ -318,19 +343,19 @@ const ShadowlinksNameEditRoute = ShadowlinksNameEditRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any);
 const SecurityUsersCreateRoute = SecurityUsersCreateRouteImport.update({
-  id: '/security/users/create',
-  path: '/security/users/create',
-  getParentRoute: () => rootRouteImport,
+  id: '/users/create',
+  path: '/users/create',
+  getParentRoute: () => SecurityRoute,
 } as any);
 const SecurityRolesCreateRoute = SecurityRolesCreateRouteImport.update({
-  id: '/security/roles/create',
-  path: '/security/roles/create',
-  getParentRoute: () => rootRouteImport,
+  id: '/roles/create',
+  path: '/roles/create',
+  getParentRoute: () => SecurityRoute,
 } as any);
 const SecurityAclsCreateRoute = SecurityAclsCreateRouteImport.update({
-  id: '/security/acls/create',
-  path: '/security/acls/create',
-  getParentRoute: () => rootRouteImport,
+  id: '/acls/create',
+  path: '/acls/create',
+  getParentRoute: () => SecurityRoute,
 } as any);
 const SecretsIdEditRoute = SecretsIdEditRouteImport.update({
   id: '/secrets/$id/edit',
@@ -378,39 +403,39 @@ const SchemaRegistrySubjectsSubjectNameIndexRoute =
   } as any);
 const SecurityUsersUserNameDetailsRoute =
   SecurityUsersUserNameDetailsRouteImport.update({
-    id: '/security/users/$userName/details',
-    path: '/security/users/$userName/details',
-    getParentRoute: () => rootRouteImport,
+    id: '/users/$userName/details',
+    path: '/users/$userName/details',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityRolesRoleNameUpdateRoute =
   SecurityRolesRoleNameUpdateRouteImport.update({
-    id: '/security/roles/$roleName/update',
-    path: '/security/roles/$roleName/update',
-    getParentRoute: () => rootRouteImport,
+    id: '/roles/$roleName/update',
+    path: '/roles/$roleName/update',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityRolesRoleNameEditRoute =
   SecurityRolesRoleNameEditRouteImport.update({
-    id: '/security/roles/$roleName/edit',
-    path: '/security/roles/$roleName/edit',
-    getParentRoute: () => rootRouteImport,
+    id: '/roles/$roleName/edit',
+    path: '/roles/$roleName/edit',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityRolesRoleNameDetailsRoute =
   SecurityRolesRoleNameDetailsRouteImport.update({
-    id: '/security/roles/$roleName/details',
-    path: '/security/roles/$roleName/details',
-    getParentRoute: () => rootRouteImport,
+    id: '/roles/$roleName/details',
+    path: '/roles/$roleName/details',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityAclsAclNameUpdateRoute =
   SecurityAclsAclNameUpdateRouteImport.update({
-    id: '/security/acls/$aclName/update',
-    path: '/security/acls/$aclName/update',
-    getParentRoute: () => rootRouteImport,
+    id: '/acls/$aclName/update',
+    path: '/acls/$aclName/update',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityAclsAclNameDetailsRoute =
   SecurityAclsAclNameDetailsRouteImport.update({
-    id: '/security/acls/$aclName/details',
-    path: '/security/acls/$aclName/details',
-    getParentRoute: () => rootRouteImport,
+    id: '/acls/$aclName/details',
+    path: '/acls/$aclName/details',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SchemaRegistrySubjectsSubjectNameEditModeRoute =
   SchemaRegistrySubjectsSubjectNameEditModeRouteImport.update({
@@ -471,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
+  '/security': typeof SecurityRouteWithChildren;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -487,7 +513,6 @@ export interface FileRoutesByFullPath {
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
-  '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents/': typeof AgentsIndexRoute;
@@ -522,6 +547,10 @@ export interface FileRoutesByFullPath {
   '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/security/acls/': typeof SecurityAclsIndexRoute;
+  '/security/permissions-list/': typeof SecurityPermissionsListIndexRoute;
+  '/security/roles/': typeof SecurityRolesIndexRoute;
+  '/security/users/': typeof SecurityUsersIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
   '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
@@ -561,7 +590,6 @@ export interface FileRoutesByTo {
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
-  '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents': typeof AgentsIndexRoute;
@@ -596,6 +624,10 @@ export interface FileRoutesByTo {
   '/connect-clusters/$clusterName': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
+  '/security/acls': typeof SecurityAclsIndexRoute;
+  '/security/permissions-list': typeof SecurityPermissionsListIndexRoute;
+  '/security/roles': typeof SecurityRolesIndexRoute;
+  '/security/users': typeof SecurityUsersIndexRoute;
   '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName': typeof TopicsTopicNameIndexRoute;
   '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
@@ -620,6 +652,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute;
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
+  '/security': typeof SecurityRouteWithChildren;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -636,7 +669,6 @@ export interface FileRoutesById {
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
-  '/security/$tab': typeof SecurityTabRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents/': typeof AgentsIndexRoute;
@@ -671,6 +703,10 @@ export interface FileRoutesById {
   '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/security/acls/': typeof SecurityAclsIndexRoute;
+  '/security/permissions-list/': typeof SecurityPermissionsListIndexRoute;
+  '/security/roles/': typeof SecurityRolesIndexRoute;
+  '/security/users/': typeof SecurityUsersIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
   '/topics/$topicName/': typeof TopicsTopicNameIndexRoute;
   '/agents/$id/transcripts/$conversationId': typeof AgentsIdTranscriptsConversationIdRoute;
@@ -696,6 +732,7 @@ export interface FileRouteTypes {
     | '/'
     | '/quotas'
     | '/reassign-partitions'
+    | '/security'
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
@@ -712,7 +749,6 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
     | '/secrets/create'
-    | '/security/$tab'
     | '/shadowlinks/create'
     | '/transforms/$transformName'
     | '/agents/'
@@ -747,6 +783,10 @@ export interface FileRouteTypes {
     | '/connect-clusters/$clusterName/'
     | '/knowledgebases/$knowledgebaseId/'
     | '/rp-connect/$pipelineId/'
+    | '/security/acls/'
+    | '/security/permissions-list/'
+    | '/security/roles/'
+    | '/security/users/'
     | '/shadowlinks/$name/'
     | '/topics/$topicName/'
     | '/agents/$id/transcripts/$conversationId'
@@ -786,7 +826,6 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
     | '/secrets/create'
-    | '/security/$tab'
     | '/shadowlinks/create'
     | '/transforms/$transformName'
     | '/agents'
@@ -821,6 +860,10 @@ export interface FileRouteTypes {
     | '/connect-clusters/$clusterName'
     | '/knowledgebases/$knowledgebaseId'
     | '/rp-connect/$pipelineId'
+    | '/security/acls'
+    | '/security/permissions-list'
+    | '/security/roles'
+    | '/security/users'
     | '/shadowlinks/$name'
     | '/topics/$topicName'
     | '/agents/$id/transcripts/$conversationId'
@@ -844,6 +887,7 @@ export interface FileRouteTypes {
     | '/'
     | '/quotas'
     | '/reassign-partitions'
+    | '/security'
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
@@ -860,7 +904,6 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
     | '/secrets/create'
-    | '/security/$tab'
     | '/shadowlinks/create'
     | '/transforms/$transformName'
     | '/agents/'
@@ -895,6 +938,10 @@ export interface FileRouteTypes {
     | '/connect-clusters/$clusterName/'
     | '/knowledgebases/$knowledgebaseId/'
     | '/rp-connect/$pipelineId/'
+    | '/security/acls/'
+    | '/security/permissions-list/'
+    | '/security/roles/'
+    | '/security/users/'
     | '/shadowlinks/$name/'
     | '/topics/$topicName/'
     | '/agents/$id/transcripts/$conversationId'
@@ -919,6 +966,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   QuotasRoute: typeof QuotasRoute;
   ReassignPartitionsRoute: typeof ReassignPartitionsRoute;
+  SecurityRoute: typeof SecurityRouteWithChildren;
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
@@ -935,7 +983,6 @@ export interface RootRouteChildren {
   SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute;
   SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute;
   SecretsCreateRoute: typeof SecretsCreateRoute;
-  SecurityTabRoute: typeof SecurityTabRoute;
   ShadowlinksCreateRoute: typeof ShadowlinksCreateRoute;
   TransformsTransformNameRoute: typeof TransformsTransformNameRoute;
   AgentsIndexRoute: typeof AgentsIndexRoute;
@@ -949,7 +996,6 @@ export interface RootRouteChildren {
   OverviewIndexRoute: typeof OverviewIndexRoute;
   SchemaRegistryIndexRoute: typeof SchemaRegistryIndexRoute;
   SecretsIndexRoute: typeof SecretsIndexRoute;
-  SecurityIndexRoute: typeof SecurityIndexRoute;
   ShadowlinksIndexRoute: typeof ShadowlinksIndexRoute;
   TopicsIndexRoute: typeof TopicsIndexRoute;
   TranscriptsIndexRoute: typeof TranscriptsIndexRoute;
@@ -961,9 +1007,6 @@ export interface RootRouteChildren {
   RpConnectPipelineIdEditRoute: typeof RpConnectPipelineIdEditRoute;
   RpConnectSecretsCreateRoute: typeof RpConnectSecretsCreateRoute;
   SecretsIdEditRoute: typeof SecretsIdEditRoute;
-  SecurityAclsCreateRoute: typeof SecurityAclsCreateRoute;
-  SecurityRolesCreateRoute: typeof SecurityRolesCreateRoute;
-  SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
   ShadowlinksNameEditRoute: typeof ShadowlinksNameEditRoute;
   TopicsTopicNameProduceRecordRoute: typeof TopicsTopicNameProduceRecordRoute;
   AgentsIdIndexRoute: typeof AgentsIdIndexRoute;
@@ -981,12 +1024,6 @@ export interface RootRouteChildren {
   SchemaRegistrySubjectsSubjectNameAddVersionRoute: typeof SchemaRegistrySubjectsSubjectNameAddVersionRoute;
   SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute: typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
   SchemaRegistrySubjectsSubjectNameEditModeRoute: typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
-  SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
-  SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
-  SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
-  SecurityRolesRoleNameEditRoute: typeof SecurityRolesRoleNameEditRoute;
-  SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
-  SecurityUsersUserNameDetailsRoute: typeof SecurityUsersUserNameDetailsRoute;
   SchemaRegistrySubjectsSubjectNameIndexRoute: typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
 
@@ -1011,6 +1048,13 @@ declare module '@tanstack/react-router' {
       path: '/transforms-setup';
       fullPath: '/transforms-setup';
       preLoaderRoute: typeof TransformsSetupRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/security': {
+      id: '/security';
+      path: '/security';
+      fullPath: '/security';
+      preLoaderRoute: typeof SecurityRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/reassign-partitions': {
@@ -1064,10 +1108,10 @@ declare module '@tanstack/react-router' {
     };
     '/security/': {
       id: '/security/';
-      path: '/security';
+      path: '/';
       fullPath: '/security/';
       preLoaderRoute: typeof SecurityIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/secrets/': {
       id: '/secrets/';
@@ -1158,13 +1202,6 @@ declare module '@tanstack/react-router' {
       path: '/shadowlinks/create';
       fullPath: '/shadowlinks/create';
       preLoaderRoute: typeof ShadowlinksCreateRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/security/$tab': {
-      id: '/security/$tab';
-      path: '/security/$tab';
-      fullPath: '/security/$tab';
-      preLoaderRoute: typeof SecurityTabRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/secrets/create': {
@@ -1272,6 +1309,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShadowlinksNameIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/security/users/': {
+      id: '/security/users/';
+      path: '/users';
+      fullPath: '/security/users/';
+      preLoaderRoute: typeof SecurityUsersIndexRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
+    '/security/roles/': {
+      id: '/security/roles/';
+      path: '/roles';
+      fullPath: '/security/roles/';
+      preLoaderRoute: typeof SecurityRolesIndexRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
+    '/security/permissions-list/': {
+      id: '/security/permissions-list/';
+      path: '/permissions-list';
+      fullPath: '/security/permissions-list/';
+      preLoaderRoute: typeof SecurityPermissionsListIndexRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
+    '/security/acls/': {
+      id: '/security/acls/';
+      path: '/acls';
+      fullPath: '/security/acls/';
+      preLoaderRoute: typeof SecurityAclsIndexRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
     '/rp-connect/$pipelineId/': {
       id: '/rp-connect/$pipelineId/';
       path: '/rp-connect/$pipelineId';
@@ -1316,24 +1381,24 @@ declare module '@tanstack/react-router' {
     };
     '/security/users/create': {
       id: '/security/users/create';
-      path: '/security/users/create';
+      path: '/users/create';
       fullPath: '/security/users/create';
       preLoaderRoute: typeof SecurityUsersCreateRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/roles/create': {
       id: '/security/roles/create';
-      path: '/security/roles/create';
+      path: '/roles/create';
       fullPath: '/security/roles/create';
       preLoaderRoute: typeof SecurityRolesCreateRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/acls/create': {
       id: '/security/acls/create';
-      path: '/security/acls/create';
+      path: '/acls/create';
       fullPath: '/security/acls/create';
       preLoaderRoute: typeof SecurityAclsCreateRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/secrets/$id/edit': {
       id: '/secrets/$id/edit';
@@ -1393,45 +1458,45 @@ declare module '@tanstack/react-router' {
     };
     '/security/users/$userName/details': {
       id: '/security/users/$userName/details';
-      path: '/security/users/$userName/details';
+      path: '/users/$userName/details';
       fullPath: '/security/users/$userName/details';
       preLoaderRoute: typeof SecurityUsersUserNameDetailsRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/roles/$roleName/update': {
       id: '/security/roles/$roleName/update';
-      path: '/security/roles/$roleName/update';
+      path: '/roles/$roleName/update';
       fullPath: '/security/roles/$roleName/update';
       preLoaderRoute: typeof SecurityRolesRoleNameUpdateRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/roles/$roleName/edit': {
       id: '/security/roles/$roleName/edit';
-      path: '/security/roles/$roleName/edit';
+      path: '/roles/$roleName/edit';
       fullPath: '/security/roles/$roleName/edit';
       preLoaderRoute: typeof SecurityRolesRoleNameEditRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/roles/$roleName/details': {
       id: '/security/roles/$roleName/details';
-      path: '/security/roles/$roleName/details';
+      path: '/roles/$roleName/details';
       fullPath: '/security/roles/$roleName/details';
       preLoaderRoute: typeof SecurityRolesRoleNameDetailsRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/acls/$aclName/update': {
       id: '/security/acls/$aclName/update';
-      path: '/security/acls/$aclName/update';
+      path: '/acls/$aclName/update';
       fullPath: '/security/acls/$aclName/update';
       preLoaderRoute: typeof SecurityAclsAclNameUpdateRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/acls/$aclName/details': {
       id: '/security/acls/$aclName/details';
-      path: '/security/acls/$aclName/details';
+      path: '/acls/$aclName/details';
       fullPath: '/security/acls/$aclName/details';
       preLoaderRoute: typeof SecurityAclsAclNameDetailsRouteImport;
-      parentRoute: typeof rootRouteImport;
+      parentRoute: typeof SecurityRoute;
     };
     '/schema-registry/subjects/$subjectName/edit-mode': {
       id: '/schema-registry/subjects/$subjectName/edit-mode';
@@ -1499,10 +1564,49 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SecurityRouteChildren {
+  SecurityIndexRoute: typeof SecurityIndexRoute;
+  SecurityAclsCreateRoute: typeof SecurityAclsCreateRoute;
+  SecurityRolesCreateRoute: typeof SecurityRolesCreateRoute;
+  SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
+  SecurityAclsIndexRoute: typeof SecurityAclsIndexRoute;
+  SecurityPermissionsListIndexRoute: typeof SecurityPermissionsListIndexRoute;
+  SecurityRolesIndexRoute: typeof SecurityRolesIndexRoute;
+  SecurityUsersIndexRoute: typeof SecurityUsersIndexRoute;
+  SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
+  SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
+  SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
+  SecurityRolesRoleNameEditRoute: typeof SecurityRolesRoleNameEditRoute;
+  SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
+  SecurityUsersUserNameDetailsRoute: typeof SecurityUsersUserNameDetailsRoute;
+}
+
+const SecurityRouteChildren: SecurityRouteChildren = {
+  SecurityIndexRoute: SecurityIndexRoute,
+  SecurityAclsCreateRoute: SecurityAclsCreateRoute,
+  SecurityRolesCreateRoute: SecurityRolesCreateRoute,
+  SecurityUsersCreateRoute: SecurityUsersCreateRoute,
+  SecurityAclsIndexRoute: SecurityAclsIndexRoute,
+  SecurityPermissionsListIndexRoute: SecurityPermissionsListIndexRoute,
+  SecurityRolesIndexRoute: SecurityRolesIndexRoute,
+  SecurityUsersIndexRoute: SecurityUsersIndexRoute,
+  SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
+  SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
+  SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
+  SecurityRolesRoleNameEditRoute: SecurityRolesRoleNameEditRoute,
+  SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
+  SecurityUsersUserNameDetailsRoute: SecurityUsersUserNameDetailsRoute,
+};
+
+const SecurityRouteWithChildren = SecurityRoute._addFileChildren(
+  SecurityRouteChildren,
+);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   QuotasRoute: QuotasRoute,
   ReassignPartitionsRoute: ReassignPartitionsRoute,
+  SecurityRoute: SecurityRouteWithChildren,
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,
@@ -1519,7 +1623,6 @@ const rootRouteChildren: RootRouteChildren = {
   SchemaRegistryEditCompatibilityRoute: SchemaRegistryEditCompatibilityRoute,
   SchemaRegistryEditModeRoute: SchemaRegistryEditModeRoute,
   SecretsCreateRoute: SecretsCreateRoute,
-  SecurityTabRoute: SecurityTabRoute,
   ShadowlinksCreateRoute: ShadowlinksCreateRoute,
   TransformsTransformNameRoute: TransformsTransformNameRoute,
   AgentsIndexRoute: AgentsIndexRoute,
@@ -1533,7 +1636,6 @@ const rootRouteChildren: RootRouteChildren = {
   OverviewIndexRoute: OverviewIndexRoute,
   SchemaRegistryIndexRoute: SchemaRegistryIndexRoute,
   SecretsIndexRoute: SecretsIndexRoute,
-  SecurityIndexRoute: SecurityIndexRoute,
   ShadowlinksIndexRoute: ShadowlinksIndexRoute,
   TopicsIndexRoute: TopicsIndexRoute,
   TranscriptsIndexRoute: TranscriptsIndexRoute,
@@ -1547,9 +1649,6 @@ const rootRouteChildren: RootRouteChildren = {
   RpConnectPipelineIdEditRoute: RpConnectPipelineIdEditRoute,
   RpConnectSecretsCreateRoute: RpConnectSecretsCreateRoute,
   SecretsIdEditRoute: SecretsIdEditRoute,
-  SecurityAclsCreateRoute: SecurityAclsCreateRoute,
-  SecurityRolesCreateRoute: SecurityRolesCreateRoute,
-  SecurityUsersCreateRoute: SecurityUsersCreateRoute,
   ShadowlinksNameEditRoute: ShadowlinksNameEditRoute,
   TopicsTopicNameProduceRecordRoute: TopicsTopicNameProduceRecordRoute,
   AgentsIdIndexRoute: AgentsIdIndexRoute,
@@ -1576,12 +1675,6 @@ const rootRouteChildren: RootRouteChildren = {
     SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute,
   SchemaRegistrySubjectsSubjectNameEditModeRoute:
     SchemaRegistrySubjectsSubjectNameEditModeRoute,
-  SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
-  SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
-  SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
-  SecurityRolesRoleNameEditRoute: SecurityRolesRoleNameEditRoute,
-  SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
-  SecurityUsersUserNameDetailsRoute: SecurityUsersUserNameDetailsRoute,
   SchemaRegistrySubjectsSubjectNameIndexRoute:
     SchemaRegistrySubjectsSubjectNameIndexRoute,
 };
