@@ -18,7 +18,6 @@ import AclCreatePage from '../../../components/pages/acls/new-acl/acl-create-pag
 const searchSchema = z.object({
   principalType: fallback(z.string().optional(), undefined),
   principalName: fallback(z.string().optional(), undefined),
-  lockPrincipal: fallback(z.literal('true').optional(), undefined),
 });
 
 export const Route = createFileRoute('/security/acls/create')({

@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { parsePrincipalFromParam } from './principal-utils';
+import { parsePrincipalFromParam, resolveAclSearchParams } from './principal-utils';
 
 describe('parsePrincipalFromParam', () => {
   test('bare name defaults to User principal type', () => {
@@ -42,5 +42,55 @@ describe('parsePrincipalFromParam', () => {
 
   test('Group with colon in name uses first colon as separator', () => {
     expect(parsePrincipalFromParam('Group:team:a')).toEqual({ principalType: 'Group', principalName: 'team:a' });
+  });
+});
+
+describe('resolveAclSearchParams', () => {
+  test('returns sharedConfig with User principal for principalType=User', () => {
+    const result = resolveAclSearchParams({ principalType: 'User', principalName: 'alice' });
+    expect(result.sharedConfig).toEqual({ principal: 'User:alice', host: '*' });
+    expect(result.principalType).toBe('User:');
+  });
+
+  test('returns sharedConfig with RedpandaRole principal', () => {
+    const result = resolveAclSearchParams({ principalType: 'RedpandaRole', principalName: 'admin' });
+    expect(result.sharedConfig).toEqual({ principal: 'RedpandaRole:admin', host: '*' });
+    expect(result.principalType).toBe('RedpandaRole:');
+  });
+
+  test('returns sharedConfig with Group principal', () => {
+    const result = resolveAclSearchParams({ principalType: 'Group', principalName: 'team-a' });
+    expect(result.sharedConfig).toEqual({ principal: 'Group:team-a', host: '*' });
+    expect(result.principalType).toBe('Group:');
+  });
+
+  test('is case-insensitive for principalType', () => {
+    const result = resolveAclSearchParams({ principalType: 'USER', principalName: 'bob' });
+    expect(result.sharedConfig).toEqual({ principal: 'User:bob', host: '*' });
+    expect(result.principalType).toBe('User:');
+  });
+
+  test('returns undefined sharedConfig when principalName is missing', () => {
+    const result = resolveAclSearchParams({ principalType: 'User' });
+    expect(result.sharedConfig).toBeUndefined();
+    expect(result.principalType).toBe('User:');
+  });
+
+  test('returns undefined sharedConfig when principalType is missing', () => {
+    const result = resolveAclSearchParams({ principalName: 'alice' });
+    expect(result.sharedConfig).toBeUndefined();
+    expect(result.principalType).toBeUndefined();
+  });
+
+  test('returns undefined for both when no params', () => {
+    const result = resolveAclSearchParams({});
+    expect(result.sharedConfig).toBeUndefined();
+    expect(result.principalType).toBeUndefined();
+  });
+
+  test('returns undefined for unknown principalType', () => {
+    const result = resolveAclSearchParams({ principalType: 'Unknown', principalName: 'alice' });
+    expect(result.sharedConfig).toBeUndefined();
+    expect(result.principalType).toBeUndefined();
   });
 });

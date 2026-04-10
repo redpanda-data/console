@@ -13,49 +13,20 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/create');
 
-import {
-  convertRulesToCreateACLRequests,
-  handleResponses,
-  type PrincipalType,
-  PrincipalTypeGroup,
-  PrincipalTypeRedpandaRole,
-  PrincipalTypeUser,
-  type Rule,
-} from 'components/pages/acls/new-acl/acl.model';
+import { convertRulesToCreateACLRequests, handleResponses, type Rule } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
-import { LockedPrincipalField } from 'components/pages/acls/new-acl/locked-principal-field';
-import { parsePrincipalFromParam } from 'components/pages/acls/new-acl/principal-utils';
-import { useEffect } from 'react';
-import { uiState } from 'state/ui-state';
+import { parsePrincipalFromParam, resolveAclSearchParams } from 'components/pages/acls/new-acl/principal-utils';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
-import PageContent from '../../../misc/page-content';
-
-const principalTypeMap: Record<string, PrincipalType> = {
-  redpandarole: PrincipalTypeRedpandaRole,
-  user: PrincipalTypeUser,
-  group: PrincipalTypeGroup,
-};
+import { useSecurityBreadcrumbs } from '../../security/hooks/use-security-breadcrumbs';
 
 const AclCreatePage = () => {
   const navigate = useNavigate({ from: '/security/acls/create' });
   const search = routeApi.useSearch();
 
-  const principalTypeParam = search.principalType?.toLowerCase();
-  const principalName = search.principalName;
-  const principalType = principalTypeParam ? principalTypeMap[principalTypeParam] : undefined;
-  const lockPrincipal = search.lockPrincipal === 'true' && !!principalType && !!principalName;
+  const { sharedConfig, principalType } = resolveAclSearchParams(search);
 
-  const sharedConfig =
-    principalName && principalType ? { principal: `${principalType}${principalName}`, host: '*' } : undefined;
-
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [
-      { title: 'Security', linkTo: '/security' },
-      { title: 'ACLs', linkTo: '/security/acls' },
-      { title: 'Create ACL', linkTo: '' },
-    ];
-  }, []);
+  useSecurityBreadcrumbs([{ title: 'ACLs', linkTo: '/security/acls' }]);
 
   const { createAcls } = useCreateAcls();
 
@@ -64,8 +35,8 @@ const AclCreatePage = () => {
     const applyResult = await createAcls(result);
     handleResponses(applyResult.errors, applyResult.created);
 
-    const { principalType, principalName } = parsePrincipalFromParam(principal);
-    const aclName = principalType === 'User' ? principalName : principal;
+    const { principalType: parsedType, principalName } = parsePrincipalFromParam(principal);
+    const aclName = parsedType === 'User' ? principalName : principal;
     navigate({
       to: '/security/acls/$aclName/details',
       params: { aclName },
@@ -74,16 +45,16 @@ const AclCreatePage = () => {
   };
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Create ACL</h2>
       <CreateACL
         edit={false}
-        onCancel={() => navigate({ to: '/security/$tab', params: { tab: 'acls' } })}
+        onCancel={() => navigate({ to: '/security/acls' })}
         onSubmit={createAclMutation}
         principalType={principalType}
-        renderPrincipal={lockPrincipal ? (props) => <LockedPrincipalField {...props} /> : undefined}
         sharedConfig={sharedConfig}
       />
-    </PageContent>
+    </div>
   );
 };
 
