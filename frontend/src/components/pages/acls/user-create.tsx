@@ -9,39 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  Checkbox,
-  CopyButton,
-  createStandaloneToast,
-  Flex,
-  FormField,
-  Grid,
-  Heading,
-  IconButton,
-  Input,
-  isMultiValue,
-  PasswordInput,
-  redpandaTheme,
-  redpandaToastOptions,
-  Select,
-  Text,
-  Tooltip,
-} from '@redpanda-data/ui';
-import { Link } from '@tanstack/react-router';
-import { RotateCwIcon } from 'components/icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { create } from '@bufbuild/protobuf';
+import { useNavigate } from '@tanstack/react-router';
+import { InfoIcon, LoaderCircleIcon, RotateCwIcon } from 'lucide-react';
+import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { useCallback, useState } from 'react';
 
-import { useListRolesQuery } from '../../../react-query/api/security';
-import { invalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
-import { appGlobal } from '../../../state/app-global';
-import { api, rolesApi } from '../../../state/backend-api';
-import { AclRequestDefault } from '../../../state/rest-interfaces';
+import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
+import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../react-query/api/user';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { uiState } from '../../../state/ui-state';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -50,17 +27,16 @@ import {
   validatePassword,
   validateUsername,
 } from '../../../utils/user';
-import PageContent from '../../misc/page-content';
-import { SingleSelect } from '../../misc/select';
-
-const { ToastContainer, toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: {
-    ...redpandaToastOptions.defaultOptions,
-    isClosable: false,
-    duration: 2000,
-  },
-});
+import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
+import { Button } from '../../redpanda-ui/components/button';
+import { Checkbox } from '../../redpanda-ui/components/checkbox';
+import { CopyButton } from '../../redpanda-ui/components/copy-button';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
+import { Input } from '../../redpanda-ui/components/input';
+import { SimpleMultiSelect } from '../../redpanda-ui/components/multi-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({
@@ -71,7 +47,10 @@ const UserCreatePage = () => {
     selectedRoles: [] as string[],
   });
   const [step, setStep] = useState<'CREATE_USER' | 'CREATE_USER_CONFIRMATION'>('CREATE_USER');
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { mutateAsync: createUserMutate } = useCreateUserMutation();
+  const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
 
   const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
   const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
@@ -81,87 +60,53 @@ const UserCreatePage = () => {
     setFormState((prev) => ({ ...prev, generateWithSpecialChars: v }));
   const setSelectedRoles = (v: string[]) => setFormState((prev) => ({ ...prev, selectedRoles: v }));
 
-  const { data: usersData } = useLegacyListUsersQuery();
+  const { data: usersData } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
 
   const isValidUsername = validateUsername(username);
   const isValidPassword = validatePassword(password);
 
-  useEffect(() => {
-    uiState.pageTitle = 'Create user';
-    uiState.pageBreadcrumbs = [];
-    uiState.pageBreadcrumbs.push({ title: 'Access Control', linkTo: '/security' });
-    uiState.pageBreadcrumbs.push({ title: 'Create user', linkTo: '/security/users/create' });
-
-    const refreshData = async () => {
-      if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
-        return;
-      }
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
-    };
-
-    refreshData().catch(() => {
-      // Silently ignore refresh errors
-    });
-    appGlobal.onRefresh = () =>
-      refreshData().catch(() => {
-        // Silently ignore refresh errors
-      });
-  }, []);
+  useSecurityBreadcrumbs([{ title: 'Users', linkTo: '/security/users' }]);
 
   const onCreateUser = useCallback(async (): Promise<boolean> => {
-    setIsCreating(true);
-    let success = false;
+    setIsSubmitting(true);
     try {
-      await api.createServiceAccount({
-        username,
-        password,
-        mechanism,
+      await createUserMutate({
+        user: create(CreateUserRequest_UserSchema, {
+          name: username,
+          password,
+          mechanism: getSASLMechanism(mechanism),
+        }),
       });
-    } catch (err) {
-      toast({
-        status: 'error',
-        duration: null,
-        isClosable: true,
-        title: 'Failed to create user',
-        description: String(err),
-      });
-      setIsCreating(false);
+    } catch {
+      // Toast is shown by useCreateUserMutation's onError handler.
+      // mutateAsync re-throws after onError, so we catch to prevent unhandled rejection.
+      setIsSubmitting(false);
       return false;
     }
 
-    const userData = api.userData;
-    if (userData) {
-      const cannotListAcls = !userData.canListAcls;
-      if (cannotListAcls) {
-        setIsCreating(false);
-        return false;
-      }
-    }
-
-    const roleAddPromises: Promise<unknown>[] = selectedRoles.map((r) =>
-      rolesApi.updateRoleMembership(r, [{ name: username, principalType: 'User' }], [], false)
+    const roleAddPromises = selectedRoles.map((r) =>
+      updateMembership(
+        create(UpdateRoleMembershipRequestSchema, {
+          roleName: r,
+          add: [{ principal: username }],
+        })
+      )
     );
 
-    try {
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
-      await Promise.allSettled(roleAddPromises);
-      setStep('CREATE_USER_CONFIRMATION');
-      success = true;
-    } catch (err) {
-      toast({
-        status: 'error',
-        duration: null,
-        isClosable: true,
-        title: 'Failed to create user',
-        description: String(err),
-      });
-    }
-    setIsCreating(false);
-    return success;
-  }, [username, password, mechanism, selectedRoles]);
+    await Promise.allSettled(roleAddPromises);
+    setIsSubmitting(false);
+    setStep('CREATE_USER_CONFIRMATION');
+    return true;
+  }, [username, password, mechanism, selectedRoles, createUserMutate, updateMembership]);
 
-  const onCancel = () => appGlobal.historyPush('/security/users');
+  const navigate = useNavigate();
+  const onCancel = () => navigate({ to: '/security/users' });
+  const onCreateAcls = () =>
+    navigate({
+      to: '/security/acls/create',
+      search: { principalType: 'User', principalName: username },
+    });
 
   const state = {
     username,
@@ -172,7 +117,7 @@ const UserCreatePage = () => {
     setMechanism,
     generateWithSpecialChars,
     setGenerateWithSpecialChars,
-    isCreating,
+    isCreating: isSubmitting,
     isValidUsername,
     isValidPassword,
     selectedRoles,
@@ -181,24 +126,22 @@ const UserCreatePage = () => {
   };
 
   return (
-    <>
-      <ToastContainer />
-
-      <PageContent>
-        <Box>
-          {step === 'CREATE_USER' ? (
-            <CreateUserModal onCancel={onCancel} onCreateUser={onCreateUser} state={state} />
-          ) : (
-            <CreateUserConfirmationModal
-              closeModal={onCancel}
-              mechanism={mechanism}
-              password={password}
-              username={username}
-            />
-          )}
-        </Box>
-      </PageContent>
-    </>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Create user</h2>
+      <div>
+        {step === 'CREATE_USER' ? (
+          <CreateUserModal onCancel={onCancel} onCreateUser={onCreateUser} state={state} />
+        ) : (
+          <CreateUserConfirmationModal
+            closeModal={onCancel}
+            mechanism={mechanism}
+            onCreateAcls={onCreateAcls}
+            password={password}
+            username={username}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -228,125 +171,131 @@ type CreateUserModalProps = {
 const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userAlreadyExists = state.users.includes(state.username);
+  const hasError = (!state.isValidUsername || userAlreadyExists) && state.username.length > 0;
 
-  const errorText = useMemo(() => {
+  function getErrorText(): string | undefined {
     if (!state.isValidUsername) {
       return 'The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens.';
     }
-
     if (userAlreadyExists) {
       return 'User already exists';
     }
-  }, [state.isValidUsername, userAlreadyExists]);
+    return;
+  }
+  const errorText = getErrorText();
 
   return (
-    <Box maxWidth="460px">
-      <Flex direction="column" gap="2em">
-        <FormField
-          description="Must not contain any whitespace. Dots, hyphens and underscores may be used."
-          errorText={errorText}
-          isInvalid={(!state.isValidUsername || userAlreadyExists) && state.username.length > 0}
-          label="Username"
-          showRequiredIndicator
-        >
+    <div className="max-w-[460px]">
+      <div className="flex flex-col gap-8">
+        <Field data-invalid={hasError || undefined}>
+          <FieldLabel required>Username</FieldLabel>
           <Input
             autoComplete="off"
-            data-testid="create-user-name"
-            onChange={(v) => {
-              state.setUsername(v.target.value);
-            }}
+            onChange={(e) => state.setUsername(e.target.value)}
             placeholder="Username"
             spellCheck={false}
+            testId="create-user-name"
             value={state.username}
-            width="100%"
           />
-        </FormField>
+          <FieldDescription>
+            Must not contain any whitespace. Dots, hyphens and underscores may be used.
+          </FieldDescription>
+          {hasError && errorText !== undefined && <FieldError>{errorText}</FieldError>}
+        </Field>
 
-        <FormField
-          data-testid="create-user-password"
-          description={`Must be at least ${PASSWORD_MIN_LENGTH} characters and should not exceed ${PASSWORD_MAX_LENGTH} characters.`}
-          label="Password"
-          showRequiredIndicator={true}
-        >
-          <Flex direction="column" gap="2">
-            <Flex alignItems="center" gap="2">
-              <PasswordInput
-                isInvalid={!state.isValidPassword}
+        <Field>
+          <FieldLabel required>Password</FieldLabel>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                aria-invalid={!state.isValidPassword}
                 name="test"
-                onChange={(e) => {
-                  state.setPassword(e.target.value);
-                }}
+                onChange={(e) => state.setPassword(e.target.value)}
+                testId="create-user-password"
+                type="password"
                 value={state.password}
               />
-
-              <Tooltip hasArrow label={'Generate new random password'} placement="top">
-                <IconButton
-                  aria-label="Refresh"
-                  display="inline-flex"
-                  icon={<RotateCwIcon size={16} />}
-                  onClick={() => {
-                    state.setPassword(generatePassword(30, state.generateWithSpecialChars));
-                  }}
-                  variant="ghost"
-                />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label="Refresh"
+                    data-testid="refresh-password-button"
+                    onClick={() => state.setPassword(generatePassword(30, state.generateWithSpecialChars))}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <RotateCwIcon size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Generate new random password</TooltipContent>
               </Tooltip>
-              <Tooltip hasArrow label={'Copy password'} placement="top">
-                {/* Wrapper needed: CopyButton doesn't forward refs, so Chakra Tooltip can't position itself without a DOM element to measure */}
-                <Box as="span" display="inline-flex">
-                  <CopyButton content={state.password} variant="ghost" />
-                </Box>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CopyButton content={state.password} data-testid="copy-password-button" variant="ghost" />
+                </TooltipTrigger>
+                <TooltipContent side="top">Copy password</TooltipContent>
               </Tooltip>
-            </Flex>
-            <Checkbox
-              isChecked={state.generateWithSpecialChars}
-              onChange={(e) => {
-                state.setGenerateWithSpecialChars(e.target.checked);
-                state.setPassword(generatePassword(30, e.target.checked));
-              }}
-            >
-              Generate with special characters
-            </Checkbox>
-          </Flex>
-        </FormField>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={state.generateWithSpecialChars}
+                id="special-chars"
+                onCheckedChange={(checked) => {
+                  const val = checked === true;
+                  state.setGenerateWithSpecialChars(val);
+                  state.setPassword(generatePassword(30, val));
+                }}
+                testId="special-chars-checkbox"
+              />
+              <label className="cursor-pointer text-sm" htmlFor="special-chars">
+                Generate with special characters
+              </label>
+            </div>
+          </div>
+          <FieldDescription>
+            Must be at least {PASSWORD_MIN_LENGTH} characters and should not exceed {PASSWORD_MAX_LENGTH} characters.
+          </FieldDescription>
+        </Field>
 
-        <FormField label="SASL mechanism" showRequiredIndicator>
-          <SingleSelect<SaslMechanism>
-            onChange={(e) => {
-              state.setMechanism(e);
-            }}
-            options={SASL_MECHANISMS.map((mechanism) => ({
-              value: mechanism,
-              label: mechanism,
-            }))}
-            value={state.mechanism}
-          />
-        </FormField>
+        <Field>
+          <FieldLabel required>SASL mechanism</FieldLabel>
+          <Select onValueChange={(v) => state.setMechanism(v as SaslMechanism)} value={state.mechanism}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SASL_MECHANISMS.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
-        {Boolean(featureRolesApi) && (
-          <FormField
-            description="Assign roles to this user. This is optional and can be changed later."
-            isDisabled={!featureRolesApi}
-            label="Assign roles"
-          >
+        {!!featureRolesApi && (
+          <Field>
+            <FieldLabel>Assign roles</FieldLabel>
             <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
-          </FormField>
+            <FieldDescription>Assign roles to this user. This is optional and can be changed later.</FieldDescription>
+          </Field>
         )}
-      </Flex>
+      </div>
 
-      <Flex gap={4} mt={8}>
+      <div className="mt-8 flex gap-4">
         <Button
-          isDisabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
-          isLoading={state.isCreating}
-          loadingText="Creating..."
+          disabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
           onClick={onCreateUser}
+          testId="create-user-submit"
         >
-          Create
+          {state.isCreating ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
+          {state.isCreating ? 'Creating...' : 'Create'}
         </Button>
-        <Button isDisabled={state.isCreating} onClick={onCancel} variant="link">
+        <Button disabled={state.isCreating} onClick={onCancel} testId="create-user-cancel" variant="link">
           Cancel
         </Button>
-      </Flex>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -355,6 +304,7 @@ type CreateUserConfirmationModalProps = {
   password: string;
   mechanism: SaslMechanism;
   closeModal: () => void;
+  onCreateAcls: () => void;
 };
 
 const CreateUserConfirmationModal = ({
@@ -362,107 +312,83 @@ const CreateUserConfirmationModal = ({
   password,
   mechanism,
   closeModal,
+  onCreateAcls,
 }: CreateUserConfirmationModalProps) => (
   <>
-    <Heading as="h1" data-testid="user-created-successfully" mb={8} mt={4}>
-      <Flex alignItems="center">User created successfully</Flex>
-    </Heading>
+    <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
+      User created successfully
+    </h1>
 
-    <Alert mb={4} mt={4} status="info">
-      <AlertIcon />
-      You will not be able to view this password again. Make sure that it is copied and saved.
+    <Alert className="my-4" icon={<InfoIcon />} variant="info">
+      <AlertDescription>
+        You will not be able to view this password again. Make sure that it is copied and saved.
+      </AlertDescription>
     </Alert>
 
-    <Grid alignItems="center" gridColumnGap={6} gridRowGap={2} maxWidth="460px" templateColumns="max-content 1fr">
-      <Box data-testid="username" fontWeight="bold">
+    <div className="grid max-w-[460px] items-center gap-x-6 gap-y-2" style={{ gridTemplateColumns: 'max-content 1fr' }}>
+      <div className="font-bold" data-testid="username">
         Username
-      </Box>
-      <Box>
-        <Flex alignItems="center" gap={2}>
-          <Text overflow="hidden" wordBreak="break-all">
-            {username}
-          </Text>
-
-          <Tooltip hasArrow label={'Copy username'} placement="top">
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="overflow-hidden break-all">{username}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <CopyButton content={username} variant="ghost" />
-          </Tooltip>
-        </Flex>
-      </Box>
+          </TooltipTrigger>
+          <TooltipContent side="top">Copy username</TooltipContent>
+        </Tooltip>
+      </div>
 
-      <Box data-testid="password" fontWeight="bold">
+      <div className="font-bold" data-testid="password">
         Password
-      </Box>
-      <Box>
-        <Flex alignItems="center" gap={2}>
-          <PasswordInput isDisabled={true} isReadOnly={true} name="test" value={password} />
+      </div>
+      <div className="flex items-center gap-2">
+        <Input disabled readOnly testId="test_field" type="password" value={password} />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <CopyButton content={password} variant="ghost" />
+          </TooltipTrigger>
+          <TooltipContent side="top">Copy password</TooltipContent>
+        </Tooltip>
+      </div>
 
-          <Tooltip hasArrow label={'Copy password'} placement="top">
-            {/* Wrapper needed: CopyButton doesn't forward refs, so Chakra Tooltip can't position itself without a DOM element to measure */}
-            <Box as="span" display="inline-flex">
-              <CopyButton content={password} variant="ghost" />
-            </Box>
-          </Tooltip>
-        </Flex>
-      </Box>
-
-      <Box data-testid="mechanism" fontWeight="bold">
+      <div className="font-bold" data-testid="mechanism">
         Mechanism
-      </Box>
-      <Box>
-        <Text isTruncated={true} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-          {mechanism}
-        </Text>
-      </Box>
-    </Grid>
+      </div>
+      <div>
+        <span className="truncate">{mechanism}</span>
+      </div>
+    </div>
 
-    <Flex gap={4} mt={8}>
-      <Button onClick={closeModal}>Done</Button>
-      <Button
-        as={Link}
-        to={`/security/acls/create?principalType=User&principalName=${encodeURIComponent(username)}&lockPrincipal=true`}
-        variant="link"
-      >
+    <div className="mt-8 flex gap-4">
+      <Button onClick={closeModal} testId="done-button">
+        Done
+      </Button>
+      <Button onClick={onCreateAcls} testId="create-acls-button" variant="link">
         Create ACLs
       </Button>
-    </Flex>
+    </div>
   </>
 );
 
 export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRoles: (roles: string[]) => void }) => {
-  const [searchValue, setSearchValue] = useState('');
   const {
     data: { roles: allRoles },
   } = useListRolesQuery();
   const availableRoles = (allRoles ?? [])
     .filter((r: { name: string }) => !roles.includes(r.name))
-    .map((r: { name: string }) => ({ value: r.name }));
+    .map((r: { name: string }) => r.name);
 
   return (
-    <Flex direction="column" gap={4}>
-      <Box w="280px">
-        <Select<string>
-          inputValue={searchValue}
-          isMulti={true}
-          noOptionsMessage={() => 'No roles found'}
-          onChange={(val) => {
-            if (val && isMultiValue(val)) {
-              setRoles([...val.map((selectedRole) => selectedRole.value)]);
-              setSearchValue('');
-            }
-          }}
-          onInputChange={setSearchValue}
-          options={availableRoles}
-          // TODO: Selecting an entry triggers onChange properly.
-          //       But there is no way to prevent the component from showing no value as intended
-          //       Seems to be a bug with the component.
-          //       On 'undefined' it should handle selection on its own (this works properly)
-          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
-          //       The override doesn't work either (isOptionSelected={()=>false})
-          placeholder="Select roles..."
-          value={roles.map((r) => ({ value: r }))}
-        />
-      </Box>
-    </Flex>
+    <div className="w-[280px]">
+      <SimpleMultiSelect
+        onValueChange={setRoles}
+        options={availableRoles}
+        placeholder="Select roles..."
+        value={roles}
+        width="full"
+      />
+    </div>
   );
 };
 
@@ -476,21 +402,10 @@ export function generatePassword(length: number, allowSpecialChars: boolean): st
   const numbers = '0123456789';
   const special = '.,&_+|[]/-()';
 
-  let alphabet = lowercase + uppercase + numbers;
-  if (allowSpecialChars) {
-    alphabet += special;
-  }
+  const alphabet = lowercase + uppercase + numbers + (allowSpecialChars ? special : '');
 
   const randomValues = new Uint32Array(length);
   crypto.getRandomValues(randomValues);
 
-  let result = '';
-  for (const n of randomValues) {
-    const index = n % alphabet.length;
-    const sym = alphabet[index];
-
-    result += sym;
-  }
-
-  return result;
+  return Array.from(randomValues, (n) => alphabet[n % alphabet.length]).join('');
 }
