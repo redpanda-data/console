@@ -26,7 +26,9 @@ import {
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
+import { LockedPrincipalField } from 'components/pages/acls/new-acl/locked-principal-field';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
 import { uiState } from '../../../state/ui-state';
@@ -54,13 +56,17 @@ const RoleUpdatePage = () => {
 
   const updateRoleAclMutation =
     (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
-      const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
-      handleResponses(applyResult.errors, applyResult.created);
+      try {
+        const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
+        handleResponses(applyResult.errors, applyResult.created);
 
-      navigate({
-        to: `/security/roles/${roleName}/details`,
-        search: { host },
-      });
+        navigate({
+          to: `/security/roles/${roleName}/details`,
+          search: { host },
+        });
+      } catch (error) {
+        toast.error(`Failed to update role ACLs: ${error instanceof Error ? error.message : String(error)}`);
+      }
     };
 
   if (isLoading) {
@@ -123,6 +129,7 @@ const RoleUpdatePage = () => {
         }
         onSubmit={updateRoleAclMutation(acl?.rules ?? [], acl?.sharedConfig ?? emptySharedConfig)}
         principalType={PrincipalTypeRedpandaRole}
+        renderPrincipal={(props) => <LockedPrincipalField {...props} label="Role name" />}
         rules={rulesWithAllOperations.length > 0 ? rulesWithAllOperations : undefined}
         sharedConfig={acl?.sharedConfig ?? emptySharedConfig}
       />

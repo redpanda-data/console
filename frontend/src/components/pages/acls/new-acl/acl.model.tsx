@@ -123,6 +123,13 @@ export type SharedConfigProps = {
   edit: boolean;
 };
 
+export type PrincipalFieldProps = {
+  value: string;
+  onChange: (principal: string) => void;
+  disabled: boolean;
+  error?: string;
+};
+
 export type AclRulesProps = {
   rules: Rule[];
   addRule: () => void;

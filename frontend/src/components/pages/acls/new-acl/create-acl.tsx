@@ -21,7 +21,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useApiStoreHook } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
@@ -41,6 +41,7 @@ import {
   OperationTypeAllow,
   OperationTypeDeny,
   OperationTypeNotSet,
+  type PrincipalFieldProps,
   type PrincipalType,
   parsePrincipal,
   type ResourcePatternType,
@@ -566,7 +567,12 @@ const SharedConfiguration = ({
   edit,
   principalType: propPrincipalType,
   principalError,
-}: SharedConfigProps & { principalType?: PrincipalType; principalError?: string }) => {
+  renderPrincipal,
+}: SharedConfigProps & {
+  principalType?: PrincipalType;
+  principalError?: string;
+  renderPrincipal?: (props: PrincipalFieldProps) => ReactNode;
+}) => {
   const [principalType, setPrincipalType] = useState(
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
@@ -582,75 +588,84 @@ const SharedConfiguration = ({
       </CardHeader>
       <CardContent>
         <CardForm>
-          <CardField>
-            <div className="flex items-center gap-1">
-              <Label className="font-medium text-gray-700 text-sm" htmlFor="principal">
-                {principalType === RoleTypeRedpandaRole ? 'Role name' : 'User / principal'}
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <div>
-                      <p>
-                        The user getting permissions granted or denied. In Kafka, this user is known as the principal.
-                      </p>
-                      <ul className="mt-2 space-y-1 text-sm">
-                        <li>• Use the wildcard * to target all users.</li>
-                        <li>• Do not include the prefix. For example, use my-user instead of User:my-user.</li>
-                      </ul>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              <Select
-                disabled={edit}
-                onValueChange={(value) => {
-                  setPrincipalType(value);
-                  // Update the principal to include the new type
-                  const currentValue = parsePrincipal(sharedConfig.principal).name || '';
-                  setSharedConfig({
-                    ...sharedConfig,
-                    principal: `${value}:${currentValue}`,
-                  });
-                }}
-                value={principalType}
-              >
-                <SelectTrigger testId="shared-principal-type-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={RoleTypeUser}>User</SelectItem>
-                  {gbacEnabled && <SelectItem value={RoleTypeGroup}>Group</SelectItem>}
-                  <SelectItem value={RoleTypeRedpandaRole}>Redpanda role</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="col-span-3 gap-1">
-                <Input
+          {renderPrincipal ? (
+            renderPrincipal({
+              value: sharedConfig.principal,
+              onChange: (principal) => setSharedConfig({ ...sharedConfig, principal }),
+              disabled: edit,
+              error: principalError,
+            })
+          ) : (
+            <CardField>
+              <div className="flex items-center gap-1">
+                <Label className="font-medium text-gray-700 text-sm" htmlFor="principal">
+                  {principalType === RoleTypeRedpandaRole ? 'Role name' : 'User / principal'}
+                </Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div>
+                        <p>
+                          The user getting permissions granted or denied. In Kafka, this user is known as the principal.
+                        </p>
+                        <ul className="mt-2 space-y-1 text-sm">
+                          <li>• Use the wildcard * to target all users.</li>
+                          <li>• Do not include the prefix. For example, use my-user instead of User:my-user.</li>
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <Select
                   disabled={edit}
-                  id="principal"
-                  onChange={(e) =>
+                  onValueChange={(value) => {
+                    setPrincipalType(value);
+                    // Update the principal to include the new type
+                    const currentValue = parsePrincipal(sharedConfig.principal).name || '';
                     setSharedConfig({
                       ...sharedConfig,
-                      principal: `${principalType}:${e.target.value}`,
-                    })
-                  }
-                  placeholder="analytics-writer"
-                  testId="shared-principal-input"
-                  value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
-                />
-                {Boolean(principalError) && (
-                  <p className="text-red-600 text-sm" data-testid="principal-error">
-                    {principalError}
-                  </p>
-                )}
+                      principal: `${value}:${currentValue}`,
+                    });
+                  }}
+                  value={principalType}
+                >
+                  <SelectTrigger testId="shared-principal-type-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={RoleTypeUser}>User</SelectItem>
+                    {gbacEnabled && <SelectItem value={RoleTypeGroup}>Group</SelectItem>}
+                    <SelectItem value={RoleTypeRedpandaRole}>Redpanda role</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="col-span-3 gap-1">
+                  <Input
+                    disabled={edit}
+                    id="principal"
+                    onChange={(e) =>
+                      setSharedConfig({
+                        ...sharedConfig,
+                        principal: `${principalType}:${e.target.value}`,
+                      })
+                    }
+                    placeholder="analytics-writer"
+                    testId="shared-principal-input"
+                    value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
+                  />
+                  {Boolean(principalError) && (
+                    <p className="text-red-600 text-sm" data-testid="principal-error">
+                      {principalError}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardField>
+            </CardField>
+          )}
         </CardForm>
         <br />
 
@@ -730,6 +745,7 @@ type CreateACLProps = {
   sharedConfig?: SharedConfig;
   edit: boolean;
   principalType?: PrincipalType;
+  renderPrincipal?: (props: PrincipalFieldProps) => ReactNode;
 };
 
 export default function CreateACL({
@@ -739,6 +755,7 @@ export default function CreateACL({
   sharedConfig: propSharedConfig,
   edit,
   principalType,
+  renderPrincipal,
 }: CreateACLProps) {
   const schemaRegistryEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
   const [principalError, setPrincipalError] = useState<string>('');
@@ -1069,6 +1086,7 @@ export default function CreateACL({
                 openMatchingSections={openMatchingSections}
                 principalError={principalError}
                 principalType={principalType}
+                renderPrincipal={renderPrincipal}
                 setOpenMatchingSections={setOpenMatchingSections}
                 setSharedConfig={setSharedConfig}
                 sharedConfig={sharedConfig}
