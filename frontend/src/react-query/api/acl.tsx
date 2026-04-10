@@ -41,7 +41,7 @@ import {
   getIdFromCreateACLRequest,
   type Rule,
   type SharedConfig,
-} from '../../components/pages/acls/new-acl/acl.model';
+} from '../../components/pages/acls/acl.model';
 
 /**
  * TODO: Remove once Console v3 is released.

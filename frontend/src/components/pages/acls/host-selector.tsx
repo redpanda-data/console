@@ -12,9 +12,9 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import type { AclDetail } from './acl.model';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Text } from '../../../redpanda-ui/components/typography';
+import { Card, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
+import { Text } from '../../redpanda-ui/components/typography';
 
 type HostSelectorProps = {
   principalName: string;

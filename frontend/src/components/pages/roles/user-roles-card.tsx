@@ -18,9 +18,9 @@ import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import type { AclDetail } from '../acls/new-acl/acl.model';
-import { getRuleDataTestId } from '../acls/new-acl/acl.model';
-import { OperationsBadge } from '../acls/new-acl/operations-badge';
+import type { AclDetail } from '../acls/acl.model';
+import { getRuleDataTestId } from '../acls/acl.model';
+import { OperationsBadge } from '../acls/operations-badge';
 
 type Role = {
   principalType: string;

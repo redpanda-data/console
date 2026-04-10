@@ -12,7 +12,7 @@
 import { renderWithFileRoutes, screen } from 'test-utils';
 
 import { UserAclsCard } from './user-acls-card';
-import type { AclDetail } from '../acls/new-acl/acl.model';
+import type { AclDetail } from '../acls/acl.model';
 
 const mockAcls: AclDetail[] = [
   {
