@@ -23,24 +23,16 @@ import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
-import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useCreateAcls } from '../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../react-query/api/security';
-import { uiState } from '../../../state/ui-state';
-import PageContent from '../../misc/page-content';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
 
 const RoleCreatePage = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [
-      { title: 'Security', linkTo: '/security' },
-      { title: 'Roles', linkTo: '/security/roles' },
-      { title: 'Create Role', linkTo: '' },
-    ];
-  }, []);
+  useSecurityBreadcrumbs([{ title: 'Roles', linkTo: '/security/roles' }]);
 
   const { createAcls } = useCreateAcls();
   const { mutateAsync: createRole } = useCreateRoleMutation();
@@ -78,10 +70,11 @@ const RoleCreatePage = () => {
   };
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Create role</h2>
       <CreateACL
         edit={false}
-        onCancel={() => navigate({ to: '/security/$tab', params: { tab: 'roles' } })}
+        onCancel={() => navigate({ to: '/security/roles' })}
         onSubmit={createRoleAclMutation}
         principalType={PrincipalTypeRedpandaRole}
         renderPrincipal={({ value, onChange, error }) => (
@@ -98,7 +91,7 @@ const RoleCreatePage = () => {
           </CardField>
         )}
       />
-    </PageContent>
+    </div>
   );
 };
 

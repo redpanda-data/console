@@ -14,18 +14,17 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 const routeApi = getRouteApi('/security/roles/$roleName/details');
 
 import { Eye, Pencil } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import { uiState } from 'state/ui-state';
+import { useMemo } from 'react';
 
 import { MatchingUsersCard } from './matching-users-card';
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import PageContent from '../../misc/page-content';
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Text } from '../../redpanda-ui/components/typography';
 import type { AclDetail } from '../acls/new-acl/acl.model';
 import { ACLDetails } from '../acls/new-acl/acl-details';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
 
 type SecurityAclRulesTableProps = {
   data: AclDetail[];
@@ -107,14 +106,10 @@ const RoleDetailPage = () => {
   const search = routeApi.useSearch();
   const host = search.host ?? undefined;
 
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [
-      { title: 'Security', linkTo: '/security' },
-      { title: 'Roles', linkTo: '/security/roles' },
-      { title: roleName, linkTo: `/security/roles/${roleName}/details` },
-      { title: 'Role Configuration Details', linkTo: '' },
-    ];
-  }, [roleName]);
+  useSecurityBreadcrumbs([
+    { title: 'Roles', linkTo: '/security/roles' },
+    { title: roleName, linkTo: `/security/roles/${roleName}/details` },
+  ]);
 
   // Fetch ACLs for the role
   const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`, host);
@@ -137,20 +132,17 @@ const RoleDetailPage = () => {
 
   if (isLoading) {
     return (
-      <PageContent>
-        <div className="flex h-96 items-center justify-center">
-          <div className="text-gray-500">Loading role details...</div>
-        </div>
-      </PageContent>
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-gray-500">Loading role details...</div>
+      </div>
     );
   }
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Role: {roleName}</h2>
       <div className="flex items-center justify-between">
-        <Text>
-          Configuration for role: <Text as="span">{roleName}</Text>
-        </Text>
+        <Text>Configuration details</Text>
         {(!!host || data?.length === 1) && (
           <div>
             <Button
@@ -174,7 +166,7 @@ const RoleDetailPage = () => {
         <div className="col-span-2 w-full">{renderACLInformation}</div>
         <MatchingUsersCard principal={`Redpanda:${roleName}`} principalType="RedpandaRole" />
       </div>
-    </PageContent>
+    </div>
   );
 };
 

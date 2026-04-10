@@ -14,8 +14,6 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 const routeApi = getRouteApi('/security/acls/$aclName/details');
 
 import { Pencil } from 'lucide-react';
-import { useEffect } from 'react';
-import { uiState } from 'state/ui-state';
 
 import { ACLDetails } from './acl-details';
 import { HostSelector } from './host-selector';
@@ -23,6 +21,7 @@ import { parsePrincipalFromParam } from './principal-utils';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Text } from '../../../redpanda-ui/components/typography';
+import { useSecurityBreadcrumbs } from '../../security/hooks/use-security-breadcrumbs';
 
 const AclDetailPage = () => {
   const { aclName } = routeApi.useParams();
@@ -35,14 +34,10 @@ const AclDetailPage = () => {
 
   const [acls, ...hosts] = data || [];
 
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [
-      { title: 'Security', linkTo: '/security' },
-      { title: 'ACLs', linkTo: '/security/acls' },
-      { title: principalName, linkTo: `/security/acls/${aclName}/details` },
-      { title: 'ACL Configuration Details', linkTo: '', heading: '' },
-    ];
-  }, [aclName, principalName]);
+  useSecurityBreadcrumbs([
+    { title: 'ACLs', linkTo: '/security/acls' },
+    { title: principalName, linkTo: `/security/acls/${aclName}/details` },
+  ]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -58,10 +53,9 @@ const AclDetailPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      <h2 className="pt-4 pb-3 font-semibold text-xl">ACL: {principalName}</h2>
       <div className="flex items-center justify-between">
-        <Text>
-          ACL Configuration Details for <strong>{principalName}</strong>
-        </Text>
+        <Text>Configuration details</Text>
         <Button
           data-testid="update-acl-button"
           onClick={() =>
