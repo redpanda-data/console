@@ -27,12 +27,10 @@ import {
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
 import { LockedPrincipalField } from 'components/pages/acls/new-acl/locked-principal-field';
-import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
-import { uiState } from '../../../state/ui-state';
-import PageContent from '../../misc/page-content';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
 
 const RoleUpdatePage = () => {
   const navigate = useNavigate({ from: '/security/roles/$roleName/update' });
@@ -40,16 +38,12 @@ const RoleUpdatePage = () => {
   const search = routeApi.useSearch();
   const host = search.host ?? undefined;
 
-  const { applyUpdates } = useUpdateAclMutation();
+  useSecurityBreadcrumbs([
+    { title: 'Roles', linkTo: '/security/roles' },
+    { title: roleName, linkTo: `/security/roles/${roleName}/details` },
+  ]);
 
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [
-      { title: 'Security', linkTo: '/security' },
-      { title: 'Roles', linkTo: '/security/roles' },
-      { title: roleName, linkTo: `/security/roles/${roleName}/details` },
-      { title: 'Update Role', linkTo: '', heading: '' },
-    ];
-  }, [roleName]);
+  const { applyUpdates } = useUpdateAclMutation();
 
   // Fetch existing ACL data for the role
   const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`, host);
@@ -71,20 +65,20 @@ const RoleUpdatePage = () => {
 
   if (isLoading) {
     return (
-      <PageContent>
+      <div>
         <div className="flex h-96 items-center justify-center">
           <div className="text-gray-500">Loading role configuration...</div>
         </div>
-      </PageContent>
+      </div>
     );
   }
 
   // If multiple hosts exist and no host is selected, show host selector
   if (data && data.length > 1 && !host) {
     return (
-      <PageContent>
+      <div>
         <HostSelector baseUrl={`/security/roles/${roleName}/update`} hosts={data} principalName={roleName} />
-      </PageContent>
+      </div>
     );
   }
 
@@ -118,7 +112,8 @@ const RoleUpdatePage = () => {
   });
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Update role: {roleName}</h2>
       <CreateACL
         edit={true}
         onCancel={() =>
@@ -133,7 +128,7 @@ const RoleUpdatePage = () => {
         rules={rulesWithAllOperations.length > 0 ? rulesWithAllOperations : undefined}
         sharedConfig={acl?.sharedConfig ?? emptySharedConfig}
       />
-    </PageContent>
+    </div>
   );
 };
 

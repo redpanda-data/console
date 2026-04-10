@@ -17,19 +17,18 @@ import { Button } from 'components/redpanda-ui/components/button';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { useEffect, useState } from 'react';
 
-import { DeleteUserConfirmModal } from './delete-user-confirm-modal';
 import type { AclPrincipalGroup } from './models';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import { useListRolesQuery } from '../../../react-query/api/security';
-import { invalidateUsersCache, useLegacyListUsersQuery } from '../../../react-query/api/user';
+import { invalidateUsersCache, useDeleteUserMutation, useListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { uiState } from '../../../state/ui-state';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import PageContent from '../../misc/page-content';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+import { DeleteUserConfirmModal } from '../security/shared/delete-user-confirm-modal';
 
 type UserDetailsPageProps = {
   userName: string;
@@ -40,25 +39,21 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
 
-  const { data: usersData, isLoading: isUsersLoading } = useLegacyListUsersQuery();
+  const { data: usersData, isLoading: isUsersLoading } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
+  const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
+
+  useSecurityBreadcrumbs([
+    { title: 'Users', linkTo: '/security/users' },
+    { title: userName, linkTo: `/security/users/${userName}/details` },
+  ]);
 
   useEffect(() => {
-    uiState.pageTitle = 'User details';
-    uiState.pageBreadcrumbs = [];
-    uiState.pageBreadcrumbs.push({ title: 'Access Control', linkTo: '/security' });
-    uiState.pageBreadcrumbs.push({ title: 'Users', linkTo: '/security/users' });
-    uiState.pageBreadcrumbs.push({ title: userName, linkTo: `/security/users/${userName}` });
-
     const refreshData = async () => {
       if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
         return;
       }
-      await Promise.allSettled([
-        api.refreshAcls(AclRequestDefault, true),
-        api.refreshServiceAccounts(),
-        rolesApi.refreshRoles(),
-      ]);
+      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), rolesApi.refreshRoles()]);
       await rolesApi.refreshRoleMembers();
     };
 
@@ -76,7 +71,8 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   const isServiceAccount = users.includes(userName);
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">User: {userName}</h2>
       <div className="flex flex-col gap-4">
         <UserInformationCard
           onEditPassword={() => {
@@ -103,9 +99,13 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                 </Button>
               }
               onConfirm={async () => {
-                await api.deleteServiceAccount(userName);
+                try {
+                  await deleteUserMutation({ name: userName });
+                } catch {
+                  return; // Error toast shown by mutation's onError
+                }
 
-                // Remove user from all its roles
+                // Remove user from all its roles (best-effort)
                 const promises: Promise<UpdateRoleMembershipResponse>[] = [];
                 for (const [roleName, members] of rolesApi.roleMembers) {
                   if (members.any((m) => m.name === userName)) {
@@ -115,7 +115,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                   }
                 }
                 await Promise.allSettled(promises);
-                await Promise.all([invalidateUsersCache(), rolesApi.refreshRoleMembers()]);
+                await Promise.allSettled([invalidateUsersCache(), rolesApi.refreshRoleMembers()]);
                 appGlobal.historyPush('/security/users/');
               }}
               userName={userName}
@@ -133,7 +133,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
           <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={userName} />
         )}
       </div>
-    </PageContent>
+    </div>
   );
 };
 

@@ -28,12 +28,10 @@ import {
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
 import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
-import { useEffect } from 'react';
 
 import { parsePrincipalFromParam } from './principal-utils';
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
-import { uiState } from '../../../../state/ui-state';
-import PageContent from '../../../misc/page-content';
+import { useSecurityBreadcrumbs } from '../../security/hooks/use-security-breadcrumbs';
 
 const VALID_PRINCIPAL_TYPES: Record<string, PrincipalType> = {
   User: PrincipalTypeUser,
@@ -49,14 +47,10 @@ const AclUpdatePage = () => {
 
   const { principalType, principalName } = parsePrincipalFromParam(aclName);
 
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [
-      { title: 'Security', linkTo: '/security' },
-      { title: 'ACLs', linkTo: '/security/acls' },
-      { title: principalName, linkTo: `/security/acls/${aclName}/details` },
-      { title: 'Update ACL', linkTo: '', heading: '' },
-    ];
-  }, [aclName, principalName]);
+  useSecurityBreadcrumbs([
+    { title: 'ACLs', linkTo: '/security/acls' },
+    { title: principalName, linkTo: `/security/acls/${aclName}/details` },
+  ]);
 
   // Fetch existing ACL data
   const { data, isLoading } = useGetAclsByPrincipal(`${principalType}:${principalName}`, host);
@@ -80,11 +74,11 @@ const AclUpdatePage = () => {
 
   if (isLoading) {
     return (
-      <PageContent>
+      <div>
         <div className="flex h-96 items-center justify-center">
           <div className="text-gray-500">Loading ACL configuration...</div>
         </div>
-      </PageContent>
+      </div>
     );
   }
 
@@ -94,9 +88,9 @@ const AclUpdatePage = () => {
 
   if (hosts.length > 1) {
     return (
-      <PageContent>
+      <div>
         <HostSelector baseUrl={`/security/acls/${aclName}/update`} hosts={data} principalName={principalName} />
-      </PageContent>
+      </div>
     );
   }
 
@@ -126,7 +120,8 @@ const AclUpdatePage = () => {
   });
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Update ACL: {principalName}</h2>
       <CreateACL
         edit
         onCancel={() =>
@@ -140,7 +135,7 @@ const AclUpdatePage = () => {
         rules={rulesWithAllOperations}
         sharedConfig={acls.sharedConfig}
       />
-    </PageContent>
+    </div>
   );
 };
 

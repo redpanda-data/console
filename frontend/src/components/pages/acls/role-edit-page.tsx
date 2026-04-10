@@ -17,8 +17,8 @@ import { appGlobal } from '../../../state/app-global';
 import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
 
 async function refreshEditData(force: boolean) {
   if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
@@ -35,11 +35,7 @@ async function refreshEditData(force: boolean) {
 
 class RoleEditPage extends PageComponent<{ roleName: string }> {
   initPage(p: PageInitHelper): void {
-    const roleName = decodeURIComponent(this.props.roleName);
-    p.title = 'Edit role';
-    p.addBreadcrumb('Access Control', '/security');
-    p.addBreadcrumb('Roles', '/security/roles');
-    p.addBreadcrumb(roleName, `/security/roles/${encodeURIComponent(this.props.roleName)}`);
+    p.title = 'Access Control';
 
     // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     refreshEditData(true).catch(console.error);
@@ -55,6 +51,11 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
 const RoleEditPageContent = ({ roleName: encodedRoleName }: { roleName: string }) => {
   const roleName = decodeURIComponent(encodedRoleName);
   const [allDataLoaded, setAllDataLoaded] = useState(false);
+
+  useSecurityBreadcrumbs([
+    { title: 'Roles', linkTo: '/security/roles' },
+    { title: roleName, linkTo: `/security/roles/${encodeURIComponent(roleName)}/details` },
+  ]);
 
   useEffect(() => {
     refreshEditData(true)
@@ -74,7 +75,8 @@ const RoleEditPageContent = ({ roleName: encodedRoleName }: { roleName: string }
   const principals = rolesApi.roleMembers.get(roleName);
 
   return (
-    <PageContent>
+    <div>
+      <h2 className="pt-4 pb-3 font-semibold text-xl">Edit role: {roleName}</h2>
       <RoleForm
         initialData={{
           roleName,
@@ -86,7 +88,7 @@ const RoleEditPageContent = ({ roleName: encodedRoleName }: { roleName: string }
           principals: principals ?? [],
         }}
       />
-    </PageContent>
+    </div>
   );
 };
 
