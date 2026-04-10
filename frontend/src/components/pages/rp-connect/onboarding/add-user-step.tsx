@@ -698,11 +698,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                       <AlertDescription>
                                         <Text variant="small">
                                           You will need to configure{' '}
-                                          <TanStackRouterLink params={{ tab: 'acls' }} to="/security/$tab">
-                                            ACLs
-                                          </TanStackRouterLink>{' '}
-                                          for custom user permissions if you want the user to be able to read from the
-                                          topic.
+                                          <TanStackRouterLink to="/security/acls">ACLs</TanStackRouterLink> for custom
+                                          user permissions if you want the user to be able to read from the topic.
                                         </Text>
                                       </AlertDescription>
                                     </Alert>
