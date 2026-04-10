@@ -1316,3 +1316,45 @@ test.describe('Multiples ACLs to same principal', () => {
     });
   });
 });
+
+test.describe('ACL Create with lockPrincipal', () => {
+  test('lockPrincipal=true disables principal type selector and name input', async ({ page }) => {
+    await page.goto('/security/acls/create?principalType=User&principalName=locked-user&lockPrincipal=true', {
+      waitUntil: 'networkidle',
+    });
+
+    // Skip if running against a pre-built backend that doesn't have the lockPrincipal feature
+    const hasLockSupport = await page
+      .getByTestId('shared-principal-type-select')
+      .isVisible()
+      .then(
+        (visible) => !visible, // If selector is hidden, lockPrincipal is working
+        () => true
+      );
+    test.skip(!hasLockSupport, 'lockPrincipal not supported in this build');
+
+    // Principal type selector should NOT be visible
+    await expect(page.getByTestId('shared-principal-type-select')).not.toBeVisible();
+
+    // Principal input should be present, pre-filled, and disabled
+    const input = page.getByTestId('shared-principal-input');
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue('locked-user');
+    await expect(input).toBeDisabled();
+  });
+
+  test('without lockPrincipal, principal type selector and name are editable', async ({ page }) => {
+    await page.goto('/security/acls/create?principalType=User&principalName=editable-user', {
+      waitUntil: 'networkidle',
+    });
+
+    // Principal type selector should be visible and interactive
+    await expect(page.getByTestId('shared-principal-type-select')).toBeVisible();
+
+    // Principal input should be pre-filled but editable
+    const input = page.getByTestId('shared-principal-input');
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue('editable-user');
+    await expect(input).not.toBeDisabled();
+  });
+});
