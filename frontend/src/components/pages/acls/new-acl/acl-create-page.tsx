@@ -23,6 +23,7 @@ import {
   type Rule,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
+import { LockedPrincipalField } from 'components/pages/acls/new-acl/locked-principal-field';
 import { parsePrincipalFromParam } from 'components/pages/acls/new-acl/principal-utils';
 import { useEffect } from 'react';
 import { uiState } from 'state/ui-state';
@@ -43,6 +44,7 @@ const AclCreatePage = () => {
   const principalTypeParam = search.principalType?.toLowerCase();
   const principalName = search.principalName;
   const principalType = principalTypeParam ? principalTypeMap[principalTypeParam] : undefined;
+  const lockPrincipal = search.lockPrincipal === 'true' && !!principalType && !!principalName;
 
   const sharedConfig =
     principalName && principalType ? { principal: `${principalType}${principalName}`, host: '*' } : undefined;
@@ -78,6 +80,7 @@ const AclCreatePage = () => {
         onCancel={() => navigate({ to: '/security/$tab', params: { tab: 'acls' } })}
         onSubmit={createAclMutation}
         principalType={principalType}
+        renderPrincipal={lockPrincipal ? (props) => <LockedPrincipalField {...props} /> : undefined}
         sharedConfig={sharedConfig}
       />
     </PageContent>

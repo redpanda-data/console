@@ -419,7 +419,7 @@ const CreateUserConfirmationModal = ({
       <Button onClick={closeModal}>Done</Button>
       <Button
         as={Link}
-        to={`/security/acls/create?principalType=User&principalName=${encodeURIComponent(username)}`}
+        to={`/security/acls/create?principalType=User&principalName=${encodeURIComponent(username)}&lockPrincipal=true`}
         variant="link"
       >
         Create ACLs
