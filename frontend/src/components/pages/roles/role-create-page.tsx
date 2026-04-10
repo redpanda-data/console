@@ -19,6 +19,9 @@ import {
   type Rule,
 } from 'components/pages/acls/new-acl/acl.model';
 import CreateACL from 'components/pages/acls/new-acl/create-acl';
+import { CardField } from 'components/redpanda-ui/components/card';
+import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -70,7 +73,7 @@ const RoleCreatePage = () => {
 
       navigate({ to: `/security/roles/${roleName}/details` });
     } catch (error) {
-      toast.error(`Failed to create role: ${error}`);
+      toast.error(`Failed to create role: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -81,6 +84,19 @@ const RoleCreatePage = () => {
         onCancel={() => navigate({ to: '/security/$tab', params: { tab: 'roles' } })}
         onSubmit={createRoleAclMutation}
         principalType={PrincipalTypeRedpandaRole}
+        renderPrincipal={({ value, onChange, error }) => (
+          <CardField>
+            <FieldLabel htmlFor="principal">Role name</FieldLabel>
+            <Input
+              id="principal"
+              onChange={(e) => onChange(`RedpandaRole:${e.target.value}`)}
+              placeholder="analytics-writer"
+              testId="shared-principal-input"
+              value={parsePrincipal(value).name}
+            />
+            {error && <FieldError>{error}</FieldError>}
+          </CardField>
+        )}
       />
     </PageContent>
   );
