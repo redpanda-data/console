@@ -56,7 +56,7 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock generatePassword to return deterministic value
-vi.mock('components/pages/acls/user-create', () => ({
+vi.mock('utils/password', () => ({
   generatePassword: vi.fn(() => 'mock-generated-password-12345'),
 }));
 

@@ -25,8 +25,9 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { SASLMechanism, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
+import { generatePassword } from 'utils/password';
 
-import { generatePassword, StateRoleSelector } from './user-create';
+import { StateRoleSelector } from './user-create';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
 import { useUpdateUserMutationWithToast } from '../../../react-query/api/user';
 import { rolesApi } from '../../../state/backend-api';
