@@ -84,7 +84,7 @@ export const addUserFormSchema = z.object({
     .min(PASSWORD_MIN_LENGTH, { message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.` })
     .max(PASSWORD_MAX_LENGTH, { message: `Password must not exceed ${PASSWORD_MAX_LENGTH} characters.` }),
   saslMechanism: z.enum(SASL_MECHANISMS),
-  superuser: z.boolean().default(true),
+  grantTopicPermissions: z.boolean().default(true),
   specialCharactersEnabled: z.boolean().default(false),
   passwordLength: z.number().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH).default(30),
   consumerGroup: z.string().optional(),

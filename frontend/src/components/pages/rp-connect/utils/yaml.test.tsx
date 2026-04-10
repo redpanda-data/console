@@ -6,6 +6,7 @@ import {
   applyRedpandaSetup,
   configToYaml,
   extractAllTopics,
+  extractConnectorTopics,
   generateYamlFromWizardData,
   getConnectTemplate,
   mergeConnectConfigs,
@@ -1433,5 +1434,126 @@ input:
         ''
       );
     });
+  });
+});
+
+describe('extractConnectorTopics', () => {
+  test('extracts topics array from input section', () => {
+    const yaml = `input:
+  kafka_franz:
+    topics:
+      - my-topic
+      - other-topic
+output:
+  stdout: {}`;
+    const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toEqual(['my-topic', 'other-topic']);
+  });
+
+  test('extracts singular topic from output section', () => {
+    const yaml = `input:
+  stdin: {}
+output:
+  kafka_franz:
+    topic: my-output-topic`;
+    const result = extractConnectorTopics(yaml, 'output', 'kafka_franz');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toEqual(['my-output-topic']);
+  });
+
+  test('returns undefined topics for empty YAML', () => {
+    expect(extractConnectorTopics('', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
+    expect(extractConnectorTopics('   ', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
+  });
+
+  test('returns undefined topics when component has no topic config', () => {
+    const yaml = `input:
+  generate:
+    mapping: 'root = "hello"'`;
+    const result = extractConnectorTopics(yaml, 'input', 'generate');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toBeUndefined();
+  });
+
+  test('returns undefined topics for structurally invalid YAML with no topic fields', () => {
+    // parseDocument from the yaml library collects errors rather than throwing,
+    // so parseError stays false; the function simply finds no topic fields.
+    const yaml = '{{{';
+    const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toBeUndefined();
+  });
+
+  test('filters out empty strings from topics array', () => {
+    const yaml = `input:
+  kafka_franz:
+    topics:
+      - ""
+      - valid-topic
+      - ""`;
+    const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toEqual(['valid-topic']);
+  });
+
+  test('returns undefined topics when all topics are empty strings', () => {
+    const yaml = `input:
+  kafka_franz:
+    topics:
+      - ""`;
+    const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toBeUndefined();
+  });
+});
+
+describe('patchRedpandaConfig comment stripping', () => {
+  test('strips commented topic placeholder after patching topic on output', () => {
+    const yaml = `output:
+  kafka_franz:
+    # topic: Required - the topic to write to
+    seed_brokers:
+      - localhost:9092`;
+    const result = patchRedpandaConfig(yaml, 'output', 'kafka_franz', { topicName: 'my-topic' });
+    expect(result).toBeDefined();
+    expect(result).not.toContain('# topic:');
+    expect(result).toContain('topic: my-topic');
+  });
+
+  test('strips commented topics placeholder after patching topics on input', () => {
+    const yaml = `input:
+  kafka_franz:
+    # topics: Required - topics to read from
+    seed_brokers:
+      - localhost:9092`;
+    const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { topicName: 'my-topic' });
+    expect(result).toBeDefined();
+    expect(result).not.toContain('# topics:');
+    expect(result).toContain('topics:');
+  });
+
+  test('does not strip comments in other sections', () => {
+    const yaml = `input:
+  kafka_franz:
+    seed_brokers:
+      - localhost:9092
+output:
+  kafka_franz:
+    # topic: this is in the output section
+    seed_brokers:
+      - localhost:9092`;
+    // Patching input should NOT strip comments in output section
+    const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { topicName: 'my-topic' });
+    expect(result).toBeDefined();
+    expect(result).toContain('# topic: this is in the output section');
+  });
+
+  test('returns undefined for empty YAML', () => {
+    expect(patchRedpandaConfig('', 'input', 'kafka_franz', { topicName: 'x' })).toBeUndefined();
+  });
+
+  test('returns undefined for invalid YAML', () => {
+    expect(patchRedpandaConfig('{{{', 'input', 'kafka_franz', { topicName: 'x' })).toBeUndefined();
   });
 });

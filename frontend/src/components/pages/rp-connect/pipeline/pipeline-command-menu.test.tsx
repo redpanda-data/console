@@ -121,8 +121,8 @@ describe('PipelineCommandMenu', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('${secrets.MY_API_KEY}')).toBeInTheDocument();
-      expect(screen.getByText('${secrets.DB_PASSWORD}')).toBeInTheDocument();
+      expect(screen.getByText('secrets.MY_API_KEY')).toBeInTheDocument();
+      expect(screen.getByText('secrets.DB_PASSWORD')).toBeInTheDocument();
     });
   });
 
@@ -252,7 +252,7 @@ describe('PipelineCommandMenu', () => {
 
     // Wait for secrets to load so the footer button is visible
     await waitFor(() => {
-      expect(screen.getByText('${secrets.EXISTING_KEY}')).toBeInTheDocument();
+      expect(screen.getByText('secrets.EXISTING_KEY')).toBeInTheDocument();
     });
 
     // Click the "Create secret" button in the footer

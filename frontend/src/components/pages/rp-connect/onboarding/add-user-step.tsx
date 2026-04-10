@@ -135,7 +135,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         username: defaultUsername || '',
         password: generatePassword(30, false),
         saslMechanism: defaultSaslMechanism || 'SCRAM-SHA-256',
-        superuser: true,
+        grantTopicPermissions: true,
         specialCharactersEnabled: false,
         passwordLength: 30,
         consumerGroup: defaultConsumerGroup || '',
@@ -360,14 +360,20 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     }, [form]);
 
     useImperativeHandle(ref, () => ({
-      triggerSubmit: async () => {
+      triggerSubmit: async (signal?: AbortSignal) => {
+        if (signal?.aborted) {
+          return { success: false };
+        }
+
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
-          // Service account doesn't use form validation
-          const userData = form.getValues(); // Pass dummy data
+          const userData = form.getValues();
           return handleSubmit(userData);
         }
 
         const isUserFormValid = await form.trigger();
+        if (signal?.aborted) {
+          return { success: false };
+        }
         if (isUserFormValid) {
           const userData = form.getValues();
           return handleSubmit(userData);
@@ -512,7 +518,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         )}
                       </div>
 
-                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && (
+                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
                         <Alert variant="info">
                           <AlertDescription>
                             A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will
@@ -661,7 +667,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         <FormField
                           control={form.control}
                           disabled={isPending || isReadOnly}
-                          name="superuser"
+                          name="grantTopicPermissions"
                           render={({ field }) => (
                             <FormItem>
                               <div className="flex flex-col gap-2">
