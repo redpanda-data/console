@@ -25,13 +25,13 @@ import {
   PrincipalTypeRedpandaRole,
   PrincipalTypeUser,
   type Rule,
-} from 'components/pages/acls/new-acl/acl.model';
-import CreateACL from 'components/pages/acls/new-acl/create-acl';
-import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
+} from 'components/pages/acls/acl.model';
+import CreateACL from 'components/pages/acls/create-acl';
+import { HostSelector } from 'components/pages/acls/host-selector';
 
 import { parsePrincipalFromParam } from './principal-utils';
-import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
-import { useSecurityBreadcrumbs } from '../../security/hooks/use-security-breadcrumbs';
+import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
+import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
 
 const VALID_PRINCIPAL_TYPES: Record<string, PrincipalType> = {
   User: PrincipalTypeUser,

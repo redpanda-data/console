@@ -23,10 +23,10 @@ import {
   PrincipalTypeRedpandaRole,
   type Rule,
   type SharedConfig,
-} from 'components/pages/acls/new-acl/acl.model';
-import CreateACL from 'components/pages/acls/new-acl/create-acl';
-import { HostSelector } from 'components/pages/acls/new-acl/host-selector';
-import { LockedPrincipalField } from 'components/pages/acls/new-acl/locked-principal-field';
+} from 'components/pages/acls/acl.model';
+import CreateACL from 'components/pages/acls/create-acl';
+import { HostSelector } from 'components/pages/acls/host-selector';
+import { LockedPrincipalField } from 'components/pages/acls/locked-principal-field';
 import { toast } from 'sonner';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';

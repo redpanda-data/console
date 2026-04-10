@@ -53,8 +53,8 @@ describe('CreateACL - principal field composability', () => {
           principalType={PrincipalTypeRedpandaRole}
           renderPrincipal={({ value }) => (
             <div data-testid="custom-principal-field">
-              <label>Role name</label>
-              <input readOnly value={parsePrincipal(value).name} />
+              <label htmlFor="custom-principal-input">Role name</label>
+              <input id="custom-principal-input" readOnly value={parsePrincipal(value).name} />
             </div>
           )}
         />

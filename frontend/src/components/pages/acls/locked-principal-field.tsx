@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { PrincipalFieldProps } from 'components/pages/acls/new-acl/acl.model';
-import { parsePrincipal } from 'components/pages/acls/new-acl/acl.model';
+import type { PrincipalFieldProps } from 'components/pages/acls/acl.model';
+import { parsePrincipal } from 'components/pages/acls/acl.model';
 import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';

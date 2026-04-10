@@ -17,8 +17,8 @@ import {
   PrincipalTypeRedpandaRole,
   parsePrincipal,
   type Rule,
-} from 'components/pages/acls/new-acl/acl.model';
-import CreateACL from 'components/pages/acls/new-acl/create-acl';
+} from 'components/pages/acls/acl.model';
+import CreateACL from 'components/pages/acls/create-acl';
 import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';

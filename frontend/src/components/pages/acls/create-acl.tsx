@@ -764,16 +764,6 @@ export default function CreateACL({
     host: propSharedConfig?.host ?? '*',
   });
 
-  // Sync sharedConfig when props change (e.g., route search params arrive after initial render)
-  useEffect(() => {
-    if (propSharedConfig?.principal) {
-      setSharedConfig((prev) => ({
-        principal: propSharedConfig.principal ?? prev.principal,
-        host: propSharedConfig.host ?? prev.host,
-      }));
-    }
-  }, [propSharedConfig?.principal, propSharedConfig?.host]);
-
   const ruleIdCounter = useRef(2);
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
