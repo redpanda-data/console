@@ -47,6 +47,7 @@ import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
+import { generatePassword } from 'utils/password';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { SASL_MECHANISMS } from 'utils/user';

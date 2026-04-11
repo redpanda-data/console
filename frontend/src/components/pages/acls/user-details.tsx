@@ -162,4 +162,3 @@ const UserPermissionDetailsContent = ({
     </div>
   );
 };
-
