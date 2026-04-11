@@ -9,7 +9,7 @@ import {
   OperationTypeAllow,
   OperationTypeDeny,
   type Rule,
-} from '../../../src/components/pages/acls/new-acl/acl.model';
+} from '../../../src/components/pages/acls/acl.model';
 
 /**
  * Page Object Model for ACL (Access Control List) pages
