@@ -17,14 +17,14 @@ import { Eye, Pencil } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { MatchingUsersCard } from './matching-users-card';
-import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import { Button } from '../../redpanda-ui/components/button';
-import { Card, CardContent, CardHeader } from '../../redpanda-ui/components/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { Text } from '../../redpanda-ui/components/typography';
-import type { AclDetail } from '../acls/acl.model';
-import { ACLDetails } from '../acls/acl-details';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Card, CardContent, CardHeader } from '../../../redpanda-ui/components/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { Text } from '../../../redpanda-ui/components/typography';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { ACLDetails } from '../shared/acl-details';
+import type { AclDetail } from '../shared/acl-model';
 
 type SecurityAclRulesTableProps = {
   data: AclDetail[];

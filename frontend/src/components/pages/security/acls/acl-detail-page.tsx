@@ -15,13 +15,13 @@ const routeApi = getRouteApi('/security/acls/$aclName/details');
 
 import { Pencil } from 'lucide-react';
 
-import { ACLDetails } from './acl-details';
 import { HostSelector } from './host-selector';
-import { parsePrincipalFromParam } from './principal-utils';
-import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import { Button } from '../../redpanda-ui/components/button';
-import { Text } from '../../redpanda-ui/components/typography';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Text } from '../../../redpanda-ui/components/typography';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { ACLDetails } from '../shared/acl-details';
+import { parsePrincipalFromParam } from '../shared/principal-utils';
 
 const AclDetailPage = () => {
   const { aclName } = routeApi.useParams();

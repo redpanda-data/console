@@ -13,11 +13,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '../../redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { type AclDetail, getRuleDataTestId, parsePrincipal } from '../acls/acl.model';
-import { OperationsBadge } from '../acls/operations-badge';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { type AclDetail, getRuleDataTestId, parsePrincipal } from '../shared/acl-model';
+import { OperationsBadge } from '../shared/operations-badge';
 
 type UserAclsCardProps = {
   acls?: AclDetail[];

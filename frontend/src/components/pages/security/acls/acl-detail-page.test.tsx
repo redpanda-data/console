@@ -13,7 +13,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import type { AclDetail } from './acl.model';
+import type { AclDetail } from '../shared/acl-model';
 
 // ---------------------------------------------------------------------------
 // Mocks

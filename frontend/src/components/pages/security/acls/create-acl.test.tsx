@@ -11,8 +11,8 @@
 
 import { renderWithFileRoutes, screen } from 'test-utils';
 
-import { PrincipalTypeRedpandaRole, PrincipalTypeUser, parsePrincipal } from './acl.model';
 import CreateACL from './create-acl';
+import { PrincipalTypeRedpandaRole, PrincipalTypeUser, parsePrincipal } from '../shared/acl-model';
 
 const noop = () => {};
 

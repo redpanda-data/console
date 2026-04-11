@@ -17,7 +17,7 @@ import {
   getResourceName,
   type OperationType,
   type Rule,
-} from './acl.model';
+} from './acl-model';
 
 type OperationsBadgesProps = {
   rule: Rule;

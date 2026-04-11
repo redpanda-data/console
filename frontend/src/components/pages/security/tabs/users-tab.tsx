@@ -32,11 +32,11 @@ import {
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { ChangePasswordModal, ChangeRolesModal } from '../../acls/user-edit-modals';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { filterByName } from '../shared/filter-by-name';
 import { UserRoleTags } from '../shared/user-role-tags';
+import { ChangePasswordModal, ChangeRolesModal } from '../users/user-edit-modals';
 
 type PrincipalEntry = { name: string; principalType: 'User' | 'Group'; isScramUser: boolean };
 

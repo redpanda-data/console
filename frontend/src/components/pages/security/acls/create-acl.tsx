@@ -63,7 +63,7 @@ import {
   type SharedConfig,
   type SharedConfigProps,
   type SummaryProps,
-} from './acl.model';
+} from '../shared/acl-model';
 
 const UNDERSCORE_REGEX = /_/g;
 const FIRST_CHAR_REGEX = /^\w/;

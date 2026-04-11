@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from '../../redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
-import { Separator } from '../../redpanda-ui/components/separator';
-import { Text } from '../../redpanda-ui/components/typography';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { Separator } from '../../../redpanda-ui/components/separator';
+import { Text } from '../../../redpanda-ui/components/typography';
 
 type UserInformationCardProps = {
   username: string;

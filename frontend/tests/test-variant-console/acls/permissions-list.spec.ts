@@ -16,7 +16,7 @@ import {
   OperationTypeAllow,
   ResourcePatternTypeAny,
   ResourceTypeCluster,
-} from '../../../src/components/pages/acls/acl.model';
+} from '../../../src/components/pages/security/shared/acl-model';
 import { AclPage } from '../utils/acl-page';
 
 function generateUsername(): string {

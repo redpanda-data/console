@@ -13,6 +13,10 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/$aclName/update');
 
+import CreateACL from './create-acl';
+import { HostSelector } from './host-selector';
+import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import {
   getOperationsForResourceType,
   handleResponses,
@@ -25,13 +29,8 @@ import {
   PrincipalTypeRedpandaRole,
   PrincipalTypeUser,
   type Rule,
-} from 'components/pages/acls/acl.model';
-import CreateACL from 'components/pages/acls/create-acl';
-import { HostSelector } from 'components/pages/acls/host-selector';
-
-import { parsePrincipalFromParam } from './principal-utils';
-import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+} from '../shared/acl-model';
+import { parsePrincipalFromParam } from '../shared/principal-utils';
 
 const VALID_PRINCIPAL_TYPES: Record<string, PrincipalType> = {
   User: PrincipalTypeUser,

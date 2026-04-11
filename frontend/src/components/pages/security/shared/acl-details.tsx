@@ -13,7 +13,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 
-import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './acl.model';
+import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './acl-model';
 import { OperationsBadge } from './operations-badge';
 
 type ACLDetailsProps = {
