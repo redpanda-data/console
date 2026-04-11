@@ -15,6 +15,7 @@ import { InfoIcon, LoaderCircleIcon, RotateCwIcon } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useCallback, useState } from 'react';
+import { generatePassword } from 'utils/password';
 
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../react-query/api/user';
