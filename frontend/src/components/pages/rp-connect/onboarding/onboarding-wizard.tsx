@@ -1,5 +1,3 @@
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 

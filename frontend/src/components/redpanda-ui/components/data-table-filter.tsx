@@ -1,6 +1,3 @@
-'use no memo';
-
-
 import type { Table } from '@tanstack/react-table';
 import { Ellipsis, FilterIcon, X } from 'lucide-react';
 import React, { isValidElement, memo, useCallback, useEffect, useMemo, useState } from 'react';

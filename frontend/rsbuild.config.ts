@@ -31,6 +31,7 @@ export default defineConfig({
           'babel-plugin-react-compiler',
           {
             target: '18',
+            compilationMode: 'annotation',
             sources: (filename: string) => {
               if (filename.includes('/lib/redpanda-ui/')) {
                 return false;

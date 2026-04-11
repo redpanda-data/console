@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { durationMs } from '@bufbuild/protobuf/wkt';
 import {
   type ColumnDef,
@@ -1004,7 +1002,6 @@ export const TranscriptsTable: FC<Props> = ({
   matchedSpans,
   showFullTraces = true,
 }) => {
-  'use no memo';
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
 
   // Auto-expand trace when autoExpandTraceId changes (for linked trace mode)
