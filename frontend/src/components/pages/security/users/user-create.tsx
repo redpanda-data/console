@@ -189,9 +189,12 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
     <div className="max-w-[460px]">
       <div className="flex flex-col gap-8">
         <Field data-invalid={hasError || undefined}>
-          <FieldLabel required>Username</FieldLabel>
+          <FieldLabel htmlFor="create-user-name" required>
+            Username
+          </FieldLabel>
           <Input
             autoComplete="off"
+            id="create-user-name"
             onChange={(e) => state.setUsername(e.target.value)}
             placeholder="Username"
             spellCheck={false}
