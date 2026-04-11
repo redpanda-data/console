@@ -28,12 +28,12 @@ import { useEffect, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { StateRoleSelector } from './user-create';
-import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
-import { useUpdateUserMutationWithToast } from '../../../react-query/api/user';
-import { rolesApi } from '../../../state/backend-api';
-import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { formatToastErrorMessageGRPC, showToast } from '../../../utils/toast.utils';
-import { SingleSelect } from '../../misc/select';
+import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
+import { useUpdateUserMutationWithToast } from '../../../../react-query/api/user';
+import { rolesApi } from '../../../../state/backend-api';
+import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
+import { SingleSelect } from '../../../misc/select';
 
 type ChangePasswordModalProps = {
   userName: string;

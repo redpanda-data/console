@@ -17,9 +17,9 @@ import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1
 import { useCallback, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
-import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
-import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../react-query/api/user';
-import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
+import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -27,17 +27,17 @@ import {
   type SaslMechanism,
   validatePassword,
   validateUsername,
-} from '../../../utils/user';
-import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
-import { Button } from '../../redpanda-ui/components/button';
-import { Checkbox } from '../../redpanda-ui/components/checkbox';
-import { CopyButton } from '../../redpanda-ui/components/copy-button';
-import { Field, FieldDescription, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
-import { Input } from '../../redpanda-ui/components/input';
-import { SimpleMultiSelect } from '../../redpanda-ui/components/multi-select';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+} from '../../../../utils/user';
+import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Checkbox } from '../../../redpanda-ui/components/checkbox';
+import { CopyButton } from '../../../redpanda-ui/components/copy-button';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
+import { Input } from '../../../redpanda-ui/components/input';
+import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({

@@ -11,23 +11,23 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  convertRulesToCreateACLRequests,
-  handleResponses,
-  PrincipalTypeRedpandaRole,
-  parsePrincipal,
-  type Rule,
-} from 'components/pages/acls/acl.model';
-import CreateACL from 'components/pages/acls/create-acl';
 import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { toast } from 'sonner';
 
-import { useCreateAcls } from '../../../react-query/api/acl';
-import { useCreateRoleMutation } from '../../../react-query/api/security';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+import { useCreateAcls } from '../../../../react-query/api/acl';
+import { useCreateRoleMutation } from '../../../../react-query/api/security';
+import CreateACL from '../acls/create-acl';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import {
+  convertRulesToCreateACLRequests,
+  handleResponses,
+  PrincipalTypeRedpandaRole,
+  parsePrincipal,
+  type Rule,
+} from '../shared/acl-model';
 
 const RoleCreatePage = () => {
   const navigate = useNavigate();

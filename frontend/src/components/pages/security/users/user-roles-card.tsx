@@ -13,14 +13,14 @@ import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
 
-import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import { Button } from '../../redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../redpanda-ui/components/card';
-import { Skeleton } from '../../redpanda-ui/components/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import type { AclDetail } from '../acls/acl.model';
-import { getRuleDataTestId } from '../acls/acl.model';
-import { OperationsBadge } from '../acls/operations-badge';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { Skeleton } from '../../../redpanda-ui/components/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import type { AclDetail } from '../shared/acl-model';
+import { getRuleDataTestId } from '../shared/acl-model';
+import { OperationsBadge } from '../shared/operations-badge';
 
 type Role = {
   principalType: string;

@@ -13,6 +13,13 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/roles/$roleName/update');
 
+import { toast } from 'sonner';
+
+import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
+import CreateACL from '../acls/create-acl';
+import { HostSelector } from '../acls/host-selector';
+import { LockedPrincipalField } from '../acls/locked-principal-field';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import {
   getOperationsForResourceType,
   handleResponses,
@@ -23,14 +30,7 @@ import {
   PrincipalTypeRedpandaRole,
   type Rule,
   type SharedConfig,
-} from 'components/pages/acls/acl.model';
-import CreateACL from 'components/pages/acls/create-acl';
-import { HostSelector } from 'components/pages/acls/host-selector';
-import { LockedPrincipalField } from 'components/pages/acls/locked-principal-field';
-import { toast } from 'sonner';
-
-import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../react-query/api/acl';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+} from '../shared/acl-model';
 
 const RoleUpdatePage = () => {
   const navigate = useNavigate({ from: '/security/roles/$roleName/update' });

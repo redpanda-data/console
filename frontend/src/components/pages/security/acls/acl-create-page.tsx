@@ -13,12 +13,11 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/create');
 
-import { convertRulesToCreateACLRequests, handleResponses, type Rule } from 'components/pages/acls/acl.model';
-import CreateACL from 'components/pages/acls/create-acl';
-import { parsePrincipalFromParam, resolveAclSearchParams } from 'components/pages/acls/principal-utils';
-
-import { useCreateAcls } from '../../../react-query/api/acl';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
+import CreateACL from './create-acl';
+import { useCreateAcls } from '../../../../react-query/api/acl';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { convertRulesToCreateACLRequests, handleResponses, type Rule } from '../shared/acl-model';
+import { parsePrincipalFromParam, resolveAclSearchParams } from '../shared/principal-utils';
 
 const AclCreatePage = () => {
   const navigate = useNavigate({ from: '/security/acls/create' });

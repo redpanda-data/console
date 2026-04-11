@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { parsePrincipal } from 'components/pages/acls/acl.model';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Empty, EmptyTitle } from 'components/redpanda-ui/components/empty';
@@ -25,10 +24,11 @@ import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
-import { useListUsersQuery } from '../../../react-query/api/user';
-import { useApiStoreHook } from '../../../state/backend-api';
-import { AutocompleteInput } from '../acls/autocomplete-input';
+import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
+import { useListUsersQuery } from '../../../../react-query/api/user';
+import { useApiStoreHook } from '../../../../state/backend-api';
+import { parsePrincipal } from '../shared/acl-model';
+import { AutocompleteInput } from '../shared/autocomplete-input';
 
 type MatchingUsersCardProps = {
   principalType: string;

@@ -9,24 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import { UserAclsCard } from 'components/pages/roles/user-acls-card';
-import { UserInformationCard } from 'components/pages/roles/user-information-card';
-import { UserRolesCard } from 'components/pages/roles/user-roles-card';
 import { Button } from 'components/redpanda-ui/components/button';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { useEffect, useState } from 'react';
 
+import { UserAclsCard } from './user-acls-card';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
-import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import { useListRolesQuery } from '../../../react-query/api/security';
-import { invalidateUsersCache, useDeleteUserMutation, useListUsersQuery } from '../../../react-query/api/user';
-import { appGlobal } from '../../../state/app-global';
-import { api, rolesApi } from '../../../state/backend-api';
-import { AclRequestDefault } from '../../../state/rest-interfaces';
-import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import { useSecurityBreadcrumbs } from '../security/hooks/use-security-breadcrumbs';
-import { DeleteUserConfirmModal } from '../security/shared/delete-user-confirm-modal';
+import { UserInformationCard } from './user-information-card';
+import { UserRolesCard } from './user-roles-card';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { useListRolesQuery } from '../../../../react-query/api/security';
+import { invalidateUsersCache, useDeleteUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { appGlobal } from '../../../../state/app-global';
+import { api, rolesApi } from '../../../../state/backend-api';
+import { AclRequestDefault } from '../../../../state/rest-interfaces';
+import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { DefaultSkeleton } from '../../../../utils/tsx-utils';
+import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 
 type UserDetailsPageProps = {
   userName: string;

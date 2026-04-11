@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import type { PrincipalFieldProps } from 'components/pages/acls/acl.model';
-import { parsePrincipal } from 'components/pages/acls/acl.model';
 import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+
+import type { PrincipalFieldProps } from '../shared/acl-model';
+import { parsePrincipal } from '../shared/acl-model';
 
 /**
  * A read-only principal field used when the principal is pre-set and should not be editable.

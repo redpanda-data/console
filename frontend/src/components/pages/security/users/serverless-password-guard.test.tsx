@@ -10,7 +10,8 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { UserInformationCard } from 'components/pages/roles/user-information-card';
+
+import { UserInformationCard } from './user-information-card';
 
 /**
  * The Edit password button in UserInformationCard is shown whenever
