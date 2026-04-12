@@ -32,6 +32,9 @@ export default defineConfig({
           {
             target: '18',
             compilationMode: 'annotation',
+            panicThreshold: 'critical_errors',
+            // In annotation mode, this still gates which files CAN be opted in.
+            // Files excluded here are ineligible even with 'use memo'.
             sources: (filename: string) => {
               if (filename.includes('/lib/redpanda-ui/')) {
                 return false;
