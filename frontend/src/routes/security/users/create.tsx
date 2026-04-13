@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { createFileRoute, useParams } from '@tanstack/react-router';
-import { SecurityPage, type SecurityTab } from 'components/pages/security/security-page';
+import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/security/$tab')({
+import UserCreatePage from '../../../components/pages/security/users/user-create';
+
+export const Route = createFileRoute('/security/users/create')({
   staticData: {
-    title: 'Security',
+    title: 'Create User',
   },
-  component: SecurityTabWrapper,
+  component: UserCreateWrapper,
 });
 
-function SecurityTabWrapper() {
-  const { tab } = useParams({ from: '/security/$tab' });
-  return <SecurityPage tab={tab as SecurityTab} />;
+function UserCreateWrapper() {
+  return <UserCreatePage />;
 }

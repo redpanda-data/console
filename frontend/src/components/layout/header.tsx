@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Box, Button, ColorModeSwitch, CopyButton, Flex } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
 import { Heading } from 'components/redpanda-ui/components/typography';

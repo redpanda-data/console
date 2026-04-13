@@ -421,7 +421,7 @@ export const useCreateUserWithSecretsMutation = () => {
     toast.success(userResult.message || `User "${userData.username}" created`);
 
     // Step 2: Configure topic ACL if needed
-    if (topicName && userData.superuser) {
+    if (topicName && userData.grantTopicPermissions) {
       const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
       if (!aclResult.success) {
         toast.error(aclResult.error || 'Failed to configure topic permissions');

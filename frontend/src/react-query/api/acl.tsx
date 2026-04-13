@@ -41,7 +41,7 @@ import {
   getIdFromCreateACLRequest,
   type Rule,
   type SharedConfig,
-} from '../../components/pages/acls/new-acl/acl.model';
+} from '../../components/pages/security/shared/acl-model';
 
 /**
  * TODO: Remove once Console v3 is released.
@@ -435,7 +435,7 @@ export const useCreateACLMutation = () => {
 
 // New ACL implementation
 
-// this method is used from AclTab frontend/src/components/pages/acls/acl-list.tsx, removed this when that page is migrated.
+// Used by ACLs tab and Permissions List tab in the security section.
 type SimpleAcl = {
   host: string;
   principal: string;
@@ -443,7 +443,7 @@ type SimpleAcl = {
   principalName: string;
   hasAcl: boolean;
 };
-// this method is used from AclTab frontend/src/components/pages/acls/acl-list.tsx, removed this when that page is migrated.
+// Used by ACLs tab and Permissions List tab in the security section.
 export const useListACLAsPrincipalGroups = () =>
   useQuery(listACLs, {} as ListACLsRequest, {
     select: (response) => {

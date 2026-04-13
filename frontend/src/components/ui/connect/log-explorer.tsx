@@ -22,26 +22,28 @@ import {
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
 import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
-import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
-import { InfoIcon, RefreshCcw } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Progress } from 'components/redpanda-ui/components/progress';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
-import type { Pipeline } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { TimestampDisplay } from '../../../utils/tsx-utils';
-import { cullText } from '../../../utils/utils';
+import { cullText, prettyBytes } from '../../../utils/utils';
+import { RefreshIcon } from 'components/icons';
+import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -205,23 +207,24 @@ interface LogExplorerProps {
 }
 
 export function LogExplorer({ pipeline, serverless, enableLiveView = false }: LogExplorerProps) {
-  const [liveViewEnabled, setLiveViewEnabled] = useState(enableLiveView);
+  const [liveViewEnabled, setLiveViewEnabled] = useState(false);
 
-  // Sync live view when pipeline state changes (e.g. transitions to RUNNING)
-  const [prevEnableLiveView, setPrevEnableLiveView] = useState(enableLiveView);
-  if (enableLiveView !== prevEnableLiveView) {
-    setPrevEnableLiveView(enableLiveView);
-    if (enableLiveView) {
-      setLiveViewEnabled(true);
+  // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
+  // Skip mount — always start in history mode; only react to subsequent transitions.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (mountedRef.current) {
+      setLiveViewEnabled(enableLiveView);
     }
-  }
+    mountedRef.current = true;
+  }, [enableLiveView]);
 
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedMessage, setSelectedMessage] = useState<TopicMessage | null>(null);
 
-  const { messages, phase, error, refresh } = useLogSearch({
+  const { messages, phase, error, progress, refresh } = useLogSearch({
     pipelineId: pipeline.id,
     live: liveViewEnabled,
     enabled: true,
@@ -301,12 +304,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
           const logPayload = getLogPayload(original);
           const text = logPayload?.message ?? original.valueJson ?? '';
           return (
-            <Text as="span" variant="bodyMedium">
+            <Text as="span" className="block truncate" variant="bodyMedium">
               {cullText(text, 200)}
             </Text>
           );
         },
-        size: Number.POSITIVE_INFINITY,
       },
     ],
     [liveViewEnabled],
@@ -346,62 +348,73 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
 
   const isSearching = phase !== null;
   const filteredRowCount = table.getFilteredRowModel().rows.length;
+  const hasProgress = progress.bytesConsumed > 0 || progress.messagesConsumed > 0;
+  const pipelineNotRunning = pipeline.state !== Pipeline_State.RUNNING;
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {!liveViewEnabled && (
             <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
           )}
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={liveViewEnabled}
-              id="live-view-toggle"
-              onCheckedChange={(checked) => {
-                setLiveViewEnabled(checked);
-                setSorting([]);
-                if (checked) {
-                  actions.removeAllFilters();
-                }
-              }}
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex gap-1">
-                  <Label htmlFor="live-view-toggle">Live</Label>
-                  <InfoIcon className="size-4 text-muted-foreground" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                Continuously load new log messages as they arrive. When disabled, shows logs from the last 5 hours.
-              </TooltipContent>
-            </Tooltip>
-          </div>
         </div>
-        <Button
-          data-testid="log-refresh-button"
-          disabled={isSearching}
-          onClick={refresh}
-          size="icon"
-          variant="ghost"
-        >
-          <RefreshCcw className={isSearching ? 'animate-spin' : ''} />
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+          <Label className="cursor-pointer" htmlFor="live-view-toggle">
+            {liveViewEnabled ? 'Live logs enabled' : 'Enable live logs'}
+          </Label>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex cursor-help" data-testid="log-live-tooltip-trigger">
+                <InfoIcon className="size-4 text-muted-foreground" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" testId="log-live-tooltip-content">
+              {liveViewEnabled
+                ? 'Showing new log messages as they arrive in real time.'
+                : 'Showing log messages from the last 5 hours. Toggle on to see live logs as they arrive.'}
+            </TooltipContent>
+          </Tooltip>
+          <Switch
+            checked={liveViewEnabled}
+            // overriding size to make it more prominent, user feedback showed it was not discoverable
+            className="h-5 w-9 **:data-[slot=switch-thumb]:size-4.5"
+            data-testid="log-live-toggle"
+            disabled={!enableLiveView}
+            id="live-view-toggle"
+            onCheckedChange={(checked) => {
+              setLiveViewEnabled(checked);
+              setSorting([]);
+              if (checked) {
+                actions.removeAllFilters();
+              }
+            }}
+          />
+          </div>
+          <Button
+            data-testid="log-refresh-button"
+            disabled={isSearching}
+            onClick={refresh}
+            size="icon"
+            variant="ghost"
+          >
+            <RefreshIcon className={isSearching ? 'animate-spin' : ''} />
+          </Button>
+        </div>
       </div>
 
-      {/* Error */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>Failed to load logs</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {/* Table */}
-      <div className="min-h-0 overflow-auto">
-        <Table>
+      <div className="relative min-h-0">
+        {/* Progress bar overlaying top of table */}
+        {isSearching && hasProgress && (
+          <div className="absolute inset-x-0 top-0 z-10">
+            <Progress className="h-1 w-full rounded-none" testId="log-progress-bar" value={null} />
+          </div>
+        )}
+        <div className="overflow-auto">
+        <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -413,8 +426,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getIsSorted() === 'asc' && ' \u2191'}
-                    {header.column.getIsSorted() === 'desc' && ' \u2193'}
+                    {header.column.getIsSorted() === 'asc' && <ArrowUp className="ml-1 inline size-3.5" />}
+                    {header.column.getIsSorted() === 'desc' && <ArrowDown className="ml-1 inline size-3.5" />}
                   </TableHead>
                 ))}
               </TableRow>
@@ -426,19 +439,69 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
                 return (
                   <TableRow>
                     <TableCell className="py-10 text-center" colSpan={table.getVisibleFlatColumns().length}>
-                      <Spinner className="size-6" data-testid="log-loading-spinner" />
+                      <div className="mx-auto flex max-w-xs flex-col items-center gap-3">
+                        {hasProgress ? (
+                          <Text as="span" className="text-muted-foreground" data-testid="log-search-progress" variant="bodySmall">
+                            {prettyBytes(progress.bytesConsumed)} scanned, {progress.messagesConsumed.toLocaleString()} messages checked
+                          </Text>
+                        ) : (
+                          <Spinner className="size-6" data-testid="log-loading-spinner" />
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+              if (error && messages.length === 0) {
+                return (
+                  <TableRow>
+                    <TableCell className="p-4" colSpan={table.getVisibleFlatColumns().length}>
+                      <Alert variant="destructive">
+                        <AlertTitle>Failed to load logs</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+              if (liveViewEnabled && pipelineNotRunning && messages.length === 0) {
+                return (
+                  <TableRow>
+                    <TableCell className="p-4" colSpan={table.getVisibleFlatColumns().length}>
+                      <Alert data-testid="pipeline-stopped-banner" variant="info">
+                        <AlertTitle>Pipeline is not running</AlertTitle>
+                        <AlertDescription>
+                          Live logs require a running pipeline.{' '}
+                          <button
+                            className="font-medium underline"
+                            onClick={() => setLiveViewEnabled(false)}
+                            type="button"
+                          >
+                            Switch to Recent Logs
+                          </button>{' '}
+                          to view historical logs.
+                        </AlertDescription>
+                      </Alert>
                     </TableCell>
                   </TableRow>
                 );
               }
               if (filteredRowCount === 0) {
+                let emptyText: string;
+                if (messages.length > 0) {
+                  emptyText = 'No messages match the current filters';
+                } else if (liveViewEnabled) {
+                  emptyText = 'Listening for new log messages… Switch to Recent Logs to view historical logs.';
+                } else {
+                  emptyText = 'No logs found in the last 5 hours for this pipeline.';
+                }
                 return (
                   <TableRow>
                     <TableCell
                       className="py-10 text-center text-muted-foreground"
                       colSpan={table.getVisibleFlatColumns().length}
                     >
-                      {messages.length === 0 ? 'No messages' : 'No messages match the current filters'}
+                      {emptyText}
                     </TableCell>
                   </TableRow>
                 );
@@ -462,6 +525,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
             })()}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination (client-side only) */}

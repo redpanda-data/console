@@ -9,35 +9,39 @@
  * by the Apache License, Version 2.0
  */
 
-// Redpanda UI (legacy)
-import {
-  Alert,
-  AlertIcon,
-  Badge,
-  Box,
-  Checkbox,
-  createStandaloneToast,
-  DataTable,
-  Divider,
-  Flex,
-  SearchField,
-  Spinner,
-  Text,
-  Tooltip,
-} from '@redpanda-data/ui';
-// Routing and state management
 import { Link } from '@tanstack/react-router';
-// Icons
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type Updater,
+  useReactTable,
+} from '@tanstack/react-table';
 import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
+import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from 'components/redpanda-ui/components/drawer';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon, SearchIcon } from 'lucide-react';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { sortingParser } from 'utils/sorting-parser';
 
-// Local modals
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
+import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { SchemaContextSelector } from './schema-context-selector';
 import {
   ALL_CONTEXT_ID,
@@ -48,9 +52,7 @@ import {
   parseSubjectContext,
 } from './schema-context-utils';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
-// Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
-// API hooks
 import {
   useDeleteSchemaSubjectMutation,
   useListSchemasQuery,
@@ -60,21 +62,16 @@ import {
   useSchemaRegistryContextsQuery,
   useSchemaUsagesByIdQuery,
 } from '../../../react-query/api/schema-registry';
-// Global state
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
-// Utility components and functions
 import { encodeURIComponentPercents } from '../../../utils/utils';
-// Layout components
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { SmallStat } from '../../misc/small-stat';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
@@ -84,13 +81,18 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   return (
     <Section>
       {requestErrors.map((errorMessage) => (
-        <Alert key={errorMessage} marginTop="1em" status="error">
-          <AlertIcon />
-          <div>{errorMessage}</div>
+        <Alert className="mt-4" key={errorMessage} variant="destructive">
+          <AlertTitle>{errorMessage}</AlertTitle>
         </Alert>
       ))}
     </Section>
   );
+};
+
+const SCHEMA_TYPE_BADGE_VARIANT: Record<string, string> = {
+  AVRO: 'info-inverted',
+  PROTOBUF: 'accent-inverted',
+  JSON: 'warning-inverted',
 };
 
 const SchemaList: FC = () => {
@@ -115,6 +117,21 @@ const SchemaList: FC = () => {
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
+  const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
+  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
+  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(10));
+
+  const pagination = useMemo<PaginationState>(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
+
+  const handlePaginationChange = useCallback(
+    (updater: Updater<PaginationState>) => {
+      const next = typeof updater === 'function' ? updater(pagination) : updater;
+      setPageIndex(next.pageIndex);
+      setPageSize(next.pageSize);
+    },
+    [pagination, setPageIndex, setPageSize]
+  );
 
   // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
@@ -210,44 +227,171 @@ const SchemaList: FC = () => {
     return subjects;
   }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages, schemaRegistryContextsSupported, selectedContext]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isAllContext and selectedContext drive conditional columns
+  const columns = useMemo<ColumnDef<SchemaRegistrySubject>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+        cell: ({
+          row: {
+            original: { name, isSoftDeleted },
+          },
+        }) => {
+          const parsed = parseSubjectContext(name);
+          return (
+            <div className="whitespace-break-spaces break-words">
+              <div className="flex items-center gap-2">
+                <Link
+                  data-testid="schema-registry-table-name"
+                  params={{ subjectName: encodeURIComponentPercents(name) }}
+                  search={{ version: 'latest' }}
+                  to="/schema-registry/subjects/$subjectName"
+                >
+                  {isAllContext && parsed.context !== 'default' && (
+                    <span className="text-gray-400">:.{parsed.context}:</span>
+                  )}
+                  {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
+                </Link>
+                {isSoftDeleted && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
+                        <ArchiveIcon aria-hidden="true" height={16} style={{ color: 'dimgrey' }} width={16} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      This subject has been soft-deleted. It can be restored or permanently deleted.
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      ...(isAllContext
+        ? [
+            {
+              header: 'Context',
+              id: 'context',
+              enableSorting: false,
+              cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
+                const { context } = parseSubjectContext(row.original.name);
+                return (
+                  <Badge size="sm" variant="neutral-inverted">
+                    {context === 'default' ? 'Default' : `.${context}`}
+                  </Badge>
+                );
+              },
+            } satisfies ColumnDef<SchemaRegistrySubject>,
+          ]
+        : []),
+      {
+        header: 'Type',
+        id: 'type',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />,
+      },
+      {
+        header: 'Compatibility',
+        id: 'compatibility',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
+      },
+      {
+        header: 'Mode',
+        id: 'mode',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <SchemaModeColumn name={r.name} />,
+      },
+      {
+        header: 'Latest Version',
+        id: 'latestVersion',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
+      },
+      {
+        header: '',
+        id: 'actions',
+        enableSorting: false,
+        cell: ({ row: { original: r } }) => (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Delete schema"
+                data-testid={`schema-list-delete-btn-${r.name}`}
+                disabled={api.userData?.canDeleteSchemas === false}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
+                }}
+                size="icon-sm"
+                variant="secondary-ghost"
+              >
+                <TrashIcon />
+              </Button>
+            </TooltipTrigger>
+            {api.userData?.canDeleteSchemas === false && (
+              <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
+            )}
+          </Tooltip>
+        ),
+      },
+    ],
+    [isAllContext, selectedContext]
+  );
+
+  const table = useReactTable({
+    data: filteredSubjects,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: handlePaginationChange,
+    autoResetPageIndex: false,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
   if (schemaMode === null) {
     return <SchemaNotConfiguredPage />;
   }
 
   return (
     <PageContent key="b">
-      <ToastContainer />
       {/* Statistics Bar */}
-      <Flex alignItems="center" data-testid="schema-list-stats" gap="1rem">
+      <div className="flex items-center gap-4" data-testid="schema-list-stats">
         <SmallStat title={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}>
-          <Flex alignItems="center" gap="1.5">
+          <div className="flex items-center gap-1.5">
             {displayMode ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip
-              hasArrow
-              isDisabled={api.userData?.canManageSchemaRegistry !== false}
-              label="You don't have the 'canManageSchemaRegistry' permission"
-              placement="top"
-            >
-              <Button
-                aria-label="Edit mode"
-                data-testid="schema-list-edit-mode-btn"
-                disabled={api.userData?.canManageSchemaRegistry === false}
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(
-                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                      )
-                    : appGlobal.historyPush('/schema-registry/edit-mode')
-                }
-                size="icon-xs"
-                variant="secondary-ghost"
-              >
-                <EditIcon />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label="Edit mode"
+                  data-testid="schema-list-edit-mode-btn"
+                  disabled={api.userData?.canManageSchemaRegistry === false}
+                  onClick={() =>
+                    isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                      ? appGlobal.historyPush(
+                          `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                        )
+                      : appGlobal.historyPush('/schema-registry/edit-mode')
+                  }
+                  size="icon-xs"
+                  variant="secondary-ghost"
+                >
+                  <EditIcon />
+                </Button>
+              </TooltipTrigger>
+              {api.userData?.canManageSchemaRegistry === false && (
+                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+              )}
             </Tooltip>
-          </Flex>
+          </div>
         </SmallStat>
-        <Divider height="2ch" orientation="vertical" />
+        <Separator className="h-[2ch]" orientation="vertical" />
         <SmallStat
           title={
             isNamedContext(selectedContext) && schemaRegistryContextsSupported
@@ -255,56 +399,66 @@ const SchemaList: FC = () => {
               : 'Compatibility'
           }
         >
-          <Flex alignItems="center" gap="1.5">
+          <div className="flex items-center gap-1.5">
             {displayCompat ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip
-              hasArrow
-              isDisabled={api.userData?.canManageSchemaRegistry !== false}
-              label="You don't have the 'canManageSchemaRegistry' permission"
-              placement="top"
-            >
-              <Button
-                aria-label="Edit compatibility"
-                data-testid="schema-list-edit-compatibility-btn"
-                disabled={api.userData?.canManageSchemaRegistry === false}
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(
-                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                      )
-                    : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                }
-                size="icon-xs"
-                variant="secondary-ghost"
-              >
-                <EditIcon />
-              </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label="Edit compatibility"
+                  data-testid="schema-list-edit-compatibility-btn"
+                  disabled={api.userData?.canManageSchemaRegistry === false}
+                  onClick={() =>
+                    isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                      ? appGlobal.historyPush(
+                          `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                        )
+                      : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                  }
+                  size="icon-xs"
+                  variant="secondary-ghost"
+                >
+                  <EditIcon />
+                </Button>
+              </TooltipTrigger>
+              {api.userData?.canManageSchemaRegistry === false && (
+                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+              )}
             </Tooltip>
-          </Flex>
+          </div>
         </SmallStat>
-      </Flex>
+      </div>
 
       {schemaRegistryContextsSupported && (
         <SchemaContextSelector
           contexts={derivedContexts}
-          onContextChange={setSelectedContext}
+          onContextChange={(ctx) => {
+            setSelectedContext(ctx);
+            setPageIndex(0);
+          }}
           selectedContext={selectedContext}
         />
       )}
 
       <div className="my-4 flex items-center gap-2">
-        <Button
-          data-testid="schema-list-create-btn"
-          disabled={api.userData?.canCreateSchemas === false}
-          onClick={() =>
-            isNamedContext(selectedContext) && schemaRegistryContextsSupported
-              ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
-              : appGlobal.historyPush('/schema-registry/create')
-          }
-          variant="primary"
-        >
-          Create new schema
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              data-testid="schema-list-create-btn"
+              disabled={api.userData?.canCreateSchemas === false}
+              onClick={() =>
+                isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                  ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
+                  : appGlobal.historyPush('/schema-registry/create')
+              }
+              variant="primary"
+            >
+              Create new schema
+            </Button>
+          </TooltipTrigger>
+          {api.userData?.canCreateSchemas === false && (
+            <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+          )}
+        </Tooltip>
       </div>
 
       <RequestErrors />
@@ -362,9 +516,8 @@ const SchemaList: FC = () => {
         if (isError) {
           return (
             <Section>
-              <Alert status="error">
-                <AlertIcon />
-                Error loading schemas
+              <Alert variant="destructive">
+                <AlertTitle>Error loading schemas</AlertTitle>
               </Alert>
             </Section>
           );
@@ -372,194 +525,186 @@ const SchemaList: FC = () => {
 
         return (
           <Section>
-            <Flex justifyContent={'space-between'} pb={3}>
-              <Flex alignItems="center" gap="2">
-                <SearchField
-                  data-testid="schema-list-search-field"
-                  placeholderText="Filter by subject name or schema ID..."
-                  searchText={quickSearch ?? ''}
-                  setSearchText={setQuickSearch}
-                  width="350px"
-                />
-                <Tooltip hasArrow label="Help with schema search" placement="top">
-                  <Box
-                    alignItems="center"
-                    cursor="pointer"
-                    data-testid="schema-search-help"
-                    display="inline-flex"
-                    onClick={() => setIsHelpSidebarOpen(true)}
-                  >
-                    <InfoIcon />
-                  </Box>
-                </Tooltip>
-                <Spinner display={isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
-              </Flex>
-              <Checkbox
-                data-testid="schema-list-show-soft-deleted-checkbox"
-                isChecked={showSoftDeleted}
-                onChange={(e) => {
-                  setShowSoftDeleted(e.target.checked);
-                }}
-              >
-                Show soft-deleted
-              </Checkbox>
-            </Flex>
-
-            <DataTable<SchemaRegistrySubject>
-              columns={[
-                {
-                  header: 'Name',
-                  accessorKey: 'name',
-                  size: Number.POSITIVE_INFINITY,
-                  cell: ({
-                    row: {
-                      original: { name, isSoftDeleted },
-                    },
-                  }) => {
-                    const parsed = parseSubjectContext(name);
-                    return (
-                      <Box whiteSpace="break-spaces" wordBreak="break-word">
-                        <Flex alignItems="center" gap={2}>
-                          <Link
-                            data-testid="schema-registry-table-name"
-                            params={{ subjectName: encodeURIComponentPercents(name) }}
-                            search={{ version: 'latest' }}
-                            to="/schema-registry/subjects/$subjectName"
-                          >
-                            {isAllContext && parsed.context !== 'default' && (
-                              <span className="text-gray-400">:.{parsed.context}:</span>
-                            )}
-                            {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
-                          </Link>
-                          {isSoftDeleted && (
-                            <Tooltip
-                              hasArrow
-                              label="This subject has been soft-deleted. It can be restored or permanently deleted."
-                            >
-                              <Box data-testid="schema-list-soft-deleted-icon">
-                                <ArchiveIcon height={16} style={{ color: 'dimgrey' }} width={16} />
-                              </Box>
-                            </Tooltip>
-                          )}
-                        </Flex>
-                      </Box>
-                    );
-                  },
-                },
-                ...(isAllContext
-                  ? [
-                      {
-                        header: 'Context',
-                        id: 'context',
-                        size: 120,
-                        cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
-                          const { context } = parseSubjectContext(row.original.name);
-                          return (
-                            <Badge bg="gray.50" color="gray.700" size="sm" variant="subtle">
-                              {context === 'default' ? 'Default' : `.${context}`}
-                            </Badge>
-                          );
-                        },
-                      },
-                    ]
-                  : []),
-                { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
-                {
-                  header: 'Compatibility',
-                  cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
-                  size: 100,
-                },
-                {
-                  header: 'Mode',
-                  cell: ({ row: { original: r } }) => <SchemaModeColumn name={r.name} />,
-                  size: 100,
-                },
-                {
-                  header: 'Latest Version',
-                  cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
-                  size: 100,
-                },
-                {
-                  header: '',
-                  id: 'actions',
-                  cell: ({ row: { original: r } }) => (
-                    <Button
-                      aria-label="Delete schema"
-                      data-testid={`schema-list-delete-btn-${r.name}`}
-                      disabled={api.userData?.canDeleteSchemas === false}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        if (r.isSoftDeleted) {
-                          openPermanentDeleteModal(r.name, () => {
-                            deleteSchemaMutation.mutate(
-                              { subjectName: r.name, permanent: true },
-                              {
-                                onSuccess: () => {
-                                  toast({
-                                    status: 'success',
-                                    duration: 4000,
-                                    isClosable: false,
-                                    title: 'Subject permanently deleted',
-                                  });
-                                },
-                                onError: (err) => {
-                                  toast({
-                                    status: 'error',
-                                    duration: null,
-                                    isClosable: true,
-                                    title: 'Failed to permanently delete subject',
-                                    description: String(err),
-                                  });
-                                },
-                              }
-                            );
-                          });
-                        } else {
-                          openDeleteModal(r.name, () => {
-                            deleteSchemaMutation.mutate(
-                              { subjectName: r.name, permanent: false },
-                              {
-                                onSuccess: () => {
-                                  toast({
-                                    status: 'success',
-                                    duration: 4000,
-                                    isClosable: false,
-                                    title: 'Subject soft-deleted',
-                                  });
-                                },
-                                onError: (err) => {
-                                  toast({
-                                    status: 'error',
-                                    duration: null,
-                                    isClosable: true,
-                                    title: 'Failed to soft-delete subject',
-                                    description: String(err),
-                                  });
-                                },
-                              }
-                            );
-                          });
-                        }
-                      }}
-                      size="icon-sm"
-                      variant="secondary-ghost"
+            <div className="flex items-center justify-between pb-3">
+              <div className="flex items-center gap-2">
+                <div className="relative w-[350px]" data-testid="schema-list-search-field">
+                  <SearchIcon
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    aria-label="Filter by subject name or schema ID"
+                    className="pl-9"
+                    onChange={(e) => {
+                      setQuickSearch(e.target.value);
+                      setPageIndex(0);
+                    }}
+                    placeholder="Filter by subject name or schema ID..."
+                    value={quickSearch ?? ''}
+                  />
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      aria-label="Search help"
+                      className="inline-flex cursor-pointer items-center"
+                      data-testid="schema-search-help"
+                      onClick={() => setIsHelpSidebarOpen(true)}
+                      type="button"
                     >
-                      <TrashIcon />
-                    </Button>
-                  ),
-                  size: 1,
-                },
-              ]}
-              data={filteredSubjects}
-              pagination
-              rowClassName={(row) => (row.original.isSoftDeleted ? 'text-gray-400' : '')}
-              sorting
-            />
+                      <InfoIcon aria-hidden="true" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Help with schema search</TooltipContent>
+                </Tooltip>
+                {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={showSoftDeleted}
+                  data-testid="schema-list-show-soft-deleted-checkbox"
+                  id="show-soft-deleted"
+                  onCheckedChange={(checked) => {
+                    setShowSoftDeleted(checked === true);
+                    setPageIndex(0);
+                  }}
+                />
+                <Label htmlFor="show-soft-deleted">Show soft-deleted</Label>
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow className={row.original.isSoftDeleted ? 'text-gray-400' : ''} key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
+                      No schemas found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <div className="mt-4 flex items-center justify-end px-2">
+              <div className="flex items-center space-x-6 lg:space-x-8">
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium text-sm">Rows per page</span>
+                  <select
+                    aria-label="Rows per page"
+                    className="h-8 w-[70px] rounded-md border bg-transparent px-2 text-sm"
+                    onChange={(e) => table.setPageSize(Number(e.target.value))}
+                    value={table.getState().pagination.pageSize}
+                  >
+                    {[10, 20, 25, 30, 40, 50].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    className="hidden size-8 lg:flex"
+                    disabled={!table.getCanPreviousPage()}
+                    onClick={() => table.setPageIndex(0)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to first page</span>
+                    <ChevronsLeftIcon />
+                  </Button>
+                  <Button
+                    className="size-8"
+                    disabled={!table.getCanPreviousPage()}
+                    onClick={() => table.previousPage()}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to previous page</span>
+                    <ChevronLeftIcon />
+                  </Button>
+                  <Button
+                    className="size-8"
+                    disabled={!table.getCanNextPage()}
+                    onClick={() => table.nextPage()}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to next page</span>
+                    <ChevronRightIcon />
+                  </Button>
+                  <Button
+                    className="hidden size-8 lg:flex"
+                    disabled={!table.getCanNextPage()}
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <span className="sr-only">Go to last page</span>
+                    <ChevronsRightIcon />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </Section>
         );
       })()}
+
+      <DeleteDialog
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteSchemaMutation.mutate(
+            { subjectName: deleteTarget.name, permanent: false },
+            {
+              onSuccess: () => toast.success('Subject soft-deleted'),
+              onError: (err) => toast.error('Failed to soft-delete subject', { description: String(err) }),
+            }
+          );
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget?.kind === 'soft'}
+        schemaVersionName={deleteTarget?.name ?? ''}
+      />
+      <PermanentDeleteDialog
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteSchemaMutation.mutate(
+            { subjectName: deleteTarget.name, permanent: true },
+            {
+              onSuccess: () => toast.success('Subject permanently deleted'),
+              onError: (err) => toast.error('Failed to permanently delete subject', { description: String(err) }),
+            }
+          );
+        }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget?.kind === 'permanent'}
+        schemaVersionName={deleteTarget?.name ?? ''}
+      />
     </PageContent>
   );
 };
@@ -571,23 +716,10 @@ const SchemaTypeColumn: FC<{ name: string }> = ({ name }) => {
     return <Skeleton variant="text" />;
   }
 
-  const getSchemaTypeBadgeProps = (type: string) => {
-    switch (type) {
-      case 'AVRO':
-        return { bg: 'blue.50', color: 'blue.700', variant: 'subtle' as const };
-      case 'PROTOBUF':
-        return { bg: 'teal.50', color: 'teal.700', variant: 'subtle' as const };
-      case 'JSON':
-        return { bg: 'orange.50', color: 'orange.700', variant: 'subtle' as const };
-      default:
-        return { bg: 'gray.50', color: 'gray.700', variant: 'subtle' as const };
-    }
-  };
-
-  const badgeProps = getSchemaTypeBadgeProps(details.type);
+  const variant = SCHEMA_TYPE_BADGE_VARIANT[details.type] ?? 'neutral-inverted';
 
   return (
-    <Badge size="sm" {...badgeProps}>
+    <Badge size="sm" variant={variant as 'info-inverted'}>
       {details.type}
     </Badge>
   );
@@ -621,7 +753,7 @@ const LatestVersionColumn: FC<{ name: string }> = ({ name }) => {
   }
 
   if (details.latestActiveVersion < 0) {
-    return <Text color="gray.500">None</Text>;
+    return <span className="text-muted-foreground">None</span>;
   }
 
   return <>{details.latestActiveVersion}</>;

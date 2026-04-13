@@ -8,8 +8,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
@@ -153,7 +151,6 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
   isLoading,
   knowledgebaseId,
 }) => {
-  'use no memo';
   const navigate = useNavigate();
 
   // TanStack Table state

@@ -7,6 +7,7 @@ import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanst
 import { type RenderOptions, render } from '@testing-library/react';
 import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
 
+import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
 import { routeTree } from './routeTree.gen';
 
@@ -91,7 +92,9 @@ export function renderWithFileRoutes(
       <TransportProvider transport={finalTransport}>
         <QueryClientProvider client={queryClient}>
           <ChakraProvider theme={redpandaTheme}>
-            <RouterContextProvider router={router}>{children}</RouterContextProvider>
+            <RouterContextProvider router={router}>
+              <TooltipProvider>{children}</TooltipProvider>
+            </RouterContextProvider>
           </ChakraProvider>
         </QueryClientProvider>
       </TransportProvider>

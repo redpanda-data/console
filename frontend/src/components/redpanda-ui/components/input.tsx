@@ -132,7 +132,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     // Map input size to a button icon size that fits comfortably inside the input
     // sm (h-8/32px) → icon-xs (24px), md (h-9/36px) → icon-sm (32px), lg (h-10/40px) → icon-sm (32px)
-    const passwordToggleSize = size === 'sm' ? 'icon-xs' as const : 'icon-sm' as const;
+    const passwordToggleSize = size === 'sm' ? ('icon-xs' as const) : ('icon-sm' as const);
 
     let positionClasses = 'rounded-md';
     if (attached && groupPosition === 'first') {

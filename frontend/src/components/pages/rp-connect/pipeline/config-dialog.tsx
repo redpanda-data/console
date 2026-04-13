@@ -27,6 +27,7 @@ import { KeyValueField } from 'components/redpanda-ui/components/key-value-field
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
+import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
@@ -217,7 +218,8 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent size="lg">
+      <DialogContent showCloseButton={false} size="lg">
+        <DialogCloseButton />
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Pipeline settings' : mode === 'view' ? 'Pipeline settings' : 'Edit pipeline settings'}

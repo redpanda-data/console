@@ -373,7 +373,7 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} params={{ tab: 'users' }} to="/security/$tab">
+              <Link key={0} to="/security/users">
                 {serviceAccounts}
               </Link>,
             ],
@@ -384,7 +384,7 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} params={{ tab: 'acls' }} to="/security/$tab">
+              <Link key={0} to="/security/acls">
                 {aclCount}
               </Link>,
             ],

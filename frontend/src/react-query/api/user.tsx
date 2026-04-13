@@ -20,6 +20,7 @@ import {
 import queryClient from 'query-client';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { toast } from 'sonner';
 import type { GetUsersResponse } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -126,11 +127,13 @@ export const useCreateUserMutation = () => {
       });
     },
     onError: (error) =>
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'create',
-        entity: 'user',
-      }),
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error,
+          action: 'create',
+          entity: 'user',
+        })
+      ),
   });
 };
 
@@ -172,11 +175,30 @@ export const useUpdateUserMutationWithToast = () => {
       });
     },
     onError: (error) =>
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'update',
-        entity: 'user',
-      }),
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error,
+          action: 'update',
+          entity: 'user',
+        })
+      ),
+  });
+};
+
+export const useDeleteUserMutation = () => {
+  const qc = useQueryClient();
+
+  return useMutation(deleteUser, {
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) => toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'user' })),
   });
 };
 

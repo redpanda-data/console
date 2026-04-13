@@ -27,6 +27,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 const invalidateRolesQueries = async (queryClient: ReturnType<typeof useQueryClient>) => {
@@ -137,11 +138,13 @@ export const useCreateRoleMutation = () => {
       await invalidateRolesQueries(queryClient);
     },
     onError: (error) =>
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'create',
-        entity: 'role',
-      }),
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error,
+          action: 'create',
+          entity: 'role',
+        })
+      ),
   });
 };
 
@@ -168,11 +171,13 @@ export const useDeleteRoleMutation = () => {
       await invalidateAclQueries(queryClient);
     },
     onError: (error) =>
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'delete',
-        entity: 'role',
-      }),
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error,
+          action: 'delete',
+          entity: 'role',
+        })
+      ),
   });
 };
 
@@ -234,11 +239,13 @@ export const useUpdateRoleMembershipMutation = () => {
           queryClient.setQueryData(queryKey, data);
         }
       }
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'update',
-        entity: 'role membership',
-      });
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error,
+          action: 'update',
+          entity: 'role membership',
+        })
+      );
     },
   });
 };

@@ -10,6 +10,8 @@ React 18.3 · Bun · Rsbuild
 
 ## Commands
 
+Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run tools directly.
+
 | Command | Purpose |
 |---------|---------|
 | `bun start` | Dev server :3000 |
@@ -17,7 +19,7 @@ React 18.3 · Bun · Rsbuild
 | `bun run test` | All tests |
 | `bun run test:unit` | `.test.ts` (node) |
 | `bun run test:integration` | `.test.tsx` (jsdom) |
-| `bun run lint` | Biome linter |
+| `bun run lint` | Biome/Ultracite linter |
 | `bun run type:check` | TypeScript |
 
 ## Verify Changes

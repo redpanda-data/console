@@ -174,6 +174,7 @@ export type ConnectTilesProps = {
   tileWrapperClassName?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
+  searchPlaceholder?: string;
 };
 
 export const ConnectTiles = memo(
@@ -197,6 +198,7 @@ export const ConnectTiles = memo(
         tileWrapperClassName,
         title,
         description,
+        searchPlaceholder,
         ...motionProps
       },
       ref
@@ -361,7 +363,7 @@ export const ConnectTiles = memo(
                   <Input
                     containerClassName="w-[200px] shrink-0"
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search connectors..."
+                    placeholder={searchPlaceholder ?? 'Search connectors...'}
                     value={searchQuery}
                   >
                     <InputStart>

@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, createMessageSearch, type MessageSearchRequest, useApiStoreHook } from '../../../../state/backend-api';
@@ -330,7 +328,6 @@ async function loadLargeMessage({
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
-  'use no memo';
   const toast = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
