@@ -35,95 +35,53 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { useRegexFilter } from 'hooks/use-regex-filter';
 import { Key, MoreHorizontal, Plus, Search, Trash2, UserCog, Users } from 'lucide-react';
+import { parseAsString, useQueryState } from 'nuqs';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useMemo, useState } from 'react';
 import { useListACLsQuery } from 'react-query/api/acl';
-import { useDeleteUserMutation, useLegacyListUsersQuery } from 'react-query/api/user';
+import { useDeleteUserMutation, useListUsersQuery } from 'react-query/api/user';
 import { toast } from 'sonner';
-import { Features } from 'state/supported-features';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import { ChangePasswordDialog } from './change-password-dialog';
 import { CreateUserDialog } from './create-user-dialog';
-import { sortAclEntries, sortByName } from './security-acl-utils';
+import { buildUserAclsMap, sortByName, type UserAcl } from './security-acl-utils';
 
 const ACL_HOVER_LIMIT = 8;
 
-function getMechanismLabel(mechanism?: SASLMechanism): string | null {
-  switch (mechanism) {
-    case SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256:
-      return 'SCRAM-SHA-256';
-    case SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512:
-      return 'SCRAM-SHA-512';
-    default:
-      return null;
-  }
-}
+const MECHANISM_LABELS: Partial<Record<SASLMechanism, string>> = {
+  [SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256]: 'SCRAM-SHA-256',
+  [SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512]: 'SCRAM-SHA-512',
+};
 
-interface UserAcl {
-  resourceType: string;
-  resourceName: string;
-  operation: string;
-  permission: string;
-}
-
-interface UsersTabProps {
+type UsersTabProps = {
   onNavigateToTab: (tab: string) => void;
-}
+};
 
 export function UsersTab({ onNavigateToTab }: UsersTabProps) {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useQueryState('q', parseAsString.withDefault(''));
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [passwordDialogUser, setPasswordDialogUser] = useState<{
     name: string;
-    mechanism: string | null;
+    mechanism: SASLMechanism | undefined;
   } | null>(null);
   const [deleteUserName, setDeleteUserName] = useState<string | null>(null);
   const { mutateAsync: deleteUserMutation, isPending: isDeletingUser } = useDeleteUserMutation();
+  const canCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const canDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
 
   // Fetch data
-  const { data: usersData } = useLegacyListUsersQuery();
+  const { data: usersData } = useListUsersQuery();
   const { data: aclsData } = useListACLsQuery();
 
   const users = useMemo(() => sortByName(usersData?.users ?? []), [usersData]);
 
-  // Build a map of user -> ACLs from the ACL list
-  const userAclsMap = useMemo(() => {
-    const map = new Map<string, UserAcl[]>();
-    const resources = aclsData?.aclResources ?? [];
-    for (const resource of resources) {
-      for (const acl of resource.acls) {
-        const principal = acl.principal || '';
-        // ACL principals are in format "User:name"
-        if (principal.startsWith('User:')) {
-          const userName = principal.substring(5);
-          if (!map.has(userName)) {
-            map.set(userName, []);
-          }
-          map.get(userName)?.push({
-            resourceType: getResourceTypeLabel(resource.resourceType),
-            resourceName: resource.resourceName,
-            operation: getOperationLabel(acl.operation),
-            permission: getPermissionLabel(acl.permissionType),
-          });
-        }
-      }
-    }
-    for (const [userName, acls] of map.entries()) {
-      map.set(userName, sortAclEntries(acls));
-    }
-    return map;
-  }, [aclsData]);
+  const userAclsMap = useMemo(() => buildUserAclsMap(aclsData?.aclResources ?? []), [aclsData]);
 
-  // Filter users
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery) {
-      return users;
-    }
-    const q = searchQuery.toLowerCase();
-    return users.filter((user) => user.name.toLowerCase().includes(q));
-  }, [users, searchQuery]);
+  const filteredUsers = useRegexFilter(users, searchQuery, (user) => user.name);
 
   const handleDeleteUser = async () => {
     if (!deleteUserName) {
@@ -158,12 +116,12 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
             aria-label="Search users"
             className="pl-9"
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name..."
+            placeholder="Search by name or regex..."
             type="text"
             value={searchQuery}
           />
         </div>
-        {Boolean(Features.createUser) && (
+        {Boolean(canCreateUser) && (
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="size-4" />
             Create user
@@ -187,7 +145,7 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => {
-                const mechanismLabel = getMechanismLabel(user.mechanism);
+                const mechanismLabel = user?.mechanism ? MECHANISM_LABELS[user.mechanism] : 'Unknown';
                 const userAcls = userAclsMap.get(user.name) ?? [];
 
                 return (
@@ -230,7 +188,7 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
-                            onClick={() => setPasswordDialogUser({ name: user.name, mechanism: mechanismLabel })}
+                            onClick={() => setPasswordDialogUser({ name: user.name, mechanism: user.mechanism })}
                           >
                             <Key className="size-4" />
                             Change password
@@ -239,7 +197,7 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
                             <UserCog className="size-4" />
                             View details
                           </DropdownMenuItem>
-                          {Boolean(Features.deleteUser) && (
+                          {Boolean(canDeleteUser) && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -268,11 +226,11 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
               <EmptyTitle>No users found</EmptyTitle>
               <EmptyDescription>
                 {searchQuery
-                  ? `No users matching "${searchQuery}". Try adjusting your search.`
+                  ? 'No users matching the query. Try adjusting your search.'
                   : 'Get started by creating your first SASL-SCRAM user.'}
               </EmptyDescription>
             </EmptyHeader>
-            {!searchQuery && Boolean(Features.createUser) && (
+            {!searchQuery && Boolean(canCreateUser) && (
               <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="size-4" />
                 Create user
@@ -402,43 +360,4 @@ function ACLSummary({ acls, principal, onViewAll }: { acls: UserAcl[]; principal
       </HoverCardContent>
     </HoverCard>
   );
-}
-
-// ─── ACL data helpers ────────────────────────────────────────────────────
-
-function getResourceTypeLabel(resourceType: number): string {
-  // These map to ACL_ResourceType enum values
-  const labels: Record<number, string> = {
-    1: 'Any',
-    2: 'Topic',
-    3: 'Group',
-    4: 'Cluster',
-    5: 'TransactionalId',
-    6: 'DelegationToken',
-    7: 'RedpandaRole',
-  };
-  return labels[resourceType] ?? 'Unknown';
-}
-
-function getOperationLabel(operation: number): string {
-  const labels: Record<number, string> = {
-    1: 'Any',
-    2: 'All',
-    3: 'Read',
-    4: 'Write',
-    5: 'Create',
-    6: 'Delete',
-    7: 'Alter',
-    8: 'Describe',
-    9: 'ClusterAction',
-    10: 'DescribeConfigs',
-    11: 'AlterConfigs',
-    12: 'IdempotentWrite',
-  };
-  return labels[operation] ?? 'Unknown';
-}
-
-function getPermissionLabel(permissionType: number): string {
-  // ACL_PermissionType: DENY=2, ALLOW=3
-  return permissionType === 2 ? 'Deny' : 'Allow';
 }

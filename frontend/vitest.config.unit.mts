@@ -33,6 +33,8 @@ export default defineConfig(({ mode }) => {
         '@monaco-editor/react': new URL('./tests/mocks/monaco-editor-react.ts', import.meta.url).pathname,
         // @redpanda-data/ui has CSS that can't be parsed in Node
         '@redpanda-data/ui': new URL('./tests/mocks/redpanda-ui.ts', import.meta.url).pathname,
+        // sonner inserts CSS via document.getElementsByTagName at module init
+        sonner: new URL('./tests/mocks/sonner.ts', import.meta.url).pathname,
       },
     },
   };

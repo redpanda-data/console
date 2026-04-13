@@ -5,7 +5,6 @@ import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link as TanStackRouterLink } from '@tanstack/react-router';
-import { generatePassword } from 'components/pages/security/create-user-dialog';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -52,7 +51,7 @@ import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { SASL_MECHANISMS } from 'utils/user';
+import { generatePassword } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
@@ -639,14 +638,17 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                           <FormItem>
                             <FormLabel>SASL mechanism</FormLabel>
                             <FormControl>
-                              <Select {...field} onValueChange={field.onChange}>
+                              <Select
+                                onValueChange={(v) => field.onChange(Number(v) as SASLMechanism)}
+                                value={String(field.value)}
+                              >
                                 <SelectTrigger className="w-[300px]">
                                   <SelectValue placeholder="Select a SASL Mechanism" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {SASL_MECHANISMS.map((mechanism) => (
-                                    <SelectItem key={mechanism} value={mechanism}>
-                                      {mechanism}
+                                  {SASL_MECHANISM_OPTIONS.map((mech) => (
+                                    <SelectItem key={mech.id} value={String(mech.id)}>
+                                      {mech.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

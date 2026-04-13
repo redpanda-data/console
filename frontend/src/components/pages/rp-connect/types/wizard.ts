@@ -1,15 +1,12 @@
+import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { enumFromKeys } from 'utils/form';
 import { sizeFactors, timeFactors } from 'utils/topic-utils';
-import {
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  SASL_MECHANISMS,
-  USERNAME_ERROR_MESSAGE,
-  USERNAME_REGEX,
-} from 'utils/user';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, USERNAME_ERROR_MESSAGE, USERNAME_REGEX } from 'utils/user';
 import { z } from 'zod';
 
 import { CONNECT_COMPONENT_TYPE } from './schema';
+
+export { SASLMechanism };
 
 export const connectTilesListFormSchema = z.object({
   connectionName: z.string().min(1, { message: 'Please select a connection method.' }),
@@ -83,7 +80,7 @@ export const addUserFormSchema = z.object({
     .string()
     .min(PASSWORD_MIN_LENGTH, { message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.` })
     .max(PASSWORD_MAX_LENGTH, { message: `Password must not exceed ${PASSWORD_MAX_LENGTH} characters.` }),
-  saslMechanism: z.enum(SASL_MECHANISMS),
+  saslMechanism: z.nativeEnum(SASLMechanism),
   superuser: z.boolean().default(true),
   specialCharactersEnabled: z.boolean().default(false),
   passwordLength: z.number().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH).default(30),
@@ -107,7 +104,7 @@ export type MinimalTopicData = {
 
 export type MinimalUserData = {
   username: string;
-  saslMechanism: (typeof SASL_MECHANISMS)[number];
+  saslMechanism: SASLMechanism;
   consumerGroup: string;
   authMethod?: 'sasl' | 'service-account';
   serviceAccountName?: string;

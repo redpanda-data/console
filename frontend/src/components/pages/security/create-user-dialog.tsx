@@ -35,47 +35,58 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Info, RefreshCw, Shield, UserCog } from 'lucide-react';
-import { CreateUserRequest_UserSchema, CreateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import {
+  CreateUserRequest_UserSchema,
+  CreateUserRequestSchema,
+  SASLMechanism,
+} from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
-import { getSASLMechanism, useCreateUserMutation } from 'react-query/api/user';
+import { useCreateUserMutation } from 'react-query/api/user';
 import { toast } from 'sonner';
+import { generatePassword, SASL_MECHANISM_OPTIONS } from 'utils/user';
 
-const saslMechanisms = [
-  { id: 'SCRAM-SHA-256', name: 'SCRAM-SHA-256', description: 'Salted Challenge Response with SHA-256' },
-  { id: 'SCRAM-SHA-512', name: 'SCRAM-SHA-512', description: 'Salted Challenge Response with SHA-512 (recommended)' },
-] as const;
+const DEFAULT_MECHANISM = SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
 
-export function generatePassword(length: number, includeSpecial: boolean): string {
-  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const numbers = '0123456789';
-  const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-  let chars = lowercase + uppercase + numbers;
-  if (includeSpecial) {
-    chars += special;
-  }
-  let pwd = '';
-  for (let i = 0; i < length; i++) {
-    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return pwd;
-}
+const WHITESPACE_REGEX = /\s/;
+const USERNAME_ALLOWED_REGEX = /^[a-zA-Z0-9._-]+$/;
 
 function createGeneratedPassword(includeSpecial: boolean): string {
   return generatePassword(24, includeSpecial);
 }
 
-interface CreateUserDialogProps {
+function validateForm(username: string, password: string): string | null {
+  if (!username.trim()) {
+    return 'Username is required';
+  }
+  if (WHITESPACE_REGEX.test(username)) {
+    return 'Username must not contain whitespace';
+  }
+  if (!USERNAME_ALLOWED_REGEX.test(username)) {
+    return 'Only letters, numbers, dots, hyphens, and underscores are allowed';
+  }
+  if (!password) {
+    return 'Password is required';
+  }
+  if (password.length < 4) {
+    return 'Password must be at least 4 characters';
+  }
+  if (password.length > 64) {
+    return 'Password should not exceed 64 characters';
+  }
+  return null;
+}
+
+type CreateUserDialogProps = {
   open: boolean;
   onClose: () => void;
   onNavigateToTab: (tab: string) => void;
-}
+};
 
 export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserDialogProps) {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState(() => createGeneratedPassword(true));
-  const [mechanism, setMechanism] = useState<'SCRAM-SHA-256' | 'SCRAM-SHA-512'>('SCRAM-SHA-256');
+  const [mechanism, setMechanism] = useState<SASLMechanism>(DEFAULT_MECHANISM);
   const [error, setError] = useState<string | null>(null);
   const [includeSpecial, setIncludeSpecial] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,7 +97,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
     setStep('form');
     setUsername('');
     setPassword(createGeneratedPassword(true));
-    setMechanism('SCRAM-SHA-256');
+    setMechanism(DEFAULT_MECHANISM);
     setError(null);
     setIncludeSpecial(true);
     setIsSubmitting(false);
@@ -104,28 +115,9 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
   };
 
   const handleCreate = async () => {
-    if (!username.trim()) {
-      setError('Username is required');
-      return;
-    }
-    if (/\s/.test(username)) {
-      setError('Username must not contain whitespace');
-      return;
-    }
-    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
-      setError('Only letters, numbers, dots, hyphens, and underscores are allowed');
-      return;
-    }
-    if (!password) {
-      setError('Password is required');
-      return;
-    }
-    if (password.length < 4) {
-      setError('Password must be at least 4 characters');
-      return;
-    }
-    if (password.length > 64) {
-      setError('Password should not exceed 64 characters');
+    const validationError = validateForm(username, password);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setError(null);
@@ -137,7 +129,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
           user: create(CreateUserRequest_UserSchema, {
             name: username.trim(),
             password,
-            mechanism: getSASLMechanism(mechanism),
+            mechanism,
           }),
         })
       );
@@ -235,15 +227,15 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
               {/* SASL Mechanism */}
               <div className="space-y-3">
                 <Label htmlFor="create-mechanism">SASL Mechanism</Label>
-                <Select onValueChange={(v) => setMechanism(v as 'SCRAM-SHA-256' | 'SCRAM-SHA-512')} value={mechanism}>
+                <Select onValueChange={(v) => setMechanism(Number(v) as SASLMechanism)} value={String(mechanism)}>
                   <SelectTrigger id="create-mechanism">
                     <SelectValue>
-                      <span className="font-mono">{mechanism}</span>
+                      <span className="font-mono">{SASL_MECHANISM_OPTIONS.find((m) => m.id === mechanism)?.name}</span>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {saslMechanisms.map((mech) => (
-                      <SelectItem className="py-2.5" key={mech.id} value={mech.id}>
+                    {SASL_MECHANISM_OPTIONS.map((mech) => (
+                      <SelectItem className="py-2.5" key={mech.id} value={String(mech.id)}>
                         <div className="flex flex-col gap-0.5">
                           <span className="font-mono text-base">{mech.name}</span>
                           <span className="text-base text-muted-foreground leading-6">{mech.description}</span>

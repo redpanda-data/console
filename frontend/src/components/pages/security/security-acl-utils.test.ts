@@ -1,10 +1,17 @@
 import type { AclDetail } from 'components/pages/acls/new-acl/acl.model';
-import { ACL_ResourcePatternType, ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import {
+  ACL_Operation,
+  ACL_PermissionType,
+  ACL_ResourcePatternType,
+  ACL_ResourceType,
+  type ListACLsResponse_Resource,
+} from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { describe, expect, it } from 'vitest';
 
 import {
   buildPrincipalAutocompleteOptions,
   buildResourceOptionsByType,
+  buildUserAclsMap,
   compareDisplayText,
   flattenAclDetails,
   sortAclEntries,
@@ -214,5 +221,84 @@ describe('security-acl-utils sorting', () => {
     expect(optionsByType.Group?.map((option) => option.value)).toEqual(['group-a']);
     expect(optionsByType.TransactionalId?.map((option) => option.value)).toEqual(['txn-1']);
     expect(optionsByType.Cluster?.map((option) => option.value)).toEqual(['kafka-cluster']);
+  });
+});
+
+function makeResource(
+  resourceType: ACL_ResourceType,
+  resourceName: string,
+  acls: { principal: string; operation: ACL_Operation; permissionType: ACL_PermissionType }[]
+): ListACLsResponse_Resource {
+  return { resourceType, resourceName, acls } as unknown as ListACLsResponse_Resource;
+}
+
+describe('buildUserAclsMap', () => {
+  it('returns an empty map for no resources', () => {
+    expect(buildUserAclsMap([])).toEqual(new Map());
+  });
+
+  it('maps a User: principal to its ACL entry', () => {
+    const resources = [
+      makeResource(ACL_ResourceType.TOPIC, 'my-topic', [
+        { principal: 'User:alice', operation: ACL_Operation.READ, permissionType: ACL_PermissionType.ALLOW },
+      ]),
+    ];
+
+    const map = buildUserAclsMap(resources);
+
+    expect(map.get('alice')).toEqual([
+      { resourceType: 'Topic', resourceName: 'my-topic', operation: 'Read', permission: 'Allow' },
+    ]);
+  });
+
+  it('ignores non-User: principals', () => {
+    const resources = [
+      makeResource(ACL_ResourceType.TOPIC, 'my-topic', [
+        { principal: 'RedpandaRole:admin', operation: ACL_Operation.ALL, permissionType: ACL_PermissionType.ALLOW },
+      ]),
+    ];
+
+    expect(buildUserAclsMap(resources).size).toBe(0);
+  });
+
+  it('groups multiple ACL entries under the same user', () => {
+    const resources = [
+      makeResource(ACL_ResourceType.TOPIC, 'topic-a', [
+        { principal: 'User:bob', operation: ACL_Operation.READ, permissionType: ACL_PermissionType.ALLOW },
+      ]),
+      makeResource(ACL_ResourceType.GROUP, 'group-a', [
+        { principal: 'User:bob', operation: ACL_Operation.READ, permissionType: ACL_PermissionType.DENY },
+      ]),
+    ];
+
+    const acls = buildUserAclsMap(resources).get('bob');
+    expect(acls).toHaveLength(2);
+    expect(acls?.map((a) => a.resourceType)).toEqual(['Group', 'Topic']);
+  });
+
+  it('sorts ACL entries within each user', () => {
+    const resources = [
+      makeResource(ACL_ResourceType.TOPIC, 'topic-10', [
+        { principal: 'User:alice', operation: ACL_Operation.WRITE, permissionType: ACL_PermissionType.ALLOW },
+      ]),
+      makeResource(ACL_ResourceType.TOPIC, 'topic-2', [
+        { principal: 'User:alice', operation: ACL_Operation.READ, permissionType: ACL_PermissionType.ALLOW },
+      ]),
+    ];
+
+    const acls = buildUserAclsMap(resources).get('alice');
+    expect(acls?.map((a) => a.resourceName)).toEqual(['topic-2', 'topic-10']);
+  });
+
+  it('maps enum values to display labels', () => {
+    const resources = [
+      makeResource(ACL_ResourceType.CLUSTER, 'kafka-cluster', [
+        { principal: 'User:alice', operation: ACL_Operation.CLUSTER_ACTION, permissionType: ACL_PermissionType.DENY },
+      ]),
+    ];
+
+    expect(buildUserAclsMap(resources).get('alice')).toEqual([
+      { resourceType: 'Cluster', resourceName: 'kafka-cluster', operation: 'ClusterAction', permission: 'Deny' },
+    ]);
   });
 });

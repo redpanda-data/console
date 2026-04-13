@@ -33,29 +33,33 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RefreshCw } from 'lucide-react';
-import { UpdateUserRequest_UserSchema, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import {
+  SASLMechanism,
+  UpdateUserRequest_UserSchema,
+  UpdateUserRequestSchema,
+} from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
-import { getSASLMechanism, useUpdateUserMutationWithToast } from 'react-query/api/user';
+import { useUpdateUserMutationWithToast } from 'react-query/api/user';
 import { toast } from 'sonner';
+import { generatePassword, SASL_MECHANISM_OPTIONS, SASL_MECHANISMS } from 'utils/user';
 
-import { generatePassword } from './create-user-dialog';
-
-const saslMechanisms = [
-  { id: 'SCRAM-SHA-256', name: 'SCRAM-SHA-256', description: 'Salted Challenge Response with SHA-256' },
-  { id: 'SCRAM-SHA-512', name: 'SCRAM-SHA-512', description: 'Salted Challenge Response with SHA-512 (recommended)' },
-] as const;
-
-interface ChangePasswordDialogProps {
+type ChangePasswordDialogProps = {
   open: boolean;
   userName: string;
-  currentMechanism?: string | null;
+  currentMechanism: SASLMechanism | undefined;
   onClose: () => void;
+};
+
+function resolveInitialMechanism(current: SASLMechanism | undefined): SASLMechanism {
+  return current !== undefined && SASL_MECHANISMS.includes(current)
+    ? current
+    : SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
 }
 
 export function ChangePasswordDialog({ open, userName, currentMechanism, onClose }: ChangePasswordDialogProps) {
   const [newPassword, setNewPassword] = useState(() => generatePassword(24, true));
-  const [selectedMechanism, setSelectedMechanism] = useState<'SCRAM-SHA-256' | 'SCRAM-SHA-512'>(
-    currentMechanism === 'SCRAM-SHA-256' || currentMechanism === 'SCRAM-SHA-512' ? currentMechanism : 'SCRAM-SHA-512'
+  const [selectedMechanism, setSelectedMechanism] = useState<SASLMechanism>(() =>
+    resolveInitialMechanism(currentMechanism)
   );
   const [error, setError] = useState<string | null>(null);
   const [includeSpecialChars, setIncludeSpecialChars] = useState(true);
@@ -65,9 +69,7 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
 
   const resetForm = () => {
     setNewPassword(generatePassword(24, true));
-    setSelectedMechanism(
-      currentMechanism === 'SCRAM-SHA-256' || currentMechanism === 'SCRAM-SHA-512' ? currentMechanism : 'SCRAM-SHA-512'
-    );
+    setSelectedMechanism(resolveInitialMechanism(currentMechanism));
     setError(null);
     setIncludeSpecialChars(true);
     setIsSubmitting(false);
@@ -78,9 +80,7 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
       return;
     }
     setNewPassword(generatePassword(24, true));
-    setSelectedMechanism(
-      currentMechanism === 'SCRAM-SHA-256' || currentMechanism === 'SCRAM-SHA-512' ? currentMechanism : 'SCRAM-SHA-512'
-    );
+    setSelectedMechanism(resolveInitialMechanism(currentMechanism));
     setError(null);
     setIncludeSpecialChars(true);
     setIsSubmitting(false);
@@ -119,7 +119,7 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
           user: create(UpdateUserRequest_UserSchema, {
             name: userName,
             password: newPassword,
-            mechanism: getSASLMechanism(selectedMechanism),
+            mechanism: selectedMechanism,
           }),
         })
       );
@@ -151,17 +151,19 @@ export function ChangePasswordDialog({ open, userName, currentMechanism, onClose
           <div className="space-y-3">
             <Label htmlFor="mechanism">SASL Mechanism</Label>
             <Select
-              onValueChange={(v) => setSelectedMechanism(v as 'SCRAM-SHA-256' | 'SCRAM-SHA-512')}
-              value={selectedMechanism}
+              onValueChange={(v) => setSelectedMechanism(Number(v) as SASLMechanism)}
+              value={String(selectedMechanism)}
             >
               <SelectTrigger id="mechanism">
                 <SelectValue>
-                  <span className="font-mono">{selectedMechanism}</span>
+                  <span className="font-mono">
+                    {SASL_MECHANISM_OPTIONS.find((m) => m.id === selectedMechanism)?.name}
+                  </span>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {saslMechanisms.map((mech) => (
-                  <SelectItem className="py-2.5" key={mech.id} value={mech.id}>
+                {SASL_MECHANISM_OPTIONS.map((mech) => (
+                  <SelectItem className="py-2.5" key={mech.id} value={String(mech.id)}>
                     <div className="flex flex-col gap-0.5">
                       <span className="font-mono text-base">{mech.name}</span>
                       <span className="text-base text-muted-foreground leading-6">{mech.description}</span>

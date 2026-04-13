@@ -44,7 +44,9 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { useRegexFilter } from 'hooks/use-regex-filter';
 import { MoreHorizontal, Pencil, Plus, Search, Shield, Trash2, Users } from 'lucide-react';
+import { parseAsString, useQueryState } from 'nuqs';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { getRole } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { useMemo, useState } from 'react';
@@ -55,7 +57,7 @@ import { sortByName } from './security-acl-utils';
 
 export function RolesTab() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useQueryState('q', parseAsString.withDefault(''));
   const [deleteConfirmRole, setDeleteConfirmRole] = useState<{ name: string; memberCount: number } | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
@@ -81,13 +83,7 @@ export function RolesTab() {
     ),
   });
 
-  const filteredRoles = useMemo(() => {
-    if (!searchQuery) {
-      return roles;
-    }
-    const q = searchQuery.toLowerCase();
-    return roles.filter((role) => role.name.toLowerCase().includes(q));
-  }, [roles, searchQuery]);
+  const filteredRoles = useRegexFilter(roles, searchQuery, (role) => role.name);
   const memberCountByRole = useMemo(
     () => new Map(roles.map((role, index) => [role.name, roleDetailsQueries[index]?.data?.members?.length ?? 0])),
     [roleDetailsQueries, roles]
@@ -156,7 +152,7 @@ export function RolesTab() {
             aria-label="Search roles"
             className="pl-9"
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name..."
+            placeholder="Search by name or regex..."
             type="text"
             value={searchQuery}
           />

@@ -9,7 +9,6 @@ import {
   type ListUsersResponse,
   type ListUsersResponse_User,
   ListUsersResponse_UserSchema,
-  SASLMechanism,
   UserService,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import {
@@ -110,17 +109,6 @@ export const useListUsersQuery = (
       users: allRetrievedUsers,
     },
   };
-};
-
-export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512') => {
-  switch (saslMechanism) {
-    case 'SCRAM-SHA-256':
-      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
-    case 'SCRAM-SHA-512':
-      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
-    default:
-      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
-  }
 };
 
 export const useCreateUserMutation = () => {

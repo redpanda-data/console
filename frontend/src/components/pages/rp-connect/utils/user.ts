@@ -10,7 +10,6 @@ import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useCreateUserMutation } from 'react-query/api/user';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import type { SaslMechanism } from 'utils/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import {
@@ -21,7 +20,7 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
-import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { CreateUserRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { convertToScreamingSnakeCase } from '../types/constants';
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
@@ -322,11 +321,6 @@ const createPasswordSecret = async (
   }
 };
 
-const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
-  'SCRAM-SHA-256': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-  'SCRAM-SHA-512': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
-};
-
 const createKafkaUser = async (
   userData: AddUserFormData,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
@@ -336,7 +330,7 @@ const createKafkaUser = async (
       user: {
         name: userData.username,
         password: userData.password,
-        mechanism: saslMechanismToProtoMapping[userData.saslMechanism],
+        mechanism: userData.saslMechanism,
       },
     });
 
