@@ -9,6 +9,7 @@ import {
   type ListUsersResponse,
   type ListUsersResponse_User,
   ListUsersResponse_UserSchema,
+  SASLMechanism,
   UserService,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import {
@@ -112,11 +113,21 @@ export const useListUsersQuery = (
   };
 };
 
+export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512') => {
+  switch (saslMechanism) {
+    case 'SCRAM-SHA-256':
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
+    case 'SCRAM-SHA-512':
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
+    default:
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
+  }
+};
+
 export const useCreateUserMutation = () => {
   const qc = useQueryClient();
 
   return useMutation(createUser, {
-    retry: false,
     onSuccess: async () => {
       await qc.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -137,34 +148,10 @@ export const useCreateUserMutation = () => {
   });
 };
 
-export const useDeleteUserMutation = () => {
-  const qc = useQueryClient();
-
-  return useMutation(deleteUser, {
-    retry: false,
-    onSuccess: async () => {
-      await qc.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: UserService.method.listUsers,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
-    },
-    onError: (error) =>
-      formatToastErrorMessageGRPC({
-        error,
-        action: 'delete',
-        entity: 'user',
-      }),
-  });
-};
-
 export const useUpdateUserMutationWithToast = () => {
   const qc = useQueryClient();
 
   return useMutation(updateUser, {
-    retry: false,
     onSuccess: async () => {
       await qc.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -182,6 +169,23 @@ export const useUpdateUserMutationWithToast = () => {
           entity: 'user',
         })
       ),
+  });
+};
+
+export const useDeleteUserMutation = () => {
+  const qc = useQueryClient();
+
+  return useMutation(deleteUser, {
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) => toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'user' })),
   });
 };
 

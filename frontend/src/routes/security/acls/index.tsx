@@ -15,7 +15,7 @@ import { AclsTab } from '../../../components/pages/security/tabs/acls-tab';
 
 export const Route = createFileRoute('/security/acls/')({
   staticData: {
-    title: 'Security',
+    title: 'Role Details',
   },
   component: AclsTab,
 });

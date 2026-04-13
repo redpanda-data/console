@@ -18,13 +18,13 @@ import { useCallback, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
-import { useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
-  SASL_MECHANISM_OPTIONS,
-  SASLMechanism,
+  SASL_MECHANISMS,
+  type SaslMechanism,
   validatePassword,
   validateUsername,
 } from '../../../../utils/user';
@@ -43,7 +43,7 @@ const UserCreatePage = () => {
   const [formState, setFormState] = useState({
     username: '',
     password: generatePassword(30, false),
-    mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+    mechanism: 'SCRAM-SHA-256' as SaslMechanism,
     generateWithSpecialChars: false,
     selectedRoles: [] as string[],
   });
@@ -56,7 +56,7 @@ const UserCreatePage = () => {
   const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
   const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
   const setPassword = (v: string) => setFormState((prev) => ({ ...prev, password: v }));
-  const setMechanism = (v: SASLMechanism) => setFormState((prev) => ({ ...prev, mechanism: v }));
+  const setMechanism = (v: SaslMechanism) => setFormState((prev) => ({ ...prev, mechanism: v }));
   const setGenerateWithSpecialChars = (v: boolean) =>
     setFormState((prev) => ({ ...prev, generateWithSpecialChars: v }));
   const setSelectedRoles = (v: string[]) => setFormState((prev) => ({ ...prev, selectedRoles: v }));
@@ -76,7 +76,7 @@ const UserCreatePage = () => {
         user: create(CreateUserRequest_UserSchema, {
           name: username,
           password,
-          mechanism,
+          mechanism: getSASLMechanism(mechanism),
         }),
       });
     } catch {
@@ -154,8 +154,8 @@ type CreateUserModalProps = {
     setUsername: (v: string) => void;
     password: string;
     setPassword: (v: string) => void;
-    mechanism: SASLMechanism;
-    setMechanism: (v: SASLMechanism) => void;
+    mechanism: SaslMechanism;
+    setMechanism: (v: SaslMechanism) => void;
     generateWithSpecialChars: boolean;
     setGenerateWithSpecialChars: (v: boolean) => void;
     isCreating: boolean;
@@ -263,14 +263,14 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
 
         <Field>
           <FieldLabel required>SASL mechanism</FieldLabel>
-          <Select onValueChange={(v) => state.setMechanism(Number(v) as SASLMechanism)} value={String(state.mechanism)}>
+          <Select onValueChange={(v) => state.setMechanism(v as SaslMechanism)} value={state.mechanism}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {SASL_MECHANISM_OPTIONS.map((opt) => (
-                <SelectItem key={opt.id} value={String(opt.id)}>
-                  {opt.name}
+              {SASL_MECHANISMS.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -306,7 +306,7 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
 type CreateUserConfirmationModalProps = {
   username: string;
   password: string;
-  mechanism: SASLMechanism;
+  mechanism: SaslMechanism;
   closeModal: () => void;
   onCreateAcls: () => void;
 };
@@ -360,9 +360,7 @@ const CreateUserConfirmationModal = ({
         Mechanism
       </div>
       <div>
-        <span className="truncate">
-          {SASL_MECHANISM_OPTIONS.find((o) => o.id === mechanism)?.name ?? String(mechanism)}
-        </span>
+        <span className="truncate">{mechanism}</span>
       </div>
     </div>
 

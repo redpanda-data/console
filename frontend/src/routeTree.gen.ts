@@ -62,7 +62,6 @@ import { Route as ShadowlinksNameEditRouteImport } from './routes/shadowlinks/$n
 import { Route as SecurityUsersCreateRouteImport } from './routes/security/users/create';
 import { Route as SecurityUsersUserNameRouteImport } from './routes/security/users/$userName';
 import { Route as SecurityRolesCreateRouteImport } from './routes/security/roles/create';
-import { Route as SecurityRolesRoleNameRouteImport } from './routes/security/roles/$roleName';
 import { Route as SecurityAclsCreateRouteImport } from './routes/security/acls/create';
 import { Route as SecretsIdEditRouteImport } from './routes/secrets/$id/edit';
 import { Route as RpConnectSecretsCreateRouteImport } from './routes/rp-connect/secrets/create';
@@ -357,11 +356,6 @@ const SecurityRolesCreateRoute = SecurityRolesCreateRouteImport.update({
   path: '/roles/create',
   getParentRoute: () => SecurityRoute,
 } as any);
-const SecurityRolesRoleNameRoute = SecurityRolesRoleNameRouteImport.update({
-  id: '/roles/$roleName',
-  path: '/roles/$roleName',
-  getParentRoute: () => SecurityRoute,
-} as any);
 const SecurityAclsCreateRoute = SecurityAclsCreateRouteImport.update({
   id: '/acls/create',
   path: '/acls/create',
@@ -413,15 +407,15 @@ const SchemaRegistrySubjectsSubjectNameIndexRoute =
   } as any);
 const SecurityRolesRoleNameUpdateRoute =
   SecurityRolesRoleNameUpdateRouteImport.update({
-    id: '/update',
-    path: '/update',
-    getParentRoute: () => SecurityRolesRoleNameRoute,
+    id: '/roles/$roleName/update',
+    path: '/roles/$roleName/update',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityRolesRoleNameDetailsRoute =
   SecurityRolesRoleNameDetailsRouteImport.update({
-    id: '/details',
-    path: '/details',
-    getParentRoute: () => SecurityRolesRoleNameRoute,
+    id: '/roles/$roleName/details',
+    path: '/roles/$roleName/details',
+    getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityAclsAclNameUpdateRoute =
   SecurityAclsAclNameUpdateRouteImport.update({
@@ -537,7 +531,6 @@ export interface FileRoutesByFullPath {
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
   '/security/acls/create': typeof SecurityAclsCreateRoute;
-  '/security/roles/$roleName': typeof SecurityRolesRoleNameRouteWithChildren;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/$userName': typeof SecurityUsersUserNameRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
@@ -614,7 +607,6 @@ export interface FileRoutesByTo {
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
   '/security/acls/create': typeof SecurityAclsCreateRoute;
-  '/security/roles/$roleName': typeof SecurityRolesRoleNameRouteWithChildren;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/$userName': typeof SecurityUsersUserNameRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
@@ -693,7 +685,6 @@ export interface FileRoutesById {
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
   '/security/acls/create': typeof SecurityAclsCreateRoute;
-  '/security/roles/$roleName': typeof SecurityRolesRoleNameRouteWithChildren;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/$userName': typeof SecurityUsersUserNameRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
@@ -773,7 +764,6 @@ export interface FileRouteTypes {
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
     | '/security/acls/create'
-    | '/security/roles/$roleName'
     | '/security/roles/create'
     | '/security/users/$userName'
     | '/security/users/create'
@@ -850,7 +840,6 @@ export interface FileRouteTypes {
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
     | '/security/acls/create'
-    | '/security/roles/$roleName'
     | '/security/roles/create'
     | '/security/users/$userName'
     | '/security/users/create'
@@ -928,7 +917,6 @@ export interface FileRouteTypes {
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
     | '/security/acls/create'
-    | '/security/roles/$roleName'
     | '/security/roles/create'
     | '/security/users/$userName'
     | '/security/users/create'
@@ -1398,13 +1386,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRolesCreateRouteImport;
       parentRoute: typeof SecurityRoute;
     };
-    '/security/roles/$roleName': {
-      id: '/security/roles/$roleName';
-      path: '/roles/$roleName';
-      fullPath: '/security/roles/$roleName';
-      preLoaderRoute: typeof SecurityRolesRoleNameRouteImport;
-      parentRoute: typeof SecurityRoute;
-    };
     '/security/acls/create': {
       id: '/security/acls/create';
       path: '/acls/create';
@@ -1470,17 +1451,17 @@ declare module '@tanstack/react-router' {
     };
     '/security/roles/$roleName/update': {
       id: '/security/roles/$roleName/update';
-      path: '/update';
+      path: '/roles/$roleName/update';
       fullPath: '/security/roles/$roleName/update';
       preLoaderRoute: typeof SecurityRolesRoleNameUpdateRouteImport;
-      parentRoute: typeof SecurityRolesRoleNameRoute;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/roles/$roleName/details': {
       id: '/security/roles/$roleName/details';
-      path: '/details';
+      path: '/roles/$roleName/details';
       fullPath: '/security/roles/$roleName/details';
       preLoaderRoute: typeof SecurityRolesRoleNameDetailsRouteImport;
-      parentRoute: typeof SecurityRolesRoleNameRoute;
+      parentRoute: typeof SecurityRoute;
     };
     '/security/acls/$aclName/update': {
       id: '/security/acls/$aclName/update';
@@ -1562,25 +1543,9 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface SecurityRolesRoleNameRouteChildren {
-  SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
-  SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
-}
-
-const SecurityRolesRoleNameRouteChildren: SecurityRolesRoleNameRouteChildren = {
-  SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
-  SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
-};
-
-const SecurityRolesRoleNameRouteWithChildren =
-  SecurityRolesRoleNameRoute._addFileChildren(
-    SecurityRolesRoleNameRouteChildren,
-  );
-
 interface SecurityRouteChildren {
   SecurityIndexRoute: typeof SecurityIndexRoute;
   SecurityAclsCreateRoute: typeof SecurityAclsCreateRoute;
-  SecurityRolesRoleNameRoute: typeof SecurityRolesRoleNameRouteWithChildren;
   SecurityRolesCreateRoute: typeof SecurityRolesCreateRoute;
   SecurityUsersUserNameRoute: typeof SecurityUsersUserNameRoute;
   SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
@@ -1590,12 +1555,13 @@ interface SecurityRouteChildren {
   SecurityUsersIndexRoute: typeof SecurityUsersIndexRoute;
   SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
   SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
+  SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
+  SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
 }
 
 const SecurityRouteChildren: SecurityRouteChildren = {
   SecurityIndexRoute: SecurityIndexRoute,
   SecurityAclsCreateRoute: SecurityAclsCreateRoute,
-  SecurityRolesRoleNameRoute: SecurityRolesRoleNameRouteWithChildren,
   SecurityRolesCreateRoute: SecurityRolesCreateRoute,
   SecurityUsersUserNameRoute: SecurityUsersUserNameRoute,
   SecurityUsersCreateRoute: SecurityUsersCreateRoute,
@@ -1605,6 +1571,8 @@ const SecurityRouteChildren: SecurityRouteChildren = {
   SecurityUsersIndexRoute: SecurityUsersIndexRoute,
   SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
   SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
+  SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
+  SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
 };
 
 const SecurityRouteWithChildren = SecurityRoute._addFileChildren(
