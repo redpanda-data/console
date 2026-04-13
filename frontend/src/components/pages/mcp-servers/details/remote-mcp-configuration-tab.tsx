@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 /** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import { create } from '@bufbuild/protobuf';

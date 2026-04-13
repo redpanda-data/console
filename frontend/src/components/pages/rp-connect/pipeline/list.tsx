@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
@@ -491,7 +489,6 @@ const createColumns = ({
 ];
 
 const PipelineListPageContent = () => {
-  'use no memo';
   const navigate = useNavigate();
   const resetOnboardingWizardStore = useResetOnboardingWizardStore();
 

@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Box, Button, Flex, FormField, Grid, Icon, Input, InputGroup, InputLeftAddon, Text } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
 

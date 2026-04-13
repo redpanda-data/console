@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,

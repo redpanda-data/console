@@ -1,7 +1,5 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
-'use no memo';
-
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Card,

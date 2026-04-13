@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { useNavigate } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -111,7 +109,6 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   topicNameFilter,
   onTopicNameFilterChange,
 }) => {
-  'use no memo';
   const columnHelper = createColumnHelper<ShadowTopic>();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();

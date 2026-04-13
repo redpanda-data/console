@@ -8,7 +8,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
 'use client';
 
 import { create } from '@bufbuild/protobuf';
