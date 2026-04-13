@@ -107,6 +107,7 @@ import type {
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
+import { getSASLMechanismName } from '../utils/user';
 import {
   extractConnectorTopics,
   getConnectTemplate,
@@ -416,7 +417,7 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
         setupResult = {
           authMethod: 'sasl',
           username: (data as AddUserFormData).username,
-          saslMechanism: (data as AddUserFormData).saslMechanism,
+          saslMechanism: getSASLMechanismName((data as AddUserFormData).saslMechanism),
         };
       }
       const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, setupResult);

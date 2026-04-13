@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { getSASLMechanismName } from './user';
 import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
 import {
   convertToScreamingSnakeCase,
@@ -102,7 +103,8 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
 
     redpandaConfig.sasl = [
       {
-        mechanism: userData.saslMechanism || 'SCRAM-SHA-256',
+        mechanism:
+          userData.saslMechanism !== undefined ? getSASLMechanismName(userData.saslMechanism) : 'SCRAM-SHA-256',
         username: getSecretSyntax(usernameSecretId),
         password: getSecretSyntax(passwordSecretId),
       },
@@ -305,7 +307,7 @@ function populateConnectionDefaults(
   const isMechanismField = spec.name.toLowerCase() === 'mechanism' && parentName?.toLowerCase() === 'sasl';
   if (isMechanismField) {
     const userData = onboardingWizardStore.getUserData();
-    return userData?.saslMechanism || 'SCRAM-SHA-256';
+    return userData?.saslMechanism !== undefined ? getSASLMechanismName(userData.saslMechanism) : 'SCRAM-SHA-256';
   }
 
   return;

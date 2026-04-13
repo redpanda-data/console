@@ -51,7 +51,7 @@ type ChangePasswordDialogProps = {
 };
 
 function resolveInitialMechanism(current: SASLMechanism | undefined): SASLMechanism {
-  return current !== undefined && SASL_MECHANISMS.includes(current)
+  return current !== undefined && SASL_MECHANISMS.includes(current as (typeof SASL_MECHANISMS)[number])
     ? current
     : SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
 }

@@ -13,7 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { createQueryOptions, useTransport } from '@connectrpc/connect-query';
 import { useQueries } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { getAclFromAclListResponse } from 'components/pages/acls/new-acl/acl.model';
+import { getAclFromAclListResponse } from 'components/pages/security/shared/acl-model';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
@@ -669,7 +669,7 @@ function PrincipalGroupCard({
                             key={role.name}
                             onClick={(e) => e.stopPropagation()}
                             params={{ roleName: encodeURIComponent(role.name) }}
-                            to="/security/roles/$roleName"
+                            to="/security/roles/$roleName/details"
                           >
                             <Badge
                               className="font-normal text-sm transition-colors hover:bg-accent-foreground/25"

@@ -315,7 +315,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
     try {
       await deleteUserMutation({ name: userName });
       toast.success(`User "${userName}" deleted`);
-      navigate({ to: '/security/$tab', params: { tab: 'users' } });
+      navigate({ to: '/security/users' });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete user';
       toast.error(message);
@@ -327,9 +327,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <Text variant="muted">User not found.</Text>
         <Button asChild variant="outline">
-          <Link params={{ tab: 'users' }} to="/security/$tab">
-            Back to Security
-          </Link>
+          <Link to="/security/users">Back to Security</Link>
         </Button>
       </div>
     );
@@ -341,7 +339,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
         {/* Page Header */}
         <div>
           <Button asChild className="mb-4 -ml-3 text-muted-foreground" variant="ghost">
-            <Link params={{ tab: 'users' }} to="/security/$tab">
+            <Link to="/security/users">
               <ArrowLeft className="size-4" />
               Users
             </Link>
@@ -468,7 +466,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
                       <Link
                         className="font-medium text-base hover:underline"
                         params={{ roleName: encodeURIComponent(role) }}
-                        to="/security/roles/$roleName"
+                        to="/security/roles/$roleName/details"
                       >
                         {role}
                       </Link>
@@ -483,7 +481,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
                         <Trash2 className="size-4" />
                         <span className="sr-only">Remove {role}</span>
                       </Button>
-                      <Link params={{ roleName: encodeURIComponent(role) }} to="/security/roles/$roleName">
+                      <Link params={{ roleName: encodeURIComponent(role) }} to="/security/roles/$roleName/details">
                         <ChevronRight className="size-4 text-muted-foreground" />
                       </Link>
                     </div>
@@ -518,7 +516,7 @@ export function UserDetailPage({ userName }: UserDetailPageProps) {
 
       {/* Change Password Dialog */}
       <ChangePasswordDialog
-        currentMechanism={mechanismLabel}
+        currentMechanism={user?.mechanism}
         onClose={() => setPasswordDialogOpen(false)}
         open={passwordDialogOpen}
         userName={userName}

@@ -22,6 +22,9 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { CreateUserRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { convertToScreamingSnakeCase } from '../types/constants';
+
+export { getSASLMechanismName, SASL_MECHANISM_OPTIONS, SASL_MECHANISMS, SASLMechanism } from 'utils/user';
+
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
 const createConsumerGroupACLs = (consumerGroupName: string, username: string) => {

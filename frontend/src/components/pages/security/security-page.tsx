@@ -49,7 +49,9 @@ export function SecurityPage({ tab }: SecurityPageProps) {
   }, [activeTab, activeTabLabel]);
 
   const setActiveTab = (newTab: SecurityTab) => {
-    navigate({ to: '/security/$tab', params: { tab: newTab }, replace: true });
+    if (newTab === 'users') navigate({ to: '/security/users', replace: true });
+    else if (newTab === 'roles') navigate({ to: '/security/roles', replace: true });
+    else navigate({ to: '/security/permissions-list', replace: true });
   };
 
   const visibleTabs = tabs.filter((t) => !t.requiresFeature || t.requiresFeature());

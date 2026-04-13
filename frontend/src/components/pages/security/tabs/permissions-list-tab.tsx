@@ -259,7 +259,7 @@ export const PermissionsListTab: FC = () => {
                     <Link
                       className="text-inherit no-underline hover:no-underline"
                       params={{ userName: entry.name }}
-                      to="/security/users/$userName/details"
+                      to="/security/users/$userName"
                     >
                       {entry.name}
                     </Link>

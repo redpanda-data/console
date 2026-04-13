@@ -133,7 +133,7 @@ export function RolesTab() {
   };
 
   const navigateToRole = (roleName: string) => {
-    navigate({ to: '/security/roles/$roleName', params: { roleName: encodeURIComponent(roleName) } });
+    navigate({ to: '/security/roles/$roleName/details', params: { roleName: encodeURIComponent(roleName) } });
   };
 
   return (

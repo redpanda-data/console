@@ -297,9 +297,7 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <Text variant="muted">Role not found.</Text>
         <Button asChild variant="outline">
-          <Link params={{ tab: 'roles' }} to="/security/$tab">
-            Back to Security
-          </Link>
+          <Link to="/security/roles">Back to Security</Link>
         </Button>
       </div>
     );
@@ -311,7 +309,7 @@ export function RoleDetailPage({ roleName }: RoleDetailPageProps) {
         {/* Page Header */}
         <div>
           <Button asChild className="mb-4 -ml-3 text-muted-foreground" variant="ghost">
-            <Link params={{ tab: 'roles' }} to="/security/$tab">
+            <Link to="/security/roles">
               <ArrowLeft className="size-4" />
               Roles
             </Link>

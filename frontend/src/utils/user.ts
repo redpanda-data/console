@@ -36,6 +36,10 @@ export const SASL_MECHANISM_OPTIONS: ReadonlyArray<{ id: SASLMechanism; name: st
   },
 ];
 
+export function getSASLMechanismName(mechanism: SASLMechanism): string {
+  return SASL_MECHANISM_OPTIONS.find((o) => o.id === mechanism)?.name ?? 'SCRAM-SHA-256';
+}
+
 export const USERNAME_REGEX = /^[a-zA-Z0-9._@-]+$/;
 export const USERNAME_ERROR_MESSAGE =
   'Must not contain any whitespace. Must be alphanumeric and can contain underscores, periods, and hyphens.';

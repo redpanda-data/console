@@ -42,7 +42,7 @@ import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_conn
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { type Control, useForm, useWatch } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
@@ -66,12 +66,14 @@ import {
   checkUserHasConsumerGroupPermissions,
   checkUserHasTopicReadWritePermissions,
   getACLOperationName,
+  SASL_MECHANISM_OPTIONS,
+  SASLMechanism,
   useCreateUserWithSecretsMutation,
 } from '../utils/user';
 
 type AddUserStepProps = {
   defaultUsername?: string;
-  defaultSaslMechanism?: (typeof SASL_MECHANISMS)[number];
+  defaultSaslMechanism?: SASLMechanism;
   hideInternal?: boolean;
   topicName?: string;
   defaultConsumerGroup?: string;
@@ -131,13 +133,15 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       defaultValues: {
         username: defaultUsername || '',
         password: generatePassword(30, false),
-        saslMechanism: defaultSaslMechanism || 'SCRAM-SHA-256',
+        saslMechanism: defaultSaslMechanism ?? SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
         grantTopicPermissions: true,
         specialCharactersEnabled: false,
         passwordLength: 30,
         consumerGroup: defaultConsumerGroup || '',
       },
     });
+
+    const control = form.control as Control<AddUserFormData>;
 
     const watchedUsername = useWatch({
       control: form.control,
@@ -470,7 +474,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
                       <div className="flex gap-2">
                         <FormField
-                          control={form.control}
+                          control={control}
                           name="username"
                           render={({ field }) => (
                             <FormItem>
@@ -584,7 +588,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                   {userSelectionType === CreatableSelectionOptions.CREATE && (
                     <>
                       <FormField
-                        control={form.control}
+                        control={control}
                         disabled={isPending || isReadOnly}
                         name="password"
                         render={({ field }) => (
@@ -612,7 +616,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                             <FormField
                               disabled={isReadOnly}
                               {...field}
-                              control={form.control}
+                              control={control}
                               name="specialCharactersEnabled"
                               render={({ field: specialCharsField }) => (
                                 <div className="flex flex-row items-center gap-2">
@@ -635,7 +639,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         )}
                       />
                       <FormField
-                        control={form.control}
+                        control={control}
                         disabled={isPending || isReadOnly}
                         name="saslMechanism"
                         render={({ field }) => (
@@ -665,7 +669,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
                       {Boolean(topicName) && (
                         <FormField
-                          control={form.control}
+                          control={control}
                           disabled={isPending || isReadOnly}
                           name="grantTopicPermissions"
                           render={({ field }) => (
@@ -727,7 +731,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                       <div className="flex flex-col items-start gap-2">
                         <div className="flex gap-2">
                           <FormField
-                            control={form.control}
+                            control={control}
                             name="consumerGroup"
                             render={({ field }) => (
                               <FormItem>
