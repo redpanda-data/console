@@ -15,7 +15,6 @@ import { useGetOnboardingCodeSnippetQuery } from 'react-query/api/onboarding';
 import { useGetServerlessClusterQuery } from 'react-query/api/serverless';
 import { useAPIWizardStore } from 'state/api-wizard-store';
 import { uiState } from 'state/ui-state';
-import { getSASLMechanismName } from 'utils/user';
 import { capitalizeFirst } from 'utils/utils';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -154,7 +153,7 @@ export const APIConnectWizard = () => {
         if (userResult?.success && userResult.data && 'username' in userResult.data) {
           // SASL user data
           setUsername(userResult.data.username);
-          setSaslMechanism(getSASLMechanismName(userResult.data.saslMechanism));
+          setSaslMechanism(userResult.data.saslMechanism);
         }
         // Service account data doesn't set username/saslMechanism
         handleStepResult(userResult, methods.next);

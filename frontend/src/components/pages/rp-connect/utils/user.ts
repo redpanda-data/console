@@ -20,10 +20,15 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
-import { CreateUserRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { convertToScreamingSnakeCase } from '../types/constants';
 
 export { getSASLMechanismName, SASL_MECHANISM_OPTIONS, SASL_MECHANISMS, SASLMechanism } from 'utils/user';
+
+const saslMechanismToProto: Record<string, SASLMechanism> = {
+  'SCRAM-SHA-256': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+  'SCRAM-SHA-512': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
+};
 
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
@@ -333,7 +338,7 @@ const createKafkaUser = async (
       user: {
         name: userData.username,
         password: userData.password,
-        mechanism: userData.saslMechanism,
+        mechanism: saslMechanismToProto[userData.saslMechanism] ?? SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
       },
     });
 

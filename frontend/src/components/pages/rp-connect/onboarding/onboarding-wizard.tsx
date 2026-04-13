@@ -36,7 +36,6 @@ import {
 import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, ConnectTilesListFormData, UserStepRef } from '../types/wizard';
 import { parseSchema } from '../utils/schema';
-import { SASLMechanism } from '../utils/user';
 import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
 import { getConnectTemplate } from '../utils/yaml';
 
@@ -276,7 +275,7 @@ export const ConnectOnboardingWizard = ({
             setUserData({
               authMethod: 'service-account',
               username: '',
-              saslMechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+              saslMechanism: 'SCRAM-SHA-256',
               consumerGroup: '',
               serviceAccountName: userResult.data.serviceAccountName,
               serviceAccountId: userResult.data.serviceAccountId,
@@ -402,7 +401,7 @@ export const ConnectOnboardingWizard = ({
                     <AddUserStep
                       {...stepMotionProps}
                       defaultConsumerGroup={persistedConsumerGroup}
-                      defaultSaslMechanism={persistedUserSaslMechanism}
+                      defaultSaslMechanism={persistedUserSaslMechanism as 'SCRAM-SHA-256' | 'SCRAM-SHA-512' | undefined}
                       defaultUsername={persistedUsername}
                       key="add-user-step"
                       onValidityChange={handleUserValidityChange}

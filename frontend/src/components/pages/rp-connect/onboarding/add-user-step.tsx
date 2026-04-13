@@ -67,13 +67,12 @@ import {
   checkUserHasTopicReadWritePermissions,
   getACLOperationName,
   SASL_MECHANISM_OPTIONS,
-  SASLMechanism,
   useCreateUserWithSecretsMutation,
 } from '../utils/user';
 
 type AddUserStepProps = {
   defaultUsername?: string;
-  defaultSaslMechanism?: SASLMechanism;
+  defaultSaslMechanism?: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
   hideInternal?: boolean;
   topicName?: string;
   defaultConsumerGroup?: string;
@@ -133,7 +132,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       defaultValues: {
         username: defaultUsername || '',
         password: generatePassword(30, false),
-        saslMechanism: defaultSaslMechanism ?? SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+        saslMechanism: defaultSaslMechanism ?? 'SCRAM-SHA-256',
         grantTopicPermissions: true,
         specialCharactersEnabled: false,
         passwordLength: 30,
@@ -141,7 +140,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       },
     });
 
-    const control = form.control as Control<AddUserFormData>;
+    const control = form.control as unknown as Control<AddUserFormData>;
 
     const watchedUsername = useWatch({
       control: form.control,
@@ -646,16 +645,13 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                           <FormItem>
                             <FormLabel>SASL mechanism</FormLabel>
                             <FormControl>
-                              <Select
-                                onValueChange={(v) => field.onChange(Number(v) as SASLMechanism)}
-                                value={String(field.value)}
-                              >
+                              <Select onValueChange={(v) => field.onChange(v)} value={field.value}>
                                 <SelectTrigger className="w-[300px]">
                                   <SelectValue placeholder="Select a SASL Mechanism" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {SASL_MECHANISM_OPTIONS.map((mech) => (
-                                    <SelectItem key={mech.id} value={String(mech.id)}>
+                                    <SelectItem key={mech.name} value={mech.name}>
                                       {mech.name}
                                     </SelectItem>
                                   ))}
