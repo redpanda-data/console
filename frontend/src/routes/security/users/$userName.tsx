@@ -12,9 +12,7 @@
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { UserDetailPage } from 'components/pages/security/user-detail-page';
 
-import UserDetailsPage from '../../../../components/pages/security/users/user-details';
-
-export const Route = createFileRoute('/security/users/$userName/details')({
+export const Route = createFileRoute('/security/users/$userName')({
   staticData: {
     title: 'User Details',
   },

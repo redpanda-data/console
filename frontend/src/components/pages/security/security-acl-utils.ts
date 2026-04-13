@@ -2,7 +2,7 @@ import {
   type AclDetail,
   getGRPCResourcePatternType,
   getResourceNameValue,
-} from 'components/pages/acls/new-acl/acl.model';
+} from 'components/pages/security/shared/acl-model';
 import type { ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import {
   ACL_Operation,

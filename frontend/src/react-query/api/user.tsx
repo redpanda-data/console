@@ -185,23 +185,6 @@ export const useUpdateUserMutationWithToast = () => {
   });
 };
 
-export const useDeleteUserMutation = () => {
-  const qc = useQueryClient();
-
-  return useMutation(deleteUser, {
-    onSuccess: async () => {
-      await qc.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: UserService.method.listUsers,
-          cardinality: 'infinite',
-        }),
-        exact: false,
-      });
-    },
-    onError: (error) => toast.error(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'user' })),
-  });
-};
-
 /**
  * Hook to get a function that invalidates the users cache.
  * Use this after MobX operations that modify users (create, delete).

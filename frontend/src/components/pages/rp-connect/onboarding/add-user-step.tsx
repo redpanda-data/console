@@ -50,7 +50,6 @@ import { toast } from 'sonner';
 import { generatePassword } from 'utils/password';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { generatePassword } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
