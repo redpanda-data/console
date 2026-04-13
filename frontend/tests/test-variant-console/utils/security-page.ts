@@ -16,7 +16,7 @@ export class SecurityPage {
   }
 
   async goToUserDetails(username: string) {
-    await this.page.goto(`/security/users/${username}/details`);
+    await this.page.goto(`/security/users/${username}`);
   }
 
   async goToCreateUser() {
@@ -38,19 +38,18 @@ export class SecurityPage {
   }
 
   async submitUserCreation() {
-    await this.page.getByRole('button').getByText('Create').click();
+    await this.page.getByTestId('create-user-submit').click();
   }
 
   /**
    * User deletion operations
    */
   async clickDeleteButton() {
-    await this.page.getByRole('button').getByText('Delete').click();
+    await this.page.getByRole('button', { name: 'Delete User' }).click();
   }
 
-  async confirmUserDeletion(username: string) {
-    await this.page.getByPlaceholder(`Type "${username}" to confirm`).fill(username);
-    await this.page.getByTestId('test-delete-item').click();
+  async confirmUserDeletion(_username: string) {
+    await this.page.getByRole('button', { name: 'Delete User' }).last().click();
   }
 
   /**

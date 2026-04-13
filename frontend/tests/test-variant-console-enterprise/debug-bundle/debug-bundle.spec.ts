@@ -110,15 +110,15 @@ test.describe('Debug Bundle - Generation Progress', () => {
 test.describe('Debug Bundle - Download and Deletion', () => {
   test('should display download link when bundle is ready', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
-    await debugBundlePage.goto();
+    // Use skipCleanup to avoid resetting form state — we just want to check current state
+    await debugBundlePage.goto({ skipCleanup: true });
 
-    // Check if there's a download link available
-    const downloadLink = page.getByRole('link', { name: /download/i });
-    const hasDownload = await downloadLink.isVisible({ timeout: 2000 }).catch(() => false);
+    // The download mechanism is a button (not an anchor), with text matching the filename
+    const downloadButton = page.getByRole('button', { name: /debug-bundle\.zip/i });
+    const hasDownload = await downloadButton.isVisible({ timeout: 2000 }).catch(() => false);
 
     if (hasDownload) {
-      await expect(downloadLink).toBeVisible();
-      await expect(downloadLink).toHaveAttribute('href', /\/api\/debug_bundle\/files\//);
+      await expect(downloadButton).toBeVisible();
     } else {
       test.skip();
     }

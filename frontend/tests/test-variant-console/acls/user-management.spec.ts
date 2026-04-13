@@ -246,24 +246,21 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('3. Verify user detail page loads', async () => {
-      await expect(page).toHaveURL(`/security/users/${username}/details`);
-      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
+      await expect(page).toHaveURL(`/security/users/${username}`);
+      await expect(page.getByRole('heading', { name: username, exact: true }).first()).toBeVisible();
     });
 
     await test.step('4. Verify user information section', async () => {
-      await expect(page.getByText('User information')).toBeVisible();
-      await expect(page.getByText('Username')).toBeVisible();
       await expect(page.getByText(username, { exact: true }).first()).toBeVisible();
-      await expect(page.getByText('Passwords cannot be viewed')).toBeVisible();
     });
 
     await test.step('5. Verify sections are visible', async () => {
-      await expect(page.getByRole('heading', { name: 'Roles' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: /ACLs/ })).toBeVisible();
+      await expect(page.getByText('Roles').first()).toBeVisible();
+      await expect(page.getByText('ACLs').first()).toBeVisible();
     });
 
     await test.step('6. Navigate back using breadcrumb', async () => {
-      await page.getByRole('link', { name: 'Users' }).click();
+      await page.getByRole('link', { name: 'Users' }).first().click();
       await expect(page).toHaveURL('/security/users');
     });
 
@@ -290,21 +287,21 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('3. Verify URL and heading', async () => {
-      await expect(page).toHaveURL(`/security/users/${username}/details`);
-      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
+      await expect(page).toHaveURL(`/security/users/${username}`);
+      await expect(page.getByRole('heading', { name: username, exact: true }).first()).toBeVisible();
     });
 
-    await test.step('4. Verify User information section shows correct username', async () => {
+    await test.step('4. Verify correct username is shown', async () => {
       await expect(page.getByText('test-user-123', { exact: false })).not.toBeVisible();
-      await expect(page.getByText('User information')).toBeVisible();
+      await expect(page.getByText(username, { exact: true }).first()).toBeVisible();
     });
 
-    await test.step('5. Verify Delete user button is available', async () => {
-      await expect(page.getByRole('button', { name: 'Delete user' })).toBeVisible();
+    await test.step('5. Verify Delete User button is available', async () => {
+      await expect(page.getByRole('button', { name: 'Delete User' })).toBeVisible();
     });
 
     await test.step('6. Navigate back to list using breadcrumb', async () => {
-      await page.getByRole('link', { name: 'Users' }).click();
+      await page.getByRole('link', { name: 'Users' }).first().click();
       await expect(page).toHaveURL('/security/users');
     });
   });
@@ -380,17 +377,16 @@ test.describe('ACL User Management', () => {
 
     await test.step('3. Navigate to user detail page', async () => {
       await page.getByRole('link', { name: username, exact: true }).click();
-      await expect(page).toHaveURL(`/security/users/${username}/details`);
-      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
+      await expect(page).toHaveURL(`/security/users/${username}`);
+      await expect(page.getByRole('heading', { name: username, exact: true }).first()).toBeVisible();
     });
 
-    await test.step('4. Click Delete user button', async () => {
-      await page.getByRole('button', { name: 'Delete user' }).click();
+    await test.step('4. Click Delete User button', async () => {
+      await page.getByRole('button', { name: 'Delete User' }).click();
     });
 
     await test.step('5. Confirm deletion', async () => {
-      await page.getByTestId('txt-confirmation-delete').fill(username);
-      await page.getByRole('button', { name: 'Delete' }).click();
+      await page.getByRole('button', { name: 'Delete User' }).last().click();
     });
 
     await test.step('6. Verify redirect to users list', async () => {

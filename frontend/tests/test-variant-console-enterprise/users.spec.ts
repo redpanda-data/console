@@ -29,19 +29,13 @@ test.describe('Users', () => {
     await page.goto('/security/users/', {
       waitUntil: 'domcontentloaded',
     });
-    await page.getByPlaceholder('Filter by name').fill(`user-${r}-regexp-[1,2]`);
+    await page.getByTestId('search-field-input').getByRole('textbox').fill(`user-${r}-regexp-[1,2]`);
     // Wait for nuqs to push the filter into the URL (TanStack Router navigate is async)
     await page.waitForURL(/[?&]q=/);
 
-    await expect(
-      page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`)
-    ).toHaveCount(1);
-    await expect(
-      page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName2}/details']`)
-    ).toHaveCount(1);
-    await expect(
-      page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName3}/details']`)
-    ).toHaveCount(0);
+    await expect(page.getByRole('link', { name: userName1, exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: userName2, exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: userName3, exact: true })).not.toBeVisible();
 
     await securityPage.deleteUser(userName1);
     await securityPage.deleteUser(userName2);

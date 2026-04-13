@@ -7,8 +7,11 @@ test.describe('Licenses', () => {
     });
     const licensingEl = page.locator('[data-testid="overview-license-name"]');
 
-    // Assert that at least one element is visible and contains the text
-    await expect(licensingEl.filter({ hasText: 'Console Enterprise' }).first()).toBeVisible();
+    // When multiple licenses of the same type exist (e.g., both a Redpanda Core and a Console
+    // trial license), the source prefix is omitted and only the type is shown (e.g., "Trial").
+    // When only one license of a type exists, the source is included (e.g., "Console Enterprise").
+    // Accept any enterprise-grade license label regardless of how many licenses are present.
+    await expect(licensingEl.filter({ hasText: /Enterprise|Trial/ }).first()).toBeVisible();
   });
 
   test('should be able to upload new license', async ({ page }) => {
