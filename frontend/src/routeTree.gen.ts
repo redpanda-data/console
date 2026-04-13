@@ -72,6 +72,7 @@ import { Route as ConnectClustersClusterNameCreateConnectorRouteImport } from '.
 import { Route as ConnectClustersClusterNameConnectorRouteImport } from './routes/connect-clusters/$clusterName/$connector';
 import { Route as SchemaRegistrySubjectsSubjectNameIndexRouteImport } from './routes/schema-registry/subjects/$subjectName/index';
 import { Route as SecurityRolesRoleNameUpdateRouteImport } from './routes/security/roles/$roleName/update';
+import { Route as SecurityRolesRoleNameEditRouteImport } from './routes/security/roles/$roleName/edit';
 import { Route as SecurityRolesRoleNameDetailsRouteImport } from './routes/security/roles/$roleName/details';
 import { Route as SecurityAclsAclNameUpdateRouteImport } from './routes/security/acls/$aclName/update';
 import { Route as SecurityAclsAclNameDetailsRouteImport } from './routes/security/acls/$aclName/details';
@@ -411,6 +412,12 @@ const SecurityRolesRoleNameUpdateRoute =
     path: '/roles/$roleName/update',
     getParentRoute: () => SecurityRoute,
   } as any);
+const SecurityRolesRoleNameEditRoute =
+  SecurityRolesRoleNameEditRouteImport.update({
+    id: '/roles/$roleName/edit',
+    path: '/roles/$roleName/edit',
+    getParentRoute: () => SecurityRoute,
+  } as any);
 const SecurityRolesRoleNameDetailsRoute =
   SecurityRolesRoleNameDetailsRouteImport.update({
     id: '/roles/$roleName/details',
@@ -558,6 +565,7 @@ export interface FileRoutesByFullPath {
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
+  '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
@@ -634,6 +642,7 @@ export interface FileRoutesByTo {
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
+  '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/schema-registry/subjects/$subjectName': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
@@ -712,6 +721,7 @@ export interface FileRoutesById {
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
   '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
+  '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
   '/schema-registry/subjects/$subjectName/': typeof SchemaRegistrySubjectsSubjectNameIndexRoute;
 }
@@ -791,6 +801,7 @@ export interface FileRouteTypes {
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
+    | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
     | '/schema-registry/subjects/$subjectName/';
   fileRoutesByTo: FileRoutesByTo;
@@ -867,6 +878,7 @@ export interface FileRouteTypes {
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
+    | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
     | '/schema-registry/subjects/$subjectName';
   id:
@@ -944,6 +956,7 @@ export interface FileRouteTypes {
     | '/security/acls/$aclName/details'
     | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
+    | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
     | '/schema-registry/subjects/$subjectName/';
   fileRoutesById: FileRoutesById;
@@ -1456,6 +1469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRolesRoleNameUpdateRouteImport;
       parentRoute: typeof SecurityRoute;
     };
+    '/security/roles/$roleName/edit': {
+      id: '/security/roles/$roleName/edit';
+      path: '/roles/$roleName/edit';
+      fullPath: '/security/roles/$roleName/edit';
+      preLoaderRoute: typeof SecurityRolesRoleNameEditRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
     '/security/roles/$roleName/details': {
       id: '/security/roles/$roleName/details';
       path: '/roles/$roleName/details';
@@ -1556,6 +1576,7 @@ interface SecurityRouteChildren {
   SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
   SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
   SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
+  SecurityRolesRoleNameEditRoute: typeof SecurityRolesRoleNameEditRoute;
   SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
 }
 
@@ -1572,6 +1593,7 @@ const SecurityRouteChildren: SecurityRouteChildren = {
   SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
   SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
   SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
+  SecurityRolesRoleNameEditRoute: SecurityRolesRoleNameEditRoute,
   SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
 };
 
