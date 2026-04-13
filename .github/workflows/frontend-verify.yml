@@ -182,8 +182,12 @@ jobs:
 
   e2e-test:
     needs: ["lint", "type-check", "build"]
-    timeout-minutes: 30
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    timeout-minutes: 20
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ["1/2", "2/2"]
     defaults:
       run:
         working-directory: frontend
@@ -226,11 +230,11 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bun run install:chromium
       - name: Run Playwright tests
-        run: bun run e2e-test
+        run: bun run e2e-test -- --shard=${{ matrix.shard }}
       - name: Upload Playwright report artifact
         uses: actions/upload-artifact@v4
         if: ${{ failure() }}
         with:
-          name: playwright-report
+          name: playwright-report-${{ strategy.job-index }}
           path: frontend/playwright-report/
           retention-days: 2

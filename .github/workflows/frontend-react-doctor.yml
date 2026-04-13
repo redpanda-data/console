@@ -5,6 +5,9 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-react-doctor.yml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   react-doctor:
     timeout-minutes: 5
