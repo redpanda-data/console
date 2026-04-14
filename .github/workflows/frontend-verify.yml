@@ -176,7 +176,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: integration-test-results-${{ matrix.shard }}
+          name: integration-test-results-${{ strategy.job-index }}
           path: frontend/test-results
           retention-days: 2
 
