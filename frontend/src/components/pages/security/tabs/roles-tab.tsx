@@ -13,11 +13,12 @@ import { create } from '@bufbuild/protobuf';
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { EditIcon, TrashIcon } from 'components/icons';
+import { parseAsString } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { useState } from 'react';
 
 import ErrorResult from '../../../../components/misc/error-result';
+import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
 import { appGlobal } from '../../../../state/app-global';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
@@ -35,7 +36,11 @@ export const RolesTab: FC = () => {
   useSecurityBreadcrumbs([]);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
+    { onUpdate: () => {}, getDefaultValue: () => '' },
+    'q',
+    parseAsString.withDefault('')
+  );
   const { data: rolesData, isError: rolesIsError, error: rolesError } = useListRolesQuery();
   const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
 
@@ -71,8 +76,8 @@ export const RolesTab: FC = () => {
       </NullFallbackBoundary>
       <SearchField
         placeholderText="Filter by name"
-        searchText={searchQuery}
-        setSearchText={setSearchQuery}
+        searchText={searchQuery ?? ''}
+        setSearchText={(x) => setSearchQuery(x)}
         width="300px"
       />
       <Section>

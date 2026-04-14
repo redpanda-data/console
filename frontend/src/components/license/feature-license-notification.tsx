@@ -64,7 +64,10 @@ const getLicenseAlertContentForFeature = (
     }
     return {
       message: (
-        <Alert icon={<InfoIcon />} variant={msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'warning' : 'destructive'}>
+        <Alert
+          icon={<InfoIcon />}
+          variant={msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'warning' : 'destructive'}
+        >
           <AlertTitle>This is an enterprise feature.</AlertTitle>
         </Alert>
       ),

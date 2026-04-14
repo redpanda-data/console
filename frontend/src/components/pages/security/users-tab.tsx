@@ -103,11 +103,6 @@ export function UsersTab({ onNavigateToTab }: UsersTabProps) {
 
   return (
     <div aria-labelledby="users-tab" id="users-panel" role="tabpanel">
-      <Text className="max-w-3xl pb-2 text-base leading-6" variant="muted">
-        These users are SASL-SCRAM users managed by your cluster. View the full permissions picture for all identities
-        (including OIDC and mTLS) on the Permissions tab.
-      </Text>
-
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">

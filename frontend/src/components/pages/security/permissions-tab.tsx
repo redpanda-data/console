@@ -19,7 +19,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, ExternalLink, Lock, Plus, Search, Shield, Trash2, X } from 'lucide-react';
 import {
   ACL_Operation,
@@ -437,11 +436,6 @@ export function PermissionsTab() {
 
   return (
     <div aria-labelledby="permissions-tab" id="permissions-panel" role="tabpanel">
-      <Text className="max-w-3xl pb-2 text-base leading-6" variant="muted">
-        A unified view of all principal permissions across your cluster, including direct ACLs and those inherited from
-        role bindings. Inherited ACLs are read-only here and must be edited on the respective role page.
-      </Text>
-
       {/* Toolbar */}
       <div className="mb-4 flex items-center gap-3">
         <div className="relative max-w-xs flex-1">

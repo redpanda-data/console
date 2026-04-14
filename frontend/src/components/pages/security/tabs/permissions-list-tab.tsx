@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
+import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -25,6 +26,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
+import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useDeleteUserMutation, useInvalidateUsersCache } from '../../../../react-query/api/user';
 import { appGlobal } from '../../../../state/app-global';
@@ -141,7 +143,11 @@ const PermissionsListActions = ({
 
 export const PermissionsListTab: FC = () => {
   useSecurityBreadcrumbs([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
+    { onUpdate: () => {}, getDefaultValue: () => '' },
+    'q',
+    parseAsString.withDefault('')
+  );
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
@@ -224,8 +230,8 @@ export const PermissionsListTab: FC = () => {
 
       <SearchField
         placeholderText="Filter by name"
-        searchText={searchQuery}
-        setSearchText={setSearchQuery}
+        searchText={searchQuery ?? ''}
+        setSearchText={(x) => setSearchQuery(x)}
         width="300px"
       />
 

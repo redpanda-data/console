@@ -138,12 +138,6 @@ export function RolesTab() {
 
   return (
     <div aria-labelledby="roles-tab" id="roles-panel" role="tabpanel">
-      <Text className="max-w-3xl pb-2 text-base leading-6" variant="muted">
-        Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents any
-        entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC
-        identity, or mTLS client).
-      </Text>
-
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">

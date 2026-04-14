@@ -14,6 +14,7 @@ import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
 import { InfoIcon } from 'lucide-react';
+import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -27,6 +28,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
+import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
@@ -61,7 +63,11 @@ export const AclsTab: FC = () => {
   const invalidateUsersCache = useInvalidateUsersCache();
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
+    { onUpdate: () => {}, getDefaultValue: () => '' },
+    'q',
+    parseAsString.withDefault('')
+  );
 
   const navigate = useNavigate();
 
@@ -115,8 +121,8 @@ export const AclsTab: FC = () => {
       )}
       <SearchField
         placeholderText="Filter by name"
-        searchText={searchQuery}
-        setSearchText={setSearchQuery}
+        searchText={searchQuery ?? ''}
+        setSearchText={(x) => setSearchQuery(x)}
         width="300px"
       />
       <Section>
