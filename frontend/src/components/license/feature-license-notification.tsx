@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertIcon, Box, Flex, Text } from '@redpanda-data/ui';
+import { Flex, Text } from '@redpanda-data/ui';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
 
@@ -20,13 +20,16 @@ import {
 
 const WARNING_THRESHOLD_DAYS = 5;
 
-import { RegisterModal } from './register-modal';
+import { InfoIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import {
   type License,
   License_Type,
   type ListEnterpriseFeaturesResponse_Feature,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api } from '../../state/backend-api';
+} from 'protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from 'state/backend-api';
+
+import { RegisterModal } from './register-modal';
 
 // biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
 const getLicenseAlertContentForFeature = (
@@ -36,7 +39,7 @@ const getLicenseAlertContentForFeature = (
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; status: 'warning' | 'info' } | null => {
+): { message: ReactElement; status: 'warning' | 'destructive' } | null => {
   if (license === undefined) {
     return null;
   }
@@ -47,23 +50,25 @@ const getLicenseAlertContentForFeature = (
     if (bakedInTrial) {
       return {
         message: (
-          <Box>
-            <Text>This is an enterprise feature. Register for an additional 30 days of enterprise features.</Text>
-            <Flex gap={2} my={2}>
-              <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
-            </Flex>
-          </Box>
+          <Alert icon={<InfoIcon />} variant="destructive">
+            <AlertDescription>
+              <Text>This is an enterprise feature. Register for an additional 30 days of enterprise features.</Text>
+              <Flex gap={2} my={2}>
+                <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
+              </Flex>
+            </AlertDescription>
+          </Alert>
         ),
-        status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'warning',
+        status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'warning' : 'destructive',
       };
     }
     return {
       message: (
-        <Box>
-          <Text>This is an enterprise feature.</Text>
-        </Box>
+        <Alert icon={<InfoIcon />} variant={msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'warning' : 'destructive'}>
+          <AlertTitle>This is an enterprise feature.</AlertTitle>
+        </Alert>
       ),
-      status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'warning',
+      status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'warning' : 'destructive',
     };
   }
 
@@ -76,39 +81,43 @@ const getLicenseAlertContentForFeature = (
     ) {
       return {
         message: (
-          <Box>
-            <Text>This is an enterprise feature, active until {getPrettyExpirationDate(license)}.</Text>
-            <Flex gap={2} my={2}>
-              <UploadLicenseButton />
-              <UpgradeButton />
-            </Flex>
-          </Box>
+          <Alert icon={<InfoIcon />} variant="info">
+            <AlertDescription>
+              <Text>This is an enterprise feature, active until {getPrettyExpirationDate(license)}.</Text>
+              <Flex gap={2} my={2}>
+                <UploadLicenseButton />
+                <UpgradeButton />
+              </Flex>
+            </AlertDescription>
+          </Alert>
         ),
-        status: 'info',
+        status: 'warning',
       };
     }
     if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
       return {
         message: (
-          <Box>
-            <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
-                enterprise features
-              </Link>{' '}
-              will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
-                contact us
-              </Link>
-              .
-            </Text>
-            <Flex gap={2} my={2}>
-              <UploadLicenseButton />
-              <UpgradeButton />
-            </Flex>
-          </Box>
+          <Alert icon={<InfoIcon />} variant="destructive">
+            <AlertDescription>
+              <Text>
+                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+                <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
+                  enterprise features
+                </Link>{' '}
+                will become unavailable. To get a full Redpanda Enterprise license,{' '}
+                <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
+                  contact us
+                </Link>
+                .
+              </Text>
+              <Flex gap={2} my={2}>
+                <UploadLicenseButton />
+                <UpgradeButton />
+              </Flex>
+            </AlertDescription>
+          </Alert>
         ),
-        status: 'warning',
+        status: 'destructive',
       };
     }
   } else {
@@ -117,54 +126,62 @@ const getLicenseAlertContentForFeature = (
       if (license.type === License_Type.TRIAL) {
         return {
           message: (
-            <Box>
-              <Text>This is an enterprise feature. Your trial is active until {getPrettyExpirationDate(license)}</Text>
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <UpgradeButton />
-              </Flex>
-            </Box>
+            <Alert icon={<InfoIcon />} variant="warning">
+              <AlertDescription>
+                <Text>
+                  This is an enterprise feature. Your trial is active until {getPrettyExpirationDate(license)}
+                </Text>
+                <Flex gap={2} my={2}>
+                  <UploadLicenseButton />
+                  <UpgradeButton />
+                </Flex>
+              </AlertDescription>
+            </Alert>
           ),
-          status: 'info',
+          status: 'warning',
         };
       }
       return {
         message: (
-          <Box>
-            <Text>
-              This is a Redpanda Enterprise feature. Try it with our{' '}
-              <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
-                Redpanda Enterprise Trial
-              </Link>
-              .
-            </Text>
-          </Box>
+          <Alert icon={<InfoIcon />} variant="warning">
+            <AlertDescription>
+              <Text>
+                This is a Redpanda Enterprise feature. Try it with our{' '}
+                <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
+                  Redpanda Enterprise Trial
+                </Link>
+                .
+              </Text>
+            </AlertDescription>
+          </Alert>
         ),
-        status: 'info',
+        status: 'warning',
       };
     }
     if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
       return {
         message: (
-          <Box>
-            <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
-                enterprise features
-              </Link>{' '}
-              will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
-                contact us
-              </Link>
-              .
-            </Text>
-            <Flex gap={2} my={2}>
-              <UploadLicenseButton />
-              <UpgradeButton />
-            </Flex>
-          </Box>
+          <Alert icon={<InfoIcon />} variant="warning">
+            <AlertDescription>
+              <Text>
+                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+                <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
+                  enterprise features
+                </Link>{' '}
+                will become unavailable. To get a full Redpanda Enterprise license,{' '}
+                <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
+                  contact us
+                </Link>
+                .
+              </Text>
+              <Flex gap={2} my={2}>
+                <UploadLicenseButton />
+                <UpgradeButton />
+              </Flex>
+            </AlertDescription>
+          </Alert>
         ),
-        status: 'warning',
+        status: 'destructive',
       };
     }
   }
@@ -220,16 +237,12 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     return null;
   }
 
-  const { message, status } = alertContent;
+  const { message } = alertContent;
 
   return (
-    <Box>
-      <Alert mb={4} status={status} variant="subtle">
-        <AlertIcon />
-        <AlertDescription>{message}</AlertDescription>
-      </Alert>
-
+    <>
+      {message}
       <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
-    </Box>
+    </>
   );
 };
