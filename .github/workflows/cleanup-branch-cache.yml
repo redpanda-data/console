@@ -6,7 +6,7 @@ on:
       - '**'
 jobs:
   cleanup:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       actions: write
     steps:
@@ -21,6 +21,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref,
+              per_page: 100,
             });
 
             for (const cache of caches.data.actions_caches) {
