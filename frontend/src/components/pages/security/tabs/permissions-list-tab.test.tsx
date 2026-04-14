@@ -232,6 +232,8 @@ vi.mock('react-query/api/acl', () => ({
   useListACLAsPrincipalGroups: () => listACLsData,
 }));
 
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
+
 import { PermissionsListTab } from './permissions-list-tab';
 
 describe('Permissions List - delete dropdown for different principal types', () => {
@@ -242,7 +244,11 @@ describe('Permissions List - delete dropdown for different principal types', () 
   test('Group principal does not show "Delete User" options in dropdown', async () => {
     const user = userEvent.setup();
 
-    render(<PermissionsListTab />);
+    render(
+      <NuqsTestingAdapter>
+        <PermissionsListTab />
+      </NuqsTestingAdapter>
+    );
 
     const groupRow = await screen.findByTestId('row-engineering');
     const deleteButton = within(groupRow).getByRole('button');
@@ -258,7 +264,11 @@ describe('Permissions List - delete dropdown for different principal types', () 
     const user = userEvent.setup();
 
     // "scram-admin" exists in usersData.users — it's a real SCRAM user
-    render(<PermissionsListTab />);
+    render(
+      <NuqsTestingAdapter>
+        <PermissionsListTab />
+      </NuqsTestingAdapter>
+    );
 
     const scramRow = await screen.findByTestId('row-scram-admin');
     const deleteButton = within(scramRow).getByRole('button');
@@ -277,7 +287,11 @@ describe('Permissions List - delete dropdown for different principal types', () 
   test('Group principal has "Delete (ACLs only)" available', async () => {
     const user = userEvent.setup();
 
-    render(<PermissionsListTab />);
+    render(
+      <NuqsTestingAdapter>
+        <PermissionsListTab />
+      </NuqsTestingAdapter>
+    );
 
     const groupRow = await screen.findByTestId('row-engineering');
     const deleteButton = within(groupRow).getByRole('button');

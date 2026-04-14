@@ -304,6 +304,7 @@ vi.mock('react-query/api/security', () => ({
 }));
 
 import { RolesTab } from './roles-tab';
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 
 describe('RolesTab role navigation', () => {
   beforeEach(() => {
@@ -313,7 +314,11 @@ describe('RolesTab role navigation', () => {
   test('navigates role edit actions to the encoded update route', async () => {
     const user = userEvent.setup();
 
-    render(<RolesTab />);
+    render(
+      <NuqsTestingAdapter>
+        <RolesTab />
+      </NuqsTestingAdapter>
+    );
 
     await user.click(await screen.findByLabelText('Edit role topic reader/qa'));
 
@@ -321,7 +326,11 @@ describe('RolesTab role navigation', () => {
   });
 
   test('renders role list from useListRolesQuery', async () => {
-    render(<RolesTab />);
+    render(
+      <NuqsTestingAdapter>
+        <RolesTab />
+      </NuqsTestingAdapter>
+    );
 
     await expect(screen.findByTestId('role-list-item-topic reader/qa')).resolves.toBeInTheDocument();
   });
@@ -329,7 +338,11 @@ describe('RolesTab role navigation', () => {
   test('delete role calls deleteRoleMutation with correct arguments', async () => {
     const user = userEvent.setup();
 
-    render(<RolesTab />);
+    render(
+      <NuqsTestingAdapter>
+        <RolesTab />
+      </NuqsTestingAdapter>
+    );
 
     await user.click(await screen.findByTestId('mock-confirm-delete-topic reader/qa'));
 
