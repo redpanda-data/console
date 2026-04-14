@@ -132,6 +132,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
       </a>
     ),
     useNavigate: () => vi.fn(),
+    useLocation: () => ({ searchStr: '' }),
   };
 });
 

@@ -201,6 +201,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
       </a>
     ),
     useNavigate: () => vi.fn(),
+    useLocation: () => ({ searchStr: '' }),
   };
 });
 
@@ -303,8 +304,9 @@ vi.mock('react-query/api/security', () => ({
   }),
 }));
 
-import { RolesTab } from './roles-tab';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
+
+import { RolesTab } from './roles-tab';
 
 describe('RolesTab role navigation', () => {
   beforeEach(() => {
