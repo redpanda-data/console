@@ -156,7 +156,7 @@ export const AclsTab: FC = () => {
                   <Link
                     className="cursor-pointer no-underline hover:text-primary"
                     params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
-                    search={(prev) => ({ ...prev, host: record.host })}
+                    search={{ host: record.host }}
                     to="/security/acls/$aclName/details"
                   >
                     <span className="flex items-center gap-1">
