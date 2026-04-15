@@ -122,7 +122,7 @@ export default defineConfig({
     },
   },
   performance: {
-    buildCache: true,
+    buildCache: false,
   },
   output: {
     distPath: {
