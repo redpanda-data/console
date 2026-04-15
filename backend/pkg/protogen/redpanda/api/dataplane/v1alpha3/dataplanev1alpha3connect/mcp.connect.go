@@ -5,12 +5,14 @@
 package dataplanev1alpha3connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1alpha3 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha3"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1alpha3 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha3"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are

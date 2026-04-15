@@ -10,3 +10,87 @@ import { ConsoleService } from "./console_service_pb";
  * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.PublishMessage
  */
 export const publishMessage = ConsoleService.method.publishMessage;
+
+/**
+ * ListConsumerGroups returns an overview of all consumer groups.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListConsumerGroups
+ */
+export const listConsumerGroups = ConsoleService.method.listConsumerGroups;
+
+/**
+ * GetConsumerGroup returns the overview for a single consumer group.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetConsumerGroup
+ */
+export const getConsumerGroup = ConsoleService.method.getConsumerGroup;
+
+/**
+ * ListBrokers returns all brokers with their log dir information.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListBrokers
+ */
+export const listBrokers = ConsoleService.method.listBrokers;
+
+/**
+ * DescribeCluster returns cluster-level information including brokers and configs.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.DescribeCluster
+ */
+export const describeCluster = ConsoleService.method.describeCluster;
+
+/**
+ * GetTopicsOverview returns a summary overview of all topics.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetTopicsOverview
+ */
+export const getTopicsOverview = ConsoleService.method.getTopicsOverview;
+
+/**
+ * ListTopicPartitionDetails returns partition details for a single topic.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListTopicPartitionDetails
+ */
+export const listTopicPartitionDetails = ConsoleService.method.listTopicPartitionDetails;
+
+/**
+ * GetTopicsConfigs returns configuration for one or more topics.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetTopicsConfigs
+ */
+export const getTopicsConfigs = ConsoleService.method.getTopicsConfigs;
+
+/**
+ * ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListTopicConsumerGroups
+ */
+export const listTopicConsumerGroups = ConsoleService.method.listTopicConsumerGroups;
+
+/**
+ * GetAllTopicDetails returns partition details for all (or specified) topics.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetAllTopicDetails
+ */
+export const getAllTopicDetails = ConsoleService.method.getAllTopicDetails;
+
+/**
+ * ListPartitionReassignments lists active partition reassignments.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListPartitionReassignments
+ */
+export const listPartitionReassignments = ConsoleService.method.listPartitionReassignments;
+
+/**
+ * AlterPartitionAssignments changes partition-to-broker assignments.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.AlterPartitionAssignments
+ */
+export const alterPartitionAssignments = ConsoleService.method.alterPartitionAssignments;
+
+/**
+ * IncrementalAlterConfigs incrementally alters resource configurations.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.IncrementalAlterConfigs
+ */
+export const incrementalAlterConfigs = ConsoleService.method.incrementalAlterConfigs;

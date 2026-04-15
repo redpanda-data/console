@@ -7,9 +7,11 @@ package dataplanev1alpha3connect
 import (
 	context "context"
 	fmt "fmt"
+
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	v1alpha3 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha3"
 	connect_gateway "go.vallahaye.net/connect-gateway"
+
+	v1alpha3 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha3"
 )
 
 // KnowledgeBaseServiceGatewayServer implements the gRPC server API for the KnowledgeBaseService

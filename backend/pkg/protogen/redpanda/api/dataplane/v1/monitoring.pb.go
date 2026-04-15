@@ -7,13 +7,15 @@
 package dataplanev1
 
 import (
+	reflect "reflect"
+
 	v2 "buf.build/gen/go/redpandadata/core/protocolbuffers/go/redpanda/core/admin/v2"
 	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
-	_ "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/auth/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
+
+	_ "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/auth/v1"
 )
 
 const (

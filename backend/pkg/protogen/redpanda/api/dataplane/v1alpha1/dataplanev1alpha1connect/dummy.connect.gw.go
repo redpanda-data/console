@@ -7,10 +7,12 @@ package dataplanev1alpha1connect
 import (
 	context "context"
 	fmt "fmt"
+
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 	connect_gateway "go.vallahaye.net/connect-gateway"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
+
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
 )
 
 // DummyServiceGatewayServer implements the gRPC server API for the DummyService service.

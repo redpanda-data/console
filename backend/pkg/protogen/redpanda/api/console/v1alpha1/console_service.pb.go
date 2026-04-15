@@ -7,11 +7,13 @@
 package consolev1alpha1
 
 import (
-	_ "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/auth/v1"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+
+	_ "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/auth/v1"
 )
 
 const (

@@ -2,19 +2,1329 @@
 // @generated from file redpanda/api/console/v1alpha1/console_service.proto (package redpanda.api.console.v1alpha1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv1";
-import { fileDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
+import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_redpanda_api_auth_v1_authorization } from "../../auth/v1/authorization_pb";
 import type { ListMessagesRequestSchema, ListMessagesResponseSchema } from "./list_messages_pb";
 import { file_redpanda_api_console_v1alpha1_list_messages } from "./list_messages_pb";
 import type { PublishMessageRequestSchema, PublishMessageResponseSchema } from "./publish_messages_pb";
 import { file_redpanda_api_console_v1alpha1_publish_messages } from "./publish_messages_pb";
+import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file redpanda/api/console/v1alpha1/console_service.proto.
  */
 export const file_redpanda_api_console_v1alpha1_console_service: GenFile = /*@__PURE__*/
-  fileDesc("CjNyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9jb25zb2xlX3NlcnZpY2UucHJvdG8SHXJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExMqACCg5Db25zb2xlU2VydmljZRKDAQoMTGlzdE1lc3NhZ2VzEjIucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdE1lc3NhZ2VzUmVxdWVzdBozLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RNZXNzYWdlc1Jlc3BvbnNlIgiKph0ECAEQATABEocBCg5QdWJsaXNoTWVzc2FnZRI0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVxdWVzdBo1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2UiCIqmHQQIAhABYgZwcm90bzM", [file_redpanda_api_auth_v1_authorization, file_redpanda_api_console_v1alpha1_list_messages, file_redpanda_api_console_v1alpha1_publish_messages]);
+  fileDesc("CjNyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9jb25zb2xlX3NlcnZpY2UucHJvdG8SHXJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExIhsKGUxpc3RDb25zdW1lckdyb3Vwc1JlcXVlc3QiawoaTGlzdENvbnN1bWVyR3JvdXBzUmVzcG9uc2USTQoPY29uc3VtZXJfZ3JvdXBzGAEgAygLMjQucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ29uc3VtZXJHcm91cE92ZXJ2aWV3IisKF0dldENvbnN1bWVyR3JvdXBSZXF1ZXN0EhAKCGdyb3VwX2lkGAEgASgJImgKGEdldENvbnN1bWVyR3JvdXBSZXNwb25zZRJMCg5jb25zdW1lcl9ncm91cBgBIAEoCzI0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkNvbnN1bWVyR3JvdXBPdmVydmlldyKKAgoVQ29uc3VtZXJHcm91cE92ZXJ2aWV3EhAKCGdyb3VwX2lkGAEgASgJEg0KBXN0YXRlGAIgASgJEhUKDXByb3RvY29sX3R5cGUYAyABKAkSEAoIcHJvdG9jb2wYBCABKAkSRgoHbWVtYmVycxgFIAMoCzI1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdyb3VwTWVtYmVyRGVzY3JpcHRpb24SFgoOY29vcmRpbmF0b3JfaWQYBiABKAUSRwoNdG9waWNfb2Zmc2V0cxgHIAMoCzIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdyb3VwVG9waWNPZmZzZXRzIpcBChZHcm91cE1lbWJlckRlc2NyaXB0aW9uEgoKAmlkGAEgASgJEhEKCWNsaWVudF9pZBgCIAEoCRITCgtjbGllbnRfaG9zdBgDIAEoCRJJCgthc3NpZ25tZW50cxgEIAMoCzI0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdyb3VwTWVtYmVyQXNzaWdubWVudCJCChVHcm91cE1lbWJlckFzc2lnbm1lbnQSEgoKdG9waWNfbmFtZRgBIAEoCRIVCg1wYXJ0aXRpb25faWRzGAIgAygFIroBChFHcm91cFRvcGljT2Zmc2V0cxINCgV0b3BpYxgBIAEoCRISCgpzdW1tZWRfbGFnGAIgASgDEhcKD3BhcnRpdGlvbl9jb3VudBgDIAEoBRIeChZwYXJ0aXRpb25zX3dpdGhfb2Zmc2V0GAQgASgFEkkKEXBhcnRpdGlvbl9vZmZzZXRzGAUgAygLMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUGFydGl0aW9uT2Zmc2V0InIKD1BhcnRpdGlvbk9mZnNldBINCgVlcnJvchgBIAEoCRIUCgxwYXJ0aXRpb25faWQYAiABKAUSFAoMZ3JvdXBfb2Zmc2V0GAMgASgDEhcKD2hpZ2hfd2F0ZXJfbWFyaxgEIAEoAxILCgNsYWcYBSABKAMiFAoSTGlzdEJyb2tlcnNSZXF1ZXN0IlgKE0xpc3RCcm9rZXJzUmVzcG9uc2USQQoHYnJva2VycxgBIAMoCzIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkJyb2tlcldpdGhMb2dEaXJzIoICChFCcm9rZXJXaXRoTG9nRGlycxIRCglicm9rZXJfaWQYASABKAUSFQoNaXNfY29udHJvbGxlchgCIAEoCBIPCgdhZGRyZXNzGAMgASgJEhEKBHJhY2sYBCABKAlIAIgBARIlChh0b3RhbF9sb2dfZGlyX3NpemVfYnl0ZXMYBSABKANIAYgBARItCiB0b3RhbF9wcmltYXJ5X2xvZ19kaXJfc2l6ZV9ieXRlcxgGIAEoA0gCiAEBQgcKBV9yYWNrQhsKGV90b3RhbF9sb2dfZGlyX3NpemVfYnl0ZXNCIwohX3RvdGFsX3ByaW1hcnlfbG9nX2Rpcl9zaXplX2J5dGVzIhgKFkRlc2NyaWJlQ2x1c3RlclJlcXVlc3QiWwoXRGVzY3JpYmVDbHVzdGVyUmVzcG9uc2USQAoMY2x1c3Rlcl9pbmZvGAEgASgLMioucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ2x1c3RlckluZm8iegoLQ2x1c3RlckluZm8SFQoNY29udHJvbGxlcl9pZBgBIAEoBRI9Cgdicm9rZXJzGAIgAygLMiwucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ2x1c3RlckJyb2tlchIVCg1rYWZrYV92ZXJzaW9uGAMgASgJIqkBCg1DbHVzdGVyQnJva2VyEhEKCWJyb2tlcl9pZBgBIAEoBRIUCgxsb2dfZGlyX3NpemUYAiABKAMSDwoHYWRkcmVzcxgDIAEoCRIRCgRyYWNrGAQgASgJSACIAQESQgoGY29uZmlnGAUgASgLMjIucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ2x1c3RlckJyb2tlckNvbmZpZ0IHCgVfcmFjayJuChNDbHVzdGVyQnJva2VyQ29uZmlnEkgKB2NvbmZpZ3MYASADKAsyNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5DbHVzdGVyQnJva2VyQ29uZmlnRW50cnkSDQoFZXJyb3IYAiABKAkixQEKGENsdXN0ZXJCcm9rZXJDb25maWdFbnRyeRIMCgRuYW1lGAEgASgJEhIKBXZhbHVlGAIgASgJSACIAQESDgoGc291cmNlGAMgASgJEgwKBHR5cGUYBCABKAkSGQoRaXNfZXhwbGljaXRseV9zZXQYBSABKAgSGAoQaXNfZGVmYXVsdF92YWx1ZRgGIAEoCBIUCgxpc19zZW5zaXRpdmUYByABKAgSFAoMaXNfcmVhZF9vbmx5GAggASgIQggKBl92YWx1ZSIaChhHZXRUb3BpY3NPdmVydmlld1JlcXVlc3QiWAoZR2V0VG9waWNzT3ZlcnZpZXdSZXNwb25zZRI7CgZ0b3BpY3MYASADKAsyKy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Ub3BpY1N1bW1hcnki5wEKDFRvcGljU3VtbWFyeRISCgp0b3BpY19uYW1lGAEgASgJEhMKC2lzX2ludGVybmFsGAIgASgIEhcKD3BhcnRpdGlvbl9jb3VudBgDIAEoBRIaChJyZXBsaWNhdGlvbl9mYWN0b3IYBCABKAUSFgoOY2xlYW51cF9wb2xpY3kYBSABKAkSFQoNZG9jdW1lbnRhdGlvbhgGIAEoCRJKCg9sb2dfZGlyX3N1bW1hcnkYByABKAsyMS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Ub3BpY0xvZ0RpclN1bW1hcnkiPAoSVG9waWNMb2dEaXJTdW1tYXJ5EhgKEHRvdGFsX3NpemVfYnl0ZXMYASABKAMSDAoEaGludBgCIAEoCSI2CiBMaXN0VG9waWNQYXJ0aXRpb25EZXRhaWxzUmVxdWVzdBISCgp0b3BpY19uYW1lGAEgASgJIoABCiFMaXN0VG9waWNQYXJ0aXRpb25EZXRhaWxzUmVzcG9uc2USEgoKdG9waWNfbmFtZRgBIAEoCRJHCgpwYXJ0aXRpb25zGAIgAygLMjMucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVG9waWNQYXJ0aXRpb25EZXRhaWwirgIKFFRvcGljUGFydGl0aW9uRGV0YWlsEgoKAmlkGAEgASgFEhcKD3BhcnRpdGlvbl9lcnJvchgCIAEoCRIQCghyZXBsaWNhcxgDIAMoBRIYChBvZmZsaW5lX3JlcGxpY2FzGAQgAygFEhgKEGluX3N5bmNfcmVwbGljYXMYBSADKAUSDgoGbGVhZGVyGAYgASgFEhkKEXdhdGVyX21hcmtzX2Vycm9yGAcgASgJEhYKDndhdGVyX21hcmtfbG93GAggASgDEhcKD3dhdGVyX21hcmtfaGlnaBgJIAEoAxJPChJwYXJ0aXRpb25fbG9nX2RpcnMYCiADKAsyMy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Ub3BpY1BhcnRpdGlvbkxvZ0RpciJcChRUb3BpY1BhcnRpdGlvbkxvZ0RpchIRCglicm9rZXJfaWQYASABKAUSDQoFZXJyb3IYAiABKAkSFAoMcGFydGl0aW9uX2lkGAMgASgFEgwKBHNpemUYBCABKAMiQwoXR2V0VG9waWNzQ29uZmlnc1JlcXVlc3QSEwoLdG9waWNfbmFtZXMYASADKAkSEwoLY29uZmlnX2tleXMYAiADKAkiXQoYR2V0VG9waWNzQ29uZmlnc1Jlc3BvbnNlEkEKDXRvcGljX2NvbmZpZ3MYASADKAsyKi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Ub3BpY0NvbmZpZyKzAQoLVG9waWNDb25maWcSEgoKdG9waWNfbmFtZRgBIAEoCRJHCg5jb25maWdfZW50cmllcxgCIAMoCzIvLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlRvcGljQ29uZmlnRW50cnkSPQoFZXJyb3IYAyABKAsyKS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5LYWZrYUVycm9ySACIAQFCCAoGX2Vycm9yIusBChBUb3BpY0NvbmZpZ0VudHJ5EgwKBG5hbWUYASABKAkSEgoFdmFsdWUYAiABKAlIAIgBARIOCgZzb3VyY2UYAyABKAkSDAoEdHlwZRgEIAEoCRIZChFpc19leHBsaWNpdGx5X3NldBgFIAEoCBIYChBpc19kZWZhdWx0X3ZhbHVlGAYgASgIEhQKDGlzX3NlbnNpdGl2ZRgHIAEoCBIUCgxpc19yZWFkX29ubHkYCCABKAgSGgoNZG9jdW1lbnRhdGlvbhgJIAEoCUgBiAEBQggKBl92YWx1ZUIQCg5fZG9jdW1lbnRhdGlvbiJACgpLYWZrYUVycm9yEgwKBGNvZGUYASABKAUSDwoHbWVzc2FnZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCSI0Ch5MaXN0VG9waWNDb25zdW1lckdyb3Vwc1JlcXVlc3QSEgoKdG9waWNfbmFtZRgBIAEoCSJ7Ch9MaXN0VG9waWNDb25zdW1lckdyb3Vwc1Jlc3BvbnNlEhIKCnRvcGljX25hbWUYASABKAkSRAoJY29uc3VtZXJzGAIgAygLMjEucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVG9waWNDb25zdW1lckdyb3VwIjoKElRvcGljQ29uc3VtZXJHcm91cBIQCghncm91cF9pZBgBIAEoCRISCgpzdW1tZWRfbGFnGAIgASgDIjAKGUdldEFsbFRvcGljRGV0YWlsc1JlcXVlc3QSEwoLdG9waWNfbmFtZXMYASADKAkiWQoaR2V0QWxsVG9waWNEZXRhaWxzUmVzcG9uc2USOwoGdG9waWNzGAEgAygLMisucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVG9waWNEZXRhaWxzInoKDFRvcGljRGV0YWlscxISCgp0b3BpY19uYW1lGAEgASgJEg0KBWVycm9yGAIgASgJEkcKCnBhcnRpdGlvbnMYAyADKAsyMy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Ub3BpY1BhcnRpdGlvbkRldGFpbCIjCiFMaXN0UGFydGl0aW9uUmVhc3NpZ25tZW50c1JlcXVlc3QiagoiTGlzdFBhcnRpdGlvblJlYXNzaWdubWVudHNSZXNwb25zZRJECgZ0b3BpY3MYASADKAsyNC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5QYXJ0aXRpb25SZWFzc2lnbm1lbnQifgoVUGFydGl0aW9uUmVhc3NpZ25tZW50EhIKCnRvcGljX25hbWUYASABKAkSUQoKcGFydGl0aW9ucxgCIAMoCzI9LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlBhcnRpdGlvblJlYXNzaWdubWVudFBhcnRpdGlvbiJ8Ch5QYXJ0aXRpb25SZWFzc2lnbm1lbnRQYXJ0aXRpb24SFAoMcGFydGl0aW9uX2lkGAEgASgFEhcKD2FkZGluZ19yZXBsaWNhcxgCIAMoBRIZChFyZW1vdmluZ19yZXBsaWNhcxgDIAMoBRIQCghyZXBsaWNhcxgEIAMoBSJ4CiBBbHRlclBhcnRpdGlvbkFzc2lnbm1lbnRzUmVxdWVzdBJUCgZ0b3BpY3MYASADKAsyRC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5BbHRlclBhcnRpdGlvbkFzc2lnbm1lbnRzUmVxdWVzdFRvcGljIpkBCiVBbHRlclBhcnRpdGlvbkFzc2lnbm1lbnRzUmVxdWVzdFRvcGljEhIKCnRvcGljX25hbWUYASABKAkSXAoKcGFydGl0aW9ucxgCIAMoCzJILnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkFsdGVyUGFydGl0aW9uQXNzaWdubWVudHNSZXF1ZXN0UGFydGl0aW9uIlMKKUFsdGVyUGFydGl0aW9uQXNzaWdubWVudHNSZXF1ZXN0UGFydGl0aW9uEhQKDHBhcnRpdGlvbl9pZBgBIAEoBRIQCghyZXBsaWNhcxgCIAMoBSJ6CiFBbHRlclBhcnRpdGlvbkFzc2lnbm1lbnRzUmVzcG9uc2USVQoGdG9waWNzGAEgAygLMkUucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQWx0ZXJQYXJ0aXRpb25Bc3NpZ25tZW50c1RvcGljUmVzcG9uc2UimwEKJkFsdGVyUGFydGl0aW9uQXNzaWdubWVudHNUb3BpY1Jlc3BvbnNlEhIKCnRvcGljX25hbWUYASABKAkSXQoKcGFydGl0aW9ucxgCIAMoCzJJLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkFsdGVyUGFydGl0aW9uQXNzaWdubWVudHNQYXJ0aXRpb25SZXNwb25zZSKEAQoqQWx0ZXJQYXJ0aXRpb25Bc3NpZ25tZW50c1BhcnRpdGlvblJlc3BvbnNlEhQKDHBhcnRpdGlvbl9pZBgBIAEoBRISCgplcnJvcl9jb2RlGAIgASgJEhoKDWVycm9yX21lc3NhZ2UYAyABKAlIAIgBAUIQCg5fZXJyb3JfbWVzc2FnZSJ6Ch5JbmNyZW1lbnRhbEFsdGVyQ29uZmlnc1JlcXVlc3QSWAoJcmVzb3VyY2VzGAEgAygLMkUucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuSW5jcmVtZW50YWxBbHRlckNvbmZpZ3NSZXF1ZXN0UmVzb3VyY2UitAEKJkluY3JlbWVudGFsQWx0ZXJDb25maWdzUmVxdWVzdFJlc291cmNlEhUKDXJlc291cmNlX3R5cGUYASABKAUSFQoNcmVzb3VyY2VfbmFtZRgCIAEoCRJcCgdjb25maWdzGAMgAygLMksucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuSW5jcmVtZW50YWxBbHRlckNvbmZpZ3NSZXF1ZXN0UmVzb3VyY2VDb25maWciZgosSW5jcmVtZW50YWxBbHRlckNvbmZpZ3NSZXF1ZXN0UmVzb3VyY2VDb25maWcSDAoEbmFtZRgBIAEoCRIKCgJvcBgCIAEoBRISCgV2YWx1ZRgDIAEoCUgAiAEBQggKBl92YWx1ZSJ8Ch9JbmNyZW1lbnRhbEFsdGVyQ29uZmlnc1Jlc3BvbnNlElkKCXJlc291cmNlcxgBIAMoCzJGLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkluY3JlbWVudGFsQWx0ZXJDb25maWdzUmVzb3VyY2VSZXNwb25zZSJmCidJbmNyZW1lbnRhbEFsdGVyQ29uZmlnc1Jlc291cmNlUmVzcG9uc2USDQoFZXJyb3IYASABKAkSFQoNcmVzb3VyY2VfbmFtZRgCIAEoCRIVCg1yZXNvdXJjZV90eXBlGAMgASgFMtoQCg5Db25zb2xlU2VydmljZRKDAQoMTGlzdE1lc3NhZ2VzEjIucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdE1lc3NhZ2VzUmVxdWVzdBozLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RNZXNzYWdlc1Jlc3BvbnNlIgiKph0ECAEQATABEocBCg5QdWJsaXNoTWVzc2FnZRI0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVxdWVzdBo1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2UiCIqmHQQIAhABEpMBChJMaXN0Q29uc3VtZXJHcm91cHMSOC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0Q29uc3VtZXJHcm91cHNSZXF1ZXN0GjkucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdENvbnN1bWVyR3JvdXBzUmVzcG9uc2UiCIqmHQQIARABEo0BChBHZXRDb25zdW1lckdyb3VwEjYucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0Q29uc3VtZXJHcm91cFJlcXVlc3QaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRDb25zdW1lckdyb3VwUmVzcG9uc2UiCIqmHQQIARABEn4KC0xpc3RCcm9rZXJzEjEucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdEJyb2tlcnNSZXF1ZXN0GjIucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdEJyb2tlcnNSZXNwb25zZSIIiqYdBAgBEAESigEKD0Rlc2NyaWJlQ2x1c3RlchI1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkRlc2NyaWJlQ2x1c3RlclJlcXVlc3QaNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5EZXNjcmliZUNsdXN0ZXJSZXNwb25zZSIIiqYdBAgBEAESkAEKEUdldFRvcGljc092ZXJ2aWV3EjcucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0VG9waWNzT3ZlcnZpZXdSZXF1ZXN0GjgucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0VG9waWNzT3ZlcnZpZXdSZXNwb25zZSIIiqYdBAgBEAESqAEKGUxpc3RUb3BpY1BhcnRpdGlvbkRldGFpbHMSPy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0VG9waWNQYXJ0aXRpb25EZXRhaWxzUmVxdWVzdBpALnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RUb3BpY1BhcnRpdGlvbkRldGFpbHNSZXNwb25zZSIIiqYdBAgBEAESjQEKEEdldFRvcGljc0NvbmZpZ3MSNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRUb3BpY3NDb25maWdzUmVxdWVzdBo3LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldFRvcGljc0NvbmZpZ3NSZXNwb25zZSIIiqYdBAgBEAESogEKF0xpc3RUb3BpY0NvbnN1bWVyR3JvdXBzEj0ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFRvcGljQ29uc3VtZXJHcm91cHNSZXF1ZXN0Gj4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFRvcGljQ29uc3VtZXJHcm91cHNSZXNwb25zZSIIiqYdBAgBEAESkwEKEkdldEFsbFRvcGljRGV0YWlscxI4LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldEFsbFRvcGljRGV0YWlsc1JlcXVlc3QaOS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRBbGxUb3BpY0RldGFpbHNSZXNwb25zZSIIiqYdBAgBEAESqwEKGkxpc3RQYXJ0aXRpb25SZWFzc2lnbm1lbnRzEkAucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFBhcnRpdGlvblJlYXNzaWdubWVudHNSZXF1ZXN0GkEucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFBhcnRpdGlvblJlYXNzaWdubWVudHNSZXNwb25zZSIIiqYdBAgBEAESqAEKGUFsdGVyUGFydGl0aW9uQXNzaWdubWVudHMSPy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5BbHRlclBhcnRpdGlvbkFzc2lnbm1lbnRzUmVxdWVzdBpALnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkFsdGVyUGFydGl0aW9uQXNzaWdubWVudHNSZXNwb25zZSIIiqYdBAgCEAESogEKF0luY3JlbWVudGFsQWx0ZXJDb25maWdzEj0ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuSW5jcmVtZW50YWxBbHRlckNvbmZpZ3NSZXF1ZXN0Gj4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuSW5jcmVtZW50YWxBbHRlckNvbmZpZ3NSZXNwb25zZSIIiqYdBAgCEAFiBnByb3RvMw", [file_redpanda_api_auth_v1_authorization, file_redpanda_api_console_v1alpha1_list_messages, file_redpanda_api_console_v1alpha1_publish_messages]);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListConsumerGroupsRequest
+ */
+export type ListConsumerGroupsRequest = Message<"redpanda.api.console.v1alpha1.ListConsumerGroupsRequest"> & {
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListConsumerGroupsRequest.
+ * Use `create(ListConsumerGroupsRequestSchema)` to create a new message.
+ */
+export const ListConsumerGroupsRequestSchema: GenMessage<ListConsumerGroupsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 0);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListConsumerGroupsResponse
+ */
+export type ListConsumerGroupsResponse = Message<"redpanda.api.console.v1alpha1.ListConsumerGroupsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.ConsumerGroupOverview consumer_groups = 1;
+   */
+  consumerGroups: ConsumerGroupOverview[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListConsumerGroupsResponse.
+ * Use `create(ListConsumerGroupsResponseSchema)` to create a new message.
+ */
+export const ListConsumerGroupsResponseSchema: GenMessage<ListConsumerGroupsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 1);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetConsumerGroupRequest
+ */
+export type GetConsumerGroupRequest = Message<"redpanda.api.console.v1alpha1.GetConsumerGroupRequest"> & {
+  /**
+   * @generated from field: string group_id = 1;
+   */
+  groupId: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetConsumerGroupRequest.
+ * Use `create(GetConsumerGroupRequestSchema)` to create a new message.
+ */
+export const GetConsumerGroupRequestSchema: GenMessage<GetConsumerGroupRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 2);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetConsumerGroupResponse
+ */
+export type GetConsumerGroupResponse = Message<"redpanda.api.console.v1alpha1.GetConsumerGroupResponse"> & {
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.ConsumerGroupOverview consumer_group = 1;
+   */
+  consumerGroup?: ConsumerGroupOverview;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetConsumerGroupResponse.
+ * Use `create(GetConsumerGroupResponseSchema)` to create a new message.
+ */
+export const GetConsumerGroupResponseSchema: GenMessage<GetConsumerGroupResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 3);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ConsumerGroupOverview
+ */
+export type ConsumerGroupOverview = Message<"redpanda.api.console.v1alpha1.ConsumerGroupOverview"> & {
+  /**
+   * @generated from field: string group_id = 1;
+   */
+  groupId: string;
+
+  /**
+   * @generated from field: string state = 2;
+   */
+  state: string;
+
+  /**
+   * @generated from field: string protocol_type = 3;
+   */
+  protocolType: string;
+
+  /**
+   * @generated from field: string protocol = 4;
+   */
+  protocol: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GroupMemberDescription members = 5;
+   */
+  members: GroupMemberDescription[];
+
+  /**
+   * @generated from field: int32 coordinator_id = 6;
+   */
+  coordinatorId: number;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GroupTopicOffsets topic_offsets = 7;
+   */
+  topicOffsets: GroupTopicOffsets[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ConsumerGroupOverview.
+ * Use `create(ConsumerGroupOverviewSchema)` to create a new message.
+ */
+export const ConsumerGroupOverviewSchema: GenMessage<ConsumerGroupOverview> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 4);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GroupMemberDescription
+ */
+export type GroupMemberDescription = Message<"redpanda.api.console.v1alpha1.GroupMemberDescription"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * @generated from field: string client_host = 3;
+   */
+  clientHost: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.GroupMemberAssignment assignments = 4;
+   */
+  assignments: GroupMemberAssignment[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GroupMemberDescription.
+ * Use `create(GroupMemberDescriptionSchema)` to create a new message.
+ */
+export const GroupMemberDescriptionSchema: GenMessage<GroupMemberDescription> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 5);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GroupMemberAssignment
+ */
+export type GroupMemberAssignment = Message<"redpanda.api.console.v1alpha1.GroupMemberAssignment"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated int32 partition_ids = 2;
+   */
+  partitionIds: number[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GroupMemberAssignment.
+ * Use `create(GroupMemberAssignmentSchema)` to create a new message.
+ */
+export const GroupMemberAssignmentSchema: GenMessage<GroupMemberAssignment> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 6);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GroupTopicOffsets
+ */
+export type GroupTopicOffsets = Message<"redpanda.api.console.v1alpha1.GroupTopicOffsets"> & {
+  /**
+   * @generated from field: string topic = 1;
+   */
+  topic: string;
+
+  /**
+   * @generated from field: int64 summed_lag = 2;
+   */
+  summedLag: bigint;
+
+  /**
+   * @generated from field: int32 partition_count = 3;
+   */
+  partitionCount: number;
+
+  /**
+   * @generated from field: int32 partitions_with_offset = 4;
+   */
+  partitionsWithOffset: number;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.PartitionOffset partition_offsets = 5;
+   */
+  partitionOffsets: PartitionOffset[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GroupTopicOffsets.
+ * Use `create(GroupTopicOffsetsSchema)` to create a new message.
+ */
+export const GroupTopicOffsetsSchema: GenMessage<GroupTopicOffsets> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 7);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.PartitionOffset
+ */
+export type PartitionOffset = Message<"redpanda.api.console.v1alpha1.PartitionOffset"> & {
+  /**
+   * @generated from field: string error = 1;
+   */
+  error: string;
+
+  /**
+   * @generated from field: int32 partition_id = 2;
+   */
+  partitionId: number;
+
+  /**
+   * @generated from field: int64 group_offset = 3;
+   */
+  groupOffset: bigint;
+
+  /**
+   * @generated from field: int64 high_water_mark = 4;
+   */
+  highWaterMark: bigint;
+
+  /**
+   * @generated from field: int64 lag = 5;
+   */
+  lag: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.PartitionOffset.
+ * Use `create(PartitionOffsetSchema)` to create a new message.
+ */
+export const PartitionOffsetSchema: GenMessage<PartitionOffset> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 8);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListBrokersRequest
+ */
+export type ListBrokersRequest = Message<"redpanda.api.console.v1alpha1.ListBrokersRequest"> & {
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListBrokersRequest.
+ * Use `create(ListBrokersRequestSchema)` to create a new message.
+ */
+export const ListBrokersRequestSchema: GenMessage<ListBrokersRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 9);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListBrokersResponse
+ */
+export type ListBrokersResponse = Message<"redpanda.api.console.v1alpha1.ListBrokersResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.BrokerWithLogDirs brokers = 1;
+   */
+  brokers: BrokerWithLogDirs[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListBrokersResponse.
+ * Use `create(ListBrokersResponseSchema)` to create a new message.
+ */
+export const ListBrokersResponseSchema: GenMessage<ListBrokersResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 10);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.BrokerWithLogDirs
+ */
+export type BrokerWithLogDirs = Message<"redpanda.api.console.v1alpha1.BrokerWithLogDirs"> & {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId: number;
+
+  /**
+   * @generated from field: bool is_controller = 2;
+   */
+  isController: boolean;
+
+  /**
+   * @generated from field: string address = 3;
+   */
+  address: string;
+
+  /**
+   * @generated from field: optional string rack = 4;
+   */
+  rack?: string;
+
+  /**
+   * @generated from field: optional int64 total_log_dir_size_bytes = 5;
+   */
+  totalLogDirSizeBytes?: bigint;
+
+  /**
+   * @generated from field: optional int64 total_primary_log_dir_size_bytes = 6;
+   */
+  totalPrimaryLogDirSizeBytes?: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.BrokerWithLogDirs.
+ * Use `create(BrokerWithLogDirsSchema)` to create a new message.
+ */
+export const BrokerWithLogDirsSchema: GenMessage<BrokerWithLogDirs> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 11);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.DescribeClusterRequest
+ */
+export type DescribeClusterRequest = Message<"redpanda.api.console.v1alpha1.DescribeClusterRequest"> & {
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.DescribeClusterRequest.
+ * Use `create(DescribeClusterRequestSchema)` to create a new message.
+ */
+export const DescribeClusterRequestSchema: GenMessage<DescribeClusterRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 12);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.DescribeClusterResponse
+ */
+export type DescribeClusterResponse = Message<"redpanda.api.console.v1alpha1.DescribeClusterResponse"> & {
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.ClusterInfo cluster_info = 1;
+   */
+  clusterInfo?: ClusterInfo;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.DescribeClusterResponse.
+ * Use `create(DescribeClusterResponseSchema)` to create a new message.
+ */
+export const DescribeClusterResponseSchema: GenMessage<DescribeClusterResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 13);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ClusterInfo
+ */
+export type ClusterInfo = Message<"redpanda.api.console.v1alpha1.ClusterInfo"> & {
+  /**
+   * @generated from field: int32 controller_id = 1;
+   */
+  controllerId: number;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.ClusterBroker brokers = 2;
+   */
+  brokers: ClusterBroker[];
+
+  /**
+   * @generated from field: string kafka_version = 3;
+   */
+  kafkaVersion: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ClusterInfo.
+ * Use `create(ClusterInfoSchema)` to create a new message.
+ */
+export const ClusterInfoSchema: GenMessage<ClusterInfo> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 14);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ClusterBroker
+ */
+export type ClusterBroker = Message<"redpanda.api.console.v1alpha1.ClusterBroker"> & {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId: number;
+
+  /**
+   * @generated from field: int64 log_dir_size = 2;
+   */
+  logDirSize: bigint;
+
+  /**
+   * @generated from field: string address = 3;
+   */
+  address: string;
+
+  /**
+   * @generated from field: optional string rack = 4;
+   */
+  rack?: string;
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.ClusterBrokerConfig config = 5;
+   */
+  config?: ClusterBrokerConfig;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ClusterBroker.
+ * Use `create(ClusterBrokerSchema)` to create a new message.
+ */
+export const ClusterBrokerSchema: GenMessage<ClusterBroker> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 15);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ClusterBrokerConfig
+ */
+export type ClusterBrokerConfig = Message<"redpanda.api.console.v1alpha1.ClusterBrokerConfig"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.ClusterBrokerConfigEntry configs = 1;
+   */
+  configs: ClusterBrokerConfigEntry[];
+
+  /**
+   * @generated from field: string error = 2;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ClusterBrokerConfig.
+ * Use `create(ClusterBrokerConfigSchema)` to create a new message.
+ */
+export const ClusterBrokerConfigSchema: GenMessage<ClusterBrokerConfig> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 16);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ClusterBrokerConfigEntry
+ */
+export type ClusterBrokerConfigEntry = Message<"redpanda.api.console.v1alpha1.ClusterBrokerConfigEntry"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: optional string value = 2;
+   */
+  value?: string;
+
+  /**
+   * @generated from field: string source = 3;
+   */
+  source: string;
+
+  /**
+   * @generated from field: string type = 4;
+   */
+  type: string;
+
+  /**
+   * @generated from field: bool is_explicitly_set = 5;
+   */
+  isExplicitlySet: boolean;
+
+  /**
+   * @generated from field: bool is_default_value = 6;
+   */
+  isDefaultValue: boolean;
+
+  /**
+   * @generated from field: bool is_sensitive = 7;
+   */
+  isSensitive: boolean;
+
+  /**
+   * @generated from field: bool is_read_only = 8;
+   */
+  isReadOnly: boolean;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ClusterBrokerConfigEntry.
+ * Use `create(ClusterBrokerConfigEntrySchema)` to create a new message.
+ */
+export const ClusterBrokerConfigEntrySchema: GenMessage<ClusterBrokerConfigEntry> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 17);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetTopicsOverviewRequest
+ */
+export type GetTopicsOverviewRequest = Message<"redpanda.api.console.v1alpha1.GetTopicsOverviewRequest"> & {
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetTopicsOverviewRequest.
+ * Use `create(GetTopicsOverviewRequestSchema)` to create a new message.
+ */
+export const GetTopicsOverviewRequestSchema: GenMessage<GetTopicsOverviewRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 18);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetTopicsOverviewResponse
+ */
+export type GetTopicsOverviewResponse = Message<"redpanda.api.console.v1alpha1.GetTopicsOverviewResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicSummary topics = 1;
+   */
+  topics: TopicSummary[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetTopicsOverviewResponse.
+ * Use `create(GetTopicsOverviewResponseSchema)` to create a new message.
+ */
+export const GetTopicsOverviewResponseSchema: GenMessage<GetTopicsOverviewResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 19);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicSummary
+ */
+export type TopicSummary = Message<"redpanda.api.console.v1alpha1.TopicSummary"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: bool is_internal = 2;
+   */
+  isInternal: boolean;
+
+  /**
+   * @generated from field: int32 partition_count = 3;
+   */
+  partitionCount: number;
+
+  /**
+   * @generated from field: int32 replication_factor = 4;
+   */
+  replicationFactor: number;
+
+  /**
+   * @generated from field: string cleanup_policy = 5;
+   */
+  cleanupPolicy: string;
+
+  /**
+   * @generated from field: string documentation = 6;
+   */
+  documentation: string;
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.TopicLogDirSummary log_dir_summary = 7;
+   */
+  logDirSummary?: TopicLogDirSummary;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicSummary.
+ * Use `create(TopicSummarySchema)` to create a new message.
+ */
+export const TopicSummarySchema: GenMessage<TopicSummary> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 20);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicLogDirSummary
+ */
+export type TopicLogDirSummary = Message<"redpanda.api.console.v1alpha1.TopicLogDirSummary"> & {
+  /**
+   * @generated from field: int64 total_size_bytes = 1;
+   */
+  totalSizeBytes: bigint;
+
+  /**
+   * @generated from field: string hint = 2;
+   */
+  hint: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicLogDirSummary.
+ * Use `create(TopicLogDirSummarySchema)` to create a new message.
+ */
+export const TopicLogDirSummarySchema: GenMessage<TopicLogDirSummary> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 21);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListTopicPartitionDetailsRequest
+ */
+export type ListTopicPartitionDetailsRequest = Message<"redpanda.api.console.v1alpha1.ListTopicPartitionDetailsRequest"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListTopicPartitionDetailsRequest.
+ * Use `create(ListTopicPartitionDetailsRequestSchema)` to create a new message.
+ */
+export const ListTopicPartitionDetailsRequestSchema: GenMessage<ListTopicPartitionDetailsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 22);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListTopicPartitionDetailsResponse
+ */
+export type ListTopicPartitionDetailsResponse = Message<"redpanda.api.console.v1alpha1.ListTopicPartitionDetailsResponse"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicPartitionDetail partitions = 2;
+   */
+  partitions: TopicPartitionDetail[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListTopicPartitionDetailsResponse.
+ * Use `create(ListTopicPartitionDetailsResponseSchema)` to create a new message.
+ */
+export const ListTopicPartitionDetailsResponseSchema: GenMessage<ListTopicPartitionDetailsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 23);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicPartitionDetail
+ */
+export type TopicPartitionDetail = Message<"redpanda.api.console.v1alpha1.TopicPartitionDetail"> & {
+  /**
+   * @generated from field: int32 id = 1;
+   */
+  id: number;
+
+  /**
+   * @generated from field: string partition_error = 2;
+   */
+  partitionError: string;
+
+  /**
+   * @generated from field: repeated int32 replicas = 3;
+   */
+  replicas: number[];
+
+  /**
+   * @generated from field: repeated int32 offline_replicas = 4;
+   */
+  offlineReplicas: number[];
+
+  /**
+   * @generated from field: repeated int32 in_sync_replicas = 5;
+   */
+  inSyncReplicas: number[];
+
+  /**
+   * @generated from field: int32 leader = 6;
+   */
+  leader: number;
+
+  /**
+   * @generated from field: string water_marks_error = 7;
+   */
+  waterMarksError: string;
+
+  /**
+   * @generated from field: int64 water_mark_low = 8;
+   */
+  waterMarkLow: bigint;
+
+  /**
+   * @generated from field: int64 water_mark_high = 9;
+   */
+  waterMarkHigh: bigint;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicPartitionLogDir partition_log_dirs = 10;
+   */
+  partitionLogDirs: TopicPartitionLogDir[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicPartitionDetail.
+ * Use `create(TopicPartitionDetailSchema)` to create a new message.
+ */
+export const TopicPartitionDetailSchema: GenMessage<TopicPartitionDetail> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 24);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicPartitionLogDir
+ */
+export type TopicPartitionLogDir = Message<"redpanda.api.console.v1alpha1.TopicPartitionLogDir"> & {
+  /**
+   * @generated from field: int32 broker_id = 1;
+   */
+  brokerId: number;
+
+  /**
+   * @generated from field: string error = 2;
+   */
+  error: string;
+
+  /**
+   * @generated from field: int32 partition_id = 3;
+   */
+  partitionId: number;
+
+  /**
+   * @generated from field: int64 size = 4;
+   */
+  size: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicPartitionLogDir.
+ * Use `create(TopicPartitionLogDirSchema)` to create a new message.
+ */
+export const TopicPartitionLogDirSchema: GenMessage<TopicPartitionLogDir> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 25);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetTopicsConfigsRequest
+ */
+export type GetTopicsConfigsRequest = Message<"redpanda.api.console.v1alpha1.GetTopicsConfigsRequest"> & {
+  /**
+   * @generated from field: repeated string topic_names = 1;
+   */
+  topicNames: string[];
+
+  /**
+   * @generated from field: repeated string config_keys = 2;
+   */
+  configKeys: string[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetTopicsConfigsRequest.
+ * Use `create(GetTopicsConfigsRequestSchema)` to create a new message.
+ */
+export const GetTopicsConfigsRequestSchema: GenMessage<GetTopicsConfigsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 26);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetTopicsConfigsResponse
+ */
+export type GetTopicsConfigsResponse = Message<"redpanda.api.console.v1alpha1.GetTopicsConfigsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicConfig topic_configs = 1;
+   */
+  topicConfigs: TopicConfig[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetTopicsConfigsResponse.
+ * Use `create(GetTopicsConfigsResponseSchema)` to create a new message.
+ */
+export const GetTopicsConfigsResponseSchema: GenMessage<GetTopicsConfigsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 27);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicConfig
+ */
+export type TopicConfig = Message<"redpanda.api.console.v1alpha1.TopicConfig"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicConfigEntry config_entries = 2;
+   */
+  configEntries: TopicConfigEntry[];
+
+  /**
+   * @generated from field: optional redpanda.api.console.v1alpha1.KafkaError error = 3;
+   */
+  error?: KafkaError;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicConfig.
+ * Use `create(TopicConfigSchema)` to create a new message.
+ */
+export const TopicConfigSchema: GenMessage<TopicConfig> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 28);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicConfigEntry
+ */
+export type TopicConfigEntry = Message<"redpanda.api.console.v1alpha1.TopicConfigEntry"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: optional string value = 2;
+   */
+  value?: string;
+
+  /**
+   * @generated from field: string source = 3;
+   */
+  source: string;
+
+  /**
+   * @generated from field: string type = 4;
+   */
+  type: string;
+
+  /**
+   * @generated from field: bool is_explicitly_set = 5;
+   */
+  isExplicitlySet: boolean;
+
+  /**
+   * @generated from field: bool is_default_value = 6;
+   */
+  isDefaultValue: boolean;
+
+  /**
+   * @generated from field: bool is_sensitive = 7;
+   */
+  isSensitive: boolean;
+
+  /**
+   * @generated from field: bool is_read_only = 8;
+   */
+  isReadOnly: boolean;
+
+  /**
+   * @generated from field: optional string documentation = 9;
+   */
+  documentation?: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicConfigEntry.
+ * Use `create(TopicConfigEntrySchema)` to create a new message.
+ */
+export const TopicConfigEntrySchema: GenMessage<TopicConfigEntry> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 29);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.KafkaError
+ */
+export type KafkaError = Message<"redpanda.api.console.v1alpha1.KafkaError"> & {
+  /**
+   * @generated from field: int32 code = 1;
+   */
+  code: number;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.KafkaError.
+ * Use `create(KafkaErrorSchema)` to create a new message.
+ */
+export const KafkaErrorSchema: GenMessage<KafkaError> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 30);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListTopicConsumerGroupsRequest
+ */
+export type ListTopicConsumerGroupsRequest = Message<"redpanda.api.console.v1alpha1.ListTopicConsumerGroupsRequest"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListTopicConsumerGroupsRequest.
+ * Use `create(ListTopicConsumerGroupsRequestSchema)` to create a new message.
+ */
+export const ListTopicConsumerGroupsRequestSchema: GenMessage<ListTopicConsumerGroupsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 31);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListTopicConsumerGroupsResponse
+ */
+export type ListTopicConsumerGroupsResponse = Message<"redpanda.api.console.v1alpha1.ListTopicConsumerGroupsResponse"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicConsumerGroup consumers = 2;
+   */
+  consumers: TopicConsumerGroup[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListTopicConsumerGroupsResponse.
+ * Use `create(ListTopicConsumerGroupsResponseSchema)` to create a new message.
+ */
+export const ListTopicConsumerGroupsResponseSchema: GenMessage<ListTopicConsumerGroupsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 32);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicConsumerGroup
+ */
+export type TopicConsumerGroup = Message<"redpanda.api.console.v1alpha1.TopicConsumerGroup"> & {
+  /**
+   * @generated from field: string group_id = 1;
+   */
+  groupId: string;
+
+  /**
+   * @generated from field: int64 summed_lag = 2;
+   */
+  summedLag: bigint;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicConsumerGroup.
+ * Use `create(TopicConsumerGroupSchema)` to create a new message.
+ */
+export const TopicConsumerGroupSchema: GenMessage<TopicConsumerGroup> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 33);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetAllTopicDetailsRequest
+ */
+export type GetAllTopicDetailsRequest = Message<"redpanda.api.console.v1alpha1.GetAllTopicDetailsRequest"> & {
+  /**
+   * @generated from field: repeated string topic_names = 1;
+   */
+  topicNames: string[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetAllTopicDetailsRequest.
+ * Use `create(GetAllTopicDetailsRequestSchema)` to create a new message.
+ */
+export const GetAllTopicDetailsRequestSchema: GenMessage<GetAllTopicDetailsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 34);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetAllTopicDetailsResponse
+ */
+export type GetAllTopicDetailsResponse = Message<"redpanda.api.console.v1alpha1.GetAllTopicDetailsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicDetails topics = 1;
+   */
+  topics: TopicDetails[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GetAllTopicDetailsResponse.
+ * Use `create(GetAllTopicDetailsResponseSchema)` to create a new message.
+ */
+export const GetAllTopicDetailsResponseSchema: GenMessage<GetAllTopicDetailsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 35);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.TopicDetails
+ */
+export type TopicDetails = Message<"redpanda.api.console.v1alpha1.TopicDetails"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: string error = 2;
+   */
+  error: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.TopicPartitionDetail partitions = 3;
+   */
+  partitions: TopicPartitionDetail[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.TopicDetails.
+ * Use `create(TopicDetailsSchema)` to create a new message.
+ */
+export const TopicDetailsSchema: GenMessage<TopicDetails> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 36);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListPartitionReassignmentsRequest
+ */
+export type ListPartitionReassignmentsRequest = Message<"redpanda.api.console.v1alpha1.ListPartitionReassignmentsRequest"> & {
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListPartitionReassignmentsRequest.
+ * Use `create(ListPartitionReassignmentsRequestSchema)` to create a new message.
+ */
+export const ListPartitionReassignmentsRequestSchema: GenMessage<ListPartitionReassignmentsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 37);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListPartitionReassignmentsResponse
+ */
+export type ListPartitionReassignmentsResponse = Message<"redpanda.api.console.v1alpha1.ListPartitionReassignmentsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.PartitionReassignment topics = 1;
+   */
+  topics: PartitionReassignment[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ListPartitionReassignmentsResponse.
+ * Use `create(ListPartitionReassignmentsResponseSchema)` to create a new message.
+ */
+export const ListPartitionReassignmentsResponseSchema: GenMessage<ListPartitionReassignmentsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 38);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.PartitionReassignment
+ */
+export type PartitionReassignment = Message<"redpanda.api.console.v1alpha1.PartitionReassignment"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.PartitionReassignmentPartition partitions = 2;
+   */
+  partitions: PartitionReassignmentPartition[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.PartitionReassignment.
+ * Use `create(PartitionReassignmentSchema)` to create a new message.
+ */
+export const PartitionReassignmentSchema: GenMessage<PartitionReassignment> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 39);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.PartitionReassignmentPartition
+ */
+export type PartitionReassignmentPartition = Message<"redpanda.api.console.v1alpha1.PartitionReassignmentPartition"> & {
+  /**
+   * @generated from field: int32 partition_id = 1;
+   */
+  partitionId: number;
+
+  /**
+   * @generated from field: repeated int32 adding_replicas = 2;
+   */
+  addingReplicas: number[];
+
+  /**
+   * @generated from field: repeated int32 removing_replicas = 3;
+   */
+  removingReplicas: number[];
+
+  /**
+   * @generated from field: repeated int32 replicas = 4;
+   */
+  replicas: number[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.PartitionReassignmentPartition.
+ * Use `create(PartitionReassignmentPartitionSchema)` to create a new message.
+ */
+export const PartitionReassignmentPartitionSchema: GenMessage<PartitionReassignmentPartition> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 40);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequest
+ */
+export type AlterPartitionAssignmentsRequest = Message<"redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequest"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestTopic topics = 1;
+   */
+  topics: AlterPartitionAssignmentsRequestTopic[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequest.
+ * Use `create(AlterPartitionAssignmentsRequestSchema)` to create a new message.
+ */
+export const AlterPartitionAssignmentsRequestSchema: GenMessage<AlterPartitionAssignmentsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 41);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestTopic
+ */
+export type AlterPartitionAssignmentsRequestTopic = Message<"redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestTopic"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestPartition partitions = 2;
+   */
+  partitions: AlterPartitionAssignmentsRequestPartition[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestTopic.
+ * Use `create(AlterPartitionAssignmentsRequestTopicSchema)` to create a new message.
+ */
+export const AlterPartitionAssignmentsRequestTopicSchema: GenMessage<AlterPartitionAssignmentsRequestTopic> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 42);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestPartition
+ */
+export type AlterPartitionAssignmentsRequestPartition = Message<"redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestPartition"> & {
+  /**
+   * @generated from field: int32 partition_id = 1;
+   */
+  partitionId: number;
+
+  /**
+   * @generated from field: repeated int32 replicas = 2;
+   */
+  replicas: number[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsRequestPartition.
+ * Use `create(AlterPartitionAssignmentsRequestPartitionSchema)` to create a new message.
+ */
+export const AlterPartitionAssignmentsRequestPartitionSchema: GenMessage<AlterPartitionAssignmentsRequestPartition> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 43);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsResponse
+ */
+export type AlterPartitionAssignmentsResponse = Message<"redpanda.api.console.v1alpha1.AlterPartitionAssignmentsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.AlterPartitionAssignmentsTopicResponse topics = 1;
+   */
+  topics: AlterPartitionAssignmentsTopicResponse[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsResponse.
+ * Use `create(AlterPartitionAssignmentsResponseSchema)` to create a new message.
+ */
+export const AlterPartitionAssignmentsResponseSchema: GenMessage<AlterPartitionAssignmentsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 44);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsTopicResponse
+ */
+export type AlterPartitionAssignmentsTopicResponse = Message<"redpanda.api.console.v1alpha1.AlterPartitionAssignmentsTopicResponse"> & {
+  /**
+   * @generated from field: string topic_name = 1;
+   */
+  topicName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.AlterPartitionAssignmentsPartitionResponse partitions = 2;
+   */
+  partitions: AlterPartitionAssignmentsPartitionResponse[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsTopicResponse.
+ * Use `create(AlterPartitionAssignmentsTopicResponseSchema)` to create a new message.
+ */
+export const AlterPartitionAssignmentsTopicResponseSchema: GenMessage<AlterPartitionAssignmentsTopicResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 45);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsPartitionResponse
+ */
+export type AlterPartitionAssignmentsPartitionResponse = Message<"redpanda.api.console.v1alpha1.AlterPartitionAssignmentsPartitionResponse"> & {
+  /**
+   * @generated from field: int32 partition_id = 1;
+   */
+  partitionId: number;
+
+  /**
+   * @generated from field: string error_code = 2;
+   */
+  errorCode: string;
+
+  /**
+   * @generated from field: optional string error_message = 3;
+   */
+  errorMessage?: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.AlterPartitionAssignmentsPartitionResponse.
+ * Use `create(AlterPartitionAssignmentsPartitionResponseSchema)` to create a new message.
+ */
+export const AlterPartitionAssignmentsPartitionResponseSchema: GenMessage<AlterPartitionAssignmentsPartitionResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 46);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequest
+ */
+export type IncrementalAlterConfigsRequest = Message<"redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequest"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResource resources = 1;
+   */
+  resources: IncrementalAlterConfigsRequestResource[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequest.
+ * Use `create(IncrementalAlterConfigsRequestSchema)` to create a new message.
+ */
+export const IncrementalAlterConfigsRequestSchema: GenMessage<IncrementalAlterConfigsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 47);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResource
+ */
+export type IncrementalAlterConfigsRequestResource = Message<"redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResource"> & {
+  /**
+   * @generated from field: int32 resource_type = 1;
+   */
+  resourceType: number;
+
+  /**
+   * @generated from field: string resource_name = 2;
+   */
+  resourceName: string;
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResourceConfig configs = 3;
+   */
+  configs: IncrementalAlterConfigsRequestResourceConfig[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResource.
+ * Use `create(IncrementalAlterConfigsRequestResourceSchema)` to create a new message.
+ */
+export const IncrementalAlterConfigsRequestResourceSchema: GenMessage<IncrementalAlterConfigsRequestResource> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 48);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResourceConfig
+ */
+export type IncrementalAlterConfigsRequestResourceConfig = Message<"redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResourceConfig"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: int32 op = 2;
+   */
+  op: number;
+
+  /**
+   * @generated from field: optional string value = 3;
+   */
+  value?: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.IncrementalAlterConfigsRequestResourceConfig.
+ * Use `create(IncrementalAlterConfigsRequestResourceConfigSchema)` to create a new message.
+ */
+export const IncrementalAlterConfigsRequestResourceConfigSchema: GenMessage<IncrementalAlterConfigsRequestResourceConfig> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 49);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.IncrementalAlterConfigsResponse
+ */
+export type IncrementalAlterConfigsResponse = Message<"redpanda.api.console.v1alpha1.IncrementalAlterConfigsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.IncrementalAlterConfigsResourceResponse resources = 1;
+   */
+  resources: IncrementalAlterConfigsResourceResponse[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.IncrementalAlterConfigsResponse.
+ * Use `create(IncrementalAlterConfigsResponseSchema)` to create a new message.
+ */
+export const IncrementalAlterConfigsResponseSchema: GenMessage<IncrementalAlterConfigsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 50);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.IncrementalAlterConfigsResourceResponse
+ */
+export type IncrementalAlterConfigsResourceResponse = Message<"redpanda.api.console.v1alpha1.IncrementalAlterConfigsResourceResponse"> & {
+  /**
+   * @generated from field: string error = 1;
+   */
+  error: string;
+
+  /**
+   * @generated from field: string resource_name = 2;
+   */
+  resourceName: string;
+
+  /**
+   * @generated from field: int32 resource_type = 3;
+   */
+  resourceType: number;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.IncrementalAlterConfigsResourceResponse.
+ * Use `create(IncrementalAlterConfigsResourceResponseSchema)` to create a new message.
+ */
+export const IncrementalAlterConfigsResourceResponseSchema: GenMessage<IncrementalAlterConfigsResourceResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_console_service, 51);
 
 /**
  * ConsoleService represents the Console API service.
@@ -41,6 +1351,126 @@ export const ConsoleService: GenService<{
     methodKind: "unary";
     input: typeof PublishMessageRequestSchema;
     output: typeof PublishMessageResponseSchema;
+  },
+  /**
+   * ListConsumerGroups returns an overview of all consumer groups.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListConsumerGroups
+   */
+  listConsumerGroups: {
+    methodKind: "unary";
+    input: typeof ListConsumerGroupsRequestSchema;
+    output: typeof ListConsumerGroupsResponseSchema;
+  },
+  /**
+   * GetConsumerGroup returns the overview for a single consumer group.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetConsumerGroup
+   */
+  getConsumerGroup: {
+    methodKind: "unary";
+    input: typeof GetConsumerGroupRequestSchema;
+    output: typeof GetConsumerGroupResponseSchema;
+  },
+  /**
+   * ListBrokers returns all brokers with their log dir information.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListBrokers
+   */
+  listBrokers: {
+    methodKind: "unary";
+    input: typeof ListBrokersRequestSchema;
+    output: typeof ListBrokersResponseSchema;
+  },
+  /**
+   * DescribeCluster returns cluster-level information including brokers and configs.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.DescribeCluster
+   */
+  describeCluster: {
+    methodKind: "unary";
+    input: typeof DescribeClusterRequestSchema;
+    output: typeof DescribeClusterResponseSchema;
+  },
+  /**
+   * GetTopicsOverview returns a summary overview of all topics.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetTopicsOverview
+   */
+  getTopicsOverview: {
+    methodKind: "unary";
+    input: typeof GetTopicsOverviewRequestSchema;
+    output: typeof GetTopicsOverviewResponseSchema;
+  },
+  /**
+   * ListTopicPartitionDetails returns partition details for a single topic.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListTopicPartitionDetails
+   */
+  listTopicPartitionDetails: {
+    methodKind: "unary";
+    input: typeof ListTopicPartitionDetailsRequestSchema;
+    output: typeof ListTopicPartitionDetailsResponseSchema;
+  },
+  /**
+   * GetTopicsConfigs returns configuration for one or more topics.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetTopicsConfigs
+   */
+  getTopicsConfigs: {
+    methodKind: "unary";
+    input: typeof GetTopicsConfigsRequestSchema;
+    output: typeof GetTopicsConfigsResponseSchema;
+  },
+  /**
+   * ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListTopicConsumerGroups
+   */
+  listTopicConsumerGroups: {
+    methodKind: "unary";
+    input: typeof ListTopicConsumerGroupsRequestSchema;
+    output: typeof ListTopicConsumerGroupsResponseSchema;
+  },
+  /**
+   * GetAllTopicDetails returns partition details for all (or specified) topics.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GetAllTopicDetails
+   */
+  getAllTopicDetails: {
+    methodKind: "unary";
+    input: typeof GetAllTopicDetailsRequestSchema;
+    output: typeof GetAllTopicDetailsResponseSchema;
+  },
+  /**
+   * ListPartitionReassignments lists active partition reassignments.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListPartitionReassignments
+   */
+  listPartitionReassignments: {
+    methodKind: "unary";
+    input: typeof ListPartitionReassignmentsRequestSchema;
+    output: typeof ListPartitionReassignmentsResponseSchema;
+  },
+  /**
+   * AlterPartitionAssignments changes partition-to-broker assignments.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.AlterPartitionAssignments
+   */
+  alterPartitionAssignments: {
+    methodKind: "unary";
+    input: typeof AlterPartitionAssignmentsRequestSchema;
+    output: typeof AlterPartitionAssignmentsResponseSchema;
+  },
+  /**
+   * IncrementalAlterConfigs incrementally alters resource configurations.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.IncrementalAlterConfigs
+   */
+  incrementalAlterConfigs: {
+    methodKind: "unary";
+    input: typeof IncrementalAlterConfigsRequestSchema;
+    output: typeof IncrementalAlterConfigsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_console_v1alpha1_console_service, 0);

@@ -5,13 +5,15 @@
 package dataplanev1connect
 
 import (
-	v2 "buf.build/gen/go/redpandadata/core/protocolbuffers/go/redpanda/core/admin/v2"
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 	http "net/http"
 	strings "strings"
+
+	v2 "buf.build/gen/go/redpandadata/core/protocolbuffers/go/redpanda/core/admin/v2"
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are

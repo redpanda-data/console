@@ -112,14 +112,14 @@ func brokerConfigToProto(bc *console.BrokerConfig) *v1alpha.ClusterBrokerConfig 
 	protoEntries := make([]*v1alpha.ClusterBrokerConfigEntry, 0, len(bc.Configs))
 	for _, c := range bc.Configs {
 		protoEntries = append(protoEntries, &v1alpha.ClusterBrokerConfigEntry{
-			Name:           c.Name,
-			Value:          c.Value,
-			Source:         c.Source,
-			Type:           c.Type,
+			Name:            c.Name,
+			Value:           c.Value,
+			Source:          c.Source,
+			Type:            c.Type,
 			IsExplicitlySet: c.IsExplicitlySet,
-			IsDefaultValue: c.IsDefaultValue,
-			IsSensitive:    c.IsSensitive,
-			IsReadOnly:     c.IsReadOnly,
+			IsDefaultValue:  c.IsDefaultValue,
+			IsSensitive:     c.IsSensitive,
+			IsReadOnly:      c.IsReadOnly,
 		})
 	}
 	return &v1alpha.ClusterBrokerConfig{
@@ -172,15 +172,15 @@ func topicConfigToProto(tc *console.TopicConfig) *v1alpha.TopicConfig {
 	protoEntries := make([]*v1alpha.TopicConfigEntry, 0, len(tc.ConfigEntries))
 	for _, e := range tc.ConfigEntries {
 		protoEntries = append(protoEntries, &v1alpha.TopicConfigEntry{
-			Name:           e.Name,
-			Value:          e.Value,
-			Source:         e.Source,
-			Type:           e.Type,
+			Name:            e.Name,
+			Value:           e.Value,
+			Source:          e.Source,
+			Type:            e.Type,
 			IsExplicitlySet: e.IsExplicitlySet,
-			IsDefaultValue: e.IsDefaultValue,
-			IsSensitive:    e.IsSensitive,
-			IsReadOnly:     e.IsReadOnly,
-			Documentation:  e.Documentation,
+			IsDefaultValue:  e.IsDefaultValue,
+			IsSensitive:     e.IsSensitive,
+			IsReadOnly:      e.IsReadOnly,
+			Documentation:   e.Documentation,
 		})
 	}
 
