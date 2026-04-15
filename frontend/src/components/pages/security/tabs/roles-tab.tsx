@@ -13,12 +13,12 @@ import { create } from '@bufbuild/protobuf';
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { EditIcon, TrashIcon } from 'components/icons';
-import { parseAsString } from 'nuqs';
+import { QueryResult } from 'components/misc/query-result';
+import { TableSkeleton } from 'components/pages/security/shared/table-skeleton';
+import { parseAsString, useQueryState } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
 
-import ErrorResult from '../../../../components/misc/error-result';
-import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
 import { appGlobal } from '../../../../state/app-global';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
@@ -36,12 +36,8 @@ export const RolesTab: FC = () => {
   useSecurityBreadcrumbs([]);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
-  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
-    { onUpdate: () => {}, getDefaultValue: () => '' },
-    'q',
-    parseAsString.withDefault('')
-  );
-  const { data: rolesData, isError: rolesIsError, error: rolesError } = useListRolesQuery();
+  const [searchQuery, setSearchQuery] = useQueryState('q', parseAsString.withDefault(''));
+  const { data: rolesData, isLoading: rolesIsLoading, isError: rolesIsError, error: rolesError } = useListRolesQuery();
   const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
 
   const roles = filterByName(rolesData?.roles ?? [], searchQuery, (r) => r.name);
@@ -50,10 +46,6 @@ export const RolesTab: FC = () => {
     const members = rolesApi.roleMembers.get(r.name) ?? [];
     return { name: r.name, members };
   });
-
-  if (rolesIsError) {
-    return <ErrorResult error={rolesError} />;
-  }
 
   const createRoleDisabled = userData?.canCreateRoles === false || !featureRolesApi;
   const createRoleTooltip = [
@@ -66,112 +58,122 @@ export const RolesTab: FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <p>
         This tab displays all roles. Roles are groups of access control lists (ACLs) that can be assigned to principals.
         A principal represents any entity that can be authenticated, such as a user, service, or system (for example, a
         SASL-SCRAM user, OIDC identity, or mTLS client).
-      </div>
+      </p>
       <NullFallbackBoundary>
         <FeatureLicenseNotification featureName="rbac" />
       </NullFallbackBoundary>
-      <SearchField
-        placeholderText="Filter by name"
-        searchText={searchQuery ?? ''}
-        setSearchText={(x) => setSearchQuery(x)}
-        width="300px"
-      />
-      <Section>
+      <div className="flex items-center justify-between gap-4">
+        <SearchField
+          placeholderText="Filter by name or regex..."
+          searchText={searchQuery ?? ''}
+          setSearchText={(x) => setSearchQuery(x)}
+          width="300px"
+        />
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                aria-label="Create role"
                 data-testid="create-role-button"
                 disabled={createRoleDisabled}
                 onClick={() => appGlobal.historyPush('/security/roles/create')}
-                variant="outline"
               >
                 Create role
               </Button>
             </TooltipTrigger>
-            {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
+            {Boolean(createRoleTooltip) && <TooltipContent>{createRoleTooltip}</TooltipContent>}
           </Tooltip>
         </TooltipProvider>
-
-        <div className="my-4">
-          <DataTable
-            columns={[
-              {
-                id: 'name',
-                size: Number.POSITIVE_INFINITY,
-                header: 'Role name',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return (
-                    <Link
-                      className="text-inherit no-underline hover:no-underline"
-                      data-testid={`role-list-item-${entry.name}`}
-                      params={{ roleName: encodeURIComponent(entry.name) }}
-                      to="/security/roles/$roleName/details"
-                    >
-                      {entry.name}
-                    </Link>
-                  );
-                },
-              },
-              {
-                id: 'assignedPrincipals',
-                header: 'Assigned principals',
-                cell: (ctx) => <>{ctx.row.original.members.length}</>,
-              },
-              {
-                size: 60,
-                id: 'menu',
-                header: '',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return (
-                    <div className="flex flex-row gap-4">
-                      <Button
-                        aria-label={`Edit role ${entry.name}`}
-                        data-testid={`edit-role-button-${entry.name}`}
-                        onClick={() => {
-                          appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
-                        }}
-                        size="icon-sm"
-                        variant="secondary-ghost"
+      </div>
+      <QueryResult
+        error={rolesError}
+        errorTitle="Failed to load roles"
+        isError={rolesIsError}
+        isLoading={rolesIsLoading}
+        skeleton={<TableSkeleton />}
+      >
+        <Section>
+          <div className="my-4">
+            <DataTable
+              columns={[
+                {
+                  id: 'name',
+                  size: Number.POSITIVE_INFINITY,
+                  header: 'Role name',
+                  cell: (ctx) => {
+                    const entry = ctx.row.original;
+                    return (
+                      <Link
+                        className="text-inherit no-underline hover:no-underline"
+                        data-testid={`role-list-item-${entry.name}`}
+                        params={{ roleName: encodeURIComponent(entry.name) }}
+                        to="/security/roles/$roleName/details"
                       >
-                        <EditIcon className="h-4 w-4" />
-                      </Button>
-                      <DeleteRoleConfirmModal
-                        buttonEl={
-                          <Button
-                            aria-label={`Delete role ${entry.name}`}
-                            data-testid={`delete-role-button-${entry.name}`}
-                            size="icon-sm"
-                            variant="destructive-ghost"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        }
-                        numberOfPrincipals={entry.members.length}
-                        onConfirm={async () => {
-                          await deleteRoleMutation(
-                            create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true })
-                          );
-                        }}
-                        roleName={entry.name}
-                      />
-                    </div>
-                  );
+                        {entry.name}
+                      </Link>
+                    );
+                  },
                 },
-              },
-            ]}
-            data={rolesWithMembers}
-            pagination
-            sorting
-          />
-        </div>
-      </Section>
+                {
+                  id: 'assignedPrincipals',
+                  header: 'Assigned principals',
+                  cell: (ctx) => <>{ctx.row.original.members.length}</>,
+                },
+                {
+                  size: 60,
+                  id: 'menu',
+                  header: '',
+                  cell: (ctx) => {
+                    const entry = ctx.row.original;
+                    return (
+                      <div className="flex flex-row gap-4">
+                        <Button
+                          aria-label={`Edit role ${entry.name}`}
+                          data-testid={`edit-role-button-${entry.name}`}
+                          onClick={() => {
+                            appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
+                          }}
+                          size="icon-sm"
+                          variant="secondary-ghost"
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </Button>
+                        <DeleteRoleConfirmModal
+                          buttonEl={
+                            <Button
+                              aria-label={`Delete role ${entry.name}`}
+                              data-testid={`delete-role-button-${entry.name}`}
+                              size="icon-sm"
+                              variant="destructive-ghost"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </Button>
+                          }
+                          numberOfPrincipals={entry.members.length}
+                          onConfirm={async () => {
+                            await deleteRoleMutation(
+                              create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true })
+                            );
+                          }}
+                          roleName={entry.name}
+                        />
+                      </div>
+                    );
+                  },
+                },
+              ]}
+              data={rolesWithMembers}
+              emptyText={searchQuery ? 'No roles match your search' : 'No roles yet'}
+              pagination
+              sorting
+            />
+          </div>
+        </Section>
+      </QueryResult>
     </div>
   );
 };

@@ -95,7 +95,7 @@ export const AclsTab: FC = () => {
     principalGroups?.filter((g) => g.principalType === 'User' || g.principalType === 'Group') || [];
   const groups = filterByName(aclPrincipalGroups, searchQuery, (g) => g.principalName);
 
-  if (isError && error) {
+  if (isError) {
     return <ErrorResult error={error} />;
   }
 
@@ -105,30 +105,29 @@ export const AclsTab: FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <p>
         This tab displays all access control lists (ACLs), grouped by principal and host. A principal represents any
         entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC
         identity, or mTLS client). The ACLs tab shows only the permissions directly granted to each principal. For a
         complete view of all permissions, including permissions granted through roles, see the Permissions List tab.
-      </div>
+      </p>
       {Boolean(featureRolesApi) && (
-        <Alert icon={<InfoIcon />} variant="warning">
+        <Alert icon={<InfoIcon />} variant="info">
           <AlertDescription>
             Roles are a more flexible and efficient way to manage user permissions, especially with complex
             organizational hierarchies or large numbers of users.
           </AlertDescription>
         </Alert>
       )}
-      <SearchField
-        placeholderText="Filter by name"
-        searchText={searchQuery ?? ''}
-        setSearchText={(x) => setSearchQuery(x)}
-        width="300px"
-      />
-      <Section>
-        <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
-
+      <div className="flex items-center justify-between gap-4">
+        <SearchField
+          placeholderText="Filter by name or regex..."
+          searchText={searchQuery ?? ''}
+          setSearchText={(x) => setSearchQuery(x)}
+          width="300px"
+        />
         <Button
+          aria-label="Create ACL"
           data-testid="create-acls"
           onClick={() => {
             navigate({
@@ -137,8 +136,11 @@ export const AclsTab: FC = () => {
             });
           }}
         >
-          Create ACLs
+          Create ACL
         </Button>
+      </div>
+      <Section>
+        <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 
         <div className="py-4">
           <DataTable<{
@@ -263,6 +265,7 @@ export const AclsTab: FC = () => {
               },
             ]}
             data={groups}
+            emptyText={searchQuery ? 'No ACLs match your search' : 'No ACLs yet'}
             pagination
             sorting
           />

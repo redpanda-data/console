@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { TrashIcon } from 'components/icons';
+import { InfoIcon, TrashIcon } from 'components/icons';
 import { parseAsString } from 'nuqs';
 import {
   ACL_Operation,
@@ -48,28 +48,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../
 import { type PrincipalEntry, usePrincipalList } from '../hooks/use-principal-list';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
+import { getCreateUserButtonProps } from '../shared/create-user-button-props';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { filterByName } from '../shared/filter-by-name';
 import { UserRoleTags } from '../shared/user-role-tags';
-
-const getCreateUserButtonProps = (
-  isAdminApiConfigured: boolean,
-  featureCreateUser: boolean,
-  canManageUsers: boolean | undefined
-) => {
-  const hasRBAC = canManageUsers !== undefined;
-
-  return {
-    disabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
-    tooltip: [
-      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-      !featureCreateUser && "Your cluster doesn't support this feature.",
-      hasRBAC && canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  };
-};
 
 const PermissionsListActions = ({
   entry,
@@ -221,12 +203,27 @@ export const PermissionsListTab: FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <p>
         This page provides a detailed overview of all effective permissions for each principal, including those derived
         from assigned roles. While the ACLs tab shows permissions directly granted to principals, this tab also
         incorporates roles that may assign additional permissions to a principal. This gives you a complete picture of
         what each principal can do within your cluster.
-      </div>
+      </p>
+      <Alert icon={<InfoIcon />} variant="info">
+        <AlertDescription>
+          <p>
+            To grant permissions, use the{' '}
+            <Link className="font-medium underline" to="/security/acls">
+              ACLs
+            </Link>{' '}
+            or{' '}
+            <Link className="font-medium underline" to="/security/roles">
+              Roles
+            </Link>{' '}
+            tabs.
+          </p>
+        </AlertDescription>
+      </Alert>
 
       <SearchField
         placeholderText="Filter by name"
@@ -296,6 +293,7 @@ export const PermissionsListTab: FC = () => {
             ]}
             data={usersFiltered}
             emptyAction={(() => {
+              if (searchQuery) return;
               const { disabled, tooltip } = getCreateUserButtonProps(
                 isAdminApiConfigured,
                 featureCreateUser,
@@ -313,12 +311,12 @@ export const PermissionsListTab: FC = () => {
                         Create user
                       </Button>
                     </TooltipTrigger>
-                    {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
+                    {Boolean(tooltip) && <TooltipContent>{tooltip}</TooltipContent>}
                   </Tooltip>
                 </TooltipProvider>
               );
             })()}
-            emptyText="No principals yet"
+            emptyText={searchQuery ? 'No principals match your search' : 'No principals yet'}
             pagination
             sorting
           />

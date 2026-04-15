@@ -78,10 +78,14 @@ export function SecurityPage({ tab }: SecurityPageProps) {
     ];
   }, [activeTab, activeTabData.label]);
 
-  const setActiveTab = (newTab: SecurityTab) => {
-    if (newTab === 'users') navigate({ to: '/security/users', replace: true });
-    else if (newTab === 'roles') navigate({ to: '/security/roles', replace: true });
-    else navigate({ to: '/security/permissions-list', replace: true });
+  const routes: Record<SecurityTab, string> = {
+    users: '/security/users',
+    roles: '/security/roles',
+    permissions: '/security/permissions-list',
+  };
+
+  const setActiveTab = (securityTab: SecurityTab) => {
+    navigate({ to: routes[securityTab], replace: true });
   };
 
   const visibleTabs = tabs.filter((t) => !t.requiresFeature || t.requiresFeature());

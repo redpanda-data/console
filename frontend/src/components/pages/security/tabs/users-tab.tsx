@@ -12,18 +12,18 @@
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
-import { parseAsString } from 'nuqs';
-import type { FC } from 'react';
-import { useState } from 'react';
+import { QueryResult } from 'components/misc/query-result';
+import { CreateUserDialog } from 'components/pages/security/create-user-dialog';
+import { TableSkeleton } from 'components/pages/security/shared/table-skeleton';
+import { parseAsString, useQueryState } from 'nuqs';
+import { type FC, useState } from 'react';
 
-import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
 import { appGlobal } from '../../../../state/app-global';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import Section from '../../../misc/section';
-import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -33,31 +33,13 @@ import {
 } from '../../../redpanda-ui/components/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { getCreateUserButtonProps } from '../shared/create-user-button-props';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { filterByName } from '../shared/filter-by-name';
 import { UserRoleTags } from '../shared/user-role-tags';
 import { ChangePasswordModal, ChangeRolesModal } from '../users/user-edit-modals';
 
 type PrincipalEntry = { name: string; principalType: 'User' | 'Group'; isScramUser: boolean };
-
-const getCreateUserButtonProps = (
-  isAdminApiConfigured: boolean,
-  featureCreateUser: boolean,
-  canManageUsers: boolean | undefined
-) => {
-  const hasRBAC = canManageUsers !== undefined;
-
-  return {
-    disabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
-    tooltip: [
-      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-      !featureCreateUser && "Your cluster doesn't support this feature.",
-      hasRBAC && canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  };
-};
 
 export const UsersTab: FC = () => {
   useSecurityBreadcrumbs([]);
@@ -66,18 +48,10 @@ export const UsersTab: FC = () => {
 
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
   const userData = useApiStoreHook((s) => s.userData);
-  const [searchQuery, setSearchQuery] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: () => {
-        // Query state is managed by the URL
-      },
-      getDefaultValue: () => '',
-    },
-    'q',
-    parseAsString.withDefault('')
-  );
+  const [searchQuery, setSearchQuery] = useQueryState('q', parseAsString.withDefault(''));
   const {
     data: usersData,
+    isLoading,
     isError,
     error,
   } = useListUsersQuery(undefined, {
@@ -92,106 +66,113 @@ export const UsersTab: FC = () => {
 
   const usersFiltered = filterByName(users, searchQuery, (u) => u.name);
 
-  if (isError && error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Failed to load users</AlertTitle>
-        <AlertDescription>{error.message}</AlertDescription>
-      </Alert>
-    );
-  }
-
   const { disabled: createDisabled, tooltip: createTooltip } = getCreateUserButtonProps(
     isAdminApiConfigured,
     featureCreateUser,
     userData?.canManageUsers
   );
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <p>
         These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
         (for example, OIDC, mTLS) on the Permissions List page.
-      </div>
+      </p>
 
-      <SearchField
-        data-testid="search-field-input"
-        placeholderText="Filter by name"
-        searchText={searchQuery ?? ''}
-        setSearchText={(x) => setSearchQuery(x)}
-        width="300px"
-      />
-
-      <Section>
+      <div className="flex items-center justify-between gap-4">
+        <SearchField
+          data-testid="search-field-input"
+          placeholderText="Filter by name or regex..."
+          searchText={searchQuery ?? ''}
+          setSearchText={(x) => setSearchQuery(x)}
+          width="300px"
+        />
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                aria-label="Create user"
                 data-testid="create-user-button"
                 disabled={createDisabled}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
+                onClick={() => setIsCreateModalOpen(true)}
               >
                 Create user
               </Button>
             </TooltipTrigger>
-            {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
+            {Boolean(createTooltip) && <TooltipContent>{createTooltip}</TooltipContent>}
           </Tooltip>
         </TooltipProvider>
+      </div>
 
-        <div className="my-4">
-          <DataTable<PrincipalEntry>
-            columns={[
-              {
-                id: 'name',
-                size: Number.POSITIVE_INFINITY,
-                header: 'User',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return (
-                    <Link
-                      className="text-inherit no-underline hover:no-underline"
-                      params={{ userName: entry.name }}
-                      to="/security/users/$userName"
-                    >
-                      {entry.name}
-                    </Link>
-                  );
+      <Section>
+        <QueryResult
+          error={error}
+          errorTitle="Failed to load users"
+          isError={isError}
+          isLoading={isLoading}
+          skeleton={<TableSkeleton />}
+        >
+          <div className="my-4">
+            <DataTable<PrincipalEntry>
+              columns={[
+                {
+                  id: 'name',
+                  size: Number.POSITIVE_INFINITY,
+                  header: 'User',
+                  cell: (ctx) => {
+                    const entry = ctx.row.original;
+                    return (
+                      <Link
+                        className="text-inherit no-underline hover:no-underline"
+                        params={{ userName: entry.name }}
+                        to="/security/users/$userName"
+                      >
+                        {entry.name}
+                      </Link>
+                    );
+                  },
                 },
-              },
-              {
-                id: 'assignedRoles',
-                header: 'Permissions',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return <UserRoleTags showMaxItems={2} userName={entry.name} />;
+                {
+                  id: 'assignedRoles',
+                  header: 'Permissions',
+                  cell: (ctx) => {
+                    const entry = ctx.row.original;
+                    return <UserRoleTags showMaxItems={2} userName={entry.name} />;
+                  },
                 },
-              },
-              {
-                size: 60,
-                id: 'menu',
-                header: '',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return <UserActions user={entry} />;
+                {
+                  size: 60,
+                  id: 'menu',
+                  header: '',
+                  cell: (ctx) => {
+                    const entry = ctx.row.original;
+                    return <UserActions user={entry} />;
+                  },
                 },
-              },
-            ]}
-            data={usersFiltered}
-            emptyAction={
-              <Button
-                disabled={createDisabled}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-                variant="outline"
-              >
-                Create user
-              </Button>
-            }
-            emptyText="No users yet"
-            pagination
-            sorting
-          />
-        </div>
+              ]}
+              data={usersFiltered}
+              emptyAction={
+                searchQuery ? undefined : (
+                  <Button disabled={createDisabled} onClick={() => setIsCreateModalOpen(true)} variant="outline">
+                    Create user
+                  </Button>
+                )
+              }
+              emptyText={searchQuery ? 'No users match your search' : 'No users yet'}
+              pagination
+              sorting
+            />
+          </div>
+        </QueryResult>
       </Section>
+
+      <CreateUserDialog
+        onClose={() => setIsCreateModalOpen(false)}
+        onNavigateToTab={(tab) => appGlobal.historyPush(tab === 'roles' ? '/security/roles' : '/security/acls')}
+        open={isCreateModalOpen}
+      />
     </div>
   );
 };
