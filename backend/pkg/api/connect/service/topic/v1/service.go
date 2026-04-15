@@ -331,7 +331,7 @@ func (s *Service) SetTopicConfigurations(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(&v1.SetTopicConfigurationsResponse{Configurations: protoTopicConfigs}), nil
 }
 
-// NewService creates a new user service handler.
+// NewService creates a new topic service handler.
 func NewService(cfg *config.Config,
 	logger *slog.Logger,
 	consoleSvc console.Servicer,
@@ -510,4 +510,81 @@ func (s *Service) SetPartitionsToTopics(ctx context.Context, req *connect.Reques
 	}
 
 	return connect.NewResponse(resMsg), nil
+}
+
+// ListTopicOffsets lists partition offsets for one or more topics at a given timestamp.
+func (s *Service) ListTopicOffsets(ctx context.Context, req *connect.Request[v1.ListTopicOffsetsRequest]) (*connect.Response[v1.ListTopicOffsetsResponse], error) {
+	topicOffsets, err := s.consoleSvc.ListOffsets(ctx, req.Msg.GetTopicNames(), req.Msg.GetTimestamp())
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	protoTopics := make([]*v1.ListTopicOffsetsResponse_TopicOffset, 0, len(topicOffsets))
+	for _, to := range topicOffsets {
+		protoPartitions := make([]*v1.ListTopicOffsetsResponse_TopicOffset_PartitionOffset, 0, len(to.Partitions))
+		for _, po := range to.Partitions {
+			protoPartitions = append(protoPartitions, &v1.ListTopicOffsetsResponse_TopicOffset_PartitionOffset{
+				Error:       po.Error,
+				PartitionId: po.PartitionID,
+				Offset:      po.Offset,
+				Timestamp:   po.Timestamp,
+			})
+		}
+		protoTopics = append(protoTopics, &v1.ListTopicOffsetsResponse_TopicOffset{
+			TopicName:  to.TopicName,
+			Partitions: protoPartitions,
+		})
+	}
+
+	return connect.NewResponse(&v1.ListTopicOffsetsResponse{Topics: protoTopics}), nil
+}
+
+// DeleteTopicRecords deletes records from topic partitions up to specified offsets.
+func (s *Service) DeleteTopicRecords(ctx context.Context, req *connect.Request[v1.DeleteTopicRecordsRequest]) (*connect.Response[v1.DeleteTopicRecordsResponse], error) {
+	deleteReq := kmsg.NewDeleteRecordsRequestTopic()
+	deleteReq.Topic = req.Msg.GetTopicName()
+	deleteReq.Partitions = make([]kmsg.DeleteRecordsRequestTopicPartition, len(req.Msg.GetPartitions()))
+	for i, p := range req.Msg.GetPartitions() {
+		pReq := kmsg.NewDeleteRecordsRequestTopicPartition()
+		pReq.Partition = p.GetPartitionId()
+		pReq.Offset = p.GetOffset()
+		deleteReq.Partitions[i] = pReq
+	}
+
+	deleteRes, restErr := s.consoleSvc.DeleteTopicRecords(ctx, deleteReq)
+	if restErr != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			restErr.Err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String()),
+		)
+	}
+
+	protoPartitions := make([]*v1.DeleteTopicRecordsResponse_PartitionResult, 0, len(deleteRes.Partitions))
+	for _, p := range deleteRes.Partitions {
+		protoPartitions = append(protoPartitions, &v1.DeleteTopicRecordsResponse_PartitionResult{
+			PartitionId:  p.PartitionID,
+			LowWatermark: p.LowWaterMark,
+			Error:        p.ErrorMsg,
+		})
+	}
+
+	return connect.NewResponse(&v1.DeleteTopicRecordsResponse{
+		TopicName:  deleteRes.TopicName,
+		Partitions: protoPartitions,
+	}), nil
+}
+
+// GetTopicDocumentation returns the documentation for a topic.
+func (s *Service) GetTopicDocumentation(ctx context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	doc := s.consoleSvc.GetTopicDocumentation(req.Msg.GetTopicName())
+
+	return connect.NewResponse(&v1.GetTopicDocumentationResponse{
+		IsEnabled: doc.IsEnabled,
+		Markdown:  doc.Markdown,
+	}), nil
 }

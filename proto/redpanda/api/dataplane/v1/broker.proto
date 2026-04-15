@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+message GetBrokerConfigRequest {
+  // Broker ID.
+  int32 broker_id = 1;
+}
+
+message GetBrokerConfigResponse {
+  message BrokerConfig {
+    // The config key name.
+    string name = 1;
+    // The config value. Nil if the value is sensitive.
+    optional string value = 2;
+    // The source of the config value (e.g. DEFAULT_CONFIG, STATIC_BROKER_CONFIG).
+    string source = 3;
+    // The config data type.
+    string type = 4;
+    // Whether this config was explicitly set.
+    bool is_explicitly_set = 5;
+    // Whether this config is using the default value.
+    bool is_default_value = 6;
+    // Whether this config is read-only.
+    bool is_read_only = 7;
+    // Whether this config value is sensitive.
+    bool is_sensitive = 8;
+
+    message ConfigSynonym {
+      string name = 1;
+      optional string value = 2;
+      string source = 3;
+    }
+    // Config synonyms.
+    repeated ConfigSynonym synonyms = 9;
+  }
+
+  // The broker's configuration entries.
+  repeated BrokerConfig configs = 1;
+}
+
+service BrokerService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Brokers"
+    description: "Manage Redpanda brokers."
+  };
+
+  rpc GetBrokerConfig(GetBrokerConfigRequest) returns (GetBrokerConfigResponse) {
+    option (google.api.http) = {get: "/v1/brokers/{broker_id}/config"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get broker configuration"
+      description: "Get the configuration for a specific broker."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetBrokerConfigResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+}

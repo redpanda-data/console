@@ -322,6 +322,93 @@ message AddPartitionsToTopicsResponse {
   repeated AlterTopicPartitionStatus statuses = 1;
 }
 
+// ListTopicOffsetsRequest lists partition offsets for one or more topics at a given timestamp.
+message ListTopicOffsetsRequest {
+  // Comma-separated list of topic names to list offsets for.
+  repeated string topic_names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+  // Timestamp in milliseconds to list offsets for. Use -1 for latest, -2 for earliest.
+  int64 timestamp = 2;
+}
+
+message ListTopicOffsetsResponse {
+  message TopicOffset {
+    message PartitionOffset {
+      // Error message if the offset could not be retrieved for this partition.
+      string error = 1;
+      // The partition ID.
+      int32 partition_id = 2;
+      // The offset at the requested timestamp.
+      int64 offset = 3;
+      // The timestamp of the offset.
+      int64 timestamp = 4;
+    }
+    // The topic name.
+    string topic_name = 1;
+    // The partition offsets.
+    repeated PartitionOffset partitions = 2;
+  }
+  // The offsets for each requested topic.
+  repeated TopicOffset topics = 1;
+}
+
+// DeleteTopicRecordsRequest deletes records from topic partitions up to the specified offsets.
+message DeleteTopicRecordsRequest {
+  message PartitionDeleteRequest {
+    // The partition ID.
+    int32 partition_id = 1;
+    // The offset to delete up to. Use -1 to delete all records (maps to high watermark).
+    int64 offset = 2 [(buf.validate.field).int64.gte = -1];
+  }
+  // Topic name.
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+  // Partitions to delete records from.
+  repeated PartitionDeleteRequest partitions = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+}
+
+message DeleteTopicRecordsResponse {
+  message PartitionResult {
+    // The partition ID.
+    int32 partition_id = 1;
+    // The new low watermark for the partition after deletion.
+    int64 low_watermark = 2;
+    // Error message if the deletion failed for this partition.
+    string error = 3;
+  }
+  // Topic name.
+  string topic_name = 1;
+  // Results for each partition.
+  repeated PartitionResult partitions = 2;
+}
+
+// GetTopicDocumentationRequest returns documentation for a specific topic.
+message GetTopicDocumentationRequest {
+  // Topic name.
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+}
+
+message GetTopicDocumentationResponse {
+  // Whether topic documentation is enabled.
+  bool is_enabled = 1;
+  // The documentation markdown content, if available.
+  bytes markdown = 2;
+}
+
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Topics"
@@ -625,6 +712,72 @@ service TopicService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+
+  rpc ListTopicOffsets(ListTopicOffsetsRequest) returns (ListTopicOffsetsResponse) {
+    option (google.api.http) = {get: "/v1/topics-offsets"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List topic offsets"
+      description: "List partition offsets for one or more topics at a given timestamp."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListTopicOffsetsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  rpc DeleteTopicRecords(DeleteTopicRecordsRequest) returns (DeleteTopicRecordsResponse) {
+    option (google.api.http) = {
+      post: "/v1/topics/{topic_name}/records:delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete topic records"
+      description: "Delete records from a topic's partitions up to specified offsets."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteTopicRecordsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+
+  rpc GetTopicDocumentation(GetTopicDocumentationRequest) returns (GetTopicDocumentationResponse) {
+    option (google.api.http) = {get: "/v1/topics/{topic_name}/documentation"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get topic documentation"
+      description: "Get the documentation for a specific topic."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTopicDocumentationResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
       api: API_KAFKA
     };
   }

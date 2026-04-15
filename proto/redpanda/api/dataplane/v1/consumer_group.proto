@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// EditConsumerGroupOffsetsRequest edits consumer group offsets for specific topic partitions.
+message EditConsumerGroupOffsetsRequest {
+  message Topic {
+    // The topic name.
+    string topic_name = 1 [(buf.validate.field).required = true];
+    message Partition {
+      // The partition ID.
+      int32 partition_id = 1;
+      // The offset to set.
+      int64 offset = 2 [(buf.validate.field).int64.gte = -2];
+    }
+    // Partitions to edit offsets for.
+    repeated Partition partitions = 2 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
+  }
+  // The consumer group ID.
+  string group_id = 1 [(buf.validate.field).required = true];
+  // Topics and partitions to edit offsets for.
+  repeated Topic topics = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+}
+
+message EditConsumerGroupOffsetsResponse {
+  message Topic {
+    message Partition {
+      // The partition ID.
+      int32 partition_id = 1;
+      // Error message if the offset edit failed for this partition.
+      string error = 2;
+    }
+    // The topic name.
+    string topic_name = 1;
+    // Results for each partition.
+    repeated Partition partitions = 2;
+  }
+  // Error message if the entire operation failed.
+  string error = 1;
+  // Results for each topic.
+  repeated Topic topics = 2;
+}
+
+// DeleteConsumerGroupOffsetsRequest deletes consumer group offsets for specific topic partitions.
+message DeleteConsumerGroupOffsetsRequest {
+  message Topic {
+    // The topic name.
+    string topic_name = 1 [(buf.validate.field).required = true];
+    message Partition {
+      // The partition ID.
+      int32 partition_id = 1;
+    }
+    // Partitions to delete offsets for.
+    repeated Partition partitions = 2 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
+  }
+  // The consumer group ID.
+  string group_id = 1 [(buf.validate.field).required = true];
+  // Topics and partitions to delete offsets for.
+  repeated Topic topics = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+}
+
+message DeleteConsumerGroupOffsetsResponse {
+  message Topic {
+    message Partition {
+      // The partition ID.
+      int32 partition_id = 1;
+      // Error message if the offset deletion failed for this partition.
+      string error = 2;
+    }
+    // The topic name.
+    string topic_name = 1;
+    // Results for each partition.
+    repeated Partition partitions = 2;
+  }
+  // Results for each topic.
+  repeated Topic topics = 1;
+}
+
+// DeleteConsumerGroupRequest deletes a consumer group.
+message DeleteConsumerGroupRequest {
+  // The consumer group ID.
+  string group_id = 1 [(buf.validate.field).required = true];
+}
+
+message DeleteConsumerGroupResponse {}
+
+service ConsumerGroupService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "ConsumerGroups"
+    description: "Manage Kafka consumer groups."
+  };
+
+  rpc EditConsumerGroupOffsets(EditConsumerGroupOffsetsRequest) returns (EditConsumerGroupOffsetsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/consumer-groups/{group_id}/offsets"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Edit consumer group offsets"
+      description: "Edit offsets for a consumer group's topic partitions."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.EditConsumerGroupOffsetsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+
+  rpc DeleteConsumerGroupOffsets(DeleteConsumerGroupOffsetsRequest) returns (DeleteConsumerGroupOffsetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/consumer-groups/{group_id}/offsets:delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete consumer group offsets"
+      description: "Delete offsets for a consumer group's topic partitions."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteConsumerGroupOffsetsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+
+  rpc DeleteConsumerGroup(DeleteConsumerGroupRequest) returns (DeleteConsumerGroupResponse) {
+    option (google.api.http) = {delete: "/v1/consumer-groups/{group_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete consumer group"
+      description: "Delete a Kafka consumer group."
+      responses: {
+        key: "204"
+        value: {
+          description: "Consumer group deleted successfully"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Consumer group not found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+}

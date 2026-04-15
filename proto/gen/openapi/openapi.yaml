@@ -317,6 +317,49 @@ components:
         version:
           type: string
       type: object
+    BrokerConfig:
+      properties:
+        is_default_value:
+          description: Whether this config is using the default value.
+          type: boolean
+        is_explicitly_set:
+          description: Whether this config was explicitly set.
+          type: boolean
+        is_read_only:
+          description: Whether this config is read-only.
+          type: boolean
+        is_sensitive:
+          description: Whether this config value is sensitive.
+          type: boolean
+        name:
+          description: The config key name.
+          type: string
+        source:
+          description: The source of the config value (e.g. DEFAULT_CONFIG, STATIC_BROKER_CONFIG).
+          type: string
+        synonyms:
+          description: Config synonyms.
+          items:
+            $ref: '#/components/schemas/BrokerConfig.ConfigSynonym'
+          type: array
+        type:
+          description: The config data type.
+          type: string
+        value:
+          description: The config value. Nil if the value is sensitive.
+          nullable: true
+          type: string
+      type: object
+    BrokerConfig.ConfigSynonym:
+      properties:
+        name:
+          type: string
+        source:
+          type: string
+        value:
+          nullable: true
+          type: string
+      type: object
     ComponentList:
       description: ComponentList contains the structured component data.
       properties:
@@ -437,16 +480,6 @@ components:
         - CONFIG_SOURCE_DEFAULT_CONFIG
         - CONFIG_SOURCE_DYNAMIC_BROKER_LOGGER_CONFIG
       type: string
-    ConfigSynonym:
-      properties:
-        name:
-          type: string
-        source:
-          $ref: '#/components/schemas/ConfigSource'
-        value:
-          nullable: true
-          type: string
-      type: object
     ConfigType:
       enum:
         - CONFIG_TYPE_BOOLEAN
@@ -468,7 +501,7 @@ components:
             key whose value is inherited. `source` indicates whether the inherited
             config is default, broker, etc.
           items:
-            $ref: '#/components/schemas/ConfigSynonym'
+            $ref: '#/components/schemas/v1.ConfigSynonym'
           type: array
         documentation:
           description: Config documentation.
@@ -908,6 +941,64 @@ components:
             $ref: '#/components/schemas/MatchingACL'
           type: array
       type: object
+    DeleteConsumerGroupOffsetsBody:
+      description: DeleteConsumerGroupOffsetsRequest deletes consumer group offsets for specific topic partitions.
+      properties:
+        topics:
+          description: Topics and partitions to delete offsets for.
+          items:
+            $ref: '#/components/schemas/DeleteConsumerGroupOffsetsRequest.Topic'
+          type: array
+      type: object
+    DeleteConsumerGroupOffsetsRequest.Topic:
+      properties:
+        partitions:
+          description: Partitions to delete offsets for.
+          items:
+            $ref: '#/components/schemas/DeleteConsumerGroupOffsetsRequest.Topic.Partition'
+          type: array
+        topic_name:
+          description: The topic name.
+          type: string
+      type: object
+    DeleteConsumerGroupOffsetsRequest.Topic.Partition:
+      properties:
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
+      type: object
+    DeleteConsumerGroupOffsetsResponse:
+      properties:
+        topics:
+          description: Results for each topic.
+          items:
+            $ref: '#/components/schemas/DeleteConsumerGroupOffsetsResponse.Topic'
+          type: array
+      type: object
+    DeleteConsumerGroupOffsetsResponse.Topic:
+      properties:
+        partitions:
+          description: Results for each partition.
+          items:
+            $ref: '#/components/schemas/DeleteConsumerGroupOffsetsResponse.Topic.Partition'
+          type: array
+        topic_name:
+          description: The topic name.
+          type: string
+      type: object
+    DeleteConsumerGroupOffsetsResponse.Topic.Partition:
+      properties:
+        error:
+          description: Error message if the offset deletion failed for this partition.
+          type: string
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
+      type: object
+    DeleteConsumerGroupResponse:
+      type: object
     DeleteKafkaConnectSecretResponse:
       description: DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
       type: object
@@ -931,6 +1022,26 @@ components:
       type: object
     DeleteSecretResponse:
       description: DeleteSecretResponse is the response of DeleteSecret.
+      type: object
+    DeleteTopicRecordsBody:
+      description: DeleteTopicRecordsRequest deletes records from topic partitions up to the specified offsets.
+      properties:
+        partitions:
+          description: Partitions to delete records from.
+          items:
+            $ref: '#/components/schemas/PartitionDeleteRequest'
+          type: array
+      type: object
+    DeleteTopicRecordsResponse:
+      properties:
+        partitions:
+          description: Results for each partition.
+          items:
+            $ref: '#/components/schemas/PartitionResult'
+          type: array
+        topic_name:
+          description: Topic name.
+          type: string
       type: object
     DeleteTopicResponse:
       type: object
@@ -969,6 +1080,69 @@ components:
       type: object
     EarliestOffset:
       description: Start at the earliest offset in the partition.
+      type: object
+    EditConsumerGroupOffsetsBody:
+      description: EditConsumerGroupOffsetsRequest edits consumer group offsets for specific topic partitions.
+      properties:
+        topics:
+          description: Topics and partitions to edit offsets for.
+          items:
+            $ref: '#/components/schemas/EditConsumerGroupOffsetsRequest.Topic'
+          type: array
+      type: object
+    EditConsumerGroupOffsetsRequest.Topic:
+      properties:
+        partitions:
+          description: Partitions to edit offsets for.
+          items:
+            $ref: '#/components/schemas/EditConsumerGroupOffsetsRequest.Topic.Partition'
+          type: array
+        topic_name:
+          description: The topic name.
+          type: string
+      type: object
+    EditConsumerGroupOffsetsRequest.Topic.Partition:
+      properties:
+        offset:
+          description: The offset to set.
+          format: int64
+          type: string
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
+      type: object
+    EditConsumerGroupOffsetsResponse:
+      properties:
+        error:
+          description: Error message if the entire operation failed.
+          type: string
+        topics:
+          description: Results for each topic.
+          items:
+            $ref: '#/components/schemas/EditConsumerGroupOffsetsResponse.Topic'
+          type: array
+      type: object
+    EditConsumerGroupOffsetsResponse.Topic:
+      properties:
+        partitions:
+          description: Results for each partition.
+          items:
+            $ref: '#/components/schemas/EditConsumerGroupOffsetsResponse.Topic.Partition'
+          type: array
+        topic_name:
+          description: The topic name.
+          type: string
+      type: object
+    EditConsumerGroupOffsetsResponse.Topic.Partition:
+      properties:
+        error:
+          description: Error message if the offset edit failed for this partition.
+          type: string
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
       type: object
     Entity:
       properties:
@@ -1189,6 +1363,14 @@ components:
         - FILTER_TYPE_EXCLUDE
       title: What type of filter this is, include or exclude
       type: string
+    GetBrokerConfigResponse:
+      properties:
+        configs:
+          description: The broker's configuration entries.
+          items:
+            $ref: '#/components/schemas/BrokerConfig'
+          type: array
+      type: object
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -1293,6 +1475,16 @@ components:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
+      type: object
+    GetTopicDocumentationResponse:
+      properties:
+        is_enabled:
+          description: Whether topic documentation is enabled.
+          type: boolean
+        markdown:
+          description: The documentation markdown content, if available.
+          format: byte
+          type: string
       type: object
     GetTransformResponse:
       properties:
@@ -1852,6 +2044,14 @@ components:
           title: Shadow topic status information
           type: array
       type: object
+    ListTopicOffsetsResponse:
+      properties:
+        topics:
+          description: The offsets for each requested topic.
+          items:
+            $ref: '#/components/schemas/TopicOffset'
+          type: array
+      type: object
     ListTopicsRequest.Filter:
       properties:
         name_contains:
@@ -2200,6 +2400,49 @@ components:
           items:
             $ref: '#/components/schemas/ParamDefinition'
           type: array
+      type: object
+    PartitionDeleteRequest:
+      properties:
+        offset:
+          description: The offset to delete up to. Use -1 to delete all records (maps to high watermark).
+          format: int64
+          type: string
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
+      type: object
+    PartitionOffset:
+      properties:
+        error:
+          description: Error message if the offset could not be retrieved for this partition.
+          type: string
+        offset:
+          description: The offset at the requested timestamp.
+          format: int64
+          type: string
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
+        timestamp:
+          description: The timestamp of the offset.
+          format: int64
+          type: string
+      type: object
+    PartitionResult:
+      properties:
+        error:
+          description: Error message if the deletion failed for this partition.
+          type: string
+        low_watermark:
+          description: The new low watermark for the partition after deletion.
+          format: int64
+          type: string
+        partition_id:
+          description: The partition ID.
+          format: int32
+          type: integer
       type: object
     PartitionStatus:
       enum:
@@ -3295,6 +3538,17 @@ components:
       required:
         - source_topic_reference
       type: object
+    TopicOffset:
+      properties:
+        partitions:
+          description: The partition offsets.
+          items:
+            $ref: '#/components/schemas/PartitionOffset'
+          type: array
+        topic_name:
+          description: The topic name.
+          type: string
+      type: object
     TopicPartitionInformation:
       properties:
         high_watermark:
@@ -3585,6 +3839,16 @@ components:
           type: array
         message:
           description: Detailed error message. No compatibility guarantees are given for the text contained in this message.
+          type: string
+      type: object
+    v1.ConfigSynonym:
+      properties:
+        name:
+          type: string
+        source:
+          $ref: '#/components/schemas/ConfigSource'
+        value:
+          nullable: true
           type: string
       type: object
     v1.FailOverResponse:
@@ -3925,6 +4189,52 @@ paths:
       summary: Create ACL
       tags:
         - Redpanda ACLs
+  /v1/brokers/{broker_id}/config:
+    get:
+      description: Get the configuration for a specific broker.
+      operationId: BrokerService_GetBrokerConfig
+      parameters:
+        - description: Broker ID.
+          in: path
+          name: broker_id
+          required: true
+          schema:
+            format: int32
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBrokerConfigResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get broker configuration
+      tags:
+        - Brokers
   /v1/cloud-storage/mount-tasks:
     get:
       description: This operation retrieves the status of a task responsible for mounting or unmounting topics. It provides details on the task’s type (mount or unmount), its current state, and the topics involved.
@@ -4243,6 +4553,142 @@ paths:
       summary: Unmount topics to object storage
       tags:
         - Cloud Storage
+  /v1/consumer-groups/{group_id}:
+    delete:
+      description: Delete a Kafka consumer group.
+      operationId: ConsumerGroupService_DeleteConsumerGroup
+      parameters:
+        - description: The consumer group ID.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Consumer group deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Consumer group not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete consumer group
+      tags:
+        - ConsumerGroups
+  /v1/consumer-groups/{group_id}/offsets:
+    patch:
+      description: Edit offsets for a consumer group's topic partitions.
+      operationId: ConsumerGroupService_EditConsumerGroupOffsets
+      parameters:
+        - description: The consumer group ID.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditConsumerGroupOffsetsBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditConsumerGroupOffsetsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Edit consumer group offsets
+      tags:
+        - ConsumerGroups
+  /v1/consumer-groups/{group_id}/offsets:delete:
+    post:
+      description: Delete offsets for a consumer group's topic partitions.
+      operationId: ConsumerGroupService_DeleteConsumerGroupOffsets
+      parameters:
+        - description: The consumer group ID.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteConsumerGroupOffsetsBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteConsumerGroupOffsetsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete consumer group offsets
+      tags:
+        - ConsumerGroups
   /v1/kafka-connect/clusters:
     get:
       description: List Connect clusters available in Console.
@@ -7367,6 +7813,52 @@ paths:
       summary: Create topic
       tags:
         - Topics
+  /v1/topics-offsets:
+    get:
+      description: List partition offsets for one or more topics at a given timestamp.
+      operationId: TopicService_ListTopicOffsets
+      parameters:
+        - description: Comma-separated list of topic names to list offsets for.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+        - description: Timestamp in milliseconds to list offsets for. Use -1 for latest, -2 for earliest.
+          in: query
+          name: timestamp
+          schema:
+            format: int64
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTopicOffsetsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List topic offsets
+      tags:
+        - Topics
   /v1/topics-partitions:
     patch:
       description: Add partitions to existing topics. Depending on the partitioning strategy used, this may impact ordering guarantees.
@@ -7651,6 +8143,45 @@ paths:
       summary: Set topic configurations
       tags:
         - Topics
+  /v1/topics/{topic_name}/documentation:
+    get:
+      description: Get the documentation for a specific topic.
+      operationId: TopicService_GetTopicDocumentation
+      parameters:
+        - description: Topic name.
+          in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicDocumentationResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get topic documentation
+      tags:
+        - Topics
   /v1/topics/{topic_name}/partitions:
     patch:
       description: Add partitions to an existing topic. Depending on the partitioning strategy used, this may impact ordering guarantees.
@@ -7754,6 +8285,52 @@ paths:
       summary: Set topic partitions
       tags:
         - Topics
+  /v1/topics/{topic_name}/records:delete:
+    post:
+      description: Delete records from a topic's partitions up to specified offsets.
+      operationId: TopicService_DeleteTopicRecords
+      parameters:
+        - description: Topic name.
+          in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteTopicRecordsBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTopicRecordsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete topic records
+      tags:
+        - Topics
   /v1/transforms:
     get:
       description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
@@ -7837,7 +8414,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -8247,8 +8824,12 @@ servers:
 tags:
   - description: Manage Redpanda access control lists (ACLs). See [Redpanda Cloud Authorization](https://docs.redpanda.com/redpanda-cloud/security/authorization/cloud-authorization/) for more information.
     name: Redpanda ACLs
+  - description: Manage Redpanda brokers.
+    name: Brokers
   - description: 'Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)'
     name: Cloud Storage
+  - description: Manage Kafka consumer groups.
+    name: ConsumerGroups
   - description: Manage Wasm transforms in Redpanda.
     name: Wasm Transforms
   - description: Manage [connectors](https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/) and interact with the Kafka Connect API.

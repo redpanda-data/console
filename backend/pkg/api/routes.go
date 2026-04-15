@@ -35,8 +35,10 @@ import (
 	apiaclsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl/v1"
 	apiaclsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl/v1alpha1"
 	apiaclsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/acl/v1alpha2"
+	brokersvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/broker/v1"
 	"github.com/redpanda-data/console/backend/pkg/api/connect/service/clusterstatus"
 	consolesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/console"
+	consumergroupsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/consumergroup/v1"
 	apikafkaconnectsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1"
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
@@ -121,6 +123,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	topicSvcV1 := topicsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
 	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(loggerpkg.Named(api.Logger, "user_service"), api.ConsoleSvc)
 	quotaSvcV1 := quotasvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "quota_service"), api.ConsoleSvc)
+	brokerSvcV1 := brokersvcv1.NewService(loggerpkg.Named(api.Logger, "broker_service"), api.ConsoleSvc)
+	consumerGroupSvcV1 := consumergroupsvcv1.NewService(loggerpkg.Named(api.Logger, "consumer_group_service"), api.ConsoleSvc)
 	transformSvcV1 := transformsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvcV1 := &transformsvcv1.ConsoleService{Impl: transformSvcV1}
@@ -188,6 +192,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
 			dataplanev1connect.SecurityServiceName:           dataplanev1connect.UnimplementedSecurityServiceHandler{},
 			dataplanev1connect.MonitoringServiceName:         monitoringSvcV1,
+			dataplanev1connect.BrokerServiceName:             brokerSvcV1,
+			dataplanev1connect.ConsumerGroupServiceName:      consumerGroupSvcV1,
 		},
 	})
 

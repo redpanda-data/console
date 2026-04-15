@@ -27,6 +27,9 @@ type TopicServiceGatewayServer struct {
 	setTopicPartitions        connect_gateway.UnaryHandler[v1.SetTopicPartitionsRequest, v1.SetTopicPartitionsResponse]
 	addPartitionsToTopics     connect_gateway.UnaryHandler[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse]
 	setPartitionsToTopics     connect_gateway.UnaryHandler[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse]
+	listTopicOffsets          connect_gateway.UnaryHandler[v1.ListTopicOffsetsRequest, v1.ListTopicOffsetsResponse]
+	deleteTopicRecords        connect_gateway.UnaryHandler[v1.DeleteTopicRecordsRequest, v1.DeleteTopicRecordsResponse]
+	getTopicDocumentation     connect_gateway.UnaryHandler[v1.GetTopicDocumentationRequest, v1.GetTopicDocumentationResponse]
 }
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
@@ -43,6 +46,9 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		setTopicPartitions:        connect_gateway.NewUnaryHandler(TopicServiceSetTopicPartitionsProcedure, svc.SetTopicPartitions, opts...),
 		addPartitionsToTopics:     connect_gateway.NewUnaryHandler(TopicServiceAddPartitionsToTopicsProcedure, svc.AddPartitionsToTopics, opts...),
 		setPartitionsToTopics:     connect_gateway.NewUnaryHandler(TopicServiceSetPartitionsToTopicsProcedure, svc.SetPartitionsToTopics, opts...),
+		listTopicOffsets:          connect_gateway.NewUnaryHandler(TopicServiceListTopicOffsetsProcedure, svc.ListTopicOffsets, opts...),
+		deleteTopicRecords:        connect_gateway.NewUnaryHandler(TopicServiceDeleteTopicRecordsProcedure, svc.DeleteTopicRecords, opts...),
+		getTopicDocumentation:     connect_gateway.NewUnaryHandler(TopicServiceGetTopicDocumentationProcedure, svc.GetTopicDocumentation, opts...),
 	}
 }
 
@@ -84,6 +90,18 @@ func (s *TopicServiceGatewayServer) AddPartitionsToTopics(ctx context.Context, r
 
 func (s *TopicServiceGatewayServer) SetPartitionsToTopics(ctx context.Context, req *v1.SetPartitionsToTopicsRequest) (*v1.SetPartitionsToTopicsResponse, error) {
 	return s.setPartitionsToTopics(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) ListTopicOffsets(ctx context.Context, req *v1.ListTopicOffsetsRequest) (*v1.ListTopicOffsetsResponse, error) {
+	return s.listTopicOffsets(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) DeleteTopicRecords(ctx context.Context, req *v1.DeleteTopicRecordsRequest) (*v1.DeleteTopicRecordsResponse, error) {
+	return s.deleteTopicRecords(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) GetTopicDocumentation(ctx context.Context, req *v1.GetTopicDocumentationRequest) (*v1.GetTopicDocumentationResponse, error) {
+	return s.getTopicDocumentation(ctx, req)
 }
 
 // RegisterTopicServiceHandlerGatewayServer registers the Connect handlers for the TopicService

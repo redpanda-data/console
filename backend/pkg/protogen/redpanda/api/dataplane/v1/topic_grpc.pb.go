@@ -30,6 +30,9 @@ const (
 	TopicService_SetTopicPartitions_FullMethodName        = "/redpanda.api.dataplane.v1.TopicService/SetTopicPartitions"
 	TopicService_AddPartitionsToTopics_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/AddPartitionsToTopics"
 	TopicService_SetPartitionsToTopics_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/SetPartitionsToTopics"
+	TopicService_ListTopicOffsets_FullMethodName          = "/redpanda.api.dataplane.v1.TopicService/ListTopicOffsets"
+	TopicService_DeleteTopicRecords_FullMethodName        = "/redpanda.api.dataplane.v1.TopicService/DeleteTopicRecords"
+	TopicService_GetTopicDocumentation_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/GetTopicDocumentation"
 )
 
 // TopicServiceClient is the client API for TopicService service.
@@ -46,6 +49,9 @@ type TopicServiceClient interface {
 	SetTopicPartitions(ctx context.Context, in *SetTopicPartitionsRequest, opts ...grpc.CallOption) (*SetTopicPartitionsResponse, error)
 	AddPartitionsToTopics(ctx context.Context, in *AddPartitionsToTopicsRequest, opts ...grpc.CallOption) (*AddPartitionsToTopicsResponse, error)
 	SetPartitionsToTopics(ctx context.Context, in *SetPartitionsToTopicsRequest, opts ...grpc.CallOption) (*SetPartitionsToTopicsResponse, error)
+	ListTopicOffsets(ctx context.Context, in *ListTopicOffsetsRequest, opts ...grpc.CallOption) (*ListTopicOffsetsResponse, error)
+	DeleteTopicRecords(ctx context.Context, in *DeleteTopicRecordsRequest, opts ...grpc.CallOption) (*DeleteTopicRecordsResponse, error)
+	GetTopicDocumentation(ctx context.Context, in *GetTopicDocumentationRequest, opts ...grpc.CallOption) (*GetTopicDocumentationResponse, error)
 }
 
 type topicServiceClient struct {
@@ -156,6 +162,36 @@ func (c *topicServiceClient) SetPartitionsToTopics(ctx context.Context, in *SetP
 	return out, nil
 }
 
+func (c *topicServiceClient) ListTopicOffsets(ctx context.Context, in *ListTopicOffsetsRequest, opts ...grpc.CallOption) (*ListTopicOffsetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopicOffsetsResponse)
+	err := c.cc.Invoke(ctx, TopicService_ListTopicOffsets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) DeleteTopicRecords(ctx context.Context, in *DeleteTopicRecordsRequest, opts ...grpc.CallOption) (*DeleteTopicRecordsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteTopicRecordsResponse)
+	err := c.cc.Invoke(ctx, TopicService_DeleteTopicRecords_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) GetTopicDocumentation(ctx context.Context, in *GetTopicDocumentationRequest, opts ...grpc.CallOption) (*GetTopicDocumentationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopicDocumentationResponse)
+	err := c.cc.Invoke(ctx, TopicService_GetTopicDocumentation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TopicServiceServer is the server API for TopicService service.
 // All implementations must embed UnimplementedTopicServiceServer
 // for forward compatibility.
@@ -170,6 +206,9 @@ type TopicServiceServer interface {
 	SetTopicPartitions(context.Context, *SetTopicPartitionsRequest) (*SetTopicPartitionsResponse, error)
 	AddPartitionsToTopics(context.Context, *AddPartitionsToTopicsRequest) (*AddPartitionsToTopicsResponse, error)
 	SetPartitionsToTopics(context.Context, *SetPartitionsToTopicsRequest) (*SetPartitionsToTopicsResponse, error)
+	ListTopicOffsets(context.Context, *ListTopicOffsetsRequest) (*ListTopicOffsetsResponse, error)
+	DeleteTopicRecords(context.Context, *DeleteTopicRecordsRequest) (*DeleteTopicRecordsResponse, error)
+	GetTopicDocumentation(context.Context, *GetTopicDocumentationRequest) (*GetTopicDocumentationResponse, error)
 	mustEmbedUnimplementedTopicServiceServer()
 }
 
@@ -209,6 +248,15 @@ func (UnimplementedTopicServiceServer) AddPartitionsToTopics(context.Context, *A
 }
 func (UnimplementedTopicServiceServer) SetPartitionsToTopics(context.Context, *SetPartitionsToTopicsRequest) (*SetPartitionsToTopicsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetPartitionsToTopics not implemented")
+}
+func (UnimplementedTopicServiceServer) ListTopicOffsets(context.Context, *ListTopicOffsetsRequest) (*ListTopicOffsetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopicOffsets not implemented")
+}
+func (UnimplementedTopicServiceServer) DeleteTopicRecords(context.Context, *DeleteTopicRecordsRequest) (*DeleteTopicRecordsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteTopicRecords not implemented")
+}
+func (UnimplementedTopicServiceServer) GetTopicDocumentation(context.Context, *GetTopicDocumentationRequest) (*GetTopicDocumentationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopicDocumentation not implemented")
 }
 func (UnimplementedTopicServiceServer) mustEmbedUnimplementedTopicServiceServer() {}
 func (UnimplementedTopicServiceServer) testEmbeddedByValue()                      {}
@@ -411,6 +459,60 @@ func _TopicService_SetPartitionsToTopics_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TopicService_ListTopicOffsets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicOffsetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).ListTopicOffsets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_ListTopicOffsets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).ListTopicOffsets(ctx, req.(*ListTopicOffsetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_DeleteTopicRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTopicRecordsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).DeleteTopicRecords(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_DeleteTopicRecords_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).DeleteTopicRecords(ctx, req.(*DeleteTopicRecordsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_GetTopicDocumentation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopicDocumentationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).GetTopicDocumentation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_GetTopicDocumentation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).GetTopicDocumentation(ctx, req.(*GetTopicDocumentationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TopicService_ServiceDesc is the grpc.ServiceDesc for TopicService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -457,6 +559,18 @@ var TopicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetPartitionsToTopics",
 			Handler:    _TopicService_SetPartitionsToTopics_Handler,
+		},
+		{
+			MethodName: "ListTopicOffsets",
+			Handler:    _TopicService_ListTopicOffsets_Handler,
+		},
+		{
+			MethodName: "DeleteTopicRecords",
+			Handler:    _TopicService_DeleteTopicRecords_Handler,
+		},
+		{
+			MethodName: "GetTopicDocumentation",
+			Handler:    _TopicService_GetTopicDocumentation_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

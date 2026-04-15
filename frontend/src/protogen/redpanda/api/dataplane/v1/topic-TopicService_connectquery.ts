@@ -53,3 +53,18 @@ export const addPartitionsToTopics = TopicService.method.addPartitionsToTopics;
  * @generated from rpc redpanda.api.dataplane.v1.TopicService.SetPartitionsToTopics
  */
 export const setPartitionsToTopics = TopicService.method.setPartitionsToTopics;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.ListTopicOffsets
+ */
+export const listTopicOffsets = TopicService.method.listTopicOffsets;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.DeleteTopicRecords
+ */
+export const deleteTopicRecords = TopicService.method.deleteTopicRecords;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation
+ */
+export const getTopicDocumentation = TopicService.method.getTopicDocumentation;

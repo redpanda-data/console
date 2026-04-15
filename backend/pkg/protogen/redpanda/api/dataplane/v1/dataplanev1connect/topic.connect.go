@@ -64,6 +64,15 @@ const (
 	// TopicServiceSetPartitionsToTopicsProcedure is the fully-qualified name of the TopicService's
 	// SetPartitionsToTopics RPC.
 	TopicServiceSetPartitionsToTopicsProcedure = "/redpanda.api.dataplane.v1.TopicService/SetPartitionsToTopics"
+	// TopicServiceListTopicOffsetsProcedure is the fully-qualified name of the TopicService's
+	// ListTopicOffsets RPC.
+	TopicServiceListTopicOffsetsProcedure = "/redpanda.api.dataplane.v1.TopicService/ListTopicOffsets"
+	// TopicServiceDeleteTopicRecordsProcedure is the fully-qualified name of the TopicService's
+	// DeleteTopicRecords RPC.
+	TopicServiceDeleteTopicRecordsProcedure = "/redpanda.api.dataplane.v1.TopicService/DeleteTopicRecords"
+	// TopicServiceGetTopicDocumentationProcedure is the fully-qualified name of the TopicService's
+	// GetTopicDocumentation RPC.
+	TopicServiceGetTopicDocumentationProcedure = "/redpanda.api.dataplane.v1.TopicService/GetTopicDocumentation"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -79,6 +88,9 @@ var (
 	topicServiceSetTopicPartitionsMethodDescriptor        = topicServiceServiceDescriptor.Methods().ByName("SetTopicPartitions")
 	topicServiceAddPartitionsToTopicsMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("AddPartitionsToTopics")
 	topicServiceSetPartitionsToTopicsMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("SetPartitionsToTopics")
+	topicServiceListTopicOffsetsMethodDescriptor          = topicServiceServiceDescriptor.Methods().ByName("ListTopicOffsets")
+	topicServiceDeleteTopicRecordsMethodDescriptor        = topicServiceServiceDescriptor.Methods().ByName("DeleteTopicRecords")
+	topicServiceGetTopicDocumentationMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("GetTopicDocumentation")
 )
 
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1.TopicService service.
@@ -93,6 +105,9 @@ type TopicServiceClient interface {
 	SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error)
 	AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error)
 	SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error)
+	ListTopicOffsets(context.Context, *connect.Request[v1.ListTopicOffsetsRequest]) (*connect.Response[v1.ListTopicOffsetsResponse], error)
+	DeleteTopicRecords(context.Context, *connect.Request[v1.DeleteTopicRecordsRequest]) (*connect.Response[v1.DeleteTopicRecordsResponse], error)
+	GetTopicDocumentation(context.Context, *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error)
 }
 
 // NewTopicServiceClient constructs a client for the redpanda.api.dataplane.v1.TopicService service.
@@ -165,6 +180,24 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(topicServiceSetPartitionsToTopicsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listTopicOffsets: connect.NewClient[v1.ListTopicOffsetsRequest, v1.ListTopicOffsetsResponse](
+			httpClient,
+			baseURL+TopicServiceListTopicOffsetsProcedure,
+			connect.WithSchema(topicServiceListTopicOffsetsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		deleteTopicRecords: connect.NewClient[v1.DeleteTopicRecordsRequest, v1.DeleteTopicRecordsResponse](
+			httpClient,
+			baseURL+TopicServiceDeleteTopicRecordsProcedure,
+			connect.WithSchema(topicServiceDeleteTopicRecordsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getTopicDocumentation: connect.NewClient[v1.GetTopicDocumentationRequest, v1.GetTopicDocumentationResponse](
+			httpClient,
+			baseURL+TopicServiceGetTopicDocumentationProcedure,
+			connect.WithSchema(topicServiceGetTopicDocumentationMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -180,6 +213,9 @@ type topicServiceClient struct {
 	setTopicPartitions        *connect.Client[v1.SetTopicPartitionsRequest, v1.SetTopicPartitionsResponse]
 	addPartitionsToTopics     *connect.Client[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse]
 	setPartitionsToTopics     *connect.Client[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse]
+	listTopicOffsets          *connect.Client[v1.ListTopicOffsetsRequest, v1.ListTopicOffsetsResponse]
+	deleteTopicRecords        *connect.Client[v1.DeleteTopicRecordsRequest, v1.DeleteTopicRecordsResponse]
+	getTopicDocumentation     *connect.Client[v1.GetTopicDocumentationRequest, v1.GetTopicDocumentationResponse]
 }
 
 // CreateTopic calls redpanda.api.dataplane.v1.TopicService.CreateTopic.
@@ -232,6 +268,21 @@ func (c *topicServiceClient) SetPartitionsToTopics(ctx context.Context, req *con
 	return c.setPartitionsToTopics.CallUnary(ctx, req)
 }
 
+// ListTopicOffsets calls redpanda.api.dataplane.v1.TopicService.ListTopicOffsets.
+func (c *topicServiceClient) ListTopicOffsets(ctx context.Context, req *connect.Request[v1.ListTopicOffsetsRequest]) (*connect.Response[v1.ListTopicOffsetsResponse], error) {
+	return c.listTopicOffsets.CallUnary(ctx, req)
+}
+
+// DeleteTopicRecords calls redpanda.api.dataplane.v1.TopicService.DeleteTopicRecords.
+func (c *topicServiceClient) DeleteTopicRecords(ctx context.Context, req *connect.Request[v1.DeleteTopicRecordsRequest]) (*connect.Response[v1.DeleteTopicRecordsResponse], error) {
+	return c.deleteTopicRecords.CallUnary(ctx, req)
+}
+
+// GetTopicDocumentation calls redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation.
+func (c *topicServiceClient) GetTopicDocumentation(ctx context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	return c.getTopicDocumentation.CallUnary(ctx, req)
+}
+
 // TopicServiceHandler is an implementation of the redpanda.api.dataplane.v1.TopicService service.
 type TopicServiceHandler interface {
 	CreateTopic(context.Context, *connect.Request[v1.CreateTopicRequest]) (*connect.Response[v1.CreateTopicResponse], error)
@@ -244,6 +295,9 @@ type TopicServiceHandler interface {
 	SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error)
 	AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error)
 	SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error)
+	ListTopicOffsets(context.Context, *connect.Request[v1.ListTopicOffsetsRequest]) (*connect.Response[v1.ListTopicOffsetsResponse], error)
+	DeleteTopicRecords(context.Context, *connect.Request[v1.DeleteTopicRecordsRequest]) (*connect.Response[v1.DeleteTopicRecordsResponse], error)
+	GetTopicDocumentation(context.Context, *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error)
 }
 
 // NewTopicServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -312,6 +366,24 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(topicServiceSetPartitionsToTopicsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	topicServiceListTopicOffsetsHandler := connect.NewUnaryHandler(
+		TopicServiceListTopicOffsetsProcedure,
+		svc.ListTopicOffsets,
+		connect.WithSchema(topicServiceListTopicOffsetsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	topicServiceDeleteTopicRecordsHandler := connect.NewUnaryHandler(
+		TopicServiceDeleteTopicRecordsProcedure,
+		svc.DeleteTopicRecords,
+		connect.WithSchema(topicServiceDeleteTopicRecordsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	topicServiceGetTopicDocumentationHandler := connect.NewUnaryHandler(
+		TopicServiceGetTopicDocumentationProcedure,
+		svc.GetTopicDocumentation,
+		connect.WithSchema(topicServiceGetTopicDocumentationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1.TopicService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TopicServiceCreateTopicProcedure:
@@ -334,6 +406,12 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 			topicServiceAddPartitionsToTopicsHandler.ServeHTTP(w, r)
 		case TopicServiceSetPartitionsToTopicsProcedure:
 			topicServiceSetPartitionsToTopicsHandler.ServeHTTP(w, r)
+		case TopicServiceListTopicOffsetsProcedure:
+			topicServiceListTopicOffsetsHandler.ServeHTTP(w, r)
+		case TopicServiceDeleteTopicRecordsProcedure:
+			topicServiceDeleteTopicRecordsHandler.ServeHTTP(w, r)
+		case TopicServiceGetTopicDocumentationProcedure:
+			topicServiceGetTopicDocumentationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -381,4 +459,16 @@ func (UnimplementedTopicServiceHandler) AddPartitionsToTopics(context.Context, *
 
 func (UnimplementedTopicServiceHandler) SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.SetPartitionsToTopics is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) ListTopicOffsets(context.Context, *connect.Request[v1.ListTopicOffsetsRequest]) (*connect.Response[v1.ListTopicOffsetsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.ListTopicOffsets is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) DeleteTopicRecords(context.Context, *connect.Request[v1.DeleteTopicRecordsRequest]) (*connect.Response[v1.DeleteTopicRecordsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.DeleteTopicRecords is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) GetTopicDocumentation(context.Context, *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation is not implemented"))
 }
