@@ -509,29 +509,6 @@ type SchemaMetadata struct {
 	Sensitive  []string            `json:"sensitive,omitempty"`
 }
 
-// GetSchemaRegistrySchema retrieves a schema for a given subject, version tuple from the
-// schema registry. You can use -1 as the version to return the latest schema,
-func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName string, version int, showSoftDeleted bool) (*SchemaRegistryVersionedSchema, error) {
-	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if showSoftDeleted {
-		ctx = sr.WithParams(ctx, sr.ShowDeleted)
-	}
-	sch, err := srClient.SchemaByVersion(ctx, subjectName, version)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve schema by version %d: %w", version, err)
-	}
-
-	// Always assuming soft-deleted=false is wrong here! This should be fixed,
-	// but won't be changed as part of this refactoring.
-	mappedSchema := mapSubjectSchema(sch, false)
-
-	return &mappedSchema, nil
-}
-
 // SchemaReference return all schema ids that reference the requested subject-version.
 type SchemaReference struct {
 	SchemaID int           `json:"schemaId"`
