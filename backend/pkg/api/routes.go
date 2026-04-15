@@ -43,6 +43,7 @@ import (
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
 	monitoringsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/monitoring/v1"
 	quotasvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/quota/v1"
+	schemaregistrysvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/schemaregistry"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
 	topicsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha2"
@@ -155,6 +156,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		api.SchemaClientProvider,
 		api.ConnectSvc,
 	)
+	schemaRegistrySvc := schemaregistrysvc.NewService(
+		api.Cfg,
+		loggerpkg.Named(api.Logger, "schema_registry_service"),
+		api.ConsoleSvc,
+	)
 
 	// Call Hook
 	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
@@ -173,6 +179,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.AuthenticationServiceName: &AuthenticationDefaultHandler{},
 			consolev1alpha1connect.ClusterStatusServiceName:  clusterStatusSvc,
 			consolev1alpha1connect.SecretServiceName:         consolev1alpha1connect.UnimplementedSecretServiceHandler{},
+			consolev1alpha1connect.SchemaRegistryServiceName: schemaRegistrySvc,
 			dataplanev1alpha2connect.ACLServiceName:          aclSvcV1alpha2,
 			dataplanev1alpha2connect.TopicServiceName:        topicSvcV1alpha2,
 			dataplanev1alpha2connect.UserServiceName:         userSvcV1alpha2,
@@ -255,6 +262,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	consoleSecretsServicePath, consoleSecretsServiceHandler := consolev1alpha1connect.NewSecretServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.SecretServiceName].(consolev1alpha1connect.SecretServiceHandler),
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	schemaRegistrySvcPath, schemaRegistrySvcHandler := consolev1alpha1connect.NewSchemaRegistryServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.SchemaRegistryServiceName].(consolev1alpha1connect.SchemaRegistryServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 
 	// v1alpha2
@@ -444,6 +454,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: dataplanev1connect.SecurityServiceName,
 			MountPath:   securitySvcPathV1,
 			Handler:     securitySvcHandlerV1,
+		},
+		{
+			ServiceName: consolev1alpha1connect.SchemaRegistryServiceName,
+			MountPath:   schemaRegistrySvcPath,
+			Handler:     schemaRegistrySvcHandler,
 		},
 	}
 

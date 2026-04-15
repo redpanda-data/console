@@ -1,0 +1,188 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// SchemaRegistryService provides endpoints for managing Schema Registry mode
+// and compatibility configuration at both the global and per-subject level.
+service SchemaRegistryService {
+  // GetSchemaRegistryMode returns the global schema registry mode.
+  rpc GetSchemaRegistryMode(GetSchemaRegistryModeRequest) returns (GetSchemaRegistryModeResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // SetSchemaRegistryMode sets the global schema registry mode.
+  rpc SetSchemaRegistryMode(SetSchemaRegistryModeRequest) returns (SetSchemaRegistryModeResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // GetSchemaRegistrySubjectMode returns the mode for a specific subject.
+  rpc GetSchemaRegistrySubjectMode(GetSchemaRegistrySubjectModeRequest) returns (GetSchemaRegistrySubjectModeResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // SetSchemaRegistrySubjectMode sets the mode for a specific subject.
+  rpc SetSchemaRegistrySubjectMode(SetSchemaRegistrySubjectModeRequest) returns (SetSchemaRegistrySubjectModeResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // DeleteSchemaRegistrySubjectMode deletes the mode override for a specific subject,
+  // reverting it to the global default.
+  rpc DeleteSchemaRegistrySubjectMode(DeleteSchemaRegistrySubjectModeRequest) returns (DeleteSchemaRegistrySubjectModeResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // GetSchemaRegistryConfig returns the global schema registry compatibility configuration.
+  rpc GetSchemaRegistryConfig(GetSchemaRegistryConfigRequest) returns (GetSchemaRegistryConfigResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // SetSchemaRegistryConfig sets the global schema registry compatibility configuration.
+  rpc SetSchemaRegistryConfig(SetSchemaRegistryConfigRequest) returns (SetSchemaRegistryConfigResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // GetSchemaRegistrySubjectConfig returns the compatibility configuration for a specific subject.
+  rpc GetSchemaRegistrySubjectConfig(GetSchemaRegistrySubjectConfigRequest) returns (GetSchemaRegistrySubjectConfigResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // SetSchemaRegistrySubjectConfig sets the compatibility configuration for a specific subject.
+  rpc SetSchemaRegistrySubjectConfig(SetSchemaRegistrySubjectConfigRequest) returns (SetSchemaRegistrySubjectConfigResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // DeleteSchemaRegistrySubjectConfig deletes the compatibility configuration override
+  // for a specific subject, reverting it to the global default.
+  rpc DeleteSchemaRegistrySubjectConfig(DeleteSchemaRegistrySubjectConfigRequest) returns (DeleteSchemaRegistrySubjectConfigResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+}
+
+// Mode endpoints
+
+message GetSchemaRegistryModeRequest {}
+
+message GetSchemaRegistryModeResponse {
+  // The current global schema registry mode (e.g. "READWRITE", "READONLY", "IMPORT").
+  string mode = 1;
+}
+
+message SetSchemaRegistryModeRequest {
+  // The mode to set (e.g. "READWRITE", "READONLY", "IMPORT").
+  string mode = 1 [(buf.validate.field).required = true];
+}
+
+message SetSchemaRegistryModeResponse {
+  // The mode that was set.
+  string mode = 1;
+}
+
+message GetSchemaRegistrySubjectModeRequest {
+  // The subject name.
+  string subject = 1 [(buf.validate.field).required = true];
+}
+
+message GetSchemaRegistrySubjectModeResponse {
+  // The current mode for the subject.
+  string mode = 1;
+}
+
+message SetSchemaRegistrySubjectModeRequest {
+  // The subject name.
+  string subject = 1 [(buf.validate.field).required = true];
+  // The mode to set (e.g. "READWRITE", "READONLY", "IMPORT").
+  string mode = 2 [(buf.validate.field).required = true];
+}
+
+message SetSchemaRegistrySubjectModeResponse {
+  // The mode that was set.
+  string mode = 1;
+}
+
+message DeleteSchemaRegistrySubjectModeRequest {
+  // The subject name.
+  string subject = 1 [(buf.validate.field).required = true];
+}
+
+message DeleteSchemaRegistrySubjectModeResponse {}
+
+// Config endpoints
+
+message GetSchemaRegistryConfigRequest {}
+
+message GetSchemaRegistryConfigResponse {
+  // The global compatibility level (e.g. "BACKWARD", "FORWARD", "FULL", etc.).
+  string compatibility = 1;
+}
+
+message SetSchemaRegistryConfigRequest {
+  // The compatibility level to set.
+  string compatibility = 1 [(buf.validate.field).required = true];
+}
+
+message SetSchemaRegistryConfigResponse {
+  // The compatibility level that was set.
+  string compatibility = 1;
+}
+
+message GetSchemaRegistrySubjectConfigRequest {
+  // The subject name.
+  string subject = 1 [(buf.validate.field).required = true];
+}
+
+message GetSchemaRegistrySubjectConfigResponse {
+  // The compatibility level for the subject.
+  string compatibility = 1;
+}
+
+message SetSchemaRegistrySubjectConfigRequest {
+  // The subject name.
+  string subject = 1 [(buf.validate.field).required = true];
+  // The compatibility level to set.
+  string compatibility = 2 [(buf.validate.field).required = true];
+}
+
+message SetSchemaRegistrySubjectConfigResponse {
+  // The compatibility level that was set.
+  string compatibility = 1;
+}
+
+message DeleteSchemaRegistrySubjectConfigRequest {
+  // The subject name.
+  string subject = 1 [(buf.validate.field).required = true];
+}
+
+message DeleteSchemaRegistrySubjectConfigResponse {}
