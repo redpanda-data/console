@@ -5,14 +5,12 @@
 package consolev1alpha1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -41,13 +39,61 @@ const (
 	// ConsoleServicePublishMessageProcedure is the fully-qualified name of the ConsoleService's
 	// PublishMessage RPC.
 	ConsoleServicePublishMessageProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
+	// ConsoleServiceListConsumerGroupsProcedure is the fully-qualified name of the ConsoleService's
+	// ListConsumerGroups RPC.
+	ConsoleServiceListConsumerGroupsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/ListConsumerGroups"
+	// ConsoleServiceGetConsumerGroupProcedure is the fully-qualified name of the ConsoleService's
+	// GetConsumerGroup RPC.
+	ConsoleServiceGetConsumerGroupProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/GetConsumerGroup"
+	// ConsoleServiceListBrokersProcedure is the fully-qualified name of the ConsoleService's
+	// ListBrokers RPC.
+	ConsoleServiceListBrokersProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/ListBrokers"
+	// ConsoleServiceDescribeClusterProcedure is the fully-qualified name of the ConsoleService's
+	// DescribeCluster RPC.
+	ConsoleServiceDescribeClusterProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/DescribeCluster"
+	// ConsoleServiceGetTopicsOverviewProcedure is the fully-qualified name of the ConsoleService's
+	// GetTopicsOverview RPC.
+	ConsoleServiceGetTopicsOverviewProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/GetTopicsOverview"
+	// ConsoleServiceListTopicPartitionDetailsProcedure is the fully-qualified name of the
+	// ConsoleService's ListTopicPartitionDetails RPC.
+	ConsoleServiceListTopicPartitionDetailsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/ListTopicPartitionDetails"
+	// ConsoleServiceGetTopicsConfigsProcedure is the fully-qualified name of the ConsoleService's
+	// GetTopicsConfigs RPC.
+	ConsoleServiceGetTopicsConfigsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/GetTopicsConfigs"
+	// ConsoleServiceListTopicConsumerGroupsProcedure is the fully-qualified name of the
+	// ConsoleService's ListTopicConsumerGroups RPC.
+	ConsoleServiceListTopicConsumerGroupsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/ListTopicConsumerGroups"
+	// ConsoleServiceGetAllTopicDetailsProcedure is the fully-qualified name of the ConsoleService's
+	// GetAllTopicDetails RPC.
+	ConsoleServiceGetAllTopicDetailsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/GetAllTopicDetails"
+	// ConsoleServiceListPartitionReassignmentsProcedure is the fully-qualified name of the
+	// ConsoleService's ListPartitionReassignments RPC.
+	ConsoleServiceListPartitionReassignmentsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/ListPartitionReassignments"
+	// ConsoleServiceAlterPartitionAssignmentsProcedure is the fully-qualified name of the
+	// ConsoleService's AlterPartitionAssignments RPC.
+	ConsoleServiceAlterPartitionAssignmentsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/AlterPartitionAssignments"
+	// ConsoleServiceIncrementalAlterConfigsProcedure is the fully-qualified name of the
+	// ConsoleService's IncrementalAlterConfigs RPC.
+	ConsoleServiceIncrementalAlterConfigsProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/IncrementalAlterConfigs"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	consoleServiceServiceDescriptor              = v1alpha1.File_redpanda_api_console_v1alpha1_console_service_proto.Services().ByName("ConsoleService")
-	consoleServiceListMessagesMethodDescriptor   = consoleServiceServiceDescriptor.Methods().ByName("ListMessages")
-	consoleServicePublishMessageMethodDescriptor = consoleServiceServiceDescriptor.Methods().ByName("PublishMessage")
+	consoleServiceServiceDescriptor                          = v1alpha1.File_redpanda_api_console_v1alpha1_console_service_proto.Services().ByName("ConsoleService")
+	consoleServiceListMessagesMethodDescriptor               = consoleServiceServiceDescriptor.Methods().ByName("ListMessages")
+	consoleServicePublishMessageMethodDescriptor             = consoleServiceServiceDescriptor.Methods().ByName("PublishMessage")
+	consoleServiceListConsumerGroupsMethodDescriptor         = consoleServiceServiceDescriptor.Methods().ByName("ListConsumerGroups")
+	consoleServiceGetConsumerGroupMethodDescriptor           = consoleServiceServiceDescriptor.Methods().ByName("GetConsumerGroup")
+	consoleServiceListBrokersMethodDescriptor                = consoleServiceServiceDescriptor.Methods().ByName("ListBrokers")
+	consoleServiceDescribeClusterMethodDescriptor            = consoleServiceServiceDescriptor.Methods().ByName("DescribeCluster")
+	consoleServiceGetTopicsOverviewMethodDescriptor          = consoleServiceServiceDescriptor.Methods().ByName("GetTopicsOverview")
+	consoleServiceListTopicPartitionDetailsMethodDescriptor  = consoleServiceServiceDescriptor.Methods().ByName("ListTopicPartitionDetails")
+	consoleServiceGetTopicsConfigsMethodDescriptor           = consoleServiceServiceDescriptor.Methods().ByName("GetTopicsConfigs")
+	consoleServiceListTopicConsumerGroupsMethodDescriptor    = consoleServiceServiceDescriptor.Methods().ByName("ListTopicConsumerGroups")
+	consoleServiceGetAllTopicDetailsMethodDescriptor         = consoleServiceServiceDescriptor.Methods().ByName("GetAllTopicDetails")
+	consoleServiceListPartitionReassignmentsMethodDescriptor = consoleServiceServiceDescriptor.Methods().ByName("ListPartitionReassignments")
+	consoleServiceAlterPartitionAssignmentsMethodDescriptor  = consoleServiceServiceDescriptor.Methods().ByName("AlterPartitionAssignments")
+	consoleServiceIncrementalAlterConfigsMethodDescriptor    = consoleServiceServiceDescriptor.Methods().ByName("IncrementalAlterConfigs")
 )
 
 // ConsoleServiceClient is a client for the redpanda.api.console.v1alpha1.ConsoleService service.
@@ -56,6 +102,30 @@ type ConsoleServiceClient interface {
 	ListMessages(context.Context, *connect.Request[v1alpha1.ListMessagesRequest]) (*connect.ServerStreamForClient[v1alpha1.ListMessagesResponse], error)
 	// PublishMessage publishes message.
 	PublishMessage(context.Context, *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error)
+	// ListConsumerGroups returns an overview of all consumer groups.
+	ListConsumerGroups(context.Context, *connect.Request[v1alpha1.ListConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListConsumerGroupsResponse], error)
+	// GetConsumerGroup returns the overview for a single consumer group.
+	GetConsumerGroup(context.Context, *connect.Request[v1alpha1.GetConsumerGroupRequest]) (*connect.Response[v1alpha1.GetConsumerGroupResponse], error)
+	// ListBrokers returns all brokers with their log dir information.
+	ListBrokers(context.Context, *connect.Request[v1alpha1.ListBrokersRequest]) (*connect.Response[v1alpha1.ListBrokersResponse], error)
+	// DescribeCluster returns cluster-level information including brokers and configs.
+	DescribeCluster(context.Context, *connect.Request[v1alpha1.DescribeClusterRequest]) (*connect.Response[v1alpha1.DescribeClusterResponse], error)
+	// GetTopicsOverview returns a summary overview of all topics.
+	GetTopicsOverview(context.Context, *connect.Request[v1alpha1.GetTopicsOverviewRequest]) (*connect.Response[v1alpha1.GetTopicsOverviewResponse], error)
+	// ListTopicPartitionDetails returns partition details for a single topic.
+	ListTopicPartitionDetails(context.Context, *connect.Request[v1alpha1.ListTopicPartitionDetailsRequest]) (*connect.Response[v1alpha1.ListTopicPartitionDetailsResponse], error)
+	// GetTopicsConfigs returns configuration for one or more topics.
+	GetTopicsConfigs(context.Context, *connect.Request[v1alpha1.GetTopicsConfigsRequest]) (*connect.Response[v1alpha1.GetTopicsConfigsResponse], error)
+	// ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+	ListTopicConsumerGroups(context.Context, *connect.Request[v1alpha1.ListTopicConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListTopicConsumerGroupsResponse], error)
+	// GetAllTopicDetails returns partition details for all (or specified) topics.
+	GetAllTopicDetails(context.Context, *connect.Request[v1alpha1.GetAllTopicDetailsRequest]) (*connect.Response[v1alpha1.GetAllTopicDetailsResponse], error)
+	// ListPartitionReassignments lists active partition reassignments.
+	ListPartitionReassignments(context.Context, *connect.Request[v1alpha1.ListPartitionReassignmentsRequest]) (*connect.Response[v1alpha1.ListPartitionReassignmentsResponse], error)
+	// AlterPartitionAssignments changes partition-to-broker assignments.
+	AlterPartitionAssignments(context.Context, *connect.Request[v1alpha1.AlterPartitionAssignmentsRequest]) (*connect.Response[v1alpha1.AlterPartitionAssignmentsResponse], error)
+	// IncrementalAlterConfigs incrementally alters resource configurations.
+	IncrementalAlterConfigs(context.Context, *connect.Request[v1alpha1.IncrementalAlterConfigsRequest]) (*connect.Response[v1alpha1.IncrementalAlterConfigsResponse], error)
 }
 
 // NewConsoleServiceClient constructs a client for the redpanda.api.console.v1alpha1.ConsoleService
@@ -80,13 +150,97 @@ func NewConsoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(consoleServicePublishMessageMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listConsumerGroups: connect.NewClient[v1alpha1.ListConsumerGroupsRequest, v1alpha1.ListConsumerGroupsResponse](
+			httpClient,
+			baseURL+ConsoleServiceListConsumerGroupsProcedure,
+			connect.WithSchema(consoleServiceListConsumerGroupsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getConsumerGroup: connect.NewClient[v1alpha1.GetConsumerGroupRequest, v1alpha1.GetConsumerGroupResponse](
+			httpClient,
+			baseURL+ConsoleServiceGetConsumerGroupProcedure,
+			connect.WithSchema(consoleServiceGetConsumerGroupMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listBrokers: connect.NewClient[v1alpha1.ListBrokersRequest, v1alpha1.ListBrokersResponse](
+			httpClient,
+			baseURL+ConsoleServiceListBrokersProcedure,
+			connect.WithSchema(consoleServiceListBrokersMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		describeCluster: connect.NewClient[v1alpha1.DescribeClusterRequest, v1alpha1.DescribeClusterResponse](
+			httpClient,
+			baseURL+ConsoleServiceDescribeClusterProcedure,
+			connect.WithSchema(consoleServiceDescribeClusterMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getTopicsOverview: connect.NewClient[v1alpha1.GetTopicsOverviewRequest, v1alpha1.GetTopicsOverviewResponse](
+			httpClient,
+			baseURL+ConsoleServiceGetTopicsOverviewProcedure,
+			connect.WithSchema(consoleServiceGetTopicsOverviewMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listTopicPartitionDetails: connect.NewClient[v1alpha1.ListTopicPartitionDetailsRequest, v1alpha1.ListTopicPartitionDetailsResponse](
+			httpClient,
+			baseURL+ConsoleServiceListTopicPartitionDetailsProcedure,
+			connect.WithSchema(consoleServiceListTopicPartitionDetailsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getTopicsConfigs: connect.NewClient[v1alpha1.GetTopicsConfigsRequest, v1alpha1.GetTopicsConfigsResponse](
+			httpClient,
+			baseURL+ConsoleServiceGetTopicsConfigsProcedure,
+			connect.WithSchema(consoleServiceGetTopicsConfigsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listTopicConsumerGroups: connect.NewClient[v1alpha1.ListTopicConsumerGroupsRequest, v1alpha1.ListTopicConsumerGroupsResponse](
+			httpClient,
+			baseURL+ConsoleServiceListTopicConsumerGroupsProcedure,
+			connect.WithSchema(consoleServiceListTopicConsumerGroupsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getAllTopicDetails: connect.NewClient[v1alpha1.GetAllTopicDetailsRequest, v1alpha1.GetAllTopicDetailsResponse](
+			httpClient,
+			baseURL+ConsoleServiceGetAllTopicDetailsProcedure,
+			connect.WithSchema(consoleServiceGetAllTopicDetailsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listPartitionReassignments: connect.NewClient[v1alpha1.ListPartitionReassignmentsRequest, v1alpha1.ListPartitionReassignmentsResponse](
+			httpClient,
+			baseURL+ConsoleServiceListPartitionReassignmentsProcedure,
+			connect.WithSchema(consoleServiceListPartitionReassignmentsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		alterPartitionAssignments: connect.NewClient[v1alpha1.AlterPartitionAssignmentsRequest, v1alpha1.AlterPartitionAssignmentsResponse](
+			httpClient,
+			baseURL+ConsoleServiceAlterPartitionAssignmentsProcedure,
+			connect.WithSchema(consoleServiceAlterPartitionAssignmentsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		incrementalAlterConfigs: connect.NewClient[v1alpha1.IncrementalAlterConfigsRequest, v1alpha1.IncrementalAlterConfigsResponse](
+			httpClient,
+			baseURL+ConsoleServiceIncrementalAlterConfigsProcedure,
+			connect.WithSchema(consoleServiceIncrementalAlterConfigsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // consoleServiceClient implements ConsoleServiceClient.
 type consoleServiceClient struct {
-	listMessages   *connect.Client[v1alpha1.ListMessagesRequest, v1alpha1.ListMessagesResponse]
-	publishMessage *connect.Client[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	listMessages               *connect.Client[v1alpha1.ListMessagesRequest, v1alpha1.ListMessagesResponse]
+	publishMessage             *connect.Client[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	listConsumerGroups         *connect.Client[v1alpha1.ListConsumerGroupsRequest, v1alpha1.ListConsumerGroupsResponse]
+	getConsumerGroup           *connect.Client[v1alpha1.GetConsumerGroupRequest, v1alpha1.GetConsumerGroupResponse]
+	listBrokers                *connect.Client[v1alpha1.ListBrokersRequest, v1alpha1.ListBrokersResponse]
+	describeCluster            *connect.Client[v1alpha1.DescribeClusterRequest, v1alpha1.DescribeClusterResponse]
+	getTopicsOverview          *connect.Client[v1alpha1.GetTopicsOverviewRequest, v1alpha1.GetTopicsOverviewResponse]
+	listTopicPartitionDetails  *connect.Client[v1alpha1.ListTopicPartitionDetailsRequest, v1alpha1.ListTopicPartitionDetailsResponse]
+	getTopicsConfigs           *connect.Client[v1alpha1.GetTopicsConfigsRequest, v1alpha1.GetTopicsConfigsResponse]
+	listTopicConsumerGroups    *connect.Client[v1alpha1.ListTopicConsumerGroupsRequest, v1alpha1.ListTopicConsumerGroupsResponse]
+	getAllTopicDetails         *connect.Client[v1alpha1.GetAllTopicDetailsRequest, v1alpha1.GetAllTopicDetailsResponse]
+	listPartitionReassignments *connect.Client[v1alpha1.ListPartitionReassignmentsRequest, v1alpha1.ListPartitionReassignmentsResponse]
+	alterPartitionAssignments  *connect.Client[v1alpha1.AlterPartitionAssignmentsRequest, v1alpha1.AlterPartitionAssignmentsResponse]
+	incrementalAlterConfigs    *connect.Client[v1alpha1.IncrementalAlterConfigsRequest, v1alpha1.IncrementalAlterConfigsResponse]
 }
 
 // ListMessages calls redpanda.api.console.v1alpha1.ConsoleService.ListMessages.
@@ -99,6 +253,71 @@ func (c *consoleServiceClient) PublishMessage(ctx context.Context, req *connect.
 	return c.publishMessage.CallUnary(ctx, req)
 }
 
+// ListConsumerGroups calls redpanda.api.console.v1alpha1.ConsoleService.ListConsumerGroups.
+func (c *consoleServiceClient) ListConsumerGroups(ctx context.Context, req *connect.Request[v1alpha1.ListConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListConsumerGroupsResponse], error) {
+	return c.listConsumerGroups.CallUnary(ctx, req)
+}
+
+// GetConsumerGroup calls redpanda.api.console.v1alpha1.ConsoleService.GetConsumerGroup.
+func (c *consoleServiceClient) GetConsumerGroup(ctx context.Context, req *connect.Request[v1alpha1.GetConsumerGroupRequest]) (*connect.Response[v1alpha1.GetConsumerGroupResponse], error) {
+	return c.getConsumerGroup.CallUnary(ctx, req)
+}
+
+// ListBrokers calls redpanda.api.console.v1alpha1.ConsoleService.ListBrokers.
+func (c *consoleServiceClient) ListBrokers(ctx context.Context, req *connect.Request[v1alpha1.ListBrokersRequest]) (*connect.Response[v1alpha1.ListBrokersResponse], error) {
+	return c.listBrokers.CallUnary(ctx, req)
+}
+
+// DescribeCluster calls redpanda.api.console.v1alpha1.ConsoleService.DescribeCluster.
+func (c *consoleServiceClient) DescribeCluster(ctx context.Context, req *connect.Request[v1alpha1.DescribeClusterRequest]) (*connect.Response[v1alpha1.DescribeClusterResponse], error) {
+	return c.describeCluster.CallUnary(ctx, req)
+}
+
+// GetTopicsOverview calls redpanda.api.console.v1alpha1.ConsoleService.GetTopicsOverview.
+func (c *consoleServiceClient) GetTopicsOverview(ctx context.Context, req *connect.Request[v1alpha1.GetTopicsOverviewRequest]) (*connect.Response[v1alpha1.GetTopicsOverviewResponse], error) {
+	return c.getTopicsOverview.CallUnary(ctx, req)
+}
+
+// ListTopicPartitionDetails calls
+// redpanda.api.console.v1alpha1.ConsoleService.ListTopicPartitionDetails.
+func (c *consoleServiceClient) ListTopicPartitionDetails(ctx context.Context, req *connect.Request[v1alpha1.ListTopicPartitionDetailsRequest]) (*connect.Response[v1alpha1.ListTopicPartitionDetailsResponse], error) {
+	return c.listTopicPartitionDetails.CallUnary(ctx, req)
+}
+
+// GetTopicsConfigs calls redpanda.api.console.v1alpha1.ConsoleService.GetTopicsConfigs.
+func (c *consoleServiceClient) GetTopicsConfigs(ctx context.Context, req *connect.Request[v1alpha1.GetTopicsConfigsRequest]) (*connect.Response[v1alpha1.GetTopicsConfigsResponse], error) {
+	return c.getTopicsConfigs.CallUnary(ctx, req)
+}
+
+// ListTopicConsumerGroups calls
+// redpanda.api.console.v1alpha1.ConsoleService.ListTopicConsumerGroups.
+func (c *consoleServiceClient) ListTopicConsumerGroups(ctx context.Context, req *connect.Request[v1alpha1.ListTopicConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListTopicConsumerGroupsResponse], error) {
+	return c.listTopicConsumerGroups.CallUnary(ctx, req)
+}
+
+// GetAllTopicDetails calls redpanda.api.console.v1alpha1.ConsoleService.GetAllTopicDetails.
+func (c *consoleServiceClient) GetAllTopicDetails(ctx context.Context, req *connect.Request[v1alpha1.GetAllTopicDetailsRequest]) (*connect.Response[v1alpha1.GetAllTopicDetailsResponse], error) {
+	return c.getAllTopicDetails.CallUnary(ctx, req)
+}
+
+// ListPartitionReassignments calls
+// redpanda.api.console.v1alpha1.ConsoleService.ListPartitionReassignments.
+func (c *consoleServiceClient) ListPartitionReassignments(ctx context.Context, req *connect.Request[v1alpha1.ListPartitionReassignmentsRequest]) (*connect.Response[v1alpha1.ListPartitionReassignmentsResponse], error) {
+	return c.listPartitionReassignments.CallUnary(ctx, req)
+}
+
+// AlterPartitionAssignments calls
+// redpanda.api.console.v1alpha1.ConsoleService.AlterPartitionAssignments.
+func (c *consoleServiceClient) AlterPartitionAssignments(ctx context.Context, req *connect.Request[v1alpha1.AlterPartitionAssignmentsRequest]) (*connect.Response[v1alpha1.AlterPartitionAssignmentsResponse], error) {
+	return c.alterPartitionAssignments.CallUnary(ctx, req)
+}
+
+// IncrementalAlterConfigs calls
+// redpanda.api.console.v1alpha1.ConsoleService.IncrementalAlterConfigs.
+func (c *consoleServiceClient) IncrementalAlterConfigs(ctx context.Context, req *connect.Request[v1alpha1.IncrementalAlterConfigsRequest]) (*connect.Response[v1alpha1.IncrementalAlterConfigsResponse], error) {
+	return c.incrementalAlterConfigs.CallUnary(ctx, req)
+}
+
 // ConsoleServiceHandler is an implementation of the redpanda.api.console.v1alpha1.ConsoleService
 // service.
 type ConsoleServiceHandler interface {
@@ -106,6 +325,30 @@ type ConsoleServiceHandler interface {
 	ListMessages(context.Context, *connect.Request[v1alpha1.ListMessagesRequest], *connect.ServerStream[v1alpha1.ListMessagesResponse]) error
 	// PublishMessage publishes message.
 	PublishMessage(context.Context, *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error)
+	// ListConsumerGroups returns an overview of all consumer groups.
+	ListConsumerGroups(context.Context, *connect.Request[v1alpha1.ListConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListConsumerGroupsResponse], error)
+	// GetConsumerGroup returns the overview for a single consumer group.
+	GetConsumerGroup(context.Context, *connect.Request[v1alpha1.GetConsumerGroupRequest]) (*connect.Response[v1alpha1.GetConsumerGroupResponse], error)
+	// ListBrokers returns all brokers with their log dir information.
+	ListBrokers(context.Context, *connect.Request[v1alpha1.ListBrokersRequest]) (*connect.Response[v1alpha1.ListBrokersResponse], error)
+	// DescribeCluster returns cluster-level information including brokers and configs.
+	DescribeCluster(context.Context, *connect.Request[v1alpha1.DescribeClusterRequest]) (*connect.Response[v1alpha1.DescribeClusterResponse], error)
+	// GetTopicsOverview returns a summary overview of all topics.
+	GetTopicsOverview(context.Context, *connect.Request[v1alpha1.GetTopicsOverviewRequest]) (*connect.Response[v1alpha1.GetTopicsOverviewResponse], error)
+	// ListTopicPartitionDetails returns partition details for a single topic.
+	ListTopicPartitionDetails(context.Context, *connect.Request[v1alpha1.ListTopicPartitionDetailsRequest]) (*connect.Response[v1alpha1.ListTopicPartitionDetailsResponse], error)
+	// GetTopicsConfigs returns configuration for one or more topics.
+	GetTopicsConfigs(context.Context, *connect.Request[v1alpha1.GetTopicsConfigsRequest]) (*connect.Response[v1alpha1.GetTopicsConfigsResponse], error)
+	// ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+	ListTopicConsumerGroups(context.Context, *connect.Request[v1alpha1.ListTopicConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListTopicConsumerGroupsResponse], error)
+	// GetAllTopicDetails returns partition details for all (or specified) topics.
+	GetAllTopicDetails(context.Context, *connect.Request[v1alpha1.GetAllTopicDetailsRequest]) (*connect.Response[v1alpha1.GetAllTopicDetailsResponse], error)
+	// ListPartitionReassignments lists active partition reassignments.
+	ListPartitionReassignments(context.Context, *connect.Request[v1alpha1.ListPartitionReassignmentsRequest]) (*connect.Response[v1alpha1.ListPartitionReassignmentsResponse], error)
+	// AlterPartitionAssignments changes partition-to-broker assignments.
+	AlterPartitionAssignments(context.Context, *connect.Request[v1alpha1.AlterPartitionAssignmentsRequest]) (*connect.Response[v1alpha1.AlterPartitionAssignmentsResponse], error)
+	// IncrementalAlterConfigs incrementally alters resource configurations.
+	IncrementalAlterConfigs(context.Context, *connect.Request[v1alpha1.IncrementalAlterConfigsRequest]) (*connect.Response[v1alpha1.IncrementalAlterConfigsResponse], error)
 }
 
 // NewConsoleServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -126,12 +369,108 @@ func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect.Handler
 		connect.WithSchema(consoleServicePublishMessageMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	consoleServiceListConsumerGroupsHandler := connect.NewUnaryHandler(
+		ConsoleServiceListConsumerGroupsProcedure,
+		svc.ListConsumerGroups,
+		connect.WithSchema(consoleServiceListConsumerGroupsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceGetConsumerGroupHandler := connect.NewUnaryHandler(
+		ConsoleServiceGetConsumerGroupProcedure,
+		svc.GetConsumerGroup,
+		connect.WithSchema(consoleServiceGetConsumerGroupMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceListBrokersHandler := connect.NewUnaryHandler(
+		ConsoleServiceListBrokersProcedure,
+		svc.ListBrokers,
+		connect.WithSchema(consoleServiceListBrokersMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceDescribeClusterHandler := connect.NewUnaryHandler(
+		ConsoleServiceDescribeClusterProcedure,
+		svc.DescribeCluster,
+		connect.WithSchema(consoleServiceDescribeClusterMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceGetTopicsOverviewHandler := connect.NewUnaryHandler(
+		ConsoleServiceGetTopicsOverviewProcedure,
+		svc.GetTopicsOverview,
+		connect.WithSchema(consoleServiceGetTopicsOverviewMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceListTopicPartitionDetailsHandler := connect.NewUnaryHandler(
+		ConsoleServiceListTopicPartitionDetailsProcedure,
+		svc.ListTopicPartitionDetails,
+		connect.WithSchema(consoleServiceListTopicPartitionDetailsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceGetTopicsConfigsHandler := connect.NewUnaryHandler(
+		ConsoleServiceGetTopicsConfigsProcedure,
+		svc.GetTopicsConfigs,
+		connect.WithSchema(consoleServiceGetTopicsConfigsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceListTopicConsumerGroupsHandler := connect.NewUnaryHandler(
+		ConsoleServiceListTopicConsumerGroupsProcedure,
+		svc.ListTopicConsumerGroups,
+		connect.WithSchema(consoleServiceListTopicConsumerGroupsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceGetAllTopicDetailsHandler := connect.NewUnaryHandler(
+		ConsoleServiceGetAllTopicDetailsProcedure,
+		svc.GetAllTopicDetails,
+		connect.WithSchema(consoleServiceGetAllTopicDetailsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceListPartitionReassignmentsHandler := connect.NewUnaryHandler(
+		ConsoleServiceListPartitionReassignmentsProcedure,
+		svc.ListPartitionReassignments,
+		connect.WithSchema(consoleServiceListPartitionReassignmentsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceAlterPartitionAssignmentsHandler := connect.NewUnaryHandler(
+		ConsoleServiceAlterPartitionAssignmentsProcedure,
+		svc.AlterPartitionAssignments,
+		connect.WithSchema(consoleServiceAlterPartitionAssignmentsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	consoleServiceIncrementalAlterConfigsHandler := connect.NewUnaryHandler(
+		ConsoleServiceIncrementalAlterConfigsProcedure,
+		svc.IncrementalAlterConfigs,
+		connect.WithSchema(consoleServiceIncrementalAlterConfigsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.ConsoleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConsoleServiceListMessagesProcedure:
 			consoleServiceListMessagesHandler.ServeHTTP(w, r)
 		case ConsoleServicePublishMessageProcedure:
 			consoleServicePublishMessageHandler.ServeHTTP(w, r)
+		case ConsoleServiceListConsumerGroupsProcedure:
+			consoleServiceListConsumerGroupsHandler.ServeHTTP(w, r)
+		case ConsoleServiceGetConsumerGroupProcedure:
+			consoleServiceGetConsumerGroupHandler.ServeHTTP(w, r)
+		case ConsoleServiceListBrokersProcedure:
+			consoleServiceListBrokersHandler.ServeHTTP(w, r)
+		case ConsoleServiceDescribeClusterProcedure:
+			consoleServiceDescribeClusterHandler.ServeHTTP(w, r)
+		case ConsoleServiceGetTopicsOverviewProcedure:
+			consoleServiceGetTopicsOverviewHandler.ServeHTTP(w, r)
+		case ConsoleServiceListTopicPartitionDetailsProcedure:
+			consoleServiceListTopicPartitionDetailsHandler.ServeHTTP(w, r)
+		case ConsoleServiceGetTopicsConfigsProcedure:
+			consoleServiceGetTopicsConfigsHandler.ServeHTTP(w, r)
+		case ConsoleServiceListTopicConsumerGroupsProcedure:
+			consoleServiceListTopicConsumerGroupsHandler.ServeHTTP(w, r)
+		case ConsoleServiceGetAllTopicDetailsProcedure:
+			consoleServiceGetAllTopicDetailsHandler.ServeHTTP(w, r)
+		case ConsoleServiceListPartitionReassignmentsProcedure:
+			consoleServiceListPartitionReassignmentsHandler.ServeHTTP(w, r)
+		case ConsoleServiceAlterPartitionAssignmentsProcedure:
+			consoleServiceAlterPartitionAssignmentsHandler.ServeHTTP(w, r)
+		case ConsoleServiceIncrementalAlterConfigsProcedure:
+			consoleServiceIncrementalAlterConfigsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -147,4 +486,52 @@ func (UnimplementedConsoleServiceHandler) ListMessages(context.Context, *connect
 
 func (UnimplementedConsoleServiceHandler) PublishMessage(context.Context, *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.PublishMessage is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) ListConsumerGroups(context.Context, *connect.Request[v1alpha1.ListConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListConsumerGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.ListConsumerGroups is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) GetConsumerGroup(context.Context, *connect.Request[v1alpha1.GetConsumerGroupRequest]) (*connect.Response[v1alpha1.GetConsumerGroupResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.GetConsumerGroup is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) ListBrokers(context.Context, *connect.Request[v1alpha1.ListBrokersRequest]) (*connect.Response[v1alpha1.ListBrokersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.ListBrokers is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) DescribeCluster(context.Context, *connect.Request[v1alpha1.DescribeClusterRequest]) (*connect.Response[v1alpha1.DescribeClusterResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.DescribeCluster is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) GetTopicsOverview(context.Context, *connect.Request[v1alpha1.GetTopicsOverviewRequest]) (*connect.Response[v1alpha1.GetTopicsOverviewResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.GetTopicsOverview is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) ListTopicPartitionDetails(context.Context, *connect.Request[v1alpha1.ListTopicPartitionDetailsRequest]) (*connect.Response[v1alpha1.ListTopicPartitionDetailsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.ListTopicPartitionDetails is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) GetTopicsConfigs(context.Context, *connect.Request[v1alpha1.GetTopicsConfigsRequest]) (*connect.Response[v1alpha1.GetTopicsConfigsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.GetTopicsConfigs is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) ListTopicConsumerGroups(context.Context, *connect.Request[v1alpha1.ListTopicConsumerGroupsRequest]) (*connect.Response[v1alpha1.ListTopicConsumerGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.ListTopicConsumerGroups is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) GetAllTopicDetails(context.Context, *connect.Request[v1alpha1.GetAllTopicDetailsRequest]) (*connect.Response[v1alpha1.GetAllTopicDetailsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.GetAllTopicDetails is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) ListPartitionReassignments(context.Context, *connect.Request[v1alpha1.ListPartitionReassignmentsRequest]) (*connect.Response[v1alpha1.ListPartitionReassignmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.ListPartitionReassignments is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) AlterPartitionAssignments(context.Context, *connect.Request[v1alpha1.AlterPartitionAssignmentsRequest]) (*connect.Response[v1alpha1.AlterPartitionAssignmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.AlterPartitionAssignments is not implemented"))
+}
+
+func (UnimplementedConsoleServiceHandler) IncrementalAlterConfigs(context.Context, *connect.Request[v1alpha1.IncrementalAlterConfigsRequest]) (*connect.Response[v1alpha1.IncrementalAlterConfigsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.IncrementalAlterConfigs is not implemented"))
 }

@@ -7,26 +7,48 @@ package consolev1alpha1connect
 import (
 	context "context"
 	fmt "fmt"
-
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	connect_gateway "go.vallahaye.net/connect-gateway"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 )
 
 // ConsoleServiceGatewayServer implements the gRPC server API for the ConsoleService service.
 type ConsoleServiceGatewayServer struct {
 	v1alpha1.UnimplementedConsoleServiceServer
-	publishMessage connect_gateway.UnaryHandler[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	publishMessage             connect_gateway.UnaryHandler[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	listConsumerGroups         connect_gateway.UnaryHandler[v1alpha1.ListConsumerGroupsRequest, v1alpha1.ListConsumerGroupsResponse]
+	getConsumerGroup           connect_gateway.UnaryHandler[v1alpha1.GetConsumerGroupRequest, v1alpha1.GetConsumerGroupResponse]
+	listBrokers                connect_gateway.UnaryHandler[v1alpha1.ListBrokersRequest, v1alpha1.ListBrokersResponse]
+	describeCluster            connect_gateway.UnaryHandler[v1alpha1.DescribeClusterRequest, v1alpha1.DescribeClusterResponse]
+	getTopicsOverview          connect_gateway.UnaryHandler[v1alpha1.GetTopicsOverviewRequest, v1alpha1.GetTopicsOverviewResponse]
+	listTopicPartitionDetails  connect_gateway.UnaryHandler[v1alpha1.ListTopicPartitionDetailsRequest, v1alpha1.ListTopicPartitionDetailsResponse]
+	getTopicsConfigs           connect_gateway.UnaryHandler[v1alpha1.GetTopicsConfigsRequest, v1alpha1.GetTopicsConfigsResponse]
+	listTopicConsumerGroups    connect_gateway.UnaryHandler[v1alpha1.ListTopicConsumerGroupsRequest, v1alpha1.ListTopicConsumerGroupsResponse]
+	getAllTopicDetails         connect_gateway.UnaryHandler[v1alpha1.GetAllTopicDetailsRequest, v1alpha1.GetAllTopicDetailsResponse]
+	listPartitionReassignments connect_gateway.UnaryHandler[v1alpha1.ListPartitionReassignmentsRequest, v1alpha1.ListPartitionReassignmentsResponse]
+	alterPartitionAssignments  connect_gateway.UnaryHandler[v1alpha1.AlterPartitionAssignmentsRequest, v1alpha1.AlterPartitionAssignmentsResponse]
+	incrementalAlterConfigs    connect_gateway.UnaryHandler[v1alpha1.IncrementalAlterConfigsRequest, v1alpha1.IncrementalAlterConfigsResponse]
 }
 
 // NewConsoleServiceGatewayServer constructs a Connect-Gateway gRPC server for the ConsoleService
 // service.
 func NewConsoleServiceGatewayServer(svc ConsoleServiceHandler, opts ...connect_gateway.HandlerOption) *ConsoleServiceGatewayServer {
 	return &ConsoleServiceGatewayServer{
-		publishMessage: connect_gateway.NewUnaryHandler(ConsoleServicePublishMessageProcedure, svc.PublishMessage, opts...),
+		publishMessage:             connect_gateway.NewUnaryHandler(ConsoleServicePublishMessageProcedure, svc.PublishMessage, opts...),
+		listConsumerGroups:         connect_gateway.NewUnaryHandler(ConsoleServiceListConsumerGroupsProcedure, svc.ListConsumerGroups, opts...),
+		getConsumerGroup:           connect_gateway.NewUnaryHandler(ConsoleServiceGetConsumerGroupProcedure, svc.GetConsumerGroup, opts...),
+		listBrokers:                connect_gateway.NewUnaryHandler(ConsoleServiceListBrokersProcedure, svc.ListBrokers, opts...),
+		describeCluster:            connect_gateway.NewUnaryHandler(ConsoleServiceDescribeClusterProcedure, svc.DescribeCluster, opts...),
+		getTopicsOverview:          connect_gateway.NewUnaryHandler(ConsoleServiceGetTopicsOverviewProcedure, svc.GetTopicsOverview, opts...),
+		listTopicPartitionDetails:  connect_gateway.NewUnaryHandler(ConsoleServiceListTopicPartitionDetailsProcedure, svc.ListTopicPartitionDetails, opts...),
+		getTopicsConfigs:           connect_gateway.NewUnaryHandler(ConsoleServiceGetTopicsConfigsProcedure, svc.GetTopicsConfigs, opts...),
+		listTopicConsumerGroups:    connect_gateway.NewUnaryHandler(ConsoleServiceListTopicConsumerGroupsProcedure, svc.ListTopicConsumerGroups, opts...),
+		getAllTopicDetails:         connect_gateway.NewUnaryHandler(ConsoleServiceGetAllTopicDetailsProcedure, svc.GetAllTopicDetails, opts...),
+		listPartitionReassignments: connect_gateway.NewUnaryHandler(ConsoleServiceListPartitionReassignmentsProcedure, svc.ListPartitionReassignments, opts...),
+		alterPartitionAssignments:  connect_gateway.NewUnaryHandler(ConsoleServiceAlterPartitionAssignmentsProcedure, svc.AlterPartitionAssignments, opts...),
+		incrementalAlterConfigs:    connect_gateway.NewUnaryHandler(ConsoleServiceIncrementalAlterConfigsProcedure, svc.IncrementalAlterConfigs, opts...),
 	}
 }
 
@@ -36,6 +58,54 @@ func (s *ConsoleServiceGatewayServer) ListMessages(*v1alpha1.ListMessagesRequest
 
 func (s *ConsoleServiceGatewayServer) PublishMessage(ctx context.Context, req *v1alpha1.PublishMessageRequest) (*v1alpha1.PublishMessageResponse, error) {
 	return s.publishMessage(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) ListConsumerGroups(ctx context.Context, req *v1alpha1.ListConsumerGroupsRequest) (*v1alpha1.ListConsumerGroupsResponse, error) {
+	return s.listConsumerGroups(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) GetConsumerGroup(ctx context.Context, req *v1alpha1.GetConsumerGroupRequest) (*v1alpha1.GetConsumerGroupResponse, error) {
+	return s.getConsumerGroup(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) ListBrokers(ctx context.Context, req *v1alpha1.ListBrokersRequest) (*v1alpha1.ListBrokersResponse, error) {
+	return s.listBrokers(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) DescribeCluster(ctx context.Context, req *v1alpha1.DescribeClusterRequest) (*v1alpha1.DescribeClusterResponse, error) {
+	return s.describeCluster(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) GetTopicsOverview(ctx context.Context, req *v1alpha1.GetTopicsOverviewRequest) (*v1alpha1.GetTopicsOverviewResponse, error) {
+	return s.getTopicsOverview(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) ListTopicPartitionDetails(ctx context.Context, req *v1alpha1.ListTopicPartitionDetailsRequest) (*v1alpha1.ListTopicPartitionDetailsResponse, error) {
+	return s.listTopicPartitionDetails(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) GetTopicsConfigs(ctx context.Context, req *v1alpha1.GetTopicsConfigsRequest) (*v1alpha1.GetTopicsConfigsResponse, error) {
+	return s.getTopicsConfigs(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) ListTopicConsumerGroups(ctx context.Context, req *v1alpha1.ListTopicConsumerGroupsRequest) (*v1alpha1.ListTopicConsumerGroupsResponse, error) {
+	return s.listTopicConsumerGroups(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) GetAllTopicDetails(ctx context.Context, req *v1alpha1.GetAllTopicDetailsRequest) (*v1alpha1.GetAllTopicDetailsResponse, error) {
+	return s.getAllTopicDetails(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) ListPartitionReassignments(ctx context.Context, req *v1alpha1.ListPartitionReassignmentsRequest) (*v1alpha1.ListPartitionReassignmentsResponse, error) {
+	return s.listPartitionReassignments(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) AlterPartitionAssignments(ctx context.Context, req *v1alpha1.AlterPartitionAssignmentsRequest) (*v1alpha1.AlterPartitionAssignmentsResponse, error) {
+	return s.alterPartitionAssignments(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) IncrementalAlterConfigs(ctx context.Context, req *v1alpha1.IncrementalAlterConfigsRequest) (*v1alpha1.IncrementalAlterConfigsResponse, error) {
+	return s.incrementalAlterConfigs(ctx, req)
 }
 
 // RegisterConsoleServiceHandlerGatewayServer registers the Connect handlers for the ConsoleService

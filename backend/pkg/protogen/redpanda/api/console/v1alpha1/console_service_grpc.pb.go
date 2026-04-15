@@ -8,7 +8,6 @@ package consolev1alpha1
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,8 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ConsoleService_ListMessages_FullMethodName   = "/redpanda.api.console.v1alpha1.ConsoleService/ListMessages"
-	ConsoleService_PublishMessage_FullMethodName = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
+	ConsoleService_ListMessages_FullMethodName               = "/redpanda.api.console.v1alpha1.ConsoleService/ListMessages"
+	ConsoleService_PublishMessage_FullMethodName             = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
+	ConsoleService_ListConsumerGroups_FullMethodName         = "/redpanda.api.console.v1alpha1.ConsoleService/ListConsumerGroups"
+	ConsoleService_GetConsumerGroup_FullMethodName           = "/redpanda.api.console.v1alpha1.ConsoleService/GetConsumerGroup"
+	ConsoleService_ListBrokers_FullMethodName                = "/redpanda.api.console.v1alpha1.ConsoleService/ListBrokers"
+	ConsoleService_DescribeCluster_FullMethodName            = "/redpanda.api.console.v1alpha1.ConsoleService/DescribeCluster"
+	ConsoleService_GetTopicsOverview_FullMethodName          = "/redpanda.api.console.v1alpha1.ConsoleService/GetTopicsOverview"
+	ConsoleService_ListTopicPartitionDetails_FullMethodName  = "/redpanda.api.console.v1alpha1.ConsoleService/ListTopicPartitionDetails"
+	ConsoleService_GetTopicsConfigs_FullMethodName           = "/redpanda.api.console.v1alpha1.ConsoleService/GetTopicsConfigs"
+	ConsoleService_ListTopicConsumerGroups_FullMethodName    = "/redpanda.api.console.v1alpha1.ConsoleService/ListTopicConsumerGroups"
+	ConsoleService_GetAllTopicDetails_FullMethodName         = "/redpanda.api.console.v1alpha1.ConsoleService/GetAllTopicDetails"
+	ConsoleService_ListPartitionReassignments_FullMethodName = "/redpanda.api.console.v1alpha1.ConsoleService/ListPartitionReassignments"
+	ConsoleService_AlterPartitionAssignments_FullMethodName  = "/redpanda.api.console.v1alpha1.ConsoleService/AlterPartitionAssignments"
+	ConsoleService_IncrementalAlterConfigs_FullMethodName    = "/redpanda.api.console.v1alpha1.ConsoleService/IncrementalAlterConfigs"
 )
 
 // ConsoleServiceClient is the client API for ConsoleService service.
@@ -34,6 +45,30 @@ type ConsoleServiceClient interface {
 	ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListMessagesResponse], error)
 	// PublishMessage publishes message.
 	PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error)
+	// ListConsumerGroups returns an overview of all consumer groups.
+	ListConsumerGroups(ctx context.Context, in *ListConsumerGroupsRequest, opts ...grpc.CallOption) (*ListConsumerGroupsResponse, error)
+	// GetConsumerGroup returns the overview for a single consumer group.
+	GetConsumerGroup(ctx context.Context, in *GetConsumerGroupRequest, opts ...grpc.CallOption) (*GetConsumerGroupResponse, error)
+	// ListBrokers returns all brokers with their log dir information.
+	ListBrokers(ctx context.Context, in *ListBrokersRequest, opts ...grpc.CallOption) (*ListBrokersResponse, error)
+	// DescribeCluster returns cluster-level information including brokers and configs.
+	DescribeCluster(ctx context.Context, in *DescribeClusterRequest, opts ...grpc.CallOption) (*DescribeClusterResponse, error)
+	// GetTopicsOverview returns a summary overview of all topics.
+	GetTopicsOverview(ctx context.Context, in *GetTopicsOverviewRequest, opts ...grpc.CallOption) (*GetTopicsOverviewResponse, error)
+	// ListTopicPartitionDetails returns partition details for a single topic.
+	ListTopicPartitionDetails(ctx context.Context, in *ListTopicPartitionDetailsRequest, opts ...grpc.CallOption) (*ListTopicPartitionDetailsResponse, error)
+	// GetTopicsConfigs returns configuration for one or more topics.
+	GetTopicsConfigs(ctx context.Context, in *GetTopicsConfigsRequest, opts ...grpc.CallOption) (*GetTopicsConfigsResponse, error)
+	// ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+	ListTopicConsumerGroups(ctx context.Context, in *ListTopicConsumerGroupsRequest, opts ...grpc.CallOption) (*ListTopicConsumerGroupsResponse, error)
+	// GetAllTopicDetails returns partition details for all (or specified) topics.
+	GetAllTopicDetails(ctx context.Context, in *GetAllTopicDetailsRequest, opts ...grpc.CallOption) (*GetAllTopicDetailsResponse, error)
+	// ListPartitionReassignments lists active partition reassignments.
+	ListPartitionReassignments(ctx context.Context, in *ListPartitionReassignmentsRequest, opts ...grpc.CallOption) (*ListPartitionReassignmentsResponse, error)
+	// AlterPartitionAssignments changes partition-to-broker assignments.
+	AlterPartitionAssignments(ctx context.Context, in *AlterPartitionAssignmentsRequest, opts ...grpc.CallOption) (*AlterPartitionAssignmentsResponse, error)
+	// IncrementalAlterConfigs incrementally alters resource configurations.
+	IncrementalAlterConfigs(ctx context.Context, in *IncrementalAlterConfigsRequest, opts ...grpc.CallOption) (*IncrementalAlterConfigsResponse, error)
 }
 
 type consoleServiceClient struct {
@@ -73,6 +108,126 @@ func (c *consoleServiceClient) PublishMessage(ctx context.Context, in *PublishMe
 	return out, nil
 }
 
+func (c *consoleServiceClient) ListConsumerGroups(ctx context.Context, in *ListConsumerGroupsRequest, opts ...grpc.CallOption) (*ListConsumerGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListConsumerGroupsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_ListConsumerGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) GetConsumerGroup(ctx context.Context, in *GetConsumerGroupRequest, opts ...grpc.CallOption) (*GetConsumerGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConsumerGroupResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_GetConsumerGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) ListBrokers(ctx context.Context, in *ListBrokersRequest, opts ...grpc.CallOption) (*ListBrokersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListBrokersResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_ListBrokers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) DescribeCluster(ctx context.Context, in *DescribeClusterRequest, opts ...grpc.CallOption) (*DescribeClusterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeClusterResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_DescribeCluster_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) GetTopicsOverview(ctx context.Context, in *GetTopicsOverviewRequest, opts ...grpc.CallOption) (*GetTopicsOverviewResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopicsOverviewResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_GetTopicsOverview_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) ListTopicPartitionDetails(ctx context.Context, in *ListTopicPartitionDetailsRequest, opts ...grpc.CallOption) (*ListTopicPartitionDetailsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopicPartitionDetailsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_ListTopicPartitionDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) GetTopicsConfigs(ctx context.Context, in *GetTopicsConfigsRequest, opts ...grpc.CallOption) (*GetTopicsConfigsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopicsConfigsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_GetTopicsConfigs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) ListTopicConsumerGroups(ctx context.Context, in *ListTopicConsumerGroupsRequest, opts ...grpc.CallOption) (*ListTopicConsumerGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopicConsumerGroupsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_ListTopicConsumerGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) GetAllTopicDetails(ctx context.Context, in *GetAllTopicDetailsRequest, opts ...grpc.CallOption) (*GetAllTopicDetailsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllTopicDetailsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_GetAllTopicDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) ListPartitionReassignments(ctx context.Context, in *ListPartitionReassignmentsRequest, opts ...grpc.CallOption) (*ListPartitionReassignmentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPartitionReassignmentsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_ListPartitionReassignments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) AlterPartitionAssignments(ctx context.Context, in *AlterPartitionAssignmentsRequest, opts ...grpc.CallOption) (*AlterPartitionAssignmentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AlterPartitionAssignmentsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_AlterPartitionAssignments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) IncrementalAlterConfigs(ctx context.Context, in *IncrementalAlterConfigsRequest, opts ...grpc.CallOption) (*IncrementalAlterConfigsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IncrementalAlterConfigsResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_IncrementalAlterConfigs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConsoleServiceServer is the server API for ConsoleService service.
 // All implementations must embed UnimplementedConsoleServiceServer
 // for forward compatibility.
@@ -83,6 +238,30 @@ type ConsoleServiceServer interface {
 	ListMessages(*ListMessagesRequest, grpc.ServerStreamingServer[ListMessagesResponse]) error
 	// PublishMessage publishes message.
 	PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error)
+	// ListConsumerGroups returns an overview of all consumer groups.
+	ListConsumerGroups(context.Context, *ListConsumerGroupsRequest) (*ListConsumerGroupsResponse, error)
+	// GetConsumerGroup returns the overview for a single consumer group.
+	GetConsumerGroup(context.Context, *GetConsumerGroupRequest) (*GetConsumerGroupResponse, error)
+	// ListBrokers returns all brokers with their log dir information.
+	ListBrokers(context.Context, *ListBrokersRequest) (*ListBrokersResponse, error)
+	// DescribeCluster returns cluster-level information including brokers and configs.
+	DescribeCluster(context.Context, *DescribeClusterRequest) (*DescribeClusterResponse, error)
+	// GetTopicsOverview returns a summary overview of all topics.
+	GetTopicsOverview(context.Context, *GetTopicsOverviewRequest) (*GetTopicsOverviewResponse, error)
+	// ListTopicPartitionDetails returns partition details for a single topic.
+	ListTopicPartitionDetails(context.Context, *ListTopicPartitionDetailsRequest) (*ListTopicPartitionDetailsResponse, error)
+	// GetTopicsConfigs returns configuration for one or more topics.
+	GetTopicsConfigs(context.Context, *GetTopicsConfigsRequest) (*GetTopicsConfigsResponse, error)
+	// ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+	ListTopicConsumerGroups(context.Context, *ListTopicConsumerGroupsRequest) (*ListTopicConsumerGroupsResponse, error)
+	// GetAllTopicDetails returns partition details for all (or specified) topics.
+	GetAllTopicDetails(context.Context, *GetAllTopicDetailsRequest) (*GetAllTopicDetailsResponse, error)
+	// ListPartitionReassignments lists active partition reassignments.
+	ListPartitionReassignments(context.Context, *ListPartitionReassignmentsRequest) (*ListPartitionReassignmentsResponse, error)
+	// AlterPartitionAssignments changes partition-to-broker assignments.
+	AlterPartitionAssignments(context.Context, *AlterPartitionAssignmentsRequest) (*AlterPartitionAssignmentsResponse, error)
+	// IncrementalAlterConfigs incrementally alters resource configurations.
+	IncrementalAlterConfigs(context.Context, *IncrementalAlterConfigsRequest) (*IncrementalAlterConfigsResponse, error)
 	mustEmbedUnimplementedConsoleServiceServer()
 }
 
@@ -98,6 +277,42 @@ func (UnimplementedConsoleServiceServer) ListMessages(*ListMessagesRequest, grpc
 }
 func (UnimplementedConsoleServiceServer) PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PublishMessage not implemented")
+}
+func (UnimplementedConsoleServiceServer) ListConsumerGroups(context.Context, *ListConsumerGroupsRequest) (*ListConsumerGroupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConsumerGroups not implemented")
+}
+func (UnimplementedConsoleServiceServer) GetConsumerGroup(context.Context, *GetConsumerGroupRequest) (*GetConsumerGroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConsumerGroup not implemented")
+}
+func (UnimplementedConsoleServiceServer) ListBrokers(context.Context, *ListBrokersRequest) (*ListBrokersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListBrokers not implemented")
+}
+func (UnimplementedConsoleServiceServer) DescribeCluster(context.Context, *DescribeClusterRequest) (*DescribeClusterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DescribeCluster not implemented")
+}
+func (UnimplementedConsoleServiceServer) GetTopicsOverview(context.Context, *GetTopicsOverviewRequest) (*GetTopicsOverviewResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopicsOverview not implemented")
+}
+func (UnimplementedConsoleServiceServer) ListTopicPartitionDetails(context.Context, *ListTopicPartitionDetailsRequest) (*ListTopicPartitionDetailsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopicPartitionDetails not implemented")
+}
+func (UnimplementedConsoleServiceServer) GetTopicsConfigs(context.Context, *GetTopicsConfigsRequest) (*GetTopicsConfigsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopicsConfigs not implemented")
+}
+func (UnimplementedConsoleServiceServer) ListTopicConsumerGroups(context.Context, *ListTopicConsumerGroupsRequest) (*ListTopicConsumerGroupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopicConsumerGroups not implemented")
+}
+func (UnimplementedConsoleServiceServer) GetAllTopicDetails(context.Context, *GetAllTopicDetailsRequest) (*GetAllTopicDetailsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllTopicDetails not implemented")
+}
+func (UnimplementedConsoleServiceServer) ListPartitionReassignments(context.Context, *ListPartitionReassignmentsRequest) (*ListPartitionReassignmentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPartitionReassignments not implemented")
+}
+func (UnimplementedConsoleServiceServer) AlterPartitionAssignments(context.Context, *AlterPartitionAssignmentsRequest) (*AlterPartitionAssignmentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AlterPartitionAssignments not implemented")
+}
+func (UnimplementedConsoleServiceServer) IncrementalAlterConfigs(context.Context, *IncrementalAlterConfigsRequest) (*IncrementalAlterConfigsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IncrementalAlterConfigs not implemented")
 }
 func (UnimplementedConsoleServiceServer) mustEmbedUnimplementedConsoleServiceServer() {}
 func (UnimplementedConsoleServiceServer) testEmbeddedByValue()                        {}
@@ -149,6 +364,222 @@ func _ConsoleService_PublishMessage_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConsoleService_ListConsumerGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConsumerGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).ListConsumerGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_ListConsumerGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).ListConsumerGroups(ctx, req.(*ListConsumerGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_GetConsumerGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConsumerGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).GetConsumerGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_GetConsumerGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).GetConsumerGroup(ctx, req.(*GetConsumerGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_ListBrokers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBrokersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).ListBrokers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_ListBrokers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).ListBrokers(ctx, req.(*ListBrokersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_DescribeCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeClusterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).DescribeCluster(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_DescribeCluster_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).DescribeCluster(ctx, req.(*DescribeClusterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_GetTopicsOverview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopicsOverviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).GetTopicsOverview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_GetTopicsOverview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).GetTopicsOverview(ctx, req.(*GetTopicsOverviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_ListTopicPartitionDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicPartitionDetailsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).ListTopicPartitionDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_ListTopicPartitionDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).ListTopicPartitionDetails(ctx, req.(*ListTopicPartitionDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_GetTopicsConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopicsConfigsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).GetTopicsConfigs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_GetTopicsConfigs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).GetTopicsConfigs(ctx, req.(*GetTopicsConfigsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_ListTopicConsumerGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicConsumerGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).ListTopicConsumerGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_ListTopicConsumerGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).ListTopicConsumerGroups(ctx, req.(*ListTopicConsumerGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_GetAllTopicDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllTopicDetailsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).GetAllTopicDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_GetAllTopicDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).GetAllTopicDetails(ctx, req.(*GetAllTopicDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_ListPartitionReassignments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPartitionReassignmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).ListPartitionReassignments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_ListPartitionReassignments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).ListPartitionReassignments(ctx, req.(*ListPartitionReassignmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_AlterPartitionAssignments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AlterPartitionAssignmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).AlterPartitionAssignments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_AlterPartitionAssignments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).AlterPartitionAssignments(ctx, req.(*AlterPartitionAssignmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_IncrementalAlterConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncrementalAlterConfigsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).IncrementalAlterConfigs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_IncrementalAlterConfigs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).IncrementalAlterConfigs(ctx, req.(*IncrementalAlterConfigsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConsoleService_ServiceDesc is the grpc.ServiceDesc for ConsoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -159,6 +590,54 @@ var ConsoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PublishMessage",
 			Handler:    _ConsoleService_PublishMessage_Handler,
+		},
+		{
+			MethodName: "ListConsumerGroups",
+			Handler:    _ConsoleService_ListConsumerGroups_Handler,
+		},
+		{
+			MethodName: "GetConsumerGroup",
+			Handler:    _ConsoleService_GetConsumerGroup_Handler,
+		},
+		{
+			MethodName: "ListBrokers",
+			Handler:    _ConsoleService_ListBrokers_Handler,
+		},
+		{
+			MethodName: "DescribeCluster",
+			Handler:    _ConsoleService_DescribeCluster_Handler,
+		},
+		{
+			MethodName: "GetTopicsOverview",
+			Handler:    _ConsoleService_GetTopicsOverview_Handler,
+		},
+		{
+			MethodName: "ListTopicPartitionDetails",
+			Handler:    _ConsoleService_ListTopicPartitionDetails_Handler,
+		},
+		{
+			MethodName: "GetTopicsConfigs",
+			Handler:    _ConsoleService_GetTopicsConfigs_Handler,
+		},
+		{
+			MethodName: "ListTopicConsumerGroups",
+			Handler:    _ConsoleService_ListTopicConsumerGroups_Handler,
+		},
+		{
+			MethodName: "GetAllTopicDetails",
+			Handler:    _ConsoleService_GetAllTopicDetails_Handler,
+		},
+		{
+			MethodName: "ListPartitionReassignments",
+			Handler:    _ConsoleService_ListPartitionReassignments_Handler,
+		},
+		{
+			MethodName: "AlterPartitionAssignments",
+			Handler:    _ConsoleService_AlterPartitionAssignments_Handler,
+		},
+		{
+			MethodName: "IncrementalAlterConfigs",
+			Handler:    _ConsoleService_IncrementalAlterConfigs_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

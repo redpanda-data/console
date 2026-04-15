@@ -23,4 +23,409 @@ service ConsoleService {
       api: API_KAFKA
     };
   }
+
+  // ListConsumerGroups returns an overview of all consumer groups.
+  rpc ListConsumerGroups(ListConsumerGroupsRequest) returns (ListConsumerGroupsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // GetConsumerGroup returns the overview for a single consumer group.
+  rpc GetConsumerGroup(GetConsumerGroupRequest) returns (GetConsumerGroupResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // ListBrokers returns all brokers with their log dir information.
+  rpc ListBrokers(ListBrokersRequest) returns (ListBrokersResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // DescribeCluster returns cluster-level information including brokers and configs.
+  rpc DescribeCluster(DescribeClusterRequest) returns (DescribeClusterResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // GetTopicsOverview returns a summary overview of all topics.
+  rpc GetTopicsOverview(GetTopicsOverviewRequest) returns (GetTopicsOverviewResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // ListTopicPartitionDetails returns partition details for a single topic.
+  rpc ListTopicPartitionDetails(ListTopicPartitionDetailsRequest) returns (ListTopicPartitionDetailsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // GetTopicsConfigs returns configuration for one or more topics.
+  rpc GetTopicsConfigs(GetTopicsConfigsRequest) returns (GetTopicsConfigsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // ListTopicConsumerGroups lists consumer groups consuming from a given topic.
+  rpc ListTopicConsumerGroups(ListTopicConsumerGroupsRequest) returns (ListTopicConsumerGroupsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // GetAllTopicDetails returns partition details for all (or specified) topics.
+  rpc GetAllTopicDetails(GetAllTopicDetailsRequest) returns (GetAllTopicDetailsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // ListPartitionReassignments lists active partition reassignments.
+  rpc ListPartitionReassignments(ListPartitionReassignmentsRequest) returns (ListPartitionReassignmentsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  // AlterPartitionAssignments changes partition-to-broker assignments.
+  rpc AlterPartitionAssignments(AlterPartitionAssignmentsRequest) returns (AlterPartitionAssignmentsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+
+  // IncrementalAlterConfigs incrementally alters resource configurations.
+  rpc IncrementalAlterConfigs(IncrementalAlterConfigsRequest) returns (IncrementalAlterConfigsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+}
+
+// --- Consumer Groups ---
+
+message ListConsumerGroupsRequest {}
+
+message ListConsumerGroupsResponse {
+  repeated ConsumerGroupOverview consumer_groups = 1;
+}
+
+message GetConsumerGroupRequest {
+  string group_id = 1;
+}
+
+message GetConsumerGroupResponse {
+  ConsumerGroupOverview consumer_group = 1;
+}
+
+message ConsumerGroupOverview {
+  string group_id = 1;
+  string state = 2;
+  string protocol_type = 3;
+  string protocol = 4;
+  repeated GroupMemberDescription members = 5;
+  int32 coordinator_id = 6;
+  repeated GroupTopicOffsets topic_offsets = 7;
+}
+
+message GroupMemberDescription {
+  string id = 1;
+  string client_id = 2;
+  string client_host = 3;
+  repeated GroupMemberAssignment assignments = 4;
+}
+
+message GroupMemberAssignment {
+  string topic_name = 1;
+  repeated int32 partition_ids = 2;
+}
+
+message GroupTopicOffsets {
+  string topic = 1;
+  int64 summed_lag = 2;
+  int32 partition_count = 3;
+  int32 partitions_with_offset = 4;
+  repeated PartitionOffset partition_offsets = 5;
+}
+
+message PartitionOffset {
+  string error = 1;
+  int32 partition_id = 2;
+  int64 group_offset = 3;
+  int64 high_water_mark = 4;
+  int64 lag = 5;
+}
+
+// --- Brokers ---
+
+message ListBrokersRequest {}
+
+message ListBrokersResponse {
+  repeated BrokerWithLogDirs brokers = 1;
+}
+
+message BrokerWithLogDirs {
+  int32 broker_id = 1;
+  bool is_controller = 2;
+  string address = 3;
+  optional string rack = 4;
+  optional int64 total_log_dir_size_bytes = 5;
+  optional int64 total_primary_log_dir_size_bytes = 6;
+}
+
+// --- Cluster ---
+
+message DescribeClusterRequest {}
+
+message DescribeClusterResponse {
+  ClusterInfo cluster_info = 1;
+}
+
+message ClusterInfo {
+  int32 controller_id = 1;
+  repeated ClusterBroker brokers = 2;
+  string kafka_version = 3;
+}
+
+message ClusterBroker {
+  int32 broker_id = 1;
+  int64 log_dir_size = 2;
+  string address = 3;
+  optional string rack = 4;
+  ClusterBrokerConfig config = 5;
+}
+
+message ClusterBrokerConfig {
+  repeated ClusterBrokerConfigEntry configs = 1;
+  string error = 2;
+}
+
+message ClusterBrokerConfigEntry {
+  string name = 1;
+  optional string value = 2;
+  string source = 3;
+  string type = 4;
+  bool is_explicitly_set = 5;
+  bool is_default_value = 6;
+  bool is_sensitive = 7;
+  bool is_read_only = 8;
+}
+
+// --- Topics Overview ---
+
+message GetTopicsOverviewRequest {}
+
+message GetTopicsOverviewResponse {
+  repeated TopicSummary topics = 1;
+}
+
+message TopicSummary {
+  string topic_name = 1;
+  bool is_internal = 2;
+  int32 partition_count = 3;
+  int32 replication_factor = 4;
+  string cleanup_policy = 5;
+  string documentation = 6;
+  TopicLogDirSummary log_dir_summary = 7;
+}
+
+message TopicLogDirSummary {
+  int64 total_size_bytes = 1;
+  string hint = 2;
+}
+
+// --- Topic Partition Details ---
+
+message ListTopicPartitionDetailsRequest {
+  string topic_name = 1;
+}
+
+message ListTopicPartitionDetailsResponse {
+  string topic_name = 1;
+  repeated TopicPartitionDetail partitions = 2;
+}
+
+message TopicPartitionDetail {
+  int32 id = 1;
+  string partition_error = 2;
+  repeated int32 replicas = 3;
+  repeated int32 offline_replicas = 4;
+  repeated int32 in_sync_replicas = 5;
+  int32 leader = 6;
+  string water_marks_error = 7;
+  int64 water_mark_low = 8;
+  int64 water_mark_high = 9;
+  repeated TopicPartitionLogDir partition_log_dirs = 10;
+}
+
+message TopicPartitionLogDir {
+  int32 broker_id = 1;
+  string error = 2;
+  int32 partition_id = 3;
+  int64 size = 4;
+}
+
+// --- Topics Configs ---
+
+message GetTopicsConfigsRequest {
+  repeated string topic_names = 1;
+  repeated string config_keys = 2;
+}
+
+message GetTopicsConfigsResponse {
+  repeated TopicConfig topic_configs = 1;
+}
+
+message TopicConfig {
+  string topic_name = 1;
+  repeated TopicConfigEntry config_entries = 2;
+  optional KafkaError error = 3;
+}
+
+message TopicConfigEntry {
+  string name = 1;
+  optional string value = 2;
+  string source = 3;
+  string type = 4;
+  bool is_explicitly_set = 5;
+  bool is_default_value = 6;
+  bool is_sensitive = 7;
+  bool is_read_only = 8;
+  optional string documentation = 9;
+}
+
+message KafkaError {
+  int32 code = 1;
+  string message = 2;
+  string description = 3;
+}
+
+// --- Topic Consumer Groups ---
+
+message ListTopicConsumerGroupsRequest {
+  string topic_name = 1;
+}
+
+message ListTopicConsumerGroupsResponse {
+  string topic_name = 1;
+  repeated TopicConsumerGroup consumers = 2;
+}
+
+message TopicConsumerGroup {
+  string group_id = 1;
+  int64 summed_lag = 2;
+}
+
+// --- All Topic Details ---
+
+message GetAllTopicDetailsRequest {
+  repeated string topic_names = 1;
+}
+
+message GetAllTopicDetailsResponse {
+  repeated TopicDetails topics = 1;
+}
+
+message TopicDetails {
+  string topic_name = 1;
+  string error = 2;
+  repeated TopicPartitionDetail partitions = 3;
+}
+
+// --- Partition Reassignments ---
+
+message ListPartitionReassignmentsRequest {}
+
+message ListPartitionReassignmentsResponse {
+  repeated PartitionReassignment topics = 1;
+}
+
+message PartitionReassignment {
+  string topic_name = 1;
+  repeated PartitionReassignmentPartition partitions = 2;
+}
+
+message PartitionReassignmentPartition {
+  int32 partition_id = 1;
+  repeated int32 adding_replicas = 2;
+  repeated int32 removing_replicas = 3;
+  repeated int32 replicas = 4;
+}
+
+// --- Alter Partition Assignments ---
+
+message AlterPartitionAssignmentsRequest {
+  repeated AlterPartitionAssignmentsRequestTopic topics = 1;
+}
+
+message AlterPartitionAssignmentsRequestTopic {
+  string topic_name = 1;
+  repeated AlterPartitionAssignmentsRequestPartition partitions = 2;
+}
+
+message AlterPartitionAssignmentsRequestPartition {
+  int32 partition_id = 1;
+  repeated int32 replicas = 2;
+}
+
+message AlterPartitionAssignmentsResponse {
+  repeated AlterPartitionAssignmentsTopicResponse topics = 1;
+}
+
+message AlterPartitionAssignmentsTopicResponse {
+  string topic_name = 1;
+  repeated AlterPartitionAssignmentsPartitionResponse partitions = 2;
+}
+
+message AlterPartitionAssignmentsPartitionResponse {
+  int32 partition_id = 1;
+  string error_code = 2;
+  optional string error_message = 3;
+}
+
+// --- Incremental Alter Configs ---
+
+message IncrementalAlterConfigsRequest {
+  repeated IncrementalAlterConfigsRequestResource resources = 1;
+}
+
+message IncrementalAlterConfigsRequestResource {
+  int32 resource_type = 1;
+  string resource_name = 2;
+  repeated IncrementalAlterConfigsRequestResourceConfig configs = 3;
+}
+
+message IncrementalAlterConfigsRequestResourceConfig {
+  string name = 1;
+  int32 op = 2;
+  optional string value = 3;
+}
+
+message IncrementalAlterConfigsResponse {
+  repeated IncrementalAlterConfigsResourceResponse resources = 1;
+}
+
+message IncrementalAlterConfigsResourceResponse {
+  string error = 1;
+  string resource_name = 2;
+  int32 resource_type = 3;
 }

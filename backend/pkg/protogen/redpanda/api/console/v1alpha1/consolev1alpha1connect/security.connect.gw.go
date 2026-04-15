@@ -7,11 +7,9 @@ package consolev1alpha1connect
 import (
 	context "context"
 	fmt "fmt"
-
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	connect_gateway "go.vallahaye.net/connect-gateway"
-
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
+	connect_gateway "go.vallahaye.net/connect-gateway"
 )
 
 // SecurityServiceGatewayServer implements the gRPC server API for the SecurityService service.
