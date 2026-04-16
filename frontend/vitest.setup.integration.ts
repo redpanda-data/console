@@ -8,16 +8,7 @@ import './tests/mock-react-select';
 // Full setup for integration tests that render React components
 // These tests run in jsdom environment and need browser API mocks
 
-// Explicit cleanup after each test to prevent memory leaks
-afterEach(() => {
-  cleanup(); // Unmount all React trees
-  vi.clearAllMocks(); // Clear mock call history
-  vi.clearAllTimers(); // Clear pending timers
-
-  // Re-stub ResizeObserver to clear any instances from previous test
-  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
-});
-
+// ── Mocks ────────────────────────────────────────────────────────────
 // Mock ResizeObserver - not available in jsdom but required by RadixUI components
 class ResizeObserverMock {
   observe = vi.fn();
@@ -65,3 +56,60 @@ beforeEach(() => {
     })),
   });
 });
+
+// Explicit cleanup after each test to prevent memory leaks
+afterEach(() => {
+  cleanup(); // Unmount all React trees
+  vi.clearAllMocks(); // Clear mock call history
+  vi.clearAllTimers(); // Clear pending timers
+
+  // Re-stub ResizeObserver to clear any instances from previous test
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+});
+
+// ── Console suppression ──────────────────────────────────────────────
+// Suppress library warnings that are not actionable from tests and
+// pollute CI logs. Each pattern maps to a specific upstream issue or
+// migration-in-progress; removing a pattern requires fixing the source
+// component, not silencing here.
+// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
+const originalWarn = console.warn;
+// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
+const originalError = console.error;
+
+const SUPPRESSED_PATTERNS = [
+  // Radix UI ref-forwarding — fixed in React 19, not actionable in React 18
+  /Function components cannot be given refs/,
+  // Radix DialogContent missing Description/aria-describedby — tracked separately for a11y
+  /Missing `Description` or `aria-describedby=\{undefined\}` for \{DialogContent\}/,
+  // Radix Radio/Tooltip apply state updates outside the act() window after
+  // userEvent awaited clicks resolve. Not actionable from tests; source fix
+  // belongs in @radix-ui.
+  /An update to Radio inside a test was not wrapped in act/,
+  /An update to Tooltip inside a test was not wrapped in act/,
+  // jsdom DOMException noise from unmocked fetch/script loads
+  /DOMException.*AbortError/,
+  /Failed to load script/,
+  // Network noise from jsdom making real HTTP requests to mocked endpoints
+  /socket hang up/,
+  /ECONNREFUSED/,
+  /ECONNRESET/,
+];
+
+function isSuppressed(args: unknown[]): boolean {
+  return SUPPRESSED_PATTERNS.some((pattern) => {
+    const msg = typeof args[0] === 'string' ? args[0] : String(args[0]);
+    return pattern.test(msg);
+  });
+}
+
+console.warn = (...args: unknown[]) => {
+  if (!isSuppressed(args)) {
+    originalWarn(...args);
+  }
+};
+console.error = (...args: unknown[]) => {
+  if (!isSuppressed(args)) {
+    originalError(...args);
+  }
+};

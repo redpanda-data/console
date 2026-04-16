@@ -5,6 +5,7 @@ import { loadEnv } from 'vite';
 import envCompatible from 'vite-plugin-env-compatible';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
+
 import { sharedAliases } from './vitest.shared.mts';
 
 const ENV_PREFIX = 'REACT_APP_';
