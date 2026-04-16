@@ -51,7 +51,6 @@ import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
-import { isFeatureFlagEnabled } from 'config';
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -72,9 +71,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
-import { useListModelProvidersQuery } from 'react-query/api/ai-gateway/model-providers';
-import { useListModelsQuery } from 'react-query/api/ai-gateway/models';
+import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
 import { type MCPServer, MCPServer_State, useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -102,7 +99,7 @@ type LocalAIAgent = {
     systemPrompt: string;
     selectedMcpServers: string[];
   }>;
-  gatewayId?: string;
+  llmProvider?: string;
   agentCard?: {
     iconUrl: string;
     documentationUrl: string;
@@ -325,25 +322,14 @@ export const AIAgentConfigurationTab = () => {
   const { mutateAsync: updateAIAgent, isPending: isUpdateAIAgentPending } = useUpdateAIAgentMutation();
   const { data: mcpServersData } = useListMCPServersQuery();
   const { data: secretsData } = useListSecretsQuery();
-  const { data: gatewaysData } = useListGatewaysQuery();
-
-  const [editState, setEditState] = useState<{ isEditing: boolean; editedAgentData: LocalAIAgent | null }>({
-    isEditing: false,
-    editedAgentData: null,
-  });
-  const isEditing = editState.isEditing;
-  const editedAgentData = editState.editedAgentData;
-  const setIsEditing = (v: boolean) => setEditState((prev) => ({ ...prev, isEditing: v }));
-  const setEditedAgentData = (v: LocalAIAgent | null) => setEditState((prev) => ({ ...prev, editedAgentData: v }));
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
   const [systemPromptMode, setSystemPromptMode] = useState<MarkdownEditorMode>('editor');
   const [subagentPromptModes, setSubagentPromptModes] = useState<Record<number, MarkdownEditorMode>>({});
 
-  // Feature flag: when true, use legacy API key mode (hardcoded providers, no gateway API calls)
-  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
-
-  // Check if agent is using gateway AND feature flag allows it
-  const isUsingGateway = !isLegacyApiKeyMode && !!aiAgentData?.aiAgent?.gateway?.virtualGatewayId;
+  // Check if agent is using gateway (has an llmProvider configured)
+  const isUsingGateway = !!aiAgentData?.aiAgent?.gateway?.llmProvider;
 
   const getResourceTierFromAgent = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
@@ -389,7 +375,7 @@ export const AIAgentConfigurationTab = () => {
           systemPrompt: subagent.systemPrompt,
           selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
         })),
-        gatewayId: aiAgentData.aiAgent.gateway?.virtualGatewayId,
+        llmProvider: aiAgentData.aiAgent.gateway?.llmProvider,
         agentCard: aiAgentData.aiAgent.agentCard
           ? {
               iconUrl: aiAgentData.aiAgent.agentCard.iconUrl || '',
@@ -416,34 +402,22 @@ export const AIAgentConfigurationTab = () => {
 
   const selectedProvider = displayData?.provider?.provider.case;
 
-  // Fetch providers and models from AI Gateway when using gateway
-  const { data: providersData, isLoading: isLoadingProviders } = useListModelProvidersQuery(
-    { filter: 'enabled = "true"' },
+  // Fetch LLM providers from AI Gateway v2 when using gateway
+  const { data: providersData, isLoading: isLoadingProviders } = useListLLMProvidersQuery(
+    {},
     { enabled: isUsingGateway }
   );
 
-  const { data: modelsData, isLoading: isLoadingModels } = useListModelsQuery(
-    {
-      filter: selectedProvider ? `provider = "${selectedProvider}" AND enabled = "true"` : 'enabled = "true"',
-    },
-    { enabled: isUsingGateway && !!selectedProvider }
-  );
-
-  // Get available providers - from gateway API or hardcoded
+  // Get available providers - from aigw v2 API or hardcoded
   const availableProviders = useMemo(() => {
-    if (isUsingGateway && providersData?.modelProviders) {
-      // Map gateway providers to our format (already filtered for enabled at API level)
-      return providersData.modelProviders.map((provider) => {
-        // Strip "model_providers/" prefix from provider name
-        const providerName = provider.name.replace(/^model_providers\//, '');
-        const providerId = providerName.toLowerCase().replace(/\s+/g, '');
-
-        return {
-          id: providerId,
-          label: provider.displayName || providerName,
-          icon: MODEL_OPTIONS_BY_PROVIDER[providerId as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
-        };
-      });
+    if (isUsingGateway && providersData?.llmProviders) {
+      return providersData.llmProviders
+        .filter((provider) => provider.enabled)
+        .map((provider) => ({
+          id: provider.name,
+          label: provider.displayName || provider.name,
+          icon: MODEL_OPTIONS_BY_PROVIDER[provider.name as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
+        }));
     }
     // Fallback to hardcoded providers
     return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
@@ -453,26 +427,24 @@ export const AIAgentConfigurationTab = () => {
     }));
   }, [isUsingGateway, providersData]);
 
-  // Get available models - from gateway API or hardcoded
+  // Get available models - from aigw provider's models or hardcoded
   const filteredModels = useMemo(() => {
-    if (isUsingGateway && modelsData?.models) {
-      // Map gateway models to our format (already filtered for enabled at API level)
-      return modelsData.models.map((model) => {
-        // Strip "models/provider/" prefix from model name
-        const modelName = model.name.split('/').pop() || model.name;
-
-        return {
+    if (isUsingGateway && providersData?.llmProviders && displayData?.llmProvider) {
+      const provider = providersData.llmProviders.find((p) => p.name === displayData.llmProvider);
+      if (provider) {
+        return provider.models.map((modelName) => ({
           value: modelName,
-          name: model.displayName || modelName,
-          description: model.description || '',
-        };
-      });
+          name: modelName,
+          description: '',
+        }));
+      }
+      return [];
     }
     // Fallback to hardcoded models
     if (!selectedProvider) return [];
     const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider as keyof typeof MODEL_OPTIONS_BY_PROVIDER];
     return providerData?.models || [];
-  }, [isUsingGateway, modelsData, selectedProvider]);
+  }, [isUsingGateway, providersData, displayData?.llmProvider, selectedProvider]);
 
   // Get available MCP servers (includes placeholders for missing servers that agent references)
   const availableMcpServers = useMemo(() => {
@@ -514,16 +486,8 @@ export const AIAgentConfigurationTab = () => {
       }));
   }, [secretsData]);
 
-  // Get gateway display name
-  const gatewayDisplayName = useMemo(() => {
-    if (!(aiAgentData?.aiAgent?.gateway?.virtualGatewayId && gatewaysData?.gateways)) {
-      return null;
-    }
-    const gateway = gatewaysData.gateways.find(
-      (gw) => gw.name.split('/').pop() === aiAgentData.aiAgent!.gateway?.virtualGatewayId
-    );
-    return gateway?.displayName || aiAgentData.aiAgent!.gateway!.virtualGatewayId;
-  }, [aiAgentData, gatewaysData]);
+  // Get LLM provider name from gateway config
+  const llmProviderName = aiAgentData?.aiAgent?.gateway?.llmProvider ?? null;
 
   const updateField = useCallback(
     (updates: Partial<LocalAIAgent>) => {
@@ -736,84 +700,81 @@ export const AIAgentConfigurationTab = () => {
       }
     }
 
-    const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
-
-    // Build MCP servers map
-    const mcpServersMap: Record<string, { id: string }> = {};
-    for (const serverId of displayData.selectedMcpServers) {
-      mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
-    }
-
-    // Build subagents map
-    const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
-    for (const subagent of displayData.subagents) {
-      const trimmedName = subagent.name.trim();
-      if (trimmedName) {
-        const subagentMcpMap: Record<string, { id: string }> = {};
-        for (const serverId of subagent.selectedMcpServers) {
-          subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
-        }
-
-        subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
-          description: subagent.description?.trim() ?? '',
-          systemPrompt: subagent.systemPrompt.trim(),
-          mcpServers: subagentMcpMap,
-        });
-      }
-    }
-
-    const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
-    // When using gateway, keep the existing API key reference; otherwise use the selected secret
-    const currentProvider = aiAgentData.aiAgent!.provider;
-    const apiKeyRef =
-      isUsingGateway && currentProvider
-        ? extractProviderInfo(currentProvider).apiKeyTemplate
-        : `\${secrets.${displayData.apiKeySecret}}`;
-    const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
-
-    const gatewayId = displayData.gatewayId;
-    const gatewayConfig =
-      gatewayId && gatewayId.trim() !== ''
-        ? create(AIAgent_GatewayConfigSchema, { virtualGatewayId: gatewayId })
-        : undefined;
-
-    const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
-      if (!card) {
-        return false;
-      }
-      return !!(
-        card.iconUrl ||
-        card.documentationUrl ||
-        card.skills?.length > 0 ||
-        card.provider?.organization ||
-        card.provider?.url
-      );
-    };
-
-    const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
-      !!(provider?.organization || provider?.url);
-
-    const agentCard =
-      displayData.agentCard && hasAgentCardData(displayData.agentCard)
-        ? create(AIAgent_AgentCardSchema, {
-            iconUrl: displayData.agentCard.iconUrl || undefined,
-            documentationUrl: displayData.agentCard.documentationUrl || undefined,
-            provider:
-              displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
-                ? create(AIAgent_AgentCard_ProviderSchema, {
-                    organization: displayData.agentCard.provider.organization || undefined,
-                    url: displayData.agentCard.provider.url || undefined,
-                  })
-                : undefined,
-            skills: displayData.agentCard.skills.map(sanitizeSkill),
-          })
-        : undefined;
-
-    const cpuShares = selectedTier?.cpu || '100m';
-    const memoryShares = selectedTier?.memory || '400M';
-    const serviceAccount = aiAgentData.aiAgent.serviceAccount;
-
     try {
+      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
+
+      // Build MCP servers map
+      const mcpServersMap: Record<string, { id: string }> = {};
+      for (const serverId of displayData.selectedMcpServers) {
+        mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+      }
+
+      // Build subagents map
+      const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
+      for (const subagent of displayData.subagents) {
+        const trimmedName = subagent.name.trim();
+        if (trimmedName) {
+          const subagentMcpMap: Record<string, { id: string }> = {};
+          for (const serverId of subagent.selectedMcpServers) {
+            subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+          }
+
+          subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
+            description: subagent.description?.trim() ?? '',
+            systemPrompt: subagent.systemPrompt.trim(),
+            mcpServers: subagentMcpMap,
+          });
+        }
+      }
+
+      const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
+      // When using gateway, keep the existing API key reference; otherwise use the selected secret
+      const currentProvider = aiAgentData.aiAgent!.provider;
+      const apiKeyRef =
+        isUsingGateway && currentProvider
+          ? extractProviderInfo(currentProvider).apiKeyTemplate
+          : `\${secrets.${displayData.apiKeySecret}}`;
+      const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
+
+      const gatewayConfig =
+        displayData.llmProvider && displayData.llmProvider.trim() !== ''
+          ? create(AIAgent_GatewayConfigSchema, {
+              llmProvider: displayData.llmProvider,
+            })
+          : undefined;
+
+      const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
+        if (!card) {
+          return false;
+        }
+        return !!(
+          card.iconUrl ||
+          card.documentationUrl ||
+          card.skills?.length > 0 ||
+          card.provider?.organization ||
+          card.provider?.url
+        );
+      };
+
+      const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
+        !!(provider?.organization || provider?.url);
+
+      const agentCard =
+        displayData.agentCard && hasAgentCardData(displayData.agentCard)
+          ? create(AIAgent_AgentCardSchema, {
+              iconUrl: displayData.agentCard.iconUrl || undefined,
+              documentationUrl: displayData.agentCard.documentationUrl || undefined,
+              provider:
+                displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
+                  ? create(AIAgent_AgentCard_ProviderSchema, {
+                      organization: displayData.agentCard.provider.organization || undefined,
+                      url: displayData.agentCard.provider.url || undefined,
+                    })
+                  : undefined,
+              skills: displayData.agentCard.skills.map(sanitizeSkill),
+            })
+          : undefined;
+
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -824,10 +785,10 @@ export const AIAgentConfigurationTab = () => {
             maxIterations: displayData.maxIterations,
             provider: updatedProvider,
             systemPrompt: displayData.systemPrompt,
-            serviceAccount,
+            serviceAccount: aiAgentData.aiAgent.serviceAccount,
             resources: {
-              cpuShares,
-              memoryShares,
+              cpuShares: selectedTier?.cpu || '100m',
+              memoryShares: selectedTier?.memory || '400M',
             },
             mcpServers: mcpServersMap,
             subagents: subagentsMap,
@@ -1094,7 +1055,8 @@ export const AIAgentConfigurationTab = () => {
                       );
 
                       return (
-                        <AccordionItem key={`subagent-${subagent.name || index}`} value={`subagent-${index}`}>
+                        // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for subagent items
+                        <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
                           <AccordionTrigger>
                             <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
                           </AccordionTrigger>
@@ -1241,12 +1203,12 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               {isEditing ? (
                 <div className="space-y-4">
-                  {/* AI Gateway - show if configured (read-only in edit mode) */}
-                  {gatewayDisplayName && (
+                  {/* LLM Provider (Gateway) - show if configured (read-only in edit mode) */}
+                  {llmProviderName && (
                     <div className="space-y-2">
-                      <Label>AI Gateway</Label>
+                      <Label>LLM Provider (Gateway)</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="muted">{gatewayDisplayName}</Text>
+                        <Text variant="muted">{llmProviderName}</Text>
                       </div>
                       <Text className="text-xs" variant="muted">
                         Gateway configuration cannot be changed after creation
@@ -1316,7 +1278,7 @@ export const AIAgentConfigurationTab = () => {
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
                     {displayData.provider?.provider.case === 'openaiCompatible' ||
-                    (isUsingGateway && filteredModels.length === 0 && !isLoadingModels) ? (
+                    (isUsingGateway && filteredModels.length === 0 && !isLoadingProviders) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
                         placeholder="Enter model name (e.g., llama-3.1-70b)"
@@ -1324,12 +1286,12 @@ export const AIAgentConfigurationTab = () => {
                       />
                     ) : (
                       <Select
-                        disabled={isLoadingModels}
+                        disabled={isLoadingProviders}
                         onValueChange={(value) => updateField({ model: value })}
                         value={displayData.model}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={isLoadingModels ? 'Loading models...' : 'Select model'}>
+                          <SelectValue placeholder={isLoadingProviders ? 'Loading models...' : 'Select model'}>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
                               <div className="flex items-center gap-2">
                                 <img
@@ -1345,7 +1307,7 @@ export const AIAgentConfigurationTab = () => {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {isLoadingModels ? (
+                          {isLoadingProviders ? (
                             <div className="p-2">
                               <Text variant="muted">Loading models...</Text>
                             </div>
@@ -1439,12 +1401,12 @@ export const AIAgentConfigurationTab = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* AI Gateway - show if configured */}
-                  {gatewayDisplayName && (
+                  {/* LLM Provider (Gateway) - show if configured */}
+                  {llmProviderName && (
                     <div className="space-y-2">
-                      <Label>AI Gateway</Label>
+                      <Label>LLM Provider (Gateway)</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text>{gatewayDisplayName}</Text>
+                        <Text>{llmProviderName}</Text>
                       </div>
                     </div>
                   )}

@@ -471,13 +471,17 @@ components:
           type: string
       type: object
     GatewayConfig:
-      description: Gateway configuration for routing requests through an AI Gateway.
+      description: Optional gateway configuration for routing requests through an AI Gateway.
       properties:
-        virtual_gateway_id:
-          description: Virtual gateway ID (20-character XID format).
+        llm_provider:
+          title: |-
+            Name of the configured LLMProvider in the AI Gateway (aigw).
+            Used to determine which provider to route requests through.
+            Example: "my-openai-provider"
           type: string
-      required:
-        - virtual_gateway_id
+        virtual_gateway_id:
+          description: 'Deprecated: No longer needed — there is always one gateway per cluster.'
+          type: string
       type: object
     GetAIAgentResponse:
       properties:

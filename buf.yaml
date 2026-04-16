@@ -11,6 +11,7 @@ deps:
   - buf.build/redpandadata/common:5d899910f71449dda17179c2e198100d
   - buf.build/redpandadata/core:923579c57f1c44cf96c1cd70650f84d2
   - buf.build/redpandadata/otel
+  - buf.build/redpandadata/cloud
 lint:
   use:
     - STANDARD
