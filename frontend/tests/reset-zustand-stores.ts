@@ -10,18 +10,21 @@
  */
 
 /**
- * Reset all module-level Zustand stores used by the app between integration
- * tests. RTL's `cleanup()` unmounts React components, but Zustand stores are
- * singletons at the module level — every piece of data written into them via
- * the Connect/React-Query effects of a page under test remains held in memory
- * for the life of the worker, which compounds across dozens of tests in a
- * single file and produces the +100–240 MB intra-file heap growth we saw in
- * the TDD audit.
+ * Reset all module-level Zustand stores used by the app. Zustand stores are
+ * singletons at the module level — data written into them by page-level
+ * effects stays retained in the worker process across tests, compounding the
+ * +100–240 MB intra-file heap growth measured during the TDD audit.
  *
- * Zustand v5 exposes `store.getInitialState()` on every `create(...)` / vanilla
- * `createStore(...)` instance, so we can snapshot the initial state and
- * restore it after each test without modifying the store definitions
- * themselves.
+ * Zustand v5 exposes `getInitialState()` on every `create(...)` instance, so
+ * we can restore initial state without modifying store definitions.
+ *
+ * This module is intentionally **not** imported by the global
+ * `vitest.setup.integration.ts` (see comment in that file). Doing so would
+ * eagerly load `src/state/backend-api`, which transitively imports
+ * `src/config` and pins `isEmbedded`/`isAdpEnabled` live bindings before
+ * test-file `vi.mock('config', ...)` hoists can take effect. Instead,
+ * individual page-test files with heavy heap growth can import this helper
+ * directly and call it from their own `afterEach`.
  */
 
 import { useAPIWizardStore } from '../src/state/api-wizard-store';
@@ -49,8 +52,6 @@ type ResettableStore = {
   setState: (state: unknown, replace: true) => void;
 };
 
-// Listed explicitly (not discovered reflectively) so a new store added in
-// application code is a deliberate decision in test infra, not a silent leak.
 const stores: ResettableStore[] = [
   useApiStore as unknown as ResettableStore,
   useRolesStore as unknown as ResettableStore,
@@ -71,8 +72,6 @@ const stores: ResettableStore[] = [
 
 export function resetAllZustandStores(): void {
   for (const store of stores) {
-    // `replace: true` forces a full replacement — partial merges leave the
-    // previous keys around, which is exactly the leak we're trying to avoid.
     store.setState(store.getInitialState(), true);
   }
 }

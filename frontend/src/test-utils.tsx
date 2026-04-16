@@ -17,49 +17,23 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   transport?: Transport;
 }
 
-// Track every QueryClient and router created by the test harness so
-// `cleanupTestHarness` can tear them down after each test. A plain render +
-// RTL cleanup only unmounts the React tree — the QueryClient and the
-// TanStack router are still held alive by closures inside the test file
-// (`const { router } = renderWithFileRoutes(...)`), so every test's fetched
-// data, route matches, and history entries accumulate in the worker heap
+// Track every QueryClient and router created by the test harness so the
+// side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
+// tear them down after each test. A plain render + RTL cleanup only unmounts
+// the React tree — the QueryClient and the TanStack router are still held
+// alive by closures inside the test file, so every test's fetched data,
+// route matches, and history entries accumulate in the worker heap
 // otherwise. That retention is the primary cause of the +100–240 MB
 // intra-file heap growth measured during the TDD audit.
-const trackedQueryClients = new Set<QueryClient>();
+//
+// `cleanupTestHarness` is kept in a separate module so that
+// `vitest.setup.integration.ts` does not transitively import `routeTree.gen`
+// (and therefore `config`), which would pin `isEmbedded`/`isAdpEnabled` live
+// bindings before test files' `vi.mock('config', ...)` hoists can take
+// effect.
+import { cleanupTestHarness, trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
-// The router generic graph is file-specific and routeTree-derived; we only
-// ever touch `.history.destroy?.()` at teardown, so the minimal structural
-// shape below is enough to keep the callers free of casts while still giving
-// us type-safety on the one method we call.
-type TrackedRouter = { history: { destroy?: () => void } };
-const trackedRouters = new Set<TrackedRouter>();
-
-/**
- * Clear and discard every tracked QueryClient and router. Intended to be
- * called from the global `afterEach` in `vitest.setup.integration.ts`.
- *
- * - `cancelQueries()` aborts in-flight fetches that might still resolve
- *   and mutate state after the test completes.
- * - `clear()` drops the cache map and observer list so fixtures the test
- *   fetched are eligible for GC.
- * - `unmount()` tears down the QueryClient's internal listeners.
- * - `history.destroy()` removes the memory-history listener set, allowing
- *   the router graph (matches, loaders, contexts referencing QueryClient)
- *   to become unreachable.
- */
-export function cleanupTestHarness(): void {
-  for (const client of trackedQueryClients) {
-    client.cancelQueries();
-    client.clear();
-    client.unmount();
-  }
-  trackedQueryClients.clear();
-
-  for (const router of trackedRouters) {
-    router.history.destroy?.();
-  }
-  trackedRouters.clear();
-}
+export { cleanupTestHarness } from '../tests/harness-cleanup';
 
 const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) => {
   function Wrapper({ children }: PropsWithChildren): JSX.Element {

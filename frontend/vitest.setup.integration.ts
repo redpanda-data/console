@@ -15,8 +15,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
-import { cleanupTestHarness } from './src/test-utils';
-import { resetAllZustandStores } from './tests/reset-zustand-stores';
+import { cleanupTestHarness } from './tests/harness-cleanup';
 
 // ── Chakra + userEvent compatibility ─────────────────────────────────
 // userEvent.setup() patches HTMLElement.prototype.focus as a getter-only
@@ -149,10 +148,24 @@ vi.mock('lottie-react', () => ({
 //      primary cause of the +100–240 MB intra-file heap growth measured
 //      during the TDD audit.
 //   3. clearAllMocks / clearAllTimers is standard Vitest hygiene.
+// Explicit cleanup after each test to prevent memory leaks.
+//
+// Order matters:
+//   1. cleanup() unmounts RTL-rendered React trees so stores/queries are no
+//      longer observed by subscribers before teardown.
+//   2. cleanupTestHarness() drops tracked QueryClients + routers held alive
+//      by test-file closures (primary source of +100–240 MB intra-file heap
+//      growth measured during the TDD audit).
+//   3. clearAllMocks / clearAllTimers is standard Vitest hygiene.
+//
+// Zustand store resets are handled per-file via
+// `tests/reset-zustand-stores.ts` rather than globally — mounting that helper
+// here pins `isEmbedded`/`isAdpEnabled` live bindings before test files'
+// `vi.mock('config', ...)` hoists can take effect. Files that accumulate
+// store state import the helper directly and opt in.
 afterEach(() => {
   cleanup();
   cleanupTestHarness();
-  resetAllZustandStores();
   vi.clearAllMocks();
   vi.clearAllTimers();
 });
