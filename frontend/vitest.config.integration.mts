@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       vmMemoryLimit: '4096Mb', // Force GC when memory limit is reached (4GB allows headroom for parallel forks)
       testTimeout: 30_000,
       globals: true,
-      environment: 'jsdom', // happy-dom was benchmarked ~3× slower on this codebase; keep jsdom until that changes
+      environment: 'happy-dom', // Aligns with cloud-ui / adp-ui; required to run Chakra + Radix integration tests consistently
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
       setupFiles: './vitest.setup.integration.ts',
       deps: {

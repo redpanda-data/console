@@ -189,7 +189,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/uuid": "^11.0.0",
     "@typescript/native-preview": "^7.0.0-dev.20260108.1",
-    "jsdom": "^16.7.0",
+    "happy-dom": "^20.8.9",
     "@vitejs/plugin-react": "^5.1.2",
     "@vitest/coverage-v8": "^4.1.4",
     "@vitest/ui": "^4.1.4",

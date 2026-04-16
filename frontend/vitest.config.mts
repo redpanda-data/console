@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       vmMemoryLimit: '1000Mb',
       testTimeout: 15_000,
       globals: true,
-      environment: 'jsdom',
+      environment: 'happy-dom',
       setupFiles: './vitest.setup.ts',
       deps: {
         registerNodeLoader: true,

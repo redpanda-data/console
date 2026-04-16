@@ -1,26 +1,111 @@
+// ── happy-dom scheduler fix ──────────────────────────────────────────
+// Must run BEFORE React loads. happy-dom's MessageChannel delivers
+// messages synchronously during act() flushes, which triggers React 18's
+// "Should not already be working" error. Removing MessageChannel forces
+// React's scheduler to use the setTimeout fallback, which is async-safe.
+if (typeof globalThis.MessageChannel !== 'undefined') {
+  // biome-ignore lint/suspicious/noExplicitAny: deleting a global at runtime
+  delete (globalThis as any).MessageChannel;
+}
+
+import '@testing-library/jest-dom/vitest';
+import _rawUserEvent from '@testing-library/user-event';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
-import '@testing-library/jest-dom/vitest';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
 
-// Full setup for integration tests that render React components.
-// Tests run in jsdom and need browser API mocks.
-
-// ── Mocks ────────────────────────────────────────────────────────────
-// Mock ResizeObserver - not available in jsdom but required by RadixUI components
-class ResizeObserverMock {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
+// ── Chakra + userEvent compatibility ─────────────────────────────────
+// userEvent.setup() patches HTMLElement.prototype.focus as a getter-only
+// property. Chakra UI's @zag-js/focus-visible later tries to override it
+// via simple assignment, causing "Cannot set property focus of [object
+// Object] which has only a getter". Wrapping setup() makes the patched
+// focus descriptor accept assignment after the patch.
+function makeFocusPatchWritable() {
+  const desc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'focus');
+  if (desc?.get && !desc.set && desc.configurable) {
+    const getter = desc.get;
+    let override: ((...args: unknown[]) => void) | null = null;
+    Object.defineProperty(HTMLElement.prototype, 'focus', {
+      configurable: true,
+      get() {
+        return override ?? getter();
+      },
+      set(fn: (...args: unknown[]) => void) {
+        override = fn;
+      },
+    });
+  }
 }
 
-vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+// Monkey-patch userEvent.setup globally so every test file gets the fix
+// without migrating imports. Any `import userEvent from '@testing-library/user-event'`
+// call receives the patched setup transparently.
+const _rawSetup = _rawUserEvent.setup.bind(_rawUserEvent);
+_rawUserEvent.setup = ((...args: Parameters<typeof _rawUserEvent.setup>) => {
+  const instance = _rawSetup(...args);
+  makeFocusPatchWritable();
+  return instance;
+}) as typeof _rawUserEvent.setup;
 
-window.scrollTo = vi.fn();
+// ── happy-dom network / resource isolation ───────────────────────────
+// Unlike jsdom, happy-dom attempts real network requests for scripts,
+// images, and fetch calls. Disable external loading + same-origin policy
+// to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
+if (typeof window !== 'undefined' && 'happyDOM' in window) {
+  // biome-ignore lint/suspicious/noExplicitAny: happy-dom settings shape is not typed
+  const settings = (window as any).happyDOM?.settings;
+  if (settings) {
+    settings.navigation = { ...settings.navigation, disableMainFrameNavigation: true };
+    settings.fetch = { ...settings.fetch, disableSameOriginPolicy: true };
+    settings.disableJavaScriptFileLoading = true;
+    settings.disableCSSFileLoading = true;
+    settings.disableJavaScriptEvaluation = true;
+  }
+}
 
-// Mock lottie-react - lottie-web tries to access canvas APIs not available in jsdom
+// Intercept fetch to known test-environment localhost URLs so mocked
+// endpoints don't escape to real TCP connections.
+if (typeof window !== 'undefined') {
+  const originalFetch = globalThis.fetch;
+  const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '::1'];
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    try {
+      const parsed = new URL(url);
+      if (BLOCKED_HOSTS.some((h) => parsed.hostname === h)) {
+        return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+    } catch {
+      // Relative URL or malformed — pass through
+    }
+    return originalFetch(input, init);
+  };
+}
+
+// ── Mocks ────────────────────────────────────────────────────────────
+// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively,
+// but Chakra components still expect matchMedia to be a vi.fn so their
+// colorMode polling sees deterministic breakpoint results.
+beforeEach(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // Deprecated
+      removeListener: vi.fn(), // Deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
+
+// Mock lottie-react — lottie-web schedules animation frames that leak
+// across tests even when canvas access is stubbed by the environment.
 vi.mock('lottie-react', () => ({
   useLottie: () => ({
     View: null,
@@ -41,30 +126,11 @@ vi.mock('lottie-react', () => ({
   }),
 }));
 
-beforeEach(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: vi.fn().mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(), // Deprecated
-      removeListener: vi.fn(), // Deprecated
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  });
-});
-
 // Explicit cleanup after each test to prevent memory leaks
 afterEach(() => {
-  cleanup(); // Unmount all React trees
-  vi.clearAllMocks(); // Clear mock call history
-  vi.clearAllTimers(); // Clear pending timers
-
-  // Re-stub ResizeObserver to clear any instances from previous test
-  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+  cleanup();
+  vi.clearAllMocks();
+  vi.clearAllTimers();
 });
 
 // ── Console suppression ──────────────────────────────────────────────
@@ -87,10 +153,10 @@ const SUPPRESSED_PATTERNS = [
   // belongs in @radix-ui.
   /An update to Radio inside a test was not wrapped in act/,
   /An update to Tooltip inside a test was not wrapped in act/,
-  // jsdom DOMException noise from unmocked fetch/script loads
+  // happy-dom DOMException noise from unmocked fetch/script loads
   /DOMException.*AbortError/,
   /Failed to load script/,
-  // Network noise from jsdom making real HTTP requests to mocked endpoints
+  // Network noise from fetch attempts to mocked endpoints that aren't running
   /socket hang up/,
   /ECONNREFUSED/,
   /ECONNRESET/,
