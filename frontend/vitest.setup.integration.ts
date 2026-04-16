@@ -5,8 +5,8 @@ import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
 
-// Full setup for integration tests that render React components
-// These tests run in jsdom environment and need browser API mocks
+// Full setup for integration tests that render React components.
+// Tests run in jsdom and need browser API mocks.
 
 // ── Mocks ────────────────────────────────────────────────────────────
 // Mock ResizeObserver - not available in jsdom but required by RadixUI components

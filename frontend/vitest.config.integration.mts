@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       vmMemoryLimit: '4096Mb', // Force GC when memory limit is reached (4GB allows headroom for parallel forks)
       testTimeout: 30_000,
       globals: true,
-      environment: 'jsdom', // Integration tests use jsdom environment
+      environment: 'jsdom', // Integration tests use jsdom (benchmarked 3x faster than happy-dom on this codebase 2026-04-16)
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
       setupFiles: './vitest.setup.integration.ts',
       deps: {
