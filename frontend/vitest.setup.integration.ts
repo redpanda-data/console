@@ -15,6 +15,8 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
+import { cleanupTestHarness } from './src/test-utils';
+import { resetAllZustandStores } from './tests/reset-zustand-stores';
 
 // ── Chakra + userEvent compatibility ─────────────────────────────────
 // userEvent.setup() patches HTMLElement.prototype.focus as a getter-only
@@ -66,19 +68,28 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
 }
 
 // Intercept fetch to known test-environment localhost URLs so mocked
-// endpoints don't escape to real TCP connections.
+// endpoints don't escape to real TCP connections. Relative URLs are
+// resolved against window.location (happy-dom defaults to localhost:3000),
+// so we MUST resolve them before matching, otherwise ConnectRPC transports
+// built with an empty baseUrl (common in test-utils) leak real TCP
+// connections to 127.0.0.1:3000 / ::1:3000 and emit AggregateError on
+// teardown.
 if (typeof window !== 'undefined') {
   const originalFetch = globalThis.fetch;
   const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '::1'];
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     try {
-      const parsed = new URL(url);
+      // Resolve relative URLs against window.location so that a relative
+      // path like "/service/Method" is matched the same way as the
+      // absolute "http://localhost:3000/service/Method".
+      const base = window.location ? window.location.href : undefined;
+      const parsed = new URL(url, base);
       if (BLOCKED_HOSTS.some((h) => parsed.hostname === h)) {
         return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
     } catch {
-      // Relative URL or malformed — pass through
+      // Malformed URL — pass through so the caller gets a normal error
     }
     return originalFetch(input, init);
   };
@@ -126,9 +137,22 @@ vi.mock('lottie-react', () => ({
   }),
 }));
 
-// Explicit cleanup after each test to prevent memory leaks
+// Explicit cleanup after each test to prevent memory leaks.
+//
+// Order matters:
+//   1. cleanup() unmounts RTL-rendered React trees so stores are no longer
+//      observed by subscribers before we replace their state.
+//   2. resetAllZustandStores() restores each module-level store to its
+//      initial state. Without this, state accumulated by the page under test
+//      (topic lists, cluster overviews, API caches, etc.) stays retained in
+//      the worker process for every subsequent test in the file — the
+//      primary cause of the +100–240 MB intra-file heap growth measured
+//      during the TDD audit.
+//   3. clearAllMocks / clearAllTimers is standard Vitest hygiene.
 afterEach(() => {
   cleanup();
+  cleanupTestHarness();
+  resetAllZustandStores();
   vi.clearAllMocks();
   vi.clearAllTimers();
 });
