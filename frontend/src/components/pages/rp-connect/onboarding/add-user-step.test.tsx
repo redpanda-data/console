@@ -31,7 +31,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { useRef } from 'react';
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import type { UserStepRef } from '../types/wizard';
 
@@ -194,7 +194,7 @@ describe('AddUserStep', () => {
       const usernameInput = await screen.findByPlaceholderText('Enter a username');
       await user.type(usernameInput, 'test-user');
 
-      fireEvent.click(screen.getByTestId('submit'));
+      await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => {
         expect(createUserMock).toHaveBeenCalledTimes(1);
@@ -224,7 +224,7 @@ describe('AddUserStep', () => {
       const usernameInput = await screen.findByPlaceholderText('Enter a username');
       await user.type(usernameInput, 'my-user');
 
-      fireEvent.click(screen.getByTestId('submit'));
+      await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
@@ -236,6 +236,7 @@ describe('AddUserStep', () => {
     });
 
     test('3. empty username rejected — triggerSubmit returns success: false', async () => {
+      const user = userEvent.setup();
       const { transport } = buildTransport();
       let capturedResult: unknown;
 
@@ -253,7 +254,7 @@ describe('AddUserStep', () => {
       await screen.findByPlaceholderText('Enter a username');
 
       // Do not type anything — submit with empty username
-      fireEvent.click(screen.getByTestId('submit'));
+      await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
@@ -297,7 +298,7 @@ describe('AddUserStep', () => {
       const usernameInput = await screen.findByPlaceholderText('Enter a username');
       await user.type(usernameInput, 'existing-user');
 
-      fireEvent.click(screen.getByTestId('submit'));
+      await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
@@ -343,7 +344,7 @@ describe('AddUserStep', () => {
       const cgInput = screen.getByPlaceholderText('Enter a consumer group name');
       await user.type(cgInput, 'my-consumer-group');
 
-      fireEvent.click(screen.getByTestId('submit'));
+      await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => {
         expect(createUserMock).toHaveBeenCalledTimes(1);
@@ -424,7 +425,7 @@ describe('AddUserStep', () => {
         expect(screen.getByTestId('service-account-selector')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByTestId('submit'));
+      await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
@@ -552,6 +553,7 @@ describe('AddUserStep', () => {
 
   describe('Edge cases', () => {
     test('12. isPending accessible via ref', async () => {
+      const user = userEvent.setup();
       const { transport } = buildTransport();
       let refValue: UserStepRef | null = null;
 
@@ -578,7 +580,7 @@ describe('AddUserStep', () => {
       // Wait for render
       await screen.findByPlaceholderText('Enter a username');
 
-      fireEvent.click(screen.getByTestId('capture-ref'));
+      await user.click(screen.getByTestId('capture-ref'));
 
       expect(refValue).not.toBeNull();
       expect(refValue!.isPending).toBe(false);

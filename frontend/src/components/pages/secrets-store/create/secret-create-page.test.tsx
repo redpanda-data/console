@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -100,7 +100,7 @@ describe('SecretCreatePage', () => {
       expect(submitButton).toBeEnabled();
     });
 
-    fireEvent.click(submitButton);
+    await user.click(submitButton);
 
     // Verify the create mutation was called
     await waitFor(() => {

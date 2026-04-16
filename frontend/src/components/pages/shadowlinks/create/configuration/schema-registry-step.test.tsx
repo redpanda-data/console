@@ -10,9 +10,10 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 import { SchemaRegistryStep } from './schema-registry-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
@@ -47,6 +48,7 @@ const TestWrapper = ({
 describe('SchemaRegistryStep', () => {
   describe('Toggle switch', () => {
     test('should toggle enableSchemaRegistrySync value when switch is clicked', async () => {
+      const user = userEvent.setup();
       let formValues: FormValues | undefined;
 
       render(
@@ -61,14 +63,14 @@ describe('SchemaRegistryStep', () => {
 
       expect(switchElement).toHaveAttribute('data-state', 'unchecked');
 
-      fireEvent.click(switchElement);
+      await user.click(switchElement);
 
       await waitFor(() => {
         expect(switchElement).toHaveAttribute('data-state', 'checked');
         expect(formValues?.enableSchemaRegistrySync).toBe(true);
       });
 
-      fireEvent.click(switchElement);
+      await user.click(switchElement);
 
       await waitFor(() => {
         expect(switchElement).toHaveAttribute('data-state', 'unchecked');

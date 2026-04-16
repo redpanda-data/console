@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import userEvent from '@testing-library/user-event';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { HostSelector } from './host-selector';
 
@@ -72,10 +73,11 @@ describe('HostSelector', () => {
 
   describe('Navigation', () => {
     test('should navigate with correct query parameter when clicking a host row', async () => {
+      const user = userEvent.setup();
       const { router } = renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
       const firstRow = screen.getByTestId('host-selector-row-192.168.1.1');
-      fireEvent.click(firstRow);
+      await user.click(firstRow);
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
@@ -84,11 +86,12 @@ describe('HostSelector', () => {
     });
 
     test('should navigate to different URLs when clicking different hosts', async () => {
+      const user = userEvent.setup();
       const { router } = renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
       // Click first host
       const firstRow = screen.getByTestId('host-selector-row-192.168.1.1');
-      fireEvent.click(firstRow);
+      await user.click(firstRow);
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
@@ -97,7 +100,7 @@ describe('HostSelector', () => {
 
       // Click second host
       const secondRow = screen.getByTestId('host-selector-row-192.168.1.2');
-      fireEvent.click(secondRow);
+      await user.click(secondRow);
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
@@ -115,10 +118,11 @@ describe('HostSelector', () => {
         ],
       };
 
+      const user = userEvent.setup();
       const { router } = renderWithFileRoutes(<HostSelector {...propsWithSpecialChars} />);
 
       const row = screen.getByTestId('host-selector-row-host@example.com');
-      fireEvent.click(row);
+      await user.click(row);
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
@@ -133,10 +137,11 @@ describe('HostSelector', () => {
         baseUrl: customBaseUrl,
       };
 
+      const user = userEvent.setup();
       const { router } = renderWithFileRoutes(<HostSelector {...customProps} />);
 
       const row = screen.getByTestId('host-selector-row-192.168.1.1');
-      fireEvent.click(row);
+      await user.click(row);
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/roles/my-role/details');
