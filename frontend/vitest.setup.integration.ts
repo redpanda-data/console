@@ -97,10 +97,10 @@ const SUPPRESSED_PATTERNS = [
 ];
 
 function isSuppressed(args: unknown[]): boolean {
-  return SUPPRESSED_PATTERNS.some((pattern) => {
-    const msg = typeof args[0] === 'string' ? args[0] : String(args[0]);
-    return pattern.test(msg);
-  });
+  // Join every argument so patterns also catch cases like
+  // console.warn('prefix:', errorObject) where the signal lives in args[1].
+  const msg = args.map((a) => (typeof a === 'string' ? a : String(a))).join(' ');
+  return SUPPRESSED_PATTERNS.some((pattern) => pattern.test(msg));
 }
 
 console.warn = (...args: unknown[]) => {
