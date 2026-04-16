@@ -15,7 +15,6 @@ import {
 	FieldLabel,
 } from "components/redpanda-ui/components/field";
 import { Input } from "components/redpanda-ui/components/input";
-import { Skeleton } from "components/redpanda-ui/components/skeleton";
 import {
 	Select,
 	SelectContent,
@@ -32,12 +31,23 @@ import {
 	SecretSelector,
 } from "components/ui/secret/secret-selector";
 import type { Scope } from "protogen/redpanda/api/dataplane/v1/secret_pb";
+import { LLMProviderType } from "protogen/redpanda/api/adp/v1alpha1/llm_provider_pb";
 import { useEffect, useMemo } from "react";
-import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
-import { useListModelProvidersQuery } from "react-query/api/ai-gateway/model-providers";
-import { useListModelsQuery } from "react-query/api/ai-gateway/models";
+import { Controller, type UseFormReturn } from "react-hook-form";
+import { useListLLMProvidersQuery } from "react-query/api/aigw/llm-providers";
 
-import { MODEL_OPTIONS_BY_PROVIDER } from "../../pages/agents/ai-agent-model";
+import { MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from "../../pages/agents/ai-agent-model";
+
+/**
+ * Maps LLMProviderType enum values to the form's provider type strings.
+ */
+const LLM_PROVIDER_TYPE_TO_FORM_ID: Record<LLMProviderType, string | undefined> = {
+	[LLMProviderType.LLM_PROVIDER_TYPE_OPENAI]: 'openai',
+	[LLMProviderType.LLM_PROVIDER_TYPE_ANTHROPIC]: 'anthropic',
+	[LLMProviderType.LLM_PROVIDER_TYPE_GOOGLE]: 'google',
+	[LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: 'openaiCompatible',
+	[LLMProviderType.LLM_PROVIDER_TYPE_UNSPECIFIED]: undefined,
+};
 
 export interface LLMConfigSectionProps {
   mode: 'create' | 'edit';
@@ -48,15 +58,13 @@ export interface LLMConfigSectionProps {
     apiKeySecret: string;
     baseUrl?: string;
     maxIterations: string;
-    gatewayId?: string;
+    llmProvider?: string;
   };
   availableSecrets: Array<{ id: string; name: string }>;
   scopes: Scope[];
   showBaseUrl?: boolean;
   showMaxIterations?: boolean;
-  hasGatewayDeployed?: boolean;
-  isLoadingGateways?: boolean;
-  availableGateways?: Array<{ id: string; displayName: string; description?: string }>;
+  hasAigwDeployed?: boolean;
 }
 
 export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
@@ -67,379 +75,306 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
   scopes,
   showBaseUrl = false,
   showMaxIterations = true,
-  hasGatewayDeployed = false,
-  isLoadingGateways = false,
-  availableGateways = [],
+  hasAigwDeployed = false,
 }) => {
-  // useWatch provides reliable cross-component re-renders when form values change via setValue,
-  // unlike form.watch which can miss updates in Module Federation environments.
-  const watchedValues = useWatch({
-    control: form.control,
-    name: [fieldNames.provider, fieldNames.gatewayId ?? fieldNames.provider],
-  });
-  const maxIterations = useWatch({
-    control: form.control,
-    name: fieldNames.maxIterations,
-  });
-  const selectedProvider = watchedValues[0] as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
-  const selectedGatewayId = fieldNames.gatewayId ? watchedValues[1] as string | undefined : undefined;
-  const isUsingGateway = hasGatewayDeployed && !!selectedGatewayId;
+  const selectedProvider = form.watch(fieldNames.provider) as keyof typeof MODEL_OPTIONS_BY_PROVIDER;
+  const selectedLlmProvider = fieldNames.llmProvider ? form.watch(fieldNames.llmProvider) : undefined;
 
-  // Fetch providers and models from AI Gateway when using gateway
-  // Filter for enabled providers at the API level
-  const { data: providersData, isLoading: isLoadingProviders } = useListModelProvidersQuery(
-    { filter: 'enabled = "true"' },
-    { enabled: isUsingGateway }
+  // Fetch providers from AI Gateway v2 when aigw is deployed
+  const { data: providersData, isLoading: isLoadingProviders } = useListLLMProvidersQuery(
+    {},
+    { enabled: hasAigwDeployed }
   );
 
-  // Filter models by provider and enabled status
-  const { data: modelsData, isLoading: isLoadingModels } = useListModelsQuery(
-    {
-      filter: selectedProvider
-        ? `provider = "${selectedProvider}" AND enabled = "true"`
-        : 'enabled = "true"',
-    },
-    { enabled: isUsingGateway && !!selectedProvider }
-  );
+  // Get available providers - from aigw API or hardcoded
+  const availableProviders = useMemo(() => {
+    if (hasAigwDeployed && providersData?.llmProviders) {
+      // Map aigw providers to our format, filtering for enabled only
+      return providersData.llmProviders
+        .filter((provider) => provider.enabled)
+        .map((provider) => {
+          const formTypeId = LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type] ?? 'openaiCompatible';
 
-	// Get available providers - from gateway API or hardcoded
-	const availableProviders = useMemo(() => {
-		if (isUsingGateway && providersData?.modelProviders) {
-			// Map gateway providers to our format (already filtered for enabled at API level)
-			// Provider names are already transformed by the query hook (prefix stripped)
-			return providersData.modelProviders.map((provider) => {
-				const providerId = provider.name.toLowerCase().replace(/\s+/g, '');
+          return {
+            id: provider.name,
+            label: provider.displayName || provider.name,
+            icon: PROVIDER_INFO[formTypeId as keyof typeof PROVIDER_INFO]?.icon || '',
+            type: provider.type,
+          };
+        });
+    }
+    // Fallback to hardcoded providers
+    return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
+      id,
+      label: provider.label,
+      icon: provider.icon,
+      type: undefined as LLMProviderType | undefined,
+    }));
+  }, [hasAigwDeployed, providersData]);
 
-				return {
-					id: providerId,
-					label: provider.displayName || provider.name,
-					icon: MODEL_OPTIONS_BY_PROVIDER[providerId as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
-				};
-			});
-		}
-		// Fallback to hardcoded providers
-		return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
-			id,
-			label: provider.label,
-			icon: provider.icon,
-		}));
-	}, [isUsingGateway, providersData]);
-
-	// Get available models - from gateway API or hardcoded
-	const filteredModels = useMemo(() => {
-		if (isUsingGateway && modelsData?.models) {
-			// Map gateway models to our format (already filtered for enabled at API level)
-			// Model names are already transformed by the query hook (prefix stripped)
-			return modelsData.models.map((model) => ({
-				value: model.name,
-				name: model.displayName || model.name,
-				description: model.description || '',
-			}));
-		}
-		// Fallback to hardcoded models
-		if (!selectedProvider) return [];
-		const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
-		return providerData?.models || [];
-	}, [isUsingGateway, modelsData, selectedProvider]);
+  // Get available models - from aigw provider's models or hardcoded
+  const filteredModels = useMemo(() => {
+    if (hasAigwDeployed && providersData?.llmProviders && selectedLlmProvider) {
+      // Find the selected provider and get its models
+      const provider = providersData.llmProviders.find((p) => p.name === selectedLlmProvider);
+      if (provider) {
+        return provider.models.map((modelName) => ({
+          value: modelName,
+          name: modelName,
+          description: '',
+        }));
+      }
+      return [];
+    }
+    // Fallback to hardcoded models
+    if (!selectedProvider) return [];
+    const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider];
+    return providerData?.models || [];
+  }, [hasAigwDeployed, providersData, selectedLlmProvider, selectedProvider]);
 
   // Auto-select first provider when available (create mode)
   useEffect(() => {
-    if (mode === 'create' && isUsingGateway && availableProviders.length > 0 && !isLoadingProviders) {
-      const currentProvider = form.getValues(fieldNames.provider);
-      // Check if current provider is in the available list
-      const isValidProvider = availableProviders.some((p) => p.id === currentProvider);
+    if (mode === 'create' && hasAigwDeployed && availableProviders.length > 0 && !isLoadingProviders) {
+      const currentLlmProvider = fieldNames.llmProvider ? form.getValues(fieldNames.llmProvider) : undefined;
+      const isValidProvider = currentLlmProvider && availableProviders.some((p) => p.id === currentLlmProvider);
 
-      if (!currentProvider || !isValidProvider) {
-        // Auto-select first available provider
-        form.setValue(fieldNames.provider, availableProviders[0].id, { shouldValidate: true });
+      if (!currentLlmProvider || !isValidProvider) {
+        // Use handleProviderChange to set all fields consistently
+        handleProviderChange(availableProviders[0].id);
       }
     }
-  }, [mode, isUsingGateway, availableProviders, isLoadingProviders, form, fieldNames]);
+  }, [mode, hasAigwDeployed, availableProviders, isLoadingProviders]);
 
-  // Clear model field when provider changes to show loading state
+  // Auto-select first model when provider changes or models become available
   useEffect(() => {
-    if (isUsingGateway && selectedProvider) {
-      const currentModel = form.getValues(fieldNames.model);
-      // When models are loading or unavailable, clear the field to show placeholder
-      if (currentModel && (isLoadingModels || filteredModels.length === 0)) {
-        form.setValue(fieldNames.model, '', { shouldValidate: false });
-      }
-    }
-  }, [isUsingGateway, selectedProvider, isLoadingModels, filteredModels.length, form, fieldNames]);
-
-  // Auto-select first model when available (create mode)
-  useEffect(() => {
-    if (mode === 'create' && isUsingGateway && filteredModels.length > 0 && filteredModels[0] && !isLoadingModels && selectedProvider) {
+    if (hasAigwDeployed && filteredModels.length > 0 && filteredModels[0] && selectedLlmProvider) {
       const currentModel = form.getValues(fieldNames.model);
       const isValid = currentModel && filteredModels.some((m: { value: string }) => m.value === currentModel);
 
       if (!isValid) {
-        // Auto-select first available model
         form.setValue(fieldNames.model, filteredModels[0].value, { shouldValidate: true });
       }
     }
-  }, [mode, isUsingGateway, selectedProvider, filteredModels, isLoadingModels, form, fieldNames]);
+  }, [hasAigwDeployed, selectedLlmProvider, filteredModels, form, fieldNames]);
 
-  // Clear API key when using gateway
+  // Clear API key when using aigw
   useEffect(() => {
-    if (isUsingGateway) {
+    if (hasAigwDeployed) {
       form.setValue(fieldNames.apiKeySecret, '');
     }
-  }, [isUsingGateway, form, fieldNames]);
+  }, [hasAigwDeployed, form, fieldNames]);
 
-  // Gateway state is settling: either still loading, or loaded but auto-select hasn't fired yet.
-  const isGatewaySettling = fieldNames.gatewayId &&
-    (isLoadingGateways || (hasGatewayDeployed && availableGateways.length > 0 && !selectedGatewayId));
+  // Handle provider selection - sets both llmProvider and provider fields in gateway mode
+  const handleProviderChange = (providerNameOrId: string) => {
+    if (hasAigwDeployed && fieldNames.llmProvider) {
+      // In gateway mode, the value is the provider NAME (e.g., "my-openai-prod")
+      // Use form.setValue for all fields to ensure form.watch picks them up
+      form.setValue(fieldNames.llmProvider, providerNameOrId, { shouldDirty: true, shouldValidate: true });
+      // Also set the provider TYPE (e.g., "openai", "anthropic") for the proto mapping
+      const selectedGwProvider = availableProviders.find((p) => p.id === providerNameOrId);
+      if (selectedGwProvider?.type != null) {
+        const formTypeId = LLM_PROVIDER_TYPE_TO_FORM_ID[selectedGwProvider.type] ?? 'openaiCompatible';
+        form.setValue(fieldNames.provider, formTypeId, { shouldDirty: true, shouldValidate: true });
+      }
+    } else {
+      // In non-gateway mode, value is the provider type ID directly
+      form.setValue(fieldNames.provider, providerNameOrId, { shouldDirty: true, shouldValidate: true });
+    }
+    // Clear model when switching providers
+    form.setValue(fieldNames.model, '', { shouldValidate: false });
+  };
 
   return (
     <div className="space-y-4">
-      {fieldNames.gatewayId && (
-        <Field data-invalid={!!form.formState.errors[fieldNames.gatewayId]}>
-          <FieldLabel htmlFor="gateway" required>AI Gateway</FieldLabel>
-          <FieldDescription>
-            {hasGatewayDeployed && availableGateways.length > 0
-              ? 'Route requests through an AI Gateway'
-              : 'Gateway not available. Please enable AI Gateway for your cluster.'}
-          </FieldDescription>
+      {mode === 'create' ? (
+        <Field data-invalid={!!form.formState.errors[fieldNames.provider]}>
+          <FieldLabel htmlFor="provider" required>
+            Provider
+          </FieldLabel>
+          {hasAigwDeployed && availableProviders.length === 0 && !isLoadingProviders && (
+            <FieldDescription>No enabled providers available. Please enable providers in AI Gateway.</FieldDescription>
+          )}
           <Controller
             control={form.control}
-            name={fieldNames.gatewayId}
+            name={hasAigwDeployed && fieldNames.llmProvider ? fieldNames.llmProvider : fieldNames.provider}
             render={({ field }) => (
               <Select
-                disabled={isLoadingGateways || !hasGatewayDeployed || availableGateways.length === 0}
-                onValueChange={field.onChange}
+                disabled={isLoadingProviders || (hasAigwDeployed && availableProviders.length === 0)}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  handleProviderChange(value);
+                }}
                 value={field.value}
               >
-                <SelectTrigger id="gateway">
-                  <SelectValue
-                    placeholder={
-                      isLoadingGateways
-                        ? 'Loading gateways...'
-                        : hasGatewayDeployed && availableGateways.length > 0
-                          ? 'Select a gateway'
-                          : 'No gateways available'
-                    }
-                  />
+                <SelectTrigger id="provider">
+                  <SelectValue placeholder={
+                    isLoadingProviders
+                      ? "Loading providers..."
+                      : (hasAigwDeployed && availableProviders.length === 0)
+                        ? "No providers available"
+                        : "Select provider"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableGateways.map((gw) => (
-                    <SelectItem key={gw.id} value={gw.id}>
-                      {gw.displayName}
+                  {availableProviders.map((provider) => (
+                    <SelectItem key={provider.id} value={provider.id}>
+                      <div className="flex items-center gap-2">
+                        {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
+                        <span>{provider.label}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
-          {form.formState.errors[fieldNames.gatewayId] && (
-            <FieldError>{form.formState.errors[fieldNames.gatewayId]?.message as string}</FieldError>
+          {form.formState.errors[fieldNames.provider] && (
+            <FieldError>{form.formState.errors[fieldNames.provider]?.message as string}</FieldError>
+          )}
+        </Field>
+      ) : (
+        <Field>
+          <FieldLabel>Provider</FieldLabel>
+          <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+            <Text>
+              {selectedProvider === 'openai' && 'OpenAI'}
+              {selectedProvider === 'anthropic' && 'Anthropic'}
+              {selectedProvider === 'google' && 'Google'}
+              {selectedProvider === 'openaiCompatible' && 'OpenAI Compatible'}
+              {!selectedProvider && 'Unknown Provider'}
+            </Text>
+          </div>
+        </Field>
+      )}
+
+      <Field data-invalid={!!form.formState.errors[fieldNames.model]}>
+        <FieldLabel htmlFor="model" required>
+          Model
+        </FieldLabel>
+        {hasAigwDeployed && filteredModels.length === 0 && selectedLlmProvider && (
+          <FieldDescription>No enabled models available. Please enable models in AI Gateway.</FieldDescription>
+        )}
+        <Controller
+          control={form.control}
+          name={fieldNames.model}
+          render={({ field }) => {
+            const providerData = selectedProvider
+              ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider]
+              : null;
+            const isFreeTextMode =
+              !hasAigwDeployed && providerData && providerData.models.length === 0;
+            const hasNoProviders = hasAigwDeployed && availableProviders.length === 0 && !isLoadingProviders;
+            const hasNoModels = hasAigwDeployed && filteredModels.length === 0 && !!selectedLlmProvider;
+
+            if (isFreeTextMode) {
+              return (
+                <>
+                  <Input
+                    disabled={hasNoProviders || hasNoModels}
+                    id="model"
+                    placeholder="Enter model name (e.g., llama-3.1-70b)"
+                    {...field}
+                    aria-invalid={!!form.formState.errors[fieldNames.model]}
+                    aria-describedby={form.formState.errors[fieldNames.model] ? 'model-error' : undefined}
+                  />
+                  <FieldDescription>Enter the model name exactly as supported by your API endpoint</FieldDescription>
+                </>
+              );
+            }
+
+            return (
+              <Select disabled={hasNoProviders || hasNoModels} onValueChange={field.onChange} value={field.value || undefined}>
+                <SelectTrigger id="model">
+                  <SelectValue placeholder={
+                    hasNoProviders
+                      ? "No providers available"
+                      : hasNoModels
+                        ? "No models available"
+                        : "Select model"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {hasNoModels ? (
+                    <div className="p-2">
+                      <Text variant="muted">No enabled models available</Text>
+                    </div>
+                  ) : filteredModels.length > 0 ? (
+                    <SelectGroup>
+                      {providerData && !hasAigwDeployed && (
+                        <SelectLabel>
+                          <div className="flex items-center gap-2">
+                            <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
+                            <span>{providerData.label}</span>
+                          </div>
+                        </SelectLabel>
+                      )}
+                      {filteredModels.map((model: { value: string; name: string; description: string }) => (
+                        <SelectItem key={model.value} value={model.value}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ) : (
+                    <div className="p-2">
+                      <Text variant="muted">Please select a provider first</Text>
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            );
+          }}
+        />
+        {form.formState.errors[fieldNames.model] && (
+          <FieldError id="model-error">{form.formState.errors[fieldNames.model]?.message as string}</FieldError>
+        )}
+      </Field>
+
+      {!hasAigwDeployed && (
+        <Field data-invalid={!!form.formState.errors[fieldNames.apiKeySecret]}>
+          <FieldLabel htmlFor="apiKeySecret" required>
+            API Token
+          </FieldLabel>
+          <Controller
+            control={form.control}
+            name={fieldNames.apiKeySecret}
+            render={({ field }) => (
+              <SecretSelector
+                availableSecrets={availableSecrets}
+                customText={AI_AGENT_SECRET_TEXT}
+                onChange={field.onChange}
+                placeholder="Select from secrets store or create new"
+                scopes={scopes}
+                value={field.value}
+              />
+            )}
+          />
+          {form.formState.errors[fieldNames.apiKeySecret] && (
+            <FieldError>{form.formState.errors[fieldNames.apiKeySecret]?.message as string}</FieldError>
           )}
         </Field>
       )}
 
-      {isGatewaySettling ? (
-        [1, 2].map((i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton variant="text" width="sm" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-        ))
-      ) : (
-        <>
-          {mode === 'create' ? (
-            <Field data-invalid={!!form.formState.errors[fieldNames.provider]}>
-              <FieldLabel htmlFor="provider" required>
-                Provider
-              </FieldLabel>
-              {isUsingGateway && availableProviders.length === 0 && !isLoadingProviders && (
-                <FieldDescription>No enabled providers available. Please enable providers in AI Gateway.</FieldDescription>
-              )}
-              <Controller
-                control={form.control}
-                name={fieldNames.provider}
-                render={({ field }) => (
-                  <Select
-                    disabled={isLoadingProviders || (isUsingGateway && availableProviders.length === 0)}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <SelectTrigger id="provider">
-                      <SelectValue placeholder={
-                        isLoadingProviders
-                          ? "Loading providers..."
-                          : (isUsingGateway && availableProviders.length === 0)
-                            ? "No providers available"
-                            : "Select provider"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProviders.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          <div className="flex items-center gap-2">
-                            {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
-                            <span>{provider.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {form.formState.errors[fieldNames.provider] && (
-                <FieldError>{form.formState.errors[fieldNames.provider]?.message as string}</FieldError>
-              )}
-            </Field>
-          ) : (
-            <Field>
-              <FieldLabel>Provider</FieldLabel>
-              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                <Text>
-                  {selectedProvider === 'openai' && 'OpenAI'}
-                  {selectedProvider === 'anthropic' && 'Anthropic'}
-                  {selectedProvider === 'google' && 'Google'}
-                  {selectedProvider === 'openaiCompatible' && 'OpenAI Compatible'}
-                  {!selectedProvider && 'Unknown Provider'}
-                </Text>
-              </div>
-            </Field>
+      {!hasAigwDeployed && showBaseUrl && fieldNames.baseUrl && (
+        <Field data-invalid={!!form.formState.errors[fieldNames.baseUrl]}>
+          <FieldLabel htmlFor="baseUrl" required={selectedProvider === 'openaiCompatible'}>
+            Base URL {selectedProvider !== 'openaiCompatible' && '(optional)'}
+          </FieldLabel>
+          <Input
+            id="baseUrl"
+            placeholder="https://api.example.com/v1"
+            {...form.register(fieldNames.baseUrl)}
+            aria-invalid={!!form.formState.errors[fieldNames.baseUrl]}
+            aria-describedby={form.formState.errors[fieldNames.baseUrl] ? 'baseUrl-error' : undefined}
+          />
+          <FieldDescription>
+            {selectedProvider === 'openaiCompatible'
+              ? 'API endpoint URL for your OpenAI-compatible service'
+              : 'Override the default API endpoint for this provider'}
+          </FieldDescription>
+          {form.formState.errors[fieldNames.baseUrl] && (
+            <FieldError id="baseUrl-error">{form.formState.errors[fieldNames.baseUrl]?.message as string}</FieldError>
           )}
-
-          <Field data-invalid={!!form.formState.errors[fieldNames.model]}>
-            <FieldLabel htmlFor="model" required>
-              Model
-            </FieldLabel>
-            {isUsingGateway && filteredModels.length === 0 && !isLoadingModels && selectedProvider && (
-              <FieldDescription>No enabled models available. Please enable models in AI Gateway.</FieldDescription>
-            )}
-            <Controller
-              control={form.control}
-              name={fieldNames.model}
-              render={({ field }) => {
-                const providerData = selectedProvider
-                  ? MODEL_OPTIONS_BY_PROVIDER[selectedProvider]
-                  : null;
-                const isFreeTextMode =
-                  providerData && providerData.models.length === 0;
-                const hasNoProviders = isUsingGateway && availableProviders.length === 0 && !isLoadingProviders;
-                const hasNoModels = isUsingGateway && filteredModels.length === 0 && !isLoadingModels && !!selectedProvider;
-
-                if (isFreeTextMode) {
-                  return (
-                    <>
-                      <Input
-                        disabled={hasNoProviders || hasNoModels}
-                        id="model"
-                        placeholder="Enter model name (e.g., llama-3.1-70b)"
-                        {...field}
-                        aria-invalid={!!form.formState.errors[fieldNames.model]}
-                        aria-describedby={form.formState.errors[fieldNames.model] ? 'model-error' : undefined}
-                      />
-                      <FieldDescription>Enter the model name exactly as supported by your API endpoint</FieldDescription>
-                    </>
-                  );
-                }
-
-                return (
-                  <Select disabled={isLoadingModels || hasNoProviders || hasNoModels} onValueChange={field.onChange} value={field.value || undefined}>
-                    <SelectTrigger id="model">
-                      <SelectValue placeholder={
-                        hasNoProviders
-                          ? "No providers available"
-                          : hasNoModels
-                            ? "No models available"
-                            : isLoadingModels
-                              ? "Loading models..."
-                              : "Select model"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {isLoadingModels ? (
-                        <div className="p-2">
-                          <Text variant="muted">Loading models...</Text>
-                        </div>
-                      ) : hasNoModels ? (
-                        <div className="p-2">
-                          <Text variant="muted">No enabled models available</Text>
-                        </div>
-                      ) : filteredModels.length > 0 ? (
-                        <SelectGroup>
-                          {providerData && !isUsingGateway && (
-                            <SelectLabel>
-                              <div className="flex items-center gap-2">
-                                <img alt={providerData.label} className="h-4 w-4" src={providerData.icon} />
-                                <span>{providerData.label}</span>
-                              </div>
-                            </SelectLabel>
-                          )}
-                          {filteredModels.map((model: { value: string; name: string; description: string }) => (
-                            <SelectItem key={model.value} value={model.value}>
-                              {model.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ) : (
-                        <div className="p-2">
-                          <Text variant="muted">Please select a provider first</Text>
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                );
-              }}
-            />
-            {form.formState.errors[fieldNames.model] && (
-              <FieldError id="model-error">{form.formState.errors[fieldNames.model]?.message as string}</FieldError>
-            )}
-          </Field>
-
-          {!isUsingGateway && (
-            <Field data-invalid={!!form.formState.errors[fieldNames.apiKeySecret]}>
-              <FieldLabel htmlFor="apiKeySecret" required>
-                API Token
-              </FieldLabel>
-              <Controller
-                control={form.control}
-                name={fieldNames.apiKeySecret}
-                render={({ field }) => (
-                  <SecretSelector
-                    availableSecrets={availableSecrets}
-                    customText={AI_AGENT_SECRET_TEXT}
-                    onChange={field.onChange}
-                    placeholder="Select from secrets store or create new"
-                    scopes={scopes}
-                    value={field.value}
-                  />
-                )}
-              />
-              {form.formState.errors[fieldNames.apiKeySecret] && (
-                <FieldError>{form.formState.errors[fieldNames.apiKeySecret]?.message as string}</FieldError>
-              )}
-            </Field>
-          )}
-
-          {!isUsingGateway && showBaseUrl && fieldNames.baseUrl && (
-            <Field data-invalid={!!form.formState.errors[fieldNames.baseUrl]}>
-              <FieldLabel htmlFor="baseUrl" required={selectedProvider === 'openaiCompatible'}>
-                Base URL {selectedProvider !== 'openaiCompatible' && '(optional)'}
-              </FieldLabel>
-              <Input
-                id="baseUrl"
-                placeholder="https://api.example.com/v1"
-                {...form.register(fieldNames.baseUrl)}
-                aria-invalid={!!form.formState.errors[fieldNames.baseUrl]}
-                aria-describedby={form.formState.errors[fieldNames.baseUrl] ? 'baseUrl-error' : undefined}
-              />
-              <FieldDescription>
-                {selectedProvider === 'openaiCompatible'
-                  ? 'API endpoint URL for your OpenAI-compatible service'
-                  : 'Override the default API endpoint for this provider'}
-              </FieldDescription>
-              {form.formState.errors[fieldNames.baseUrl] && (
-                <FieldError id="baseUrl-error">{form.formState.errors[fieldNames.baseUrl]?.message as string}</FieldError>
-              )}
-            </Field>
-          )}
-        </>
+        </Field>
       )}
 
 			{showMaxIterations && (
@@ -447,7 +382,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
 					<div className="flex items-center justify-between">
 						<FieldLabel htmlFor="maxIterations">Max Iterations</FieldLabel>
 						<Text className="font-medium text-sm">
-							{maxIterations}
+							{form.watch(fieldNames.maxIterations)}
 						</Text>
 					</div>
 					<Controller

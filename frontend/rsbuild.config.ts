@@ -103,6 +103,19 @@ export default defineConfig({
             },
           ]
         : []),
+      // AIGW v2 API - proxy to new AI Gateway management API (LLMProviderService, ModelService)
+      ...(process.env.AIGW_URL
+        ? [
+            {
+              context: ['/.aigw/api'],
+              target: process.env.AIGW_URL,
+              changeOrigin: true,
+              secure: false,
+              logLevel: 'debug',
+              pathRewrite: { '^/\\.aigw/api': '' },
+            },
+          ]
+        : []),
       // All other APIs - proxy to Console backend
       {
         context: ['/api', '/redpanda.api', '/auth', '/logout'],

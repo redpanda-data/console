@@ -33,7 +33,7 @@ import {
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
-import { isFeatureFlagEnabled } from 'config';
+import { config } from 'config';
 import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -53,7 +53,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
 import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -75,38 +74,8 @@ export const AIAgentCreatePage = () => {
     skipInvalidation: true,
   });
 
-  // Feature flag: when true, use legacy API key mode (hardcoded providers)
-  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
-
-  // Gateway detection and list query (using v1 API from ai-gateway module)
-  // Only fetch when NOT in legacy mode
-  // Note: System-managed gateways are automatically excluded by the query hook
-  const { data: gatewaysData, isLoading: isLoadingGateways } = useListGatewaysQuery(
-    {},
-    { enabled: !isLegacyApiKeyMode }
-  );
-
-  const hasGatewayDeployed = useMemo(() => {
-    if (isLegacyApiKeyMode || isLoadingGateways) {
-      return false;
-    }
-    return Boolean(gatewaysData?.gateways && gatewaysData.gateways.length > 0);
-  }, [isLegacyApiKeyMode, gatewaysData, isLoadingGateways]);
-
-  const availableGateways = useMemo(() => {
-    if (isLegacyApiKeyMode || !gatewaysData?.gateways) {
-      return [];
-    }
-    return gatewaysData.gateways.map((gw) => {
-      // Extract gateway ID from name (format: "gateways/{gateway_id}")
-      const gatewayId = gw.name.split('/').pop() || gw.name;
-      return {
-        id: gatewayId,
-        displayName: gw.displayName,
-        description: gw.description,
-      };
-    });
-  }, [isLegacyApiKeyMode, gatewaysData]);
+  // Determine if AI Gateway is deployed based on config
+  const hasAigwDeployed = !!config.aigwUrl;
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -145,13 +114,6 @@ export const AIAgentCreatePage = () => {
       form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
     }
   }, [displayName, form]);
-
-  // Auto-select first gateway when gateways are available (only if not in legacy mode)
-  useEffect(() => {
-    if (!isLegacyApiKeyMode && availableGateways.length > 0 && !form.getValues('gatewayId')) {
-      form.setValue('gatewayId', availableGateways[0].id);
-    }
-  }, [isLegacyApiKeyMode, availableGateways, form]);
 
   const {
     fields: tagFields,
@@ -395,9 +357,9 @@ export const AIAgentCreatePage = () => {
     }
 
     const gatewayConfig =
-      values.gatewayId && values.gatewayId.trim() !== ''
+      values.llmProvider && values.llmProvider.trim() !== ''
         ? create(AIAgent_GatewayConfigSchema, {
-            virtualGatewayId: values.gatewayId,
+            llmProvider: values.llmProvider,
           })
         : undefined;
 
@@ -520,7 +482,6 @@ export const AIAgentCreatePage = () => {
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
-                    availableGateways={availableGateways}
                     availableSecrets={availableSecrets}
                     fieldNames={{
                       provider: 'provider',
@@ -528,11 +489,10 @@ export const AIAgentCreatePage = () => {
                       apiKeySecret: 'apiKeySecret',
                       baseUrl: 'baseUrl',
                       maxIterations: 'maxIterations',
-                      gatewayId: 'gatewayId',
+                      llmProvider: 'llmProvider',
                     }}
                     form={form}
-                    hasGatewayDeployed={hasGatewayDeployed}
-                    isLoadingGateways={isLoadingGateways}
+                    hasAigwDeployed={hasAigwDeployed}
                     mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                     showBaseUrl={selectedProvider === 'openaiCompatible'}

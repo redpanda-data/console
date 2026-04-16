@@ -210,17 +210,15 @@ message AIAgent {
     string description = 3 [(buf.validate.field).string.max_len = 256];
   }
 
-  // Gateway configuration for routing requests through an AI Gateway.
+  // Optional gateway configuration for routing requests through an AI Gateway.
   message GatewayConfig {
-    // Virtual gateway ID (XID format - 20-character alphanumeric string).
-    // This ID is used in the x-gateway-id header for multi-tenant routing.
-    string virtual_gateway_id = 1 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).string.pattern = "^[a-z0-9]+$",
-      (buf.validate.field).string.len = 20,
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Virtual gateway ID (20-character XID format)."}
-    ];
+    // Deprecated: No longer needed — there is always one gateway per cluster.
+    string virtual_gateway_id = 1 [deprecated = true];
+
+    // Name of the configured LLMProvider in the AI Gateway (aigw).
+    // Used to determine which provider to route requests through.
+    // Example: "my-openai-provider"
+    string llm_provider = 2;
   }
 
   // A2A agent card configuration for customizing agent discovery metadata.
