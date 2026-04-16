@@ -134,9 +134,11 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
+// Rendered as <div> instead of <p> so consumers can nest block-level components
+// (Text, Alert, Input, etc.) without triggering React's validateDOMNesting warnings.
+function FieldDescription({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <p
+    <div
       data-slot="field-description"
       className={cn(
         'text-muted-foreground text-sm leading-normal font-normal group-has-[[data-orientation=horizontal]]/field:text-balance',

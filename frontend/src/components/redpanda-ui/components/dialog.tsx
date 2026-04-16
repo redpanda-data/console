@@ -175,13 +175,20 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   );
 }
 
-function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  // Render the Radix Description as a <div> (via asChild) instead of the default <p>
+  // so it can safely contain block-level children (Text, Input, List, etc.) without
+  // triggering React's validateDOMNesting warnings.
   return (
-    <DialogPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
-      data-slot="dialog-description"
-      {...props}
-    />
+    <DialogPrimitive.Description asChild {...props}>
+      <div className={cn('text-muted-foreground text-sm', className)} data-slot="dialog-description">
+        {children}
+      </div>
+    </DialogPrimitive.Description>
   );
 }
 

@@ -142,7 +142,10 @@ interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<type
   as?: 'p' | 'div' | 'span' | 'small';
 }
 
-export function Text({ variant, align, as = 'p', className, children, testId, ...props }: TextProps) {
+// Defaults to a <div> so Text can safely wrap block-level children (lists, inputs, etc.)
+// without emitting React `validateDOMNesting` warnings. Consumers that need paragraph
+// semantics can opt in via `as="p"`.
+export function Text({ variant, align, as = 'div', className, children, testId, ...props }: TextProps) {
   const Component = as;
 
   return (
