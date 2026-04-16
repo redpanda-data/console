@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import axios from 'axios';
 // biome-ignore lint/performance/noNamespaceImport: part of es-cookie
 import * as Cookies from 'es-cookie';
 
@@ -66,15 +65,18 @@ export const hubspotSubmit = ({
       value,
     }));
 
-  axios
-    .post(`https://api.hsforms.com/submissions/v3/integration/submit/${portalId}/${formId}`, {
+  fetch(`https://api.hsforms.com/submissions/v3/integration/submit/${portalId}/${formId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       fields: prepareFields(fields),
       context: {
         hutk: Cookies.get(HUBSPOT_TRACKING_COOKIE_TOKEN),
         pageUri: window?.location?.href,
         pageName: document?.title,
       },
-    })
+    }),
+  })
     .then((response) => {
       if (onSuccess) {
         onSuccess(response);
