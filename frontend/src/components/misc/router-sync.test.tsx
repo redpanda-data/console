@@ -47,8 +47,8 @@ vi.mock('../../state/backend-api', () => ({
   },
 }));
 
-import { config, isEmbedded } from '../../config';
 import { RouterSync } from './router-sync';
+import { config, isEmbedded } from '../../config';
 
 describe('RouterSync', () => {
   beforeEach(() => {
@@ -65,7 +65,7 @@ describe('RouterSync', () => {
     render(<RouterSync />);
 
     const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated',
+      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
     );
     expect(consoleEvents).toHaveLength(0);
 
@@ -81,7 +81,7 @@ describe('RouterSync', () => {
     render(<RouterSync />);
 
     const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated',
+      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
     );
     expect(consoleEvents).toHaveLength(0);
 
@@ -97,7 +97,7 @@ describe('RouterSync', () => {
     render(<RouterSync />);
 
     const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated',
+      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
     );
     expect(consoleEvents).toHaveLength(1);
     expect((consoleEvents[0][0] as CustomEvent).detail).toBe('/schema-registry');

@@ -294,7 +294,7 @@ describe('ConsoleApp', () => {
 
       // Verify initial path was used
       expect(vi.mocked(createMemoryHistory)).toHaveBeenCalledWith(
-        expect.objectContaining({ initialEntries: ['/topics'] }),
+        expect.objectContaining({ initialEntries: ['/topics'] })
       );
 
       const callCount = vi.mocked(createMemoryHistory).mock.calls.length;
