@@ -9,8 +9,8 @@ if (typeof globalThis.MessageChannel !== 'undefined') {
 }
 
 import '@testing-library/jest-dom/vitest';
-import _rawUserEvent from '@testing-library/user-event';
 import { cleanup } from '@testing-library/react';
+import _rawUserEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 import './src/utils/array-extensions';
 import './tests/mock-document';
