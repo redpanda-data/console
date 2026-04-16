@@ -14,6 +14,11 @@ export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
 
   return {
+    // fsModuleCache caches filesystem module resolution between runs of the
+    // same process. Ported from apps/adp-ui — cheap perf win on cold starts
+    // and watch-mode reruns, especially with the large route tree + proto
+    // output that Vitest would otherwise stat on every resolution.
+    experimental: { fsModuleCache: true },
     test: {
       fileParallelism: true,
       isolate: true,

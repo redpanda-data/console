@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
 
   return {
+    // fsModuleCache caches filesystem module resolution between runs of the
+    // same process. Ported from apps/adp-ui — cheap perf win on cold starts
+    // and watch-mode reruns.
+    experimental: { fsModuleCache: true },
     test: {
       fileParallelism: true,
       vmMemoryLimit: '1000Mb',
