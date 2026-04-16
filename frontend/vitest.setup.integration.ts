@@ -15,6 +15,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
+
 import { cleanupTestHarness } from './tests/harness-cleanup';
 
 // ── Chakra + userEvent compatibility ─────────────────────────────────
@@ -136,18 +137,6 @@ vi.mock('lottie-react', () => ({
   }),
 }));
 
-// Explicit cleanup after each test to prevent memory leaks.
-//
-// Order matters:
-//   1. cleanup() unmounts RTL-rendered React trees so stores are no longer
-//      observed by subscribers before we replace their state.
-//   2. resetAllZustandStores() restores each module-level store to its
-//      initial state. Without this, state accumulated by the page under test
-//      (topic lists, cluster overviews, API caches, etc.) stays retained in
-//      the worker process for every subsequent test in the file — the
-//      primary cause of the +100–240 MB intra-file heap growth measured
-//      during the TDD audit.
-//   3. clearAllMocks / clearAllTimers is standard Vitest hygiene.
 // Explicit cleanup after each test to prevent memory leaks.
 //
 // Order matters:

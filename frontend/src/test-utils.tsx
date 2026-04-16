@@ -31,7 +31,7 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
 // (and therefore `config`), which would pin `isEmbedded`/`isAdpEnabled` live
 // bindings before test files' `vi.mock('config', ...)` hoists can take
 // effect.
-import { cleanupTestHarness, trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
+import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 
