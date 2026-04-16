@@ -78,6 +78,9 @@ export const hubspotSubmit = ({
     }),
   })
     .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HubSpot submit failed: ${response.status}`);
+      }
       if (onSuccess) {
         onSuccess(response);
       }
