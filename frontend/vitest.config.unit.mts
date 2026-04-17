@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       environment: 'node', // Unit tests use node environment
       include: ['src/**/*.test.ts'], // Only .test.ts files (unit tests)
       setupFiles: './vitest.setup.unit.ts',
-      reporters: ['dot', ...(process.env.CI ? ['github-actions' as const] : [])],
+      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
     },
     plugins: [
       envCompatible({ prefix: ENV_PREFIX }),

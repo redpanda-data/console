@@ -53,7 +53,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       alias: sharedAliases,
-      reporters: ['dot', ...(process.env.CI ? ['github-actions' as const] : [])],
+      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
       typecheck: {
         enabled: false,
       },

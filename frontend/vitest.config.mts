@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
         registerNodeLoader: true,
       },
       alias: sharedAliases,
-      reporters: ['default', 'html', ...(process.env.CI ? ['github-actions' as const] : [])],
+      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
       typecheck: {
         enabled: false,
       },
