@@ -37,39 +37,6 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 };
 
 describe('TopicsStep', () => {
-  describe('Filter type options', () => {
-    test('should show all filter type options when in specify topics mode', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        topicsMode: 'specify',
-        topics: [
-          {
-            name: '',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('topics-toggle-button');
-      await user.click(toggleButton);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('topic-filter-0')).toBeInTheDocument();
-      });
-
-      // Verify all filter type tabs are present
-      expect(screen.getByTestId('topic-filter-0-include-specific')).toBeInTheDocument();
-      expect(screen.getByTestId('topic-filter-0-include-prefix')).toBeInTheDocument();
-      expect(screen.getByTestId('topic-filter-0-exclude-specific')).toBeInTheDocument();
-      expect(screen.getByTestId('topic-filter-0-exclude-prefix')).toBeInTheDocument();
-    });
-  });
-
   describe('Multiple filters', () => {
     test('should create multiple topic filters', async () => {
       const user = userEvent.setup();

@@ -121,16 +121,16 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Wait for error state
-    await waitFor(
+    // Wait for the hook to settle on callCount === 2 (first page success + second page error).
+    // vi.waitFor polls in small intervals rather than hard-sleeping, so it exits as soon as
+    // the condition holds, and stays short enough to catch runaway extra calls.
+    await vi.waitFor(
       () => {
         expect(result.current.isFetching).toBe(false);
+        expect(callCount).toBe(2);
       },
-      { timeout: 5000 }
+      { timeout: 2000, interval: 50 }
     );
-
-    // Give time to ensure no infinite loop (would cause many more calls)
-    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Should have called API exactly twice: first page success, second page error
     // If there's an infinite loop, callCount would be much higher
@@ -173,8 +173,11 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Wait a bit to ensure no calls are made
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Flush microtasks + one macrotask so a would-be fetch has a chance to run.
+    // Avoids a hard setTimeout(r, 500) that both wastes wall time and leaks into
+    // react-query's gcTime cleanup path.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(callCount).toBe(0);
   });

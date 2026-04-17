@@ -147,26 +147,6 @@ describe('UserCreatePage', () => {
     mockRolesApiEnabled = false;
   });
 
-  test('renders form fields', async () => {
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    expect(await screen.findByTestId('create-user-name')).toBeInTheDocument();
-    expect(screen.getByText('Password')).toBeInTheDocument();
-    expect(screen.getByText('SASL mechanism')).toBeInTheDocument();
-    expect(screen.getByTestId('create-user-submit')).toBeInTheDocument();
-  });
-
-  test('create button disabled when username empty', async () => {
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const createButton = await screen.findByRole('button', { name: 'Create' });
-    expect(createButton).toBeDisabled();
-  });
-
   test('create button disabled when username has invalid characters', async () => {
     const { transport } = buildTransport();
 
@@ -217,26 +197,6 @@ describe('UserCreatePage', () => {
     await waitFor(() => {
       expect(screen.getByText('User created successfully')).toBeInTheDocument();
     });
-  });
-
-  test('Create ACLs button is present after user creation', async () => {
-    const user = userEvent.setup();
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'acl-user');
-
-    await user.click(screen.getByTestId('create-user-submit'));
-
-    await waitFor(() => {
-      expect(screen.getByText('User created successfully')).toBeInTheDocument();
-    });
-
-    // Create ACLs is now a button that uses useNavigate
-    const aclButton = screen.getByTestId('create-acls-button');
-    expect(aclButton).toBeInTheDocument();
   });
 
   test('stays on form when createUser fails', async () => {

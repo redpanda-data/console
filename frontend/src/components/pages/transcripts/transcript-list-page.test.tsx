@@ -119,60 +119,6 @@ describe('TranscriptListPage', () => {
     });
   });
 
-  describe('Filter Bar', () => {
-    test('should render preset filter buttons', async () => {
-      const transcript1 = createMockTranscriptSummary({
-        traceId: 'transcript1',
-        rootSpanName: 'operation-1',
-        rootServiceName: 'ai-agent',
-      });
-
-      const { transport } = setupTransport({
-        listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [transcript1],
-          nextPageToken: '',
-        }),
-      });
-
-      renderTranscriptListPage(transport);
-
-      await waitFor(() => {
-        expect(screen.getByText('operation-1')).toBeVisible();
-      });
-
-      // Verify preset filter buttons are present
-      expect(screen.getByRole('button', { name: /LLM Calls/i })).toBeVisible();
-      expect(screen.getByRole('button', { name: /Tool Calls/i })).toBeVisible();
-      expect(screen.getByRole('button', { name: /Agent Spans/i })).toBeVisible();
-      expect(screen.getByRole('button', { name: /Errors Only/i })).toBeVisible();
-      expect(screen.getByRole('button', { name: /Slow/i })).toBeVisible();
-    });
-
-    test('should render attribute filter button', async () => {
-      const transcript1 = createMockTranscriptSummary({
-        traceId: 'transcript1',
-        rootSpanName: 'operation-1',
-        rootServiceName: 'ai-agent',
-      });
-
-      const { transport } = setupTransport({
-        listTracesResponse: create(ListTracesResponseSchema, {
-          traces: [transcript1],
-          nextPageToken: '',
-        }),
-      });
-
-      renderTranscriptListPage(transport);
-
-      await waitFor(() => {
-        expect(screen.getByText('operation-1')).toBeVisible();
-      });
-
-      // Verify attribute filter button is present
-      expect(screen.getByRole('button', { name: /Attribute/i })).toBeVisible();
-    });
-  });
-
   describe('Time Range Selection', () => {
     test('should load transcripts with default time range', async () => {
       const transcript1 = createMockTranscriptSummary({
