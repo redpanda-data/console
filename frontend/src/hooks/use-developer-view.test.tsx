@@ -61,8 +61,15 @@ describe('useDeveloperView', () => {
   });
 
   it('returns false when localStorage contains invalid JSON', () => {
+    // The tested fallback path intentionally catches + logs a SyntaxError via
+    // @redpanda-data/ui's useLocalStorage (which uses console.log). Scope the
+    // mute to this single test so the expected error doesn't pollute CI output.
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {
+      // intentionally empty — scoped mute for expected fallback log
+    });
     store.dv = 'not-json';
     const { result } = renderHook(() => useDeveloperView());
     expect(typeof result.current).toBe('boolean');
+    logSpy.mockRestore();
   });
 });
