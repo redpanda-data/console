@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -78,7 +79,7 @@ func (api *Service) GetConsumerGroup(
 	if groupID == "" {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("group_id is required"),
+			errors.New("group_id is required"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
@@ -174,7 +175,7 @@ func (api *Service) ListTopicPartitionDetails(
 	if topicName == "" {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("topic_name is required"),
+			errors.New("topic_name is required"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
@@ -252,7 +253,7 @@ func (api *Service) ListTopicConsumerGroups(
 	if topicName == "" {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("topic_name is required"),
+			errors.New("topic_name is required"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
@@ -361,7 +362,7 @@ func (api *Service) AlterPartitionAssignments(
 	if len(protoTopics) == 0 {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("at least one topic and partition must be set"),
+			errors.New("at least one topic and partition must be set"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
@@ -420,7 +421,7 @@ func (api *Service) IncrementalAlterConfigs(
 	if len(protoResources) == 0 {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("at least one resource must be set"),
+			errors.New("at least one resource must be set"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 		)
 	}
