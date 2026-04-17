@@ -295,9 +295,7 @@ describe('PipelinePage', () => {
 
     // Wait for debounced lint response to appear
     // LintHintList renders hints via SimpleCodeBlock with format "Line N, Col N: hint"
-    await waitFor(() => {
-      expect(screen.getByText('Line 1, Col 1: response lint warning')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Line 1, Col 1: response lint warning')).toBeInTheDocument();
   });
 
   it('cancelling during pipeline creation goes back to the previous page', async () => {
@@ -328,9 +326,7 @@ describe('PipelinePage', () => {
     });
 
     // When line is 0, LintHintList renders just the hint text (no "Line N, Col N:" prefix)
-    await waitFor(() => {
-      expect(screen.getByText('general config warning')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('general config warning')).toBeInTheDocument();
   });
 
   it('shows a count badge when multiple lint issues are found', async () => {
@@ -524,9 +520,7 @@ describe('PipelinePage', () => {
     render(<PipelinePage />, { transport: createTransport() });
 
     // Wait for the view mode toolbar to load
-    await waitFor(() => {
-      expect(screen.getByText('Edit pipeline')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Edit pipeline')).toBeInTheDocument();
 
     // The back button is the first button in the view toolbar
     const allButtons = screen.getAllByRole('button');
@@ -544,9 +538,7 @@ describe('PipelinePage', () => {
     render(<PipelinePage />, { transport: createTransport() });
 
     // The toolbar should show the displayName from the pipeline response, not the pipeline ID
-    await waitFor(() => {
-      expect(screen.getByText('Test Pipeline')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Test Pipeline')).toBeInTheDocument();
     expect(screen.queryByText('test-pipeline')).not.toBeInTheDocument();
   });
 

@@ -13,6 +13,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import AclDetailPage from './acl-detail-page';
 import type { AclDetail } from '../shared/acl-model';
 
 // ---------------------------------------------------------------------------
@@ -86,7 +87,6 @@ describe('AclDetailPage — principal URL encoding', () => {
     currentAclName = 'Group:mygroup';
     currentHost = '*';
 
-    const { default: AclDetailPage } = await import('./acl-detail-page');
     render(<AclDetailPage />);
 
     await waitFor(() => {
@@ -98,7 +98,6 @@ describe('AclDetailPage — principal URL encoding', () => {
     currentAclName = 'alice';
     currentHost = '*';
 
-    const { default: AclDetailPage } = await import('./acl-detail-page');
     render(<AclDetailPage />);
 
     await waitFor(() => {
@@ -110,7 +109,6 @@ describe('AclDetailPage — principal URL encoding', () => {
     currentAclName = 'User:alice';
     currentHost = '*';
 
-    const { default: AclDetailPage } = await import('./acl-detail-page');
     render(<AclDetailPage />);
 
     await waitFor(() => {
@@ -123,7 +121,6 @@ describe('AclDetailPage — principal URL encoding', () => {
     currentHost = '*';
     mockUseGetAclsByPrincipal.mockReturnValue(aclDetailResult('Group:mygroup'));
 
-    const { default: AclDetailPage } = await import('./acl-detail-page');
     render(<AclDetailPage />);
 
     const editButton = await screen.findByTestId('update-acl-button');

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 
 // Mock TanStack Router before any imports
 vi.mock('@tanstack/react-router', async () => {
@@ -104,10 +104,27 @@ describe('ConsoleApp', () => {
     config.jwt = undefined;
   });
 
-  test('shows nothing while loading', () => {
+  test('shows nothing while loading', async () => {
+    // Use a deferred promise so the component stays in its loading branch
+    // for the duration of the assertion. This prevents the async
+    // initialize() useEffect from flushing a second state update (which
+    // would trigger "update was not wrapped in act(...)" since the render()
+    // call wasn't awaited).
+    const tokenPromise = new Promise<string>(() => {
+      // never resolves
+    });
+    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
+
     const { container } = render(<ConsoleApp {...defaultProps} />);
 
     // Component returns null while initializing
+    expect(container.firstChild).toBeNull();
+
+    // Let any queued microtasks settle inside act() so React's scheduler
+    // doesn't log a deferred-update warning after the test completes.
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(container.firstChild).toBeNull();
   });
 

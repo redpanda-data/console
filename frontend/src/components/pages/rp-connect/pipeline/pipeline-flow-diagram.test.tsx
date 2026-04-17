@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, render, screen } from 'test-utils';
+import userEvent from '@testing-library/user-event';
+import { render, screen } from 'test-utils';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
@@ -129,14 +130,15 @@ describe('PipelineFlowDiagram', () => {
       expect(screen.getByText('Add input')).toBeInTheDocument();
     });
 
-    it('fires onAddConnector when placeholder add button is clicked', () => {
+    it('fires onAddConnector when placeholder add button is clicked', async () => {
+      const user = userEvent.setup();
       const onAddConnector = vi.fn();
       const { container } = renderDiagram(EMPTY_INPUT, { onAddConnector });
 
       // Find the absolute-positioned "+" button on the placeholder node via DOM query
       const plusButtons = container.querySelectorAll<HTMLButtonElement>('button[class*="absolute"]');
       expect(plusButtons.length).toBeGreaterThan(0);
-      fireEvent.click(plusButtons[0]);
+      await user.click(plusButtons[0]);
       expect(onAddConnector).toHaveBeenCalledWith('input');
     });
 
@@ -160,13 +162,14 @@ describe('PipelineFlowDiagram', () => {
       expect(screen.getByText('Topic')).toBeInTheDocument();
     });
 
-    it('fires onAddTopic when "Topic" button is clicked', () => {
+    it('fires onAddTopic when "Topic" button is clicked', async () => {
+      const user = userEvent.setup();
       const onAddTopic = vi.fn();
       renderDiagram(REDPANDA_INPUT_MISSING_CONFIG, { onAddTopic });
 
       const topicButton = screen.getByText('Topic').closest('button');
       expect(topicButton).not.toBeNull();
-      fireEvent.click(topicButton as HTMLButtonElement);
+      await user.click(topicButton as HTMLButtonElement);
       expect(onAddTopic).toHaveBeenCalledWith('input', 'redpanda');
     });
 
@@ -175,24 +178,26 @@ describe('PipelineFlowDiagram', () => {
       expect(screen.getByText('User')).toBeInTheDocument();
     });
 
-    it('fires onAddSasl when "User" button is clicked', () => {
+    it('fires onAddSasl when "User" button is clicked', async () => {
+      const user = userEvent.setup();
       const onAddSasl = vi.fn();
       renderDiagram(REDPANDA_INPUT_MISSING_CONFIG, { onAddSasl });
 
       const userButton = screen.getByText('User').closest('button');
       expect(userButton).not.toBeNull();
-      fireEvent.click(userButton as HTMLButtonElement);
+      await user.click(userButton as HTMLButtonElement);
       expect(onAddSasl).toHaveBeenCalledWith('input', 'redpanda');
     });
 
-    it('hint buttons render but do nothing when callbacks are not provided', () => {
+    it('hint buttons render but do nothing when callbacks are not provided', async () => {
+      const user = userEvent.setup();
       // The parser sets missingTopic/missingSasl flags regardless of callbacks.
       // Buttons always render as visible hints; clicking them is a no-op without handlers.
       renderDiagram(REDPANDA_INPUT_MISSING_CONFIG);
       const topicButton = screen.getByText('Topic').closest('button');
       expect(topicButton).toBeInTheDocument();
       // Clicking should not throw (optional chaining in onClick)
-      fireEvent.click(topicButton as HTMLButtonElement);
+      await user.click(topicButton as HTMLButtonElement);
     });
   });
 

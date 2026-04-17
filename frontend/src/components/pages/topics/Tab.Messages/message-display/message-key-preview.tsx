@@ -115,7 +115,7 @@ export const MessageKeyPreview = ({
     }
 
     return (
-      <Flex flexDirection="column">
+      <Flex style={{ flexDirection: 'column' }}>
         <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
           <code style={{ fontSize: '95%' }}>{text}</code>
         </span>

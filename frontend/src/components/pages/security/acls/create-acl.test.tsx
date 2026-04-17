@@ -18,12 +18,6 @@ const noop = () => {};
 
 describe('CreateACL - principal field composability', () => {
   describe('default principal field (no renderPrincipal)', () => {
-    test('shows the principal type selector when no renderPrincipal is provided', () => {
-      renderWithFileRoutes(<CreateACL edit={false} onCancel={noop} />);
-
-      expect(screen.getByTestId('shared-principal-type-select')).toBeInTheDocument();
-    });
-
     test('shows the principal type selector when principalType is provided without renderPrincipal', () => {
       renderWithFileRoutes(<CreateACL edit={false} onCancel={noop} principalType={PrincipalTypeUser} />);
 

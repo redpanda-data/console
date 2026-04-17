@@ -6,17 +6,19 @@ import envCompatible from 'vite-plugin-env-compatible';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
-const ENV_PREFIX = 'REACT_APP_';
+import { sharedAliases } from './vitest.shared.mts';
 
-// Regex patterns for module resolution
-const REDPANDA_UI_REGEX = /^@redpanda-data\/ui$/;
-const BUFBUILD_REGEX = /^@bufbuild\/buf$/;
-const MONACO_EDITOR_REGEX = /^monaco-editor$/;
+const ENV_PREFIX = 'REACT_APP_';
 
 export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
 
   return {
+    // fsModuleCache caches filesystem module resolution between runs of the
+    // same process. Ported from apps/adp-ui — cheap perf win on cold starts
+    // and watch-mode reruns, especially with the large route tree + proto
+    // output that Vitest would otherwise stat on every resolution.
+    experimental: { fsModuleCache: true },
     test: {
       fileParallelism: true,
       isolate: true,
@@ -24,8 +26,9 @@ export default defineConfig(({ mode }) => {
       vmMemoryLimit: '4096Mb', // Force GC when memory limit is reached (4GB allows headroom for parallel forks)
       testTimeout: 30_000,
       globals: true,
-      environment: 'jsdom', // Integration tests use jsdom environment
+      environment: 'happy-dom', // Aligns with cloud-ui / adp-ui; required to run Chakra + Radix integration tests consistently
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
+      exclude: ['src/**/*.browser.test.tsx'], // Browser mode tests run via vitest.config.browser.mts
       setupFiles: './vitest.setup.integration.ts',
       deps: {
         registerNodeLoader: true,
@@ -50,28 +53,30 @@ export default defineConfig(({ mode }) => {
           ],
         },
       },
-      alias: [
-        {
-          find: REDPANDA_UI_REGEX, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
-          replacement: '@redpanda-data/ui/dist/index.js',
-        },
-        {
-          find: BUFBUILD_REGEX,
-          replacement: '@bufbuild/protobuf/dist/esm/index.js',
-        },
-        {
-          find: MONACO_EDITOR_REGEX,
-          replacement: 'monaco-editor/esm/vs/editor/editor.api.js',
-        },
-      ],
-      reporters: ['dot'],
+      alias: sharedAliases,
+      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
       typecheck: {
         enabled: false,
       },
       coverage: {
+        // Default off so local dev watch/test runs stay fast. Enable via
+        // `--coverage` flag (see `test:coverage` script).
         enabled: false,
+        provider: 'v8',
+        reporter: ['text', 'html', 'lcov', 'json-summary', 'json'],
         include: ['src/**/*.{ts,tsx}'],
-        exclude: ['src/proto/**/*'],
+        exclude: [
+          'src/protogen/**',
+          'src/routeTree.gen.ts',
+          '**/*.test.{ts,tsx}',
+          '**/*.spec.{ts,tsx}',
+          '**/*.browser.test.tsx',
+          'src/**/*.stories.tsx',
+        ],
+        // Thresholds are enforced on the merged (unit + integration) summary
+        // via `scripts/check-coverage-thresholds.mjs`, which the CI
+        // `test-coverage` job runs after `merge-coverage.mjs`. Per-config
+        // thresholds would trip on integration-only numbers, so we skip them.
       },
     },
     plugins: [

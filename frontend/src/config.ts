@@ -290,14 +290,18 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
   monaco.editor.setTheme('kowl');
 };
 
-// Subscribe to UI state changes for breadcrumbs and sidebar items
-// Delay to ensure stores are initialized
-setTimeout(() => {
+// Subscribe to UI state changes for breadcrumbs and sidebar items.
+// Installed from `setup()` so it is tied to the app's lifecycle and can be
+// torn down by the returned teardown function — not at module-top-level,
+// which previously pinned store subscribers across vitest isolate resets.
+function installUiStateSubscriptions(): () => void {
+  const unsubs: Array<() => void> = [];
+
   try {
     // Subscribe to breadcrumbs changes
     let previousBreadcrumbs = useUIStateStore.getState().pageBreadcrumbs;
 
-    useUIStateStore.subscribe((state) => {
+    const unsubUi = useUIStateStore.subscribe((state) => {
       const setBreadcrumbs = config.setBreadcrumbs;
       if (!setBreadcrumbs) {
         return;
@@ -317,6 +321,7 @@ setTimeout(() => {
 
       setBreadcrumbs(breadcrumbs);
     });
+    unsubs.push(unsubUi);
 
     const updateSidebarItems = () => {
       const setSidebarItems = config.setSidebarItems;
@@ -347,16 +352,26 @@ setTimeout(() => {
     // Call once on initialization; also re-call whenever endpointCompatibility
     // becomes available (it starts null and is populated after the first API fetch).
     updateSidebarItems();
-    useApiStore.subscribe((state, prev) => {
+    const unsubApi = useApiStore.subscribe((state, prev) => {
       if (state.endpointCompatibility !== prev.endpointCompatibility) {
         updateSidebarItems();
       }
     });
-  } catch (error) {
+    unsubs.push(unsubApi);
+  } catch {
     // Ignore errors in test environments where stores might not be properly initialized
-    // This setTimeout runs globally when config.ts is imported
   }
-}, 50);
+
+  return () => {
+    for (const unsub of unsubs) {
+      try {
+        unsub();
+      } catch {
+        // ignore — teardown is best-effort
+      }
+    }
+  };
+}
 
 export function isEmbedded() {
   return config.jwt !== null && config.jwt !== undefined;
@@ -390,8 +405,57 @@ export const embeddedAvailableRoutesObservable = {
   },
 };
 
+// Module-level state for cancelling `setup()`'s recursive user-data poll and
+// for holding the current setup teardown. `setup` is memoized with
+// memoize-one, so repeated calls with the same args no-op; these refs let the
+// harness (and app lifecycle) cancel the pending work explicitly.
+let checkUserDataCancelled = false;
+let currentSetupTeardown: (() => void) | null = null;
+let subscriptionInstallTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Cancels the recursive `checkUserData` polling timer started by `setup()`.
+ * Exposed for test cleanup + explicit app teardown.
+ */
+export function cancelCheckUserData(): void {
+  checkUserDataCancelled = true;
+}
+
+/**
+ * Tear down anything `setup()` installed (store subscriptions + polling timer).
+ * Safe to call multiple times.
+ */
+export function teardownSetup(): void {
+  if (subscriptionInstallTimeoutId !== null) {
+    clearTimeout(subscriptionInstallTimeoutId);
+    subscriptionInstallTimeoutId = null;
+  }
+  cancelCheckUserData();
+  if (currentSetupTeardown) {
+    const t = currentSetupTeardown;
+    currentSetupTeardown = null;
+    t();
+  }
+}
+
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
+  // If setup() is re-invoked (memoize-one only caches the latest args), tear
+  // down any state installed by the previous invocation first to avoid
+  // stacking subscribers / pending timeouts.
+  teardownSetup();
+
   setConfig(setupArgs);
+
+  // Reset the cancel flag now that we're installing fresh state.
+  checkUserDataCancelled = false;
+
+  // Install UI / API store subscriptions on a short delay (matches historical
+  // behavior that waited for stores to initialize). Tracked so teardown can
+  // unsubscribe and clear the pending timeout.
+  subscriptionInstallTimeoutId = setTimeout(() => {
+    subscriptionInstallTimeoutId = null;
+    currentSetupTeardown = installUiStateSubscriptions();
+  }, 50);
 
   // Set MonacoEnvironment synchronously before loader.init() to avoid race
   // where the editor mounts before the worker URL resolver is available
@@ -420,6 +484,9 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   if (AppFeatures.SINGLE_SIGN_ON) {
     // Poll for user data instead of using MobX when
     const checkUserData = () => {
+      if (checkUserDataCancelled) {
+        return;
+      }
       if (api.userData) {
         api.refreshSupportedEndpoints();
         api.listLicenses();
@@ -432,4 +499,6 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     api.listLicenses();
     api.refreshSupportedEndpoints();
   }
+
+  return teardownSetup;
 });

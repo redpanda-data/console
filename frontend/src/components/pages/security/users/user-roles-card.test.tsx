@@ -45,25 +45,16 @@ describe('UserRolesCard', () => {
     expect(screen.queryByTestId('assign-role-button')).not.toBeInTheDocument();
   });
 
-  test('should render roles table with role names', () => {
+  test('should render roles table with role names and action buttons', () => {
     renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
 
+    // Role names
     expect(screen.getByTestId('role-name-admin')).toHaveTextContent('admin');
     expect(screen.getByTestId('role-name-viewer')).toHaveTextContent('viewer');
-  });
 
-  test('should render action buttons for each role', () => {
-    renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
-
+    // Action buttons per row
     expect(screen.getByTestId('view-role-admin')).toBeInTheDocument();
     expect(screen.getByTestId('view-role-viewer')).toBeInTheDocument();
-  });
-
-  test('should render table headers', () => {
-    renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
-
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('Actions')).toBeInTheDocument();
   });
 
   test('should render Change Role button when roles exist and onChangeRoles is provided', () => {

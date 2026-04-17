@@ -86,13 +86,20 @@ function DrawerTitle({ className, ...props }: React.ComponentProps<typeof Drawer
   );
 }
 
-function DrawerDescription({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Description>) {
+function DrawerDescription({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Description>) {
+  // Render the Radix Description as a <div> (via asChild) instead of the default <p>
+  // so it can safely contain block-level children (Text, Input, List, etc.) without
+  // triggering React's validateDOMNesting warnings.
   return (
-    <DrawerPrimitive.Description
-      data-slot="drawer-description"
-      className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
+    <DrawerPrimitive.Description asChild {...props}>
+      <div data-slot="drawer-description" className={cn('text-muted-foreground text-sm', className)}>
+        {children}
+      </div>
+    </DrawerPrimitive.Description>
   );
 }
 

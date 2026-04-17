@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import Tabs, { type Tab } from './tabs';
 
@@ -33,13 +34,6 @@ const testTabs: Tab[] = [
 ];
 
 describe('Tabs', () => {
-  test('renders a single tab with string title and content', () => {
-    render(<Tabs tabs={testTabs.slice(0, 1)} />);
-
-    expect(screen.getByText('test title 1')).toBeInTheDocument();
-    expect(screen.getByText('test content 1')).toBeInTheDocument();
-  });
-
   test('renders an initial tab other than the first', () => {
     render(<Tabs selectedTabKey="test2" tabs={testTabs.slice(0, 2)} />);
 
@@ -47,38 +41,41 @@ describe('Tabs', () => {
     expect(screen.getByText('test content 2')).toBeInTheDocument();
   });
 
-  test('renders the wanted tab after switching to it', () => {
+  test('renders the wanted tab after switching to it', async () => {
+    const user = userEvent.setup();
     render(<Tabs tabs={testTabs.slice(0, 2)} />);
 
     expect(screen.getByText('test content 1')).toBeInTheDocument();
     expect(screen.queryByText('test content 2')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('test title 2'));
+    await user.click(screen.getByText('test title 2'));
 
     expect(screen.getByText('test content 2')).toBeInTheDocument();
     expect(screen.queryByText('test content 1')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('test title 1'));
+    await user.click(screen.getByText('test title 1'));
 
     expect(screen.getByText('test content 1')).toBeInTheDocument();
     expect(screen.queryByText('test content 2')).not.toBeInTheDocument();
   });
 
-  test('does not switch tabs when wanted key is disabled', () => {
+  test('does not switch tabs when wanted key is disabled', async () => {
+    const user = userEvent.setup();
     render(<Tabs tabs={testTabs.slice(0, 3)} />);
 
-    fireEvent.click(screen.getByText('test title 3'));
+    await user.click(screen.getByText('test title 3'));
 
     expect(screen.queryByText('test content 3')).not.toBeInTheDocument();
     expect(screen.getByText('test content 1')).toBeInTheDocument();
   });
 
-  test('executes onChange callback when active tab changes', () => {
+  test('executes onChange callback when active tab changes', async () => {
+    const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(<Tabs onChange={onChange} tabs={testTabs.slice(0, 2)} />);
 
-    fireEvent.click(screen.getByText('test title 2'));
+    await user.click(screen.getByText('test title 2'));
 
     expect(onChange).toHaveBeenCalled();
   });

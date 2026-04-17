@@ -23,7 +23,7 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
   children,
   onDownloadRecord,
 }) => (
-  <Flex gap={2} justifyContent="flex-end" my={4}>
+  <Flex gap={2} my={4} style={{ justifyContent: 'flex-end' }}>
     {children}
     {Boolean(onDownloadRecord) && (
       <Button onClick={onDownloadRecord} variant="outline">

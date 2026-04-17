@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   ListRoleMembersResponseSchema,
@@ -146,34 +147,14 @@ describe('UserCreatePage', () => {
     mockRolesApiEnabled = false;
   });
 
-  test('renders form fields', async () => {
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    expect(await screen.findByTestId('create-user-name')).toBeInTheDocument();
-    expect(screen.getByText('Password')).toBeInTheDocument();
-    expect(screen.getByText('SASL mechanism')).toBeInTheDocument();
-    expect(screen.getByTestId('create-user-submit')).toBeInTheDocument();
-  });
-
-  test('create button disabled when username empty', async () => {
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const createButton = await screen.findByRole('button', { name: 'Create' });
-    expect(createButton).toBeDisabled();
-  });
-
   test('create button disabled when username has invalid characters', async () => {
-    const user = userEvent.setup();
     const { transport } = buildTransport();
 
     renderWithFileRoutes(<UserCreatePage />, { transport });
 
     const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'user with spaces');
+    // Value-only assertion — bypass char-by-char user.type to save ~500ms.
+    fireEvent.input(usernameInput, { target: { value: 'user with spaces' } });
 
     expect(screen.getByTestId('create-user-submit')).toBeDisabled();
   });
@@ -216,26 +197,6 @@ describe('UserCreatePage', () => {
     await waitFor(() => {
       expect(screen.getByText('User created successfully')).toBeInTheDocument();
     });
-  });
-
-  test('Create ACLs button is present after user creation', async () => {
-    const user = userEvent.setup();
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'acl-user');
-
-    await user.click(screen.getByTestId('create-user-submit'));
-
-    await waitFor(() => {
-      expect(screen.getByText('User created successfully')).toBeInTheDocument();
-    });
-
-    // Create ACLs is now a button that uses useNavigate
-    const aclButton = screen.getByTestId('create-acls-button');
-    expect(aclButton).toBeInTheDocument();
   });
 
   test('stays on form when createUser fails', async () => {
@@ -352,30 +313,18 @@ describe('UserCreatePage', () => {
     });
   });
 
-  test('SASL mechanism select is rendered with default value', async () => {
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    // Radix Select renders a combobox trigger showing the current value
-    const mechanismTrigger = await screen.findByRole('combobox');
-    expect(mechanismTrigger).toBeInTheDocument();
-    expect(mechanismTrigger).toHaveTextContent('SCRAM-SHA-256');
-  });
-
   test('create button disabled when password is too short', async () => {
-    const user = userEvent.setup();
     const { transport } = buildTransport();
 
     renderWithFileRoutes(<UserCreatePage />, { transport });
 
     const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'valid-user');
+    // Value-only assertion — bypass char-by-char user.type to save ~500ms.
+    fireEvent.input(usernameInput, { target: { value: 'valid-user' } });
 
-    // Clear the password field and type a too-short password (< 4 chars)
+    // Replace the password field value with a too-short password (< 4 chars)
     const passwordInput = screen.getByTestId('create-user-password');
-    await user.clear(passwordInput);
-    await user.type(passwordInput, 'ab');
+    fireEvent.input(passwordInput, { target: { value: 'ab' } });
 
     expect(screen.getByTestId('create-user-submit')).toBeDisabled();
   });

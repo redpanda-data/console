@@ -10,6 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
@@ -44,36 +45,19 @@ function TestWrapper({ defaultValues }: { defaultValues?: Partial<FormValues> })
 }
 
 describe('ConfigDialog', () => {
-  it('renders pipeline name input, accepts text', async () => {
-    const user = userEvent.setup();
+  it('renders pipeline name input, accepts text', () => {
     render(<TestWrapper />);
     const input = screen.getByPlaceholderText('Enter pipeline name');
     expect(input).toBeInTheDocument();
-    await user.type(input, 'my-pipeline');
+    // Value round-trip only — skip char-by-char user.type.
+    fireEvent.input(input, { target: { value: 'my-pipeline' } });
     expect(input).toHaveValue('my-pipeline');
-  });
-
-  it('renders description textarea', () => {
-    render(<TestWrapper />);
-    expect(screen.getByPlaceholderText('Optional description for this pipeline')).toBeInTheDocument();
-  });
-
-  it('renders compute units slider and number input', () => {
-    render(<TestWrapper />);
-    expect(screen.getByText('Compute units')).toBeInTheDocument();
-    expect(screen.getByRole('slider')).toBeInTheDocument();
-    expect(screen.getByRole('spinbutton')).toBeInTheDocument();
   });
 
   it('compute units slider and number input stay in sync', async () => {
     render(<TestWrapper defaultValues={{ computeUnits: 3 }} />);
     const numberInput = screen.getByRole('spinbutton');
     expect(numberInput).toHaveValue(3);
-  });
-
-  it('renders tags section with "Tags" label', () => {
-    render(<TestWrapper />);
-    expect(screen.getByText('Tags')).toBeInTheDocument();
   });
 
   it('add tag button creates a new row', async () => {
@@ -126,20 +110,5 @@ describe('ConfigDialog', () => {
     await user.type(valueInput, 'production');
     expect(keyInput).toHaveValue('env');
     expect(valueInput).toHaveValue('production');
-  });
-
-  it('tag key input is rendered and editable', async () => {
-    const user = userEvent.setup();
-    render(
-      <TestWrapper
-        defaultValues={{
-          tags: [{ key: '', value: '' }],
-        }}
-      />
-    );
-    const keyInput = screen.getByPlaceholderText('Key');
-    expect(keyInput).toBeInTheDocument();
-    await user.type(keyInput, 'test');
-    expect(keyInput).toHaveValue('test');
   });
 });

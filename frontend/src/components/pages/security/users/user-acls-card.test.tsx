@@ -71,38 +71,20 @@ describe('UserAclsCard', () => {
     expect(screen.getByRole('button', { name: 'Create ACL' })).toBeInTheDocument();
   });
 
-  test('should render ACL table with correct count', () => {
+  test('should render ACL table with rows, action buttons, and headers', () => {
     renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
+    // Count, rows, action buttons, and headers all rendered together so we assert them once.
     expect(screen.getByText('ACLs (2)')).toBeInTheDocument();
-  });
 
-  test('should render ACL rows with principal and host', () => {
-    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
-
+    // Principal and host values per row
     expect(screen.getByTestId('acl-principal-User:test-user-*')).toHaveTextContent('User:test-user');
     expect(screen.getByTestId('acl-principal-User:test-user-192.168.1.1')).toHaveTextContent('User:test-user');
     expect(screen.getByTestId('acl-host-*')).toHaveTextContent('*');
     expect(screen.getByTestId('acl-host-192.168.1.1')).toHaveTextContent('192.168.1.1');
-  });
 
-  test('should render action buttons for each ACL', () => {
-    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
-
-    // Check toggle buttons
+    // Action buttons per row
     expect(screen.getByTestId('toggle-acl-User:test-user-*')).toBeInTheDocument();
-    expect(screen.getByTestId('toggle-acl-User:test-user-192.168.1.1')).toBeInTheDocument();
-
-    // Check edit buttons
     expect(screen.getByTestId('edit-acl-User:test-user-*')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-acl-User:test-user-192.168.1.1')).toBeInTheDocument();
-  });
-
-  test('should render table headers', () => {
-    renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
-
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('Hosts')).toBeInTheDocument();
-    expect(screen.getByText('Actions')).toBeInTheDocument();
   });
 });

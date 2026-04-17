@@ -60,9 +60,9 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
     expect(transcripts?.title).toBe('Transcripts');
   });
 
-  it('store selector triggers re-render when endpointCompatibility changes', () => {
+  it('store selector triggers re-render when endpointCompatibility changes', async () => {
     const selector = (s: { endpointCompatibility: EndpointCompatibility | null }) => s.endpointCompatibility;
-    const { result } = renderHook(() => useSupportedFeaturesStore(selector));
+    const { result, unmount } = renderHook(() => useSupportedFeaturesStore(selector));
 
     expect(result.current).toBeNull();
 
@@ -77,10 +77,19 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
       ],
     };
 
-    act(() => {
+    // Zustand's useSyncExternalStore subscriber schedules the re-render
+    // synchronously, but renderHook's TestComponent runs a trailing useEffect
+    // to sync `result.current`. Wrap the store mutation in async act() so
+    // the boundary awaits the microtask + effect flush before the assertion.
+    await act(async () => {
       useSupportedFeaturesStore.getState().setEndpointCompatibility(compatibility);
     });
 
     expect(result.current).toBe(compatibility);
+
+    // Unmount before the afterEach's store reset fires, otherwise the
+    // reset triggers an update on the still-mounted TestComponent outside
+    // any act boundary and emits the "not wrapped in act(...)" warning.
+    unmount();
   });
 });

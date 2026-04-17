@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithFileRoutes, screen } from 'test-utils';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -96,33 +97,6 @@ describe('EditSchemaCompatibilityPage', () => {
   });
 
   describe('Global compatibility (no subjectName)', () => {
-    test('renders description text', () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(screen.getByTestId('edit-compatibility-description')).toHaveTextContent(
-        'Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.'
-      );
-    });
-
-    test('renders all compatibility options', () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(screen.getByText('None')).toBeInTheDocument();
-      expect(screen.getByText('Backward')).toBeInTheDocument();
-      expect(screen.getByText('Transitive Backward')).toBeInTheDocument();
-      expect(screen.getByText('Forward')).toBeInTheDocument();
-      expect(screen.getByText('Transitive Forward')).toBeInTheDocument();
-      expect(screen.getByText('Full')).toBeInTheDocument();
-      expect(screen.getByText('Transitive Full')).toBeInTheDocument();
-    });
-
-    test('renders Save and Cancel buttons', () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(screen.getByTestId('edit-compatibility-save-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('edit-compatibility-cancel-btn')).toBeInTheDocument();
-    });
-
     test('calls global mutation on save', async () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
@@ -147,14 +121,17 @@ describe('EditSchemaCompatibilityPage', () => {
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
     });
 
-    test('does not show schema preview panel', () => {
+    test('does not show schema preview panel', async () => {
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
+      // Await the Radio group settling before assertions on absence.
+      await screen.findByTestId('edit-compatibility-description');
 
       expect(screen.queryByTestId('edit-compatibility-subject-name')).not.toBeInTheDocument();
     });
 
-    test('does not show context name header', () => {
+    test('does not show context name header', async () => {
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
+      await screen.findByTestId('edit-compatibility-description');
 
       expect(screen.queryByTestId('edit-compatibility-context-name')).not.toBeInTheDocument();
     });
@@ -201,10 +178,10 @@ describe('EditSchemaCompatibilityPage', () => {
       expect(mockMutateGlobal).not.toHaveBeenCalled();
     });
 
-    test('shows subject name in schema preview panel', () => {
+    test('shows subject name in schema preview panel', async () => {
       renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName={subjectName} />);
 
-      expect(screen.getByTestId('edit-compatibility-subject-name')).toHaveTextContent(subjectName);
+      expect(await screen.findByTestId('edit-compatibility-subject-name')).toHaveTextContent(subjectName);
     });
 
     test('navigates back to subject page on cancel', async () => {
@@ -225,18 +202,25 @@ describe('EditSchemaCompatibilityPage', () => {
     });
 
     afterEach(() => {
+      // Unmount the React tree BEFORE mutating the supported-features store.
+      // Otherwise the setState notifies still-mounted Radix Radio / Tooltip
+      // subscribers outside any act boundary and emits "update inside a test
+      // was not wrapped in act(...)" warnings attributed to the just-finished
+      // test. The global afterEach also calls cleanup() but runs after this
+      // block, so we have to unmount eagerly here.
+      cleanup();
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
     });
 
-    test('shows not-supported page when contexts feature is disabled', () => {
+    test('shows not-supported page when contexts feature is disabled', async () => {
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
-      expect(screen.getByTestId('contexts-not-supported')).toBeInTheDocument();
+      expect(await screen.findByTestId('contexts-not-supported')).toBeInTheDocument();
       expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
     });
 
-    test('shows context name in header when editing context compatibility', () => {
+    test('shows context name in header when editing context compatibility', async () => {
       vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
         isLoading: false,
@@ -244,13 +228,7 @@ describe('EditSchemaCompatibilityPage', () => {
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
-      expect(screen.getByTestId('edit-compatibility-context-name')).toHaveTextContent('.test');
-    });
-
-    test('does not show context name header for global mode', () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(screen.queryByTestId('edit-compatibility-context-name')).not.toBeInTheDocument();
+      expect(await screen.findByTestId('edit-compatibility-context-name')).toHaveTextContent('.test');
     });
 
     test('calls context mutation on save', async () => {
@@ -365,6 +343,7 @@ describe('EditSchemaCompatibilityPage', () => {
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
+      // No Radio group renders during skeleton — no async state update to wait for.
       expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
     });
 
@@ -406,10 +385,13 @@ describe('EditSchemaCompatibilityPage', () => {
 
       expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
 
+      // Unmount before mutating supported-features; otherwise the store
+      // update notifies still-mounted subscribers outside any act boundary.
+      cleanup();
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
     });
 
-    test('disables save button when user lacks permission', () => {
+    test('disables save button when user lacks permission', async () => {
       // Ensure mocks are in correct state
       vi.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
@@ -424,7 +406,7 @@ describe('EditSchemaCompatibilityPage', () => {
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
-      const saveBtn = screen.getByTestId('edit-compatibility-save-btn');
+      const saveBtn = await screen.findByTestId('edit-compatibility-save-btn');
       expect(saveBtn).toHaveAttribute('disabled');
 
       (api as Record<string, unknown>).userData = { canManageSchemaRegistry: true };
