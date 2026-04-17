@@ -262,6 +262,49 @@ describe('ConsoleApp', () => {
     });
   });
 
+  describe('Router Stability', () => {
+    test('does not recreate router when initialPath prop changes', async () => {
+      const { createRouter, createMemoryHistory } = await import('@tanstack/react-router');
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      const createRouterCallCount = vi.mocked(createRouter).mock.calls.length;
+      const createMemoryHistoryCallCount = vi.mocked(createMemoryHistory).mock.calls.length;
+
+      // Rerender with a different initialPath (simulates cloud-ui navigation)
+      rerender(<ConsoleApp {...defaultProps} initialPath="/groups" />);
+
+      // Router should NOT have been recreated
+      expect(vi.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
+      expect(vi.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
+    });
+
+    test('uses first initialPath for memory history, ignores subsequent changes', async () => {
+      const { createMemoryHistory } = await import('@tanstack/react-router');
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Verify initial path was used
+      expect(vi.mocked(createMemoryHistory)).toHaveBeenCalledWith(
+        expect.objectContaining({ initialEntries: ['/topics'] })
+      );
+
+      const callCount = vi.mocked(createMemoryHistory).mock.calls.length;
+
+      // Changing initialPath should not create a new memory history
+      rerender(<ConsoleApp {...defaultProps} initialPath="/schema-registry" />);
+      expect(vi.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
+    });
+  });
+
   describe('Search Params Handling', () => {
     test('onRouteChange includes searchStr when route resolves with search params', async () => {
       // Get a reference to the subscribe callback so we can invoke it manually

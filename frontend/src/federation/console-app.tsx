@@ -234,10 +234,16 @@ function ConsoleAppInner({
     [configOverrides?.urlOverride?.grpc, tokenRefreshInterceptor]
   );
 
+  // Capture initialPath on first render only — subsequent navigation is handled
+  // by the navigateTo prop via router.navigate(). Including initialPath in the
+  // useMemo deps would recreate the entire router on every host navigation,
+  // remounting all route components and retriggering all data fetches.
+  const initialPathRef = useRef(initialPath);
+
   // Create memory history router (host controls browser URL)
   const router = useMemo(() => {
     const memoryHistory = createMemoryHistory({
-      initialEntries: [initialPath],
+      initialEntries: [initialPathRef.current],
     });
 
     const r = createRouter({
@@ -252,7 +258,7 @@ function ConsoleAppInner({
     });
 
     return r;
-  }, [initialPath, queryClient, dataplaneTransport]);
+  }, [queryClient, dataplaneTransport]);
 
   // Subscribe to route changes and notify host (with loop prevention)
   useEffect(() => {
