@@ -25,9 +25,11 @@ jobs:
     # block PR merge (continue-on-error + not listed in any required checks).
     # Run "bun run test:browser:update" via the frontend-update-baselines
     # workflow to regenerate baselines when UI changes are intentional.
-    timeout-minutes: 5
+    timeout-minutes: 15
     continue-on-error: true
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: write
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: frontend
@@ -49,15 +51,32 @@ jobs:
         run: bunx playwright install --with-deps chromium
       - name: Run browser tests
         run: |
-          # Only run strict comparison when Linux baselines exist in git.
-          # Baseline generation is intentionally NOT done on push CI — it
-          # blocks on the first cold Vitest+Playwright browser-mode launch
-          # and runs out the job timeout. Use the `frontend-update-baselines`
-          # workflow_dispatch to generate and commit baselines.
+          # If Linux baselines exist in git, run strict comparison.
+          # Otherwise bootstrap: generate baselines and commit them back to
+          # the branch so the next push does strict comparison.
           if git ls-files 'src/**/__screenshots__/**/*-linux.png' | grep -q .; then
             bun run test:browser
           else
-            echo "::notice::No Linux baselines committed yet — skipping visual regression. Run 'frontend-update-baselines' workflow to generate."
+            echo "::notice::Bootstrapping Linux baselines (first run on this branch)"
+            bun run test:browser:update
+          fi
+      - name: Commit generated baselines
+        if: success()
+        env:
+          BRANCH_REF: ${{ github.ref_name }}
+        run: |
+          if git status --porcelain 'frontend/src/**/__screenshots__/**/*.png' 'src/**/__screenshots__/**/*.png' 2>/dev/null | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add 'src/**/__screenshots__/**/*.png'
+            if git diff --cached --quiet; then
+              echo "::notice::No baseline changes to commit"
+            else
+              git commit -m "chore(frontend): bootstrap visual regression baselines [skip ci]"
+              git push origin HEAD:"$BRANCH_REF"
+            fi
+          else
+            echo "::notice::No baseline file changes detected"
           fi
       - uses: actions/upload-artifact@v7.0.1
         if: failure()
