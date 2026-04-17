@@ -75,7 +75,7 @@ describe('SecretsStoreActionsCell', () => {
     await user.click(menuButton);
 
     // Click the delete option
-    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX, {}, { timeout: 3000 });
+    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX);
     await user.click(deleteMenuItem);
 
     // Wait for the confirmation dialog
@@ -138,7 +138,7 @@ describe('SecretsStoreActionsCell', () => {
     await user.click(menuButton);
 
     // Click the delete option to open the dialog
-    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX, {}, { timeout: 3000 });
+    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX);
     await user.click(deleteMenuItem);
 
     // Wait for resources query to be called with correct secret ID

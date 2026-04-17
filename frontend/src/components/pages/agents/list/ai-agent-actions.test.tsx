@@ -275,7 +275,7 @@ describe('AIAgentActions', () => {
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
     await user.click(actionsButton);
 
-    const deleteButton = await screen.findByText('Delete', {}, { timeout: 3000 });
+    const deleteButton = await screen.findByText('Delete');
     await user.click(deleteButton);
 
     await waitFor(() => {
@@ -321,7 +321,7 @@ describe('AIAgentActions', () => {
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
     await user.click(actionsButton);
 
-    const deleteButton = await screen.findByText('Delete', {}, { timeout: 3000 });
+    const deleteButton = await screen.findByText('Delete');
     await user.click(deleteButton);
 
     await waitFor(() => {
