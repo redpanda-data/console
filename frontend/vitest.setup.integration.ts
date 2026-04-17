@@ -167,6 +167,8 @@ afterEach(() => {
 const originalWarn = console.warn;
 // biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalError = console.error;
+// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for info suppression
+const originalInfo = console.info;
 
 const SUPPRESSED_PATTERNS = [
   // Radix UI ref-forwarding — fixed in React 19, not actionable in React 18
@@ -180,6 +182,12 @@ const SUPPRESSED_PATTERNS = [
   /socket hang up/,
   /ECONNREFUSED/,
   /ECONNRESET/,
+  // @redpanda-data/ui hardcodes `debugTable: true` on its DataTable,
+  // which makes @tanstack/table-core emit `console.info('Creating Table
+  // Instance...')` on every table render. Not reachable from our source;
+  // upstream fix requires a release of @redpanda-data/ui with the flag
+  // disabled or gated on process.env.NODE_ENV !== 'test'.
+  /Creating Table Instance/,
 ];
 
 function isSuppressed(args: unknown[]): boolean {
@@ -197,5 +205,10 @@ console.warn = (...args: unknown[]) => {
 console.error = (...args: unknown[]) => {
   if (!isSuppressed(args)) {
     originalError(...args);
+  }
+};
+console.info = (...args: unknown[]) => {
+  if (!isSuppressed(args)) {
+    originalInfo(...args);
   }
 };
