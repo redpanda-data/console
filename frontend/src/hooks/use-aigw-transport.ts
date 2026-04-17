@@ -18,6 +18,12 @@ import { useMemo } from 'react';
  * In Production (Standalone):
  *   - Uses relative path /.aigw/api (backend handles routing)
  */
+// `ignoreUnknownFields: true` keeps the client forward-compatible when aigw
+// rolls out proto changes before the console's generated bindings are refreshed.
+// Without it, any new server-side field throws at JSON decode time and turns
+// a successful response into a hook error with no data.
+const AIGW_JSON_OPTIONS = { registry: protobufRegistry, ignoreUnknownFields: true };
+
 export const useAigwTransport = (): Transport => {
   return useMemo(() => {
     // In embedded mode (cloud-ui), use the aigw URL from parent config.
@@ -27,7 +33,7 @@ export const useAigwTransport = (): Transport => {
       return createConnectTransport({
         baseUrl: config.aigwUrl,
         interceptors: [addBearerTokenInterceptor],
-        jsonOptions: { registry: protobufRegistry },
+        jsonOptions: AIGW_JSON_OPTIONS,
       });
     }
 
@@ -35,7 +41,7 @@ export const useAigwTransport = (): Transport => {
     return createConnectTransport({
       baseUrl: '/.aigw/api',
       interceptors: [addBearerTokenInterceptor],
-      jsonOptions: { registry: protobufRegistry },
+      jsonOptions: AIGW_JSON_OPTIONS,
     });
   }, []);
 };
