@@ -158,9 +158,3 @@ jobs:
           name: coverage-report
           path: frontend/coverage-merged/
           retention-days: 14
-      - name: Comment coverage summary on PR
-        if: github.event_name == 'pull_request'
-        uses: davelosert/vitest-coverage-report-action@v2
-        with:
-          working-directory: frontend
-          json-summary-path: coverage-merged/coverage-summary.json
