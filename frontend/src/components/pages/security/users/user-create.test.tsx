@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   ListRoleMembersResponseSchema,
@@ -167,13 +168,13 @@ describe('UserCreatePage', () => {
   });
 
   test('create button disabled when username has invalid characters', async () => {
-    const user = userEvent.setup();
     const { transport } = buildTransport();
 
     renderWithFileRoutes(<UserCreatePage />, { transport });
 
     const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'user with spaces');
+    // Value-only assertion — bypass char-by-char user.type to save ~500ms.
+    fireEvent.input(usernameInput, { target: { value: 'user with spaces' } });
 
     expect(screen.getByTestId('create-user-submit')).toBeDisabled();
   });
@@ -364,18 +365,17 @@ describe('UserCreatePage', () => {
   });
 
   test('create button disabled when password is too short', async () => {
-    const user = userEvent.setup();
     const { transport } = buildTransport();
 
     renderWithFileRoutes(<UserCreatePage />, { transport });
 
     const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'valid-user');
+    // Value-only assertion — bypass char-by-char user.type to save ~500ms.
+    fireEvent.input(usernameInput, { target: { value: 'valid-user' } });
 
-    // Clear the password field and type a too-short password (< 4 chars)
+    // Replace the password field value with a too-short password (< 4 chars)
     const passwordInput = screen.getByTestId('create-user-password');
-    await user.clear(passwordInput);
-    await user.type(passwordInput, 'ab');
+    fireEvent.input(passwordInput, { target: { value: 'ab' } });
 
     expect(screen.getByTestId('create-user-submit')).toBeDisabled();
   });

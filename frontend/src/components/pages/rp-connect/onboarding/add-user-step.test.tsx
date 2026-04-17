@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CreateSecretResponseSchema as CreateSecretResponseSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { createSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
@@ -192,7 +193,8 @@ describe('AddUserStep', () => {
       );
 
       const usernameInput = await screen.findByPlaceholderText('Enter a username');
-      await user.type(usernameInput, 'test-user');
+      // Assertion is "createUser RPC called with name" — skip char-by-char typing.
+      fireEvent.input(usernameInput, { target: { value: 'test-user' } });
 
       await user.click(screen.getByTestId('submit'));
 

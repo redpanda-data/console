@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
@@ -109,13 +110,13 @@ const performCreateAction = async (
   switch (action.type) {
     case 'fillName': {
       const nameInput = scr.getByPlaceholderText('my-shadow-link');
-      await user.type(nameInput, action.value);
+      // Value-only — tests assert submitted payload shape, not keystroke behaviour.
+      fireEvent.input(nameInput, { target: { value: action.value } });
       break;
     }
     case 'fillBootstrapServer': {
       const serverInput = scr.getByTestId(`bootstrap-server-input-${action.index}`);
-      await user.clear(serverInput);
-      await user.type(serverInput, action.value);
+      fireEvent.input(serverInput, { target: { value: action.value } });
       break;
     }
     case 'addBootstrapServer':
@@ -123,12 +124,12 @@ const performCreateAction = async (
       break;
     case 'fillScramUsername': {
       const usernameInput = scr.getByTestId('scram-username-input');
-      await user.type(usernameInput, action.value);
+      fireEvent.input(usernameInput, { target: { value: action.value } });
       break;
     }
     case 'fillScramPassword': {
       const passwordInput = scr.getByTestId('scram-password-input');
-      await user.type(passwordInput, action.value);
+      fireEvent.input(passwordInput, { target: { value: action.value } });
       break;
     }
     case 'enableTLS':

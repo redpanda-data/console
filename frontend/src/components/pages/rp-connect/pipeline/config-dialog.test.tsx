@@ -10,6 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
@@ -44,12 +45,12 @@ function TestWrapper({ defaultValues }: { defaultValues?: Partial<FormValues> })
 }
 
 describe('ConfigDialog', () => {
-  it('renders pipeline name input, accepts text', async () => {
-    const user = userEvent.setup();
+  it('renders pipeline name input, accepts text', () => {
     render(<TestWrapper />);
     const input = screen.getByPlaceholderText('Enter pipeline name');
     expect(input).toBeInTheDocument();
-    await user.type(input, 'my-pipeline');
+    // Value round-trip only — skip char-by-char user.type.
+    fireEvent.input(input, { target: { value: 'my-pipeline' } });
     expect(input).toHaveValue('my-pipeline');
   });
 
