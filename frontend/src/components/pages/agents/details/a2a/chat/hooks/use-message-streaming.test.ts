@@ -874,6 +874,13 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   // Scenario 16: finalizeMessage failure after recovery falls through to error path
   // -------------------------------------------------------------------
   test('falls through to error path when finalizeMessage fails after recovery', async () => {
+    // The production code path under test intentionally logs
+    // `finalizeMessage failed after recovery: ...` via console.error at the
+    // catch site. Silence that expected negative-path log for this test only;
+    // the vi.restoreAllMocks() in the describe's afterEach restores it.
+    // biome-ignore lint/suspicious/noConsole: scoped suppression of expected negative-path log
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
     const TASK_ID = 'task-finalize-fail';
     const onMessageUpdate = vi.fn();
 
