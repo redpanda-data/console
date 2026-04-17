@@ -25,6 +25,21 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+// Recharts' ResponsiveContainer requires parent-container dimensions to
+// render. happy-dom reports 0×0 for every element, which makes recharts
+// emit "width(0) and height(0) of chart should be greater than 0" on every
+// chart mount. Mock ResponsiveContainer with a fixed-size passthrough div
+// so the inner LineChart gets a positive layout and the warning stops.
+vi.mock('recharts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('recharts')>();
+  const React = await import('react');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { style: { width: 800, height: 600 } }, children),
+  };
+});
+
 vi.mock('config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('config')>();
   return {
