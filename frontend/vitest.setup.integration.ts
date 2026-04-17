@@ -173,11 +173,6 @@ const SUPPRESSED_PATTERNS = [
   /Function components cannot be given refs/,
   // Radix DialogContent missing Description/aria-describedby — tracked separately for a11y
   /Missing `Description` or `aria-describedby=\{undefined\}` for \{DialogContent\}/,
-  // Radix Radio/Tooltip apply state updates outside the act() window after
-  // userEvent awaited clicks resolve. Not actionable from tests; source fix
-  // belongs in @radix-ui.
-  /An update to Radio inside a test was not wrapped in act/,
-  /An update to Tooltip inside a test was not wrapped in act/,
   // happy-dom DOMException noise from unmocked fetch/script loads
   /DOMException.*AbortError/,
   /Failed to load script/,
