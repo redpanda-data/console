@@ -51,6 +51,7 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routeTree } from './routeTree.gen';
+import { installUISettingsSideEffects } from './state/ui';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
@@ -98,7 +99,12 @@ const App = () => {
   const developerView = useDeveloperView();
 
   useEffect(() => {
-    setup(EMPTY_SETUP_ARGS);
+    const setupTeardown = setup(EMPTY_SETUP_ARGS);
+    const uiSettingsTeardown = installUISettingsSideEffects();
+    return () => {
+      uiSettingsTeardown();
+      setupTeardown?.();
+    };
   }, []);
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp

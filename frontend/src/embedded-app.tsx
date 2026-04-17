@@ -53,6 +53,7 @@ import {
 } from './config';
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
+import { installUISettingsSideEffects } from './state/ui';
 
 // Regex for normalizing paths by removing trailing slashes
 const TRAILING_SLASH_REGEX = /\/+$/;
@@ -105,6 +106,13 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
 
     return () => {
       window.removeEventListener('[shell] navigated', shellNavigationHandler);
+    };
+  }, []);
+
+  useEffect(() => {
+    const uiSettingsTeardown = installUISettingsSideEffects();
+    return () => {
+      uiSettingsTeardown();
     };
   }, []);
 
