@@ -774,7 +774,10 @@ export default function CreateACL({
     }
   }, [propSharedConfig?.principal, propSharedConfig?.host]);
 
-  const ruleIdCounter = useRef(2);
+  // Start counter beyond any existing rule id so new rules never collide with
+  // propRules coming from edit-mode loads (UX-1219, UX-1198). Default 2 matches
+  // the fresh-create default rule id=1 below.
+  const ruleIdCounter = useRef(propRules && propRules.length > 0 ? Math.max(...propRules.map((r) => r.id)) + 1 : 2);
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
       {
