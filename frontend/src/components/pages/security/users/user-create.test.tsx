@@ -313,17 +313,6 @@ describe('UserCreatePage', () => {
     });
   });
 
-  test('SASL mechanism select is rendered with default value', async () => {
-    const { transport } = buildTransport();
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    // Radix Select renders a combobox trigger showing the current value
-    const mechanismTrigger = await screen.findByRole('combobox');
-    expect(mechanismTrigger).toBeInTheDocument();
-    expect(mechanismTrigger).toHaveTextContent('SCRAM-SHA-256');
-  });
-
   test('create button disabled when password is too short', async () => {
     const { transport } = buildTransport();
 

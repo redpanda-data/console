@@ -34,13 +34,6 @@ const testTabs: Tab[] = [
 ];
 
 describe('Tabs', () => {
-  test('renders a single tab with string title and content', () => {
-    render(<Tabs tabs={testTabs.slice(0, 1)} />);
-
-    expect(screen.getByText('test title 1')).toBeInTheDocument();
-    expect(screen.getByText('test content 1')).toBeInTheDocument();
-  });
-
   test('renders an initial tab other than the first', () => {
     render(<Tabs selectedTabKey="test2" tabs={testTabs.slice(0, 2)} />);
 

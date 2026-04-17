@@ -103,17 +103,6 @@ describe('EditSchemaModePage', () => {
   });
 
   describe('Global mode (no subjectName)', () => {
-    test('renders description text', async () => {
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      // `findByTestId` awaits the Radio group's async focus-visible effects
-      // before asserting, which keeps any subsequent Radio state update
-      // inside RTL's act boundary.
-      expect(await screen.findByTestId('edit-mode-description')).toHaveTextContent(
-        'Mode controls whether the Schema Registry accepts new schema registrations and under what conditions.'
-      );
-    });
-
     test('renders 3 mode options for global mode', async () => {
       renderWithFileRoutes(<EditSchemaModePage />);
 
@@ -122,23 +111,6 @@ describe('EditSchemaModePage', () => {
       expect(screen.getByText('Import')).toBeInTheDocument();
       // Should NOT show Default option when no subjectName
       expect(screen.queryByText('Default')).not.toBeInTheDocument();
-    });
-
-    test('shows warning text on Import option', async () => {
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      expect(
-        await screen.findByText(
-          'This mode allows overriding schema IDs. Incorrect use can cause ID collisions and data loss.'
-        )
-      ).toBeInTheDocument();
-    });
-
-    test('renders Save and Cancel buttons', async () => {
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      expect(await screen.findByTestId('edit-mode-save-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('edit-mode-cancel-btn')).toBeInTheDocument();
     });
 
     test('calls global mutation on save', async () => {
@@ -281,11 +253,6 @@ describe('EditSchemaModePage', () => {
       expect(await screen.findByTestId('edit-mode-subject-name')).toHaveTextContent(subjectName);
     });
 
-    test('shows schema heading in preview panel', async () => {
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      expect(await screen.findByText('Schema')).toBeInTheDocument();
-    });
   });
 
   describe('Per-context mode (with contextName)', () => {

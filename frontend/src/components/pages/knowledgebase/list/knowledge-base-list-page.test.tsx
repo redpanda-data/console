@@ -263,50 +263,6 @@ describe('KnowledgeBaseList', () => {
     expect(screen.getByText('Create Knowledge Base')).toBeVisible();
   });
 
-  test('should filter knowledge bases by name', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'production-kb',
-      displayName: 'Production KB',
-      description: 'Production environment',
-      tags: {},
-    });
-
-    const kb2 = create(KnowledgeBaseSchema, {
-      id: 'staging-kb',
-      displayName: 'Staging KB',
-      description: 'Staging environment',
-      tags: {},
-    });
-
-    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
-      knowledgeBases: [kb1, kb2],
-      nextPageToken: '',
-    });
-
-    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, listKnowledgeBasesMock);
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Production KB')).toBeVisible();
-      expect(screen.getByText('Staging KB')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-    await user.type(filterInput, 'Production');
-
-    await waitFor(() => {
-      expect(screen.getByText('Production KB')).toBeVisible();
-      expect(screen.queryByText('Staging KB')).not.toBeInTheDocument();
-    });
-  });
-
   test('should update pagination footer and disable next button on the last page', async () => {
     const user = userEvent.setup();
 

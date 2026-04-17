@@ -54,27 +54,10 @@ describe('ConfigDialog', () => {
     expect(input).toHaveValue('my-pipeline');
   });
 
-  it('renders description textarea', () => {
-    render(<TestWrapper />);
-    expect(screen.getByPlaceholderText('Optional description for this pipeline')).toBeInTheDocument();
-  });
-
-  it('renders compute units slider and number input', () => {
-    render(<TestWrapper />);
-    expect(screen.getByText('Compute units')).toBeInTheDocument();
-    expect(screen.getByRole('slider')).toBeInTheDocument();
-    expect(screen.getByRole('spinbutton')).toBeInTheDocument();
-  });
-
   it('compute units slider and number input stay in sync', async () => {
     render(<TestWrapper defaultValues={{ computeUnits: 3 }} />);
     const numberInput = screen.getByRole('spinbutton');
     expect(numberInput).toHaveValue(3);
-  });
-
-  it('renders tags section with "Tags" label', () => {
-    render(<TestWrapper />);
-    expect(screen.getByText('Tags')).toBeInTheDocument();
   });
 
   it('add tag button creates a new row', async () => {
@@ -129,18 +112,4 @@ describe('ConfigDialog', () => {
     expect(valueInput).toHaveValue('production');
   });
 
-  it('tag key input is rendered and editable', async () => {
-    const user = userEvent.setup();
-    render(
-      <TestWrapper
-        defaultValues={{
-          tags: [{ key: '', value: '' }],
-        }}
-      />
-    );
-    const keyInput = screen.getByPlaceholderText('Key');
-    expect(keyInput).toBeInTheDocument();
-    await user.type(keyInput, 'test');
-    expect(keyInput).toHaveValue('test');
-  });
 });

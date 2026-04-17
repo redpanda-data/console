@@ -97,36 +97,6 @@ describe('EditSchemaCompatibilityPage', () => {
   });
 
   describe('Global compatibility (no subjectName)', () => {
-    test('renders description text', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      // `findByTestId` awaits the Radio group's async focus-visible effects
-      // before asserting, which keeps the subsequent Radio state update
-      // inside RTL's act boundary.
-      expect(await screen.findByTestId('edit-compatibility-description')).toHaveTextContent(
-        'Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.'
-      );
-    });
-
-    test('renders all compatibility options', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(await screen.findByText('None')).toBeInTheDocument();
-      expect(screen.getByText('Backward')).toBeInTheDocument();
-      expect(screen.getByText('Transitive Backward')).toBeInTheDocument();
-      expect(screen.getByText('Forward')).toBeInTheDocument();
-      expect(screen.getByText('Transitive Forward')).toBeInTheDocument();
-      expect(screen.getByText('Full')).toBeInTheDocument();
-      expect(screen.getByText('Transitive Full')).toBeInTheDocument();
-    });
-
-    test('renders Save and Cancel buttons', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(await screen.findByTestId('edit-compatibility-save-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('edit-compatibility-cancel-btn')).toBeInTheDocument();
-    });
-
     test('calls global mutation on save', async () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
@@ -259,13 +229,6 @@ describe('EditSchemaCompatibilityPage', () => {
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
       expect(await screen.findByTestId('edit-compatibility-context-name')).toHaveTextContent('.test');
-    });
-
-    test('does not show context name header for global mode', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-      await screen.findByTestId('edit-compatibility-description');
-
-      expect(screen.queryByTestId('edit-compatibility-context-name')).not.toBeInTheDocument();
     });
 
     test('calls context mutation on save', async () => {

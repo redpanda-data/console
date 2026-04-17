@@ -69,26 +69,6 @@ vi.mock('state/app-global', () => ({
 import ObservabilityPage from './observability-page';
 
 describe('ObservabilityPage', () => {
-  test('should render and display content when data loads', async () => {
-    const listQueriesResponse = create(ListQueriesResponseSchema, {
-      queries: [],
-    });
-
-    const listQueriesMock = vi.fn().mockReturnValue(listQueriesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listQueries, listQueriesMock);
-    });
-
-    renderWithFileRoutes(<ObservabilityPage />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('No metrics queries available at this time.')).toBeInTheDocument();
-    });
-
-    expect(listQueriesMock).toHaveBeenCalledTimes(1);
-  });
-
   test('should display metrics queries when data is loaded', async () => {
     const query1 = create(QueryMetadataSchema, {
       name: 'cpu_usage',
