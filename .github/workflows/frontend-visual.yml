@@ -49,13 +49,15 @@ jobs:
         run: bunx playwright install --with-deps chromium
       - name: Run browser tests
         run: |
-          # If Linux baselines exist in git, run strict comparison.
-          # Otherwise bootstrap: generate baselines without failing.
+          # Only run strict comparison when Linux baselines exist in git.
+          # Baseline generation is intentionally NOT done on push CI — it
+          # blocks on the first cold Vitest+Playwright browser-mode launch
+          # and runs out the job timeout. Use the `frontend-update-baselines`
+          # workflow_dispatch to generate and commit baselines.
           if git ls-files 'src/**/__screenshots__/**/*-linux.png' | grep -q .; then
             bun run test:browser
           else
-            echo "::notice::No Linux baselines committed yet — generating initial baselines"
-            bun run test:browser:update
+            echo "::notice::No Linux baselines committed yet — skipping visual regression. Run 'frontend-update-baselines' workflow to generate."
           fi
       - uses: actions/upload-artifact@v7.0.1
         if: failure()
