@@ -2,11 +2,11 @@ import type { Transport } from '@connectrpc/connect';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider } from '@redpanda-data/ui';
-import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { type RenderOptions, render } from '@testing-library/react';
 import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
+import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
