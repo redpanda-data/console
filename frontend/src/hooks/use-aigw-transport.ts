@@ -18,10 +18,13 @@ import { useMemo } from 'react';
  * In Production (Standalone):
  *   - Uses relative path /.aigw/api (backend handles routing)
  */
-// `ignoreUnknownFields: true` keeps the client forward-compatible when aigw
-// rolls out proto changes before the console's generated bindings are refreshed.
-// Without it, any new server-side field throws at JSON decode time and turns
-// a successful response into a hook error with no data.
+// Use the binary (proto) wire format instead of JSON. MCPServer responses contain
+// `google.protobuf.Any` fields (backend.managed.config) whose inner types live in
+// the redpanda-data/mcps library and are not in the console's protobuf registry.
+// `anyFromJson` throws for any unregistered `@type`, so JSON decoding fails on the
+// entire response. Binary Any keeps the inner bytes opaque — no registry needed.
+// `ignoreUnknownFields` covers forward-compat for plain fields added server-side
+// before the console regenerates bindings.
 const AIGW_JSON_OPTIONS = { registry: protobufRegistry, ignoreUnknownFields: true };
 
 export const useAigwTransport = (): Transport => {
@@ -33,6 +36,7 @@ export const useAigwTransport = (): Transport => {
       return createConnectTransport({
         baseUrl: config.aigwUrl,
         interceptors: [addBearerTokenInterceptor],
+        useBinaryFormat: true,
         jsonOptions: AIGW_JSON_OPTIONS,
       });
     }
@@ -41,6 +45,7 @@ export const useAigwTransport = (): Transport => {
     return createConnectTransport({
       baseUrl: '/.aigw/api',
       interceptors: [addBearerTokenInterceptor],
+      useBinaryFormat: true,
       jsonOptions: AIGW_JSON_OPTIONS,
     });
   }, []);
