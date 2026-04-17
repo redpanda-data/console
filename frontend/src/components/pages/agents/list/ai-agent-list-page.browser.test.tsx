@@ -15,6 +15,7 @@ import { AIAgent_State, AIAgentSchema } from 'protogen/redpanda/api/dataplane/v1
 import { describe, expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-react';
+
 import {
   getRouteComponent,
   mockConnectQuery,
@@ -25,7 +26,7 @@ import {
 // Hoisted mocks — `vi.mock` factories run before module imports, so any state
 // they reference must be declared via `vi.hoisted()` to survive hoisting.
 const mocks = vi.hoisted(() => ({
-  listAgents: vi.fn<() => { data: unknown; isLoading: boolean; error: Error | null }>().mockReturnValue({
+  listAIAgents: vi.fn<() => { data: unknown; isLoading: boolean; error: Error | null }>().mockReturnValue({
     data: undefined,
     isLoading: false,
     error: null,
@@ -56,8 +57,10 @@ vi.mock('state/ui-state', async (importOriginal) => {
 });
 
 vi.mock('react-query/api/ai-agent', () => ({
-  useListAIAgentsQuery: () => mocks.listAgents(),
+  useListAIAgentsQuery: () => mocks.listAIAgents(),
   useDeleteAIAgentMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useStartAIAgentMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useStopAIAgentMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('react-query/api/remote-mcp', () => ({
@@ -68,59 +71,67 @@ vi.mock('react-query/api/secret', () => ({
   useDeleteSecretMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
-// Stub the delete handler because it pulls in useControlplaneTransport, which
-// requires a full config singleton that's costly to reproduce in browser mode.
-vi.mock('./ai-agent-delete-handler', () => ({
-  AIAgentDeleteHandler: ({ children }: { children: React.ReactNode }) => children,
-}));
-
 const { AIAgentsListPage } = await import('./ai-agent-list-page');
 
 // Route-component extraction guard — exercises getRouteComponent for parity
-// with ADP UI's canonical browser test even though AIAgentsListPage is a
-// plain component rather than a Route export.
+// with the ADP UI browser-test pattern.
 getRouteComponent({ component: AIAgentsListPage });
 
-const testAgents: AIAgent[] = [
+const testAIAgents: AIAgent[] = [
   create(AIAgentSchema, {
     id: 'agent-support',
     displayName: 'Customer Support Agent',
-    description: 'Handles tier-1 customer support tickets via Zendesk.',
+    description: 'Answers customer questions from the product docs knowledge base.',
     state: AIAgent_State.RUNNING,
-    provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
+    provider: {
+      provider: {
+        case: 'openai',
+        value: { apiKey: 'secret-support' },
+      },
+    },
     model: 'gpt-4',
-    systemPrompt: 'You are a helpful support agent.',
-    mcpServers: { server1: { id: 'server-1' } },
+    systemPrompt: 'You are a helpful customer support agent.',
+    mcpServers: {},
     tags: { env: 'production', team: 'support' },
   }),
   create(AIAgentSchema, {
-    id: 'agent-docs',
-    displayName: 'Product Docs Agent',
-    description: 'Answers questions about product documentation.',
+    id: 'agent-release-notes',
+    displayName: 'Release Notes Writer',
+    description: 'Drafts release notes from commit history.',
     state: AIAgent_State.STOPPED,
-    provider: { provider: { case: 'anthropic', value: { apiKey: 'key' } } },
-    model: 'claude-3-5-sonnet',
-    systemPrompt: 'You are a documentation assistant.',
-    mcpServers: { server2: { id: 'server-2' } },
+    provider: {
+      provider: {
+        case: 'anthropic',
+        value: { apiKey: 'secret-release-notes' },
+      },
+    },
+    model: 'claude-3.5-sonnet',
+    systemPrompt: 'You write concise release notes.',
+    mcpServers: {},
     tags: { env: 'staging' },
   }),
   create(AIAgentSchema, {
-    id: 'agent-wiki',
-    displayName: 'Internal Wiki Agent',
-    description: 'Internal runbooks and wiki — no MCP tools.',
-    state: AIAgent_State.STARTING,
-    provider: { provider: { case: 'google', value: { apiKey: 'key' } } },
-    model: 'gemini-2.0-flash',
-    systemPrompt: 'You are a wiki assistant.',
+    id: 'agent-triage',
+    displayName: 'Issue Triage Agent',
+    description: 'Classifies incoming issues by severity.',
+    state: AIAgent_State.RUNNING,
+    provider: {
+      provider: {
+        case: 'openai',
+        value: { apiKey: 'secret-triage' },
+      },
+    },
+    model: 'gpt-4o-mini',
+    systemPrompt: 'You classify issues.',
     mcpServers: {},
     tags: {},
   }),
 ];
 
 describe('AIAgentsListPage — browser visual regression', () => {
-  test('populated table with filters, status icons, and heading', async () => {
-    mocks.listAgents.mockReturnValue({
-      data: { aiAgents: testAgents },
+  test('populated table with filters, status chips, and pagination footer', async () => {
+    mocks.listAIAgents.mockReturnValue({
+      data: { aiAgents: testAIAgents },
       isLoading: false,
       error: null,
     });
@@ -132,9 +143,11 @@ describe('AIAgentsListPage — browser visual regression', () => {
     );
 
     await expect.element(page.getByText('Customer Support Agent')).toBeVisible();
-    await expect.element(page.getByText('Product Docs Agent')).toBeVisible();
-    await expect.element(page.getByText('Internal Wiki Agent')).toBeVisible();
-    await expect.element(page.getByRole('heading', { name: 'AI Agents' })).toBeVisible();
+    await expect.element(page.getByText('Release Notes Writer')).toBeVisible();
+    await expect.element(page.getByText('Issue Triage Agent')).toBeVisible();
+    // Toolbar + pagination confirm the full table chrome is rendered.
+    await expect.element(page.getByPlaceholder('Filter agents...')).toBeVisible();
+    await expect.element(page.getByText('Page 1 of 1')).toBeVisible();
 
     await expect(page.getByTestId('screenshot-frame')).toMatchScreenshot('ai-agent-list-populated');
   });
