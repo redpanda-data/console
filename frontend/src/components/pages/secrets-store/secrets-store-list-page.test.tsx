@@ -46,6 +46,15 @@ const createListSecretsTransport = (listSecretsMock: ReturnType<typeof vi.fn>) =
     rpc(listSecrets, listSecretsMock);
   });
 
+// Hoisted once — 25 rows = 3 pages at the page's hard-coded pageSize of 10.
+const PAGINATION_SECRETS_FIXTURE = Array.from({ length: 25 }, (_, index) =>
+  create(SecretSchema, {
+    id: `test-secret-${index + 1}`,
+    labels: { env: 'production' },
+    scopes: [Scope.AI_GATEWAY],
+  })
+);
+
 describe('SecretsStoreListPage', () => {
   test('should call listSecrets on render and display secret IDs', async () => {
     const secret1 = create(SecretSchema, {
@@ -127,17 +136,10 @@ describe('SecretsStoreListPage', () => {
 
   test('should update pagination footer and disable next button on the last page', async () => {
     const user = userEvent.setup();
-    const secrets = Array.from({ length: 25 }, (_, index) =>
-      create(SecretSchema, {
-        id: `test-secret-${index + 1}`,
-        labels: { env: 'production' },
-        scopes: [Scope.AI_GATEWAY],
-      })
-    );
 
     const listSecretsResponse = create(ListSecretsResponseSchema, {
       response: {
-        secrets,
+        secrets: PAGINATION_SECRETS_FIXTURE,
         nextPageToken: '',
       },
     });
@@ -147,9 +149,7 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 1 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 1 of 3')).toBeVisible();
 
     const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
     const nextButton = screen.getByRole('button', { name: 'Go to next page' });
@@ -159,17 +159,13 @@ describe('SecretsStoreListPage', () => {
 
     await user.click(nextButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 2 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 2 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 3 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 3 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
