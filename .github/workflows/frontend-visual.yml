@@ -1,0 +1,69 @@
+---
+name: frontend-visual
+# Vitest browser-mode visual regression tests for the console frontend.
+# Mirrors apps/adp-ui/.github/workflows/adp-ui.yml `test-browser` job.
+on:
+  push:
+    paths:
+      - '.github/workflows/frontend-visual.yml'
+      - 'frontend/**'
+    branches-ignore:
+      - 'dependabot/**'
+      - 'snyk-upgrade-**'
+      - 'gh-readonly-queue/**'
+      - 'production'
+      - 'preprod'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CI: true
+jobs:
+  test-browser:
+    # Visual regression tests — compares against Linux/Chromium baselines
+    # committed to git. If screenshots change, this job fails.
+    # Run "bun run test:browser:update" via the frontend-update-baselines
+    # workflow to regenerate baselines when UI changes are intentional.
+    timeout-minutes: 5
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.2.0
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5.0.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('frontend/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-chromium-
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+      - name: Run browser tests
+        run: |
+          # If Linux baselines exist in git, run strict comparison.
+          # Otherwise bootstrap: generate baselines without failing.
+          if git ls-files 'src/**/__screenshots__/**/*-linux.png' | grep -q .; then
+            bun run test:browser
+          else
+            echo "::notice::No Linux baselines committed yet — generating initial baselines"
+            bun run test:browser:update
+          fi
+      - uses: actions/upload-artifact@v7.0.1
+        if: failure()
+        with:
+          name: browser-test-diffs
+          path: |
+            frontend/src/**/__screenshots__/**/*.png
+            frontend/.vitest-attachments
+          retention-days: 7
+      - name: Hint on visual diff failure
+        if: failure()
+        run: |
+          echo "::warning::Visual regression detected. If the UI change is intentional, run the 'frontend-update-baselines' workflow on this branch to regenerate baselines."
