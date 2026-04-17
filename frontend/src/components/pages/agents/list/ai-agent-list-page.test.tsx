@@ -40,7 +40,7 @@ vi.mock('config', async (importOriginal) => {
     config: {
       jwt: 'test-jwt-token',
       controlplaneUrl: 'http://localhost:9090',
-      aigwUrl: 'http://localhost:9091',
+      aigwUrl: 'http://localhost:8090',
     },
     isFeatureFlagEnabled: vi.fn(() => false),
     addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
