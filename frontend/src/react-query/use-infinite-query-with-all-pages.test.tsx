@@ -121,10 +121,9 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Wait for the hook to settle on callCount === 2 (first page success + second page error).
-    // vi.waitFor polls in small intervals rather than hard-sleeping, so it exits as soon as
-    // the condition holds, and stays short enough to catch runaway extra calls.
-    await vi.waitFor(
+    // RTL's waitFor batches state updates in act(); vi.waitFor does not,
+    // so the second-page error triggers "not wrapped in act" on TestComponent.
+    await waitFor(
       () => {
         expect(result.current.isFetching).toBe(false);
         expect(callCount).toBe(2);
