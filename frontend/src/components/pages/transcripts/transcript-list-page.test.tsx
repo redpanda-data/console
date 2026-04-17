@@ -285,9 +285,7 @@ describe('TranscriptListPage', () => {
 
       renderTranscriptListPage(transport);
 
-      await waitFor(() => {
-        expect(screen.getByText(REGEX_NO_TRANSCRIPTS_FOUND)).toBeVisible();
-      });
+      expect(await screen.findByText(REGEX_NO_TRANSCRIPTS_FOUND)).toBeVisible();
 
       // Verify the message about no transcripts recorded
       expect(screen.getByText(REGEX_NO_TRANSCRIPTS_RECORDED)).toBeVisible();

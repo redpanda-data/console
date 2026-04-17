@@ -75,9 +75,7 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('test-secret-123')).toBeVisible();
-    });
+    expect(await screen.findByText('test-secret-123')).toBeVisible();
 
     expect(listSecretsMock).toHaveBeenCalledTimes(1);
     const callArgs = listSecretsMock.mock.calls[0];
@@ -101,9 +99,7 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('No secrets found.')).toBeVisible();
-    });
+    expect(await screen.findByText('No secrets found.')).toBeVisible();
   });
 
   test('should display loading state while fetching secrets', async () => {
@@ -188,9 +184,7 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('my-secret')).toBeVisible();
-    });
+    expect(await screen.findByText('my-secret')).toBeVisible();
 
     const filterInput = screen.getByPlaceholderText('Filter by ID...');
     await user.type(filterInput, 'hello');
