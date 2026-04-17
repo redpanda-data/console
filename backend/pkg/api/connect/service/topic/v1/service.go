@@ -580,7 +580,7 @@ func (s *Service) DeleteTopicRecords(ctx context.Context, req *connect.Request[v
 }
 
 // GetTopicDocumentation returns the documentation for a topic.
-func (s *Service) GetTopicDocumentation(ctx context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+func (s *Service) GetTopicDocumentation(_ context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
 	doc := s.consoleSvc.GetTopicDocumentation(req.Msg.GetTopicName())
 
 	return connect.NewResponse(&v1.GetTopicDocumentationResponse{
