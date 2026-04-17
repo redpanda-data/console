@@ -374,7 +374,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   );
 
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
-  const [pendingSearch, setPendingSearch] = useState('');
+  const [, setPendingSearch] = useState('');
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
