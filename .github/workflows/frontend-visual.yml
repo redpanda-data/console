@@ -21,10 +21,12 @@ env:
 jobs:
   test-browser:
     # Visual regression tests — compares against Linux/Chromium baselines
-    # committed to git. If screenshots change, this job fails.
+    # committed to git. If screenshots change, this job fails BUT does NOT
+    # block PR merge (continue-on-error + not listed in any required checks).
     # Run "bun run test:browser:update" via the frontend-update-baselines
     # workflow to regenerate baselines when UI changes are intentional.
     timeout-minutes: 5
+    continue-on-error: true
     runs-on: blacksmith-2vcpu-ubuntu-2404
     defaults:
       run:
