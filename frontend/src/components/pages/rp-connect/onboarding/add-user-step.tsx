@@ -535,7 +535,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               <CircleAlert className="h-4 w-4" /> User does not have required permissions
                             </AlertTitle>
                             <AlertDescription>
-                              <Text variant="small">
+                              <Text as="div" variant="small">
                                 The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
                                 <b>{topicName}</b> topic:
                                 <List>
@@ -568,7 +568,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               <CircleAlert className="h-4 w-4" /> User has required permissions
                             </AlertTitle>
                             <AlertDescription>
-                              <Text variant="small">
+                              <Text as="div" variant="small">
                                 The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
                                 <b>{topicName}</b> topic:
                                 <List>
@@ -759,7 +759,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                 <CircleAlert className="h-4 w-4" /> User has required consumer group permissions
                               </AlertTitle>
                               <AlertDescription>
-                                <Text variant="small">
+                                <Text as="div" variant="small">
                                   The user <b>{existingUserSelected?.name}</b> has the following permissions for the{' '}
                                   <b>{watchedConsumerGroup}</b> consumer group:
                                   <List>
