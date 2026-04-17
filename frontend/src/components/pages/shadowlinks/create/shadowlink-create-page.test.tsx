@@ -515,18 +515,34 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
     });
   });
 
-  // TODO: This test requires special handling for window.location mocking with renderWithFileRoutes
-  // The embedded mode redirect functionality works correctly but test setup needs investigation
-  // biome-ignore lint/suspicious/noSkippedTests: Test requires window.location mocking investigation
-  test.skip('redirects to correct path when in embedded mode', async () => {
+  test('redirects to correct path when in embedded mode', async () => {
+    // happy-dom blocks `window.location.href` assignment when
+    // disableMainFrameNavigation is on (see vitest.setup.integration.ts), so
+    // replace window.location with a plain object whose href we can inspect.
+    const originalLocation = window.location;
+    const locationStub = { href: '' };
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: locationStub,
+    });
+
     vi.mocked(isEmbedded).mockReturnValue(true);
     vi.mocked(getBasePath).mockReturnValue('/console');
 
-    renderWithFileRoutes(<ShadowLinkCreatePage />);
+    try {
+      renderWithFileRoutes(<ShadowLinkCreatePage />);
 
-    await waitFor(() => {
-      expect(window.location.href).toBe('/console/shadowlinks/create');
-    });
+      await waitFor(() => {
+        expect(locationStub.href).toBe('/console/shadowlinks/create');
+      });
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        writable: true,
+        value: originalLocation,
+      });
+    }
   });
 
   test('does not redirect when not in embedded mode', async () => {
