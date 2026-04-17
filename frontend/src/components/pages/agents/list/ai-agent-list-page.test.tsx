@@ -12,8 +12,8 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
-import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
-import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
+import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
+import { listMCPServers } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server-MCPServerService_connectquery';
 import {
   AIAgent_State,
   AIAgentSchema,
@@ -40,9 +40,11 @@ vi.mock('config', async (importOriginal) => {
     config: {
       jwt: 'test-jwt-token',
       controlplaneUrl: 'http://localhost:9090',
+      aigwUrl: 'http://localhost:9091',
     },
     isFeatureFlagEnabled: vi.fn(() => false),
     addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
+    isEmbedded: vi.fn(() => false),
   };
 });
 
@@ -52,6 +54,14 @@ vi.mock('state/ui-state', () => ({
     pageBreadcrumbs: [],
   },
 }));
+
+// Route aigw queries through the same test transport as the main dataplane transport
+vi.mock('hooks/use-aigw-transport', async () => {
+  const { useTransport } = await import('@connectrpc/connect-query');
+  return {
+    useAigwTransport: () => useTransport(),
+  };
+});
 
 global.ResizeObserver = class ResizeObserver {
   observe() {
@@ -144,25 +154,13 @@ describe('AIAgentsListPage', () => {
     });
 
     const mcpServer1 = create(MCPServerSchema, {
-      id: 'server-1',
-      displayName: 'Test MCP Server 1',
-      tools: {
-        'tool-1': {
-          componentType: 1,
-          configYaml: 'test: config',
-        },
-      },
+      name: 'server-1',
+      tools: [{ name: 'tool-1', description: '', inputSchema: '' }],
     });
 
     const mcpServer2 = create(MCPServerSchema, {
-      id: 'server-2',
-      displayName: 'Test MCP Server 2',
-      tools: {
-        'tool-2': {
-          componentType: 2,
-          configYaml: 'test: config2',
-        },
-      },
+      name: 'server-2',
+      tools: [{ name: 'tool-2', description: '', inputSchema: '' }],
     });
 
     const listAIAgentsResponse = create(ListAIAgentsResponseSchema, {

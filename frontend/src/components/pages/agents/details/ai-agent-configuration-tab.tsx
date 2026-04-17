@@ -51,7 +51,9 @@ import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
+import { config } from 'config';
 import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
+import { type MCPServer, MCPServerSchema, MCPServerType } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_AgentCard_ProviderSchema,
@@ -72,7 +74,7 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
-import { type MCPServer, MCPServer_State, useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -320,7 +322,7 @@ export const AIAgentConfigurationTab = () => {
   const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateAIAgent, isPending: isUpdateAIAgentPending } = useUpdateAIAgentMutation();
-  const { data: mcpServersData } = useListMCPServersQuery();
+  const { data: mcpServersData } = useListAigwMCPServersQuery(undefined, { enabled: !!config.aigwUrl });
   const { data: secretsData } = useListSecretsQuery();
   const [isEditing, setIsEditing] = useState(false);
   const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
@@ -449,25 +451,22 @@ export const AIAgentConfigurationTab = () => {
   // Get available MCP servers (includes placeholders for missing servers that agent references)
   const availableMcpServers = useMemo(() => {
     const existingServers = mcpServersData?.mcpServers ?? [];
-    const existingIds = new Set(existingServers.map((s) => s.id));
+    const existingNames = new Set(existingServers.map((s) => s.name));
 
-    // Find missing server IDs referenced by the agent
-    const connectedServerIds = Object.values(aiAgentData?.aiAgent?.mcpServers ?? {}).map((s) => s.id);
-    const missingServerIds = connectedServerIds.filter((id) => !existingIds.has(id));
+    // Find missing server names referenced by the agent
+    const connectedServerNames = Object.values(aiAgentData?.aiAgent?.mcpServers ?? {}).map((s) => s.id);
+    const missingServerNames = connectedServerNames.filter((name) => !existingNames.has(name));
 
-    // Create placeholders for missing servers
-    // Note: Cast required because MCPServer is a protobuf Message type with internal properties
-    const missingServers = missingServerIds.map(
-      (id) =>
-        ({
-          id,
-          displayName: `${id} (deleted)`,
-          description: 'This MCP server no longer exists',
-          tools: {},
-          tags: {},
-          state: MCPServer_State.UNSPECIFIED,
-          url: '',
-        }) as MCPServer
+    // Create placeholders for missing servers (disabled + unspecified type)
+    const missingServers = missingServerNames.map((name) =>
+      create(MCPServerSchema, {
+        name,
+        description: 'This MCP server no longer exists',
+        tools: [],
+        enabled: false,
+        type: MCPServerType.MCP_SERVER_TYPE_UNSPECIFIED,
+        url: '',
+      })
     );
 
     return [...existingServers, ...missingServers];
@@ -840,24 +839,23 @@ export const AIAgentConfigurationTab = () => {
     if (!aiAgentData?.aiAgent?.mcpServers) {
       return [];
     }
-    const connectedServerIds = Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id);
-    const existingServersMap = new Map((mcpServersData?.mcpServers ?? []).map((s) => [s.id, s]));
+    const connectedServerNames = Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id);
+    const existingServersMap = new Map((mcpServersData?.mcpServers ?? []).map((s) => [s.name, s]));
 
-    return connectedServerIds.map((id) => {
-      const existing = existingServersMap.get(id);
+    return connectedServerNames.map((name) => {
+      const existing = existingServersMap.get(name);
       if (existing) {
         return existing;
       }
       // Create placeholder for missing/deleted server
-      return {
-        id,
-        displayName: `${id} (deleted)`,
+      return create(MCPServerSchema, {
+        name,
         description: 'This MCP server no longer exists',
-        tools: {},
-        tags: {},
-        state: MCPServer_State.UNSPECIFIED,
+        tools: [],
+        enabled: false,
+        type: MCPServerType.MCP_SERVER_TYPE_UNSPECIFIED,
         url: '',
-      } as MCPServer;
+      });
     });
   }, [aiAgentData, mcpServersData]);
 

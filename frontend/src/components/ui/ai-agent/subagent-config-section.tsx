@@ -24,10 +24,10 @@ import { MarkdownEditor } from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { Plus, Trash2 } from 'lucide-react';
+import type { MCPServer } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
 import { useState } from 'react';
 import { Controller, type Control, useFormState } from 'react-hook-form';
 import { useFieldArray } from 'react-hook-form';
-import type { MCPServer } from 'react-query/api/remote-mcp';
 
 import type { FormValues } from '../../pages/agents/create/schemas';
 
