@@ -147,11 +147,10 @@ vi.mock('lottie-react', () => ({
 //      growth measured during the TDD audit).
 //   3. clearAllMocks / clearAllTimers is standard Vitest hygiene.
 //
-// Zustand store resets are handled per-file via
-// `tests/reset-zustand-stores.ts` rather than globally — mounting that helper
-// here pins `isEmbedded`/`isAdpEnabled` live bindings before test files'
-// `vi.mock('config', ...)` hoists can take effect. Files that accumulate
-// store state import the helper directly and opt in.
+// Zustand store resets are intentionally not mounted here: importing any
+// store pins `isEmbedded`/`isAdpEnabled` live bindings before test files'
+// `vi.mock('config', ...)` hoists can take effect. Tests that accumulate
+// store state should reset it explicitly in their own setup.
 afterEach(() => {
   cleanup();
   cleanupTestHarness();
