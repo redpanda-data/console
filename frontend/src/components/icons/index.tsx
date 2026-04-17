@@ -66,7 +66,6 @@ export {
   Layers as LayersIcon, // MdOutlineLayers
   LayoutGrid as CollectionIcon, // CollectionIcon (Heroicons) - Note: 3x3 grid → 2x2 grid
   Link as LinkIcon, // LinkIcon (Heroicons)
-  Linkedin as LinkedInIcon, // FaLinkedin (LinkedIn removed from simple-icons)
   Loader2 as LoaderIcon, // Loading spinner
   Lock as LockIcon, // LockIcon (Octicons)
   Menu as MenuIcon, // ThreeBarsIcon (Octicons)
