@@ -58,9 +58,24 @@ export default defineConfig(({ mode }) => {
         enabled: false,
       },
       coverage: {
+        // Default off so local dev watch/test runs stay fast. Enable via
+        // `--coverage` flag (see `test:coverage` script).
         enabled: false,
+        provider: 'v8',
+        reporter: ['text', 'html', 'lcov', 'json-summary', 'json'],
         include: ['src/**/*.{ts,tsx}'],
-        exclude: ['src/proto/**/*'],
+        exclude: [
+          'src/protogen/**',
+          'src/routeTree.gen.ts',
+          '**/*.test.{ts,tsx}',
+          '**/*.spec.{ts,tsx}',
+          '**/*.browser.test.tsx',
+          'src/**/*.stories.tsx',
+        ],
+        // Thresholds are enforced on the merged (unit + integration) summary
+        // via `scripts/check-coverage-thresholds.mjs`, which the CI
+        // `test-coverage` job runs after `merge-coverage.mjs`. Per-config
+        // thresholds would trip on integration-only numbers, so we skip them.
       },
     },
     plugins: [

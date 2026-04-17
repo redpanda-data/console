@@ -40,6 +40,8 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+coverage-integration
+coverage-merged
 *.lcov
 html
 
