@@ -192,7 +192,11 @@ describe('buildDataplaneUpdateRequest', () => {
     expect(request.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
     expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toHaveLength(3);
     expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
-      create(NameFilterSchema, { name: 'exact-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }),
+      create(NameFilterSchema, {
+        name: 'exact-topic',
+        patternType: PatternType.LITERAL,
+        filterType: FilterType.INCLUDE,
+      }),
       create(NameFilterSchema, { name: 'exclude-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE }),
       create(NameFilterSchema, { name: 'include-', patternType: PatternType.PREFIX, filterType: FilterType.INCLUDE }),
     ]);
