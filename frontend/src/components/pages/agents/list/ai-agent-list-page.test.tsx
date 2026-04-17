@@ -509,41 +509,6 @@ describe('AIAgentsListPage', () => {
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 
-  test('search input updates value on keystrokes', async () => {
-    const user = userEvent.setup();
-
-    const agent1 = create(AIAgentSchema, {
-      id: 'agent-1',
-      displayName: 'Test Agent',
-      description: '',
-      state: AIAgent_State.RUNNING,
-      provider: { provider: { case: 'openai', value: { apiKey: 'key' } } },
-      model: 'gpt-4',
-      systemPrompt: '',
-      mcpServers: {},
-      tags: {},
-    });
-
-    const transport = createAIAgentsTransport({
-      listAIAgentsMock: vi
-        .fn()
-        .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent1], nextPageToken: '' })),
-    });
-
-    renderWithFileRoutes(<AIAgentsListPage />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Agent')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter agents...');
-    await user.type(filterInput, 'hello');
-
-    // Input value must reflect typed text — a React Compiler memoization
-    // bug would freeze it at the initial empty string.
-    expect(filterInput).toHaveValue('hello');
-  });
-
   test('filters agents by name via search input', async () => {
     const user = userEvent.setup();
 

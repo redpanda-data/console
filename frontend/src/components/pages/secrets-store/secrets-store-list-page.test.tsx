@@ -166,34 +166,6 @@ describe('SecretsStoreListPage', () => {
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 
-  test('search input updates value on keystrokes', async () => {
-    const user = userEvent.setup();
-
-    const secret1 = create(SecretSchema, {
-      id: 'my-secret',
-      labels: {},
-      scopes: [Scope.AI_GATEWAY],
-    });
-
-    const listSecretsMock = vi.fn().mockReturnValue(
-      create(ListSecretsResponseSchema, {
-        response: { secrets: [secret1], nextPageToken: '' },
-      })
-    );
-    const transport = createListSecretsTransport(listSecretsMock);
-
-    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
-
-    expect(await screen.findByText('my-secret')).toBeVisible();
-
-    const filterInput = screen.getByPlaceholderText('Filter by ID...');
-    await user.type(filterInput, 'hello');
-
-    // Input value must reflect typed text — a React Compiler memoization
-    // bug would freeze it at the initial empty string.
-    expect(filterInput).toHaveValue('hello');
-  });
-
   test('filters secrets by ID via search input', async () => {
     const user = userEvent.setup();
 

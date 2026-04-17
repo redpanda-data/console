@@ -300,40 +300,6 @@ describe('KnowledgeBaseList', () => {
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 
-  test('search input value updates on each keystroke', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'kb-1',
-      displayName: 'Alpha',
-      description: '',
-      tags: {},
-    });
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, () =>
-        create(ListKnowledgeBasesResponseSchema, {
-          knowledgeBases: [kb1],
-          nextPageToken: '',
-        })
-      );
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Alpha')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-
-    await user.type(filterInput, 'test');
-
-    // The input value must reflect what was typed — a React Compiler
-    // memoization bug would freeze it at the initial empty string.
-    expect(filterInput).toHaveValue('test');
-  });
-
   test('filters knowledge bases by search text and updates results', async () => {
     const user = userEvent.setup();
 

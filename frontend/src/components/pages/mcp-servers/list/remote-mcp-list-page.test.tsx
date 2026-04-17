@@ -386,37 +386,6 @@ describe('RemoteMCPListPage', () => {
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });
 
-  test('search input updates value on keystrokes', async () => {
-    const user = userEvent.setup();
-
-    const server1 = create(MCPServerSchema, {
-      id: 'server-1',
-      displayName: 'Test Server',
-      url: 'http://localhost:8080',
-      state: MCPServer_State.RUNNING,
-      tools: {},
-    });
-
-    const transport = createMCPServersTransport({
-      listMCPServersMock: vi
-        .fn()
-        .mockReturnValue(create(ListMCPServersResponseSchema, { mcpServers: [server1], nextPageToken: '' })),
-    });
-
-    renderWithFileRoutes(<RemoteMCPListPage />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Server')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter servers...');
-    await user.type(filterInput, 'hello');
-
-    // Input value must reflect typed text — a React Compiler memoization
-    // bug would freeze it at the initial empty string.
-    expect(filterInput).toHaveValue('hello');
-  });
-
   test('filters servers by name via search input', async () => {
     const user = userEvent.setup();
 
