@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'happy-dom', // Aligns with cloud-ui / adp-ui; required to run Chakra + Radix integration tests consistently
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
+      exclude: ['src/**/*.browser.test.tsx'], // Browser mode tests run via vitest.config.browser.mts
       setupFiles: './vitest.setup.integration.ts',
       deps: {
         registerNodeLoader: true,

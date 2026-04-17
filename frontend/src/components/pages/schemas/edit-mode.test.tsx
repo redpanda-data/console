@@ -252,7 +252,6 @@ describe('EditSchemaModePage', () => {
 
       expect(await screen.findByTestId('edit-mode-subject-name')).toHaveTextContent(subjectName);
     });
-
   });
 
   describe('Per-context mode (with contextName)', () => {

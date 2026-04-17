@@ -111,5 +111,4 @@ describe('ConfigDialog', () => {
     expect(keyInput).toHaveValue('env');
     expect(valueInput).toHaveValue('production');
   });
-
 });

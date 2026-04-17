@@ -4,6 +4,7 @@ import { playwright } from '@vitest/browser-playwright';
 import envCompatible from 'vite-plugin-env-compatible';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
+
 import { sharedAliases } from './vitest.shared.mts';
 
 const ENV_PREFIX = 'REACT_APP_';
@@ -25,12 +26,7 @@ export default defineConfig({
   //   - envCompatible:  REACT_APP_* env var compatibility
   //   - tsconfigPaths:  resolve console's tsconfig path aliases (e.g. `components/…`)
   //   - yaml:           route module imports `.yaml` fixture files
-  plugins: [
-    react(),
-    envCompatible({ prefix: ENV_PREFIX }),
-    tsconfigPaths({ ignoreConfigErrors: true }),
-    yaml(),
-  ],
+  plugins: [react(), envCompatible({ prefix: ENV_PREFIX }), tsconfigPaths({ ignoreConfigErrors: true }), yaml()],
   resolve: { alias: sharedAliases, preserveSymlinks: true },
   optimizeDeps: {
     include: [
