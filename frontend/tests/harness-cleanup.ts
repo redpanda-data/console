@@ -28,6 +28,22 @@ export const trackedQueryClients = new Set<QueryClient>();
 export type TrackedRouter = { history: { destroy?: () => void } };
 export const trackedRouters = new Set<TrackedRouter>();
 
+/**
+ * Registered teardowns for side-effects installed by the production code
+ * (config.setup + state/ui installUISettingsSideEffects). These are populated
+ * lazily by the test harness when the corresponding side-effect is installed,
+ * and cleared on each afterEach().
+ *
+ * Kept as a plain set so the harness code itself doesn't have to import
+ * `src/config` / `src/state/ui` eagerly; callers register teardowns as
+ * functions.
+ */
+export const trackedTeardowns = new Set<() => void>();
+
+export function registerTestTeardown(teardown: () => void): void {
+  trackedTeardowns.add(teardown);
+}
+
 export function cleanupTestHarness(): void {
   for (const client of trackedQueryClients) {
     client.cancelQueries();
@@ -40,4 +56,13 @@ export function cleanupTestHarness(): void {
     router.history.destroy?.();
   }
   trackedRouters.clear();
+
+  for (const teardown of trackedTeardowns) {
+    try {
+      teardown();
+    } catch {
+      // best-effort — one failing teardown must not block the others
+    }
+  }
+  trackedTeardowns.clear();
 }
