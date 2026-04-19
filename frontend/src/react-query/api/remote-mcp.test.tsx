@@ -723,6 +723,24 @@ describe('useStreamMCPServerToolMutation — concurrency', () => {
   });
 });
 
+describe('createMCPClientWithSession — transport error contract', () => {
+  test('transport.onerror does not route through formatToastErrorMessageGRPC — toast is owned by mutation onError', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const { transport } = await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
+
+    transport.onerror?.(new Error('sse drop'));
+
+    expect(formatToastErrorMessageGRPCMock).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[MCP] transport error',
+      expect.objectContaining({ serverUrl: 'https://example.test/mcp' })
+    );
+
+    errorSpy.mockRestore();
+  });
+});
+
 describe('createMCPClientWithSession — isolation & error propagation', () => {
   test('each call yields a fresh client — no hidden singleton', async () => {
     const r1 = await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
