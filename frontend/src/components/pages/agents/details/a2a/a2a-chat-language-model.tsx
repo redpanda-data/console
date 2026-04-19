@@ -150,20 +150,12 @@ class A2aChatLanguageModel implements LanguageModelV2 {
   readonly specificationVersion = 'v2';
   readonly provider: string;
   readonly modelId: string;
-  // @ts-ignore part of A2A adapter for AI SDK
   private readonly config: A2aChatConfig;
 
-
-  constructor(
-    modelId: string,
-    // @ts-ignore part of A2A adapter for AI SDK
-    settings: A2aChatSettings,
-    config: A2aChatConfig,
-  ) {
+  constructor(modelId: string, _settings: A2aChatSettings, config: A2aChatConfig) {
     this.provider = config.provider;
     this.modelId = modelId;
     this.config = config;
-    // Initialize with settings and config
   }
 
   // Convert AI SDK prompt to provider format
@@ -317,7 +309,6 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       // Use the `sendMessageStream` method.
       const response = client.sendMessageStream(streamParams);
       let isFirstChunk = true;
-      const activeTextIds = new Set<string>();
       let finishReason: LanguageModelV2FinishReason = 'unknown';
 
       return {
@@ -355,10 +346,6 @@ class A2aChatLanguageModel implements LanguageModelV2 {
             },
 
             flush(controller) {
-              activeTextIds.forEach((activeTextId) => {
-                controller.enqueue({ type: 'text-end', id: activeTextId });
-              })
-
               controller.enqueue({
                 type: 'finish',
                 finishReason,
