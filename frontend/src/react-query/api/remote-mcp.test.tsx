@@ -54,7 +54,7 @@ type StreamMessage =
   | { type: 'taskCreated'; task: { taskId: string; status: string; statusMessage?: string } }
   | { type: 'taskStatus'; task: { taskId: string; status: string; statusMessage?: string } }
   | { type: 'result'; result: { content: Array<{ type: string; text?: string }> } }
-  | { type: 'error'; error: Error };
+  | { type: 'error'; error?: Error };
 
 type StreamOptions = {
   signal?: AbortSignal;
@@ -484,6 +484,31 @@ describe('useStreamMCPServerToolMutation', () => {
         parameters: {},
       })
     ).rejects.toThrow('upstream failed');
+  });
+
+  test('rejects with a descriptive Error when the stream yields an error event without a payload', async () => {
+    streamMessages = [{ type: 'error' }];
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const rejection = await result.current
+      .mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+      })
+      .then(
+        () => {
+          throw new Error('mutation should have rejected');
+        },
+        (err: unknown) => err
+      );
+
+    expect(rejection).toBeInstanceOf(Error);
+    expect((rejection as Error).message).toMatch(/MCP stream yielded an error event with no payload/);
   });
 
   test('routes non-abort errors through formatToastErrorMessageGRPC with action=call entity=MCP tool and fires exactly one toast', async () => {

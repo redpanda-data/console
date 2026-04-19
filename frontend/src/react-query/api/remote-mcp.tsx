@@ -423,7 +423,7 @@ const drainMCPStream = async <T,>(
     if (message.type === 'result') {
       return message.result;
     }
-    throw message.error;
+    throw message.error ?? new Error('MCP stream yielded an error event with no payload');
   }
   return;
 };
