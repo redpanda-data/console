@@ -25,6 +25,7 @@ import { createMCPClientWithSession, useListMCPServersQuery, useStreamMCPServerT
 const STREAM_TIMEOUT_50MS_REGEX = /MCP tool stream timed out after 50ms/;
 const STREAM_TIMED_OUT_REGEX = /timed out/;
 const STREAM_WATCHDOG_REGEX = /MCP tool stream ended without a terminal/;
+const STREAM_ERROR_EMPTY_PAYLOAD_REGEX = /MCP stream yielded an error event with no payload/;
 
 vi.mock('config', () => ({
   config: {
@@ -534,7 +535,9 @@ describe('useStreamMCPServerToolMutation', () => {
       );
 
     expect(rejection).toBeInstanceOf(Error);
-    expect((rejection as Error).message).toMatch(/MCP stream yielded an error event with no payload/);
+    if (rejection instanceof Error) {
+      expect(rejection.message).toMatch(STREAM_ERROR_EMPTY_PAYLOAD_REGEX);
+    }
   });
 
   test('routes non-abort errors through formatToastErrorMessageGRPC with action=call entity=MCP tool and fires exactly one toast', async () => {
