@@ -42,6 +42,14 @@ vi.mock('utils/toast.utils', async (importOriginal) => {
   };
 });
 
+const toastErrorMock = vi.fn();
+vi.mock('sonner', () => ({
+  toast: {
+    error: (...args: unknown[]) => toastErrorMock(...args),
+    success: vi.fn(),
+  },
+}));
+
 type StreamMessage =
   | { type: 'taskCreated'; task: { taskId: string; status: string; statusMessage?: string } }
   | { type: 'taskStatus'; task: { taskId: string; status: string; statusMessage?: string } }
@@ -158,6 +166,7 @@ beforeEach(() => {
   createdClients.length = 0;
   callToolInvocations.length = 0;
   formatToastErrorMessageGRPCMock.mockClear();
+  toastErrorMock.mockClear();
 });
 
 describe('useListMCPServersQuery', () => {
@@ -477,7 +486,7 @@ describe('useStreamMCPServerToolMutation', () => {
     ).rejects.toThrow('upstream failed');
   });
 
-  test('routes non-abort errors through formatToastErrorMessageGRPC with action=call entity=MCP tool', async () => {
+  test('routes non-abort errors through formatToastErrorMessageGRPC with action=call entity=MCP tool and fires exactly one toast', async () => {
     streamMessages = [{ type: 'error', error: new Error('boom') }];
 
     const { wrapper } = connectQueryWrapper({
@@ -497,6 +506,9 @@ describe('useStreamMCPServerToolMutation', () => {
     expect(formatToastErrorMessageGRPCMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'call', entity: 'MCP tool' })
     );
+    // Mutation owns the toast — it must actually fire one, not just format a string.
+    expect(toastErrorMock).toHaveBeenCalledTimes(1);
+    expect(toastErrorMock).toHaveBeenCalledWith('formatted error');
   });
 
   test('does not surface a toast when the error is an AbortError', async () => {
@@ -518,6 +530,7 @@ describe('useStreamMCPServerToolMutation', () => {
     ).rejects.toBe(abortErr);
 
     expect(formatToastErrorMessageGRPCMock).not.toHaveBeenCalled();
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 });
 

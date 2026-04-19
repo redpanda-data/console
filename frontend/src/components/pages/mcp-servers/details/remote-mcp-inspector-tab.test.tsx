@@ -217,7 +217,7 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
   });
 
-  test('surfaces a toast on non-abort errors', async () => {
+  test('surfaces exactly one toast on non-abort errors — mutation owns the toast, component does not double-fire', async () => {
     const user = userEvent.setup();
     messagesAfterGate = [{ type: 'error', error: new Error('server blew up') }];
 
@@ -230,8 +230,11 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     releaseStream();
 
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith('server blew up');
+      expect(toastErrorMock).toHaveBeenCalledTimes(1);
     });
+    const message = toastErrorMock.mock.calls[0]?.[0] as string;
+    expect(message).toContain('MCP tool');
+    expect(message).toContain('server blew up');
   });
 
   test('clicking Cancel aborts the signal without firing a toast', async () => {

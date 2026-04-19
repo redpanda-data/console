@@ -375,13 +375,7 @@ export const RemoteMCPInspectorTab = () => {
         onProgress: (update) => setStreamProgress(update),
       },
       {
-        onError: (error) => {
-          if (error.message !== 'Request was cancelled') {
-            toast.error(error.message);
-          }
-        },
         onSettled: () => {
-          // Clear the abort controller reference when request completes
           if (abortControllerRef.current === abortController) {
             abortControllerRef.current = null;
           }

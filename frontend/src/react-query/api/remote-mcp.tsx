@@ -36,6 +36,7 @@ import { useMemo } from 'react';
 import { ConsoleJWTOAuthProvider } from 'react-query/api/mcp-oauth-provider';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export { MCPServer_State, MCPServer_Tool_ComponentType };
@@ -278,6 +279,7 @@ export const createMCPClientWithSession = async (
   const authProvider = new ConsoleJWTOAuthProvider({ getJwt: () => config.jwt, clientName });
   const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
     authProvider,
+    // allow: direct-query MCP SDK transport requires a raw fetch to stream SSE — ConnectRPC does not apply here
     fetch: async (input, init) => {
       const response = await fetch(input, {
         ...init,
@@ -337,11 +339,13 @@ export const useCallMCPServerToolMutation = () =>
 
       const connectError = ConnectError.from(error);
 
-      return formatToastErrorMessageGRPC({
-        error: connectError,
-        action: 'call',
-        entity: 'MCP tool',
-      });
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: connectError,
+          action: 'call',
+          entity: 'MCP tool',
+        })
+      );
     },
   });
 
@@ -479,11 +483,13 @@ export const useStreamMCPServerToolMutation = () =>
 
       const connectError = ConnectError.from(error);
 
-      return formatToastErrorMessageGRPC({
-        error: connectError,
-        action: 'call',
-        entity: 'MCP tool',
-      });
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: connectError,
+          action: 'call',
+          entity: 'MCP tool',
+        })
+      );
     },
   });
 
