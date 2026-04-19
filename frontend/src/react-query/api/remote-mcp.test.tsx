@@ -203,6 +203,8 @@ beforeEach(() => {
   lastTransportOpts = undefined;
   lastClientInfo = undefined;
   nextConnectRejection = undefined;
+  nextListToolsRejection = undefined;
+  nextCallToolRejection = undefined;
   streamConstructorSnapshots = [];
   serverCapabilitiesMock = {
     tools: { listChanged: false },
@@ -1036,6 +1038,26 @@ describe('useCallMCPServerToolMutation — client lifecycle (close in finally)',
     ).rejects.toThrow('boom');
 
     expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not fire a toast when callTool rejects with AbortError', async () => {
+    nextCallToolRejection = Object.assign(new Error('aborted'), { name: 'AbortError' });
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useCallMCPServerToolMutation(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+      })
+    ).rejects.toBeTruthy();
+
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 });
 
