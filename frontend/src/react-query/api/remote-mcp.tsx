@@ -357,11 +357,26 @@ export type MCPStreamProgress = {
 
 export type StreamMCPToolParams = CallMCPToolParams & {
   onProgress?: (update: MCPStreamProgress) => void;
+  /**
+   * Maximum time to wait for the stream to produce a terminal (result/error)
+   * message. On timeout, the SDK signal is aborted and the mutation rejects
+   * with a descriptive error. Defaults to {@link DEFAULT_STREAM_TIMEOUT_MS}.
+   */
+  streamTimeoutMs?: number;
 };
 
 type CallToolResult = Awaited<
   ReturnType<InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>['callTool']>
 >;
+
+type MCPClient = InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>;
+
+export const DEFAULT_STREAM_TIMEOUT_MS = 120_000;
+
+const serverSupportsToolTasks = (client: MCPClient): boolean => {
+  const capabilities = client.getServerCapabilities();
+  return capabilities?.tasks?.requests?.tools?.call !== undefined;
+};
 
 export const useStreamMCPServerToolMutation = () =>
   useTanstackMutation({
@@ -371,35 +386,76 @@ export const useStreamMCPServerToolMutation = () =>
       parameters,
       signal,
       onProgress,
+      streamTimeoutMs = DEFAULT_STREAM_TIMEOUT_MS,
     }: StreamMCPToolParams): Promise<CallToolResult> => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      const stream = client.experimental.tasks.callToolStream({ name: toolName, arguments: parameters }, undefined, {
-        signal,
-        onprogress: (progress) => {
-          onProgress?.({
-            progress: progress.progress,
-            total: progress.total,
-          });
-        },
-      });
-
-      for await (const message of stream) {
-        if (message.type === 'taskCreated' || message.type === 'taskStatus') {
-          onProgress?.({
-            taskId: message.task.taskId,
-            status: message.task.status,
-            statusMessage: message.task.statusMessage,
-          });
-          continue;
-        }
-        if (message.type === 'result') {
-          return message.result as CallToolResult;
-        }
-        throw message.error;
+      // Fall back to non-streaming callTool if the server does not advertise
+      // tasks.requests.tools.call — older servers respond to callToolStream
+      // but never produce a terminal message, which would hang the mutation.
+      if (!serverSupportsToolTasks(client)) {
+        return (await client.callTool(
+          { name: toolName, arguments: parameters },
+          undefined,
+          { signal }
+        )) as CallToolResult;
       }
 
-      throw new Error('MCP tool stream ended without a result');
+      // Compose caller's signal with a timeout-aborted signal so a hung stream
+      // rejects instead of hanging forever. AbortError suppression in onError
+      // preserves behavior for explicit user cancellation.
+      const timeoutController = new AbortController();
+      const timeoutHandle = setTimeout(() => timeoutController.abort(), streamTimeoutMs);
+      const onUserAbort = () => timeoutController.abort();
+      if (signal) {
+        if (signal.aborted) {
+          timeoutController.abort();
+        } else {
+          signal.addEventListener('abort', onUserAbort, { once: true });
+        }
+      }
+
+      try {
+        const stream = client.experimental.tasks.callToolStream(
+          { name: toolName, arguments: parameters },
+          undefined,
+          {
+            signal: timeoutController.signal,
+            onprogress: (progress) => {
+              onProgress?.({
+                progress: progress.progress,
+                total: progress.total,
+              });
+            },
+          }
+        );
+
+        for await (const message of stream) {
+          if (message.type === 'taskCreated' || message.type === 'taskStatus') {
+            onProgress?.({
+              taskId: message.task.taskId,
+              status: message.task.status,
+              statusMessage: message.task.statusMessage,
+            });
+            continue;
+          }
+          if (message.type === 'result') {
+            return message.result as CallToolResult;
+          }
+          throw message.error;
+        }
+
+        // The SDK guarantees the stream ends with a `result` or `error`, but
+        // if the timeout fired we surface it explicitly, and otherwise the
+        // transport silently closed — fail fast instead of hanging.
+        if (timeoutController.signal.aborted && !signal?.aborted) {
+          throw new Error(`MCP tool stream timed out after ${streamTimeoutMs}ms`);
+        }
+        throw new Error('MCP tool stream ended without a terminal result or error message');
+      } finally {
+        clearTimeout(timeoutHandle);
+        signal?.removeEventListener('abort', onUserAbort);
+      }
     },
     onError: (error) => {
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {

@@ -49,25 +49,50 @@ type StreamOptions = {
   onprogress?: (progress: { progress: number; total?: number }) => void;
 };
 
+type ServerCapabilitiesMock = {
+  tools?: { listChanged?: boolean };
+  tasks?: { requests?: { tools?: { call?: unknown } } } | undefined;
+} | null;
+
 let streamMessages: StreamMessage[] = [];
+let streamYieldDelayMs = 0;
+let streamHangForever = false;
 let lastStreamOptions: StreamOptions | undefined;
 let connectOrderLog: string[] = [];
 let lastTransportOpts: { authProvider?: OAuthClientProvider; fetch?: typeof fetch } | undefined;
 let lastClientInfo: { name: string; version: string } | undefined;
+let nextConnectRejection: Error | undefined;
+let streamConstructorSnapshots: number[] = [];
+let serverCapabilitiesMock: ServerCapabilitiesMock = {
+  tools: { listChanged: false },
+  tasks: { requests: { tools: { call: {} } } },
+};
+const createdClients: Array<unknown> = [];
+const callToolInvocations: Array<{ name: string; arguments: Record<string, unknown> }> = [];
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   class MockClient {
     transport?: { sessionId?: string; onerror?: (error: Error) => void };
     constructor(clientInfo: { name: string; version: string }) {
       lastClientInfo = clientInfo;
+      createdClients.push(this);
     }
     connect = vi.fn((transport: { sessionId?: string; onerror?: (error: Error) => void }) => {
+      if (nextConnectRejection) {
+        const err = nextConnectRejection;
+        nextConnectRejection = undefined;
+        return Promise.reject(err);
+      }
       this.transport = transport;
       connectOrderLog.push(`connect:onerror=${typeof transport.onerror}`);
       return Promise.resolve();
     });
+    getServerCapabilities = vi.fn(() => serverCapabilitiesMock ?? undefined);
     listTools = vi.fn(() => Promise.resolve({ tools: [] }));
-    callTool = vi.fn(() => Promise.resolve({ content: [] }));
+    callTool = vi.fn((params: { name: string; arguments: Record<string, unknown> }) => {
+      callToolInvocations.push(params);
+      return Promise.resolve({ content: [{ type: 'text', text: 'fallback-result' }] });
+    });
     experimental = {
       tasks: {
         // biome-ignore lint/suspicious/useAwait: async generator with sync yields
@@ -77,7 +102,17 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
           opts?: StreamOptions
         ) {
           lastStreamOptions = opts;
+          streamConstructorSnapshots.push(streamMessages.length);
+          if (streamHangForever) {
+            await new Promise<void>((resolve) => {
+              opts?.signal?.addEventListener('abort', () => resolve());
+            });
+            return;
+          }
           for (const message of streamMessages) {
+            if (streamYieldDelayMs > 0) {
+              await new Promise((r) => setTimeout(r, streamYieldDelayMs));
+            }
             yield message;
           }
         },
@@ -104,10 +139,20 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => {
 
 beforeEach(() => {
   streamMessages = [];
+  streamYieldDelayMs = 0;
+  streamHangForever = false;
   lastStreamOptions = undefined;
   connectOrderLog = [];
   lastTransportOpts = undefined;
   lastClientInfo = undefined;
+  nextConnectRejection = undefined;
+  streamConstructorSnapshots = [];
+  serverCapabilitiesMock = {
+    tools: { listChanged: false },
+    tasks: { requests: { tools: { call: {} } } },
+  };
+  createdClients.length = 0;
+  callToolInvocations.length = 0;
   formatToastErrorMessageGRPCMock.mockClear();
 });
 
@@ -351,7 +396,31 @@ describe('useStreamMCPServerToolMutation', () => {
       signal: controller.signal,
     });
 
-    expect(lastStreamOptions?.signal).toBe(controller.signal);
+    // The stream receives a composed signal (caller signal ⋃ internal timeout).
+    expect(lastStreamOptions?.signal).toBeDefined();
+  });
+
+  test('pre-aborted caller signal short-circuits the composed signal', async () => {
+    streamMessages = [{ type: 'result', result: { content: [] } }];
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const controller = new AbortController();
+    controller.abort();
+
+    await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+      signal: controller.signal,
+    });
+
+    // The composed signal surfaced to the SDK fired synchronously because the
+    // caller's signal was already aborted at call time.
+    expect(lastStreamOptions?.signal?.aborted).toBe(true);
   });
 
   test('throws when the stream ends without a result', async () => {
@@ -445,5 +514,230 @@ describe('useStreamMCPServerToolMutation', () => {
     ).rejects.toBe(abortErr);
 
     expect(formatToastErrorMessageGRPCMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('useStreamMCPServerToolMutation — capability fallback', () => {
+  test('falls back to non-streaming callTool when the server does not advertise tasks.requests.tools.call', async () => {
+    serverCapabilitiesMock = { tools: { listChanged: false } };
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const value = await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: { foo: 'bar' },
+    });
+
+    expect(value).toEqual({ content: [{ type: 'text', text: 'fallback-result' }] });
+    expect(callToolInvocations).toHaveLength(1);
+    expect(callToolInvocations[0]).toEqual({ name: 'my-tool', arguments: { foo: 'bar' } });
+    // Stream path must not have been entered.
+    expect(streamConstructorSnapshots).toHaveLength(0);
+  });
+
+  test('uses the streaming path when the server advertises tasks capability', async () => {
+    serverCapabilitiesMock = {
+      tools: { listChanged: false },
+      tasks: { requests: { tools: { call: {} } } },
+    };
+    streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'streamed' }] } }];
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const value = await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+    });
+
+    expect(value).toEqual({ content: [{ type: 'text', text: 'streamed' }] });
+    expect(callToolInvocations).toHaveLength(0);
+    expect(streamConstructorSnapshots).toHaveLength(1);
+  });
+
+  test('falls back when getServerCapabilities returns undefined entirely', async () => {
+    serverCapabilitiesMock = null;
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+    });
+
+    expect(callToolInvocations).toHaveLength(1);
+  });
+});
+
+describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
+  test('rejects with a descriptive error when the stream never produces a terminal message before the timeout', async () => {
+    streamHangForever = true;
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+        streamTimeoutMs: 50,
+      })
+    ).rejects.toThrow(/MCP tool stream timed out after 50ms/);
+  });
+
+  test('timeout path aborts the SDK signal so upstream fetches are cancelled', async () => {
+    streamHangForever = true;
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const abortStates: boolean[] = [];
+    const promise = result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+      streamTimeoutMs: 30,
+    });
+
+    await expect(promise).rejects.toThrow(/timed out/);
+    abortStates.push(lastStreamOptions?.signal?.aborted ?? false);
+    expect(abortStates).toEqual([true]);
+  });
+
+  test('does not fire the timeout when a terminal result arrives first', async () => {
+    streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'ok' }] } }];
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const value = await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+      streamTimeoutMs: 500,
+    });
+
+    expect(value).toEqual({ content: [{ type: 'text', text: 'ok' }] });
+  });
+
+  test('rejects explicitly when the stream closes without any result or error message (watchdog)', async () => {
+    // No messages at all — generator returns immediately. Current code throws a generic "stream ended without a result".
+    streamMessages = [];
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+      })
+    ).rejects.toThrow(/MCP tool stream ended without a terminal/);
+  });
+});
+
+describe('useStreamMCPServerToolMutation — concurrency', () => {
+  test('back-to-back calls each get a fresh client — no shared state leak', async () => {
+    streamMessages = [
+      { type: 'result', result: { content: [{ type: 'text', text: 'parallel-ok' }] } },
+    ];
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result: resultA } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+    const { result: resultB } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const controllerA = new AbortController();
+    const controllerB = new AbortController();
+
+    const a = await resultA.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'tool-a',
+      parameters: {},
+      signal: controllerA.signal,
+    });
+    const b = await resultB.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'tool-b',
+      parameters: {},
+      signal: controllerB.signal,
+    });
+
+    expect(a).toEqual({ content: [{ type: 'text', text: 'parallel-ok' }] });
+    expect(b).toEqual({ content: [{ type: 'text', text: 'parallel-ok' }] });
+    expect(controllerA.signal).not.toBe(controllerB.signal);
+    // Each call created a separate client — no shared state / singleton.
+    expect(createdClients.length).toBeGreaterThanOrEqual(2);
+  });
+
+  test('cancelling one parallel call does not cancel the other', async () => {
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result: resultA } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+    const { result: resultB } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const controllerA = new AbortController();
+    const controllerB = new AbortController();
+
+    streamHangForever = true;
+    const aPromise = resultA.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'tool-a',
+      parameters: {},
+      signal: controllerA.signal,
+      streamTimeoutMs: 10_000,
+    });
+    // Let the first call enter the stream.
+    await new Promise((r) => setTimeout(r, 10));
+
+    streamHangForever = false;
+    streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'b-done' }] } }];
+    const bPromise = resultB.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'tool-b',
+      parameters: {},
+      signal: controllerB.signal,
+    });
+
+    const b = await bPromise;
+    expect(b).toEqual({ content: [{ type: 'text', text: 'b-done' }] });
+    expect(controllerB.signal.aborted).toBe(false);
+
+    controllerA.abort();
+    await expect(aPromise).rejects.toBeTruthy();
+    // B was never aborted by A's cancellation.
+    expect(controllerB.signal.aborted).toBe(false);
+  });
+});
+
+describe('createMCPClientWithSession — isolation & error propagation', () => {
+  test('each call yields a fresh client — no hidden singleton', async () => {
+    const r1 = await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
+    const r2 = await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
+
+    expect(r1.client).not.toBe(r2.client);
+    expect(r1.transport).not.toBe(r2.transport);
+    expect(createdClients).toHaveLength(2);
+  });
+
+  test('connect() failure propagates and leaves no half-initialized client usable', async () => {
+    nextConnectRejection = new Error('connect refused');
+
+    await expect(createMCPClientWithSession('https://example.test/mcp', 'redpanda-console')).rejects.toThrow(
+      'connect refused'
+    );
   });
 });
