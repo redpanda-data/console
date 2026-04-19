@@ -15,9 +15,12 @@ import { ConsoleJWTOAuthProvider } from './mcp-oauth-provider';
 
 const INTERACTIVE_AUTHORIZATION_ERROR = /interactive authorization/;
 const PKCE_ERROR = /PKCE/;
+const BASE64_URL_PLUS = /\+/g;
+const BASE64_URL_SLASH = /\//g;
+const BASE64_URL_PADDING = /=+$/;
 
 const base64Url = (value: string): string =>
-  btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  btoa(value).replace(BASE64_URL_PLUS, '-').replace(BASE64_URL_SLASH, '_').replace(BASE64_URL_PADDING, '');
 
 const makeJwt = (payload: Record<string, unknown>): string => {
   const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));

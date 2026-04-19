@@ -149,6 +149,19 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
 const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
+const PROGRESS_MAX_PERCENT = 100;
+
+const normalizeProgressPercent = (progress: number | undefined, total: number | undefined): number | undefined => {
+  if (progress === undefined || total === undefined || total <= 0) {
+    return;
+  }
+  const percent = Math.round((progress / total) * PROGRESS_MAX_PERCENT);
+  if (!Number.isFinite(percent)) {
+    return;
+  }
+  return Math.max(0, Math.min(PROGRESS_MAX_PERCENT, percent));
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = routeApi.useParams();
@@ -484,6 +497,8 @@ export const RemoteMCPInspectorTab = () => {
                         const initialData = initializeFormData(tool.inputSchema as JSONSchemaType);
                         setToolParameters(initialData);
                         resetMCPServerToolCall();
+                        // Clear progress from the previous tool's in-flight stream
+                        setStreamProgress(null);
                         // Clear validation errors when switching tools
                         setValidationErrors({});
                       }}
@@ -515,7 +530,6 @@ export const RemoteMCPInspectorTab = () => {
               </CardTitle>
             </CardHeader>
             <div className="relative flex flex-1 flex-col">
-              {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy inline tool form, incremental streaming progress adds branches */}
               {(() => {
                 const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
                 return (
@@ -621,11 +635,7 @@ export const RemoteMCPInspectorTab = () => {
                             <div className="space-y-1" data-testid="mcp-tool-progress">
                               <Progress
                                 testId="mcp-tool-progress-bar"
-                                value={
-                                  streamProgress?.total && streamProgress.progress !== undefined
-                                    ? Math.round((streamProgress.progress / streamProgress.total) * 100)
-                                    : undefined
-                                }
+                                value={normalizeProgressPercent(streamProgress?.progress, streamProgress?.total)}
                               />
                               <Text className="text-muted-foreground" variant="small">
                                 {streamProgress?.statusMessage ?? streamProgress?.status ?? 'Running tool...'}

@@ -378,6 +378,52 @@ const serverSupportsToolTasks = (client: MCPClient): boolean => {
   return capabilities?.tasks?.requests?.tools?.call !== undefined;
 };
 
+// Compose a caller signal with a timeout so a hung stream rejects instead of
+// blocking forever. Returned cleanup must run in a `finally`.
+const buildStreamAbortControl = (signal: AbortSignal | undefined, timeoutMs: number) => {
+  const timeoutController = new AbortController();
+  const timeoutHandle = setTimeout(() => timeoutController.abort(), timeoutMs);
+  const onUserAbort = () => timeoutController.abort();
+  if (signal?.aborted) {
+    timeoutController.abort();
+  } else {
+    signal?.addEventListener('abort', onUserAbort, { once: true });
+  }
+  return {
+    composedSignal: timeoutController.signal,
+    cleanup: () => {
+      clearTimeout(timeoutHandle);
+      signal?.removeEventListener('abort', onUserAbort);
+    },
+  };
+};
+
+const drainMCPStream = async <T,>(
+  stream: AsyncIterable<{
+    type: 'taskCreated' | 'taskStatus' | 'result' | 'error';
+    task?: { taskId: string; status: MCPStreamTaskStatus; statusMessage?: string };
+    result?: T;
+    error?: Error;
+  }>,
+  onProgress?: (update: MCPStreamProgress) => void
+): Promise<T | undefined> => {
+  for await (const message of stream) {
+    if (message.type === 'taskCreated' || message.type === 'taskStatus') {
+      onProgress?.({
+        taskId: message.task?.taskId,
+        status: message.task?.status,
+        statusMessage: message.task?.statusMessage,
+      });
+      continue;
+    }
+    if (message.type === 'result') {
+      return message.result;
+    }
+    throw message.error;
+  }
+  return;
+};
+
 export const useStreamMCPServerToolMutation = () =>
   useTanstackMutation({
     mutationFn: async ({
@@ -390,71 +436,40 @@ export const useStreamMCPServerToolMutation = () =>
     }: StreamMCPToolParams): Promise<CallToolResult> => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      // Fall back to non-streaming callTool if the server does not advertise
-      // tasks.requests.tools.call — older servers respond to callToolStream
-      // but never produce a terminal message, which would hang the mutation.
+      // Older servers respond to callToolStream but never produce a terminal
+      // message, which would hang the mutation — fall back to non-streaming.
       if (!serverSupportsToolTasks(client)) {
-        return (await client.callTool(
-          { name: toolName, arguments: parameters },
-          undefined,
-          { signal }
-        )) as CallToolResult;
+        return (await client.callTool({ name: toolName, arguments: parameters }, undefined, {
+          signal,
+        })) as CallToolResult;
       }
 
-      // Compose caller's signal with a timeout-aborted signal so a hung stream
-      // rejects instead of hanging forever. AbortError suppression in onError
-      // preserves behavior for explicit user cancellation.
-      const timeoutController = new AbortController();
-      const timeoutHandle = setTimeout(() => timeoutController.abort(), streamTimeoutMs);
-      const onUserAbort = () => timeoutController.abort();
-      if (signal) {
-        if (signal.aborted) {
-          timeoutController.abort();
-        } else {
-          signal.addEventListener('abort', onUserAbort, { once: true });
-        }
-      }
+      const { composedSignal, cleanup } = buildStreamAbortControl(signal, streamTimeoutMs);
 
       try {
-        const stream = client.experimental.tasks.callToolStream(
-          { name: toolName, arguments: parameters },
-          undefined,
-          {
-            signal: timeoutController.signal,
-            onprogress: (progress) => {
-              onProgress?.({
-                progress: progress.progress,
-                total: progress.total,
-              });
-            },
-          }
-        );
-
-        for await (const message of stream) {
-          if (message.type === 'taskCreated' || message.type === 'taskStatus') {
+        const stream = client.experimental.tasks.callToolStream({ name: toolName, arguments: parameters }, undefined, {
+          signal: composedSignal,
+          onprogress: (progress) => {
             onProgress?.({
-              taskId: message.task.taskId,
-              status: message.task.status,
-              statusMessage: message.task.statusMessage,
+              progress: progress.progress,
+              total: progress.total,
             });
-            continue;
-          }
-          if (message.type === 'result') {
-            return message.result as CallToolResult;
-          }
-          throw message.error;
+          },
+        });
+
+        const result = await drainMCPStream(stream, onProgress);
+        if (result !== undefined) {
+          return result as CallToolResult;
         }
 
-        // The SDK guarantees the stream ends with a `result` or `error`, but
-        // if the timeout fired we surface it explicitly, and otherwise the
-        // transport silently closed — fail fast instead of hanging.
-        if (timeoutController.signal.aborted && !signal?.aborted) {
+        // Stream closed without a terminal message. Surface timeout explicitly
+        // if that was the cause; otherwise fail fast with a watchdog error.
+        if (composedSignal.aborted && !signal?.aborted) {
           throw new Error(`MCP tool stream timed out after ${streamTimeoutMs}ms`);
         }
         throw new Error('MCP tool stream ended without a terminal result or error message');
       } finally {
-        clearTimeout(timeoutHandle);
-        signal?.removeEventListener('abort', onUserAbort);
+        cleanup();
       }
     },
     onError: (error) => {

@@ -22,6 +22,10 @@ import { ConsoleJWTOAuthProvider } from './mcp-oauth-provider';
 import type { MCPStreamProgress } from './remote-mcp';
 import { createMCPClientWithSession, useListMCPServersQuery, useStreamMCPServerToolMutation } from './remote-mcp';
 
+const STREAM_TIMEOUT_50MS_REGEX = /MCP tool stream timed out after 50ms/;
+const STREAM_TIMED_OUT_REGEX = /timed out/;
+const STREAM_WATCHDOG_REGEX = /MCP tool stream ended without a terminal/;
+
 vi.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
@@ -67,8 +71,8 @@ let serverCapabilitiesMock: ServerCapabilitiesMock = {
   tools: { listChanged: false },
   tasks: { requests: { tools: { call: {} } } },
 };
-const createdClients: Array<unknown> = [];
-const callToolInvocations: Array<{ name: string; arguments: Record<string, unknown> }> = [];
+const createdClients: unknown[] = [];
+const callToolInvocations: { name: string; arguments: Record<string, unknown> }[] = [];
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   class MockClient {
@@ -590,7 +594,7 @@ describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
         parameters: {},
         streamTimeoutMs: 50,
       })
-    ).rejects.toThrow(/MCP tool stream timed out after 50ms/);
+    ).rejects.toThrow(STREAM_TIMEOUT_50MS_REGEX);
   });
 
   test('timeout path aborts the SDK signal so upstream fetches are cancelled', async () => {
@@ -609,7 +613,7 @@ describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
       streamTimeoutMs: 30,
     });
 
-    await expect(promise).rejects.toThrow(/timed out/);
+    await expect(promise).rejects.toThrow(STREAM_TIMED_OUT_REGEX);
     abortStates.push(lastStreamOptions?.signal?.aborted ?? false);
     expect(abortStates).toEqual([true]);
   });
@@ -645,15 +649,13 @@ describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
         toolName: 'my-tool',
         parameters: {},
       })
-    ).rejects.toThrow(/MCP tool stream ended without a terminal/);
+    ).rejects.toThrow(STREAM_WATCHDOG_REGEX);
   });
 });
 
 describe('useStreamMCPServerToolMutation — concurrency', () => {
   test('back-to-back calls each get a fresh client — no shared state leak', async () => {
-    streamMessages = [
-      { type: 'result', result: { content: [{ type: 'text', text: 'parallel-ok' }] } },
-    ];
+    streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'parallel-ok' }] } }];
 
     const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
     const { result: resultA } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
@@ -738,6 +740,37 @@ describe('createMCPClientWithSession — transport error contract', () => {
     );
 
     errorSpy.mockRestore();
+  });
+});
+
+describe('Integration — listTools then streaming callTool end-to-end', () => {
+  test('happy path: list tools, then stream a call with progress and a final result', async () => {
+    streamMessages = [
+      { type: 'taskCreated', task: { taskId: 't-e2e', status: 'working' } },
+      { type: 'taskStatus', task: { taskId: 't-e2e', status: 'working', statusMessage: '50%' } },
+      { type: 'result', result: { content: [{ type: 'text', text: 'e2e-done' }] } },
+    ];
+
+    // 1. List tools via the session factory.
+    const { client } = await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
+    const toolsRes = await client.listTools();
+    expect(toolsRes.tools).toEqual([]);
+
+    // 2. Stream a call through the mutation — progress + result arrive as expected.
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const progressUpdates: MCPStreamProgress[] = [];
+    const value = await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'e2e-tool',
+      parameters: { foo: 'bar' },
+      onProgress: (u) => progressUpdates.push(u),
+    });
+
+    expect(value).toEqual({ content: [{ type: 'text', text: 'e2e-done' }] });
+    expect(progressUpdates.map((u) => u.status)).toEqual(['working', 'working']);
+    expect(progressUpdates.map((u) => u.statusMessage)).toEqual([undefined, '50%']);
   });
 });
 

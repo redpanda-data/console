@@ -60,6 +60,23 @@ let messagesAfterGate: StreamMessage[] = [];
 let streamGate: Promise<void> = Promise.resolve();
 let releaseStream: () => void = () => undefined;
 let lastStreamSignal: AbortSignal | undefined;
+let onprogressHandoff: ((p: { progress: number; total?: number }) => void) | undefined;
+
+let toolsResponse: {
+  tools: Array<{
+    name: string;
+    description: string;
+    inputSchema: { type: 'object'; properties: Record<string, unknown> };
+  }>;
+} = {
+  tools: [
+    {
+      name: 'echo',
+      description: 'Echo tool',
+      inputSchema: { type: 'object' as const, properties: {} },
+    },
+  ],
+};
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   class MockClient {
@@ -68,17 +85,10 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
       this.transport = transport;
       return Promise.resolve();
     });
-    listTools = vi.fn(() =>
-      Promise.resolve({
-        tools: [
-          {
-            name: 'echo',
-            description: 'Echo tool',
-            inputSchema: { type: 'object' as const, properties: {} },
-          },
-        ],
-      })
-    );
+    getServerCapabilities = vi.fn(() => ({
+      tasks: { requests: { tools: { call: {} } } },
+    }));
+    listTools = vi.fn(() => Promise.resolve(toolsResponse));
     callTool = vi.fn(() => Promise.resolve({ content: [] }));
     experimental = {
       tasks: {
@@ -88,6 +98,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
           opts?: { signal?: AbortSignal; onprogress?: (p: { progress: number; total?: number }) => void }
         ) {
           lastStreamSignal = opts?.signal;
+          onprogressHandoff = opts?.onprogress;
           for (const message of progressBeforeGate) {
             yield message;
           }
@@ -149,6 +160,16 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     progressBeforeGate = [];
     messagesAfterGate = [];
     lastStreamSignal = undefined;
+    onprogressHandoff = undefined;
+    toolsResponse = {
+      tools: [
+        {
+          name: 'echo',
+          description: 'Echo tool',
+          inputSchema: { type: 'object' as const, properties: {} },
+        },
+      ],
+    };
     toastErrorMock.mockClear();
     toastSuccessMock.mockClear();
     freshStreamGate();
@@ -235,5 +256,95 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await waitFor(() => {
       expect(toastErrorMock).not.toHaveBeenCalled();
     });
+  });
+
+  test('Progress value clamps to [0, 100] when the server sends out-of-range numbers', async () => {
+    const user = userEvent.setup();
+    messagesAfterGate = [{ type: 'result', result: { content: [{ type: 'text', text: '"ok"' }] } }];
+
+    renderWithFileRoutes(<RemoteMCPInspectorTab />, { transport: makeTransport() });
+
+    const runButton = await screen.findByRole('button', { name: RUN_TOOL_REGEX });
+    await waitFor(() => expect(runButton).toBeEnabled());
+
+    await user.click(runButton);
+
+    await waitFor(() => expect(onprogressHandoff).toBeDefined());
+
+    // > 100%
+    onprogressHandoff?.({ progress: 200, total: 100 });
+    await waitFor(() => {
+      const bar = screen.queryByTestId('mcp-tool-progress-bar');
+      expect(bar).toBeTruthy();
+      const value = bar?.getAttribute('data-value');
+      expect(value).not.toBeNull();
+      expect(Number(value)).toBeLessThanOrEqual(100);
+      expect(Number(value)).toBeGreaterThanOrEqual(0);
+    });
+
+    // < 0%
+    onprogressHandoff?.({ progress: -5, total: 10 });
+    await waitFor(() => {
+      const bar = screen.queryByTestId('mcp-tool-progress-bar');
+      const value = bar?.getAttribute('data-value');
+      expect(Number(value)).toBeGreaterThanOrEqual(0);
+    });
+
+    // NaN (total = 0 → division by zero NaN handled as undefined)
+    onprogressHandoff?.({ progress: 5, total: 0 });
+    await waitFor(() => {
+      const bar = screen.queryByTestId('mcp-tool-progress-bar');
+      expect(bar).toBeTruthy();
+      const value = bar?.getAttribute('data-value');
+      // Either indeterminate (no data-value) or a valid clamped number.
+      if (value !== null && value !== undefined) {
+        const n = Number(value);
+        if (!Number.isNaN(n)) {
+          expect(n).toBeGreaterThanOrEqual(0);
+          expect(n).toBeLessThanOrEqual(100);
+        }
+      }
+    });
+
+    releaseStream();
+  });
+
+  test('switching tools mid-stream clears any in-flight progress UI', async () => {
+    const user = userEvent.setup();
+    toolsResponse = {
+      tools: [
+        { name: 'echo', description: 'Echo tool', inputSchema: { type: 'object' as const, properties: {} } },
+        { name: 'reverse', description: 'Reverse tool', inputSchema: { type: 'object' as const, properties: {} } },
+      ],
+    };
+    progressBeforeGate = [{ type: 'taskStatus', task: { taskId: 't1', status: 'working', statusMessage: 'halfway' } }];
+    messagesAfterGate = [{ type: 'result', result: { content: [] } }];
+
+    renderWithFileRoutes(<RemoteMCPInspectorTab />, { transport: makeTransport() });
+
+    // Wait for two tools to render.
+    const echoButton = await screen.findByText('echo');
+    await screen.findByText('reverse');
+
+    // Select echo first and run.
+    await user.click(echoButton);
+    const runButton = await screen.findByRole('button', { name: RUN_TOOL_REGEX });
+    await waitFor(() => expect(runButton).toBeEnabled());
+    await user.click(runButton);
+
+    // Progress surfaces.
+    await screen.findByTestId('mcp-tool-progress-bar');
+    expect(await screen.findByText('halfway')).toBeVisible();
+
+    // Switch to reverse — progress UI must clear.
+    const reverseButton = await screen.findByText('reverse');
+    await user.click(reverseButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('mcp-tool-progress-bar')).toBeNull();
+      expect(screen.queryByText('halfway')).toBeNull();
+    });
+
+    releaseStream();
   });
 });
