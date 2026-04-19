@@ -445,17 +445,17 @@ export const useStreamMCPServerToolMutation = () =>
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
       try {
-        // Older servers respond to callToolStream but never produce a terminal
-        // message, which would hang the mutation — fall back to non-streaming.
-        if (!serverSupportsToolTasks(client)) {
-          return (await client.callTool({ name: toolName, arguments: parameters }, undefined, {
-            signal,
-          })) as CallToolResult;
-        }
-
         const { composedSignal, cleanup } = buildStreamAbortControl(signal, streamTimeoutMs);
 
         try {
+          // Older servers respond to callToolStream but never produce a terminal
+          // message, which would hang the mutation — fall back to non-streaming.
+          if (!serverSupportsToolTasks(client)) {
+            return (await client.callTool({ name: toolName, arguments: parameters }, undefined, {
+              signal: composedSignal,
+            })) as CallToolResult;
+          }
+
           const stream = client.experimental.tasks.callToolStream(
             { name: toolName, arguments: parameters },
             undefined,

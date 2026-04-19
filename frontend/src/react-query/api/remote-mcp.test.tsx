@@ -640,6 +640,33 @@ describe('useStreamMCPServerToolMutation — capability fallback', () => {
 
     expect(callToolInvocations).toHaveLength(1);
   });
+
+  test('streamTimeoutMs applies on the capability-fallback path — hung callTool rejects within the budget', async () => {
+    serverCapabilitiesMock = { tools: { listChanged: false } };
+    fallbackCallToolHang = true;
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const start = Date.now();
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+        streamTimeoutMs: 50,
+      })
+    ).rejects.toBeTruthy();
+    const elapsed = Date.now() - start;
+
+    expect(elapsed).toBeLessThan(500);
+    // The fallback callTool must have received the composed signal so its
+    // upstream fetch can be cancelled when the timeout fires.
+    expect(fallbackCallToolSignalCapture).toBeDefined();
+    expect(fallbackCallToolSignalCapture?.aborted).toBe(true);
+  });
 });
 
 describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
