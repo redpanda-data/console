@@ -23,6 +23,7 @@ import type { MCPStreamProgress } from './remote-mcp';
 import {
   createMCPClientWithSession,
   listMCPServerTools,
+  useCallMCPServerToolMutation,
   useListMCPServersQuery,
   useStreamMCPServerToolMutation,
 } from './remote-mcp';
@@ -81,6 +82,7 @@ let lastTransportOpts: { authProvider?: OAuthClientProvider; fetch?: typeof fetc
 let lastClientInfo: { name: string; version: string } | undefined;
 let nextConnectRejection: Error | undefined;
 let nextListToolsRejection: Error | undefined;
+let nextCallToolRejection: Error | undefined;
 let streamConstructorSnapshots: number[] = [];
 let serverCapabilitiesMock: ServerCapabilitiesMock = {
   tools: { listChanged: false },
@@ -126,6 +128,11 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
       ) => {
         callToolInvocations.push(params);
         fallbackCallToolSignalCapture = opts?.signal;
+        if (nextCallToolRejection) {
+          const err = nextCallToolRejection;
+          nextCallToolRejection = undefined;
+          return Promise.reject(err);
+        }
         if (fallbackCallToolHang) {
           return new Promise<{ content: Array<{ type: string; text: string }> }>((_resolve, reject) => {
             const onAbort = () => {
@@ -960,6 +967,7 @@ describe('useStreamMCPServerToolMutation — client lifecycle (close in finally)
     await expect(promise).rejects.toBeTruthy();
 
     expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
   test('closes the client exactly once on the capability-fallback (non-streaming) path', async () => {
@@ -991,6 +999,41 @@ describe('listMCPServerTools — client lifecycle', () => {
     nextListToolsRejection = new Error('boom');
 
     await expect(listMCPServerTools('https://example.test/mcp')).rejects.toThrow('boom');
+
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useCallMCPServerToolMutation — client lifecycle (close in finally)', () => {
+  test('closes the client exactly once on a successful callTool', async () => {
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useCallMCPServerToolMutation(), { wrapper });
+
+    await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+    });
+
+    expect(createdClients).toHaveLength(1);
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  test('closes the client exactly once when callTool rejects', async () => {
+    nextCallToolRejection = new Error('boom');
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useCallMCPServerToolMutation(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+      })
+    ).rejects.toThrow('boom');
 
     expect(createdClients[0].close).toHaveBeenCalledTimes(1);
   });

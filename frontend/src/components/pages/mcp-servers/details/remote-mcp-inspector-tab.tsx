@@ -372,7 +372,7 @@ export const RemoteMCPInspectorTab = () => {
         toolName: selectedTool,
         parameters,
         signal: abortController.signal,
-        onProgress: (update) => setStreamProgress(update),
+        onProgress: (update) => setStreamProgress((prev) => ({ ...prev, ...update })),
       },
       {
         onSettled: () => {

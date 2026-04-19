@@ -261,6 +261,31 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
   });
 
+  test('numeric progress from SDK onprogress merges with task status from the stream', async () => {
+    const user = userEvent.setup();
+    progressBeforeGate = [{ type: 'taskStatus', task: { taskId: 't1', status: 'working', statusMessage: 'halfway' } }];
+    messagesAfterGate = [{ type: 'result', result: { content: [{ type: 'text', text: '"ok"' }] } }];
+
+    renderWithFileRoutes(<RemoteMCPInspectorTab />, { transport: makeTransport() });
+
+    const runButton = await screen.findByRole('button', { name: RUN_TOOL_REGEX });
+    await waitFor(() => expect(runButton).toBeEnabled());
+    await user.click(runButton);
+
+    await screen.findByText('halfway');
+    await waitFor(() => expect(onprogressHandoff).toBeDefined());
+
+    onprogressHandoff?.({ progress: 50, total: 100 });
+
+    await waitFor(() => {
+      const bar = screen.queryByTestId('mcp-tool-progress-bar');
+      expect(bar?.getAttribute('data-value')).toBe('50');
+    });
+    expect(screen.queryByText('halfway')).toBeVisible();
+
+    releaseStream();
+  });
+
   test('Progress value clamps to [0, 100] when the server sends out-of-range numbers', async () => {
     const user = userEvent.setup();
     messagesAfterGate = [{ type: 'result', result: { content: [{ type: 'text', text: '"ok"' }] } }];

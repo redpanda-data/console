@@ -480,9 +480,13 @@ export const useStreamMCPServerToolMutation = () =>
           }
 
           // Stream closed without a terminal message. Surface timeout explicitly
-          // if that was the cause; otherwise fail fast with a watchdog error.
+          // if that was the cause, user cancellation as an AbortError so the
+          // mutation's onError skips the toast, else a watchdog error.
           if (composedSignal.aborted && !signal?.aborted) {
             throw new Error(`MCP tool stream timed out after ${streamTimeoutMs}ms`);
+          }
+          if (signal?.aborted) {
+            throw Object.assign(new Error('Request was cancelled'), { name: 'AbortError' });
           }
           throw new Error('MCP tool stream ended without a terminal result or error message');
         } finally {
