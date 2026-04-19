@@ -8,6 +8,7 @@ import {
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import { config } from 'config';
+import { ConsoleJWTOAuthProvider } from 'react-query/api/mcp-oauth-provider';
 import {
   type GetMCPServerRequest,
   GetMCPServerRequestSchema,
@@ -274,7 +275,9 @@ export const createMCPClientWithSession = async (
   );
 
   // Create StreamableHTTP transport for HTTP endpoints
+  const authProvider = new ConsoleJWTOAuthProvider({ getJwt: () => config.jwt, clientName });
   const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
+    authProvider,
     fetch: async (input, init) => {
       const response = await fetch(input, {
         ...init,
