@@ -9,19 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import type {
-  Message,
-  Task,
-  TaskArtifactUpdateEvent,
-  TaskState,
-  TaskStatusUpdateEvent,
-} from '@a2a-js/sdk';
+import type { Message, Task, TaskArtifactUpdateEvent, TaskState, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import { describe, expect, test } from 'vitest';
 
-import {
-  getResponseMetadata,
-  mapFinishReason,
-} from './a2a-chat-language-model';
+import { getResponseMetadata, mapFinishReason } from './a2a-chat-language-model';
 
 // ---------------------------------------------------------------------------
 // Regression guards for the A2A → AI SDK v6 adapter. We assert on the pure
