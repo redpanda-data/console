@@ -289,6 +289,10 @@ export const createMCPClientWithSession = async (
     },
   });
 
+  transport.onerror = (error) => {
+    console.error('[MCP] transport error', { serverUrl, error });
+  };
+
   // Connect the client to the transport
   await client.connect(transport);
 

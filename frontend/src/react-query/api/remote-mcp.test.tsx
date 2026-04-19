@@ -15,9 +15,30 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { ListMCPServersResponseSchema, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
-import { useListMCPServersQuery } from './remote-mcp';
+import { createMCPClientWithSession, useListMCPServersQuery } from './remote-mcp';
+
+vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
+  class MockClient {
+    transport?: { sessionId?: string };
+    connect = vi.fn(async (transport: { sessionId?: string }) => {
+      this.transport = transport;
+    });
+    listTools = vi.fn(async () => ({ tools: [] }));
+    callTool = vi.fn(async () => ({ content: [] }));
+  }
+  return { Client: MockClient };
+});
+
+vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => {
+  class MockStreamableHTTPClientTransport {
+    sessionId?: string;
+    onerror?: (error: Error) => void;
+    constructor(public url: URL, public opts: unknown) {}
+  }
+  return { StreamableHTTPClientTransport: MockStreamableHTTPClientTransport };
+});
 
 describe('useListMCPServersQuery', () => {
   test('fetches all pages and flattens servers into a single array', async () => {
@@ -111,5 +132,26 @@ describe('useListMCPServersQuery', () => {
 
     expect(callCount).toBe(1);
     expect(result.current.data.mcpServers).toHaveLength(0);
+  });
+});
+
+describe('createMCPClientWithSession', () => {
+  test('wires transport.onerror to log transport-level failures', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const { client, transport } = await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
+
+    expect(client).toBeDefined();
+    expect(transport).toBeDefined();
+    expect(typeof transport.onerror).toBe('function');
+
+    transport.onerror?.(new Error('boom'));
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[MCP] transport error',
+      expect.objectContaining({ serverUrl: 'https://example.test/mcp' })
+    );
+
+    errorSpy.mockRestore();
   });
 });
