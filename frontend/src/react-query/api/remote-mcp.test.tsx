@@ -20,7 +20,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ConsoleJWTOAuthProvider } from './mcp-oauth-provider';
 import type { MCPStreamProgress } from './remote-mcp';
-import { createMCPClientWithSession, useListMCPServersQuery, useStreamMCPServerToolMutation } from './remote-mcp';
+import {
+  createMCPClientWithSession,
+  listMCPServerTools,
+  useListMCPServersQuery,
+  useStreamMCPServerToolMutation,
+} from './remote-mcp';
 
 const STREAM_TIMEOUT_50MS_REGEX = /MCP tool stream timed out after 50ms/;
 const STREAM_TIMED_OUT_REGEX = /timed out/;
@@ -75,6 +80,7 @@ let connectOrderLog: string[] = [];
 let lastTransportOpts: { authProvider?: OAuthClientProvider; fetch?: typeof fetch } | undefined;
 let lastClientInfo: { name: string; version: string } | undefined;
 let nextConnectRejection: Error | undefined;
+let nextListToolsRejection: Error | undefined;
 let streamConstructorSnapshots: number[] = [];
 let serverCapabilitiesMock: ServerCapabilitiesMock = {
   tools: { listChanged: false },
@@ -104,7 +110,14 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
       return Promise.resolve();
     });
     getServerCapabilities = vi.fn(() => serverCapabilitiesMock ?? undefined);
-    listTools = vi.fn(() => Promise.resolve({ tools: [] }));
+    listTools = vi.fn(() => {
+      if (nextListToolsRejection) {
+        const err = nextListToolsRejection;
+        nextListToolsRejection = undefined;
+        return Promise.reject(err);
+      }
+      return Promise.resolve({ tools: [] });
+    });
     callTool = vi.fn(
       (
         params: { name: string; arguments: Record<string, unknown> },
@@ -963,5 +976,42 @@ describe('useStreamMCPServerToolMutation — client lifecycle (close in finally)
 
     expect(callToolInvocations).toHaveLength(1);
     expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('listMCPServerTools — client lifecycle', () => {
+  test('closes the client exactly once on a successful listTools call', async () => {
+    await listMCPServerTools('https://example.test/mcp');
+
+    expect(createdClients).toHaveLength(1);
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  test('closes the client exactly once when listTools rejects', async () => {
+    nextListToolsRejection = new Error('boom');
+
+    await expect(listMCPServerTools('https://example.test/mcp')).rejects.toThrow('boom');
+
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createMCPClientWithSession — Mcp-Session-Id header', () => {
+  test('omits Mcp-Session-Id header when no session has been established yet', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
+
+    await createMCPClientWithSession('https://example.test/mcp', 'redpanda-console');
+    const transportFetch = lastTransportOpts?.fetch;
+    expect(transportFetch).toBeDefined();
+
+    await transportFetch?.('https://example.test/mcp', { method: 'POST' });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [, init] = fetchSpy.mock.calls[0] as [unknown, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer test-jwt-token');
+    expect(headers).not.toHaveProperty('Mcp-Session-Id');
+
+    fetchSpy.mockRestore();
   });
 });

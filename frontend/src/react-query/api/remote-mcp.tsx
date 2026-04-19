@@ -287,7 +287,7 @@ export const createMCPClientWithSession = async (
           ...init?.headers,
           'Content-Type': 'application/json',
           ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          'Mcp-Session-Id': client?.transport?.sessionId ?? '',
+          ...(client?.transport?.sessionId && { 'Mcp-Session-Id': client.transport.sessionId }),
         },
       });
       return response;
@@ -308,7 +308,11 @@ export const createMCPClientWithSession = async (
 export const listMCPServerTools = async (serverUrl: string) => {
   const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-  return client.listTools();
+  try {
+    return await client.listTools();
+  } finally {
+    await client.close?.();
+  }
 };
 
 export type CallMCPToolParams = {
