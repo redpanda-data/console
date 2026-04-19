@@ -38,7 +38,7 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
     callTool = vi.fn(async () => ({ content: [] }));
     experimental = {
       tasks: {
-        callToolStream: async function* () {
+        async *callToolStream() {
           for (const message of streamMessages) {
             yield message;
           }
@@ -53,7 +53,10 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => {
   class MockStreamableHTTPClientTransport {
     sessionId?: string;
     onerror?: (error: Error) => void;
-    constructor(public url: URL, public opts: unknown) {}
+    constructor(
+      public url: URL,
+      public opts: unknown
+    ) {}
   }
   return { StreamableHTTPClientTransport: MockStreamableHTTPClientTransport };
 });

@@ -8,7 +8,6 @@ import {
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import { config } from 'config';
-import { ConsoleJWTOAuthProvider } from 'react-query/api/mcp-oauth-provider';
 import {
   type GetMCPServerRequest,
   GetMCPServerRequestSchema,
@@ -34,6 +33,7 @@ import {
   updateMCPServer,
 } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { useMemo } from 'react';
+import { ConsoleJWTOAuthProvider } from 'react-query/api/mcp-oauth-provider';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -373,19 +373,15 @@ export const useStreamMCPServerToolMutation = () =>
     }: StreamMCPToolParams): Promise<CallToolResult> => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      const stream = client.experimental.tasks.callToolStream(
-        { name: toolName, arguments: parameters },
-        undefined,
-        {
-          signal,
-          onprogress: (progress) => {
-            onProgress?.({
-              progress: progress.progress,
-              total: progress.total,
-            });
-          },
-        }
-      );
+      const stream = client.experimental.tasks.callToolStream({ name: toolName, arguments: parameters }, undefined, {
+        signal,
+        onprogress: (progress) => {
+          onProgress?.({
+            progress: progress.progress,
+            total: progress.total,
+          });
+        },
+      });
 
       for await (const message of stream) {
         if (message.type === 'taskCreated' || message.type === 'taskStatus') {

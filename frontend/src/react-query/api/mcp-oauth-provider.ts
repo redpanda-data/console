@@ -10,7 +10,11 @@
  */
 
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
-import type { OAuthClientInformation, OAuthClientMetadata, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
+import type {
+  OAuthClientInformation,
+  OAuthClientMetadata,
+  OAuthTokens,
+} from '@modelcontextprotocol/sdk/shared/auth.js';
 
 export type ConsoleJWTOAuthProviderOptions = {
   getJwt: () => string | undefined;
@@ -38,7 +42,7 @@ export class ConsoleJWTOAuthProvider implements OAuthClientProvider {
   }
 
   get redirectUrl(): string | URL | undefined {
-    return undefined;
+    return;
   }
 
   get clientMetadata(): OAuthClientMetadata {
