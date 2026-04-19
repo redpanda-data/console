@@ -421,19 +421,3 @@ export const handleArtifactUpdateEvent = (
   onMessageUpdate(updatedMessage);
 };
 
-/**
- * Handle text-delta event to accumulate streaming text
- * NOTE: Text-delta is now only for artifacts (protocol compliant)
- * Regular messages come via status-update events with message.parts
- */
-export const handleTextDeltaEvent = (
-  _textDelta: string,
-  _state: StreamingState,
-  _assistantMessage: ChatMessage,
-  _onMessageUpdate: (message: ChatMessage) => void
-): void => {
-  // Text-delta events are deprecated for regular messages
-  // They are only used for artifact streaming now (handled separately)
-  // If we receive text-delta, it's likely duplicate artifact content
-  // Skip processing to avoid duplicate text blocks
-};

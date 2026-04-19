@@ -18,10 +18,9 @@ import {
   handleResponseMetadataEvent,
   handleStatusUpdateEvent,
   handleTaskEvent,
-  handleTextDeltaEvent,
 } from './event-handlers';
 import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-builder';
-import type { ResponseMetadataEvent, StreamChunk, StreamingState, TextDeltaEvent } from './streaming-types';
+import type { ResponseMetadataEvent, StreamChunk, StreamingState } from './streaming-types';
 import { a2a } from '../../a2a-provider';
 import type { ChatMessage, ContentBlock } from '../types';
 import { createA2AClient } from '../utils/a2a-client';
@@ -395,12 +394,9 @@ export const streamMessage = async ({
         }
         continue;
       }
-
-      // Handle text-delta events
-      if (streamChunk.type === 'text-delta') {
-        const textDelta = streamChunk as TextDeltaEvent;
-        handleTextDeltaEvent(textDelta.text, state, assistantMessage, onMessageUpdate);
-      }
+      // text-delta chunks are emitted as raw events routed above; no separate
+      // handling is needed because the A2A protocol carries text through
+      // status-update.message.parts and artifact-update.
     }
 
     // Close any active text block before finalizing
