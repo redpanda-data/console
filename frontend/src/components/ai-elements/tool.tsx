@@ -190,7 +190,7 @@ export const ToolHeader = ({
             size="icon"
             className="size-7"
             onClick={(e) => e.stopPropagation()}
-            title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
+            title={toolCallId ? `Copy: ${displayName} (${toolCallId})` : `Copy: ${displayName}`}
           />
           <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
         </div>

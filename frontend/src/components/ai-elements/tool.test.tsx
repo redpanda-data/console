@@ -133,6 +133,34 @@ describe('ToolHeader', () => {
     expect(screen.getByText('call-xyz-123')).toBeInTheDocument();
   });
 
+  test('copy button title uses derived name for static tools', () => {
+    render(
+      <Tool>
+        <ToolHeader
+          state="output-available"
+          toolCallId="call-xyz-123"
+          type="tool-get-weather"
+        />
+      </Tool>
+    );
+    // Regression guard: previously used `toolName` which is undefined for
+    // static tools, producing "Copy: undefined".
+    expect(screen.getByTitle('Copy: get-weather (call-xyz-123)')).toBeInTheDocument();
+  });
+
+  test('copy button title uses toolName for dynamic tools', () => {
+    render(
+      <Tool>
+        <ToolHeader
+          state="output-available"
+          toolName="mcp_list_topics"
+          type="dynamic-tool"
+        />
+      </Tool>
+    );
+    expect(screen.getByTitle('Copy: mcp_list_topics')).toBeInTheDocument();
+  });
+
   // ---------------------------------------------------------------------------
   // Additional state-coverage cases (added under a2a/mcp/ai-elements bump)
   // These exercise the approval flow beyond the happy path and guard against

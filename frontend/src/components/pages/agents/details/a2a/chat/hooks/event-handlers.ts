@@ -420,4 +420,3 @@ export const handleArtifactUpdateEvent = (
   });
   onMessageUpdate(updatedMessage);
 };
-

@@ -392,7 +392,6 @@ export const streamMessage = async ({
             handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
           }
         }
-        continue;
       }
       // text-delta chunks are emitted as raw events routed above; no separate
       // handling is needed because the A2A protocol carries text through
