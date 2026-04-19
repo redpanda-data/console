@@ -13,6 +13,9 @@ import { describe, expect, test } from 'vitest';
 
 import { ConsoleJWTOAuthProvider } from './mcp-oauth-provider';
 
+const INTERACTIVE_AUTHORIZATION_ERROR = /interactive authorization/;
+const PKCE_ERROR = /PKCE/;
+
 describe('ConsoleJWTOAuthProvider', () => {
   test('returns the current JWT as a Bearer token every call', () => {
     let jwt: string | undefined = 'jwt-1';
@@ -46,8 +49,8 @@ describe('ConsoleJWTOAuthProvider', () => {
   test('interactive flow methods throw because the console never drives OAuth redirects', () => {
     const provider = new ConsoleJWTOAuthProvider({ getJwt: () => 'x' });
 
-    expect(() => provider.redirectToAuthorization()).toThrow(/interactive authorization/);
-    expect(() => provider.saveCodeVerifier()).toThrow(/PKCE/);
-    expect(() => provider.codeVerifier()).toThrow(/PKCE/);
+    expect(() => provider.redirectToAuthorization()).toThrow(INTERACTIVE_AUTHORIZATION_ERROR);
+    expect(() => provider.saveCodeVerifier()).toThrow(PKCE_ERROR);
+    expect(() => provider.codeVerifier()).toThrow(PKCE_ERROR);
   });
 });

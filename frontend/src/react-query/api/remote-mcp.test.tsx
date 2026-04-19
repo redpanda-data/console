@@ -31,13 +31,15 @@ let streamMessages: StreamMessage[] = [];
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   class MockClient {
     transport?: { sessionId?: string };
-    connect = vi.fn(async (transport: { sessionId?: string }) => {
+    connect = vi.fn((transport: { sessionId?: string }) => {
       this.transport = transport;
+      return Promise.resolve();
     });
-    listTools = vi.fn(async () => ({ tools: [] }));
-    callTool = vi.fn(async () => ({ content: [] }));
+    listTools = vi.fn(() => Promise.resolve({ tools: [] }));
+    callTool = vi.fn(() => Promise.resolve({ content: [] }));
     experimental = {
       tasks: {
+        // biome-ignore lint/suspicious/useAwait: async generator with sync yields
         async *callToolStream() {
           for (const message of streamMessages) {
             yield message;
@@ -53,10 +55,12 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => {
   class MockStreamableHTTPClientTransport {
     sessionId?: string;
     onerror?: (error: Error) => void;
-    constructor(
-      public url: URL,
-      public opts: unknown
-    ) {}
+    url: URL;
+    opts: unknown;
+    constructor(url: URL, opts: unknown) {
+      this.url = url;
+      this.opts = opts;
+    }
   }
   return { StreamableHTTPClientTransport: MockStreamableHTTPClientTransport };
 });

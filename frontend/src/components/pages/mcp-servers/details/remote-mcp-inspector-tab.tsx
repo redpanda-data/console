@@ -515,6 +515,7 @@ export const RemoteMCPInspectorTab = () => {
               </CardTitle>
             </CardHeader>
             <div className="relative flex flex-1 flex-col">
+              {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy inline tool form, incremental streaming progress adds branches */}
               {(() => {
                 const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
                 return (
@@ -616,18 +617,18 @@ export const RemoteMCPInspectorTab = () => {
                       {Boolean(isServerToolPending) && (
                         <div className="space-y-2">
                           <Label className="font-medium text-sm">Response</Label>
-                          {streamProgress && (
+                          {Boolean(streamProgress) && (
                             <div className="space-y-1" data-testid="mcp-tool-progress">
                               <Progress
                                 testId="mcp-tool-progress-bar"
                                 value={
-                                  streamProgress.total && streamProgress.progress !== undefined
+                                  streamProgress?.total && streamProgress.progress !== undefined
                                     ? Math.round((streamProgress.progress / streamProgress.total) * 100)
                                     : undefined
                                 }
                               />
                               <Text className="text-muted-foreground" variant="small">
-                                {streamProgress.statusMessage ?? streamProgress.status ?? 'Running tool...'}
+                                {streamProgress?.statusMessage ?? streamProgress?.status ?? 'Running tool...'}
                               </Text>
                             </div>
                           )}

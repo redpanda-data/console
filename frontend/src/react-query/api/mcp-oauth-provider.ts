@@ -41,9 +41,7 @@ export class ConsoleJWTOAuthProvider implements OAuthClientProvider {
     this.clientName = clientName;
   }
 
-  get redirectUrl(): string | URL | undefined {
-    return;
-  }
+  readonly redirectUrl: string | URL | undefined;
 
   get clientMetadata(): OAuthClientMetadata {
     return {

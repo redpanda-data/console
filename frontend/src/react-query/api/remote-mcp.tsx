@@ -293,6 +293,7 @@ export const createMCPClientWithSession = async (
   });
 
   transport.onerror = (error) => {
+    // biome-ignore lint/suspicious/noConsole: transport-level errors have no UI surface
     console.error('[MCP] transport error', { serverUrl, error });
   };
 
