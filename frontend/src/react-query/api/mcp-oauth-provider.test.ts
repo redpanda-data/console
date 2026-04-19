@@ -41,6 +41,20 @@ describe('ConsoleJWTOAuthProvider', () => {
     expect(provider.clientInformation()).toEqual({ client_id: 'custom-client' });
   });
 
+  test('defaults clientName to redpanda-console when omitted', () => {
+    const provider = new ConsoleJWTOAuthProvider({ getJwt: () => 'x' });
+
+    expect(provider.clientMetadata.client_name).toBe('redpanda-console');
+    expect(provider.clientInformation()).toEqual({ client_id: 'redpanda-console' });
+  });
+
+  test('clientMetadata advertises no redirect URIs and public-client auth method', () => {
+    const provider = new ConsoleJWTOAuthProvider({ getJwt: () => 'x' });
+
+    expect(provider.clientMetadata.redirect_uris).toEqual([]);
+    expect(provider.clientMetadata.token_endpoint_auth_method).toBe('none');
+  });
+
   test('saveTokens is a no-op', () => {
     const provider = new ConsoleJWTOAuthProvider({ getJwt: () => 'x' });
     expect(() => provider.saveTokens()).not.toThrow();
