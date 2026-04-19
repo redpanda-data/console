@@ -79,12 +79,15 @@ let serverCapabilitiesMock: ServerCapabilitiesMock = {
   tools: { listChanged: false },
   tasks: { requests: { tools: { call: {} } } },
 };
-const createdClients: unknown[] = [];
+const createdClients: { close: ReturnType<typeof vi.fn> }[] = [];
 const callToolInvocations: { name: string; arguments: Record<string, unknown> }[] = [];
+let fallbackCallToolHang = false;
+let fallbackCallToolSignalCapture: AbortSignal | undefined;
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   class MockClient {
     transport?: { sessionId?: string; onerror?: (error: Error) => void };
+    close = vi.fn(() => Promise.resolve());
     constructor(clientInfo: { name: string; version: string }) {
       lastClientInfo = clientInfo;
       createdClients.push(this);
@@ -101,10 +104,31 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
     });
     getServerCapabilities = vi.fn(() => serverCapabilitiesMock ?? undefined);
     listTools = vi.fn(() => Promise.resolve({ tools: [] }));
-    callTool = vi.fn((params: { name: string; arguments: Record<string, unknown> }) => {
-      callToolInvocations.push(params);
-      return Promise.resolve({ content: [{ type: 'text', text: 'fallback-result' }] });
-    });
+    callTool = vi.fn(
+      (
+        params: { name: string; arguments: Record<string, unknown> },
+        _schema: unknown,
+        opts?: { signal?: AbortSignal }
+      ) => {
+        callToolInvocations.push(params);
+        fallbackCallToolSignalCapture = opts?.signal;
+        if (fallbackCallToolHang) {
+          return new Promise<{ content: Array<{ type: string; text: string }> }>((_resolve, reject) => {
+            const onAbort = () => {
+              const err = new Error('aborted');
+              err.name = 'AbortError';
+              reject(err);
+            };
+            if (opts?.signal?.aborted) {
+              onAbort();
+              return;
+            }
+            opts?.signal?.addEventListener('abort', onAbort, { once: true });
+          });
+        }
+        return Promise.resolve({ content: [{ type: 'text', text: 'fallback-result' }] });
+      }
+    );
     experimental = {
       tasks: {
         // biome-ignore lint/suspicious/useAwait: async generator with sync yields
@@ -165,6 +189,8 @@ beforeEach(() => {
   };
   createdClients.length = 0;
   callToolInvocations.length = 0;
+  fallbackCallToolHang = false;
+  fallbackCallToolSignalCapture = undefined;
   formatToastErrorMessageGRPCMock.mockClear();
   toastErrorMock.mockClear();
 });
@@ -828,5 +854,84 @@ describe('createMCPClientWithSession — isolation & error propagation', () => {
     await expect(createMCPClientWithSession('https://example.test/mcp', 'redpanda-console')).rejects.toThrow(
       'connect refused'
     );
+  });
+});
+
+describe('useStreamMCPServerToolMutation — client lifecycle (close in finally)', () => {
+  test('closes the client exactly once on a successful streaming call', async () => {
+    streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'ok' }] } }];
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+    });
+
+    expect(createdClients).toHaveLength(1);
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  test('closes the client exactly once when the stream rejects with an error', async () => {
+    streamMessages = [{ type: 'error', error: new Error('boom') }];
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+      })
+    ).rejects.toThrow('boom');
+
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  test('closes the client exactly once when the caller aborts mid-stream', async () => {
+    streamHangForever = true;
+
+    const { wrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const controller = new AbortController();
+    const promise = result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+      signal: controller.signal,
+      streamTimeoutMs: 10_000,
+    });
+
+    // Let the mutation enter the streaming path before aborting.
+    await new Promise((r) => setTimeout(r, 10));
+    controller.abort();
+
+    await expect(promise).rejects.toBeTruthy();
+
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  test('closes the client exactly once on the capability-fallback (non-streaming) path', async () => {
+    serverCapabilitiesMock = { tools: { listChanged: false } };
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: {},
+    });
+
+    expect(callToolInvocations).toHaveLength(1);
+    expect(createdClients[0].close).toHaveBeenCalledTimes(1);
   });
 });

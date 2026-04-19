@@ -323,14 +323,18 @@ export const useCallMCPServerToolMutation = () =>
     mutationFn: async ({ serverUrl, toolName, parameters, signal }: CallMCPToolParams) => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      return client.callTool(
-        {
-          name: toolName,
-          arguments: parameters,
-        },
-        undefined,
-        { signal }
-      );
+      try {
+        return await client.callTool(
+          {
+            name: toolName,
+            arguments: parameters,
+          },
+          undefined,
+          { signal }
+        );
+      } finally {
+        await client.close?.();
+      }
     },
     onError: (error) => {
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
@@ -440,40 +444,48 @@ export const useStreamMCPServerToolMutation = () =>
     }: StreamMCPToolParams): Promise<CallToolResult> => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      // Older servers respond to callToolStream but never produce a terminal
-      // message, which would hang the mutation — fall back to non-streaming.
-      if (!serverSupportsToolTasks(client)) {
-        return (await client.callTool({ name: toolName, arguments: parameters }, undefined, {
-          signal,
-        })) as CallToolResult;
-      }
-
-      const { composedSignal, cleanup } = buildStreamAbortControl(signal, streamTimeoutMs);
-
       try {
-        const stream = client.experimental.tasks.callToolStream({ name: toolName, arguments: parameters }, undefined, {
-          signal: composedSignal,
-          onprogress: (progress) => {
-            onProgress?.({
-              progress: progress.progress,
-              total: progress.total,
-            });
-          },
-        });
-
-        const result = await drainMCPStream(stream, onProgress);
-        if (result !== undefined) {
-          return result as CallToolResult;
+        // Older servers respond to callToolStream but never produce a terminal
+        // message, which would hang the mutation — fall back to non-streaming.
+        if (!serverSupportsToolTasks(client)) {
+          return (await client.callTool({ name: toolName, arguments: parameters }, undefined, {
+            signal,
+          })) as CallToolResult;
         }
 
-        // Stream closed without a terminal message. Surface timeout explicitly
-        // if that was the cause; otherwise fail fast with a watchdog error.
-        if (composedSignal.aborted && !signal?.aborted) {
-          throw new Error(`MCP tool stream timed out after ${streamTimeoutMs}ms`);
+        const { composedSignal, cleanup } = buildStreamAbortControl(signal, streamTimeoutMs);
+
+        try {
+          const stream = client.experimental.tasks.callToolStream(
+            { name: toolName, arguments: parameters },
+            undefined,
+            {
+              signal: composedSignal,
+              onprogress: (progress) => {
+                onProgress?.({
+                  progress: progress.progress,
+                  total: progress.total,
+                });
+              },
+            }
+          );
+
+          const result = await drainMCPStream(stream, onProgress);
+          if (result !== undefined) {
+            return result as CallToolResult;
+          }
+
+          // Stream closed without a terminal message. Surface timeout explicitly
+          // if that was the cause; otherwise fail fast with a watchdog error.
+          if (composedSignal.aborted && !signal?.aborted) {
+            throw new Error(`MCP tool stream timed out after ${streamTimeoutMs}ms`);
+          }
+          throw new Error('MCP tool stream ended without a terminal result or error message');
+        } finally {
+          cleanup();
         }
-        throw new Error('MCP tool stream ended without a terminal result or error message');
       } finally {
-        cleanup();
+        await client.close?.();
       }
     },
     onError: (error) => {
