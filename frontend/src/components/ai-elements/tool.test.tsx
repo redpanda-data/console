@@ -12,7 +12,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 
-import { Tool, ToolHeader } from './tool';
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from './tool';
 
 describe('ToolHeader', () => {
   test('renders static tool with name derived from type', () => {
@@ -131,5 +131,155 @@ describe('ToolHeader', () => {
       </Tool>
     );
     expect(screen.getByText('call-xyz-123')).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Additional state-coverage cases (added under a2a/mcp/ai-elements bump)
+  // These exercise the approval flow beyond the happy path and guard against
+  // regression of badge rendering for error / streaming states.
+  // ---------------------------------------------------------------------------
+
+  test('shows "Pending" badge for input-streaming state', () => {
+    render(
+      <Tool>
+        <ToolHeader
+          state="input-streaming"
+          toolName="mcp_list_topics"
+          type="dynamic-tool"
+        />
+      </Tool>
+    );
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+  });
+
+  test('shows "Error" badge and duration for output-error state', () => {
+    render(
+      <Tool>
+        <ToolHeader
+          durationMs={500}
+          state="output-error"
+          type="tool-get-weather"
+        />
+      </Tool>
+    );
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    // Duration should render for both output-available and output-error — gating
+    // on only one would hide execution time when users most need it.
+    expect(screen.getByText('500ms')).toBeInTheDocument();
+  });
+
+  test('suppresses duration for in-flight states even when durationMs is set', () => {
+    render(
+      <Tool>
+        <ToolHeader
+          durationMs={2345}
+          state="input-available"
+          type="tool-get-weather"
+        />
+      </Tool>
+    );
+    // Duration should not leak into the header for in-flight (`input-available`)
+    // tool executions — showing a duration mid-flight would be misleading.
+    expect(screen.queryByText('2.35s')).not.toBeInTheDocument();
+  });
+
+  test('approval-requested → output-denied transition swaps badges correctly', () => {
+    const { rerender } = render(
+      <Tool>
+        <ToolHeader
+          state="approval-requested"
+          toolName="mcp_delete_topic"
+          type="dynamic-tool"
+        />
+      </Tool>
+    );
+    expect(screen.getByText('Awaiting Approval')).toBeInTheDocument();
+
+    rerender(
+      <Tool>
+        <ToolHeader
+          state="output-denied"
+          toolName="mcp_delete_topic"
+          type="dynamic-tool"
+        />
+      </Tool>
+    );
+    // After denial, the approval-requested badge must be gone and the denied
+    // state must surface — otherwise users might not realise the tool was
+    // cancelled.
+    expect(screen.queryByText('Awaiting Approval')).not.toBeInTheDocument();
+    expect(screen.getByText('Denied')).toBeInTheDocument();
+  });
+
+  test('renders no badge for an unknown tool state', () => {
+    // `getStatusBadge` returns null for anything outside the known set. The
+    // header should still render the tool name without throwing. We narrow
+    // via `unknown` cast to avoid polluting this guard test with a wider
+    // type-escape hatch.
+    const unknownState = 'stale-unknown' as unknown as 'output-available';
+    render(
+      <Tool>
+        <ToolHeader state={unknownState} type="tool-get-weather" />
+      </Tool>
+    );
+    expect(screen.getByText('get-weather')).toBeInTheDocument();
+    // None of the known status labels should have leaked in.
+    for (const label of [
+      'Completed',
+      'Working',
+      'Error',
+      'Pending',
+      'Awaiting Approval',
+      'Responded',
+      'Denied',
+    ]) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
+  });
+});
+
+describe('ToolInput / ToolOutput', () => {
+  test('ToolInput renders nothing for an empty object', () => {
+    const { container } = render(
+      <Tool>
+        <ToolContent>
+          <ToolInput input={{}} />
+        </ToolContent>
+      </Tool>
+    );
+    // An empty tool input should collapse away rather than render a bare
+    // "Parameters" section that confuses readers.
+    expect(container.querySelector('h4')).toBeNull();
+  });
+
+  test('ToolOutput renders the parsed JSON output for objects', () => {
+    const { container } = render(
+      <Tool defaultOpen>
+        <ToolContent>
+          <ToolOutput errorText={undefined} output={{ topics: ['a'] }} />
+        </ToolContent>
+      </Tool>
+    );
+    // The object output is pretty-printed and the code-block syntax
+    // highlighter splits tokens across spans, so we assert on the concatenated
+    // textContent of the rendered region.
+    const text = container.textContent ?? '';
+    expect(text).toContain('"topics"');
+    expect(text).toContain('"a"');
+    // The label should identify this as a result, not an error.
+    expect(screen.getByText('Result')).toBeInTheDocument();
+  });
+
+  test('ToolOutput renders errorText when provided', () => {
+    const { container } = render(
+      <Tool defaultOpen>
+        <ToolContent>
+          <ToolOutput errorText="boom" output={undefined} />
+        </ToolContent>
+      </Tool>
+    );
+    // Heading becomes "Error" and the body contains the error text.
+    expect(screen.getByRole('heading', { level: 4 })).toHaveTextContent('Error');
+    expect(container.textContent ?? '').toContain('boom');
   });
 });
