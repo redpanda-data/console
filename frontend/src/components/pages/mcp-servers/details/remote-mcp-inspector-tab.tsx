@@ -21,6 +21,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
+import { Progress } from 'components/redpanda-ui/components/progress';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
@@ -35,7 +36,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useRef, useState } from 'react';
-import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
+import {
+  type MCPStreamProgress,
+  useGetMCPServerQuery,
+  useListMCPServerTools,
+  useStreamMCPServerToolMutation,
+} from 'react-query/api/remote-mcp';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 
@@ -159,13 +165,14 @@ export const RemoteMCPInspectorTab = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
+  const [streamProgress, setStreamProgress] = useState<MCPStreamProgress | null>(null);
   const {
     data: serverToolResponse,
     mutate: callMCPServerTool,
     isPending: isServerToolPending,
     error: toolError,
     reset: resetMCPServerToolCall,
-  } = useCallMCPServerToolMutation();
+  } = useStreamMCPServerToolMutation();
 
   const {
     data: mcpServerTools,
@@ -344,12 +351,15 @@ export const RemoteMCPInspectorTab = () => {
 
     const parameters = (toolParameters as Record<string, unknown>) || {};
 
+    setStreamProgress(null);
+
     callMCPServerTool(
       {
         serverUrl: mcpServerData.mcpServer.url,
         toolName: selectedTool,
         parameters,
         signal: abortController.signal,
+        onProgress: (update) => setStreamProgress(update),
       },
       {
         onError: (error) => {
@@ -606,6 +616,21 @@ export const RemoteMCPInspectorTab = () => {
                       {Boolean(isServerToolPending) && (
                         <div className="space-y-2">
                           <Label className="font-medium text-sm">Response</Label>
+                          {streamProgress && (
+                            <div className="space-y-1" data-testid="mcp-tool-progress">
+                              <Progress
+                                testId="mcp-tool-progress-bar"
+                                value={
+                                  streamProgress.total && streamProgress.progress !== undefined
+                                    ? Math.round((streamProgress.progress / streamProgress.total) * 100)
+                                    : undefined
+                                }
+                              />
+                              <Text className="text-muted-foreground" variant="small">
+                                {streamProgress.statusMessage ?? streamProgress.status ?? 'Running tool...'}
+                              </Text>
+                            </div>
+                          )}
                           <div className="flex flex-col space-y-3">
                             <Skeleton className="h-[250px] w-full rounded-xl" />
                             <div className="space-y-2">

@@ -341,6 +341,81 @@ export const useCallMCPServerToolMutation = () =>
     },
   });
 
+export type MCPStreamTaskStatus = 'working' | 'input_required' | 'completed' | 'failed' | 'cancelled';
+
+export type MCPStreamProgress = {
+  taskId?: string;
+  status?: MCPStreamTaskStatus;
+  statusMessage?: string;
+  progress?: number;
+  total?: number;
+};
+
+export type StreamMCPToolParams = CallMCPToolParams & {
+  onProgress?: (update: MCPStreamProgress) => void;
+};
+
+type CallToolResult = Awaited<
+  ReturnType<InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>['callTool']>
+>;
+
+export const useStreamMCPServerToolMutation = () =>
+  useTanstackMutation({
+    mutationFn: async ({
+      serverUrl,
+      toolName,
+      parameters,
+      signal,
+      onProgress,
+    }: StreamMCPToolParams): Promise<CallToolResult> => {
+      const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
+
+      const stream = client.experimental.tasks.callToolStream(
+        { name: toolName, arguments: parameters },
+        undefined,
+        {
+          signal,
+          onprogress: (progress) => {
+            onProgress?.({
+              progress: progress.progress,
+              total: progress.total,
+            });
+          },
+        }
+      );
+
+      for await (const message of stream) {
+        if (message.type === 'taskCreated' || message.type === 'taskStatus') {
+          onProgress?.({
+            taskId: message.task.taskId,
+            status: message.task.status,
+            statusMessage: message.task.statusMessage,
+          });
+          continue;
+        }
+        if (message.type === 'result') {
+          return message.result as CallToolResult;
+        }
+        throw message.error;
+      }
+
+      throw new Error('MCP tool stream ended without a result');
+    },
+    onError: (error) => {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return;
+      }
+
+      const connectError = ConnectError.from(error);
+
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'call',
+        entity: 'MCP tool',
+      });
+    },
+  });
+
 export const GITHUB_CODE_SNIPPETS_API_BASE_URL =
   'https://raw.githubusercontent.com/redpanda-data/how-to-connect-code-snippets';
 

@@ -17,7 +17,16 @@ import { listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServer
 import { connectQueryWrapper } from 'test-utils';
 import { describe, expect, test, vi } from 'vitest';
 
-import { createMCPClientWithSession, useListMCPServersQuery } from './remote-mcp';
+import type { MCPStreamProgress } from './remote-mcp';
+import { createMCPClientWithSession, useListMCPServersQuery, useStreamMCPServerToolMutation } from './remote-mcp';
+
+type StreamMessage =
+  | { type: 'taskCreated'; task: { taskId: string; status: string; statusMessage?: string } }
+  | { type: 'taskStatus'; task: { taskId: string; status: string; statusMessage?: string } }
+  | { type: 'result'; result: { content: Array<{ type: string; text?: string }> } }
+  | { type: 'error'; error: Error };
+
+let streamMessages: StreamMessage[] = [];
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
   class MockClient {
@@ -27,6 +36,15 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => {
     });
     listTools = vi.fn(async () => ({ tools: [] }));
     callTool = vi.fn(async () => ({ content: [] }));
+    experimental = {
+      tasks: {
+        callToolStream: async function* () {
+          for (const message of streamMessages) {
+            yield message;
+          }
+        },
+      },
+    };
   }
   return { Client: MockClient };
 });
@@ -153,5 +171,49 @@ describe('createMCPClientWithSession', () => {
     );
 
     errorSpy.mockRestore();
+  });
+});
+
+describe('useStreamMCPServerToolMutation', () => {
+  test('emits progress updates and resolves with the final result', async () => {
+    streamMessages = [
+      { type: 'taskCreated', task: { taskId: 't1', status: 'working' } },
+      { type: 'taskStatus', task: { taskId: 't1', status: 'working', statusMessage: 'halfway' } },
+      { type: 'result', result: { content: [{ type: 'text', text: 'done' }] } },
+    ];
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    const progressUpdates: MCPStreamProgress[] = [];
+
+    const value = await result.current.mutateAsync({
+      serverUrl: 'https://example.test/mcp',
+      toolName: 'my-tool',
+      parameters: { foo: 'bar' },
+      onProgress: (update) => progressUpdates.push(update),
+    });
+
+    expect(value).toEqual({ content: [{ type: 'text', text: 'done' }] });
+    expect(progressUpdates).toHaveLength(2);
+    expect(progressUpdates[0]).toEqual({ taskId: 't1', status: 'working', statusMessage: undefined });
+    expect(progressUpdates[1]).toEqual({ taskId: 't1', status: 'working', statusMessage: 'halfway' });
+  });
+
+  test('throws when the stream ends without a result', async () => {
+    streamMessages = [{ type: 'error', error: new Error('server died') }];
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+
+    const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+      })
+    ).rejects.toThrow('server died');
   });
 });
