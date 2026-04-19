@@ -9,7 +9,7 @@ import {
 import { Progress } from "components/redpanda-ui/components/progress";
 import { cn } from "components/redpanda-ui/lib/utils";
 import type { LanguageModelUsage } from "ai";
-import { type ComponentProps, createContext, useContext } from "react";
+import { type ComponentProps, createContext, useContext, useMemo } from "react";
 import { getUsage } from "tokenlens";
 
 const PERCENT_MAX = 100;
@@ -46,22 +46,21 @@ export const Context = ({
   maxTokens,
   usage,
   modelId,
-  children,
   ...props
-}: ContextProps) => (
-  <ContextContext.Provider
-    value={{
-      usedTokens,
-      maxTokens,
-      usage,
-      modelId,
-    }}
-  >
-    <HoverCard closeDelay={0} openDelay={0} {...props}>
-      {children}
-    </HoverCard>
-  </ContextContext.Provider>
-);
+}: ContextProps) => {
+  // Memoise the context value so consumers only re-render when one of the
+  // usage fields actually changes, not on every render of the parent.
+  const contextValue = useMemo(
+    () => ({ maxTokens, modelId, usage, usedTokens }),
+    [maxTokens, modelId, usage, usedTokens]
+  );
+
+  return (
+    <ContextContext.Provider value={contextValue}>
+      <HoverCard closeDelay={0} openDelay={0} {...props} />
+    </ContextContext.Provider>
+  );
+};
 
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
@@ -245,6 +244,10 @@ export const ContextInputUsage = ({
     return children;
   }
 
+  if (!inputTokens) {
+    return null;
+  }
+
   const inputCost = modelId
     ? getUsage({
         modelId,
@@ -279,6 +282,10 @@ export const ContextOutputUsage = ({
 
   if (children) {
     return children;
+  }
+
+  if (!outputTokens) {
+    return null;
   }
 
   const outputCost = modelId
