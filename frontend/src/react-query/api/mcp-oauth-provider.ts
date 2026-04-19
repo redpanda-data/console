@@ -21,6 +21,34 @@ export type ConsoleJWTOAuthProviderOptions = {
   clientName?: string;
 };
 
+const JWT_SEGMENT_COUNT = 3;
+
+/**
+ * Best-effort check that a JWT has not yet expired.
+ *
+ * Decodes the middle segment (base64url) and reads `exp`. Returns `true` only
+ * when we can confirm expiry; returns `false` on any parse failure, missing
+ * `exp`, or non-numeric `exp` so a well-formed token is never spuriously
+ * rejected. This is advisory, not cryptographic — signature validation still
+ * lives with the server.
+ */
+const isJwtExpired = (token: string): boolean => {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== JWT_SEGMENT_COUNT) {
+      return false;
+    }
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(padded)) as { exp?: unknown };
+    if (typeof payload.exp !== 'number') {
+      return false;
+    }
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+};
+
 /**
  * OAuthClientProvider wrapper around the console's existing JWT.
  *
@@ -59,6 +87,9 @@ export class ConsoleJWTOAuthProvider implements OAuthClientProvider {
   tokens(): OAuthTokens | undefined {
     const jwt = this.getJwt();
     if (!jwt) {
+      return;
+    }
+    if (isJwtExpired(jwt)) {
       return;
     }
     return {
