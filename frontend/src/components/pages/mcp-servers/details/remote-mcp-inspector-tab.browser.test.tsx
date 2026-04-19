@@ -11,17 +11,18 @@
 
 import { create } from '@bufbuild/protobuf';
 import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
-import {
-  MCPServer_State,
-  MCPServerSchema,
-} from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
+import { MCPServer_State, MCPServerSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import { describe, expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-react';
 
 import { mockConnectQuery, mockRouterForBrowserTest, ScreenshotFrame } from '../../../../__tests__/browser-test-utils';
 
-type StreamOptions = { onProgress?: (p: { progress?: number; total?: number; statusMessage?: string; status?: string }) => void };
+const RUN_TOOL_REGEX = /run tool/i;
+
+type StreamOptions = {
+  onProgress?: (p: { progress?: number; total?: number; statusMessage?: string; status?: string }) => void;
+};
 
 const mocks = vi.hoisted(() => ({
   getMCPServer: vi.fn<() => { data: unknown; isLoading: boolean; error: Error | null }>().mockReturnValue({
@@ -29,13 +30,17 @@ const mocks = vi.hoisted(() => ({
     isLoading: false,
     error: null,
   }),
-  listTools: vi.fn<() => { data: unknown; isLoading: boolean; error: Error | null; isRefetchError: boolean; isRefetching: boolean }>().mockReturnValue({
-    data: { tools: [] },
-    isLoading: false,
-    error: null,
-    isRefetchError: false,
-    isRefetching: false,
-  }),
+  listTools: vi
+    .fn<
+      () => { data: unknown; isLoading: boolean; error: Error | null; isRefetchError: boolean; isRefetching: boolean }
+    >()
+    .mockReturnValue({
+      data: { tools: [] },
+      isLoading: false,
+      error: null,
+      isRefetchError: false,
+      isRefetching: false,
+    }),
   listTopics: vi.fn<() => { data: unknown; refetch: () => void }>().mockReturnValue({
     data: { topics: [] },
     refetch: () => undefined,
@@ -140,10 +145,10 @@ describe('RemoteMCPInspectorTab — browser visual regression', () => {
       </ScreenshotFrame>
     );
 
-    await expect.element(page.getByRole('button', { name: /run tool/i })).toBeVisible();
+    await expect.element(page.getByRole('button', { name: RUN_TOOL_REGEX })).toBeVisible();
 
     // Start a call and emit a progress update so the Progress bar renders.
-    await page.getByRole('button', { name: /run tool/i }).click();
+    await page.getByRole('button', { name: RUN_TOOL_REGEX }).click();
 
     // Push a progress update through the captured onProgress callback so the
     // UI moves into the streaming state (Progress bar + status line).
