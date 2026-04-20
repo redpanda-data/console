@@ -148,6 +148,53 @@ function isErrorResponse(
   return 'error' in response;
 }
 
+/**
+ * The subset of `A2AClient` methods that `chooseA2ASourceStream` needs. Kept
+ * structural so unit tests can supply fakes without constructing a real
+ * client (which hits the network via `fromCardUrl`).
+ */
+export type A2ATransport = {
+  getAgentCard: () => Promise<{ capabilities: { streaming?: boolean } }>;
+  sendMessage: (params: MessageSendParams) => Promise<SendMessageResponse>;
+  sendMessageStream: (params: MessageSendParams) => AsyncIterable<A2AStreamEventData>;
+};
+
+/**
+ * Select the source stream for an A2A exchange:
+ *  - streaming-capable agents consume `sendMessageStream` directly
+ *  - non-streaming agents receive a single blocking `sendMessage` whose
+ *    successful `result` is replayed as a one-event ReadableStream
+ *
+ * The branches are mutually exclusive; the previous implementation fell
+ * through and double-dispatched the prompt.
+ */
+export async function chooseA2ASourceStream(
+  client: A2ATransport,
+  streamParams: MessageSendParams
+): Promise<ReadableStream<A2AStreamEventData>> {
+  const card = await client.getAgentCard();
+
+  if (card.capabilities.streaming) {
+    const iterable = client.sendMessageStream(streamParams);
+    return convertAsyncIteratorToReadableStream(iterable[Symbol.asyncIterator]());
+  }
+
+  const response = await client.sendMessage(streamParams);
+
+  if ('error' in response) {
+    const err = (response as { error: { message: string } }).error;
+    throw new Error(`A2A sendMessage failed: ${err.message}`);
+  }
+
+  const { result } = response as SendMessageSuccessResponse;
+  return new ReadableStream<A2AStreamEventData>({
+    start(controller) {
+      controller.enqueue(result);
+      controller.close();
+    },
+  });
+}
+
 class A2aChatLanguageModel implements LanguageModelV2 {
   readonly specificationVersion = 'v2';
   readonly provider: string;
@@ -286,35 +333,7 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       const streamParams: MessageSendParams = {
         message
       };
-      const clientCard = await client.getAgentCard();
-
-      // Agents that do not advertise streaming capability are served by a
-      // single blocking `sendMessage` whose response is replayed as a
-      // one-event ReadableStream; streaming-capable agents skip that entirely
-      // and consume `sendMessageStream` directly. The branches are mutually
-      // exclusive — the previous code unconditionally re-sent via
-      // `sendMessageStream`, which double-dispatched the prompt.
-      let sourceStream: ReadableStream<A2AStreamEventData>;
-
-      if (clientCard.capabilities.streaming) {
-        sourceStream = convertAsyncIteratorToReadableStream(client.sendMessageStream(streamParams));
-      } else {
-        const nonStreamingResponse = await client.sendMessage(streamParams);
-
-        if ("error" in nonStreamingResponse) {
-          const err = (nonStreamingResponse as { error: { message: string } }).error;
-          throw new Error(`A2A sendMessage failed: ${err.message}`);
-        }
-
-        const { result } = nonStreamingResponse as SendMessageSuccessResponse;
-        sourceStream = new ReadableStream<A2AStreamEventData>({
-          start(controller) {
-            controller.enqueue(result);
-            controller.close();
-          },
-        });
-      }
-
+      const sourceStream = await chooseA2ASourceStream(client, streamParams);
       let state = initialStreamMapperState();
 
       return {
