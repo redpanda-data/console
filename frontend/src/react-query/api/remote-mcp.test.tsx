@@ -676,14 +676,16 @@ describe('useStreamMCPServerToolMutation — capability fallback', () => {
     const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
 
     const start = Date.now();
-    await expect(
-      result.current.mutateAsync({
-        serverUrl: 'https://example.test/mcp',
-        toolName: 'my-tool',
-        parameters: {},
-        streamTimeoutMs: 50,
-      })
-    ).rejects.toBeTruthy();
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({
+          serverUrl: 'https://example.test/mcp',
+          toolName: 'my-tool',
+          parameters: {},
+          streamTimeoutMs: 50,
+        })
+      ).rejects.toBeTruthy();
+    });
     const elapsed = Date.now() - start;
 
     expect(elapsed).toBeLessThan(500);
@@ -703,14 +705,16 @@ describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
     });
     const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
 
-    await expect(
-      result.current.mutateAsync({
-        serverUrl: 'https://example.test/mcp',
-        toolName: 'my-tool',
-        parameters: {},
-        streamTimeoutMs: 50,
-      })
-    ).rejects.toThrow(STREAM_TIMEOUT_50MS_REGEX);
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({
+          serverUrl: 'https://example.test/mcp',
+          toolName: 'my-tool',
+          parameters: {},
+          streamTimeoutMs: 50,
+        })
+      ).rejects.toThrow(STREAM_TIMEOUT_50MS_REGEX);
+    });
   });
 
   test('timeout path aborts the SDK signal so upstream fetches are cancelled', async () => {
@@ -722,14 +726,16 @@ describe('useStreamMCPServerToolMutation — timeout & watchdog', () => {
     const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
 
     const abortStates: boolean[] = [];
-    const promise = result.current.mutateAsync({
-      serverUrl: 'https://example.test/mcp',
-      toolName: 'my-tool',
-      parameters: {},
-      streamTimeoutMs: 30,
-    });
+    await act(async () => {
+      const promise = result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+        streamTimeoutMs: 30,
+      });
 
-    await expect(promise).rejects.toThrow(STREAM_TIMED_OUT_REGEX);
+      await expect(promise).rejects.toThrow(STREAM_TIMED_OUT_REGEX);
+    });
     abortStates.push(lastStreamOptions?.signal?.aborted ?? false);
     expect(abortStates).toEqual([true]);
   });
@@ -810,32 +816,34 @@ describe('useStreamMCPServerToolMutation — concurrency', () => {
     const controllerA = new AbortController();
     const controllerB = new AbortController();
 
-    streamHangForever = true;
-    const aPromise = resultA.current.mutateAsync({
-      serverUrl: 'https://example.test/mcp',
-      toolName: 'tool-a',
-      parameters: {},
-      signal: controllerA.signal,
-      streamTimeoutMs: 10_000,
+    await act(async () => {
+      streamHangForever = true;
+      const aPromise = resultA.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'tool-a',
+        parameters: {},
+        signal: controllerA.signal,
+        streamTimeoutMs: 10_000,
+      });
+      // Let the first call enter the stream.
+      await new Promise((r) => setTimeout(r, 10));
+
+      streamHangForever = false;
+      streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'b-done' }] } }];
+      const bPromise = resultB.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'tool-b',
+        parameters: {},
+        signal: controllerB.signal,
+      });
+
+      const b = await bPromise;
+      expect(b).toEqual({ content: [{ type: 'text', text: 'b-done' }] });
+      expect(controllerB.signal.aborted).toBe(false);
+
+      controllerA.abort();
+      await expect(aPromise).rejects.toBeTruthy();
     });
-    // Let the first call enter the stream.
-    await new Promise((r) => setTimeout(r, 10));
-
-    streamHangForever = false;
-    streamMessages = [{ type: 'result', result: { content: [{ type: 'text', text: 'b-done' }] } }];
-    const bPromise = resultB.current.mutateAsync({
-      serverUrl: 'https://example.test/mcp',
-      toolName: 'tool-b',
-      parameters: {},
-      signal: controllerB.signal,
-    });
-
-    const b = await bPromise;
-    expect(b).toEqual({ content: [{ type: 'text', text: 'b-done' }] });
-    expect(controllerB.signal.aborted).toBe(false);
-
-    controllerA.abort();
-    await expect(aPromise).rejects.toBeTruthy();
     // B was never aborted by A's cancellation.
     expect(controllerB.signal.aborted).toBe(false);
   });
@@ -954,19 +962,21 @@ describe('useStreamMCPServerToolMutation — client lifecycle (close in finally)
     const { result } = renderHook(() => useStreamMCPServerToolMutation(), { wrapper });
 
     const controller = new AbortController();
-    const promise = result.current.mutateAsync({
-      serverUrl: 'https://example.test/mcp',
-      toolName: 'my-tool',
-      parameters: {},
-      signal: controller.signal,
-      streamTimeoutMs: 10_000,
+    await act(async () => {
+      const promise = result.current.mutateAsync({
+        serverUrl: 'https://example.test/mcp',
+        toolName: 'my-tool',
+        parameters: {},
+        signal: controller.signal,
+        streamTimeoutMs: 10_000,
+      });
+
+      // Let the mutation enter the streaming path before aborting.
+      await new Promise((r) => setTimeout(r, 10));
+      controller.abort();
+
+      await expect(promise).rejects.toBeTruthy();
     });
-
-    // Let the mutation enter the streaming path before aborting.
-    await new Promise((r) => setTimeout(r, 10));
-    controller.abort();
-
-    await expect(promise).rejects.toBeTruthy();
 
     expect(createdClients[0].close).toHaveBeenCalledTimes(1);
     expect(toastErrorMock).not.toHaveBeenCalled();

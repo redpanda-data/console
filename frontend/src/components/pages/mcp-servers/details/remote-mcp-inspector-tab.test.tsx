@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
 import {
   GetMCPServerResponseSchema,
   ListMCPServersResponseSchema,
@@ -275,7 +276,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await screen.findByText('halfway');
     await waitFor(() => expect(onprogressHandoff).toBeDefined());
 
-    onprogressHandoff?.({ progress: 50, total: 100 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: 50, total: 100 });
+    });
 
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
@@ -300,7 +303,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await waitFor(() => expect(onprogressHandoff).toBeDefined());
 
     // > 100%
-    onprogressHandoff?.({ progress: 200, total: 100 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: 200, total: 100 });
+    });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       expect(bar).toBeTruthy();
@@ -311,7 +316,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
 
     // < 0%
-    onprogressHandoff?.({ progress: -5, total: 10 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: -5, total: 10 });
+    });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       const value = bar?.getAttribute('data-value');
@@ -319,7 +326,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
 
     // NaN (total = 0 → division by zero NaN handled as undefined)
-    onprogressHandoff?.({ progress: 5, total: 0 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: 5, total: 0 });
+    });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       expect(bar).toBeTruthy();
