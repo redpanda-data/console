@@ -29,7 +29,10 @@ import type { JSONRPCError } from '@a2a-js/sdk';
  * Until the SDK exposes structured error data, we parse it back out.
  */
 export const JSON_RPC_CODE_REGEX = /\(Code:\s*(-?\d+)\)/i;
-export const JSON_RPC_DATA_REGEX = /Data:\s*(\{[^}]*\})/i;
+// Matches greedily to end-of-string so nested objects inside `Data:` are
+// captured in full — the SDK always serializes `Data: ${JSON.stringify(...)}`
+// at the tail of the error message, so the final `}` is reliable.
+export const JSON_RPC_DATA_REGEX = /Data:\s*(\{.*\})\s*$/is;
 export const JSON_RPC_MESSAGE_REGEX = /error:\s*([^(]+)\s*\(Code:/i;
 export const ERROR_PREFIX_STREAMING_REGEX = /^Error during streaming[^:]*:\s*/i;
 export const ERROR_PREFIX_SSE_REGEX = /^SSE event contained an error:\s*/i;

@@ -48,6 +48,19 @@ const rows: Row[] = [
     expected: { code: 500, message: 'network timeout', data: { detail: 'timeout' } },
   },
   {
+    // Regression guard: the old `[^}]*` stopped at the first `}` so nested
+    // data got truncated and JSON.parse threw silently.
+    name: 'Data payload containing a nested object is captured in full',
+    input: new Error(
+      'SSE event contained an error: validation failed (Code: -32602) Data: {"field":{"reason":"expired","after":1700000000}}'
+    ),
+    expected: {
+      code: -32602,
+      message: 'validation failed',
+      data: { field: { reason: 'expired', after: 1_700_000_000 } },
+    },
+  },
+  {
     name: 'error without Code: falls back to -1 and preserves raw message',
     input: 'something completely unexpected',
     expected: { code: -1, message: 'something completely unexpected' },
