@@ -21,12 +21,7 @@ import { getResponseMetadata, mapFinishReason } from './a2a-chat-language-model'
  * drop the event — silent drops during a streaming chat look like the model
  * stalled and are very hard to diagnose in production.
  */
-const KNOWN_A2A_EVENT_KINDS = new Set<string>([
-  'task',
-  'message',
-  'status-update',
-  'artifact-update',
-]);
+const KNOWN_A2A_EVENT_KINDS = new Set<string>(['task', 'message', 'status-update', 'artifact-update']);
 
 /**
  * Runtime shape-check guarding the adapter against legacy/unknown backend

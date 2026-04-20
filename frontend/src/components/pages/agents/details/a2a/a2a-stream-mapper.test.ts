@@ -207,12 +207,9 @@ describe('a2aEventToV2StreamParts — initial state', () => {
 // ---------------------------------------------------------------------------
 
 describe('isKnownA2AEvent', () => {
-  test.each([['task'], ['message'], ['status-update'], ['artifact-update']])(
-    'accepts known kind "%s"',
-    (kind) => {
-      expect(isKnownA2AEvent({ kind })).toBe(true);
-    }
-  );
+  test.each([['task'], ['message'], ['status-update'], ['artifact-update']])('accepts known kind "%s"', (kind) => {
+    expect(isKnownA2AEvent({ kind })).toBe(true);
+  });
 
   test.each([
     ['null', null],

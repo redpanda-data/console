@@ -13,6 +13,10 @@ import { describe, expect, test } from 'vitest';
 
 import { lookupErrorMeta, parseA2AError } from './parse-a2a-error';
 
+// Top-level regex literal — biome's `useTopLevelRegex` rule flags inline
+// regexes inside test bodies because they are recompiled on every call.
+const METHOD_NOT_FOUND_HINT_PATTERN = /A2A|MCP|capabilities/i;
+
 // ---------------------------------------------------------------------------
 // Table-driven coverage of the regex-based A2A error parser. The parser has
 // to tolerate a grab-bag of formats produced by the a2a-js SDK's
@@ -191,13 +195,11 @@ describe('lookupErrorMeta — well-known code coverage', () => {
 
 describe('parseA2AError — title + hint are surfaced end-to-end', () => {
   test('method-not-found (-32601) surfaces the hint in the parsed result', () => {
-    const result = parseA2AError(
-      new Error('SSE event contained an error: method unknown (Code: -32601) Data: {}')
-    );
+    const result = parseA2AError(new Error('SSE event contained an error: method unknown (Code: -32601) Data: {}'));
     expect(result.code).toBe(-32_601);
     expect(result.title).toBe('Method Not Found');
     expect(result.hint).toBeDefined();
-    expect(result.hint ?? '').toMatch(/A2A|MCP|capabilities/i);
+    expect(result.hint ?? '').toMatch(METHOD_NOT_FOUND_HINT_PATTERN);
   });
 
   test('MCP-style Internal Error (-32603) surfaces a retry hint', () => {
