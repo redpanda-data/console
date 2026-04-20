@@ -56,6 +56,29 @@ describe('ContextContentHeader', () => {
     const trigger = screen.getByRole('button');
     expect(trigger.textContent ?? '').toContain('25%');
   });
+
+  // Defensive: guard against every non-finite / invalid input the backend
+  // could send us. In all of these cases the rendered label must collapse to
+  // 0% rather than NaN%, Infinity%, or a negative percentage.
+  test.each<[string, number, number]>([
+    ['maxTokens is NaN', 100, Number.NaN],
+    ['maxTokens is Infinity', 100, Number.POSITIVE_INFINITY],
+    ['maxTokens is -Infinity', 100, Number.NEGATIVE_INFINITY],
+    ['maxTokens is negative', 100, -1],
+    ['usedTokens is NaN', Number.NaN, 100],
+    ['usedTokens is Infinity', Number.POSITIVE_INFINITY, 100],
+    ['usedTokens is negative', -50, 100],
+  ])('renders 0%% and never NaN/Infinity when %s', (_label, usedTokens, maxTokens) => {
+    render(
+      <Context maxTokens={maxTokens} usedTokens={usedTokens}>
+        <ContextTrigger />
+      </Context>
+    );
+    const trigger = screen.getByRole('button');
+    const text = trigger.textContent ?? '';
+    expect(text).not.toMatch(/NaN|Infinity/);
+    expect(text).toContain('0%');
+  });
 });
 
 // ---------------------------------------------------------------------------

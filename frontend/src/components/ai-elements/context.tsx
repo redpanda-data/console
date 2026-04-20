@@ -18,6 +18,26 @@ const ICON_VIEWBOX = 24;
 const ICON_CENTER = 12;
 const ICON_STROKE_WIDTH = 2;
 
+/**
+ * Compute `usedTokens / maxTokens` defensively. Guards against:
+ *  - `maxTokens` of `0` (cold-start before any usage has been observed),
+ *  - `NaN` / non-finite inputs (e.g. partial usage payloads),
+ *  - negative inputs (malformed backend response).
+ * In all edge cases we return `0` so the UI renders `0%` rather than `NaN%`,
+ * `-Infinity`, or `Infinity`.
+ */
+const safeUsedPercent = (usedTokens: number, maxTokens: number): number => {
+  if (
+    !Number.isFinite(maxTokens) ||
+    !Number.isFinite(usedTokens) ||
+    maxTokens <= 0 ||
+    usedTokens < 0
+  ) {
+    return 0;
+  }
+  return usedTokens / maxTokens;
+};
+
 type ModelId = string;
 
 type ContextSchema = {
@@ -65,9 +85,9 @@ export const Context = ({
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
   const circumference = 2 * Math.PI * ICON_RADIUS;
-  // Guard against divide-by-zero so the SVG dash-offset stays finite when
-  // the context capacity has not yet been reported.
-  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
+  // Guard against divide-by-zero, NaN, Infinity and negative inputs so the
+  // SVG dash-offset stays finite regardless of what the backend reports.
+  const usedPercent = safeUsedPercent(usedTokens, maxTokens);
   const dashOffset = circumference * (1 - usedPercent);
 
   return (
@@ -109,10 +129,10 @@ export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   const { usedTokens, maxTokens } = useContextValue();
-  // Guard against divide-by-zero during cold-start rendering, before any
-  // usage event has been observed. Without this, the trigger label renders
-  // as "NaN%".
-  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
+  // Guard against divide-by-zero, NaN, Infinity and negative inputs during
+  // cold-start rendering or malformed usage payloads. Without this, the
+  // trigger label can render as "NaN%".
+  const usedPercent = safeUsedPercent(usedTokens, maxTokens);
   const renderedPercent = new Intl.NumberFormat("en-US", {
     style: "percent",
     maximumFractionDigits: 1,
@@ -152,8 +172,9 @@ export const ContextContentHeader = ({
   ...props
 }: ContextContentHeaderProps) => {
   const { usedTokens, maxTokens } = useContextValue();
-  // Guard against divide-by-zero so the hover-card never renders "NaN%".
-  const usedPercent = maxTokens > 0 ? usedTokens / maxTokens : 0;
+  // Guard against divide-by-zero, NaN, Infinity and negative inputs so the
+  // hover-card never renders "NaN%".
+  const usedPercent = safeUsedPercent(usedTokens, maxTokens);
   const displayPct = new Intl.NumberFormat("en-US", {
     style: "percent",
     maximumFractionDigits: 1,
