@@ -23,6 +23,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
   getAclFromAclListResponse,
+  getInitialRuleIdCounter,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
@@ -30,7 +31,18 @@ import {
   OperationTypeDeny,
   ResourcePatternTypeLiteral,
   ResourcePatternTypePrefix,
+  ResourceTypeTopic,
+  type Rule,
 } from './acl-model';
+
+const buildRule = (id: number): Rule => ({
+  id,
+  resourceType: ResourceTypeTopic,
+  mode: ModeCustom,
+  selectorType: ResourcePatternTypeLiteral,
+  selectorValue: `topic-${id}`,
+  operations: {},
+});
 
 describe('getAclFromAclListResponse', () => {
   describe('Single host scenarios', () => {
@@ -529,5 +541,27 @@ describe('getAclFromAclListResponse', () => {
       expect(hostB?.rules[0].id).toBe(0);
       expect(hostB?.rules[1].id).toBe(1);
     });
+  });
+});
+
+describe('getInitialRuleIdCounter', () => {
+  test('returns 2 for a fresh create (undefined rules)', () => {
+    expect(getInitialRuleIdCounter()).toBe(2);
+  });
+
+  test('returns 2 for an empty rule array', () => {
+    expect(getInitialRuleIdCounter([])).toBe(2);
+  });
+
+  test('returns max(id) + 1 for sequential edit-mode rules', () => {
+    expect(getInitialRuleIdCounter([buildRule(0), buildRule(1), buildRule(2)])).toBe(3);
+  });
+
+  test('returns max(id) + 1 for non-sequential ids', () => {
+    expect(getInitialRuleIdCounter([buildRule(0), buildRule(7), buildRule(3)])).toBe(8);
+  });
+
+  test('handles a single rule with id greater than 2', () => {
+    expect(getInitialRuleIdCounter([buildRule(9)])).toBe(10);
   });
 });

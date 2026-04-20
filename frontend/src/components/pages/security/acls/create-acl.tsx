@@ -28,6 +28,7 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 import {
   type AclRulesProps,
   getIdFromRule,
+  getInitialRuleIdCounter,
   getOperationsForResourceType,
   getRuleDataTestId,
   type HostType,
@@ -774,10 +775,7 @@ export default function CreateACL({
     }
   }, [propSharedConfig?.principal, propSharedConfig?.host]);
 
-  // Start counter beyond any existing rule id so new rules never collide with
-  // propRules coming from edit-mode loads (UX-1219, UX-1198). Default 2 matches
-  // the fresh-create default rule id=1 below.
-  const ruleIdCounter = useRef(propRules && propRules.length > 0 ? Math.max(...propRules.map((r) => r.id)) + 1 : 2);
+  const ruleIdCounter = useRef(getInitialRuleIdCounter(propRules));
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
       {
