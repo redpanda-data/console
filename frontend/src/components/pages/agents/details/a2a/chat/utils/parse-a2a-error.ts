@@ -36,9 +36,134 @@ export const ERROR_PREFIX_SSE_REGEX = /^SSE event contained an error:\s*/i;
 export const ERROR_SUFFIX_CODE_REGEX = /\s*\(Code:\s*-?\d+\).*$/i;
 
 /**
- * Parse A2A/JSON-RPC error details from an error message string.
+ * Human-readable metadata for a parsed A2A / MCP / JSON-RPC error.
+ *
+ * - `title` — short noun phrase safe to surface in a headline / alert title.
+ * - `hint` — one-sentence remediation tip. Points the user at what to try
+ *   next (check credentials, retry, update the agent, etc). May be undefined
+ *   when we don't have a sharper suggestion than the raw server message.
  */
-export const parseA2AError = (error: unknown): JSONRPCError => {
+export type ParsedError = JSONRPCError & {
+  title: string;
+  hint?: string;
+};
+
+type CodeMeta = { title: string; hint?: string };
+
+/**
+ * Well-known JSON-RPC 2.0, A2A-protocol and MCP error codes mapped to a
+ * human-readable title + actionable hint.
+ *
+ * Sources:
+ *  - JSON-RPC 2.0 standard errors: https://www.jsonrpc.org/specification#error_object
+ *  - A2A protocol extensions: a2a-go/a2a/errors.go
+ *  - MCP errors: @modelcontextprotocol/sdk/types.js (ErrorCode enum)
+ *
+ * The MCP SDK reuses the JSON-RPC 2.0 standard codes plus `-32002` (Resource
+ * Not Found) for its resource URI lookups. MCP tool-execution failures are
+ * typically surfaced as `InternalError` (`-32603`) with structured `data`.
+ */
+const ERROR_CODE_TABLE: Record<number, CodeMeta> = {
+  // ---- JSON-RPC 2.0 standard errors ----
+  [-32_700]: {
+    title: 'Parse Error',
+    hint: 'The agent sent a payload that is not valid JSON. Retry — if it persists the backend is likely unreachable or misconfigured.',
+  },
+  [-32_600]: {
+    title: 'Invalid Request',
+    hint: 'The request does not conform to JSON-RPC 2.0. This is usually a client/SDK version mismatch — check that the frontend and backend are on compatible A2A versions.',
+  },
+  [-32_601]: {
+    title: 'Method Not Found',
+    hint: "The agent does not expose this method. Confirm the agent's capabilities advertise the A2A/MCP operation you tried to invoke.",
+  },
+  [-32_602]: {
+    title: 'Invalid Params',
+    hint: 'The request arguments are rejected by the agent. Inspect the `data` field for a field-level reason.',
+  },
+  [-32_603]: {
+    title: 'Internal Error',
+    hint: "The agent failed while handling the request. Retry — if it persists, check the agent's server logs.",
+  },
+  [-32_000]: {
+    title: 'Server Error',
+    hint: 'The agent returned an implementation-defined server error. Retry; if it persists, the agent owner should be notified.',
+  },
+  // ---- A2A protocol extensions ----
+  [-32_001]: {
+    title: 'Task Not Found',
+    hint: "The task id has expired or was never created. Start a new conversation to re-seed the agent's task state.",
+  },
+  [-32_002]: {
+    title: 'Task Not Cancelable',
+    hint: 'This task has already completed or is in a terminal state — cancel does not apply.',
+  },
+  [-32_003]: {
+    title: 'Push Notifications Not Supported',
+    hint: "The agent's capabilities do not advertise push notifications. Check the agent card.",
+  },
+  [-32_004]: {
+    title: 'Unsupported Operation',
+    hint: 'The agent does not support the A2A/MCP operation you invoked. Check the agent supports A2A and MCP.',
+  },
+  [-32_005]: {
+    title: 'Content Type Not Supported',
+    hint: 'Switch the input content type (for example, drop binary parts) and retry.',
+  },
+  [-32_006]: {
+    title: 'Invalid Agent Response',
+    hint: 'The agent returned a response that does not conform to A2A. This is typically an agent-side bug.',
+  },
+  [-32_007]: {
+    title: 'Authenticated Extended Card Not Configured',
+    hint: 'The agent is configured without an authenticated extended card. Contact the agent owner to enable it.',
+  },
+  [-32_008]: {
+    title: 'Authentication Failed',
+    hint: 'Your credentials were rejected. Re-authenticate and try again.',
+  },
+  [-32_009]: {
+    title: 'Forbidden',
+    hint: 'You are authenticated but not authorised for this agent. Contact the agent owner to grant access.',
+  },
+};
+
+/**
+ * Look up a known title + hint for the given JSON-RPC / A2A / MCP error code.
+ * Returns a synthetic title of the form "Error <code>" for codes in the
+ * JSON-RPC implementation-defined server range (-32099 to -32000) without a
+ * specific mapping. For anything else, returns the fallback title "Error".
+ */
+export function lookupErrorMeta(code: number): CodeMeta {
+  const known = ERROR_CODE_TABLE[code];
+  if (known) {
+    return known;
+  }
+  // JSON-RPC reserves -32099..-32000 for server-defined errors. Surface the
+  // code so operators can correlate with server logs.
+  if (code >= -32_099 && code <= -32_000) {
+    return {
+      title: `Server Error ${code}`,
+      hint: 'The agent returned an implementation-defined server error. Retry; if it persists, the agent owner should be notified.',
+    };
+  }
+  if (code === -1) {
+    // Sentinel we use when the regex could not parse a code out of the
+    // stringified SDK error.
+    return { title: 'Error' };
+  }
+  return { title: `Error ${code}` };
+}
+
+/**
+ * Parse A2A/JSON-RPC/MCP error details from an error message string.
+ *
+ * Returns a `ParsedError` with:
+ *  - `code`, `message`, `data` — raw JSON-RPC fields (or sentinels when absent)
+ *  - `title` — human-readable noun phrase for headline display
+ *  - `hint` — optional remediation tip the UI can render below the message
+ */
+export const parseA2AError = (error: unknown): ParsedError => {
   const errorMessage = error instanceof Error ? error.message : String(error);
 
   // Try to parse JSON-RPC error from the error message
@@ -71,9 +196,13 @@ export const parseA2AError = (error: unknown): JSONRPCError => {
     }
   }
 
+  const { title, hint } = lookupErrorMeta(code);
+
   return {
     code,
     message: message || 'Unknown error',
     data,
+    title,
+    hint,
   };
 };
