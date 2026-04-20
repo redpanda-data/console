@@ -89,7 +89,7 @@ const LLM_PROVIDER_TYPE_TO_FORM_ID: Record<LLMProviderType, string | undefined> 
   [LLMProviderType.LLM_PROVIDER_TYPE_OPENAI]: 'openai',
   [LLMProviderType.LLM_PROVIDER_TYPE_ANTHROPIC]: 'anthropic',
   [LLMProviderType.LLM_PROVIDER_TYPE_GOOGLE]: 'google',
-  [LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: 'openaiCompatible',
+  [LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: undefined, // not supported yet
   [LLMProviderType.LLM_PROVIDER_TYPE_UNSPECIFIED]: undefined,
 };
 
@@ -426,9 +426,9 @@ export const AIAgentConfigurationTab = () => {
   const availableProviders = useMemo(() => {
     if (isUsingGateway && providersData?.llmProviders) {
       return providersData.llmProviders
-        .filter((provider) => provider.enabled)
+        .filter((provider) => provider.enabled && LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type] !== undefined)
         .map((provider) => {
-          const formTypeId = LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type] ?? 'openaiCompatible';
+          const formTypeId = LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type]!;
           return {
             id: provider.name,
             label: provider.displayName || provider.name,
