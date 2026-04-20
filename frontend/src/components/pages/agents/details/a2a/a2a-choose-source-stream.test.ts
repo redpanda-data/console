@@ -14,6 +14,10 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { type A2ATransport, chooseA2ASourceStream } from './a2a-chat-language-model';
 
+// Top-level regex literal — biome's `useTopLevelRegex` rule flags inline
+// regexes inside test bodies because they are recompiled on every call.
+const SEND_MESSAGE_FAILED_PATTERN = /A2A sendMessage failed: upstream down/;
+
 // Regression guards for the doStream transport-selection fix: the branches
 // for streaming-capable vs. non-streaming agents must be mutually exclusive,
 // and sendMessage errors must propagate instead of silently falling through
@@ -46,12 +50,11 @@ async function collect<T>(stream: ReadableStream<T>): Promise<T[]> {
 describe('chooseA2ASourceStream', () => {
   test('streaming-capable agent: only sendMessageStream is called', async () => {
     const sendMessage = vi.fn();
-    const sendMessageStream = vi.fn(() => {
-      async function* gen() {
-        yield { kind: 'task', id: 't1' } as never;
-      }
-      return gen();
-    });
+    // biome-ignore lint/suspicious/useAwait: generator must be `async function*` to be an AsyncIterable
+    async function* streamGen() {
+      yield { kind: 'task', id: 't1' } as never;
+    }
+    const sendMessageStream = vi.fn(() => streamGen());
     const client: A2ATransport = {
       getAgentCard: async () => ({ capabilities: { streaming: true } }),
       sendMessage,
@@ -67,7 +70,7 @@ describe('chooseA2ASourceStream', () => {
 
   test('non-streaming agent: sendMessage fires once, result is replayed as single-event stream', async () => {
     const result = { kind: 'task', id: 't2', contextId: 'c1', status: { state: 'completed' } };
-    const sendMessage = vi.fn(async () => ({ result } as unknown as SendMessageResponse));
+    const sendMessage = vi.fn(async () => ({ result }) as unknown as SendMessageResponse);
     const sendMessageStream = vi.fn();
     const client: A2ATransport = {
       getAgentCard: async () => ({ capabilities: { streaming: false } }),
@@ -84,9 +87,12 @@ describe('chooseA2ASourceStream', () => {
   });
 
   test('non-streaming agent: sendMessage error surfaces instead of falling through to stream', async () => {
-    const sendMessage = vi.fn(async () => ({
-      error: { code: -32603, message: 'upstream down' },
-    } as unknown as SendMessageResponse));
+    const sendMessage = vi.fn(
+      async () =>
+        ({
+          error: { code: -32_603, message: 'upstream down' },
+        }) as unknown as SendMessageResponse
+    );
     const sendMessageStream = vi.fn();
     const client: A2ATransport = {
       getAgentCard: async () => ({ capabilities: { streaming: false } }),
@@ -94,15 +100,13 @@ describe('chooseA2ASourceStream', () => {
       sendMessageStream,
     };
 
-    await expect(chooseA2ASourceStream(client, PARAMS)).rejects.toThrow(
-      /A2A sendMessage failed: upstream down/
-    );
+    await expect(chooseA2ASourceStream(client, PARAMS)).rejects.toThrow(SEND_MESSAGE_FAILED_PATTERN);
     expect(sendMessageStream).not.toHaveBeenCalled();
   });
 
   test('undefined streaming capability is treated as non-streaming', async () => {
     const result = { kind: 'message', messageId: 'm-out' };
-    const sendMessage = vi.fn(async () => ({ result } as unknown as SendMessageResponse));
+    const sendMessage = vi.fn(async () => ({ result }) as unknown as SendMessageResponse);
     const sendMessageStream = vi.fn();
     const client: A2ATransport = {
       getAgentCard: async () => ({ capabilities: {} }),

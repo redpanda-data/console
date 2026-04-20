@@ -55,7 +55,7 @@ const rows: Row[] = [
       'SSE event contained an error: validation failed (Code: -32602) Data: {"field":{"reason":"expired","after":1700000000}}'
     ),
     expected: {
-      code: -32602,
+      code: -32_602,
       message: 'validation failed',
       data: { field: { reason: 'expired', after: 1_700_000_000 } },
     },
