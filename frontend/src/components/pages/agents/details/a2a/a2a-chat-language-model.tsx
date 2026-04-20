@@ -24,6 +24,8 @@ import {
 import { convertAsyncIteratorToReadableStream, generateId, IdGenerator } from '@ai-sdk/provider-utils';
 import { getAgentCardUrls } from 'utils/ai-agent.utils';
 
+import { a2aEventToV2StreamParts, finalizeStream, initialStreamMapperState } from './a2a-stream-mapper';
+
 /**
  * Try multiple agent card URLs in order until one succeeds.
  * Tries agent-card.json first, then falls back to agent.json
@@ -146,24 +148,63 @@ function isErrorResponse(
   return 'error' in response;
 }
 
+/**
+ * The subset of `A2AClient` methods that `chooseA2ASourceStream` needs. Kept
+ * structural so unit tests can supply fakes without constructing a real
+ * client (which hits the network via `fromCardUrl`).
+ */
+export type A2ATransport = {
+  getAgentCard: () => Promise<{ capabilities: { streaming?: boolean } }>;
+  sendMessage: (params: MessageSendParams) => Promise<SendMessageResponse>;
+  sendMessageStream: (params: MessageSendParams) => AsyncIterable<A2AStreamEventData>;
+};
+
+/**
+ * Select the source stream for an A2A exchange:
+ *  - streaming-capable agents consume `sendMessageStream` directly
+ *  - non-streaming agents receive a single blocking `sendMessage` whose
+ *    successful `result` is replayed as a one-event ReadableStream
+ *
+ * The branches are mutually exclusive; the previous implementation fell
+ * through and double-dispatched the prompt.
+ */
+export async function chooseA2ASourceStream(
+  client: A2ATransport,
+  streamParams: MessageSendParams
+): Promise<ReadableStream<A2AStreamEventData>> {
+  const card = await client.getAgentCard();
+
+  if (card.capabilities.streaming) {
+    const iterable = client.sendMessageStream(streamParams);
+    return convertAsyncIteratorToReadableStream(iterable[Symbol.asyncIterator]());
+  }
+
+  const response = await client.sendMessage(streamParams);
+
+  if ('error' in response) {
+    const err = (response as { error: { message: string } }).error;
+    throw new Error(`A2A sendMessage failed: ${err.message}`);
+  }
+
+  const { result } = response as SendMessageSuccessResponse;
+  return new ReadableStream<A2AStreamEventData>({
+    start(controller) {
+      controller.enqueue(result);
+      controller.close();
+    },
+  });
+}
+
 class A2aChatLanguageModel implements LanguageModelV2 {
   readonly specificationVersion = 'v2';
   readonly provider: string;
   readonly modelId: string;
-  // @ts-ignore part of A2A adapter for AI SDK
   private readonly config: A2aChatConfig;
 
-
-  constructor(
-    modelId: string,
-    // @ts-ignore part of A2A adapter for AI SDK
-    settings: A2aChatSettings,
-    config: A2aChatConfig,
-  ) {
+  constructor(modelId: string, _settings: A2aChatSettings, config: A2aChatConfig) {
     this.provider = config.provider;
     this.modelId = modelId;
     this.config = config;
-    // Initialize with settings and config
   }
 
   // Convert AI SDK prompt to provider format
@@ -292,82 +333,33 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       const streamParams: MessageSendParams = {
         message
       };
-      const clientCard = await client.getAgentCard();
-
-      let simulatedStream = null;
-
-      if (!clientCard.capabilities.streaming) {
-        const nonStreamingResponse = await client.sendMessage(streamParams);
-
-        if ("result" in nonStreamingResponse) {
-          // task or message
-          simulatedStream = new ReadableStream<A2AStreamEventData>({
-            start(controller) {
-              controller.enqueue(nonStreamingResponse.result);
-              controller.close();
-            },
-          });
-        }
-
-        if ("error" in nonStreamingResponse) {
-          // FIXME: error
-        }
-      }
-
-      // Use the `sendMessageStream` method.
-      const response = client.sendMessageStream(streamParams);
-      let isFirstChunk = true;
-      const activeTextIds = new Set<string>();
-      let finishReason: LanguageModelV2FinishReason = 'unknown';
+      const sourceStream = await chooseA2ASourceStream(client, streamParams);
+      let state = initialStreamMapperState();
 
       return {
-        stream: (simulatedStream || convertAsyncIteratorToReadableStream(response)).pipeThrough(
+        stream: sourceStream.pipeThrough(
           new TransformStream<
             A2AStreamEventData,
             LanguageModelV2StreamPart
           >({
             start(controller) {
+              // Emitted at the call site rather than in the reducer because the
+              // `warnings` array is scoped to this invocation of `doStream`.
               controller.enqueue({ type: 'stream-start', warnings });
             },
 
             transform(event, controller) {
-              // Emit raw chunk if requested (before anything else)
-              if (options.includeRawChunks) {
-                controller.enqueue({ type: 'raw', rawValue: event });
+              const { parts, state: next } = a2aEventToV2StreamParts(event, state, {
+                includeRawChunks: options.includeRawChunks,
+              });
+              for (const part of parts) {
+                controller.enqueue(part);
               }
-
-              if (isFirstChunk) {
-                isFirstChunk = false;
-
-                controller.enqueue({
-                  type: 'response-metadata',
-                  ...getResponseMetadata(event),
-                });
-              }
-
-              // Handle only artifact-update and task state changes
-              if (event.kind === 'status-update') {
-                if (event.final) {
-                  finishReason = mapFinishReason(event)
-                }
-              }
-              // Artifact-update events are handled as raw events, not converted to text-delta
+              state = next;
             },
 
             flush(controller) {
-              activeTextIds.forEach((activeTextId) => {
-                controller.enqueue({ type: 'text-end', id: activeTextId });
-              })
-
-              controller.enqueue({
-                type: 'finish',
-                finishReason,
-                usage: {
-                  inputTokens: undefined,
-                  outputTokens: undefined,
-                  totalTokens: undefined,
-                },
-              });
+              controller.enqueue(finalizeStream(state));
             },
           }),
         ),

@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2026 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -21,6 +21,7 @@ import {
 import { getMCPServer, listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { ListTopicsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
+import { act } from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
@@ -275,7 +276,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await screen.findByText('halfway');
     await waitFor(() => expect(onprogressHandoff).toBeDefined());
 
-    onprogressHandoff?.({ progress: 50, total: 100 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: 50, total: 100 });
+    });
 
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
@@ -300,7 +303,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await waitFor(() => expect(onprogressHandoff).toBeDefined());
 
     // > 100%
-    onprogressHandoff?.({ progress: 200, total: 100 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: 200, total: 100 });
+    });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       expect(bar).toBeTruthy();
@@ -311,7 +316,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
 
     // < 0%
-    onprogressHandoff?.({ progress: -5, total: 10 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: -5, total: 10 });
+    });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       const value = bar?.getAttribute('data-value');
@@ -319,7 +326,9 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
 
     // NaN (total = 0 → division by zero NaN handled as undefined)
-    onprogressHandoff?.({ progress: 5, total: 0 });
+    await act(async () => {
+      onprogressHandoff?.({ progress: 5, total: 0 });
+    });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       expect(bar).toBeTruthy();

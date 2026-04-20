@@ -64,7 +64,7 @@
     "immutable": "^5.1.5"
   },
   "dependencies": {
-    "@a2a-js/sdk": "^0.3.10",
+    "@a2a-js/sdk": "^0.3.13",
     "@autoform/react": "^4.0.0",
     "@autoform/zod": "^5.0.0",
     "@buf/redpandadata_ai-gateway.bufbuild_es": "^2.11.0-20260313141452-dbbaece03f76.1",
@@ -101,7 +101,7 @@
     "@tanstack/zod-adapter": "^1.158.0",
     "@types/prismjs": "^1.26.5",
     "@xyflow/react": "^12.9.2",
-    "ai": "^5.0.101",
+    "ai": "^6.0.168",
     "array-move": "^4.0.0",
     "chakra-react-select": "5.0.5",
     "class-variance-authority": "^0.7.1",
@@ -149,7 +149,7 @@
     "shiki": "^3.15.0",
     "sonner": "^2.0.7",
     "stacktrace-js": "^2.0.2",
-    "streamdown": "^1.4.0",
+    "streamdown": "^2.5.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tokenlens": "^1.3.1",

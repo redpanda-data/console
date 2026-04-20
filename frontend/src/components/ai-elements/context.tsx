@@ -9,7 +9,7 @@ import {
 import { Progress } from "components/redpanda-ui/components/progress";
 import { cn } from "components/redpanda-ui/lib/utils";
 import type { LanguageModelUsage } from "ai";
-import { type ComponentProps, createContext, useContext } from "react";
+import { type ComponentProps, createContext, useContext, useMemo } from "react";
 import { getUsage } from "tokenlens";
 
 const PERCENT_MAX = 100;
@@ -17,6 +17,26 @@ const ICON_RADIUS = 10;
 const ICON_VIEWBOX = 24;
 const ICON_CENTER = 12;
 const ICON_STROKE_WIDTH = 2;
+
+/**
+ * Compute `usedTokens / maxTokens` defensively. Guards against:
+ *  - `maxTokens` of `0` (cold-start before any usage has been observed),
+ *  - `NaN` / non-finite inputs (e.g. partial usage payloads),
+ *  - negative inputs (malformed backend response).
+ * In all edge cases we return `0` so the UI renders `0%` rather than `NaN%`,
+ * `-Infinity`, or `Infinity`.
+ */
+const safeUsedPercent = (usedTokens: number, maxTokens: number): number => {
+  if (
+    !Number.isFinite(maxTokens) ||
+    !Number.isFinite(usedTokens) ||
+    maxTokens <= 0 ||
+    usedTokens < 0
+  ) {
+    return 0;
+  }
+  return usedTokens / maxTokens;
+};
 
 type ModelId = string;
 
@@ -46,27 +66,28 @@ export const Context = ({
   maxTokens,
   usage,
   modelId,
-  children,
   ...props
-}: ContextProps) => (
-  <ContextContext.Provider
-    value={{
-      usedTokens,
-      maxTokens,
-      usage,
-      modelId,
-    }}
-  >
-    <HoverCard closeDelay={0} openDelay={0} {...props}>
-      {children}
-    </HoverCard>
-  </ContextContext.Provider>
-);
+}: ContextProps) => {
+  // Memoise the context value so consumers only re-render when one of the
+  // usage fields actually changes, not on every render of the parent.
+  const contextValue = useMemo(
+    () => ({ maxTokens, modelId, usage, usedTokens }),
+    [maxTokens, modelId, usage, usedTokens]
+  );
+
+  return (
+    <ContextContext.Provider value={contextValue}>
+      <HoverCard closeDelay={0} openDelay={0} {...props} />
+    </ContextContext.Provider>
+  );
+};
 
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
   const circumference = 2 * Math.PI * ICON_RADIUS;
-  const usedPercent = usedTokens / maxTokens;
+  // Guard against divide-by-zero, NaN, Infinity and negative inputs so the
+  // SVG dash-offset stays finite regardless of what the backend reports.
+  const usedPercent = safeUsedPercent(usedTokens, maxTokens);
   const dashOffset = circumference * (1 - usedPercent);
 
   return (
@@ -108,7 +129,10 @@ export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
+  // Guard against divide-by-zero, NaN, Infinity and negative inputs during
+  // cold-start rendering or malformed usage payloads. Without this, the
+  // trigger label can render as "NaN%".
+  const usedPercent = safeUsedPercent(usedTokens, maxTokens);
   const renderedPercent = new Intl.NumberFormat("en-US", {
     style: "percent",
     maximumFractionDigits: 1,
@@ -148,7 +172,9 @@ export const ContextContentHeader = ({
   ...props
 }: ContextContentHeaderProps) => {
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
+  // Guard against divide-by-zero, NaN, Infinity and negative inputs so the
+  // hover-card never renders "NaN%".
+  const usedPercent = safeUsedPercent(usedTokens, maxTokens);
   const displayPct = new Intl.NumberFormat("en-US", {
     style: "percent",
     maximumFractionDigits: 1,
@@ -245,6 +271,10 @@ export const ContextInputUsage = ({
     return children;
   }
 
+  if (!inputTokens) {
+    return null;
+  }
+
   const inputCost = modelId
     ? getUsage({
         modelId,
@@ -279,6 +309,10 @@ export const ContextOutputUsage = ({
 
   if (children) {
     return children;
+  }
+
+  if (!outputTokens) {
+    return null;
   }
 
   const outputCost = modelId
