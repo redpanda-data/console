@@ -12,7 +12,6 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react';
 import {
   GetMCPServerResponseSchema,
   ListMCPServersResponseSchema,
@@ -22,6 +21,7 @@ import {
 import { getMCPServer, listMCPServers } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { ListTopicsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
+import { act } from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
