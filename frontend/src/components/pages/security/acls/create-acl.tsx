@@ -28,6 +28,7 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 import {
   type AclRulesProps,
   getIdFromRule,
+  getInitialRuleIdCounter,
   getOperationsForResourceType,
   getRuleDataTestId,
   type HostType,
@@ -774,7 +775,7 @@ export default function CreateACL({
     }
   }, [propSharedConfig?.principal, propSharedConfig?.host]);
 
-  const ruleIdCounter = useRef(2);
+  const ruleIdCounter = useRef(getInitialRuleIdCounter(propRules));
   const [rules, setRules] = useState<Rule[]>(
     propRules ?? [
       {

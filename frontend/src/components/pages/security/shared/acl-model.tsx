@@ -446,6 +446,9 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail[
 export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> =>
   operationSets[resourceType] || {};
 
+export const getInitialRuleIdCounter = (rules?: Rule[]): number =>
+  rules && rules.length > 0 ? Math.max(...rules.map((r) => r.id)) + 1 : 2;
+
 // Helper function to get resource name
 export const getResourceName = (resourceType: string): string => {
   const resourceNames: Record<string, string> = {
