@@ -1,9 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-// NOTE: not importing src/globals.css — Tailwind v4's @source directive
-// interleaved with @imports in that file trips PostCSS' strict @import-first
-// rule in the Vitest browser-mode pipeline. Deterministic screenshots are
-// already guaranteed by the animation-kill stylesheet appended below plus
-// the `reducedMotion:'reduce'` playwright context option in the config.
+import './src/globals.css';
 
 // Suppress the motion library's "Reduced Motion enabled" warning — we
 // intentionally set reducedMotion:'reduce' in vitest.config.browser.mts.
