@@ -274,7 +274,7 @@ export const ToolOutput = ({
       <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
         {errorText ? "Error" : "Result"}
       </h4>
-      <div className={cn("rounded-md", errorText ? "bg-muted/50" : "bg-muted/50")}>
+      <div className={cn("rounded-md", errorText ? "bg-destructive/10" : "bg-muted/50")}>
         {errorText && <CodeBlock code={errorText} language="text" />}
         {hasOutput && Output}
       </div>

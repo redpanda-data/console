@@ -310,4 +310,28 @@ describe('ToolInput / ToolOutput', () => {
     expect(screen.getByRole('heading', { level: 4 })).toHaveTextContent('Error');
     expect(container.textContent ?? '').toContain('boom');
   });
+
+  test('ToolOutput applies destructive background only in the error state', () => {
+    const { container: errorContainer } = render(
+      <Tool defaultOpen>
+        <ToolContent>
+          <ToolOutput errorText="boom" output={undefined} />
+        </ToolContent>
+      </Tool>
+    );
+    // Regression guard: the error branch previously collided with the
+    // success branch on `bg-muted/50`, so errors were visually
+    // indistinguishable from successful tool output.
+    expect(errorContainer.querySelector('.bg-destructive\\/10')).not.toBeNull();
+
+    const { container: okContainer } = render(
+      <Tool defaultOpen>
+        <ToolContent>
+          <ToolOutput errorText={undefined} output={{ ok: true }} />
+        </ToolContent>
+      </Tool>
+    );
+    expect(okContainer.querySelector('.bg-destructive\\/10')).toBeNull();
+    expect(okContainer.querySelector('.bg-muted\\/50')).not.toBeNull();
+  });
 });
