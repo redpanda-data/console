@@ -59,6 +59,9 @@ export const useListSecretsQuery = (
       { nameContains: nameContains ?? '' },
     ],
     enabled: options?.enabled,
+    // Our queryFn throws intentionally on pagination safety violations (non-advancing token,
+    // max-pages exceeded). Retrying would multiply the server round-trips for no benefit.
+    retry: false,
     queryFn: async ({ signal }) => {
       const secrets: Secret[] = [];
       let pageToken = '';
