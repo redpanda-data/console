@@ -20,8 +20,3 @@ requests.txt
 build
 
 .cursor
-# Showcase PNGs are hosted on orphan branch pr-screenshots-2389 rather
-# than committed to feature branches — keeps binaries out of the main
-# merge history. Regenerate via `bun run test:browser:update` when a
-# component changes.
-frontend/docs/pr-screenshots/
