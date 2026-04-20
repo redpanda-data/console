@@ -11,9 +11,15 @@
 
 import type { Message, Task, TaskArtifactUpdateEvent, TaskState, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import type { LanguageModelV2FinishReason } from '@ai-sdk/provider';
+import { UnsupportedFunctionalityError } from '@ai-sdk/provider';
 import { describe, expect, test } from 'vitest';
 
-import { a2aEventToV2StreamParts, finalizeStream, initialStreamMapperState } from './a2a-stream-mapper';
+import {
+  a2aEventToV2StreamParts,
+  finalizeStream,
+  initialStreamMapperState,
+  isKnownA2AEvent,
+} from './a2a-stream-mapper';
 
 // ---------------------------------------------------------------------------
 // These tests lock down the pure reducer that drives the A2A doStream
@@ -189,5 +195,79 @@ describe('a2aEventToV2StreamParts — initial state', () => {
       isFirstChunk: true,
       finishReason: 'unknown',
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Defensive guards for backward compatibility with the previous AI agent
+// backend. If a legacy or future server emits a stream event whose `kind` we
+// don't understand, the adapter must fail loudly with an
+// `UnsupportedFunctionalityError` rather than silently drop the event.
+// Silent drops look like a stalled stream from the user's perspective.
+// ---------------------------------------------------------------------------
+
+describe('isKnownA2AEvent', () => {
+  test.each([['task'], ['message'], ['status-update'], ['artifact-update']])(
+    'accepts known kind "%s"',
+    (kind) => {
+      expect(isKnownA2AEvent({ kind })).toBe(true);
+    }
+  );
+
+  test.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['number', 42],
+    ['string', 'task'],
+    ['array', ['task']],
+    ['object missing kind', {}],
+    ['unknown kind string', { kind: 'mystery' }],
+    ['empty-string kind', { kind: '' }],
+    ['non-string kind', { kind: 42 }],
+  ])('rejects %s', (_label, value) => {
+    expect(isKnownA2AEvent(value)).toBe(false);
+  });
+});
+
+describe('a2aEventToV2StreamParts — malformed input', () => {
+  test('throws UnsupportedFunctionalityError for an unknown event kind', () => {
+    const malformed = { kind: 'mystery-update', taskId: 'x' };
+    expect(() =>
+      a2aEventToV2StreamParts(
+        // Bypass the compile-time guard — this is exactly the shape a
+        // legacy/newer backend could emit at runtime.
+        malformed as unknown as Parameters<typeof a2aEventToV2StreamParts>[0],
+        initialStreamMapperState(),
+        {}
+      )
+    ).toThrow(UnsupportedFunctionalityError);
+  });
+
+  test('throws UnsupportedFunctionalityError for a missing kind field', () => {
+    expect(() =>
+      a2aEventToV2StreamParts(
+        { taskId: 'x' } as unknown as Parameters<typeof a2aEventToV2StreamParts>[0],
+        initialStreamMapperState(),
+        {}
+      )
+    ).toThrow(UnsupportedFunctionalityError);
+  });
+
+  test('error identifies the unknown kind for easier debugging', () => {
+    const malformed = { kind: 'legacy-tool-event' };
+    try {
+      a2aEventToV2StreamParts(
+        malformed as unknown as Parameters<typeof a2aEventToV2StreamParts>[0],
+        initialStreamMapperState(),
+        {}
+      );
+      throw new Error('expected throw');
+    } catch (e) {
+      expect(e).toBeInstanceOf(UnsupportedFunctionalityError);
+      // `functionality` carries the offending kind so on-call engineers can
+      // grep logs for the culprit event shape.
+      const ufe = e as UnsupportedFunctionalityError;
+      expect(ufe.functionality).toContain('legacy-tool-event');
+    }
   });
 });

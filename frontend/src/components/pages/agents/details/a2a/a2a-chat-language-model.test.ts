@@ -77,6 +77,22 @@ describe('mapFinishReason', () => {
   test('maps unknown → unknown', () => {
     expect(mapFinishReason(mkStatusUpdate('unknown'))).toBe('unknown');
   });
+
+  // Defensive: the backend may evolve `TaskState` with new enum values. The
+  // adapter's contract is that any value outside the known set falls back
+  // to `'unknown'` so the stream doesn't pretend the run completed
+  // successfully. We pin this behaviour here so a drive-by edit of
+  // `mapFinishReason` doesn't silently change it.
+  test.each<[string]>([
+    ['in-progress'],
+    ['queued'],
+    ['mystery-state'],
+    [''],
+  ])('unknown enum value "%s" falls back to "unknown"', (state) => {
+    // Cast via `unknown` — this value is deliberately outside the TaskState
+    // union so we have to bypass the compile-time check.
+    expect(mapFinishReason(mkStatusUpdate(state as unknown as TaskState))).toBe('unknown');
+  });
 });
 
 describe('getResponseMetadata', () => {

@@ -11,8 +11,34 @@
 
 import type { Message, Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import type { LanguageModelV2FinishReason, LanguageModelV2StreamPart } from '@ai-sdk/provider';
+import { UnsupportedFunctionalityError } from '@ai-sdk/provider';
 
 import { getResponseMetadata, mapFinishReason } from './a2a-chat-language-model';
+
+/**
+ * Exhaustive list of A2A stream event kinds we understand. If the backend
+ * ever emits something outside this set we fail loudly rather than silently
+ * drop the event — silent drops during a streaming chat look like the model
+ * stalled and are very hard to diagnose in production.
+ */
+const KNOWN_A2A_EVENT_KINDS = new Set<string>([
+  'task',
+  'message',
+  'status-update',
+  'artifact-update',
+]);
+
+/**
+ * Runtime shape-check guarding the adapter against legacy/unknown backend
+ * events. Exported for direct testing.
+ */
+export function isKnownA2AEvent(event: unknown): event is A2AStreamEventData {
+  if (!event || typeof event !== 'object') {
+    return false;
+  }
+  const kind = (event as { kind?: unknown }).kind;
+  return typeof kind === 'string' && KNOWN_A2A_EVENT_KINDS.has(kind);
+}
 
 /**
  * Pure-reducer state threaded through `a2aEventToV2StreamParts` on each event.
@@ -29,7 +55,7 @@ export type StreamMapperState = {
   finishReason: LanguageModelV2FinishReason;
 };
 
-type A2AStreamEventData = Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent;
+export type A2AStreamEventData = Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent;
 
 /**
  * Build the initial state for `a2aEventToV2StreamParts`.
@@ -66,6 +92,20 @@ export function a2aEventToV2StreamParts(
   state: StreamMapperState,
   options: { includeRawChunks?: boolean }
 ): { parts: LanguageModelV2StreamPart[]; state: StreamMapperState } {
+  // Defensive: if a legacy backend emits an event the adapter doesn't know
+  // about, fail loudly via `UnsupportedFunctionalityError` rather than
+  // silently dropping it. A silent drop manifests as a stalled chat with no
+  // error surfaced to the user — extremely hard to diagnose in production.
+  // The AI SDK surfaces this error through the stream so `useChat` can
+  // render it as a message error.
+  if (!isKnownA2AEvent(event)) {
+    throw new UnsupportedFunctionalityError({
+      functionality: `a2a stream event kind "${String((event as { kind?: unknown })?.kind)}"`,
+      message:
+        'Unknown A2A stream event kind. The backend returned an event the adapter does not recognise; this usually indicates a newer protocol version on the backend than the frontend supports.',
+    });
+  }
+
   const parts: LanguageModelV2StreamPart[] = [];
   let nextState = state;
 
