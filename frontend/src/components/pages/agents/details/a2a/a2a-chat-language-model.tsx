@@ -288,32 +288,37 @@ class A2aChatLanguageModel implements LanguageModelV2 {
       };
       const clientCard = await client.getAgentCard();
 
-      let simulatedStream = null;
+      // Agents that do not advertise streaming capability are served by a
+      // single blocking `sendMessage` whose response is replayed as a
+      // one-event ReadableStream; streaming-capable agents skip that entirely
+      // and consume `sendMessageStream` directly. The branches are mutually
+      // exclusive — the previous code unconditionally re-sent via
+      // `sendMessageStream`, which double-dispatched the prompt.
+      let sourceStream: ReadableStream<A2AStreamEventData>;
 
-      if (!clientCard.capabilities.streaming) {
+      if (clientCard.capabilities.streaming) {
+        sourceStream = convertAsyncIteratorToReadableStream(client.sendMessageStream(streamParams));
+      } else {
         const nonStreamingResponse = await client.sendMessage(streamParams);
 
-        if ("result" in nonStreamingResponse) {
-          // task or message
-          simulatedStream = new ReadableStream<A2AStreamEventData>({
-            start(controller) {
-              controller.enqueue(nonStreamingResponse.result);
-              controller.close();
-            },
-          });
+        if ("error" in nonStreamingResponse) {
+          const err = (nonStreamingResponse as { error: { message: string } }).error;
+          throw new Error(`A2A sendMessage failed: ${err.message}`);
         }
 
-        if ("error" in nonStreamingResponse) {
-          // FIXME: error
-        }
+        const { result } = nonStreamingResponse as SendMessageSuccessResponse;
+        sourceStream = new ReadableStream<A2AStreamEventData>({
+          start(controller) {
+            controller.enqueue(result);
+            controller.close();
+          },
+        });
       }
 
-      // Use the `sendMessageStream` method.
-      const response = client.sendMessageStream(streamParams);
       let state = initialStreamMapperState();
 
       return {
-        stream: (simulatedStream || convertAsyncIteratorToReadableStream(response)).pipeThrough(
+        stream: sourceStream.pipeThrough(
           new TransformStream<
             A2AStreamEventData,
             LanguageModelV2StreamPart
