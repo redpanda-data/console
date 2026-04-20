@@ -16,7 +16,7 @@ import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React from 'react';
-import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
+import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('state/ui-state', () => ({
@@ -81,9 +81,69 @@ describe('SecretsStoreListPage', () => {
     const callArgs = listSecretsMock.mock.calls[0];
     expect(callArgs[0]).toMatchObject({
       request: {
-        pageSize: MAX_PAGE_SIZE,
+        pageSize: SECRETS_LIST_PAGE_SIZE,
+        pageToken: '',
       },
     });
+  });
+
+  test('follows nextPageToken until all secrets are returned', async () => {
+    const pageOne = [
+      create(SecretSchema, {
+        id: 'page1-first-secret',
+        labels: {},
+        scopes: [Scope.AI_GATEWAY],
+      }),
+    ];
+    const pageTwo = [
+      create(SecretSchema, {
+        id: 'page2-pgdb-dsn',
+        labels: {},
+        scopes: [Scope.AI_GATEWAY],
+      }),
+    ];
+
+    const listSecretsMock = vi.fn().mockImplementation(({ request }) => {
+      if (!request?.pageToken) {
+        return create(ListSecretsResponseSchema, {
+          response: { secrets: pageOne, nextPageToken: 'page2' },
+        });
+      }
+      return create(ListSecretsResponseSchema, {
+        response: { secrets: pageTwo, nextPageToken: '' },
+      });
+    });
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    expect(await screen.findByText('page1-first-secret')).toBeVisible();
+    expect(await screen.findByText('page2-pgdb-dsn')).toBeVisible();
+    expect(listSecretsMock).toHaveBeenCalledTimes(2);
+    expect(listSecretsMock.mock.calls[1][0]).toMatchObject({
+      request: { pageSize: SECRETS_LIST_PAGE_SIZE, pageToken: 'page2' },
+    });
+  });
+
+  test('stops and surfaces an error if the server returns a non-advancing pageToken', async () => {
+    const listSecretsMock = vi.fn().mockImplementation(() =>
+      create(ListSecretsResponseSchema, {
+        response: {
+          secrets: [create(SecretSchema, { id: 'looping-secret', scopes: [Scope.AI_GATEWAY] })],
+          nextPageToken: 'stuck',
+        },
+      })
+    );
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Error loading secrets:/i)).toBeVisible();
+    });
+    // Server returned nextPageToken='stuck' on first call; second call echoed 'stuck' again and the
+    // loop bailed out. Anything higher means the guard did not trip.
+    expect(listSecretsMock).toHaveBeenCalledTimes(2);
   });
 
   test('should display empty state when no secrets exist', async () => {
