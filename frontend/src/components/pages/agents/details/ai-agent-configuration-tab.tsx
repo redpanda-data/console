@@ -502,8 +502,6 @@ export const AIAgentConfigurationTab = () => {
       }));
   }, [secretsData]);
 
-
-
   const updateField = useCallback(
     (updates: Partial<LocalAIAgent>) => {
       if (!displayData) {
@@ -1223,7 +1221,7 @@ export const AIAgentConfigurationTab = () => {
                       <Label htmlFor="provider">Provider</Label>
                       {isUsingGateway && displayData?.llmProvider && (
                         <a
-                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="flex items-center gap-1 text-primary text-xs hover:underline"
                           href={`/clusters/${config.clusterId}/adp/llm-providers/${displayData.llmProvider}?tab=overview`}
                         >
                           View provider
@@ -1237,9 +1235,11 @@ export const AIAgentConfigurationTab = () => {
                         onValueChange={(value) => {
                           // Find the selected aigw provider to infer the provider type
                           const selectedGwProvider = availableProviders.find((p) => p.id === value);
-                          const formTypeId = (selectedGwProvider?.type != null
-                            ? (LLM_PROVIDER_TYPE_TO_FORM_ID[selectedGwProvider.type] ?? 'openaiCompatible')
-                            : displayData.provider?.provider.case || 'openai') as 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
+                          const formTypeId = (
+                            selectedGwProvider?.type != null
+                              ? (LLM_PROVIDER_TYPE_TO_FORM_ID[selectedGwProvider.type] ?? 'openaiCompatible')
+                              : displayData.provider?.provider.case || 'openai'
+                          ) as 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
 
                           updateField({
                             llmProvider: value,
@@ -1251,15 +1251,18 @@ export const AIAgentConfigurationTab = () => {
                       >
                         <SelectTrigger>
                           <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
-                            {displayData?.llmProvider && (() => {
-                              const matched = availableProviders.find((p) => p.id === displayData.llmProvider);
-                              return (
-                                <div className="flex items-center gap-2">
-                                  {matched?.icon && <img alt={matched.label} className="h-4 w-4" src={matched.icon} />}
-                                  <span>{matched?.label || displayData.llmProvider}</span>
-                                </div>
-                              );
-                            })()}
+                            {displayData?.llmProvider &&
+                              (() => {
+                                const matched = availableProviders.find((p) => p.id === displayData.llmProvider);
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    {matched?.icon && (
+                                      <img alt={matched.label} className="h-4 w-4" src={matched.icon} />
+                                    )}
+                                    <span>{matched?.label || displayData.llmProvider}</span>
+                                  </div>
+                                );
+                              })()}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -1279,7 +1282,9 @@ export const AIAgentConfigurationTab = () => {
                         onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
                           const providerModels = MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
                           const firstModel =
-                            providerModels.length > 0 && providerModels[0] ? providerModels[0].value : displayData.model;
+                            providerModels.length > 0 && providerModels[0]
+                              ? providerModels[0].value
+                              : displayData.model;
 
                           updateField({
                             provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
@@ -1462,7 +1467,7 @@ export const AIAgentConfigurationTab = () => {
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
                       {isUsingGateway && displayData?.llmProvider ? (
                         <a
-                          className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                          className="flex items-center gap-1.5 text-primary text-sm hover:underline"
                           href={`/clusters/${config.clusterId}/adp/llm-providers/${displayData.llmProvider}?tab=overview`}
                         >
                           {displayData.llmProvider}
