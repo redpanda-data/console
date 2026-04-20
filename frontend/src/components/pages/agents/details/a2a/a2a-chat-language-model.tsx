@@ -24,6 +24,8 @@ import {
 import { convertAsyncIteratorToReadableStream, generateId, IdGenerator } from '@ai-sdk/provider-utils';
 import { getAgentCardUrls } from 'utils/ai-agent.utils';
 
+import { a2aEventToV2StreamParts, finalizeStream, initialStreamMapperState } from './a2a-stream-mapper';
+
 /**
  * Try multiple agent card URLs in order until one succeeds.
  * Tries agent-card.json first, then falls back to agent.json
@@ -308,8 +310,7 @@ class A2aChatLanguageModel implements LanguageModelV2 {
 
       // Use the `sendMessageStream` method.
       const response = client.sendMessageStream(streamParams);
-      let isFirstChunk = true;
-      let finishReason: LanguageModelV2FinishReason = 'unknown';
+      let state = initialStreamMapperState();
 
       return {
         stream: (simulatedStream || convertAsyncIteratorToReadableStream(response)).pipeThrough(
@@ -318,43 +319,23 @@ class A2aChatLanguageModel implements LanguageModelV2 {
             LanguageModelV2StreamPart
           >({
             start(controller) {
+              // Emitted at the call site rather than in the reducer because the
+              // `warnings` array is scoped to this invocation of `doStream`.
               controller.enqueue({ type: 'stream-start', warnings });
             },
 
             transform(event, controller) {
-              // Emit raw chunk if requested (before anything else)
-              if (options.includeRawChunks) {
-                controller.enqueue({ type: 'raw', rawValue: event });
+              const { parts, state: next } = a2aEventToV2StreamParts(event, state, {
+                includeRawChunks: options.includeRawChunks,
+              });
+              for (const part of parts) {
+                controller.enqueue(part);
               }
-
-              if (isFirstChunk) {
-                isFirstChunk = false;
-
-                controller.enqueue({
-                  type: 'response-metadata',
-                  ...getResponseMetadata(event),
-                });
-              }
-
-              // Handle only artifact-update and task state changes
-              if (event.kind === 'status-update') {
-                if (event.final) {
-                  finishReason = mapFinishReason(event)
-                }
-              }
-              // Artifact-update events are handled as raw events, not converted to text-delta
+              state = next;
             },
 
             flush(controller) {
-              controller.enqueue({
-                type: 'finish',
-                finishReason,
-                usage: {
-                  inputTokens: undefined,
-                  outputTokens: undefined,
-                  totalTokens: undefined,
-                },
-              });
+              controller.enqueue(finalizeStream(state));
             },
           }),
         ),
