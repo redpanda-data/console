@@ -15,7 +15,7 @@ import { afterEach, describe, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { cleanup, render } from 'vitest-browser-react';
 
-import { ScreenshotFrame } from '../../__tests__/browser-test-utils';
+import { captureScreenshotFrame, ScreenshotFrame } from '../../__tests__/browser-test-utils';
 import {
   Context,
   ContextCacheUsage,
@@ -28,8 +28,6 @@ import {
   ContextReasoningUsage,
   ContextTrigger,
 } from './context';
-
-const SCREENSHOT_DIR = '../../../docs/pr-screenshots';
 
 afterEach(() => {
   cleanup();
@@ -99,7 +97,7 @@ const ContextPanel = ({
 );
 
 const shot = (name: string) =>
-  page.getByTestId('screenshot-frame').screenshot({ path: `${SCREENSHOT_DIR}/${name}.png` });
+  captureScreenshotFrame(page.getByTestId('screenshot-frame'), name);
 
 describe('Context hover-card screenshots', () => {
   test('zero tokens (guards hide sub-rows)', async () => {

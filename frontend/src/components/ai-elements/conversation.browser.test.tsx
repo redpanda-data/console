@@ -14,10 +14,8 @@ import { afterEach, describe, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { cleanup, render } from 'vitest-browser-react';
 
-import { ScreenshotFrame } from '../../__tests__/browser-test-utils';
+import { captureScreenshotFrame, ScreenshotFrame } from '../../__tests__/browser-test-utils';
 import { ConversationDownload } from './conversation';
-
-const SCREENSHOT_DIR = '../../../docs/pr-screenshots';
 
 afterEach(() => {
   cleanup();
@@ -75,7 +73,7 @@ const DownloadPanel = () => (
 );
 
 const shot = (name: string) =>
-  page.getByTestId('screenshot-frame').screenshot({ path: `${SCREENSHOT_DIR}/${name}.png` });
+  captureScreenshotFrame(page.getByTestId('screenshot-frame'), name);
 
 describe('ConversationDownload screenshots', () => {
   test('idle trigger rendered next to a short transcript', async () => {

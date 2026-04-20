@@ -53,3 +53,25 @@ export function ScreenshotFrame({ children, width = 1200 }: { children: React.Re
     </MotionConfig>
   );
 }
+
+/**
+ * Default directory (relative to a browser test file) where PR showcase
+ * screenshots are written. Mirrors the ADP UI convention of keeping
+ * documentation screenshots in a single repository-level folder rather
+ * than scattering them next to the tests.
+ */
+export const PR_SCREENSHOT_DIR = '../../../docs/pr-screenshots';
+
+/**
+ * Capture a PNG of the stable `ScreenshotFrame` wrapper for use in PR
+ * documentation. Use this for showcase / documentation screenshots that
+ * are not compared against a baseline. For visual regression assertions
+ * prefer Vitest's `expect(locator).toMatchScreenshot(...)` instead.
+ */
+export async function captureScreenshotFrame(
+  locator: { screenshot: (opts: { path: string }) => Promise<unknown> },
+  name: string,
+  dir = PR_SCREENSHOT_DIR
+): Promise<void> {
+  await locator.screenshot({ path: `${dir}/${name}.png` });
+}

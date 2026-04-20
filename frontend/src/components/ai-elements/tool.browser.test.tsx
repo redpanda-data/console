@@ -14,10 +14,8 @@ import { afterEach, describe, test } from 'vitest';
 import { page } from 'vitest/browser';
 import { cleanup, render } from 'vitest-browser-react';
 
-import { ScreenshotFrame } from '../../__tests__/browser-test-utils';
+import { captureScreenshotFrame, ScreenshotFrame } from '../../__tests__/browser-test-utils';
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from './tool';
-
-const SCREENSHOT_DIR = '../../../docs/pr-screenshots';
 
 afterEach(() => {
   cleanup();
@@ -32,7 +30,7 @@ const OpenTool = ({ children }: { children: ReactNode }) => (
 );
 
 const shot = (name: string) =>
-  page.getByTestId('screenshot-frame').screenshot({ path: `${SCREENSHOT_DIR}/${name}.png` });
+  captureScreenshotFrame(page.getByTestId('screenshot-frame'), name);
 
 describe('Tool card screenshots', () => {
   test('input-streaming', async () => {
