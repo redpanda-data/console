@@ -12,9 +12,10 @@
 import type { TaskState, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest';
 
-import { parseA2AError, streamMessage } from './use-message-streaming';
+import { streamMessage } from './use-message-streaming';
 import type { ContentBlock } from '../types';
 import { updateMessage } from '../utils/database-operations';
+import { parseA2AError } from '../utils/parse-a2a-error';
 
 // ---------------------------------------------------------------------------
 // Module mocks
