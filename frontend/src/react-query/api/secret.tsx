@@ -38,6 +38,10 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // Matches the server-side upper bound declared in redpanda/api/dataplane/v1/secret.proto.
 export const SECRETS_LIST_PAGE_SIZE = 50;
+// Hard cap on pagination iterations. At SECRETS_LIST_PAGE_SIZE=50 this allows 10k secrets,
+// which is far beyond any realistic tenant. Protects against a misbehaving server returning
+// non-empty nextPageToken indefinitely.
+export const SECRETS_LIST_MAX_PAGES = 200;
 
 export const useListSecretsQuery = (
   input?: MessageInit<ListSecretsRequestDataPlane>,
@@ -55,20 +59,21 @@ export const useListSecretsQuery = (
       { nameContains: nameContains ?? '' },
     ],
     enabled: options?.enabled,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const secrets: Secret[] = [];
       let pageToken = '';
-      for (;;) {
+      for (let iteration = 0; iteration < SECRETS_LIST_MAX_PAGES; iteration++) {
+        if (signal?.aborted) {
+          throw signal.reason ?? new Error('ListSecrets query aborted');
+        }
         const request = create(ListSecretsRequestSchema, {
           request: create(ListSecretsRequestSchemaDataPlane, {
             pageSize: SECRETS_LIST_PAGE_SIZE,
             pageToken,
-            filter: nameContains
-              ? create(ListSecretsFilterSchema, { nameContains })
-              : undefined,
+            filter: nameContains ? create(ListSecretsFilterSchema, { nameContains }) : undefined,
           }),
         });
-        const response = await callUnaryMethod(transport, listSecrets, request);
+        const response = await callUnaryMethod(transport, listSecrets, request, { signal });
         for (const secret of response.response?.secrets ?? []) {
           if (secret) {
             secrets.push(secret);
@@ -76,11 +81,15 @@ export const useListSecretsQuery = (
         }
         const next = response.response?.nextPageToken ?? '';
         if (!next) {
-          break;
+          return { secrets };
+        }
+        // Guard against a server that returns the same token twice — would otherwise loop forever.
+        if (next === pageToken) {
+          throw new Error('ListSecrets returned a non-advancing nextPageToken; aborting to avoid infinite loop');
         }
         pageToken = next;
       }
-      return { secrets };
+      throw new Error(`ListSecrets exceeded ${SECRETS_LIST_MAX_PAGES} pages; aborting to avoid runaway pagination`);
     },
   });
 };

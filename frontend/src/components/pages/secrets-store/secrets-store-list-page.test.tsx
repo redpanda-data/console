@@ -125,6 +125,27 @@ describe('SecretsStoreListPage', () => {
     });
   });
 
+  test('stops and surfaces an error if the server returns a non-advancing pageToken', async () => {
+    const listSecretsMock = vi.fn().mockImplementation(() =>
+      create(ListSecretsResponseSchema, {
+        response: {
+          secrets: [create(SecretSchema, { id: 'looping-secret', scopes: [Scope.AI_GATEWAY] })],
+          nextPageToken: 'stuck',
+        },
+      })
+    );
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Error loading secrets:/i)).toBeVisible();
+    });
+    // Server returned nextPageToken='stuck' on first call; second call echoed 'stuck' again and the
+    // loop bailed out. Anything higher means the guard did not trip.
+    expect(listSecretsMock).toHaveBeenCalledTimes(2);
+  });
+
   test('should display empty state when no secrets exist', async () => {
     const listSecretsResponse = create(ListSecretsResponseSchema, {
       response: {
