@@ -3,8 +3,8 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import {
   callUnaryMethod,
   createConnectQueryKey,
-  useMutation,
   useQuery as useConnectQuery,
+  useMutation,
   useTransport,
 } from '@connectrpc/connect-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,7 +33,7 @@ import {
   type Secret,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretService_connectquery';
-import { type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
+import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 // Matches the server-side upper bound declared in redpanda/api/dataplane/v1/secret.proto.
