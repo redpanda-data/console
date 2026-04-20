@@ -52,7 +52,8 @@ import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
 import { config } from 'config';
-import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
+import { Edit, ExternalLink, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
+import { LLMProviderType } from 'protogen/redpanda/api/adp/v1alpha1/llm_provider_pb';
 import { type MCPServer, MCPServerSchema, MCPServerType } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -79,7 +80,18 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../ai-agent-model';
+import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
+
+/**
+ * Maps LLMProviderType enum values to the form's provider type strings.
+ */
+const LLM_PROVIDER_TYPE_TO_FORM_ID: Record<LLMProviderType, string | undefined> = {
+  [LLMProviderType.LLM_PROVIDER_TYPE_OPENAI]: 'openai',
+  [LLMProviderType.LLM_PROVIDER_TYPE_ANTHROPIC]: 'anthropic',
+  [LLMProviderType.LLM_PROVIDER_TYPE_GOOGLE]: 'google',
+  [LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: undefined, // not supported yet
+  [LLMProviderType.LLM_PROVIDER_TYPE_UNSPECIFIED]: undefined,
+};
 
 type LocalAIAgent = {
   displayName: string;
@@ -414,18 +426,23 @@ export const AIAgentConfigurationTab = () => {
   const availableProviders = useMemo(() => {
     if (isUsingGateway && providersData?.llmProviders) {
       return providersData.llmProviders
-        .filter((provider) => provider.enabled)
-        .map((provider) => ({
-          id: provider.name,
-          label: provider.displayName || provider.name,
-          icon: MODEL_OPTIONS_BY_PROVIDER[provider.name as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
-        }));
+        .filter((provider) => provider.enabled && LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type] !== undefined)
+        .map((provider) => {
+          const formTypeId = LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type]!;
+          return {
+            id: provider.name,
+            label: provider.displayName || provider.name,
+            icon: PROVIDER_INFO[formTypeId as keyof typeof PROVIDER_INFO]?.icon || '',
+            type: provider.type,
+          };
+        });
     }
     // Fallback to hardcoded providers
     return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
       id,
       label: provider.label,
       icon: provider.icon,
+      type: undefined as LLMProviderType | undefined,
     }));
   }, [isUsingGateway, providersData]);
 
@@ -484,9 +501,6 @@ export const AIAgentConfigurationTab = () => {
         name: secret.id,
       }));
   }, [secretsData]);
-
-  // Get LLM provider name from gateway config
-  const llmProviderName = aiAgentData?.aiAgent?.gateway?.llmProvider ?? null;
 
   const updateField = useCallback(
     (updates: Partial<LocalAIAgent>) => {
@@ -1201,81 +1215,130 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               {isEditing ? (
                 <div className="space-y-4">
-                  {/* LLM Provider (Gateway) - show if configured (read-only in edit mode) */}
-                  {llmProviderName && (
-                    <div className="space-y-2">
-                      <Label>LLM Provider (Gateway)</Label>
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="muted">{llmProviderName}</Text>
-                      </div>
-                      <Text className="text-xs" variant="muted">
-                        Gateway configuration cannot be changed after creation
-                      </Text>
-                    </div>
-                  )}
-                  {/* Provider - now editable */}
+                  {/* Provider */}
                   <div className="space-y-2">
-                    <Label htmlFor="provider">Provider</Label>
-                    <Select
-                      disabled={isLoadingProviders}
-                      onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
-                        // Get models for the new provider
-                        const providerModels = isUsingGateway ? [] : MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
-                        const firstModel =
-                          providerModels.length > 0 && providerModels[0] ? providerModels[0].value : displayData.model;
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="provider">Provider</Label>
+                      {isUsingGateway && displayData?.llmProvider && (
+                        <a
+                          className="flex items-center gap-1 text-primary text-xs hover:underline"
+                          href={`/clusters/${config.clusterId}/adp/llm-providers/${displayData.llmProvider}?tab=overview`}
+                        >
+                          View provider
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    {isUsingGateway ? (
+                      <Select
+                        disabled={isLoadingProviders || availableProviders.length === 0}
+                        onValueChange={(value) => {
+                          // Find the selected aigw provider to infer the provider type
+                          const selectedGwProvider = availableProviders.find((p) => p.id === value);
+                          const formTypeId = (
+                            selectedGwProvider?.type != null
+                              ? (LLM_PROVIDER_TYPE_TO_FORM_ID[selectedGwProvider.type] ?? 'openaiCompatible')
+                              : displayData.provider?.provider.case || 'openai'
+                          ) as 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
 
-                        updateField({
-                          provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
-                          model: firstModel,
-                          apiKeySecret: '',
-                        });
-                      }}
-                      value={displayData.provider?.provider.case}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
-                          {Boolean(displayData.provider?.provider.case) && (
-                            <div className="flex items-center gap-2">
-                              <img
-                                alt={
-                                  MODEL_OPTIONS_BY_PROVIDER[
-                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
-                                  ]?.label
-                                }
-                                className="h-4 w-4"
-                                src={
-                                  MODEL_OPTIONS_BY_PROVIDER[
-                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
-                                  ]?.icon
-                                }
-                              />
-                              <span>
-                                {displayData.provider.provider.case === 'openai' && 'OpenAI'}
-                                {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
-                                {displayData.provider.provider.case === 'google' && 'Google'}
-                                {displayData.provider.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
-                              </span>
-                            </div>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProviders.map((provider) => (
-                          <SelectItem key={provider.id} value={provider.id}>
-                            <div className="flex items-center gap-2">
-                              {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
-                              <span>{provider.label}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          updateField({
+                            llmProvider: value,
+                            provider: createUpdatedProvider(formTypeId, '', displayData.baseUrl || ''),
+                            model: '',
+                          });
+                        }}
+                        value={displayData?.llmProvider}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
+                            {displayData?.llmProvider &&
+                              (() => {
+                                const matched = availableProviders.find((p) => p.id === displayData.llmProvider);
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    {matched?.icon && (
+                                      <img alt={matched.label} className="h-4 w-4" src={matched.icon} />
+                                    )}
+                                    <span>{matched?.label || displayData.llmProvider}</span>
+                                  </div>
+                                );
+                              })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProviders.map((provider) => (
+                            <SelectItem key={provider.id} value={provider.id}>
+                              <div className="flex items-center gap-2">
+                                {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
+                                <span>{provider.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        disabled={isLoadingProviders}
+                        onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
+                          const providerModels = MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
+                          const firstModel =
+                            providerModels.length > 0 && providerModels[0]
+                              ? providerModels[0].value
+                              : displayData.model;
+
+                          updateField({
+                            provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
+                            model: firstModel,
+                            apiKeySecret: '',
+                          });
+                        }}
+                        value={displayData.provider?.provider.case}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
+                            {Boolean(displayData.provider?.provider.case) && (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  alt={
+                                    MODEL_OPTIONS_BY_PROVIDER[
+                                      displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                    ]?.label
+                                  }
+                                  className="h-4 w-4"
+                                  src={
+                                    MODEL_OPTIONS_BY_PROVIDER[
+                                      displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                    ]?.icon
+                                  }
+                                />
+                                <span>
+                                  {displayData.provider.provider.case === 'openai' && 'OpenAI'}
+                                  {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
+                                  {displayData.provider.provider.case === 'google' && 'Google'}
+                                  {displayData.provider.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                                </span>
+                              </div>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProviders.map((provider) => (
+                            <SelectItem key={provider.id} value={provider.id}>
+                              <div className="flex items-center gap-2">
+                                {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
+                                <span>{provider.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* Model - filtered by provider */}
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
-                    {displayData.provider?.provider.case === 'openaiCompatible' ||
+                    {(!isUsingGateway && displayData.provider?.provider.case === 'openaiCompatible') ||
                     (isUsingGateway && filteredModels.length === 0 && !isLoadingProviders) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
@@ -1399,24 +1462,25 @@ export const AIAgentConfigurationTab = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* LLM Provider (Gateway) - show if configured */}
-                  {llmProviderName && (
-                    <div className="space-y-2">
-                      <Label>LLM Provider (Gateway)</Label>
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text>{llmProviderName}</Text>
-                      </div>
-                    </div>
-                  )}
                   <div className="space-y-2">
                     <Label>Provider</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>
-                        {agent.provider?.provider.case === 'openai' && 'OpenAI'}
-                        {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
-                        {agent.provider?.provider.case === 'google' && 'Google'}
-                        {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
-                      </Text>
+                      {isUsingGateway && displayData?.llmProvider ? (
+                        <a
+                          className="flex items-center gap-1.5 text-primary text-sm hover:underline"
+                          href={`/clusters/${config.clusterId}/adp/llm-providers/${displayData.llmProvider}?tab=overview`}
+                        >
+                          {displayData.llmProvider}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <Text>
+                          {agent.provider?.provider.case === 'openai' && 'OpenAI'}
+                          {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
+                          {agent.provider?.provider.case === 'google' && 'Google'}
+                          {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                        </Text>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-2">
