@@ -1,145 +1,108 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-/** biome-ignore-all lint/suspicious/noConsole: diagnostic tracing for UX-1217 */
-/** biome-ignore-all lint/suspicious/noSkippedTests: test shape correct, selector helper gap pending UX-1217 */
 /**
- * Regression test for UX-1217 — ACLs are wiped during edit when adding a new rule.
+ * Regression test for UX-1217 / UX-1219 — adding a rule on edit must not wipe existing ACLs.
  *
- * Ticket repro:
- *   1. Create 3 topic ACLs with same topic-name (3 operations on topic-acl2)
- *   2. Open edit — loads as one Rule with 3 operations
- *   3. Add a consumer-group rule — SAVE triggers the bug: topic ACLs lost
+ * Pre-fix bug: `create-acl.tsx` used `useRef(2)` for the new-rule id counter. On edit-load,
+ * `processResourceAcls` assigns rule ids 0, 1, 2, ... When the user clicked "Add rule",
+ * the new rule got id=2 and collided with an already-loaded rule's React key, causing
+ * list-reconciliation state bleed that dropped ACLs on save.
  *
- * This spec automates steps 1-3 and asserts that after saving:
- *   - The original 3 topic ACLs still exist
- *   - The new consumer-group ACL was also created
+ * Reproducing the collision requires at least 3 distinct rule groups on edit-load
+ * (so that id=2 is already taken). The form groups ACLs by (resourceType, pattern, name),
+ * so three separate rule groups = three different (resourceType/name) combinations.
  */
+import { test } from '@playwright/test';
 
-import { expect, test } from '@playwright/test';
-
-import { appendFileSync, writeFileSync } from 'node:fs';
 import {
-  ModeAllowAll,
   ModeCustom,
   OperationTypeAllow,
-  ResourcePatternTypeAny,
   ResourcePatternTypeLiteral,
+  ResourceTypeCluster,
   ResourceTypeConsumerGroup,
   ResourceTypeTopic,
+  ResourceTypeTransactionalId,
   type Rule,
 } from '../../../src/components/pages/security/shared/acl-model';
 import { AclPage } from '../utils/acl-page';
 
-const REQUEST_LOG = '/tmp/ux-1217-repro.txt';
+const initialRules: Rule[] = [
+  {
+    id: 0,
+    resourceType: ResourceTypeCluster,
+    mode: ModeCustom,
+    selectorType: ResourcePatternTypeLiteral,
+    selectorValue: 'kafka-cluster',
+    operations: {
+      DESCRIBE: OperationTypeAllow,
+    },
+  },
+  {
+    id: 1,
+    resourceType: ResourceTypeTopic,
+    mode: ModeCustom,
+    selectorType: ResourcePatternTypeLiteral,
+    selectorValue: 'topic-acl2',
+    operations: {
+      DESCRIBE: OperationTypeAllow,
+      READ: OperationTypeAllow,
+      WRITE: OperationTypeAllow,
+    },
+  },
+  {
+    id: 2,
+    resourceType: ResourceTypeConsumerGroup,
+    mode: ModeCustom,
+    selectorType: ResourcePatternTypeLiteral,
+    selectorValue: 'cg-a',
+    operations: {
+      READ: OperationTypeAllow,
+    },
+  },
+];
 
-function attachRequestLogger(page: import('@playwright/test').Page, label: string) {
-  writeFileSync(REQUEST_LOG, `=== ${label} @ ${new Date().toISOString()} ===\n`, { flag: 'a' });
-  page.on('request', (req) => {
-    const url = req.url();
-    if (!url.includes('/redpanda.api.')) {
-      return;
-    }
-    appendFileSync(REQUEST_LOG, `REQ  ${req.method()} ${url}\n`);
-    const body = req.postData();
-    if (body && body.length < 500) {
-      appendFileSync(REQUEST_LOG, `     body=${body}\n`);
-    }
-  });
-  page.on('response', (res) => {
-    if (!res.url().includes('/redpanda.api.')) {
-      return;
-    }
-    appendFileSync(REQUEST_LOG, `RES  ${res.status()} ${res.url()}\n`);
-  });
-}
-
-// Per the ticket: 3 separate topic ACLs, same topic name, different operations.
-// Modeled as 3 separate rule-cards in the form (not one card with 3 ops).
-const topicRuleDescribe: Rule = {
-  id: 0,
-  resourceType: ResourceTypeTopic,
+const addedRule: Rule = {
+  id: 3,
+  resourceType: ResourceTypeTransactionalId,
   mode: ModeCustom,
   selectorType: ResourcePatternTypeLiteral,
-  selectorValue: 'topic-acl2',
-  operations: { DESCRIBE: OperationTypeAllow },
-};
-const topicRuleRead: Rule = {
-  id: 1,
-  resourceType: ResourceTypeTopic,
-  mode: ModeCustom,
-  selectorType: ResourcePatternTypeLiteral,
-  selectorValue: 'topic-acl2',
-  operations: { READ: OperationTypeAllow },
-};
-const topicRuleWrite: Rule = {
-  id: 2,
-  resourceType: ResourceTypeTopic,
-  mode: ModeCustom,
-  selectorType: ResourcePatternTypeLiteral,
-  selectorValue: 'topic-acl2',
-  operations: { WRITE: OperationTypeAllow },
-};
-
-const consumerGroupRule: Rule = {
-  id: 1,
-  resourceType: ResourceTypeConsumerGroup,
-  mode: ModeAllowAll,
-  selectorType: ResourcePatternTypeAny,
-  selectorValue: '',
-  operations: {},
+  selectorValue: 'tx-1',
+  operations: {
+    DESCRIBE: OperationTypeAllow,
+  },
 };
 
 test.describe('ACL edit preserves existing rules (UX-1217)', () => {
-  // Skipped: the add-cg-rule step times out in CI. Root cause is AclPage.configureRule's
-  // selector helper — it can't reliably target the second rule-card once a rule is added
-  // in edit mode (tracked in UX-1217 handoff comments). Test shape is correct; the page
-  // object helper needs a fix before this can run.
-  test.skip('adding a cg rule on edit does not wipe existing topic ACLs', async ({ page }) => {
+  test('adding a rule on edit does not wipe existing ACLs', async ({ page }) => {
     test.setTimeout(180_000);
-    attachRequestLogger(page, 'ux-1217 add-rule repro');
 
     const principal = `edit-preserve-${Date.now()}`;
-
-    // Step 0: Seed a SCRAM user so the principal is navigable.
-    await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
-    await page.getByTestId('create-user-button').click();
-    await page.getByTestId('create-user-name').fill(principal);
-    await page.getByTestId('create-user-submit').click();
-    await expect(page.getByTestId('user-created-successfully')).toBeVisible();
-    await page.getByTestId('done-button').click();
-
-    // Step 1: Create 1 topic Rule with 3 operations → 3 Kafka ACLs on topic-acl2.
+    const host = '*';
     const aclPage = new AclPage(page);
-    await aclPage.goto();
-    await aclPage.setPrincipal(principal);
-    await aclPage.setHost('*');
-    await aclPage.configureRules([topicRuleDescribe, topicRuleRead, topicRuleWrite]);
-    await aclPage.submitForm();
-    await aclPage.waitForDetailPage();
 
-    appendFileSync(REQUEST_LOG, '\n=== post-create, navigating to edit ===\n');
+    await test.step('Create initial ACL with 3 distinct rule groups', async () => {
+      await aclPage.goto();
+      await aclPage.setPrincipal(principal);
+      await aclPage.setHost(host);
+      await aclPage.configureRules(initialRules);
+      await aclPage.submitForm();
+      await aclPage.waitForDetailPage();
+      await aclPage.validateRulesCount(initialRules.length);
+    });
 
-    // Step 2: Open edit page — triggers ListACLs which populates the form.
-    await page.getByTestId('update-acl-button').click();
-    await page.waitForURL((url) => url.href.includes('/update'));
+    await test.step('Navigate to edit page', async () => {
+      await aclPage.clickUpdateButtonFromDetailPage();
+      await aclPage.waitForUpdatePage();
+    });
 
-    appendFileSync(REQUEST_LOG, '\n=== edit page loaded, about to add consumer-group rule ===\n');
+    await test.step('Add a new rule — pre-fix this collides with the loaded id=2 rule', async () => {
+      await aclPage.updateRules([addedRule]);
+      await aclPage.submitForm();
+      await aclPage.waitForDetailPage();
+    });
 
-    // Step 3: Add a new rule (consumer-group, allow-all) then submit.
-    // This is the scenario that reproduces the bug per the ticket.
-    // Note: updateRules adds new rules starting at the next card index.
-    await aclPage.updateRules([consumerGroupRule]);
-    await aclPage.submitForm();
-    await aclPage.waitForDetailPage();
-
-    appendFileSync(REQUEST_LOG, '\n=== post-edit-save with added cg rule ===\n');
-
-    // Assertion: the detail page should show BOTH the topic rule AND the consumer-group rule.
-    // Rule count = 2 because operations are grouped per (resourceType, pattern, name).
-    await aclPage.validateRulesCount(2);
-
-    // Additional structural check: the topic rule's 3 operations should still be present.
-    // getByTestId matches the detail-page rule entries.
-    await expect(page.getByText('topic-acl2')).toBeVisible();
+    await test.step('Verify every original rule plus the added rule is preserved', async () => {
+      const finalRules = [...initialRules, addedRule];
+      await aclPage.validateRulesCount(finalRules.length);
+      await aclPage.validateAllDetailRules(finalRules, principal, host);
+    });
   });
 });
