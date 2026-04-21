@@ -301,7 +301,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'Remote MCP',
     icon: MCPIcon,
     group: SidebarSection.AGENTIC,
-    visibilityCheck: routeVisibility(() => isEmbedded()),
+    visibilityCheck: routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')),
   },
   {
     path: '/agents',
