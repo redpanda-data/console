@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
@@ -32,7 +33,6 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Separator } from 'components/redpanda-ui/components/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Info, RefreshCw, Shield, UserCog } from 'lucide-react';
 import {
@@ -85,21 +85,22 @@ type CreateUserDialogProps = {
 export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserDialogProps) {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(() => createGeneratedPassword(true));
+  const [password, setPassword] = useState(() => createGeneratedPassword(false));
   const [mechanism, setMechanism] = useState<SASLMechanism>(DEFAULT_MECHANISM);
   const [error, setError] = useState<string | null>(null);
-  const [includeSpecial, setIncludeSpecial] = useState(true);
+  const [includeSpecial, setIncludeSpecial] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { mutateAsync: createUserMutation } = useCreateUserMutation();
+  const navigate = useNavigate();
 
   const resetForm = () => {
     setStep('form');
     setUsername('');
-    setPassword(createGeneratedPassword(true));
+    setPassword(createGeneratedPassword(false));
     setMechanism(DEFAULT_MECHANISM);
     setError(null);
-    setIncludeSpecial(true);
+    setIncludeSpecial(false);
     setIsSubmitting(false);
   };
 
@@ -111,6 +112,12 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
   const handleGeneratePassword = () => {
     const pwd = createGeneratedPassword(includeSpecial);
     setPassword(pwd);
+    setError(null);
+  };
+
+  const handleToggleSpecial = (checked: boolean) => {
+    setIncludeSpecial(checked);
+    setPassword(createGeneratedPassword(checked));
     setError(null);
   };
 
@@ -158,7 +165,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                 <div className="space-y-1">
                   <Label htmlFor="create-username">Username</Label>
                   <Text variant="muted">
-                    Must not contain any whitespace. Dots, hyphens, and underscores may be used.
+                    Must not contain any whitespace. Dots, hyphens and underscores may be used.
                   </Text>
                 </div>
                 <Input
@@ -169,6 +176,7 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                     setError(null);
                   }}
                   placeholder="Username"
+                  testId="create-user-name"
                   type="text"
                   value={username}
                 />
@@ -190,33 +198,35 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                       setError(null);
                     }}
                     placeholder="Enter password"
+                    testId="create-user-password"
                     type="password"
                     value={password}
                   />
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          className="size-9"
-                          onClick={handleGeneratePassword}
-                          size="icon"
-                          type="button"
-                          variant="outline"
-                        >
-                          <RefreshCw className="size-4" />
-                          <span className="sr-only">Generate password</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Generate password</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <CopyButton content={password} disabled={!password} size="icon" variant="outline" />
+                  <Button
+                    aria-label="Generate password"
+                    className="size-9"
+                    onClick={handleGeneratePassword}
+                    size="icon"
+                    testId="refresh-password-button"
+                    type="button"
+                    variant="outline"
+                  >
+                    <RefreshCw className="size-4" />
+                  </Button>
+                  <CopyButton
+                    content={password}
+                    disabled={!password}
+                    size="icon"
+                    testId="copy-password-button"
+                    variant="outline"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={includeSpecial}
                     id="create-special-chars"
-                    onCheckedChange={(checked) => setIncludeSpecial(checked === true)}
+                    onCheckedChange={(checked) => handleToggleSpecial(checked === true)}
+                    testId="special-chars-checkbox"
                   />
                   <Label className="font-normal text-base" htmlFor="create-special-chars">
                     Generate with special characters
@@ -250,17 +260,17 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
             </div>
 
             <DialogFooter>
-              <Button onClick={handleClose} variant="outline">
+              <Button onClick={handleClose} testId="create-user-cancel" variant="outline">
                 Cancel
               </Button>
-              <Button disabled={isSubmitting} onClick={handleCreate}>
+              <Button disabled={isSubmitting} onClick={handleCreate} testId="create-user-submit">
                 {isSubmitting ? 'Creating...' : 'Create'}
               </Button>
             </DialogFooter>
           </>
         ) : (
           <>
-            <DialogHeader spacing="loose">
+            <DialogHeader data-testid="user-created-successfully" spacing="loose">
               <DialogTitle>User Created</DialogTitle>
               <DialogDescription>The user has been created. Make sure to save the credentials below.</DialogDescription>
             </DialogHeader>
@@ -317,9 +327,13 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
                   <Button
                     onClick={() => {
                       handleClose();
-                      onNavigateToTab('permissions');
+                      navigate({
+                        to: '/security/acls/create',
+                        search: { principalType: 'User', principalName: username },
+                      });
                     }}
                     size="sm"
+                    testId="create-acls-button"
                     variant="outline"
                   >
                     <Shield className="size-4" />
@@ -341,7 +355,9 @@ export function CreateUserDialog({ open, onClose, onNavigateToTab }: CreateUserD
             </div>
 
             <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose} testId="done-button">
+                Done
+              </Button>
             </DialogFooter>
           </>
         )}

@@ -19,7 +19,7 @@ test.describe('ACL User Management', () => {
   test('should create a new user with special characters in password', async ({ page }) => {
     await test.step('1. Click Create user button to open user creation dialog', async () => {
       await page.getByTestId('create-user-button').click();
-      await expect(page).toHaveURL('/security/users/create');
+      await expect(page.getByRole('dialog')).toBeVisible();
     });
 
     const timestamp = Date.now();
@@ -42,7 +42,7 @@ test.describe('ACL User Management', () => {
 
     await test.step('5. Verify success message', async () => {
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
-      await expect(page.getByText(username)).toBeVisible();
+      await expect(page.getByRole('dialog').getByText(username)).toBeVisible();
     });
 
     await test.step('6. Return to users list', async () => {
@@ -61,7 +61,7 @@ test.describe('ACL User Management', () => {
 
     await test.step('1. Create a new user', async () => {
       await page.getByTestId('create-user-button').click();
-      await expect(page).toHaveURL('/security/users/create');
+      await expect(page.getByRole('dialog')).toBeVisible();
       await page.getByTestId('create-user-name').fill(username);
       await page.getByTestId('create-user-submit').click();
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();

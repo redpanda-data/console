@@ -29,8 +29,8 @@ async function createScramUser(page: Page, username: string) {
   await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
   await page.getByTestId('create-user-button').click();
   await page.getByTestId('create-user-name').fill(username);
-  await page.getByRole('button', { name: 'Create' }).click();
-  await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'User Created' })).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();
   await expect(page).toHaveURL('/security/users');
 }
