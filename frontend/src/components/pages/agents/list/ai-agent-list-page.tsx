@@ -70,7 +70,7 @@ export type AIAgent = {
   description: string;
   state: AIAgent_State;
   model: string;
-  providerType: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
+  providerType: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
   url?: string;
   mcpServers: Record<string, { id: string }>;
   tags: Record<string, string>;
