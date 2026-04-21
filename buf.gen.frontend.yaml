@@ -2,7 +2,7 @@ version: v2
 clean: true
 inputs:
   - directory: proto
-  - module: buf.build/redpandadata/cloud
+  - module: buf.build/redpandadata/cloud:4d513424c2de4ca4b584eba3f1dce48d
     paths:
       - redpanda/api/adp
 plugins:
