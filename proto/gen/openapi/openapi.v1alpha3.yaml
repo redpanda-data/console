@@ -80,6 +80,8 @@ components:
       properties:
         anthropic:
           $ref: '#/components/schemas/Anthropic'
+        bedrock:
+          $ref: '#/components/schemas/Bedrock'
         google:
           $ref: '#/components/schemas/Google'
         openai:
@@ -323,6 +325,22 @@ components:
         - ATTRIBUTE_OPERATOR_NOT_EQUALS
         - ATTRIBUTE_OPERATOR_IN
       type: string
+    Bedrock:
+      properties:
+        access_key_id:
+          description: |-
+            Optional static AWS access key ID (secret reference).
+            When omitted, uses the AWS default credential chain (IRSA, env vars, instance profile).
+          type: string
+        region:
+          description: AWS region for Bedrock inference (e.g., "us-east-1").
+          type: string
+        secret_access_key:
+          description: Optional static AWS secret access key (secret reference).
+          type: string
+      required:
+        - region
+      type: object
     ComponentType:
       description: Component type for this tool.
       enum:
