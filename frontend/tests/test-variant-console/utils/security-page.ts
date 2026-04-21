@@ -64,7 +64,7 @@ export class SecurityPage {
     return await test.step('Create user', async () => {
       await this.goToUsersList();
       await this.clickCreateUserButton();
-      await this.page.waitForURL('/security/users/create');
+      await this.page.getByRole('dialog').waitFor({ state: 'visible' });
       await this.fillUsername(username);
       await this.submitUserCreation();
       await this.page.getByTestId('user-created-successfully').waitFor({ state: 'visible' });
