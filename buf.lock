@@ -10,9 +10,6 @@ deps:
   - name: buf.build/grpc-ecosystem/grpc-gateway
     commit: a48fcebcf8f140dd9d09359b9bb185a4
     digest: b5:330af8a71b579ab96c4f3ee26929d1a68a5a9e986c7cfe0a898591fc514216bb6e723dc04c74d90fdee3f3f14f9100a54b4f079eb273e6e7213f0d5baca36ff8
-  - name: buf.build/redpandadata/cloud
-    commit: 4e26eb166cc94aa293f60bb7b9bccc72
-    digest: b5:0c01205fc203588c4c94c733dfadf51a1087a3bfa00ff59d2fc4a862f08353f03073f0c46c474022e7028d7fea90fd404948977aec60c0052d0255debf424724
   - name: buf.build/redpandadata/common
     commit: 5d899910f71449dda17179c2e198100d
     digest: b5:4e81172ea170ff50a2d56f299996105a2384c9d2c0e2d0857caba19c7e81f6a9999f027c75dcf89737156c38a86c63d4e4781106b7e8fff057ec3e8de371b2e3

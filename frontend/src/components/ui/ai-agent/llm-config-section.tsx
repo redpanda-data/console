@@ -46,6 +46,7 @@ const LLM_PROVIDER_TYPE_TO_FORM_ID: Record<LLMProviderType, string | undefined> 
 	[LLMProviderType.LLM_PROVIDER_TYPE_ANTHROPIC]: 'anthropic',
 	[LLMProviderType.LLM_PROVIDER_TYPE_GOOGLE]: 'google',
 	[LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: undefined, // not supported yet
+	[LLMProviderType.LLM_PROVIDER_TYPE_OPENAI_COMPATIBLE]: undefined, // not supported yet
 	[LLMProviderType.LLM_PROVIDER_TYPE_UNSPECIFIED]: undefined,
 };
 

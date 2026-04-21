@@ -28,3 +28,8 @@ export const updateLLMProvider = LLMProviderService.method.updateLLMProvider;
  * @generated from rpc redpanda.api.adp.v1alpha1.LLMProviderService.DeleteLLMProvider
  */
 export const deleteLLMProvider = LLMProviderService.method.deleteLLMProvider;
+
+/**
+ * @generated from rpc redpanda.api.adp.v1alpha1.LLMProviderService.ListLLMProviderTypes
+ */
+export const listLLMProviderTypes = LLMProviderService.method.listLLMProviderTypes;
