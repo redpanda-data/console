@@ -357,11 +357,18 @@ export const streamMessage = async ({
     // cleanly rather than raising, so the catch-block reconnect never runs.
     // Route through the same resubscribe loop to avoid finalizing a task that
     // is still progressing on the server.
+    //
+    // The active text block was already closed and nulled above, so we don't
+    // need to repeat that here (unlike the catch branch, which can arrive
+    // mid-stream).
     if (isResubscribable(state)) {
       resubscribeAttempted = true;
-      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
-      state.activeTextBlock = null;
-      await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
+      const recovered = await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
+      const finalResult = await finalizeMessage(state, assistantMessage);
+      // gave-up = orphaned task; mirror the error path by reporting failure
+      // so callers and the UI treat this the same as a thrown-error gave-up.
+      // The gave-up connection-status block is still visible to the user.
+      return recovered ? finalResult : { ...finalResult, success: false };
     }
 
     return await finalizeMessage(state, assistantMessage);

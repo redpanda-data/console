@@ -690,7 +690,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 13b: Attempt counter resets when resubscribe makes progress
+  // Scenario 14: Attempt counter resets when resubscribe makes progress
   // -------------------------------------------------------------------
   test('resets attempt counter when resubscribe delivers events, allowing unlimited retries with progress', async () => {
     const TASK_ID = 'task-reset-attempts';
@@ -746,7 +746,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 13c: processResubscribeStream pushes "reconnected" on first event
+  // Scenario 15: processResubscribeStream pushes "reconnected" on first event
   // -------------------------------------------------------------------
   test('shows reconnected status as soon as resubscribe delivers first event', async () => {
     const TASK_ID = 'task-reconnected-early';
@@ -800,7 +800,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 14: updateMessage called with correct args after recovery
+  // Scenario 16: updateMessage called with correct args after recovery
   // -------------------------------------------------------------------
   test('persists correct state to database after successful recovery', async () => {
     const TASK_ID = 'task-db-check';
@@ -842,9 +842,9 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 15: TypeError in resubscribe rethrown immediately, no retry
+  // Scenario 17: TypeError in resubscribe stops retrying immediately
   // -------------------------------------------------------------------
-  test('rethrows TypeError from resubscribe instead of retrying', async () => {
+  test('stops retrying immediately on TypeError from resubscribe', async () => {
     const TASK_ID = 'task-typeerror';
     const onMessageUpdate = vi.fn();
 
@@ -872,7 +872,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 16: finalizeMessage failure after recovery falls through to error path
+  // Scenario 18: finalizeMessage failure after recovery falls through to error path
   // -------------------------------------------------------------------
   test('falls through to error path when finalizeMessage fails after recovery', async () => {
     // The production code path under test intentionally logs
@@ -918,7 +918,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 16b: Stream ends cleanly with in-flight task — resubscribe runs
+  // Scenario 19: Stream ends cleanly with in-flight task — resubscribe runs
   // -------------------------------------------------------------------
   // Regression guard: load balancers with idle timeouts (commonly ~5 min)
   // close the TCP connection gracefully (FIN), which the SDK surfaces as a
@@ -969,7 +969,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 16c: Clean close on terminal task — does NOT resubscribe
+  // Scenario 20: Clean close on terminal task — does NOT resubscribe
   // -------------------------------------------------------------------
   test('does not resubscribe when stream ends cleanly and task is already terminal', async () => {
     const TASK_ID = 'task-clean-close-terminal';
@@ -1007,7 +1007,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 16d: Clean close on in-flight task where resubscribe gives up
+  // Scenario 21: Clean close on in-flight task where resubscribe gives up
   // -------------------------------------------------------------------
   test('finalizes with gave-up status when clean-close triggers resubscribe but it exhausts retries', async () => {
     const TASK_ID = 'task-clean-close-giveup';
@@ -1033,10 +1033,11 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
 
     const result = await resultPromise;
 
-    // Stream ended cleanly so no error was thrown — finalizeMessage still runs
-    // after resubscribe gives up. success=true reflects "no exception", but the
-    // UI learns about the problem via the gave-up connection-status block.
-    expect(result.success).toBe(true);
+    // Clean-close gave-up is reported as success=false, mirroring the error-path
+    // gave-up: an orphaned task is a failure regardless of whether the original
+    // disconnect threw or was graceful. The UI surfaces the cause via the
+    // gave-up connection-status block.
+    expect(result.success).toBe(false);
     expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(5);
 
     const connBlocks = result.assistantMessage.contentBlocks.filter((b) => b.type === 'connection-status');
@@ -1052,7 +1053,7 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 16e: Clean-close resubscribe guard — no second round on finalize failure
+  // Scenario 22: Clean-close resubscribe guard — no second round on gave-up + finalize failure
   // -------------------------------------------------------------------
   // Regression guard: after the clean-close path enters resubscribeLoop and
   // gives up (task still non-terminal), if finalizeMessage subsequently
@@ -1104,7 +1105,93 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
-  // Scenario 17: gave-up replaces stale reconnecting block (not appended)
+  // Scenario 23: Clean-close resubscribe SUCCEEDS, then finalizeMessage throws
+  // -------------------------------------------------------------------
+  // Companion to scenario 22 (the gave-up arm): verifies that the
+  // resubscribeAttempted guard also protects the success-path arm. After a
+  // clean-close resubscribe that drives the task to terminal, if the DB
+  // write in finalizeMessage throws, the outer catch must not re-enter
+  // resubscribeLoop a second time (once or twice). In this particular case
+  // isResubscribable would already be false because the task is terminal,
+  // but we still want an explicit regression test so a future refactor that
+  // changes terminal-state tracking does not silently regress the guard.
+  test('does not re-enter resubscribeLoop when finalizeMessage fails after a successful clean-close resubscribe', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {
+      // Silence expected finalize-failure log so test output stays clean.
+    });
+
+    const TASK_ID = 'task-clean-close-success-then-db-fail';
+    const onMessageUpdate = vi.fn();
+
+    // Stream ends cleanly with task in 'working' state (clean-close path triggers).
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID)), {
+        responseId: TASK_ID,
+      });
+
+    // Resubscribe succeeds and drives task to terminal 'completed'.
+    const mockClient = buildMockClient([
+      statusUpdateEvent(TASK_ID, 'completed', {
+        text: 'Done after idle-timeout reconnect.',
+        messageId: 'msg-done',
+        final: true,
+      }),
+    ]);
+    createA2AClientImpl = vi.fn(async () => mockClient);
+
+    // Make the post-resubscribe finalizeMessage throw on its updateMessage call.
+    vi.mocked(updateMessage).mockRejectedValueOnce(new Error('DB write failed'));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    // Exactly one createA2AClient call — the guard prevented a second round.
+    expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(1);
+
+    // Finalize threw, so the outer catch ran and reported failure.
+    expect(result.success).toBe(false);
+    expect(result.assistantMessage.contentBlocks.some((b) => b.type === 'a2a-error')).toBe(true);
+
+    // Task state captured during recovery is preserved in the final message.
+    expect(result.assistantMessage.taskState).toBe('completed');
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 24: Clean-close with taskId captured from response metadata fallback
+  // -------------------------------------------------------------------
+  // The metadata-fallback block at streamMessage lines 344–352 runs BEFORE
+  // the clean-close isResubscribable check, so a stream that produced only a
+  // text-delta but has a valid "task-" id in response metadata should not
+  // enter resubscribeLoop (no capturedTaskState). This test asserts that
+  // ordering and also confirms that metadata fallback alone does not cause
+  // spurious reconnects.
+  test('does not resubscribe when only metadata fallback populates taskId and stream ended cleanly', async () => {
+    const TASK_ID = 'task-metadata-only';
+    const onMessageUpdate = vi.fn();
+
+    // No task/status-update events — just a text-delta. capturedTaskState
+    // will never be populated by the handlers, so isResubscribable returns
+    // false even after metadata fallback fills in capturedTaskId.
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream([{ type: 'text-delta', text: 'Quick reply.' }]), {
+        text: 'Quick reply.',
+        responseId: TASK_ID,
+      });
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([]));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskId).toBe(TASK_ID);
+    // No resubscribe attempt because capturedTaskState was never set.
+    expect(vi.mocked(createA2AClientImpl)).not.toHaveBeenCalled();
+    // No connection-status blocks surfaced to the UI.
+    const connBlocks = connectionStatuses(result.assistantMessage.contentBlocks);
+    expect(connBlocks).toHaveLength(0);
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 25: gave-up replaces stale reconnecting block (not appended)
   // -------------------------------------------------------------------
   test('gave-up replaces the last reconnecting block instead of stacking', async () => {
     const TASK_ID = 'task-gaveup-replace';
