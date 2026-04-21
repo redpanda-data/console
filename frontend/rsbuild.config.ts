@@ -87,8 +87,20 @@ export default defineConfig({
       credentials: true,
     },
     proxy: [
-      // All APIs - proxy to Console backend. AI Gateway (v1 and v2) is not
-      // proxied here; Console consumes AIGW via ADP UI in Cloud UI instead.
+      // AIGW v2 API - proxy to new AI Gateway management API (LLMProviderService, ModelService)
+      ...(process.env.AIGW_URL
+        ? [
+            {
+              context: ['/.aigw/api'],
+              target: process.env.AIGW_URL,
+              changeOrigin: true,
+              secure: false,
+              logLevel: 'debug',
+              pathRewrite: { '^/\\.aigw/api': '' },
+            },
+          ]
+        : []),
+      // All other APIs - proxy to Console backend
       {
         context: ['/api', '/redpanda.api', '/auth', '/logout'],
         target: process.env.PROXY_TARGET || 'http://localhost:9090',
