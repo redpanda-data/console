@@ -364,11 +364,21 @@ export const streamMessage = async ({
     if (isResubscribable(state)) {
       resubscribeAttempted = true;
       const recovered = await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
-      const finalResult = await finalizeMessage(state, assistantMessage);
-      // gave-up = orphaned task; mirror the error path by reporting failure
-      // so callers and the UI treat this the same as a thrown-error gave-up.
-      // The gave-up connection-status block is still visible to the user.
-      return recovered ? finalResult : { ...finalResult, success: false };
+      try {
+        const finalResult = await finalizeMessage(state, assistantMessage);
+        // gave-up = orphaned task; mirror the error path by reporting failure
+        // so callers and the UI treat this the same as a thrown-error gave-up.
+        // The gave-up connection-status block is still visible to the user.
+        return recovered ? finalResult : { ...finalResult, success: false };
+      } catch (finalizeError) {
+        // Mirror the logging in the catch-block recovery branch so a DB
+        // failure after a clean-close reconnect is observable in production.
+        // biome-ignore lint/suspicious/noConsole: intentional error logging for production observability
+        console.error('finalizeMessage failed after clean-close recovery:', finalizeError);
+        // Rethrow into the outer catch, which will produce an a2a-error block.
+        // The resubscribeAttempted flag prevents a second resubscribe round.
+        throw finalizeError;
+      }
     }
 
     return await finalizeMessage(state, assistantMessage);

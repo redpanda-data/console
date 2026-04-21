@@ -1062,8 +1062,11 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   // flag so that state-is-still-working + DB-error doesn't trigger another
   // full round of exponential-backoff retries.
   test('does not re-enter resubscribeLoop when finalizeMessage fails after a gave-up clean-close', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {
-      // Silence expected finalize-failure log so test output stays clean.
+    // The clean-close branch logs 'finalizeMessage failed after clean-close
+    // recovery:' on this path. Capture the spy so we can silence the expected
+    // log and also assert it fires exactly once.
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // Swallow expected negative-path log to keep test output clean.
     });
 
     const TASK_ID = 'task-clean-close-no-double-reconnect';
@@ -1102,6 +1105,14 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
     // Fell through to error path because finalizeMessage threw.
     expect(result.success).toBe(false);
     expect(result.assistantMessage.contentBlocks.some((b) => b.type === 'a2a-error')).toBe(true);
+
+    // The clean-close recovery logs finalize failures for production
+    // observability; assert it fires exactly once (not once per resubscribe
+    // attempt and not silently swallowed).
+    const cleanCloseLogs = errorSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].startsWith('finalizeMessage failed after clean-close recovery')
+    );
+    expect(cleanCloseLogs).toHaveLength(1);
   });
 
   // -------------------------------------------------------------------
@@ -1116,8 +1127,9 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   // but we still want an explicit regression test so a future refactor that
   // changes terminal-state tracking does not silently regress the guard.
   test('does not re-enter resubscribeLoop when finalizeMessage fails after a successful clean-close resubscribe', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {
-      // Silence expected finalize-failure log so test output stays clean.
+    // Same pattern as scenario 22: silence the expected log and assert it fires.
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // Swallow expected negative-path log to keep test output clean.
     });
 
     const TASK_ID = 'task-clean-close-success-then-db-fail';
@@ -1153,6 +1165,12 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
 
     // Task state captured during recovery is preserved in the final message.
     expect(result.assistantMessage.taskState).toBe('completed');
+
+    // Finalize-failure log fires exactly once from the clean-close branch.
+    const cleanCloseLogs = errorSpy.mock.calls.filter(
+      (args) => typeof args[0] === 'string' && args[0].startsWith('finalizeMessage failed after clean-close recovery')
+    );
+    expect(cleanCloseLogs).toHaveLength(1);
   });
 
   // -------------------------------------------------------------------
