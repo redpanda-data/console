@@ -64,6 +64,7 @@ import {
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_BedrockSchema,
   AIAgent_Provider_GoogleSchema,
   AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
@@ -89,7 +90,8 @@ const LLM_PROVIDER_TYPE_TO_FORM_ID: Record<LLMProviderType, string | undefined> 
   [LLMProviderType.LLM_PROVIDER_TYPE_OPENAI]: 'openai',
   [LLMProviderType.LLM_PROVIDER_TYPE_ANTHROPIC]: 'anthropic',
   [LLMProviderType.LLM_PROVIDER_TYPE_GOOGLE]: 'google',
-  [LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: undefined, // not supported yet
+  [LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: 'bedrock',
+  [LLMProviderType.LLM_PROVIDER_TYPE_OPENAI_COMPATIBLE]: 'openaiCompatible',
   [LLMProviderType.LLM_PROVIDER_TYPE_UNSPECIFIED]: undefined,
 };
 
@@ -200,7 +202,7 @@ const extractProviderInfo = (provider: AIAgent_Provider): { apiKeyTemplate: stri
  * Creates updated provider with new API key reference
  */
 const createUpdatedProvider = (
-  providerCase: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | undefined,
+  providerCase: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock' | undefined,
   apiKeyRef: string,
   baseUrl: string
 ): AIAgent_Provider => {
@@ -232,6 +234,15 @@ const createUpdatedProvider = (
           value: create(AIAgent_Provider_OpenAICompatibleSchema, {
             apiKey: apiKeyRef,
             baseUrl,
+          }),
+        },
+      });
+    case 'bedrock':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'bedrock',
+          value: create(AIAgent_Provider_BedrockSchema, {
+            region: baseUrl || undefined, // region is passed via baseUrl field for now
           }),
         },
       });
@@ -1239,7 +1250,7 @@ export const AIAgentConfigurationTab = () => {
                             selectedGwProvider?.type != null
                               ? (LLM_PROVIDER_TYPE_TO_FORM_ID[selectedGwProvider.type] ?? 'openaiCompatible')
                               : displayData.provider?.provider.case || 'openai'
-                          ) as 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
+                          ) as 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
 
                           updateField({
                             llmProvider: value,
@@ -1279,7 +1290,7 @@ export const AIAgentConfigurationTab = () => {
                     ) : (
                       <Select
                         disabled={isLoadingProviders}
-                        onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
+                        onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock') => {
                           const providerModels = MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
                           const firstModel =
                             providerModels.length > 0 && providerModels[0]
