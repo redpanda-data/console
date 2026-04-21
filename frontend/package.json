@@ -61,7 +61,8 @@
     "serialize-javascript": "^7.0.5",
     "@remix-run/router": "^1.23.2",
     "flatted": "^3.4.2",
-    "immutable": "^5.1.5"
+    "immutable": "^5.1.5",
+    "protobufjs": "^7.5.5"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.13",
@@ -233,6 +234,7 @@
     "serialize-javascript": "^7.0.5",
     "@remix-run/router": "^1.23.2",
     "flatted": "^3.4.2",
-    "immutable": "^5.1.5"
+    "immutable": "^5.1.5",
+    "protobufjs": "^7.5.5"
   }
 }
