@@ -87,22 +87,6 @@ export default defineConfig({
       credentials: true,
     },
     proxy: [
-      // AI Gateway API - proxy to separate AI Gateway service
-      // Matches: /.redpanda/api/redpanda.api.aigateway.v1.*
-      // Proto package is: redpanda.api.aigateway.v1 (includes .api)
-      // AI Gateway now expects the full path with .api
-      ...(process.env.AI_GATEWAY_URL
-        ? [
-            {
-              context: ['/.redpanda/api/redpanda.api.aigateway.v1'],
-              target: process.env.AI_GATEWAY_URL,
-              changeOrigin: true,
-              secure: false,
-              logLevel: 'debug',
-              // No pathRewrite - AI Gateway expects full path with .api
-            },
-          ]
-        : []),
       // AIGW v2 API - proxy to new AI Gateway management API (LLMProviderService, ModelService)
       ...(process.env.AIGW_URL
         ? [
