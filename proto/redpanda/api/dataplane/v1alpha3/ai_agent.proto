@@ -145,12 +145,33 @@ message AIAgent {
       ];
     }
 
+    message Bedrock {
+      // AWS region for Bedrock inference (e.g., "us-east-1").
+      string region = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^[a-z]{2}(-[a-z]+-\\d+)?$"
+      ];
+      // Optional secret reference for the AWS access key ID.
+      // When omitted, uses the AWS default credential chain (IRSA, env vars, instance profile).
+      string access_key_id_secret_ref = 2 [
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+      ];
+      // Optional secret reference for the AWS secret access key.
+      string secret_access_key_secret_ref = 3 [
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+      ];
+    }
+
     oneof provider {
       option (buf.validate.oneof).required = true;
       OpenAI openai = 1;
       Anthropic anthropic = 2;
       Google google = 3;
       OpenAICompatible openai_compatible = 4;
+      Bedrock bedrock = 5;
     }
   }
 
