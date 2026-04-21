@@ -33,7 +33,7 @@ export const file_protoc_gen_openapiv2_options_openapiv2: GenFile = /*@__PURE__*
  *      };
  *      license: {
  *        name: "BSD 3-Clause License";
- *        url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE.txt";
+ *        url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE";
  *      };
  *    };
  *    schemes: HTTPS;
@@ -400,7 +400,7 @@ export const HeaderParameterSchema: GenMessage<HeaderParameter> = /*@__PURE__*/
   messageDesc(file_protoc_gen_openapiv2_options_openapiv2, 3);
 
 /**
- * `Type` is a a supported HTTP header type.
+ * `Type` is a supported HTTP header type.
  * See https://swagger.io/specification/v2/#parameterType.
  *
  * @generated from enum grpc.gateway.protoc_gen_openapiv2.options.HeaderParameter.Type
@@ -570,7 +570,7 @@ export const ResponseSchema: GenMessage<Response> = /*@__PURE__*/
  *      };
  *      license: {
  *        name: "BSD 3-Clause License";
- *        url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE.txt";
+ *        url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE";
  *      };
  *    };
  *    ...
@@ -708,7 +708,7 @@ export const ContactSchema: GenMessage<Contact> = /*@__PURE__*/
  *      ...
  *      license: {
  *        name: "BSD 3-Clause License";
- *        url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE.txt";
+ *        url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE";
  *      };
  *      ...
  *    };

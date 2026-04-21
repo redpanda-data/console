@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file google/rpc/status.proto.
  */
 export const file_google_rpc_status: GenFile = /*@__PURE__*/
-  fileDesc("Chdnb29nbGUvcnBjL3N0YXR1cy5wcm90bxIKZ29vZ2xlLnJwYyJOCgZTdGF0dXMSDAoEY29kZRgBIAEoBRIPCgdtZXNzYWdlGAIgASgJEiUKB2RldGFpbHMYAyADKAsyFC5nb29nbGUucHJvdG9idWYuQW55QmEKDmNvbS5nb29nbGUucnBjQgtTdGF0dXNQcm90b1ABWjdnb29nbGUuZ29sYW5nLm9yZy9nZW5wcm90by9nb29nbGVhcGlzL3JwYy9zdGF0dXM7c3RhdHVz+AEBogIDUlBDYgZwcm90bzM", [file_google_protobuf_any]);
+  fileDesc("Chdnb29nbGUvcnBjL3N0YXR1cy5wcm90bxIKZ29vZ2xlLnJwYyJOCgZTdGF0dXMSDAoEY29kZRgBIAEoBRIPCgdtZXNzYWdlGAIgASgJEiUKB2RldGFpbHMYAyADKAsyFC5nb29nbGUucHJvdG9idWYuQW55Ql4KDmNvbS5nb29nbGUucnBjQgtTdGF0dXNQcm90b1ABWjdnb29nbGUuZ29sYW5nLm9yZy9nZW5wcm90by9nb29nbGVhcGlzL3JwYy9zdGF0dXM7c3RhdHVzogIDUlBDYgZwcm90bzM", [file_google_protobuf_any]);
 
 /**
  * The `Status` type defines a logical error model that is suitable for

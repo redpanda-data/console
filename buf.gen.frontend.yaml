@@ -3,6 +3,8 @@ clean: true
 inputs:
   - directory: proto
   - module: buf.build/redpandadata/cloud
+    paths:
+      - redpanda/api/adp
 plugins:
   - remote: buf.build/bufbuild/es:v2.2.5
     out: frontend/src/protogen
