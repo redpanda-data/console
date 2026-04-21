@@ -918,6 +918,140 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
+  // Scenario 16b: Stream ends cleanly with in-flight task — resubscribe runs
+  // -------------------------------------------------------------------
+  // Regression guard: load balancers with idle timeouts (commonly ~5 min)
+  // close the TCP connection gracefully (FIN), which the SDK surfaces as a
+  // clean end-of-stream rather than a thrown error. Before the fix, this
+  // bypassed the catch-block resubscribe and finalized the message with a
+  // non-terminal taskState. We now route clean closes through resubscribeLoop
+  // too when the task is still in-flight.
+  test('resubscribes when stream ends cleanly but task is still in-flight (LB idle-timeout)', async () => {
+    const TASK_ID = 'task-clean-close-inflight';
+    const onMessageUpdate = vi.fn();
+
+    // Initial stream emits task + working state and then ENDS CLEANLY (no throw).
+    // Note the absence of a `crashAfter` argument to buildFullStream.
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID, 'Still thinking...')), {
+        responseId: TASK_ID,
+      });
+
+    // Resubscribe stream picks up and drives the task to completion.
+    const mockClient = buildMockClient([
+      statusUpdateEvent(TASK_ID, 'completed', {
+        text: 'All done after the idle-timeout reconnect.',
+        messageId: 'msg-after-idle',
+        final: true,
+      }),
+    ]);
+    createA2AClientImpl = vi.fn(async () => mockClient);
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskState).toBe('completed');
+
+    // The fix: resubscribeTask must be called even though no error was thrown.
+    expect(mockClient.resubscribeTask).toHaveBeenCalledWith({ id: TASK_ID });
+
+    // Connection-status blocks should show the disconnect → reconnected flow.
+    const connBlocks = connectionStatuses(result.assistantMessage.contentBlocks);
+    expect(connBlocks.some((b) => b.type === 'connection-status' && b.status === 'reconnected')).toBe(true);
+
+    // Final content from the resubscribe stream is present.
+    const statusBlocks = result.assistantMessage.contentBlocks.filter((b) => b.type === 'task-status-update');
+    expect(
+      statusBlocks.some(
+        (b) => b.type === 'task-status-update' && b.text === 'All done after the idle-timeout reconnect.'
+      )
+    ).toBe(true);
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 16c: Clean close on terminal task — does NOT resubscribe
+  // -------------------------------------------------------------------
+  test('does not resubscribe when stream ends cleanly and task is already terminal', async () => {
+    const TASK_ID = 'task-clean-close-terminal';
+    const onMessageUpdate = vi.fn();
+
+    const events = [
+      ...initialWorkingTaskEvents(TASK_ID, 'Processing...'),
+      {
+        type: 'raw' as const,
+        rawValue: statusUpdateEvent(TASK_ID, 'completed', {
+          text: 'Done normally.',
+          messageId: 'msg-done',
+          final: true,
+        }),
+      },
+    ];
+
+    // Stream ends cleanly after emitting the terminal 'completed' event.
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(events), {
+        responseId: TASK_ID,
+      });
+
+    createA2AClientImpl = vi.fn(async () => buildMockClient([]));
+
+    const result = await streamMessage({ ...baseParams, onMessageUpdate });
+
+    expect(result.success).toBe(true);
+    expect(result.assistantMessage.taskState).toBe('completed');
+    // Terminal state means isResubscribable() is false — no client should be created.
+    expect(vi.mocked(createA2AClientImpl)).not.toHaveBeenCalled();
+
+    const connBlocks = connectionStatuses(result.assistantMessage.contentBlocks);
+    expect(connBlocks).toHaveLength(0);
+  });
+
+  // -------------------------------------------------------------------
+  // Scenario 16d: Clean close on in-flight task where resubscribe gives up
+  // -------------------------------------------------------------------
+  test('finalizes with gave-up status when clean-close triggers resubscribe but it exhausts retries', async () => {
+    const TASK_ID = 'task-clean-close-giveup';
+    const onMessageUpdate = vi.fn();
+
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID, 'Starting slow op...')), {
+        responseId: TASK_ID,
+      });
+
+    // Every resubscribe attempt fails — backend is unreachable.
+    createA2AClientImpl = vi.fn(async () => buildMockClient([], new Error('still down')));
+
+    vi.useRealTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+
+    const resultPromise = streamMessage({ ...baseParams, onMessageUpdate });
+
+    // Advance past all 5 backoff delays (1s + 2s + 4s + 8s + 16s).
+    for (let i = 0; i < 5; i++) {
+      await vi.advanceTimersByTimeAsync(2 ** i * 1000 + 100);
+    }
+
+    const result = await resultPromise;
+
+    // Stream ended cleanly so no error was thrown — finalizeMessage still runs
+    // after resubscribe gives up. success=true reflects "no exception", but the
+    // UI learns about the problem via the gave-up connection-status block.
+    expect(result.success).toBe(true);
+    expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(5);
+
+    const connBlocks = result.assistantMessage.contentBlocks.filter((b) => b.type === 'connection-status');
+    expect(connBlocks).toHaveLength(1);
+    expect(connBlocks[0].type === 'connection-status' && connBlocks[0].status).toBe('gave-up');
+
+    // Content received before the idle-timeout close is preserved.
+    expect(
+      result.assistantMessage.contentBlocks.some(
+        (b) => b.type === 'task-status-update' && b.text === 'Starting slow op...'
+      )
+    ).toBe(true);
+  });
+
+  // -------------------------------------------------------------------
   // Scenario 17: gave-up replaces stale reconnecting block (not appended)
   // -------------------------------------------------------------------
   test('gave-up replaces the last reconnecting block instead of stacking', async () => {

@@ -346,6 +346,18 @@ export const streamMessage = async ({
       }
     }
 
+    // The stream ended without throwing, but the task may still be in-flight
+    // server-side. This happens when a load balancer silently closes an idle
+    // TCP connection (FIN) around its idle timeout — the AsyncIterable exits
+    // cleanly rather than raising, so the catch-block reconnect never runs.
+    // Route through the same resubscribe loop to avoid finalizing a task that
+    // is still progressing on the server.
+    if (isResubscribable(state)) {
+      closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
+      state.activeTextBlock = null;
+      await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
+    }
+
     return await finalizeMessage(state, assistantMessage);
   } catch (error) {
     // If the task is still in-flight, try to resubscribe before giving up
