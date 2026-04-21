@@ -1052,6 +1052,58 @@ describe('streamMessage - SSE reconnection via tasks/resubscribe', () => {
   });
 
   // -------------------------------------------------------------------
+  // Scenario 16e: Clean-close resubscribe guard — no second round on finalize failure
+  // -------------------------------------------------------------------
+  // Regression guard: after the clean-close path enters resubscribeLoop and
+  // gives up (task still non-terminal), if finalizeMessage subsequently
+  // throws (e.g., DB write fails), the outer catch must NOT invoke
+  // resubscribeLoop a second time. We track this via the `resubscribeAttempted`
+  // flag so that state-is-still-working + DB-error doesn't trigger another
+  // full round of exponential-backoff retries.
+  test('does not re-enter resubscribeLoop when finalizeMessage fails after a gave-up clean-close', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {
+      // Silence expected finalize-failure log so test output stays clean.
+    });
+
+    const TASK_ID = 'task-clean-close-no-double-reconnect';
+    const onMessageUpdate = vi.fn();
+
+    // Stream ends cleanly with task in 'working' state (triggers clean-close resubscribe path).
+    streamTextImpl = () =>
+      buildStreamTextResult(buildFullStream(initialWorkingTaskEvents(TASK_ID)), {
+        responseId: TASK_ID,
+      });
+
+    // All resubscribe attempts fail → loop will hit gave-up.
+    createA2AClientImpl = vi.fn(async () => buildMockClient([], new Error('server down')));
+
+    // Make updateMessage reject on the post-resubscribe finalize call. There is
+    // also a saveMessage call at the top, but saveMessage is a separate mock.
+    vi.mocked(updateMessage).mockRejectedValueOnce(new Error('DB write failed'));
+
+    vi.useRealTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: false });
+
+    const resultPromise = streamMessage({ ...baseParams, onMessageUpdate });
+
+    // Advance past the 5 backoff delays of the single resubscribe round.
+    // If the guard is broken, a second round would need another 31s of
+    // advancement; the assertion below will catch that.
+    for (let i = 0; i < 5; i++) {
+      await vi.advanceTimersByTimeAsync(2 ** i * 1000 + 100);
+    }
+
+    const result = await resultPromise;
+
+    // Exactly one round of 5 attempts — not 10.
+    expect(vi.mocked(createA2AClientImpl)).toHaveBeenCalledTimes(5);
+
+    // Fell through to error path because finalizeMessage threw.
+    expect(result.success).toBe(false);
+    expect(result.assistantMessage.contentBlocks.some((b) => b.type === 'a2a-error')).toBe(true);
+  });
+
+  // -------------------------------------------------------------------
   // Scenario 17: gave-up replaces stale reconnecting block (not appended)
   // -------------------------------------------------------------------
   test('gave-up replaces the last reconnecting block instead of stacking', async () => {

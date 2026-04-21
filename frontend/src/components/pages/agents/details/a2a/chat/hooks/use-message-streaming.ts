@@ -285,6 +285,11 @@ export const streamMessage = async ({
     latestUsage: undefined,
   };
 
+  // Tracks whether the clean-close path already ran resubscribeLoop, so that
+  // a post-reconnect failure in finalizeMessage doesn't cause the outer catch
+  // to re-enter the loop a second time.
+  let resubscribeAttempted = false;
+
   try {
     // Stream the response using a2a provider
     const streamResult = streamText({
@@ -353,6 +358,7 @@ export const streamMessage = async ({
     // Route through the same resubscribe loop to avoid finalizing a task that
     // is still progressing on the server.
     if (isResubscribable(state)) {
+      resubscribeAttempted = true;
       closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
       state.activeTextBlock = null;
       await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
@@ -360,8 +366,11 @@ export const streamMessage = async ({
 
     return await finalizeMessage(state, assistantMessage);
   } catch (error) {
-    // If the task is still in-flight, try to resubscribe before giving up
-    if (isResubscribable(state)) {
+    // If the task is still in-flight, try to resubscribe before giving up.
+    // Skip if the clean-close path already exhausted a resubscribe round —
+    // otherwise a finalizeMessage failure after a gave-up reconnect would
+    // trigger another full round of retries.
+    if (!resubscribeAttempted && isResubscribable(state)) {
       closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
       state.activeTextBlock = null;
 
