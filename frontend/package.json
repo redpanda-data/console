@@ -37,7 +37,8 @@
     "prismjs": "^1.30.0",
     "path-to-regexp": "1.9.0",
     "@remix-run/node": "^2.17.4",
-    "@remix-run/router": "^1.23.2"
+    "@remix-run/router": "^1.23.2",
+    "yaml": "^2.8.3"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1",
@@ -90,7 +91,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.17",
     "uuid": "^11.1.0",
-    "yaml": "^2.7.0",
+    "yaml": "^2.8.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -132,6 +133,7 @@
   },
   "resolutions": {
     "react-error-overlay": "6.0.11",
-    "immer": "9.0.7"
+    "immer": "9.0.7",
+    "yaml": "^2.8.3"
   }
 }
