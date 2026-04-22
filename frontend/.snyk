@@ -66,4 +66,37 @@ ignore:
           in this app.
         expires: '2027-04-22T00:00:00.000Z'
         created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-REMIXRUNNODE-14908858:
+    - '*':
+        reason: >-
+          Directory Traversal in @remix-run/node's file-system handler.
+          @remix-run/node is pulled only via @tanstack/react-form's optional
+          /start SSR utility. Frontend is a browser-only Module Federation
+          remote built with rsbuild/rspack; grep of frontend/src confirms
+          source imports only from '@tanstack/react-form' (browser entry),
+          never '@tanstack/react-form/start'. @remix-run/node never loads in
+          the browser and its file-system APIs are never invoked.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-REMIXRUNROUTER-14908287:
+    - '*':
+        reason: >-
+          Open Redirect in @remix-run/router. Pulled via the same
+          @tanstack/react-form /start SSR chain as the undici/remix-run-node
+          advisories. Frontend source imports only the browser entry of
+          @tanstack/react-form, never the /start subpath. @remix-run/router's
+          server-side redirect-handling code is never executed in this
+          browser-only MF remote.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-REMIXRUNROUTER-14908530:
+    - '*':
+        reason: >-
+          XSS in @remix-run/router. Pulled via the same
+          @tanstack/react-form /start SSR chain. Frontend source imports only
+          the browser entry of @tanstack/react-form, never the /start
+          subpath. The vulnerable server-side response-rendering code is
+          never executed in this browser-only MF remote.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
 patch: {}
