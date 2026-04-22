@@ -1,0 +1,69 @@
+# Snyk (https://snyk.io) policy file
+version: v1.25.1
+ignore:
+  SNYK-JS-LODASH-15869625:
+    - '@redpanda-data/ui > @hookform/devtools > lodash':
+        reason: >-
+          CVE-2026-4800 / Arbitrary Code Injection in lodash _.template with
+          options.imports. Vulnerable surface is _.template. Reachability
+          analysis: @hookform/devtools only imports lodash/isUndefined,
+          lodash/isObject, and lodash/get (see
+          node_modules/@hookform/devtools/dist/index.esm.js). The vulnerable
+          _.template API is never loaded or invoked through this chain.
+          Additionally, @hookform/devtools is gated inside @redpanda-data/ui
+          behind a developerView flag and is not used anywhere in frontend/src.
+          No untrusted input reaches lodash through this path.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+    - '@redpanda-data/ui > remark-emoji > node-emoji > lodash':
+        reason: >-
+          CVE-2026-4800 / Arbitrary Code Injection in lodash _.template with
+          options.imports. Vulnerable surface is _.template. Reachability
+          analysis: the legacy node-emoji@1.11.0 pulled transitively through
+          @redpanda-data/ui's bundled remark-emoji@3.1.2 only imports
+          lodash/toArray (see
+          node_modules/@redpanda-data/ui/node_modules/remark-emoji/node_modules/node-emoji/lib/emoji.js).
+          The vulnerable _.template API is never loaded or invoked. Frontend
+          source code does not call lodash directly and does not import
+          node-emoji directly. No untrusted input reaches _.template.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-UNDICI-15518064:
+    - '@tanstack/react-form > @remix-run/node > undici':
+        reason: >-
+          Uncaught Exception in undici WebSocket ByteParser. undici is pulled
+          only via @tanstack/react-form's optional /start SSR utility
+          (dist/esm/start/utils.js -> @remix-run/node). Frontend is a
+          browser-only Module Federation remote built with rsbuild/rspack;
+          source code imports only from '@tanstack/react-form' (browser entry),
+          never '@tanstack/react-form/start'. undici never loads in the
+          browser and its WebSocket client is never invoked from this app.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-UNDICI-15518068:
+    - '@tanstack/react-form > @remix-run/node > undici':
+        reason: >-
+          Improper Handling of Highly Compressed Data in undici
+          PerMessageDeflate.decompress (WebSocket extension). undici is pulled
+          only via @tanstack/react-form's optional /start SSR utility
+          (dist/esm/start/utils.js -> @remix-run/node). Frontend is a
+          browser-only Module Federation remote; source imports only from
+          '@tanstack/react-form' (browser entry), never
+          '@tanstack/react-form/start'. undici's WebSocket client never loads
+          or decompresses data in this app.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-UNDICI-15518070:
+    - '@tanstack/react-form > @remix-run/node > undici':
+        reason: >-
+          Uncaught Exception via server_max_window_bits in undici
+          permessage-deflate WebSocket extension. undici is pulled only via
+          @tanstack/react-form's optional /start SSR utility
+          (dist/esm/start/utils.js -> @remix-run/node). Frontend is a
+          browser-only Module Federation remote; source imports only from
+          '@tanstack/react-form' (browser entry), never
+          '@tanstack/react-form/start'. undici's WebSocket client never loads
+          in this app.
+        expires: '2027-04-22T00:00:00.000Z'
+        created: '2026-04-22T00:00:00.000Z'
+patch: {}
