@@ -50,7 +50,7 @@ export const FormSchema = z
       ),
     triggerType: z.enum(['http', 'slack', 'kafka']).default('http'),
     llmProvider: z.string().optional().or(z.literal('')),
-    provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible']).default('openai'),
+    provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible', 'bedrock']).default('openai'),
     apiKeySecret: z.string(),
     model: z.string().min(1, 'Model is required'),
     baseUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
