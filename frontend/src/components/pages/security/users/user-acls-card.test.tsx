@@ -60,7 +60,7 @@ describe('UserAclsCard', () => {
 
     expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
     expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create ACL' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ Add ACL' })).toBeInTheDocument();
   });
 
   test('should render empty state when acls is undefined', () => {
@@ -68,23 +68,32 @@ describe('UserAclsCard', () => {
 
     expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
     expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create ACL' })).toBeInTheDocument();
   });
 
-  test('should render ACL table with rows, action buttons, and headers', () => {
+  test('should render flat ACL table with correct row count and data', () => {
     renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
-    // Count, rows, action buttons, and headers all rendered together so we assert them once.
-    expect(screen.getByText('ACLs (2)')).toBeInTheDocument();
+    // 3 flat rows: READ + WRITE on test-topic, DESCRIBE on cluster
+    expect(screen.getByText('ACLs 3 rules')).toBeInTheDocument();
 
-    // Principal and host values per row
-    expect(screen.getByTestId('acl-principal-User:test-user-*')).toHaveTextContent('User:test-user');
-    expect(screen.getByTestId('acl-principal-User:test-user-192.168.1.1')).toHaveTextContent('User:test-user');
-    expect(screen.getByTestId('acl-host-*')).toHaveTextContent('*');
-    expect(screen.getByTestId('acl-host-192.168.1.1')).toHaveTextContent('192.168.1.1');
+    // Resource types
+    expect(screen.getAllByText('Topic')).toHaveLength(2);
+    expect(screen.getByText('Cluster')).toBeInTheDocument();
 
-    // Action buttons per row
-    expect(screen.getByTestId('toggle-acl-User:test-user-*')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-acl-User:test-user-*')).toBeInTheDocument();
+    // Resource names
+    expect(screen.getAllByText('test-topic')).toHaveLength(2);
+    expect(screen.getByText('kafka-cluster')).toBeInTheDocument();
+
+    // Operations
+    expect(screen.getByText('Read')).toBeInTheDocument();
+    expect(screen.getByText('Write')).toBeInTheDocument();
+    expect(screen.getByText('Describe')).toBeInTheDocument();
+
+    // Permissions
+    expect(screen.getAllByText('Allow')).toHaveLength(3);
+
+    // Hosts
+    expect(screen.getAllByText('*')).toHaveLength(2);
+    expect(screen.getByText('192.168.1.1')).toBeInTheDocument();
   });
 });

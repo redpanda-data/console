@@ -11,10 +11,10 @@
 
 import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { ShieldCheckIcon } from 'components/icons';
+import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
 import { isServerless } from 'config';
 import { useEffect } from 'react';
 
-import PageContent from '../components/misc/page-content';
 import { Alert, AlertDescription } from '../components/redpanda-ui/components/alert';
 import { Tabs, TabsList, TabsTrigger } from '../components/redpanda-ui/components/tabs';
 import { appGlobal } from '../state/app-global';
@@ -71,7 +71,7 @@ function buildTabs(
     },
     {
       key: 'permissions-list',
-      label: 'Permissions List',
+      label: 'Permissions',
       path: '/security/permissions-list',
       disabled: userData?.canViewPermissionsList === false,
     }
@@ -144,7 +144,7 @@ function SecurityLayout() {
       {warning}
       {noAclAuthorizer}
 
-      <PageContent>
+      <ListLayoutNavigation>
         <Tabs value={activeTab}>
           <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
             {tabs.map((tab) => (
@@ -161,8 +161,8 @@ function SecurityLayout() {
             ))}
           </TabsList>
         </Tabs>
-        <Outlet />
-      </PageContent>
+      </ListLayoutNavigation>
+      <Outlet />
     </>
   );
 }

@@ -19,15 +19,12 @@ export class SecurityPage {
     await this.page.goto(`/security/users/${username}/details`);
   }
 
-  async goToCreateUser() {
-    await this.page.goto('/security/users/create');
-  }
-
   /**
    * User list operations
    */
   async clickCreateUserButton() {
     await this.page.getByTestId('create-user-button').click();
+    await this.page.getByTestId('create-user-name').waitFor({ state: 'visible' });
   }
 
   /**
@@ -65,7 +62,6 @@ export class SecurityPage {
     return await test.step('Create user', async () => {
       await this.goToUsersList();
       await this.clickCreateUserButton();
-      await this.page.waitForURL('/security/users/create');
       await this.fillUsername(username);
       await this.submitUserCreation();
       await this.page.getByTestId('user-created-successfully').waitFor({ state: 'visible' });

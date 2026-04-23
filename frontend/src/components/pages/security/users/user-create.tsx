@@ -15,11 +15,11 @@ import { InfoIcon, LoaderCircleIcon, RotateCwIcon } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useCallback, useState } from 'react';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { generatePassword } from 'utils/password';
 
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
-import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -161,16 +161,13 @@ type CreateUserModalProps = {
     isCreating: boolean;
     isValidUsername: boolean;
     isValidPassword: boolean;
-    selectedRoles: string[];
-    setSelectedRoles: (v: string[]) => void;
     users: string[];
   };
   onCreateUser: () => Promise<boolean>;
   onCancel: () => void;
 };
 
-const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+export const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
   const userAlreadyExists = state.users.includes(state.username);
   const hasError = (!state.isValidUsername || userAlreadyExists) && state.username.length > 0;
 
@@ -194,6 +191,8 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
           </FieldLabel>
           <Input
             autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
             id="create-user-name"
             onChange={(e) => state.setUsername(e.target.value)}
             placeholder="Username"
@@ -276,14 +275,6 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
             </SelectContent>
           </Select>
         </Field>
-
-        {!!featureRolesApi && (
-          <Field>
-            <FieldLabel>Assign roles</FieldLabel>
-            <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
-            <FieldDescription>Assign roles to this user. This is optional and can be changed later.</FieldDescription>
-          </Field>
-        )}
       </div>
 
       <div className="mt-8 flex gap-4">
@@ -309,71 +300,91 @@ type CreateUserConfirmationModalProps = {
   mechanism: SaslMechanism;
   closeModal: () => void;
   onCreateAcls: () => void;
+  onAssignRoles?: () => void;
 };
 
-const CreateUserConfirmationModal = ({
+export const CreateUserConfirmationModal = ({
   username,
   password,
   mechanism,
   closeModal,
   onCreateAcls,
-}: CreateUserConfirmationModalProps) => (
-  <>
-    <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
-      User created successfully
-    </h1>
+  onAssignRoles,
+}: CreateUserConfirmationModalProps) => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
 
-    <Alert className="my-4" icon={<InfoIcon />} variant="info">
-      <AlertDescription>
-        You will not be able to view this password again. Make sure that it is copied and saved.
-      </AlertDescription>
-    </Alert>
+  return (
+    <>
+      <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
+        User created successfully
+      </h1>
 
-    <div className="grid max-w-[460px] items-center gap-x-6 gap-y-2" style={{ gridTemplateColumns: 'max-content 1fr' }}>
-      <div className="font-bold" data-testid="username">
-        Username
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="overflow-hidden break-all">{username}</span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <CopyButton content={username} variant="ghost" />
-          </TooltipTrigger>
-          <TooltipContent side="top">Copy username</TooltipContent>
-        </Tooltip>
+      <Alert className="my-2" icon={<InfoIcon />} variant="info">
+        <AlertDescription>
+          You will not be able to view this password again. Make sure that it is copied and saved.
+        </AlertDescription>
+      </Alert>
+
+      <div
+        className="grid max-w-[460px] items-center gap-x-6 gap-y-2"
+        style={{ gridTemplateColumns: 'max-content 1fr' }}
+      >
+        <div className="font-bold" data-testid="username">
+          Username
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="overflow-hidden break-all">{username}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <CopyButton content={username} variant="ghost" />
+            </TooltipTrigger>
+            <TooltipContent side="top">Copy username</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="font-bold" data-testid="password">
+          Password
+        </div>
+        <div className="flex items-center gap-2">
+          <Input disabled readOnly testId="test_field" type="password" value={password} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <CopyButton content={password} variant="ghost" />
+            </TooltipTrigger>
+            <TooltipContent side="top">Copy password</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="font-bold" data-testid="mechanism">
+          Mechanism
+        </div>
+        <div>
+          <span className="truncate">{mechanism}</span>
+        </div>
       </div>
 
-      <div className="font-bold" data-testid="password">
-        Password
+      <div className="mt-3 border-t pt-6">
+        <h2 className="mb-2 font-semibold text-base">What's next?</h2>
+        <p className="my-3 text-muted-foreground text-sm">
+          This user has no permissions yet. Assign roles or create ACLs to grant access to cluster resources.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button onClick={onCreateAcls} testId="create-acls-button" variant="outline">
+            Create ACLs
+          </Button>
+          {featureRolesApi && onAssignRoles && (
+            <Button onClick={onAssignRoles} testId="assign-roles-button" variant="outline">
+              Assign Roles
+            </Button>
+          )}
+          <Button onClick={closeModal} testId="done-button" variant="link">
+            Done
+          </Button>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Input disabled readOnly testId="test_field" type="password" value={password} />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <CopyButton content={password} variant="ghost" />
-          </TooltipTrigger>
-          <TooltipContent side="top">Copy password</TooltipContent>
-        </Tooltip>
-      </div>
-
-      <div className="font-bold" data-testid="mechanism">
-        Mechanism
-      </div>
-      <div>
-        <span className="truncate">{mechanism}</span>
-      </div>
-    </div>
-
-    <div className="mt-8 flex gap-4">
-      <Button onClick={closeModal} testId="done-button">
-        Done
-      </Button>
-      <Button onClick={onCreateAcls} testId="create-acls-button" variant="link">
-        Create ACLs
-      </Button>
-    </div>
-  </>
-);
+    </>
+  );
+};
 
 export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRoles: (roles: string[]) => void }) => {
   const {

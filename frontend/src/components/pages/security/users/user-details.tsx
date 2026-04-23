@@ -11,11 +11,11 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
+import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
 
 import { UserAclsCard } from './user-acls-card';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
-import { UserInformationCard } from './user-information-card';
 import { UserRolesCard } from './user-roles-card';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRolesQuery } from '../../../../react-query/api/security';
@@ -32,13 +32,23 @@ type UserDetailsPageProps = {
   userName: string;
 };
 
+const formatMechanism = (mechanism?: SASLMechanism): string | null => {
+  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) return 'SCRAM-SHA-256';
+  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512) return 'SCRAM-SHA-512';
+  return null;
+};
+
 const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
 
   const { data: usersData, isLoading: isUsersLoading } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
+  const currentUser = usersData?.users?.find((u) => u.name === userName);
+  const mechanism = formatMechanism(currentUser?.mechanism);
+
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
 
   useSecurityBreadcrumbs([
@@ -68,69 +78,84 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
 
   const isServiceAccount = users.includes(userName);
 
-  return (
-    <div>
-      <h2 className="pt-4 pb-3 font-semibold text-xl">User: {userName}</h2>
-      <div className="flex flex-col gap-4">
-        <UserInformationCard
-          onEditPassword={() => {
-            setIsChangePasswordModalOpen(true);
-          }}
-          username={userName}
-        />
-        <UserPermissionDetailsContent
-          onChangeRoles={
-            featureRolesApi
-              ? () => {
-                  setIsChangeRolesModalOpen(true);
-                }
-              : undefined
-          }
-          userName={userName}
-        />
-        <div>
-          {Boolean(isServiceAccount) && (
-            <DeleteUserConfirmModal
-              buttonEl={
-                <Button disabled={!isServiceAccount} variant="destructive">
-                  Delete user
-                </Button>
-              }
-              onConfirm={async () => {
-                try {
-                  await deleteUserMutation({ name: userName });
-                } catch {
-                  return; // Error toast shown by mutation's onError
-                }
+  const onConfirmDelete = async () => {
+    try {
+      await deleteUserMutation({ name: userName });
+    } catch {
+      return;
+    }
 
-                // Remove user from all its roles (best-effort)
-                const promises: Promise<UpdateRoleMembershipResponse>[] = [];
-                for (const [roleName, members] of rolesApi.roleMembers) {
-                  if (members.any((m) => m.name === userName)) {
-                    promises.push(
-                      rolesApi.updateRoleMembership(roleName, [], [{ name: userName, principalType: 'User' }])
-                    );
-                  }
-                }
-                await Promise.allSettled(promises);
-                await Promise.allSettled([invalidateUsersCache(), rolesApi.refreshRoleMembers()]);
-                appGlobal.historyPush('/security/users/');
-              }}
-              userName={userName}
-            />
-          )}
+    const promises: Promise<UpdateRoleMembershipResponse>[] = [];
+    for (const [roleName, members] of rolesApi.roleMembers) {
+      if (members.any((m) => m.name === userName)) {
+        promises.push(rolesApi.updateRoleMembership(roleName, [], [{ name: userName, principalType: 'User' }]));
+      }
+    }
+    await Promise.allSettled(promises);
+    await Promise.allSettled([invalidateUsersCache(), rolesApi.refreshRoleMembers()]);
+    appGlobal.historyPush('/security/users/');
+  };
+
+  return (
+    <div className="flex flex-col gap-6 pt-4">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-semibold text-2xl">{userName}</h1>
+          <div className="flex items-center gap-3 text-muted-foreground text-sm">
+            <span>
+              Principal: <span className="font-mono text-foreground">User:{userName}</span>
+            </span>
+            {mechanism && (
+              <>
+                <span>·</span>
+                <span>
+                  Mechanism: <span className="font-mono text-foreground">{mechanism}</span>
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
-        <ChangePasswordModal
-          isOpen={isChangePasswordModalOpen}
-          setIsOpen={setIsChangePasswordModalOpen}
-          userName={userName}
-        />
-
-        {Boolean(featureRolesApi) && (
-          <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={userName} />
-        )}
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
+            Change Password
+          </Button>
+          {Boolean(isServiceAccount) && (
+            <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
+              Delete User
+            </Button>
+          )}
+        </div>
       </div>
+
+      <UserPermissionDetailsContent
+        onChangeRoles={
+          featureRolesApi
+            ? () => {
+                setIsChangeRolesModalOpen(true);
+              }
+            : undefined
+        }
+        userName={userName}
+      />
+
+      <DeleteUserConfirmModal
+        onConfirm={onConfirmDelete}
+        onOpenChange={setIsDeleteModalOpen}
+        open={isDeleteModalOpen}
+        userName={userName}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        setIsOpen={setIsChangePasswordModalOpen}
+        userName={userName}
+      />
+
+      {Boolean(featureRolesApi) && (
+        <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={userName} />
+      )}
     </div>
   );
 };
@@ -157,8 +182,8 @@ const UserPermissionDetailsContent = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <UserRolesCard onChangeRoles={onChangeRoles} roles={roles} />
-      <UserAclsCard acls={acls} />
+      <UserRolesCard onChangeRoles={onChangeRoles} roles={roles} userName={userName} />
+      <UserAclsCard acls={acls} userName={userName} />
     </div>
   );
 };
