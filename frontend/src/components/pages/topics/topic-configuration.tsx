@@ -79,7 +79,10 @@ const ConfigEditorForm: FC<{
     },
   });
 
-  const hasInfiniteValue = editedEntry.frontendFormat && ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat);
+  const hasInfiniteValue =
+    editedEntry.frontendFormat &&
+    ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat) &&
+    !editedEntry.noInfiniteValue;
   const valueTypeOptions: Array<{
     label: string;
     value: Inputs['valueType'];
