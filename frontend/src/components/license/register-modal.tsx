@@ -159,7 +159,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               </Box>
               <VStack align="center" spacing={2}>
                 <Text fontSize="lg" fontWeight="bold" textAlign="center">
-                  This cluster has been successfully registered
+                  Cluster registered
                 </Text>
                 <Text color="gray.600" textAlign="center">
                   Enjoy 30 more days of enterprise features.

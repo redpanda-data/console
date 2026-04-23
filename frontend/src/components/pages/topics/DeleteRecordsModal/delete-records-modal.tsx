@@ -442,7 +442,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     } else {
       onFinish();
       toast({
-        description: 'Records deleted successfully',
+        description: 'Records deleted',
         status: 'success',
       });
     }

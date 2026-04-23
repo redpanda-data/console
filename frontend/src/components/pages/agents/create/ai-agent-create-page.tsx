@@ -406,7 +406,7 @@ export const AIAgentCreatePage = () => {
         onError: handleValidationError,
         onSuccess: (data) => {
           if (data?.aiAgent?.id) {
-            toast.success('AI agent created successfully');
+            toast.success('AI agent created');
             navigate({ to: `/agents/${data.aiAgent.id}` });
           }
         },

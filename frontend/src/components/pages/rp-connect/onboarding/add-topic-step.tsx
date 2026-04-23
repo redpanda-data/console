@@ -210,7 +210,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
           return {
             success: true,
-            message: `Created topic "${data.topicName}" successfully!`,
+            message: `Topic "${data.topicName}" created`,
             data,
           };
         } catch (error) {

@@ -575,7 +575,7 @@ export const RemoteMCPInspectorTab = () => {
                                           });
 
                                           await createTopic(request);
-                                          toast.success(`Topic '${newTopicName}' created successfully`);
+                                          toast.success(`Topic '${newTopicName}' created`);
                                           await refetchTopics();
 
                                           // Use the provided path and updateField to update the correct field

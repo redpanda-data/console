@@ -70,7 +70,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           create: true,
         })
       );
-      toast.success(`${principalTypeToAdd} "${newUserName}" added to role successfully`);
+      toast.success(`${principalTypeToAdd} "${newUserName}" added to role`);
       setNewUserName('');
       setIsAddingUser(false);
       setPrincipalTypeToAdd('User');
@@ -90,7 +90,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           create: false,
         })
       );
-      toast.success('Member removed from role successfully');
+      toast.success('Member removed from role');
       setDeletingPrincipal(null);
     } catch (_error) {
       // Error handling is done in onError callback

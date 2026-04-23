@@ -229,7 +229,7 @@ export const ShadowLinkCreatePage = () => {
 
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
-      toast.success('Shadow link created successfully');
+      toast.success('Shadow link created');
       navigate({ to: '/shadowlinks' });
     },
     onError: (error) => {

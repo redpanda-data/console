@@ -243,7 +243,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       // Reset form
       newSecretForm.reset();
 
-      toast.success(`Secret "${normalizedName}" created successfully`);
+      toast.success(`Secret "${normalizedName}" created`);
     } catch (error) {
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,

@@ -285,7 +285,7 @@ export const AIAgentCardTab = () => {
         }),
         {
           onSuccess: () => {
-            toast.success('Agent card updated successfully');
+            toast.success('Agent card updated');
             setIsEditing(false);
             setEditedCard(null);
           },

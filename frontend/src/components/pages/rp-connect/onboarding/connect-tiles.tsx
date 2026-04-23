@@ -321,7 +321,7 @@ export const ConnectTiles = memo(
             const values = form.getValues();
             return {
               success: true,
-              message: 'Connector selected successfully',
+              message: 'Connector selected',
               data: values,
             };
           }

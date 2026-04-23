@@ -83,7 +83,7 @@ export const SecretCreatePage = () => {
 
     try {
       await createSecret({ request });
-      toast.success('Secret created successfully');
+      toast.success('Secret created');
       navigate({ to: '/secrets' });
     } catch (error) {
       const connectError = ConnectError.from(error);

@@ -245,7 +245,7 @@ const ImportExportTab: FC = () => {
                 } else {
                   toast({
                     status: 'success',
-                    description: 'Settings imported successfully',
+                    description: 'Settings imported',
                   });
                 }
                 setImportCode('');

@@ -844,7 +844,7 @@ export const AIAgentConfigurationTab = () => {
         }),
         {
           onSuccess: () => {
-            toast.success('AI agent updated successfully');
+            toast.success('AI agent updated');
             setIsEditing(false);
             setEditedAgentData(null);
           },

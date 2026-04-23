@@ -125,7 +125,7 @@ const ConfigEditorForm: FC<{
         status: 'success',
         description: (
           <span>
-            Successfully updated config <code>{editedEntry.name}</code>
+            Config <code>{editedEntry.name}</code> updated
           </span>
         ),
       });

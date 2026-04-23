@@ -626,7 +626,7 @@ export const handleResponses = (errors: ConnectError[], created: boolean) => {
       toast.error(er.message);
     }
   } else {
-    toast.success('ACLs created successfully');
+    toast.success('ACLs created');
   }
 };
 

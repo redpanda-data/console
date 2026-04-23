@@ -441,7 +441,7 @@ const SchemaPageButtons = (p: {
             if (r.isValid && r.isCompatible !== false) {
               // Clear any previous validation errors on successful validation
               setPersistentValidationError(null);
-              toast.success('Schema validated successfully');
+              toast.success('Schema validated');
             } else {
               // Persist error only after user closes the modal
               setValidationDialogResult(r);

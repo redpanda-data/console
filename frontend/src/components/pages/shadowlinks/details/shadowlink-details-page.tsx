@@ -68,8 +68,8 @@ export const ShadowLinkDetailsPage = () => {
     onSuccess: async () => {
       toast.success(
         failoverTopicName
-          ? `Topic ${failoverTopicName} failed over successfully`
-          : 'Shadowlink failed over successfully'
+          ? `Topic ${failoverTopicName} failed over`
+          : 'Shadow link failed over'
       );
       setShowFailoverDialog(false);
       setFailoverTopicName('');
