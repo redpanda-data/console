@@ -841,7 +841,7 @@ const SchemaEditor = (p: {
         </Heading>
         <Text className="w-1/2">
           Optional key-value properties to associate with this schema. Metadata will be ignored if not supported by
-          schema registry.
+          Schema Registry.
         </Text>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </div>

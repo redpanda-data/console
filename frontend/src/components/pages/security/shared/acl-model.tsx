@@ -457,7 +457,7 @@ export const getResourceName = (resourceType: string): string => {
     consumerGroup: 'consumer group',
     transactionalId: 'transactional ID',
     subject: 'subject',
-    schemaRegistry: 'schema registry',
+    schemaRegistry: 'Schema Registry',
   };
   return resourceNames[resourceType] || resourceType;
 };
