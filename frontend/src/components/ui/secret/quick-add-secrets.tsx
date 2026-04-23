@@ -368,7 +368,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                   </FieldLabel>
                   <Input
                     id="new-secret-name"
-                    placeholder="e.g., API_KEY, DATABASE_PASSWORD"
+                    placeholder="API_KEY"
                     {...newSecretForm.register('name', {
                       onChange: (e) => {
                         const normalized = normalizeSecretName(e.target.value);

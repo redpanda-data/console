@@ -606,7 +606,7 @@ export const AIAgentCreatePage = () => {
                   <FieldLabel htmlFor="serviceAccountName">Service Account Name</FieldLabel>
                   <Input
                     id="serviceAccountName"
-                    placeholder="e.g., cluster-abc123-agent-my-agent-sa"
+                    placeholder="cluster-abc123-agent-my-agent-sa"
                     {...form.register('serviceAccountName')}
                     aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
                     aria-invalid={!!form.formState.errors.serviceAccountName}

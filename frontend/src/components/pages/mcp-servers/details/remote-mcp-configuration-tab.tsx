@@ -906,7 +906,7 @@ export const RemoteMCPConfigurationTab = () => {
                                   name: e.target.value,
                                 })
                               }
-                              placeholder="e.g., search-posts (must be filename-compatible)"
+                              placeholder="search-posts (must be filename-compatible)"
                               value={selectedTool.name}
                             />
                           </div>

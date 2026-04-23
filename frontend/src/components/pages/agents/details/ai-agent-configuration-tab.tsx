@@ -1092,7 +1092,7 @@ export const AIAgentConfigurationTab = () => {
                                   <Input
                                     id={`subagent-name-${index}`}
                                     onChange={(e) => handleUpdateSubagent(index, 'name', e.target.value)}
-                                    placeholder="e.g., code-reviewer"
+                                    placeholder="code-reviewer"
                                     value={subagent.name}
                                   />
                                 ) : (

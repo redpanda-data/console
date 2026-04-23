@@ -90,7 +90,7 @@ export const RegexPatternsField = ({
                   className={inputClassName}
                   disabled={isReadOnly}
                   onChange={(e) => handlePatternChange(idx, e.target.value)}
-                  placeholder="e.g., my-topics-.*"
+                  placeholder="my-topics-.*"
                   value={pattern}
                 />
                 {pattern && !isReadOnly && (
