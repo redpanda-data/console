@@ -42,7 +42,7 @@ export const RegexPatternsField = ({
   onChange,
   isReadOnly = false,
   label = 'Regex Patterns',
-  helperText = 'Add regex patterns to match multiple topics (e.g., my-topic-prefix-.*)',
+  helperText = 'Add regex patterns to match multiple topics (for example, my-topic-prefix-.*)',
 }: RegexPatternsFieldProps) => {
   const [validationStates, setValidationStates] = useState<Record<number, { valid: boolean; error?: string }>>({});
 

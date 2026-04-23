@@ -1176,7 +1176,7 @@ export const AIAgentConfigurationTab = () => {
                 </CardTitle>
                 <Text variant="muted">
                   The service account is used by the agent to authenticate to other systems within the Redpanda Cloud
-                  Platform (e.g. MCP servers, Redpanda broker).
+                  Platform (for example, MCP servers, Redpanda broker).
                 </Text>
               </CardHeader>
               <CardContent className="px-4 pb-4">

@@ -601,7 +601,7 @@ const SchemaEditor = (p: {
                 if (value.startsWith('.')) {
                   setContextWarning('');
                 } else {
-                  setContextWarning('Context name must start with a dot (e.g. ".staging")');
+                  setContextWarning('Context name must start with a dot (for example, ".staging")');
                 }
               }}
               options={contextOptions}

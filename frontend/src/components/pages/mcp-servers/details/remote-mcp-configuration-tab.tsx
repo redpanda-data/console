@@ -1024,7 +1024,7 @@ export const RemoteMCPConfigurationTab = () => {
               </CardTitle>
               <Text className="text-sm" variant="muted">
                 The service account is used by the MCP server to authenticate to other systems within the Redpanda Cloud
-                platform (e.g. Redpanda broker).
+                platform (for example, Redpanda broker).
               </Text>
             </CardHeader>
             <CardContent className="px-4 pb-4">
