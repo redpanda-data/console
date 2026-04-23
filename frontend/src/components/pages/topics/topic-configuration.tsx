@@ -442,6 +442,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
     case 'SELECT':
       return (
         <SingleSelect
+          chakraStyles={{ container: (base) => ({ ...base, minWidth: '240px' }) }}
           className={p.className}
           onChange={onChange}
           options={
