@@ -124,10 +124,17 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       [defaultTopicName, defaultReplicationFactor]
     );
 
+    // Pass defaultValues AND values so react-hook-form reactively updates
+    // replicationFactor when the KafkaInfo query resolves after mount. The
+    // `values` prop is rhf's built-in mechanism for external reactive state;
+    // `keepDirtyValues` prevents fields the user has already touched from
+    // being overwritten when kafkaInfo lands late.
     const form = useForm<AddTopicFormData>({
       resolver: zodResolver(addTopicFormSchema),
       mode: 'onChange',
       defaultValues,
+      values: defaultValues,
+      resetOptions: { keepDirtyValues: true },
     });
 
     const watchedTopicName = useWatch({
