@@ -42,7 +42,7 @@ const RoleCreatePage = () => {
     const roleName = parsePrincipal(principal).name;
 
     if (!roleName || roleName.trim() === '') {
-      toast.error('Please enter a role name');
+      toast.error('Enter a role name');
       return;
     }
 

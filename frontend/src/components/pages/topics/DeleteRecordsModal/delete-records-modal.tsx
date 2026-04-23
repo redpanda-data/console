@@ -430,7 +430,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
   const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
     if (responseData === null || responseData === undefined || typeof responseData === 'undefined') {
-      setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
+      setErrors(['You are not allowed to delete records on this topic. Contact your Kafka administrator.']);
       return;
     }
 
@@ -508,13 +508,13 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {
             setErrors([
-              'No partition offset was specified, this should not happen. Please contact your administrator.',
+              'No partition offset was specified. Contact your administrator.',
             ]);
           }
         }
       });
     } else {
-      setErrors(['Something went wrong, please contact your administrator.']);
+      setErrors(['Something went wrong. Contact your administrator.']);
     }
   };
 
@@ -535,7 +535,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             <Alert mb={2} status="error">
               <AlertIcon />
               <Flex flexDirection="column" gap={4} p={2}>
-                <Text>Errors have occurred when processing your request. Please contact your Kafka Administrator.</Text>
+                <Text>Errors occurred while processing your request. Contact your Kafka administrator.</Text>
                 <List>
                   {errors.map((e) => (
                     <ListItem key={e}>{e}</ListItem>

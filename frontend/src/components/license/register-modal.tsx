@@ -256,7 +256,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                       required: 'Email address is required',
                       pattern: {
                         value: EMAIL_VALIDATION_REGEX,
-                        message: 'Please enter a valid email address',
+                        message: 'Enter a valid email address',
                       },
                     }}
                   />

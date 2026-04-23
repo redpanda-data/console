@@ -327,7 +327,7 @@ export const ConnectTiles = memo(
           }
           return {
             success: false,
-            message: 'Please fix the form errors before proceeding',
+            message: 'Fix the form errors before proceeding',
             error: 'Form validation failed',
           };
         },

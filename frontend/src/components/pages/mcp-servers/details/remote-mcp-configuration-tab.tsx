@@ -464,7 +464,7 @@ export const RemoteMCPConfigurationTab = () => {
     setLintHints(newLintHints);
 
     if (hasIssues) {
-      toast.error('Configuration has linting issues. Please fix them before saving.');
+      toast.error('Configuration has linting issues. Fix them before saving.');
       return false;
     }
 

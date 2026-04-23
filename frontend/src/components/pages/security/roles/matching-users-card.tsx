@@ -57,7 +57,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
   const handleAddMember = async () => {
     if (!newUserName.trim()) {
-      toast.error(`Please enter a ${principalTypeToAdd === 'Group' ? 'group name' : 'username'}`);
+      toast.error(`Enter a ${principalTypeToAdd === 'Group' ? 'group name' : 'username'}`);
       return;
     }
 

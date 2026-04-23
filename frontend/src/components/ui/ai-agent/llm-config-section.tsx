@@ -193,7 +193,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             Provider
           </FieldLabel>
           {hasAigwDeployed && availableProviders.length === 0 && !isLoadingProviders && (
-            <FieldDescription>No enabled providers available. Please enable providers in AI Gateway.</FieldDescription>
+            <FieldDescription>No enabled providers available. Enable providers in AI Gateway.</FieldDescription>
           )}
           <Controller
             control={form.control}
@@ -253,7 +253,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
           Model
         </FieldLabel>
         {hasAigwDeployed && filteredModels.length === 0 && selectedLlmProvider && (
-          <FieldDescription>No enabled models available. Please enable models in AI Gateway.</FieldDescription>
+          <FieldDescription>No enabled models available. Enable models in AI Gateway.</FieldDescription>
         )}
         <Controller
           control={form.control}
@@ -317,7 +317,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
                     </SelectGroup>
                   ) : (
                     <div className="p-2">
-                      <Text variant="muted">Please select a provider first</Text>
+                      <Text variant="muted">Select a provider first</Text>
                     </div>
                   )}
                 </SelectContent>

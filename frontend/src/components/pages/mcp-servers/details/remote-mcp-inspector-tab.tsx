@@ -265,7 +265,7 @@ export const RemoteMCPInspectorTab = () => {
           const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
           if (!topicExists) {
             errors[requiredField] =
-              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+              `Topic '${value}' does not exist. Select a valid topic name or create a new one.`;
             continue;
           }
         }

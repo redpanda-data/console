@@ -76,7 +76,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
   const callRetrievalAPI = useCallback(async () => {
     if (!query.trim()) {
       toast.error('Query Required', {
-        description: 'Please enter a query to retrieve results.',
+        description: 'Enter a query to retrieve results.',
       });
       return;
     }
