@@ -25,6 +25,7 @@ import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topi
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
@@ -104,12 +105,23 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
     const isPending = createTopicMutation.isPending;
 
+    // The RF field is readOnly in advanced-topic-settings, so the default is
+    // also the final value. Clamp to broker count so single-broker clusters
+    // (e.g. local-byoc) don't hit "not enough replicas" on CreateTopic.
+    const { data: kafkaInfo } = useGetKafkaInfoQuery();
+    const brokersOnline = kafkaInfo?.brokersOnline ?? 0;
+    const defaultReplicationFactor =
+      brokersOnline > 0
+        ? Math.min(TOPIC_FORM_DEFAULTS.replicationFactor, brokersOnline)
+        : TOPIC_FORM_DEFAULTS.replicationFactor;
+
     const defaultValues = useMemo(
       () => ({
         ...TOPIC_FORM_DEFAULTS,
+        replicationFactor: defaultReplicationFactor,
         topicName: defaultTopicName || TOPIC_FORM_DEFAULTS.topicName,
       }),
-      [defaultTopicName]
+      [defaultTopicName, defaultReplicationFactor]
     );
 
     const form = useForm<AddTopicFormData>({
