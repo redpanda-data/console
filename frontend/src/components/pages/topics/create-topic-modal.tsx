@@ -20,6 +20,7 @@ import {
   CreateTopicRequestSchema,
   ListTopicsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
 
@@ -44,6 +45,13 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
     hideInternalTopics: true,
   });
   const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useCreateTopicMutation();
+  // Clamp RF to broker count so single-broker clusters (e.g. local-byoc) don't
+  // fail CreateTopic with "not enough replicas". Fall back to the default if
+  // the KafkaInfo query hasn't resolved yet.
+  const { data: kafkaInfo } = useGetKafkaInfoQuery();
+  const brokersOnline = kafkaInfo?.brokersOnline ?? 0;
+  const replicationFactor =
+    brokersOnline > 0 ? Math.min(DEFAULT_TOPIC_REPLICATION_FACTOR, brokersOnline) : DEFAULT_TOPIC_REPLICATION_FACTOR;
 
   const formOpts = formOptions({
     defaultValues: {
@@ -57,7 +65,7 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
         topic: create(CreateTopicRequest_TopicSchema, {
           name: value.name,
           partitionCount: DEFAULT_TOPIC_PARTITION_COUNT,
-          replicationFactor: DEFAULT_TOPIC_REPLICATION_FACTOR,
+          replicationFactor,
           configs: [
             create(CreateTopicRequest_Topic_ConfigSchema, {
               name: 'cleanup.policy',
