@@ -507,9 +507,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {
-            setErrors([
-              'No partition offset was specified. Contact your administrator.',
-            ]);
+            setErrors(['No partition offset was specified. Contact your administrator.']);
           }
         }
       });

@@ -66,11 +66,7 @@ export const ShadowLinkDetailsPage = () => {
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
     onSuccess: async () => {
-      toast.success(
-        failoverTopicName
-          ? `Topic ${failoverTopicName} failed over`
-          : 'Shadow link failed over'
-      );
+      toast.success(failoverTopicName ? `Topic ${failoverTopicName} failed over` : 'Shadow link failed over');
       setShowFailoverDialog(false);
       setFailoverTopicName('');
       await refetch();
