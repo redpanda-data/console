@@ -36,7 +36,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useRef, useState } from 'react';
-import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import {
   type MCPStreamProgress,
   useGetMCPServerQuery,
@@ -202,13 +201,6 @@ export const RemoteMCPInspectorTab = () => {
     hideInternalTopics: true,
   });
   const { mutateAsync: createTopic } = useCreateTopicMutation();
-  // Clamp RF to broker count so single-broker clusters (e.g. local-byoc) don't
-  // fail CreateTopic with "not enough replicas". Fall back to the default if
-  // the KafkaInfo query hasn't resolved yet.
-  const { data: kafkaInfo } = useGetKafkaInfoQuery();
-  const brokersOnline = kafkaInfo?.brokersOnline ?? 0;
-  const effectiveReplicationFactor =
-    brokersOnline > 0 ? Math.min(DEFAULT_TOPIC_REPLICATION_FACTOR, brokersOnline) : DEFAULT_TOPIC_REPLICATION_FACTOR;
 
   useEffect(() => {
     if (!selectedTool && mcpServerTools?.tools && mcpServerTools.tools.length === 1) {
@@ -572,7 +564,7 @@ export const RemoteMCPInspectorTab = () => {
                                             topic: create(CreateTopicRequest_TopicSchema, {
                                               name: newTopicName,
                                               partitionCount: DEFAULT_TOPIC_PARTITION_COUNT,
-                                              replicationFactor: effectiveReplicationFactor,
+                                              replicationFactor: DEFAULT_TOPIC_REPLICATION_FACTOR,
                                               configs: [
                                                 create(CreateTopicRequest_Topic_ConfigSchema, {
                                                   name: 'cleanup.policy',
