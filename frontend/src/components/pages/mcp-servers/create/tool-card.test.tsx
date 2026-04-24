@@ -93,9 +93,7 @@ describe('ToolCard', () => {
 
     expect(screen.getByLabelText(/tool name/i)).toHaveValue('weather-by-city');
     expect(screen.getByLabelText(/template \(optional\)/i)).toHaveTextContent('HTTP Request');
-    expect(
-      screen.getByText(HTTP_TEMPLATE_DESCRIPTION, { selector: '[data-slot="field-description"]' })
-    ).toBeVisible();
+    expect(screen.getByText(HTTP_TEMPLATE_DESCRIPTION, { selector: '[data-slot="field-description"]' })).toBeVisible();
     expect(screen.getByTestId('yaml-editor-value')).toHaveTextContent('label: weather-by-city');
 
     expect(getToolState()).toMatchObject({
