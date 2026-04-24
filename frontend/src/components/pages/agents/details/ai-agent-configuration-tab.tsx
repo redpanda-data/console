@@ -191,6 +191,10 @@ const extractProviderInfo = (provider: AIAgent_Provider): { apiKeyTemplate: stri
       apiKeyTemplate = provider.provider.value.apiKey;
       baseUrl = provider.provider.value.baseUrl;
       break;
+    case 'bedrock':
+      // Bedrock has no apiKey/baseUrl; region is stored via the baseUrl field
+      baseUrl = provider.provider.value.region || '';
+      break;
     default:
       break;
   }
@@ -1252,9 +1256,19 @@ export const AIAgentConfigurationTab = () => {
                               : displayData.provider?.provider.case || 'openai'
                           ) as 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
 
+                          // When switching to a bedrock provider, update the region from the LLM provider config
+                          let baseUrl = displayData.baseUrl || '';
+                          if (formTypeId === 'bedrock' && providersData?.llmProviders) {
+                            const fullProvider = providersData.llmProviders.find((p) => p.name === value);
+                            if (fullProvider?.providerConfig?.case === 'bedrockConfig') {
+                              baseUrl = fullProvider.providerConfig.value.region || '';
+                            }
+                          }
+
                           updateField({
                             llmProvider: value,
-                            provider: createUpdatedProvider(formTypeId, '', displayData.baseUrl || ''),
+                            provider: createUpdatedProvider(formTypeId, '', baseUrl),
+                            baseUrl,
                             model: '',
                           });
                         }}
