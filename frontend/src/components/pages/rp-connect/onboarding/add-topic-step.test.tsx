@@ -307,8 +307,8 @@ describe('AddTopicStep', () => {
       expect(mockFetch).toHaveBeenCalled();
     });
 
-    // Switch to "New" tab (ToggleGroupItem renders as role="radio")
-    const newButton = await screen.findByRole('radio', { name: 'New' });
+    // Switch to "New" tab (ToggleGroupItem renders as a button)
+    const newButton = await screen.findByRole('button', { name: 'New' });
     await user.click(newButton);
 
     // Type a name matching an existing topic
@@ -361,10 +361,10 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 
-    // ToggleGroupItem renders as role="radio"
+    // ToggleGroupItem renders as a button
     await waitFor(() => {
-      expect(screen.getByRole('radio', { name: 'Existing' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'New' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'New' })).toBeInTheDocument();
     });
   });
 });
