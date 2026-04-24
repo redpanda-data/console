@@ -182,7 +182,10 @@ export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => 
     );
   }
   if (renderData.type === 'json') {
-    return <KowlJsonView srcObj={renderData.content} />;
+    // Avro JSON encodes bytes fields as \u00XX escape sequences. Re-escape
+    // Latin-1 code points in the viewer so copy-paste yields the original
+    // bytes rather than their UTF-8 encoding.
+    return <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} />;
   }
   return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {renderData.content}</span>;
 };
