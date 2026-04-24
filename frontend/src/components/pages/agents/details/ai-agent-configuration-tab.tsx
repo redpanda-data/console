@@ -1353,7 +1353,7 @@ export const AIAgentConfigurationTab = () => {
                     (isUsingGateway && filteredModels.length === 0 && !isLoadingProviders) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
-                        placeholder="Enter model name (e.g., llama-3.1-70b)"
+                        placeholder="llama-3.1-70b"
                         value={displayData.model}
                       />
                     ) : (

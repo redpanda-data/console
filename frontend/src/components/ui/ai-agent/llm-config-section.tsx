@@ -273,7 +273,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
                   <Input
                     disabled={hasNoProviders || hasNoModels}
                     id="model"
-                    placeholder="Enter model name (e.g., llama-3.1-70b)"
+                    placeholder="llama-3.1-70b"
                     {...field}
                     aria-invalid={!!form.formState.errors[fieldNames.model]}
                     aria-describedby={form.formState.errors[fieldNames.model] ? 'model-error' : undefined}
