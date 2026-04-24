@@ -1,11 +1,11 @@
 'use client';
 
+import { PreviewCard as HoverCardPrimitive } from '@base-ui/react/preview-card';
 import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
-import { HoverCard as HoverCardPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { type SharedProps } from '../lib/shared-types';
-import { cn } from '../lib/utils';
+import { asChildToRender, narrowOpenChange, renderWithDataState, useMirroredOpen } from '../lib/base-ui-compat';
+import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
 type HoverCardContextType = {
   isOpen: boolean;
@@ -22,6 +22,7 @@ const useHoverCard = (): HoverCardContextType => {
 };
 
 type Side = 'top' | 'bottom' | 'left' | 'right';
+type Align = 'start' | 'center' | 'end';
 
 const getInitialPosition = (side: Side) => {
   switch (side) {
@@ -33,47 +34,52 @@ const getInitialPosition = (side: Side) => {
       return { x: 15 };
     case 'right':
       return { x: -15 };
+    default:
+      return {};
   }
 };
 
-type HoverCardProps = React.ComponentProps<typeof HoverCardPrimitive.Root> & SharedProps;
+type HoverCardProps = Omit<React.ComponentProps<typeof HoverCardPrimitive.Root>, 'onOpenChange' | 'children'> &
+  SharedProps & {
+    onOpenChange?: (open: boolean) => void;
+    children?: React.ReactNode;
+  };
 
-function HoverCard({ children, testId, ...props }: HoverCardProps) {
-  const [isOpen, setIsOpen] = React.useState(props?.open ?? props?.defaultOpen ?? false);
-
-  React.useEffect(() => {
-    if (props?.open !== undefined) setIsOpen(props.open);
-  }, [props?.open]);
-
-  const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      props.onOpenChange?.(open);
-    },
-    // biome-ignore lint/correctness/useExhaustiveDependencies: part of the hover card implementation
-    [props],
-  );
+function HoverCard({ children, testId, onOpenChange, ...props }: HoverCardProps) {
+  const { isOpen, handleOpenChange } = useMirroredOpen(props?.open, props?.defaultOpen, onOpenChange);
 
   return (
     <HoverCardContext.Provider value={{ isOpen }}>
-      <HoverCardPrimitive.Root data-slot="hover-card" data-testid={testId} {...props} onOpenChange={handleOpenChange}>
+      <HoverCardPrimitive.Root
+        data-slot="hover-card"
+        data-testid={testId}
+        {...props}
+        onOpenChange={narrowOpenChange(handleOpenChange)}
+      >
         {children}
       </HoverCardPrimitive.Root>
     </HoverCardContext.Provider>
   );
 }
 
-type HoverCardTriggerProps = React.ComponentProps<typeof HoverCardPrimitive.Trigger> & SharedProps;
+type HoverCardTriggerProps = React.ComponentProps<typeof HoverCardPrimitive.Trigger> &
+  SharedProps & {
+    asChild?: boolean;
+  };
 
 function HoverCardTrigger({ testId, ...props }: HoverCardTriggerProps) {
-  return <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" data-testid={testId} {...props} />;
+  return <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" data-testid={testId} {...asChildToRender(props)} />;
 }
 
-type HoverCardContentProps = React.ComponentProps<typeof HoverCardPrimitive.Content> &
+type HoverCardContentProps = React.ComponentProps<typeof HoverCardPrimitive.Popup> &
   HTMLMotionProps<'div'> &
-  SharedProps & {
+  SharedProps &
+  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
     transition?: Transition;
-    container?: Element;
+    side?: Side;
+    align?: Align;
+    sideOffset?: number;
+    alignOffset?: number;
   };
 
 function HoverCardContent({
@@ -81,10 +87,12 @@ function HoverCardContent({
   align = 'center',
   side = 'bottom',
   sideOffset = 4,
+  alignOffset,
   transition = { type: 'spring', stiffness: 300, damping: 25 },
   children,
   testId,
   container,
+  onOpenAutoFocus: _onOpenAutoFocus,
   ...props
 }: HoverCardContentProps) {
   const { isOpen } = useHoverCard();
@@ -92,28 +100,29 @@ function HoverCardContent({
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <HoverCardPrimitive.Portal forceMount data-slot="hover-card-portal" container={container}>
-          <HoverCardPrimitive.Content forceMount align={align} sideOffset={sideOffset} className="z-50" {...props}>
-            <motion.div
-              key="hover-card-content"
-              data-slot="hover-card-content"
-              data-testid={testId}
-              initial={{ opacity: 0, scale: 0.5, ...initialPosition }}
-              animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, ...initialPosition }}
-              transition={transition}
-              className={cn(
-                'w-64 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
-                className,
-              )}
-              {...props}
-            >
-              {children}
-            </motion.div>
-          </HoverCardPrimitive.Content>
+      {isOpen ? (
+        <HoverCardPrimitive.Portal container={container} data-slot="hover-card-portal" keepMounted>
+          <HoverCardPrimitive.Positioner align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset}>
+            <HoverCardPrimitive.Popup className="z-50" render={renderWithDataState('div')} {...props}>
+              <motion.div
+                animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                className={cn(
+                  'w-64 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
+                  className
+                )}
+                data-slot="hover-card-content"
+                data-testid={testId}
+                exit={{ opacity: 0, scale: 0.5, ...initialPosition }}
+                initial={{ opacity: 0, scale: 0.5, ...initialPosition }}
+                key="hover-card-content"
+                transition={transition}
+              >
+                {children}
+              </motion.div>
+            </HoverCardPrimitive.Popup>
+          </HoverCardPrimitive.Positioner>
         </HoverCardPrimitive.Portal>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }

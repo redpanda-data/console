@@ -1,35 +1,69 @@
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import { Dialog as DialogPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { usePortalContainer } from '../lib/use-portal-container';
+import {
+  asChildTrigger,
+  narrowOpenChange,
+  renderDescription,
+  renderWithDataState,
+  warnDeprecatedProp,
+} from '../lib/base-ui-compat';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
-function Dialog({ testId, ...props }: React.ComponentProps<typeof DialogPrimitive.Root> & SharedProps) {
-  return <DialogPrimitive.Root data-slot="dialog" data-testid={testId} {...props} />;
+type DialogRootProps = Omit<React.ComponentProps<typeof DialogPrimitive.Root>, 'onOpenChange'> &
+  SharedProps & {
+    onOpenChange?: (open: boolean) => void;
+  };
+
+function Dialog({ testId, onOpenChange, ...props }: DialogRootProps) {
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      data-testid={testId}
+      onOpenChange={narrowOpenChange(onOpenChange)}
+      {...props}
+    />
+  );
 }
 
-function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+type DialogTriggerProps = React.ComponentProps<typeof DialogPrimitive.Trigger> & {
+  asChild?: boolean;
+};
+
+function DialogTrigger({ className, ...props }: DialogTriggerProps) {
+  return (
+    <DialogPrimitive.Trigger
+      className={cn('cursor-pointer', className)}
+      data-slot="dialog-trigger"
+      {...asChildTrigger(props)}
+    />
+  );
 }
 
 function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
-function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+type DialogCloseProps = React.ComponentProps<typeof DialogPrimitive.Close> & {
+  asChild?: boolean;
+};
+
+function DialogClose({ ...props }: DialogCloseProps) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...asChildTrigger(props)} />;
 }
 
-function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Backdrop>) {
   return (
-    <DialogPrimitive.Overlay
+    <DialogPrimitive.Backdrop
       className={cn(
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in',
         className
       )}
       data-slot="dialog-overlay"
+      render={renderWithDataState('div')}
       {...props}
     />
   );
@@ -60,7 +94,7 @@ const dialogContentVariants = cva(
 );
 
 interface DialogContentProps
-  extends React.ComponentProps<typeof DialogPrimitive.Content>,
+  extends React.ComponentProps<typeof DialogPrimitive.Popup>,
     VariantProps<typeof dialogContentVariants>,
     SharedProps,
     Pick<FixedPositionContentProps, 'container' | 'showOverlay' | 'onOpenAutoFocus'> {
@@ -76,16 +110,24 @@ function DialogContent({
   variant,
   testId,
   container,
+  onOpenAutoFocus,
   ...props
 }: DialogContentProps) {
+  warnDeprecatedProp(
+    'DialogContent',
+    'onOpenAutoFocus',
+    onOpenAutoFocus,
+    'Use `initialFocus` on Base UI `Dialog.Popup` instead.'
+  );
   const portalContainer = usePortalContainer();
   return (
     <DialogPortal container={container ?? portalContainer}>
       {showOverlay ? <DialogOverlay /> : null}
-      <DialogPrimitive.Content
+      <DialogPrimitive.Popup
         className={cn(dialogContentVariants({ size, variant }), className)}
         data-slot="dialog-content"
         data-testid={testId}
+        render={renderWithDataState('div')}
         {...props}
       >
         {children}
@@ -95,7 +137,7 @@ function DialogContent({
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         ) : null}
-      </DialogPrimitive.Content>
+      </DialogPrimitive.Popup>
     </DialogPortal>
   );
 }
@@ -178,17 +220,23 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
 function DialogDescription({
   className,
   children,
+  asChild,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
-  // Render the Radix Description as a <div> (via asChild) instead of the default <p>
-  // so it can safely contain block-level children (Text, Input, List, etc.) without
-  // triggering React's validateDOMNesting warnings.
+}: React.ComponentProps<typeof DialogPrimitive.Description> & { asChild?: boolean }) {
+  // Render as <div> instead of the default <p> so it can safely contain block-level
+  // children (Text, Input, List, etc.) without triggering validateDOMNesting warnings.
+  // `asChild` is a Radix-compat passthrough — when set, the child element is used
+  // as the render target (same semantics as Radix's asChild on Description).
   return (
-    <DialogPrimitive.Description asChild {...props}>
-      <div className={cn('text-muted-foreground text-sm', className)} data-slot="dialog-description">
-        {children}
-      </div>
-    </DialogPrimitive.Description>
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      render={renderDescription({
+        asChild,
+        children,
+        className: typeof className === 'string' ? className : undefined,
+      })}
+      {...props}
+    />
   );
 }
 

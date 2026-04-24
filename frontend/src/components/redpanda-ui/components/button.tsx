@@ -1,10 +1,10 @@
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot as SlotPrimitive } from 'radix-ui';
 import React, { type ElementType } from 'react';
 
 import { useGroup } from './group';
+import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const buttonVariants = cva(
@@ -178,7 +178,7 @@ export type ButtonProps = React.ComponentProps<'button'> &
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, testId, as, to, icon, children, ...props }, ref) => {
-    const Comp = as ?? (asChild ? SlotPrimitive.Slot : 'button');
+    const Comp = as ?? (asChild ? Slot : 'button');
     const { attached, position } = useGroup();
 
     let positionClasses = 'rounded-md';

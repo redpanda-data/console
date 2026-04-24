@@ -1,8 +1,9 @@
 'use client';
 
+import { Toggle as TogglePrimitive } from '@base-ui/react/toggle';
+import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
-import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 import React from 'react';
 
 import type { GroupContextValue, GroupPosition } from './group';
@@ -51,13 +52,32 @@ const useToggleGroup = (): ToggleGroupContextProps => {
   return context;
 };
 
-type ToggleGroupProps = React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
+// Preserve the Radix public API (`type: 'single' | 'multiple'`) externally while
+// mapping to Base UI's `multiple: boolean`. Value semantics are also normalized:
+// `type="single"` uses a string value; `type="multiple"` uses a string[].
+type ToggleGroupProps = Omit<
+  React.ComponentProps<typeof ToggleGroupPrimitive>,
+  'value' | 'defaultValue' | 'onValueChange' | 'multiple'
+> &
   Omit<VariantProps<typeof toggleVariants>, 'type'> &
   SharedProps & {
+    type?: 'single' | 'multiple';
+    value?: string | string[];
+    defaultValue?: string | string[];
+    // Radix called onValueChange(string) for single and onValueChange(string[]) for multiple.
+    // biome-ignore lint/suspicious/noExplicitAny: preserve Radix's polymorphic callback signature
+    onValueChange?: (value: any) => void;
     transition?: Transition;
     activeClassName?: string;
     attached?: boolean;
   };
+
+function toValueArray(v: string | string[] | undefined): string[] | undefined {
+  if (v === undefined) {
+    return;
+  }
+  return Array.isArray(v) ? v : [v];
+}
 
 function ToggleGroup({
   className,
@@ -68,9 +88,30 @@ function ToggleGroup({
   activeClassName,
   testId,
   attached = true,
+  type,
+  value,
+  defaultValue,
+  onValueChange,
   ...props
 }: ToggleGroupProps) {
   const globalId = React.useId();
+  const isMultiple = type === 'multiple';
+
+  const arrayValue = toValueArray(value);
+  const arrayDefaultValue = toValueArray(defaultValue);
+
+  const handleValueChange = React.useMemo(() => {
+    if (!onValueChange) {
+      return;
+    }
+    return (groupValue: unknown[]) => {
+      if (isMultiple) {
+        onValueChange(groupValue as string[]);
+      } else {
+        onValueChange((groupValue[0] as string | undefined) ?? '');
+      }
+    };
+  }, [isMultiple, onValueChange]);
 
   const childrenArray = React.Children.toArray(children).filter((child) => React.isValidElement(child));
   const childCount = childrenArray.length;
@@ -99,7 +140,7 @@ function ToggleGroup({
         value={{
           variant,
           size,
-          type: props.type,
+          type,
           transition,
           activeClassName,
           globalId,
@@ -113,7 +154,7 @@ function ToggleGroup({
   });
 
   return (
-    <ToggleGroupPrimitive.Root
+    <ToggleGroupPrimitive
       className={cn(
         'relative flex items-center justify-center',
         variant === 'outline' && '!border-outline-inverse rounded-md border p-0.5',
@@ -122,16 +163,21 @@ function ToggleGroup({
       )}
       data-slot="toggle-group"
       data-testid={testId}
+      defaultValue={arrayDefaultValue}
+      multiple={isMultiple}
+      onValueChange={handleValueChange}
+      value={arrayValue}
       {...props}
     >
       {content}
-    </ToggleGroupPrimitive.Root>
+    </ToggleGroupPrimitive>
   );
 }
 
-type ToggleGroupItemProps = React.ComponentProps<typeof ToggleGroupPrimitive.Item> &
+type ToggleGroupItemProps = Omit<React.ComponentProps<typeof TogglePrimitive>, 'onPressedChange'> &
   Omit<VariantProps<typeof toggleVariants>, 'type'> &
   SharedProps & {
+    value: string;
     children?: React.ReactNode;
     buttonProps?: HTMLMotionProps<'button'>;
     spanProps?: React.ComponentProps<'span'>;
@@ -179,49 +225,57 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
     }
 
     return (
-      <ToggleGroupPrimitive.Item disabled={disabled} ref={itemRef} {...props} asChild>
-        <motion.button
-          data-slot="toggle-group-item"
-          data-testid={testId}
-          disabled={disabled}
-          initial={{ scale: 1 }}
-          whileTap={{ scale: 0.9 }}
-          {...buttonProps}
-          className={cn('relative', buttonProps?.className)}
-        >
-          <span
-            {...spanProps}
-            className={cn(
-              'relative z-[1]',
-              toggleVariants({
-                variant: variant || contextVariant,
-                size: size || contextSize,
-                type,
-              }),
-              positionClasses,
-              className,
-              spanProps?.className
-            )}
-            data-state={isActive ? 'on' : 'off'}
+      <TogglePrimitive
+        disabled={disabled}
+        {...props}
+        // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Toggle attrs for the consumer element
+        render={(rootProps: Record<string, any>, state: { pressed?: boolean; disabled?: boolean }) => (
+          <motion.button
+            {...rootProps}
+            data-slot="toggle-group-item"
+            data-state={state?.pressed ? 'on' : 'off'}
+            data-testid={testId}
+            disabled={disabled ?? state?.disabled}
+            initial={{ scale: 1 }}
+            ref={itemRef}
+            whileTap={{ scale: 0.9 }}
+            {...buttonProps}
+            className={cn('relative', buttonProps?.className)}
           >
-            {children}
-          </span>
+            <span
+              {...spanProps}
+              className={cn(
+                'relative z-[1]',
+                toggleVariants({
+                  variant: variant || contextVariant,
+                  size: size || contextSize,
+                  type,
+                }),
+                positionClasses,
+                className,
+                spanProps?.className
+              )}
+              data-state={isActive ? 'on' : 'off'}
+            >
+              {children}
+            </span>
 
-          <AnimatePresence initial={false}>
-            {isActive && type === 'single' && (
-              <motion.span
-                animate={{ opacity: 1 }}
-                className={cn('absolute inset-0 z-0 bg-accent', positionClasses, activeClassName)}
-                data-slot="active-toggle-group-item"
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                layoutId={`active-toggle-group-item-${globalId}`}
-                transition={transition}
-              />
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </ToggleGroupPrimitive.Item>
+            <AnimatePresence initial={false}>
+              {isActive && type === 'single' && (
+                <motion.span
+                  animate={{ opacity: 1 }}
+                  className={cn('absolute inset-0 z-0 bg-accent', positionClasses, activeClassName)}
+                  data-slot="active-toggle-group-item"
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
+                  layoutId={`active-toggle-group-item-${globalId}`}
+                  transition={transition}
+                />
+              )}
+            </AnimatePresence>
+          </motion.button>
+        )}
+      />
     );
   }
 );

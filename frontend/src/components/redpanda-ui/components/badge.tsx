@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot as SlotPrimitive } from 'radix-ui';
 import React from 'react';
 
+import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const badgeVariants = cva(
@@ -98,6 +98,7 @@ function Badge({
   icon,
   children,
   size,
+  ref,
   ...props
 }: React.ComponentProps<'span'> &
   SharedProps & {
@@ -106,7 +107,7 @@ function Badge({
     variant?: BadgeVariant;
     size?: BadgeSize;
   }) {
-  const Comp = asChild ? SlotPrimitive.Slot : 'span';
+  const Comp = asChild ? Slot : 'span';
 
   // When asChild is used with Slot, we can only pass ONE child element
   // to satisfy React.Children.only(). In asChild mode, users must include
@@ -138,7 +139,13 @@ function Badge({
   };
 
   return (
-    <Comp className={cn(badgeVariants({ variant, size }), className)} data-slot="badge" data-testid={testId} {...props}>
+    <Comp
+      className={cn(badgeVariants({ variant, size }), className)}
+      data-slot="badge"
+      data-testid={testId}
+      ref={ref}
+      {...props}
+    >
       {renderContent()}
     </Comp>
   );

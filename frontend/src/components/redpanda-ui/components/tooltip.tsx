@@ -1,10 +1,11 @@
 'use client';
 
+import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 import { AnimatePresence, motion, type Transition } from 'motion/react';
-import { Tooltip as TooltipPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { usePortalContainer } from '../lib/use-portal-container';
+import { asChildToRender, narrowOpenChange, renderWithDataState, useMirroredOpen } from '../lib/base-ui-compat';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
 type TooltipContextType = {
@@ -22,6 +23,7 @@ const useTooltip = (): TooltipContextType => {
 };
 
 type Side = 'top' | 'bottom' | 'left' | 'right';
+type Align = 'start' | 'center' | 'end';
 
 const getInitialPosition = (side: Side) => {
   switch (side) {
@@ -38,61 +40,76 @@ const getInitialPosition = (side: Side) => {
   }
 };
 
-type TooltipProviderProps = React.ComponentProps<typeof TooltipPrimitive.Provider>;
+type TooltipProviderProps = React.ComponentProps<typeof TooltipPrimitive.Provider> & {
+  delayDuration?: number;
+  skipDelayDuration?: number;
+};
 
-function TooltipProvider(props: TooltipProviderProps) {
-  return <TooltipPrimitive.Provider data-slot="tooltip-provider" {...props} />;
+function TooltipProvider({ delayDuration, skipDelayDuration, ...props }: TooltipProviderProps) {
+  return (
+    <TooltipPrimitive.Provider
+      closeDelay={0}
+      delay={delayDuration ?? 150}
+      timeout={skipDelayDuration ?? 0}
+      {...props}
+    />
+  );
 }
 
-type TooltipProps = React.ComponentProps<typeof TooltipPrimitive.Root> & SharedProps;
+type TooltipProps = Omit<React.ComponentProps<typeof TooltipPrimitive.Root>, 'onOpenChange' | 'children'> &
+  SharedProps & {
+    onOpenChange?: (open: boolean) => void;
+    delayDuration?: number;
+    children?: React.ReactNode;
+  };
 
-function Tooltip({ testId, ...props }: TooltipProps) {
-  const [isOpen, setIsOpen] = React.useState(props?.open ?? props?.defaultOpen ?? false);
-
-  React.useEffect(() => {
-    if (props?.open !== undefined) {
-      setIsOpen(props.open);
-    }
-  }, [props?.open]);
-
-  const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      props.onOpenChange?.(open);
-    },
-    [props.onOpenChange]
-  );
+function Tooltip({ testId, onOpenChange, delayDuration: _delayDuration, ...props }: TooltipProps) {
+  const { isOpen, handleOpenChange } = useMirroredOpen(props?.open, props?.defaultOpen, onOpenChange);
 
   return (
     <TooltipContext.Provider value={{ isOpen }}>
-      <TooltipPrimitive.Root data-slot="tooltip" data-testid={testId} {...props} onOpenChange={handleOpenChange} />
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        data-testid={testId}
+        {...props}
+        onOpenChange={narrowOpenChange(handleOpenChange)}
+      />
     </TooltipContext.Provider>
   );
 }
 
-type TooltipTriggerProps = React.ComponentProps<typeof TooltipPrimitive.Trigger> & SharedProps;
+type TooltipTriggerProps = React.ComponentProps<typeof TooltipPrimitive.Trigger> &
+  SharedProps & {
+    asChild?: boolean;
+  };
 
 function TooltipTrigger({ testId, ...props }: TooltipTriggerProps) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" data-testid={testId} {...props} />;
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" data-testid={testId} {...asChildToRender(props)} />;
 }
 
-type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Content> &
+type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Popup> &
   SharedProps &
   Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
     transition?: Transition;
     arrow?: boolean;
+    side?: Side;
+    align?: Align;
+    sideOffset?: number;
+    alignOffset?: number;
   };
 
 function TooltipContent({
   className,
   side = 'top',
+  align = 'center',
   sideOffset = 4,
+  alignOffset,
   transition = { type: 'spring', stiffness: 300, damping: 25 },
   arrow = true,
   children,
   testId,
   container,
-  onOpenAutoFocus,
+  onOpenAutoFocus: _onOpenAutoFocus,
   ...props
 }: TooltipContentProps) {
   const { isOpen } = useTooltip();
@@ -102,37 +119,33 @@ function TooltipContent({
   return (
     <AnimatePresence>
       {isOpen ? (
-        <TooltipPrimitive.Portal container={container ?? portalContainer} data-slot="tooltip-portal" forceMount>
-          <TooltipPrimitive.Content
-            className="z-50"
-            forceMount
-            sideOffset={sideOffset}
-            {...(onOpenAutoFocus && { onOpenAutoFocus })}
-            {...props}
-          >
-            <motion.div
-              animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-              className={cn(
-                'relative w-fit origin-(--radix-tooltip-content-transform-origin) text-balance rounded-md bg-primary px-3 py-1.5 text-inverse text-sm shadow-md',
-                className
-              )}
-              data-slot="tooltip-content"
-              data-testid={testId}
-              exit={{ opacity: 0, scale: 0, ...initialPosition }}
-              initial={{ opacity: 0, scale: 0, ...initialPosition }}
-              key="tooltip-content"
-              transition={transition}
-            >
-              {children}
+        <TooltipPrimitive.Portal container={container ?? portalContainer} data-slot="tooltip-portal" keepMounted>
+          <TooltipPrimitive.Positioner align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset}>
+            <TooltipPrimitive.Popup className="z-50" render={renderWithDataState('div')} {...props}>
+              <motion.div
+                animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                className={cn(
+                  'relative w-fit origin-(--transform-origin) text-balance rounded-md bg-primary px-3 py-1.5 text-inverse text-sm shadow-md',
+                  className
+                )}
+                data-slot="tooltip-content"
+                data-testid={testId}
+                exit={{ opacity: 0, scale: 0, ...initialPosition }}
+                initial={{ opacity: 0, scale: 0, ...initialPosition }}
+                key="tooltip-content"
+                transition={transition}
+              >
+                {children}
 
-              {arrow ? (
-                <TooltipPrimitive.Arrow
-                  className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] bg-primary fill-primary"
-                  data-slot="tooltip-content-arrow"
-                />
-              ) : null}
-            </motion.div>
-          </TooltipPrimitive.Content>
+                {arrow ? (
+                  <TooltipPrimitive.Arrow
+                    className="z-50 size-2.5 rotate-45 rounded-[2px] bg-primary fill-primary data-[side=bottom]:top-0 data-[side=left]:right-0 data-[side=top]:bottom-0 data-[side=right]:left-0 data-[side=left]:translate-x-1/2 data-[side=right]:-translate-x-1/2 data-[side=bottom]:-translate-y-1/2 data-[side=top]:translate-y-1/2"
+                    data-slot="tooltip-content-arrow"
+                  />
+                ) : null}
+              </motion.div>
+            </TooltipPrimitive.Popup>
+          </TooltipPrimitive.Positioner>
         </TooltipPrimitive.Portal>
       ) : null}
     </AnimatePresence>
