@@ -1261,7 +1261,7 @@ export const AIAgentConfigurationTab = () => {
                           if (formTypeId === 'bedrock' && providersData?.llmProviders) {
                             const fullProvider = providersData.llmProviders.find((p) => p.name === value);
                             if (fullProvider?.providerConfig?.case === 'bedrockConfig') {
-                              baseUrl = fullProvider.providerConfig.value.region || '';
+                              baseUrl = fullProvider.providerConfig.value?.region || '';
                             }
                           }
 
