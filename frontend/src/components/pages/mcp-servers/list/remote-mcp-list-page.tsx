@@ -301,7 +301,7 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
         }
 
         // Show single success toast regardless of what was deleted
-        toast.success('MCP server deleted successfully');
+        toast.success('MCP server deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(

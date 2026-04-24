@@ -844,7 +844,7 @@ export const AIAgentConfigurationTab = () => {
         }),
         {
           onSuccess: () => {
-            toast.success('AI agent updated successfully');
+            toast.success('AI agent updated');
             setIsEditing(false);
             setEditedAgentData(null);
           },
@@ -1092,7 +1092,7 @@ export const AIAgentConfigurationTab = () => {
                                   <Input
                                     id={`subagent-name-${index}`}
                                     onChange={(e) => handleUpdateSubagent(index, 'name', e.target.value)}
-                                    placeholder="e.g., code-reviewer"
+                                    placeholder="code-reviewer"
                                     value={subagent.name}
                                   />
                                 ) : (
@@ -1176,7 +1176,7 @@ export const AIAgentConfigurationTab = () => {
                 </CardTitle>
                 <Text variant="muted">
                   The service account is used by the agent to authenticate to other systems within the Redpanda Cloud
-                  Platform (e.g. MCP servers, Redpanda broker).
+                  Platform (for example, MCP servers, Redpanda broker).
                 </Text>
               </CardHeader>
               <CardContent className="px-4 pb-4">
@@ -1353,7 +1353,7 @@ export const AIAgentConfigurationTab = () => {
                     (isUsingGateway && filteredModels.length === 0 && !isLoadingProviders) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
-                        placeholder="Enter model name (e.g., llama-3.1-70b)"
+                        placeholder="llama-3.1-70b"
                         value={displayData.model}
                       />
                     ) : (

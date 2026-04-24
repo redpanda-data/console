@@ -261,7 +261,7 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
           .then(() => {
             toast({
               status: 'success',
-              description: 'All info copied to clipboard!',
+              description: 'All info copied to clipboard',
             });
           })
           .catch(navigatorClipboardErrorHandler);

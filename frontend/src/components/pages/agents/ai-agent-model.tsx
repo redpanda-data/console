@@ -197,17 +197,17 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       {
         value: 'anthropic.claude-sonnet-4-6',
         name: 'Claude Sonnet 4.6',
-        description: 'Fast, intelligent model via Bedrock',
+        description: 'Fast, intelligent model through Bedrock',
       },
       {
         value: 'anthropic.claude-opus-4-6-v1',
         name: 'Claude Opus 4.6',
-        description: 'Most capable model via Bedrock',
+        description: 'Most capable model through Bedrock',
       },
       {
         value: 'anthropic.claude-haiku-4-5-20251001-v1:0',
         name: 'Claude Haiku 4.5',
-        description: 'Fast and cost-effective via Bedrock',
+        description: 'Fast and cost-effective through Bedrock',
       },
     ],
   },

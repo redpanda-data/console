@@ -249,7 +249,7 @@ function EditSchemaMode({
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
-            aria-label="Schema registry mode"
+            aria-label="Schema Registry mode"
             className="w-full"
             data-testid="edit-mode-radio"
             onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}

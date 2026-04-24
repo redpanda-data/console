@@ -467,7 +467,7 @@ const NewDebugBundleForm: FC<{
             />
           </FormField>
           <FormField
-            description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB."
+            description="Read the logs until the given size is reached (for example, 3MB, 1GB). Default 100MB."
             errorText={fieldViolationsMap?.logsSizeLimitBytes}
             isInvalid={!!fieldViolationsMap?.logsSizeLimitBytes}
             label="Logs size limit"

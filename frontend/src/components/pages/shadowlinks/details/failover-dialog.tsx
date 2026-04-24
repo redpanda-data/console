@@ -46,7 +46,7 @@ export const FailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoa
                 : 'This action will promote all shadow topics to an active state, allowing writes to this cluster.'}
             </Text>
             <div>
-              <Text className="font-semibold">Before proceeding, please ensure:</Text>
+              <Text className="font-semibold">Before proceeding, ensure:</Text>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 <li>
                   <Text>All applications and clients have been updated to point to this cluster</Text>

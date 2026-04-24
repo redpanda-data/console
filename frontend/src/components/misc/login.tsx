@@ -263,7 +263,7 @@ const LoginPage = () => {
                   {{
                     token_exchange_failed: 'OIDC authentication failed. Check backend logs for details.',
                     kafka_authentication_failed:
-                      'Authenticated via OIDC, but failed to authenticate with the Kafka API.',
+                      'Authenticated through OIDC, but failed to authenticate with the Kafka API.',
                     console_internal: 'An unexpected error occurred. Check backend logs.',
                     permission_denied: `This user is not authorized to use Console. An administrator should grant user ${searchParams.get('oidc_subject') ?? ''} permissions in the Console configuration to proceed.`,
                   }[searchParams.get('error_code') as string] || 'An unexpected error occurred. Check backend logs.'}
