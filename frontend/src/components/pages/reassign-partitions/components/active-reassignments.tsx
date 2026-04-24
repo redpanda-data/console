@@ -338,9 +338,11 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
         <PopoverBody>Are you sure you want to stop the reassignment?</PopoverBody>
         <PopoverFooter display="flex" justifyContent="flex-end">
           <ButtonGroup size="sm">
-            <Button variant="ghost">No</Button>
+            <Button onClick={onClose} variant="ghost">
+              Keep running
+            </Button>
             <Button onClick={onConfirm} variant="solid">
-              Yes
+              Stop reassignment
             </Button>
           </ButtonGroup>
         </PopoverFooter>

@@ -149,7 +149,7 @@ const UploadLicensePageContent: FC = () => {
                 </Box>
               </Flex>
             }
-            title="License uploaded successfully"
+            title="License uploaded"
           />
         </Box>
       ) : (

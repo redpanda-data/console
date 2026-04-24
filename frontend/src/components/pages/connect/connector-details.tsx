@@ -294,7 +294,7 @@ const KafkaConnectorMain = ({
         }}
         successMessage={(c) => (
           <>
-            Successfully restarted connector <strong>{c.name}</strong>
+            Connector <strong>{c.name}</strong> restarted
           </>
         )}
         target={() => $state.restartingConnector}
@@ -318,7 +318,7 @@ const KafkaConnectorMain = ({
         }}
         successMessage={(c) => (
           <>
-            Successfully updated config of <strong>{c.connectorName}</strong>
+            Config of <strong>{c.connectorName}</strong> updated
           </>
         )}
         target={() => $state.updatingConnector}
@@ -340,7 +340,7 @@ const KafkaConnectorMain = ({
         }}
         successMessage={(c) => (
           <>
-            Successfully restarted <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong>
+            Task <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong> restarted
           </>
         )}
         target={() => $state.restartingTask}

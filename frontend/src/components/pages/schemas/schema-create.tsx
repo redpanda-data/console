@@ -441,7 +441,7 @@ const SchemaPageButtons = (p: {
             if (r.isValid && r.isCompatible !== false) {
               // Clear any previous validation errors on successful validation
               setPersistentValidationError(null);
-              toast.success('Schema validated successfully');
+              toast.success('Schema validated');
             } else {
               // Persist error only after user closes the modal
               setValidationDialogResult(r);
@@ -601,7 +601,7 @@ const SchemaEditor = (p: {
                 if (value.startsWith('.')) {
                   setContextWarning('');
                 } else {
-                  setContextWarning('Context name must start with a dot (e.g. ".staging")');
+                  setContextWarning('Context name must start with a dot (for example, ".staging")');
                 }
               }}
               options={contextOptions}
@@ -841,7 +841,7 @@ const SchemaEditor = (p: {
         </Heading>
         <Text className="w-1/2">
           Optional key-value properties to associate with this schema. Metadata will be ignored if not supported by
-          schema registry.
+          Schema Registry.
         </Text>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </div>

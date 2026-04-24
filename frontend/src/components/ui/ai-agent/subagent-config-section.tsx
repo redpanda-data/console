@@ -92,7 +92,7 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                       render={({ field: nameField }) => (
                         <Input
                           id={`subagent-name-${index}`}
-                          placeholder="e.g., code-reviewer"
+                          placeholder="code-reviewer"
                           {...nameField}
                           aria-invalid={!!errors.subagents?.[index]?.name}
                         />

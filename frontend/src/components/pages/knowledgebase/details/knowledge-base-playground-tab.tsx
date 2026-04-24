@@ -76,7 +76,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
   const callRetrievalAPI = useCallback(async () => {
     if (!query.trim()) {
       toast.error('Query Required', {
-        description: 'Please enter a query to retrieve results.',
+        description: 'Enter a query to retrieve results.',
       });
       return;
     }
@@ -220,7 +220,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
                   });
                 }
               }}
-              placeholder="Enter your query here... (e.g., 'which redpanda tiers exist? Show a table')"
+              placeholder="which redpanda tiers exist? Show a table"
               rows={3}
               value={query}
             />

@@ -426,7 +426,7 @@ function ConfirmDeletionModal({
       title: 'Topic Deleted',
       description: (
         <Text as="span">
-          Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully
+          Topic <Code>{topicToDelete?.topicName}</Code> deleted
         </Text>
       ),
       status: 'success',

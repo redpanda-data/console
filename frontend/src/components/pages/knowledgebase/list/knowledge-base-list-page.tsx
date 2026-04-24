@@ -408,7 +408,7 @@ export const KnowledgeBaseListPage = () => {
       try {
         await deleteKnowledgeBase({ id: knowledgeBaseId });
 
-        toast.success('Knowledge base deleted successfully');
+        toast.success('Knowledge base deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(

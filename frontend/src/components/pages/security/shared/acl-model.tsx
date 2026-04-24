@@ -457,7 +457,7 @@ export const getResourceName = (resourceType: string): string => {
     consumerGroup: 'consumer group',
     transactionalId: 'transactional ID',
     subject: 'subject',
-    schemaRegistry: 'schema registry',
+    schemaRegistry: 'Schema Registry',
   };
   return resourceNames[resourceType] || resourceType;
 };
@@ -626,7 +626,7 @@ export const handleResponses = (errors: ConnectError[], created: boolean) => {
       toast.error(er.message);
     }
   } else {
-    toast.success('ACLs created successfully');
+    toast.success('ACLs created');
   }
 };
 

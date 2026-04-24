@@ -1023,7 +1023,7 @@ export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose
         </VStack>
       }
       status="success"
-      title="Topic created!"
+      title="Topic created"
     />
   );
 

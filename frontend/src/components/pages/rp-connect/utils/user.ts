@@ -344,7 +344,7 @@ const createKafkaUser = async (
     return {
       operation: 'Create user',
       success: true,
-      message: `User "${userData.username}" created successfully`,
+      message: `User "${userData.username}" created`,
     };
   } catch (error) {
     const connectError = ConnectError.from(error);
@@ -414,7 +414,7 @@ export const useCreateUserWithSecretsMutation = () => {
         exact: false,
       });
 
-      toast.success(consumerGroupACLResult.message || 'Permissions configured successfully');
+      toast.success(consumerGroupACLResult.message || 'Permissions configured');
       return { success: true, data: userData };
     }
 

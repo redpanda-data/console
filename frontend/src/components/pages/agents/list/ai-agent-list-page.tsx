@@ -320,7 +320,7 @@ const AIAgentsListPageContent = ({
         }
 
         // Show single success toast regardless of what was deleted
-        toast.success('AI agent deleted successfully');
+        toast.success('AI agent deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(

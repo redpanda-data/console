@@ -156,7 +156,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 				}),
 			);
 
-			toast.success(`Secret "${data.name}" created successfully`);
+			toast.success(`Secret "${data.name}" created`);
 
 			// Select the newly created secret
 			onChange(data.name);

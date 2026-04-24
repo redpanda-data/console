@@ -215,7 +215,7 @@ describe('AddTopicStep', () => {
       expect(result).toEqual(
         expect.objectContaining({
           success: true,
-          message: expect.stringMatching(/Created topic/),
+          message: expect.stringMatching(/Topic ".*" created/),
         })
       );
     });

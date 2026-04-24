@@ -92,7 +92,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
                 {selectedScope === 'local' && 'Configuration stored locally for this project only'}
                 {selectedScope === 'project' && (
                   <Text as="span">
-                    Configuration shared with team via <InlineCode>.mcp.json</InlineCode> file in project
+                    Configuration shared with team using <InlineCode>.mcp.json</InlineCode> file in project
                   </Text>
                 )}
                 {selectedScope === 'user' && (

@@ -287,7 +287,7 @@ export const KnowledgeBaseCreatePage = () => {
       const knowledgeBase = buildKnowledgeBaseCreate(values);
       await createKnowledgeBase(create(CreateKnowledgeBaseRequestSchema, { knowledgeBase }));
 
-      toast.success('Knowledge base created successfully');
+      toast.success('Knowledge base created');
       navigate({ to: '/knowledgebases' });
     } catch (err) {
       const connectError = err as ConnectError;
