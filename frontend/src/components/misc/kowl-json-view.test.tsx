@@ -161,4 +161,24 @@ describe('KowlJsonView', () => {
 
     expect(editorLayoutSpy).toHaveBeenLastCalledWith({ width: 800, height: 480 });
   });
+
+  test('escapeLatin1 re-escapes Latin-1 code points so copy-paste recovers the original byte', async () => {
+    render(<KowlJsonView escapeLatin1 srcObj={{ v: 'ÛN' }} />);
+
+    await waitFor(() => {
+      const value = editorPropsSpy.mock.lastCall?.[0].value as string;
+      expect(value).toContain('\\u00db');
+      expect(value).not.toContain('Û');
+    });
+  });
+
+  test('without escapeLatin1, Latin-1 glyphs pass through to the editor unchanged', async () => {
+    render(<KowlJsonView srcObj={{ v: 'ÛN' }} />);
+
+    await waitFor(() => {
+      const value = editorPropsSpy.mock.lastCall?.[0].value as string;
+      expect(value).toContain('Û');
+      expect(value).not.toContain('\\u00db');
+    });
+  });
 });
