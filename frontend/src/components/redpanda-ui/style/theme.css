@@ -330,48 +330,58 @@
   --color-surface-subtle: var(--color-grey-100);
   --color-surface-strong: var(--color-grey-200);
 
+  /* Foreground tokens use the lightest/darkest shade of the base color
+     family so they feel tonal rather than plain white. Dark bases pair with
+     the -50 shade (near-white with a tint); bright bases (orange, sky-blue)
+     pair with the -900 shade since a light foreground cannot reach adequate
+     contrast against them. */
+
   /* Primary (Indigo - UI actions) */
   --color-primary: var(--color-indigo-600);
-  --color-primary-foreground: var(--color-indigo-100);
+  --color-primary-foreground: var(--color-indigo-50);
   --color-primary-subtle: var(--color-indigo-alpha-100);
 
   /* Secondary (dark-blue - for secondary surfaces/buttons) */
   --color-secondary: var(--color-dark-blue-600);
-  --color-secondary-foreground: var(--color-dark-blue-800);
+  --color-secondary-foreground: var(--color-dark-blue-50);
   --color-secondary-subtle: var(--color-dark-blue-alpha-100);
 
-  /* Accent */
+  /* Accent (light indigo surface - dark foreground) */
   --color-accent: var(--color-indigo-100);
   --color-accent-foreground: var(--color-indigo-800);
   --color-accent-subtle: var(--color-indigo-alpha-100);
 
   /* Brand (Redpanda Red) */
   --color-brand: var(--color-primary-brand-600);
-  --color-brand-foreground: var(--color-primary-brand-800);
+  --color-brand-foreground: var(--color-primary-brand-50);
   --color-brand-subtle: var(--color-primary-brand-alpha-100);
 
   /* Destructive/Error */
   --color-destructive: var(--color-red-600);
   --color-error: var(--color-red-600);
-  --color-destructive-foreground: var(--color-red-800);
+  --color-destructive-foreground: var(--color-red-50);
   --color-destructive-subtle: var(--color-red-alpha-100);
 
   /* Status Colors */
   --color-success: var(--color-green-600);
-  --color-success-foreground: var(--color-green-800);
+  --color-success-foreground: var(--color-green-50);
   --color-success-subtle: var(--color-green-alpha-100);
+  /* Warning steps out of the orange family: orange-900 is the darkest shade
+     available and still doesn't have enough contrast against the bright
+     orange-600 base, so we fall back to grey-900. Info stays tonal because
+     blue-900 is dark enough against blue-600. */
   --color-warning: var(--color-orange-600);
-  --color-warning-foreground: var(--color-orange-900);
+  --color-warning-foreground: var(--color-orange-50);
   --color-warning-subtle: var(--color-orange-alpha-100);
   --color-info: var(--color-blue-600);
-  --color-info-foreground: var(--color-blue-800);
+  --color-info-foreground: var(--color-blue-900);
   --color-info-subtle: var(--color-blue-alpha-100);
   --color-neutral: var(--color-grey-600);
-  --color-neutral-foreground: var(--color-grey-white);
+  --color-neutral-foreground: var(--color-grey-50);
 
-  /* Informative (alias for info) */
+  /* Informative (alias for info - same bright sky-blue base) */
   --color-informative: var(--color-blue-600);
-  --color-informative-foreground: var(--color-grey-white);
+  --color-informative-foreground: var(--color-blue-900);
 
   /* Border, Input, Ring */
   --color-border: var(--color-grey-200);
@@ -759,49 +769,51 @@
 
   /* Primary */
   --color-primary: var(--color-indigo-500);
-  --color-primary-foreground: var(--color-indigo-200);
+  --color-primary-foreground: var(--color-indigo-50);
   --color-primary-subtle: var(--color-indigo-alpha-200);
 
   /* Secondary */
   --color-secondary: var(--color-dark-blue-400);
-  --color-secondary-foreground: var(--color-dark-blue-200);
+  --color-secondary-foreground: var(--color-dark-blue-50);
   --color-secondary-subtle: var(--color-dark-blue-alpha-200);
 
   /* Muted */
   --color-muted: var(--color-grey-800);
   --color-muted-foreground: var(--color-grey-400);
 
-  /* Accent */
+  /* Accent (translucent indigo surface - light foreground for dark mode) */
   --color-accent: var(--color-indigo-alpha-300);
-  --color-accent-foreground: var(--color-indigo-200);
+  --color-accent-foreground: var(--color-indigo-100);
   --color-accent-subtle: var(--color-indigo-alpha-200);
 
   /* Brand */
   --color-brand: var(--color-primary-brand-500);
-  --color-brand-foreground: var(--color-primary-brand-200);
+  --color-brand-foreground: var(--color-primary-brand-50);
   --color-brand-subtle: var(--color-primary-brand-alpha-200);
 
   /* Destructive */
   --color-destructive: var(--color-red-500);
-  --color-destructive-foreground: var(--color-red-200);
+  --color-destructive-foreground: var(--color-red-50);
   --color-destructive-subtle: var(--color-red-alpha-200);
 
   /* Status Colors */
   --color-success: var(--color-green-500);
-  --color-success-foreground: var(--color-green-200);
+  --color-success-foreground: var(--color-green-50);
   --color-success-subtle: var(--color-green-alpha-200);
+  /* Warning drops out of the orange family (see light mode note); Info stays
+     tonal since blue-900 is dark enough against blue-500. */
   --color-warning: var(--color-orange-500);
-  --color-warning-foreground: var(--color-orange-200);
+  --color-warning-foreground: var(--color-grey-900);
   --color-warning-subtle: var(--color-orange-50);
   --color-info: var(--color-blue-500);
-  --color-info-foreground: var(--color-blue-200);
+  --color-info-foreground: var(--color-blue-900);
   --color-info-subtle: var(--color-blue-alpha-200);
   --color-neutral: var(--color-grey-500);
-  --color-neutral-foreground: var(--color-grey-200);
+  --color-neutral-foreground: var(--color-grey-50);
 
   /* Informative */
   --color-informative: var(--color-blue-400);
-  --color-informative-foreground: var(--color-blue-200);
+  --color-informative-foreground: var(--color-blue-900);
 
   /* Border, Input, Ring */
   --color-border-subtle: var(--color-grey-600);
@@ -829,7 +841,7 @@
 
   /* Selection */
   --color-selection: var(--color-indigo-300);
-  --color-selection-foreground: var(--color-grey-200);
+  --color-selection-foreground: var(--color-indigo-900);
   --color-selected: var(--color-grey-white);
   --color-selected-foreground: var(--color-indigo-800);
 
