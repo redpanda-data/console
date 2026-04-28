@@ -46,7 +46,10 @@ function AlertDialogOverlay({ className, ...props }: React.ComponentProps<typeof
   return (
     <AlertDialogPrimitive.Backdrop
       className={cn(
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=open]:animate-in',
+        // fill-mode-forwards keeps opacity 0 applied after the exit animation
+        // ends; otherwise the backdrop flashes back to full opacity for a
+        // frame before Base UI unmounts it.
+        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 fill-mode-forwards data-[state=closed]:animate-out data-[state=open]:animate-in',
         className
       )}
       data-slot="alert-dialog-overlay"
@@ -74,7 +77,7 @@ function AlertDialogContent({
       {showOverlay ? <AlertDialogOverlay /> : null}
       <AlertDialogPrimitive.Popup
         className={cn(
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-lg',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col gap-4 overflow-hidden rounded-lg border bg-background fill-mode-forwards p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-lg',
           className
         )}
         data-slot="alert-dialog-content"
@@ -89,7 +92,7 @@ function AlertDialogContent({
 function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
+      className={cn('flex shrink-0 flex-col gap-2 text-center sm:text-left', className)}
       data-slot="alert-dialog-header"
       {...props}
     />
@@ -99,7 +102,7 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
 function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
+      className={cn('flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
       data-slot="alert-dialog-footer"
       {...props}
     />

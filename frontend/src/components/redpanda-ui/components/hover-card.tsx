@@ -102,8 +102,14 @@ function HoverCardContent({
     <AnimatePresence>
       {isOpen ? (
         <HoverCardPrimitive.Portal container={container} data-slot="hover-card-portal" keepMounted>
-          <HoverCardPrimitive.Positioner align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset}>
-            <HoverCardPrimitive.Popup className="z-50" render={renderWithDataState('div')} {...props}>
+          <HoverCardPrimitive.Positioner
+            align={align}
+            alignOffset={alignOffset}
+            className="z-50"
+            side={side}
+            sideOffset={sideOffset}
+          >
+            <HoverCardPrimitive.Popup render={renderWithDataState('div')} {...props}>
               <motion.div
                 animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
                 className={cn(

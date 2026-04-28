@@ -65,6 +65,7 @@ function Calendar({
     buttonVariant?: React.ComponentProps<typeof Button>['variant'];
   }) {
   const defaultClassNames = getDefaultClassNames();
+
   const rootComponent = React.useMemo(
     () =>
       ({ ref, ...rootProps }: React.ComponentProps<typeof CalendarRoot> & { ref?: React.Ref<HTMLDivElement> }) => (

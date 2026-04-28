@@ -90,7 +90,7 @@ function useUncontrolledState<T>({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: onChangeRef is a stable ref, intentionally omitted to avoid re-firing on every onChange identity change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: because radix did it
   React.useEffect(() => {
     if (prevValueRef.current !== value) {
       onChangeRef.current?.(value);

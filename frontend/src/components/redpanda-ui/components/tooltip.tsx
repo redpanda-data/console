@@ -120,8 +120,14 @@ function TooltipContent({
     <AnimatePresence>
       {isOpen ? (
         <TooltipPrimitive.Portal container={container ?? portalContainer} data-slot="tooltip-portal" keepMounted>
-          <TooltipPrimitive.Positioner align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset}>
-            <TooltipPrimitive.Popup className="z-50" render={renderWithDataState('div')} {...props}>
+          <TooltipPrimitive.Positioner
+            align={align}
+            alignOffset={alignOffset}
+            className="z-50"
+            side={side}
+            sideOffset={sideOffset}
+          >
+            <TooltipPrimitive.Popup render={renderWithDataState('div')} {...props}>
               <motion.div
                 animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
                 className={cn(
