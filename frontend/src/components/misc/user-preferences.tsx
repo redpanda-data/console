@@ -56,7 +56,7 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DialogContent className="min-h-[50vh]" size="xl" >
+      <DialogContent className="min-h-[50vh]" size="xl">
         <DialogHeader>
           <DialogTitle>User Preferences</DialogTitle>
         </DialogHeader>
