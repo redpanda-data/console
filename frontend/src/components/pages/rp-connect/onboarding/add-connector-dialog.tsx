@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectTiles } from './connect-tiles';
