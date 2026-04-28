@@ -13,7 +13,7 @@ import {
   SiSplunk,
   SiTrino,
 } from '@icons-pack/react-simple-icons';
-import { RedpandaUILetterIconColor } from 'components/redpanda-ui/components/icons';
+import { RedpandaUILetterIcon } from 'components/redpanda-ui/components/icons';
 import {
   Activity,
   Archive,
@@ -43,6 +43,7 @@ import {
   Type,
   Workflow,
 } from 'lucide-react';
+import type { SVGProps } from 'react';
 
 import {
   AmazonWebServicesLogo,
@@ -96,6 +97,10 @@ import {
   XmlLogo,
 } from './logos';
 
+const RedpandaLetterLogo = (props: SVGProps<SVGSVGElement>) => (
+  <RedpandaUILetterIcon {...props} style={{ color: '#E14226', ...props.style }} />
+);
+
 export const componentLogoMap = {
   custom: Settings,
   amqp_0_9: RabbitMQLogo,
@@ -122,7 +127,7 @@ export const componentLogoMap = {
   batched: Package,
   beanstalkd: BeanstalkdLogo,
   benchmark: Activity,
-  bloblang: RedpandaUILetterIconColor,
+  bloblang: RedpandaLetterLogo,
   bounds_check: undefined,
   branch: undefined,
   broker: undefined,
@@ -249,12 +254,12 @@ export const componentLogoMap = {
   redis_scan: RedisLogo,
   redis_script: RedisLogo,
   redis_streams: RedisLogo,
-  redpanda: RedpandaUILetterIconColor,
-  redpanda_common: RedpandaUILetterIconColor,
-  redpanda_data_transform: RedpandaUILetterIconColor,
-  redpanda_migrator: RedpandaUILetterIconColor,
-  redpanda_migrator_bundle: RedpandaUILetterIconColor,
-  redpanda_migrator_offsets: RedpandaUILetterIconColor,
+  redpanda: RedpandaLetterLogo,
+  redpanda_common: RedpandaLetterLogo,
+  redpanda_data_transform: RedpandaLetterLogo,
+  redpanda_migrator: RedpandaLetterLogo,
+  redpanda_migrator_bundle: RedpandaLetterLogo,
+  redpanda_migrator_offsets: RedpandaLetterLogo,
   reject: undefined,
   reject_errored: undefined,
   resource: Package,
