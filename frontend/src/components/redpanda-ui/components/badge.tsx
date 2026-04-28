@@ -23,14 +23,13 @@ const badgeVariants = cva(
         // === INFO (Blue - semantic tokens) ===
         info: 'border-transparent bg-surface-informative text-inverse [a&]:hover:bg-surface-informative-hover',
         'info-inverted':
-          'border-transparent bg-background-informative-subtle text-info-foreground [a&]:hover:bg-background-informative-subtle-hover',
+          'border-transparent bg-background-informative-subtle text-info [a&]:hover:bg-background-informative-subtle-hover',
         'info-outline':
           'border-outline-informative bg-transparent text-info [a&]:hover:bg-background-informative-subtle',
 
         // === ACCENT (Brand Red - uses theme brand tokens) ===
         accent: 'border-transparent bg-brand text-inverse [a&]:hover:bg-surface-brand-hover',
-        'accent-inverted':
-          'border-transparent bg-background-brand-subtle text-brand-foreground [a&]:hover:bg-brand-alpha-default',
+        'accent-inverted': 'border-transparent bg-background-brand-subtle text-brand [a&]:hover:bg-brand-alpha-default',
         'accent-outline': 'border-outline-brand bg-transparent text-brand [a&]:hover:bg-brand-alpha-subtle',
 
         // === SUCCESS (Green - semantic tokens) ===
@@ -41,8 +40,7 @@ const badgeVariants = cva(
 
         // === WARNING (Yellow/Orange - semantic tokens) ===
         warning: 'border-transparent bg-surface-warning text-inverse [a&]:hover:bg-surface-warning-hover',
-        'warning-inverted':
-          'border-transparent bg-background-warning-subtle text-warning-foreground [a&]:hover:bg-warning-subtle',
+        'warning-inverted': 'border-transparent bg-background-warning-subtle text-warning [a&]:hover:bg-warning-subtle',
         'warning-outline': 'border-outline-warning bg-transparent text-warning [a&]:hover:bg-background-warning-subtle',
 
         // === DISABLED (Muted - semantic tokens) ===

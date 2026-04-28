@@ -62,9 +62,9 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
         </DialogHeader>
         <DialogBody>
           <Tabs onValueChange={(value) => setActiveTab(value as SettingsTabKeys)} value={activeTab}>
-            <TabsList>
+            <TabsList variant="underline">
               {tabEntries.map(([key, { name }]) => (
-                <TabsTrigger key={key} value={key}>
+                <TabsTrigger key={key} value={key} variant="underline">
                   {name}
                 </TabsTrigger>
               ))}
@@ -80,7 +80,7 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
           <Text className="text-muted-foreground" variant="small">
             Changes are saved automatically
           </Text>
-          <Button onClick={onClose} variant="secondary">
+          <Button onClick={onClose} variant="ghost">
             Close
           </Button>
         </DialogFooter>
@@ -247,7 +247,7 @@ const ImportExportTab: FC = () => {
       <Label text="Import">
         <div className="flex gap-2">
           <Input
-            className="max-w-[360px]"
+            containerClassName="w-full max-w-[360px]"
             onChange={(e) => setImportCode(e.target.value)}
             placeholder="Paste a previously exported settings string..."
             spellCheck={false}
@@ -273,25 +273,27 @@ const ImportExportTab: FC = () => {
       </Label>
 
       <Label text="Reset">
-        <div className="flex items-center gap-2">
-          <Input
-            className="max-w-[360px]"
-            onChange={(str) => setResetConfirm(str.target.value)}
-            placeholder='type "reset" here to confirm and enable the button'
-            spellCheck={false}
-            value={resetConfirm}
-          />
-          <Button
-            disabled={resetConfirm !== 'reset'}
-            onClick={() => {
-              clearSettings();
-              toast.success('All settings have been reset to their defaults');
-              setResetConfirm('');
-            }}
-            variant="destructive"
-          >
-            Reset
-          </Button>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <Input
+              containerClassName="w-full max-w-[360px]"
+              onChange={(str) => setResetConfirm(str.target.value)}
+              placeholder='type "reset" here to confirm and enable the button'
+              spellCheck={false}
+              value={resetConfirm}
+            />
+            <Button
+              disabled={resetConfirm !== 'reset'}
+              onClick={() => {
+                clearSettings();
+                toast.success('All settings have been reset to their defaults');
+                setResetConfirm('');
+              }}
+              variant="destructive"
+            >
+              Reset
+            </Button>
+          </div>
           <span className="smallText">Clear all your user settings, resetting them to the default values</span>
         </div>
       </Label>

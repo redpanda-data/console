@@ -545,7 +545,8 @@ function OptionValueDisplay({
             if (!icon) {
               return null;
             }
-            return renderIcon(icon, 'size-4') ?? <span key={value} />;
+            const el = renderIcon(icon, 'size-4');
+            return el ? <span key={value}>{el}</span> : <span key={value} />;
           })
         : null}
       <span className={cn(hasIcons ? 'ml-1.5' : undefined)}>

@@ -157,10 +157,10 @@ type DropdownMenuSubContentProps = React.ComponentProps<typeof DropdownMenuPrimi
 
 function DropdownMenuSubContent({ className, ...props }: DropdownMenuSubContentProps) {
   return (
-    <DropdownMenuPrimitive.Positioner>
+    <DropdownMenuPrimitive.Positioner className="z-50">
       <DropdownMenuPrimitive.Popup
         className={cn(
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--transform-origin) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 min-w-[8rem] origin-(--transform-origin) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in',
           className
         )}
         data-slot="dropdown-menu-sub-content"
@@ -204,12 +204,14 @@ function DropdownMenuContent({
           data-slot="dropdown-menu-portal"
           keepMounted
         >
-          <DropdownMenuPrimitive.Positioner align={align} alignOffset={alignOffset} side={side} sideOffset={sideOffset}>
-            <DropdownMenuPrimitive.Popup
-              className="z-50"
-              data-slot="dropdown-menu-popup"
-              render={renderWithDataState('div')}
-            >
+          <DropdownMenuPrimitive.Positioner
+            align={align}
+            alignOffset={alignOffset}
+            className="z-50"
+            side={side}
+            sideOffset={sideOffset}
+          >
+            <DropdownMenuPrimitive.Popup data-slot="dropdown-menu-popup" render={renderWithDataState('div')}>
               <motion.div
                 animate={{
                   opacity: 1,
@@ -391,14 +393,21 @@ type DropdownMenuLabelProps = React.ComponentProps<typeof DropdownMenuPrimitive.
   inset?: boolean;
 };
 
+// Base UI's `Menu.GroupLabel` requires an ancestor `Menu.Group` or it throws
+// "MenuGroupRootContext is missing". Radix allowed a standalone label, and our
+// consumers (including the data-table demo) use it that way, so we wrap the
+// label in a Group internally to restore Radix-compatible behavior. If the
+// caller already wraps with DropdownMenuGroup, this nests harmlessly.
 function DropdownMenuLabel({ className, inset, ...props }: DropdownMenuLabelProps) {
   return (
-    <DropdownMenuPrimitive.GroupLabel
-      className={cn('px-2 py-1.5 font-semibold text-sm', inset && 'pl-8', className)}
-      data-inset={inset}
-      data-slot="dropdown-menu-label"
-      {...props}
-    />
+    <DropdownMenuPrimitive.Group>
+      <DropdownMenuPrimitive.GroupLabel
+        className={cn('px-2 py-1.5 font-semibold text-sm', inset && 'pl-8', className)}
+        data-inset={inset}
+        data-slot="dropdown-menu-label"
+        {...props}
+      />
+    </DropdownMenuPrimitive.Group>
   );
 }
 

@@ -133,10 +133,11 @@ function PopoverContent({
             align={align}
             alignOffset={alignOffset}
             {...(anchorCtx?.hasAnchor && anchorCtx.anchorRef.current ? { anchor: anchorCtx.anchorRef } : {})}
+            className="z-50"
             side={side}
             sideOffset={sideOffset}
           >
-            <PopoverPrimitive.Popup className="z-50" render={renderWithDataState('div')} {...props}>
+            <PopoverPrimitive.Popup render={renderWithDataState('div')} {...props}>
               <motion.div
                 animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
                 className={cn(
