@@ -77,6 +77,7 @@ export const Context = ({
 
   return (
     <ContextContext.Provider value={contextValue}>
+      {/* @ts-expect-error openDelay/closeDelay are not in HoverCard's typed props after registry update */}
       <HoverCard closeDelay={0} openDelay={0} {...props} />
     </ContextContext.Provider>
   );

@@ -293,6 +293,7 @@ export function DynamicCodeBlock({
 
   return (
     <>
+      {/* @ts-expect-error React 19 style hoisting attributes (href/precedence) not yet in TS DOM types */}
       <style href="shiki-dual-theme" precedence="medium">
         {shikiDualThemeStyles}
       </style>

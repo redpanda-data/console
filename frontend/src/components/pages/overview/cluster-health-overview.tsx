@@ -58,7 +58,7 @@ const ClusterHealthOverview = () => {
                   <ErrorIcon color={colors.brandError} size={18} />{' '}
                   <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text>
                 </Flex>{' '}
-                <Link to="/topics">View topics</Link>
+                <Link search={{} as never} to="/topics">View topics</Link>
               </Flex>
             </Grid>
           </ListItem>
@@ -74,7 +74,7 @@ const ClusterHealthOverview = () => {
                   <WarningIcon color={colors.brandWarning} size={18} />{' '}
                   <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text>
                 </Flex>{' '}
-                <Link to="/topics">View topics</Link>
+                <Link search={{} as never} to="/topics">View topics</Link>
               </Flex>
             </Grid>
           </ListItem>

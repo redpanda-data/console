@@ -161,6 +161,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
                   clusterName,
                   connector: original.name,
                 }}
+                search={{} as never}
                 to="/connect-clusters/$clusterName/$connector"
               >
                 <Text whiteSpace="break-spaces" wordBreak="break-word">

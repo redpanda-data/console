@@ -23,14 +23,14 @@ export const TagSchema = z.object({
 export const ToolSchema = z
   .object({
     name: z
-      .string({ required_error: 'Tool name is required' })
+      .string({ error: 'Tool name is required' })
       .trim()
       .min(1, { message: 'Tool name is required' })
       .max(100, { message: 'Tool name must be at most 100 characters' }),
     componentType: z.nativeEnum(MCPServer_Tool_ComponentType, {
-      required_error: 'Component type is required',
+      error: 'Component type is required',
     }),
-    config: z.string({ required_error: 'YAML configuration is required' }).refine((val) => {
+    config: z.string({ error: 'YAML configuration is required' }).refine((val) => {
       try {
         parse(val);
         return true;
@@ -63,7 +63,7 @@ export const ToolSchema = z
 export const FormSchema = z
   .object({
     displayName: z
-      .string({ required_error: 'Display name is required' })
+      .string({ error: 'Display name is required' })
       .trim()
       .min(1, { message: 'Display name is required' }),
     description: z.string().trim().optional().default(''),

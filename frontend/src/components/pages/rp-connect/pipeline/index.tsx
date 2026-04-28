@@ -59,7 +59,7 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
   useLintPipelineConfigQuery,
@@ -167,8 +167,6 @@ const pipelineFormSchema = z.object({
 });
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
-type PipelineFormInput = z.input<typeof pipelineFormSchema>;
-type PipelineFormHandle = UseFormReturn<PipelineFormInput, unknown, PipelineFormValues>;
 
 // ---------------------------------------------------------------------------
 // Pure helpers
@@ -184,7 +182,7 @@ function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, str
   return userTags;
 }
 
-function warnIfResized(form: PipelineFormHandle, cpuShares: string | undefined) {
+function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: string | undefined) {
   const retUnits = cpuToTasks(cpuShares);
   const currentUnits = form.getValues('computeUnits');
   if (retUnits && currentUnits !== retUnits) {
@@ -276,7 +274,7 @@ function usePipelineSave({
   pipeline,
   isPipelineDiagramsEnabled,
 }: {
-  form: PipelineFormHandle;
+  form: UseFormReturn<PipelineFormValues>;
   yamlContent: string;
   mode: string;
   pipelineId: string | undefined;
@@ -362,7 +360,7 @@ function usePipelineSave({
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters' });
+          navigate({ to: '/connect-clusters', search: {} as never });
         },
         onError: (err) => {
           toast.error(
@@ -706,8 +704,8 @@ export default function PipelinePage() {
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
-  const form = useForm<PipelineFormInput, unknown, PipelineFormValues>({
-    resolver: zodResolver(pipelineFormSchema),
+  const form = useForm<PipelineFormValues>({
+    resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
     mode: 'onSubmit',
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
@@ -837,7 +835,7 @@ export default function PipelinePage() {
       clearWizardStore();
     }
     if (mode === 'view') {
-      navigate({ to: '/connect-clusters' });
+      navigate({ to: '/connect-clusters', search: {} as never });
     } else {
       router.history.back();
     }
