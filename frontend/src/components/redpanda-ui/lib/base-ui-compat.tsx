@@ -106,11 +106,29 @@ export function asChildTrigger<P extends AsChildInput>(props: P): Omit<P, 'asChi
   if (!React.isValidElement(child)) {
     return base;
   }
-  const isNonButtonIntrinsic = typeof child.type === 'string' && child.type !== 'button';
-  if (isNonButtonIntrinsic) {
+  if (rendersNonButton(child)) {
     return { ...base, nativeButton: false };
   }
   return base;
+}
+
+/**
+ * Walks nested `asChild` chains to detect when the final rendered DOM element
+ * is not a `<button>` — e.g. `<Button asChild><span>…</span></Button>`, which
+ * wraps button styling around a `<span>` and therefore breaks the
+ * `nativeButton` assumption.
+ */
+function rendersNonButton(element: React.ReactElement): boolean {
+  if (typeof element.type === 'string') {
+    return element.type !== 'button';
+  }
+  const props = (element.props ?? {}) as { asChild?: boolean; children?: React.ReactNode };
+  if (!props.asChild) {
+    // Function/forwardRef component without asChild: assume it renders a <button>.
+    return false;
+  }
+  const inner = React.Children.count(props.children) === 1 ? React.Children.only(props.children) : null;
+  return React.isValidElement(inner) ? rendersNonButton(inner) : false;
 }
 
 /**

@@ -9,25 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Button,
-  Checkbox,
-  Flex,
-  IconButton,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  NumberInput,
-  Tabs,
-  Text,
-  useToast,
-} from '@redpanda-data/ui';
 import { WrenchIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useState } from 'react';
+import { toast } from 'sonner';
 
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsx-utils';
@@ -39,8 +36,6 @@ const settingsTabs: Record<SettingsTabKeys, { name: string; component: FC }> = {
   jsonViewer: { name: 'Json Viewer', component: () => <JsonViewerTab /> },
   importExport: { name: 'Import/Export', component: () => <ImportExportTab /> },
   autoRefresh: { name: 'Auto Refresh', component: () => <AutoRefreshTab /> },
-  // pagination position
-  // messageSearch: { name: "Message Search", component: () => <MessageSearchTab /> },
 };
 
 export const UserPreferencesButton: FC = () => {
@@ -48,40 +43,59 @@ export const UserPreferencesButton: FC = () => {
   return (
     <>
       <UserPreferencesDialog isOpen={isOpen} onClose={() => setOpen(false)} />
-      <IconButton
-        aria-label="user preferences"
-        icon={<WrenchIcon size={18} />}
-        onClick={() => setOpen(true)}
-        size="xs"
-        variant="ghost"
-      />
+      <Button aria-label="user preferences" onClick={() => setOpen(true)} size="icon-xs" variant="ghost">
+        <WrenchIcon size={18} />
+      </Button>
     </>
   );
 };
 
-export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
-  <Modal isCentered isOpen={isOpen} onClose={onClose}>
-    <ModalOverlay />
-    <ModalContent minH="50vh" minW="5xl">
-      <ModalHeader>User Preferences</ModalHeader>
-      <ModalBody>
-        <Tabs
-          items={Object.entries(settingsTabs).map(([key, { name, component: TabComponent }]) => ({
-            name,
-            component: <TabComponent />,
-            key,
-          }))}
-        />
-      </ModalBody>
-      <ModalFooter alignItems="center" gap={2} justifyContent="flex-end">
-        <Text color="gray.500" fontSize="xs">
-          Changes are saved automatically
-        </Text>
-        <Button onClick={onClose}>Close</Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-);
+export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  const tabEntries = Object.entries(settingsTabs) as [SettingsTabKeys, { name: string; component: FC }][];
+  const [activeTab, setActiveTab] = useState<SettingsTabKeys>(tabEntries[0][0]);
+
+  return (
+    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
+      <DialogContent className="min-h-[50vh]" size="xl" >
+        <DialogHeader>
+          <DialogTitle>User Preferences</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Tabs onValueChange={(value) => setActiveTab(value as SettingsTabKeys)} value={activeTab}>
+            <TabsList>
+              {tabEntries.map(([key, { name }]) => (
+                <TabsTrigger key={key} value={key}>
+                  {name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {tabEntries.map(([key, { component: TabComponent }]) => (
+              <TabsContent key={key} value={key}>
+                <TabComponent />
+              </TabsContent>
+            ))}
+          </Tabs>
+        </DialogBody>
+        <DialogFooter>
+          <Text className="text-muted-foreground" variant="small">
+            Changes are saved automatically
+          </Text>
+          <Button onClick={onClose} variant="secondary">
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const settingsGridStyle = {
+  display: 'inline-grid',
+  gridAutoFlow: 'row' as const,
+  gridRowGap: '24px',
+  gridColumnGap: '32px',
+  marginRight: 'auto',
+};
 
 const StatsBarTab: FC = () => {
   const [topicDetails, setTopicDetails] = useState(uiSettings.topicDetailsShowStatisticsBar);
@@ -90,36 +104,32 @@ const StatsBarTab: FC = () => {
   return (
     <div>
       <p>Controls on what pages Redpanda Console shows the statistics bar</p>
-      <div
-        style={{
-          display: 'inline-grid',
-          gridAutoFlow: 'row',
-          gridRowGap: '24px',
-          gridColumnGap: '32px',
-          marginRight: 'auto',
-        }}
-      >
+      <div style={settingsGridStyle}>
         <Label text="Topic Details">
-          <Checkbox
-            isChecked={topicDetails}
-            onChange={(e) => {
-              uiSettings.topicDetailsShowStatisticsBar = e.target.checked;
-              setTopicDetails(e.target.checked);
-            }}
-          >
-            Enabled
-          </Checkbox>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={topicDetails}
+              onCheckedChange={(checked) => {
+                const value = checked === true;
+                uiSettings.topicDetailsShowStatisticsBar = value;
+                setTopicDetails(value);
+              }}
+            />
+            <span className="text-sm">Enabled</span>
+          </div>
         </Label>
         <Label text="Consumer Group Details">
-          <Checkbox
-            isChecked={consumerGroup}
-            onChange={(e) => {
-              uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked;
-              setConsumerGroup(e.target.checked);
-            }}
-          >
-            Enabled
-          </Checkbox>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={consumerGroup}
+              onCheckedChange={(checked) => {
+                const value = checked === true;
+                uiSettings.consumerGroupDetails.showStatisticsBar = value;
+                setConsumerGroup(value);
+              }}
+            />
+            <span className="text-sm">Enabled</span>
+          </div>
         </Label>
       </div>
     </div>
@@ -137,18 +147,10 @@ const JsonViewerTab: FC = () => {
     <div>
       <p>Settings for the JsonViewer</p>
 
-      <div
-        style={{
-          display: 'inline-grid',
-          gridAutoFlow: 'row',
-          gridRowGap: '24px',
-          gridColumnGap: '32px',
-          marginRight: 'auto',
-        }}
-      >
+      <div style={settingsGridStyle}>
         <Label text="Font Size">
           <Input
-            maxWidth={150}
+            className="max-w-[150px]"
             onChange={(e) => {
               settings.fontSize = e.target.value;
               setFontSize(e.target.value);
@@ -158,7 +160,7 @@ const JsonViewerTab: FC = () => {
         </Label>
         <Label text="Line Height">
           <Input
-            maxWidth={150}
+            className="max-w-[150px]"
             onChange={(e) => {
               settings.lineHeight = e.target.value;
               setLineHeight(e.target.value);
@@ -167,28 +169,30 @@ const JsonViewerTab: FC = () => {
           />
         </Label>
         <Label text="Maximum string length before collapsing">
-          <NumberInput
+          <Input
+            className="max-w-[150px]"
             max={10_000}
-            maxWidth={150}
             min={0}
             onChange={(e) => {
-              const v = Number(e ?? 200);
+              const v = Number(e.target.value || 200);
               settings.maxStringLength = v;
               setMaxStringLength(v);
             }}
+            type="number"
             value={maxStringLength}
           />
         </Label>
         <Label text="Maximum depth before collapsing nested objects">
-          <NumberInput
+          <Input
+            className="max-w-[150px]"
             max={50}
-            maxWidth={150}
             min={1}
             onChange={(e) => {
-              const v = Number(e ?? 2);
+              const v = Number(e.target.value || 2);
               settings.collapsed = v;
               setCollapsed(v);
             }}
+            type="number"
             value={collapsed}
           />
         </Label>
@@ -197,64 +201,60 @@ const JsonViewerTab: FC = () => {
   );
 };
 
+const applyImportedSettings = (parsed: Record<string, unknown>): string[] => {
+  const skipped: string[] = [];
+  for (const k in parsed) {
+    if (!Object.hasOwn(parsed, k)) {
+      continue;
+    }
+    if (Reflect.has(uiSettings, k)) {
+      (uiSettings as Record<string, unknown>)[k] = parsed[k];
+    } else {
+      skipped.push(k);
+    }
+  }
+  return skipped;
+};
+
 const ImportExportTab: FC = () => {
-  const toast = useToast();
   const [importCode, setImportCode] = useState('');
   const [resetConfirm, setResetConfirm] = useState('');
 
+  const handleImport = () => {
+    let parsed: Record<string, unknown> | null = null;
+    try {
+      parsed = JSON.parse(importCode);
+    } catch (e) {
+      toast.error('Unable to import settings. See console for more information.');
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging settings import failures
+      console.error('unable to import settings', { error: e });
+      return;
+    }
+    if (parsed === null) {
+      return;
+    }
+    const skipped = applyImportedSettings(parsed);
+    if (skipped.length > 0) {
+      toast.warning(`Some properties were skipped during import:\n${skipped.join(', ')}`);
+    } else {
+      toast.success('Settings imported');
+    }
+    setImportCode('');
+  };
+
   return (
-    <Flex flexDirection="column" gap={2}>
+    <div className="flex flex-col gap-2">
       <Label text="Import">
-        <Flex gap={2}>
+        <div className="flex gap-2">
           <Input
-            maxWidth={360}
+            className="max-w-[360px]"
             onChange={(e) => setImportCode(e.target.value)}
             placeholder="Paste a previously exported settings string..."
             spellCheck={false}
             value={importCode}
           />
-          <Button
-            onClick={() => {
-              let parsed: Record<string, unknown> | null = null;
-              try {
-                parsed = JSON.parse(importCode);
-              } catch (e) {
-                toast({
-                  status: 'error',
-                  description: 'Unable to import settings. See console for more information.',
-                });
-                // biome-ignore lint/suspicious/noConsole: error logging for debugging settings import failures
-                console.error('unable to import settings', { error: e });
-              }
-              if (parsed !== null) {
-                const skipped: string[] = [];
-                for (const k in parsed) {
-                  const hasKey = Reflect.has(uiSettings, k);
-                  if (hasKey) {
-                    (uiSettings as Record<string, unknown>)[k] = parsed[k];
-                  } else {
-                    skipped.push(k);
-                  }
-                }
-                const hasSkipped = skipped.length > 0;
-                if (hasSkipped) {
-                  toast({
-                    status: 'warning',
-                    description: `Some properties were skipped during import:\n${skipped.join(', ')}`,
-                  });
-                } else {
-                  toast({
-                    status: 'success',
-                    description: 'Settings imported',
-                  });
-                }
-                setImportCode('');
-              }
-            }}
-          >
-            Import
-          </Button>
-        </Flex>
+          <Button onClick={handleImport}>Import</Button>
+        </div>
       </Label>
 
       <Label text="Export">
@@ -263,10 +263,7 @@ const ImportExportTab: FC = () => {
             navigator.clipboard
               .writeText(JSON.stringify(uiSettings))
               .then(() => {
-                toast({
-                  status: 'success',
-                  description: 'Preferences copied to clipboard',
-                });
+                toast.success('Preferences copied to clipboard');
               })
               .catch(navigatorClipboardErrorHandler);
           }}
@@ -276,32 +273,29 @@ const ImportExportTab: FC = () => {
       </Label>
 
       <Label text="Reset">
-        <Flex alignItems="center" gap={2}>
+        <div className="flex items-center gap-2">
           <Input
-            maxWidth={360}
+            className="max-w-[360px]"
             onChange={(str) => setResetConfirm(str.target.value)}
             placeholder='type "reset" here to confirm and enable the button'
             spellCheck={false}
             value={resetConfirm}
           />
           <Button
-            colorScheme="red"
-            isDisabled={resetConfirm !== 'reset'}
+            disabled={resetConfirm !== 'reset'}
             onClick={() => {
               clearSettings();
-              toast({
-                status: 'success',
-                description: 'All settings have been reset to their defaults',
-              });
+              toast.success('All settings have been reset to their defaults');
               setResetConfirm('');
             }}
+            variant="destructive"
           >
             Reset
           </Button>
           <span className="smallText">Clear all your user settings, resetting them to the default values</span>
-        </Flex>
+        </div>
       </Label>
-    </Flex>
+    </div>
   );
 };
 
@@ -311,27 +305,20 @@ const AutoRefreshTab: FC = () => {
   return (
     <div>
       <p>Settings for the Auto Refresh Button</p>
-      <div
-        style={{
-          display: 'inline-grid',
-          gridAutoFlow: 'row',
-          gridRowGap: '24px',
-          gridColumnGap: '32px',
-          marginRight: 'auto',
-        }}
-      >
+      <div style={settingsGridStyle}>
         <Label text="Interval in seconds">
-          <NumberInput
+          <Input
+            className="max-w-[150px]"
             max={300}
-            maxWidth={150}
             min={5}
             onChange={(e) => {
-              if (e) {
-                const v = Number(e);
+              const v = Number(e.target.value);
+              if (!Number.isNaN(v)) {
                 uiSettings.autoRefreshIntervalSecs = v;
                 setIntervalSecs(v);
               }
             }}
+            type="number"
             value={intervalSecs}
           />
         </Label>
