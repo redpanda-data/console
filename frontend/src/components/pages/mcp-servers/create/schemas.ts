@@ -62,10 +62,7 @@ export const ToolSchema = z
 // Main form schema
 export const FormSchema = z
   .object({
-    displayName: z
-      .string({ error: 'Display name is required' })
-      .trim()
-      .min(1, { message: 'Display name is required' }),
+    displayName: z.string({ error: 'Display name is required' }).trim().min(1, { message: 'Display name is required' }),
     description: z.string().trim().optional().default(''),
     tags: z.array(TagSchema).refine(
       (arr) => {

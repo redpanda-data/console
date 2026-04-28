@@ -67,7 +67,8 @@
     "picomatch": "^2.3.2",
     "webpack": "^5.104.1",
     "@tootallnate/once": "^3.0.1",
-    "sirv": "^3.0.2"
+    "sirv": "^3.0.2",
+    "date-fns-tz": "^3.2.0"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.13",
@@ -247,5 +248,8 @@
     "@tootallnate/once": "^3.0.1",
     "sirv": "^3.0.2",
     "**/webpack-bundle-analyzer/sirv": "^3.0.2"
+  },
+  "patchedDependencies": {
+    "@redpanda-data/ui@4.2.0": "patches/@redpanda-data%2Fui@4.2.0.patch"
   }
 }

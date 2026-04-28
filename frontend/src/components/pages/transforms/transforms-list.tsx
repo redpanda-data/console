@@ -157,7 +157,11 @@ const TransformsListContent: FC = () => {
               size: 300,
               cell: ({ row: { original: r } }) => (
                 <Box whiteSpace="break-spaces" wordBreak="break-word">
-                  <Link params={{ transformName: encodeURIComponentPercents(r.name) }} search={{} as never} to="/transforms/$transformName">
+                  <Link
+                    params={{ transformName: encodeURIComponentPercents(r.name) }}
+                    search={{} as never}
+                    to="/transforms/$transformName"
+                  >
                     {r.name}
                   </Link>
                 </Box>

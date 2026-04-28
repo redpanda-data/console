@@ -203,7 +203,11 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               {
                 header: 'ID',
                 cell: ({ row: { original } }) => (
-                  <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} search={{} as never} to="/rp-connect/$pipelineId">
+                  <Link
+                    params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+                    search={{} as never}
+                    to="/rp-connect/$pipelineId"
+                  >
                     <Text>{original.id}</Text>
                   </Link>
                 ),
@@ -212,7 +216,11 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               {
                 header: 'Pipeline Name',
                 cell: ({ row: { original } }) => (
-                  <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} search={{} as never} to="/rp-connect/$pipelineId">
+                  <Link
+                    params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+                    search={{} as never}
+                    to="/rp-connect/$pipelineId"
+                  >
                     <Text whiteSpace="break-spaces" wordBreak="break-word">
                       {original.displayName}
                     </Text>
