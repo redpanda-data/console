@@ -12,7 +12,14 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import {
   Form,
   FormControl,
@@ -204,15 +211,15 @@ type ConfigDialogProps = {
 };
 
 export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogProps) {
-  const handleSave = async () => {
+  const handleSave = form.handleSubmit(() => {
+    onOpenChange(false);
+  });
+
+  const onSaveClick = () => {
     // Strip empty tag rows before validation
     const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
     form.setValue('tags', tags);
-
-    const isValid = await form.trigger();
-    if (isValid) {
-      onOpenChange(false);
-    }
+    handleSave();
   };
 
   return (
@@ -226,15 +233,15 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
         <DialogBody>
           <Form {...form}>
             <ConfigFields mode={mode} />
-            {mode !== 'view' && (
-              <div className="flex justify-end gap-2 pt-4">
-                <Button onClick={handleSave} variant="primary">
-                  Save
-                </Button>
-              </div>
-            )}
           </Form>
         </DialogBody>
+        {mode !== 'view' && (
+          <DialogFooter>
+            <Button onClick={onSaveClick} variant="primary">
+              Save
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

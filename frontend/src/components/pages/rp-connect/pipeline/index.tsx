@@ -167,6 +167,8 @@ const pipelineFormSchema = z.object({
 });
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
+type PipelineFormInput = z.input<typeof pipelineFormSchema>;
+type PipelineFormHandle = UseFormReturn<PipelineFormInput, unknown, PipelineFormValues>;
 
 // ---------------------------------------------------------------------------
 // Pure helpers
@@ -182,7 +184,7 @@ function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, str
   return userTags;
 }
 
-function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: string | undefined) {
+function warnIfResized(form: PipelineFormHandle, cpuShares: string | undefined) {
   const retUnits = cpuToTasks(cpuShares);
   const currentUnits = form.getValues('computeUnits');
   if (retUnits && currentUnits !== retUnits) {
@@ -274,7 +276,7 @@ function usePipelineSave({
   pipeline,
   isPipelineDiagramsEnabled,
 }: {
-  form: UseFormReturn<PipelineFormValues>;
+  form: PipelineFormHandle;
   yamlContent: string;
   mode: string;
   pipelineId: string | undefined;
@@ -704,9 +706,9 @@ export default function PipelinePage() {
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
-  const form = useForm<PipelineFormValues>({
+  const form = useForm<PipelineFormInput, unknown, PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
 
