@@ -27,6 +27,7 @@ import { setPageHeader } from '../../../../state/ui-state';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
+import { Table, TableBody, TableCell, TableRow } from '../../../redpanda-ui/components/table';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -132,29 +133,30 @@ const RoleDetailPage = () => {
           ) : allMembers.length === 0 ? (
             <p className="text-muted-foreground text-sm">No principals assigned to this role.</p>
           ) : (
-            <div className="rounded-md border">
-              {allMembers.map((member) => {
-                const parsed = parsePrincipal(member.principal);
-                const displayName = parsed.name || member.principal;
-                return (
-                  <div
-                    className="flex items-center justify-between gap-2 border-b px-3 py-2 text-sm last:border-b-0 hover:bg-muted/30"
-                    key={member.principal}
-                  >
-                    <span className="font-mono">{displayName}</span>
-                    <Button
-                      data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
-                      disabled={deletingPrincipal === member.principal || isSubmitting}
-                      onClick={() => handleRemoveMember(member.principal)}
-                      size="icon-sm"
-                      variant="destructive-ghost"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
+            <Table>
+              <TableBody>
+                {allMembers.map((member) => {
+                  const parsed = parsePrincipal(member.principal);
+                  const displayName = parsed.name || member.principal;
+                  return (
+                    <TableRow key={member.principal}>
+                      <TableCell className="font-mono">{displayName}</TableCell>
+                      <TableCell align="right">
+                        <Button
+                          data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
+                          disabled={deletingPrincipal === member.principal || isSubmitting}
+                          onClick={() => handleRemoveMember(member.principal)}
+                          size="icon-sm"
+                          variant="destructive-ghost"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </ListLayoutContent>
       </ListLayout>

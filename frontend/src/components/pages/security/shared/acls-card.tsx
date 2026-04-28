@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from '../../../redpanda-ui/components/dialog';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
 const RESOURCE_TYPE_LABELS: Record<string, string> = {
@@ -206,34 +207,39 @@ export const AclsCard = ({ acls, principal }: AclsCardProps) => {
           {rows.length === 0 ? (
             <p>No ACLs assigned.</p>
           ) : (
-            <div className="rounded-md border">
-              <div className="grid grid-cols-[32px_1fr_2fr_1fr_1fr_1fr] items-center gap-2 border-b px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                <Checkbox
-                  checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                  onCheckedChange={toggleAll}
-                />
-                <span>Type</span>
-                <span>Resource</span>
-                <span>Operation</span>
-                <span>Permission</span>
-                <span>Host</span>
-              </div>
-              {rows.map((row) => (
-                <div
-                  className="grid grid-cols-[32px_1fr_2fr_1fr_1fr_1fr] items-center gap-2 border-b px-3 py-2 text-sm last:border-b-0 hover:bg-muted/30"
-                  key={row.id}
-                >
-                  <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
-                  <span className="text-muted-foreground">{row.resourceType}</span>
-                  <span className="font-mono">{row.resourceName}</span>
-                  <span>{row.operation}</span>
-                  <span className={row.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
-                    {row.permissionType}
-                  </span>
-                  <span className="text-muted-foreground">{row.host}</span>
-                </div>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Resource</TableHead>
+                  <TableHead>Operation</TableHead>
+                  <TableHead>Permission</TableHead>
+                  <TableHead>Host</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{row.resourceType}</TableCell>
+                    <TableCell className="font-mono">{row.resourceName}</TableCell>
+                    <TableCell>{row.operation}</TableCell>
+                    <TableCell className={row.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
+                      {row.permissionType}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{row.host}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </ListLayoutContent>
       </ListLayout>
@@ -249,22 +255,26 @@ export const AclsCard = ({ acls, principal }: AclsCardProps) => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-md border text-sm">
-            <div className="grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 border-b px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
-              <span>Resource Type</span>
-              <span>Resource Name</span>
-              <span>Operation</span>
-              <span>Permission</span>
-            </div>
-            {GRANT_ALL_RESOURCES.map((r) => (
-              <div className="grid grid-cols-[1fr_1fr_1fr_1fr] gap-2 border-b px-3 py-2 last:border-b-0" key={r.type}>
-                <span className="text-muted-foreground">{r.label}</span>
-                <span className="font-mono">{r.name}</span>
-                <span>All</span>
-                <span className="text-green-600">Allow</span>
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Resource Type</TableHead>
+                <TableHead>Resource Name</TableHead>
+                <TableHead>Operation</TableHead>
+                <TableHead>Permission</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {GRANT_ALL_RESOURCES.map((r) => (
+                <TableRow key={r.type}>
+                  <TableCell className="text-muted-foreground">{r.label}</TableCell>
+                  <TableCell className="font-mono">{r.name}</TableCell>
+                  <TableCell>All</TableCell>
+                  <TableCell className="text-green-600">Allow</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
           <DialogFooter>
             <Button onClick={() => setGrantAllOpen(false)} type="button" variant="outline">

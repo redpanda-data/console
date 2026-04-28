@@ -68,7 +68,7 @@ import { Tooltip, TooltipTrigger } from '../../../redpanda-ui/components/tooltip
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 import { CreateUserDialog } from '../users/user-create-dialog';
-import { ChangePasswordModal, ChangeRolesModal } from '../users/user-edit-modals';
+import { ChangePasswordModal } from '../users/user-edit-modals';
 
 type PrincipalEntry = {
   name: string;
@@ -411,9 +411,7 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
 };
 
 const UserActions = ({ user }: { user: PrincipalEntry }) => {
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
-  const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const invalidateUsersCache = useInvalidateUsersCache();
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
@@ -450,9 +448,6 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
         setIsOpen={setIsChangePasswordModalOpen}
         userName={user.name}
       />
-      {Boolean(featureRolesApi) && (
-        <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
-      )}
       <DeleteUserConfirmModal
         onConfirm={onConfirmDelete}
         onOpenChange={setIsDeleteModalOpen}
@@ -475,16 +470,6 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
           >
             Change password
           </DropdownMenuItem>
-          {Boolean(featureRolesApi) && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsChangeRolesModalOpen(true);
-              }}
-            >
-              Change roles
-            </DropdownMenuItem>
-          )}
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation();

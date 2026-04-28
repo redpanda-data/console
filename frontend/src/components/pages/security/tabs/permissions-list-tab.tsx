@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
-import { TrashIcon } from 'components/icons';
+import { MoreHorizontalIcon } from 'components/icons';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from 'components/redpanda-ui/components/list-layout';
 import { ChevronDown, ChevronRight, ExternalLink, ShieldIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
@@ -43,29 +43,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
-import {
-  type PrincipalPermissionGroup,
-  type RoleAclGroup,
-  usePrincipalPermissions,
-} from '../hooks/use-principal-permissions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { type PrincipalPermissionGroup, usePrincipalPermissions } from '../hooks/use-principal-permissions';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { DescriptionWithHelp } from '../shared/description-with-help';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
-export const AclTableHeader: FC = () => (
-  <div className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_32px] gap-2 border-b px-3 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
-    <span>Type</span>
-    <span>Resource</span>
-    <span>Operation</span>
-    <span>Permission</span>
-    <span>Host</span>
-    <span />
-  </div>
-);
-
-export const AclRow: FC<{
+const AclTableRow: FC<{
   resourceType: string;
   resourceName: string;
   operation: string;
@@ -73,33 +59,20 @@ export const AclRow: FC<{
   host: string;
   editHref?: string;
 }> = ({ resourceType, resourceName, operation, permissionType, host, editHref }) => (
-  <div className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_32px] gap-2 border-b px-3 py-2 text-sm last:border-b-0 hover:bg-muted/30">
-    <span className="text-muted-foreground">{resourceType}</span>
-    <span className="font-mono">{resourceName}</span>
-    <span>{operation}</span>
-    <span className={permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>{permissionType}</span>
-    <span className="text-muted-foreground">{host}</span>
-    <span className="flex items-center justify-end">
+  <TableRow>
+    <TableCell className="text-muted-foreground">{resourceType}</TableCell>
+    <TableCell className="font-mono">{resourceName}</TableCell>
+    <TableCell>{operation}</TableCell>
+    <TableCell className={permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>{permissionType}</TableCell>
+    <TableCell className="text-muted-foreground">{host}</TableCell>
+    <TableCell align="right">
       {editHref && (
         <Link className="text-muted-foreground hover:text-foreground" to={editHref as never}>
           <ExternalLink className="h-3.5 w-3.5" />
         </Link>
       )}
-    </span>
-  </div>
-);
-
-const RoleGroup: FC<{ group: RoleAclGroup }> = ({ group }) => (
-  <div>
-    <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 text-muted-foreground text-xs">
-      <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
-      <span className="font-medium uppercase tracking-wide">Via Role: {group.roleName}</span>
-    </div>
-    {group.acls.map((acl, i) => (
-      // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
-      <AclRow key={i} {...acl} />
-    ))}
-  </div>
+    </TableCell>
+  </TableRow>
 );
 
 type PrincipalRowProps = {
@@ -186,8 +159,8 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon-sm" variant="destructive-ghost">
-                  <TrashIcon className="h-4 w-4" />
+                <Button size="icon-sm" variant="ghost">
+                  <MoreHorizontalIcon className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -229,14 +202,40 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
         {/* Expanded content */}
         {isExpanded && hasAcls && (
           <div className="border-t bg-background">
-            <AclTableHeader />
-            {group.directAcls.map((acl, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
-              <AclRow key={i} {...acl} />
-            ))}
-            {group.roleAclGroups.map((rg) => (
-              <RoleGroup group={rg} key={rg.roleName} />
-            ))}
+            <Table variant="simple">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Resource</TableHead>
+                  <TableHead>Operation</TableHead>
+                  <TableHead>Permission</TableHead>
+                  <TableHead>Host</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {group.directAcls.map((acl, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
+                  <AclTableRow key={i} {...acl} />
+                ))}
+              </TableBody>
+              {group.roleAclGroups.map((rg) => (
+                <TableBody key={rg.roleName}>
+                  <TableRow>
+                    <TableCell className="bg-muted/40 py-1.5 text-muted-foreground text-xs" colSpan={6}>
+                      <div className="flex items-center gap-1.5">
+                        <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {rg.acls.map((acl, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
+                    <AclTableRow key={i} {...acl} />
+                  ))}
+                </TableBody>
+              ))}
+            </Table>
           </div>
         )}
 

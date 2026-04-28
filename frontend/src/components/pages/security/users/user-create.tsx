@@ -356,13 +356,13 @@ export const CreateUserConfirmationModal = ({
     </div>
 
     <div className="mt-3 border-t pt-6">
-      <h2 className="mb-2 font-semibold text-base">What's next?</h2>
+      <h2 className="mb-2 font-semibold text-base">Assign new user permissions</h2>
       <p className="my-3 text-muted-foreground text-sm">
-        This user has no permissions yet. Assign roles or create ACLs to grant access to cluster resources.
+        To grant access to clusters, assign a role to the user or create ACLs.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Button onClick={onGoToUserDetails} testId="go-to-user-details-button" variant="outline">
-          Go to user details
+          Add permissions
         </Button>
         <Button onClick={closeModal} testId="done-button" variant="link">
           Done

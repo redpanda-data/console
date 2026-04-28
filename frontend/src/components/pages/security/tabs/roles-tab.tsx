@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -25,8 +25,15 @@ import {
   type Updater,
   useReactTable,
 } from '@tanstack/react-table';
-import { EditIcon, TrashIcon } from 'components/icons';
+import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
+import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
 import {
   ListLayout,
   ListLayoutContent,
@@ -50,7 +57,6 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { DataTableColumnHeader, DataTablePagination } from '../../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { DeleteRoleConfirmModal } from '../shared/delete-role-confirm-modal';
 import { DescriptionWithHelp } from '../shared/description-with-help';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
@@ -75,7 +81,6 @@ export const RolesTab: FC = () => {
       { title: 'Roles', linkTo: '/security/roles' },
     ]);
   }, []);
-  const navigate = useNavigate();
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -154,38 +159,17 @@ export const RolesTab: FC = () => {
         enableSorting: false,
         meta: { align: 'right' as const },
         cell: ({ row: { original: entry } }) => (
-          <div className="flex flex-row justify-end gap-2">
-            <Button
-              aria-label={`Edit role ${entry.name}`}
-              data-testid={`edit-role-button-${entry.name}`}
-              onClick={() => navigate({ to: `/security/roles/${encodeURIComponent(entry.name)}/update` })}
-              size="icon-sm"
-              variant="secondary-ghost"
-            >
-              <EditIcon className="h-4 w-4" />
-            </Button>
-            <DeleteRoleConfirmModal
-              buttonEl={
-                <Button
-                  aria-label={`Delete role ${entry.name}`}
-                  data-testid={`delete-role-button-${entry.name}`}
-                  size="icon-sm"
-                  variant="destructive-ghost"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </Button>
-              }
-              numberOfPrincipals={entry.members.length}
-              onConfirm={async () => {
-                await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
-              }}
-              roleName={entry.name}
-            />
-          </div>
+          <RoleActions
+            memberCount={entry.members.length}
+            onDelete={async () => {
+              await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
+            }}
+            roleName={entry.name}
+          />
         ),
       },
     ],
-    [navigate, deleteRoleMutation]
+    [deleteRoleMutation]
   );
 
   const table = useReactTable({
@@ -296,6 +280,48 @@ export const RolesTab: FC = () => {
       </ListLayout>
 
       <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
+    </>
+  );
+};
+
+const RoleActions = ({
+  roleName,
+  memberCount,
+  onDelete,
+}: {
+  roleName: string;
+  memberCount: number;
+  onDelete: () => Promise<void>;
+}) => {
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  return (
+    <>
+      <DeleteRoleConfirmModal
+        numberOfPrincipals={memberCount}
+        onConfirm={onDelete}
+        onOpenChange={setIsDeleteOpen}
+        open={isDeleteOpen}
+        roleName={roleName}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button data-testid={`role-actions-button-${roleName}`} size="icon-sm" variant="ghost">
+            <MoreHorizontalIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            data-testid={`delete-role-button-${roleName}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDeleteOpen(true);
+            }}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 };
