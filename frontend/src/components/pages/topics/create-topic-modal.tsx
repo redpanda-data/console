@@ -46,8 +46,9 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
   });
   const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useCreateTopicMutation();
   // Clamp RF to broker count so single-broker clusters (e.g. local-byoc) don't
-  // fail CreateTopic with "not enough replicas". Fall back to the default if
-  // the KafkaInfo query hasn't resolved yet.
+  // fail CreateTopic with "not enough replicas". When `brokersOnline` is 0
+  // (KafkaInfo still loading, or every broker is offline) keep the default —
+  // a degraded cluster will reject CreateTopic regardless of what we send.
   const { data: kafkaInfo } = useGetKafkaInfoQuery();
   const brokersOnline = kafkaInfo?.brokersOnline ?? 0;
   const replicationFactor =

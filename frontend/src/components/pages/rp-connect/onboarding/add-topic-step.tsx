@@ -166,7 +166,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       }
       if (topicConfig && !topicConfig.error) {
         const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
-        form.reset(allTopicValues, { keepDefaultValues: false });
+        // Override the form-level `keepDirtyValues: true` default — when a user
+        // selects an existing topic, its config must fully replace any partial
+        // input they've made.
+        form.reset(allTopicValues, { keepDefaultValues: false, keepDirtyValues: false });
       } else {
         form.setValue('topicName', existingTopicSelected.topicName, {
           shouldDirty: false,
