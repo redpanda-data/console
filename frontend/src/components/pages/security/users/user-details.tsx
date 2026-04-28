@@ -12,10 +12,10 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 import { UserAclsCard } from './user-acls-card';
-import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
+import { ChangePasswordModal } from './user-edit-modals';
 import { UserRolesCard } from './user-roles-card';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRolesQuery } from '../../../../react-query/api/security';
@@ -24,8 +24,8 @@ import { appGlobal } from '../../../../state/app-global';
 import { api, rolesApi } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { setPageHeader } from '../../../../state/ui-state';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 
 type UserDetailsPageProps = {
@@ -40,21 +40,26 @@ const formatMechanism = (mechanism?: SASLMechanism): string | null => {
 
 const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
-  const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
 
   const { data: usersData, isLoading: isUsersLoading } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
   const currentUser = usersData?.users?.find((u) => u.name === userName);
-  const mechanism = formatMechanism(currentUser?.mechanism);
+  formatMechanism(currentUser?.mechanism);
 
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
 
-  useSecurityBreadcrumbs([
-    { title: 'Users', linkTo: '/security/users' },
-    { title: userName, linkTo: `/security/users/${userName}/details` },
-  ]);
+  useLayoutEffect(() => {
+    setPageHeader(
+      userName,
+      [
+        { title: 'Security', linkTo: '/security' },
+        { title: 'Users', linkTo: '/security/users' },
+        { title: userName, linkTo: `/security/users/${userName}/details` },
+      ],
+      { title: 'Users', linkTo: '/security/users' }
+    );
+  }, [userName]);
 
   useEffect(() => {
     const refreshData = async () => {
@@ -97,48 +102,19 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-6 pt-4">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-semibold text-2xl">{userName}</h1>
-          <div className="flex items-center gap-3 text-muted-foreground text-sm">
-            <span>
-              Principal: <span className="font-mono text-foreground">User:{userName}</span>
-            </span>
-            {mechanism && (
-              <>
-                <span>·</span>
-                <span>
-                  Mechanism: <span className="font-mono text-foreground">{mechanism}</span>
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
-            Change Password
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center gap-2">
+        <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
+          Change Password
+        </Button>
+        {Boolean(isServiceAccount) && (
+          <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
+            Delete User
           </Button>
-          {Boolean(isServiceAccount) && (
-            <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
-              Delete User
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
-      <UserPermissionDetailsContent
-        onChangeRoles={
-          featureRolesApi
-            ? () => {
-                setIsChangeRolesModalOpen(true);
-              }
-            : undefined
-        }
-        userName={userName}
-      />
+      <UserPermissionDetailsContent userName={userName} />
 
       <DeleteUserConfirmModal
         onConfirm={onConfirmDelete}
@@ -152,23 +128,13 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
         setIsOpen={setIsChangePasswordModalOpen}
         userName={userName}
       />
-
-      {Boolean(featureRolesApi) && (
-        <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={userName} />
-      )}
     </div>
   );
 };
 
 export default UserDetailsPage;
 
-const UserPermissionDetailsContent = ({
-  userName,
-  onChangeRoles,
-}: {
-  userName: string;
-  onChangeRoles?: () => void;
-}) => {
+const UserPermissionDetailsContent = ({ userName }: { userName: string }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const { data: rolesData } = useListRolesQuery({ filter: { principal: userName } });
   const { data: acls } = useGetAclsByPrincipal(`User:${userName}`);
@@ -182,7 +148,7 @@ const UserPermissionDetailsContent = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <UserRolesCard onChangeRoles={onChangeRoles} roles={roles} userName={userName} />
+      <UserRolesCard roles={roles} userName={userName} />
       <UserAclsCard acls={acls} userName={userName} />
     </div>
   );

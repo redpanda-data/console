@@ -12,7 +12,7 @@
 import { type FC, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useListQueries } from 'react-query/api/observability';
 import { appGlobal } from 'state/app-global';
-import { uiState } from 'state/ui-state';
+import { setPageHeader } from 'state/ui-state';
 
 const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
 
@@ -46,7 +46,7 @@ const ObservabilityPage: FC = () => {
   }, [refetch]);
 
   useEffect(() => {
-    uiState.pageBreadcrumbs = [{ title: 'Metrics', linkTo: '/observability' }];
+    setPageHeader('Metrics', [{ title: 'Metrics', linkTo: '/observability' }]);
     appGlobal.onRefresh = () => refreshData();
   }, [refreshData]);
 

@@ -58,23 +58,18 @@ describe('UserAclsCard', () => {
   test('should render empty state when no ACLs provided', () => {
     renderWithFileRoutes(<UserAclsCard acls={[]} />);
 
-    expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
-    expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
+    expect(screen.getByText('No ACLs assigned.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '+ Add ACL' })).toBeInTheDocument();
   });
 
   test('should render empty state when acls is undefined', () => {
     renderWithFileRoutes(<UserAclsCard acls={undefined} />);
 
-    expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
-    expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
+    expect(screen.getByText('No ACLs assigned.')).toBeInTheDocument();
   });
 
   test('should render flat ACL table with correct row count and data', () => {
     renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
-
-    // 3 flat rows: READ + WRITE on test-topic, DESCRIBE on cluster
-    expect(screen.getByText('ACLs 3 rules')).toBeInTheDocument();
 
     // Resource types
     expect(screen.getAllByText('Topic')).toHaveLength(2);

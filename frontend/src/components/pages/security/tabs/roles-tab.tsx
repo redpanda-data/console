@@ -26,31 +26,33 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { EditIcon, TrashIcon } from 'components/icons';
+import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
 import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutHeader,
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { setPageHeader } from '../../../../state/ui-state';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../../misc/null-fallback-boundary';
 import { Button } from '../../../redpanda-ui/components/button';
 import { DataTableColumnHeader, DataTablePagination } from '../../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { DeleteRoleConfirmModal } from '../shared/delete-role-confirm-modal';
+import { DescriptionWithHelp } from '../shared/description-with-help';
+import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
 type RoleEntry = {
   name: string;
@@ -67,10 +69,16 @@ const nameFilterFn = (row: Row<RoleEntry>, columnId: string, filterValue: string
 };
 
 export const RolesTab: FC = () => {
-  useSecurityBreadcrumbs([{ title: 'Roles', linkTo: '/security/roles' }]);
+  useLayoutEffect(() => {
+    setPageHeader('Security', [
+      { title: 'Security', linkTo: '/security/users' },
+      { title: 'Roles', linkTo: '/security/roles' },
+    ]);
+  }, []);
   const navigate = useNavigate();
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -208,74 +216,86 @@ export const RolesTab: FC = () => {
     .join(' ');
 
   return (
-    <ListLayout>
-      <ListLayoutHeader description="Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents any entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user, OIDC identity, or mTLS client)." />
+    <>
+      <SecurityTabsNav />
+      <ListLayout>
+        <p className="text-muted-foreground text-sm sm:text-base">
+          <DescriptionWithHelp short="Groups of ACLs that can be assigned to principals." title="Roles">
+            <p>
+              Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents
+              any entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user,
+              OIDC identity, or mTLS client).
+            </p>
+          </DescriptionWithHelp>{' '}
+          <NullFallbackBoundary>
+            <FeatureLicenseNotification as="badge" featureName="rbac" />
+          </NullFallbackBoundary>
+        </p>
 
-      <NullFallbackBoundary>
-        <FeatureLicenseNotification featureName="rbac" />
-      </NullFallbackBoundary>
+        <ListLayoutFilters
+          actions={
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="create-role-button"
+                  disabled={createRoleDisabled}
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  Create role
+                </Button>
+              </TooltipTrigger>
+              {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
+            </Tooltip>
+          }
+        >
+          <ListLayoutSearchInput
+            onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
+            placeholder="Filter by name (regexp)..."
+            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+          />
+        </ListLayoutFilters>
 
-      <ListLayoutFilters
-        actions={
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                data-testid="create-role-button"
-                disabled={createRoleDisabled}
-                onClick={() => navigate({ to: '/security/roles/create' })}
-              >
-                Create role
-              </Button>
-            </TooltipTrigger>
-            {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
-          </Tooltip>
-        }
-      >
-        <ListLayoutSearchInput
-          onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
-          placeholder="Filter by name (regexp)..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-        />
-      </ListLayoutFilters>
-
-      <ListLayoutContent>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead align={(header.column.columnDef.meta as { align?: 'right' })?.align} key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+        <ListLayoutContent>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead align={(header.column.columnDef.meta as { align?: 'right' })?.align} key={header.id}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
-                  No roles yet.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </ListLayoutContent>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
+                    No roles yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </ListLayoutContent>
 
-      <ListLayoutPagination>
-        <DataTablePagination table={table} />
-      </ListLayoutPagination>
-    </ListLayout>
+        <ListLayoutPagination>
+          <DataTablePagination table={table} />
+        </ListLayoutPagination>
+      </ListLayout>
+
+      <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
+    </>
   );
 };

@@ -16,7 +16,6 @@ import { useCallback, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { CreateUserConfirmationModal, CreateUserModal } from './user-create';
-import { ChangeRolesModal } from './user-edit-modals';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../redpanda-ui/components/dialog';
@@ -35,7 +34,6 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
   });
   const [step, setStep] = useState<'form' | 'confirmation'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAssignRolesOpen, setIsAssignRolesOpen] = useState(false);
 
   const navigate = useNavigate();
   const { mutateAsync: createUserMutate } = useCreateUserMutation();
@@ -72,9 +70,9 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
     return true;
   }, [username, password, mechanism, createUserMutate]);
 
-  const onCreateAcls = () => {
+  const onGoToUserDetails = () => {
     handleClose();
-    navigate({ to: '/security/acls/create', search: { principalType: 'User', principalName: username } });
+    navigate({ to: `/security/users/${username}/details` });
   };
 
   const state = {
@@ -107,17 +105,13 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
             <CreateUserConfirmationModal
               closeModal={handleClose}
               mechanism={mechanism}
-              onAssignRoles={() => setIsAssignRolesOpen(true)}
-              onCreateAcls={onCreateAcls}
+              onGoToUserDetails={onGoToUserDetails}
               password={password}
               username={username}
             />
           )}
         </DialogContent>
       </Dialog>
-      {step === 'confirmation' && (
-        <ChangeRolesModal isOpen={isAssignRolesOpen} setIsOpen={setIsAssignRolesOpen} userName={username} />
-      )}
     </>
   );
 };

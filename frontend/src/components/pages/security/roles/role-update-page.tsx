@@ -13,13 +13,14 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/roles/$roleName/update');
 
+import { useLayoutEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useGetAclsByPrincipal, useUpdateAclMutation } from '../../../../react-query/api/acl';
+import { setPageHeader } from '../../../../state/ui-state';
 import CreateACL from '../acls/create-acl';
 import { HostSelector } from '../acls/host-selector';
 import { LockedPrincipalField } from '../acls/locked-principal-field';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import {
   getOperationsForResourceType,
   handleResponses,
@@ -38,10 +39,13 @@ const RoleUpdatePage = () => {
   const search = routeApi.useSearch();
   const host = search.host ?? undefined;
 
-  useSecurityBreadcrumbs([
-    { title: 'Roles', linkTo: '/security/roles' },
-    { title: roleName, linkTo: `/security/roles/${roleName}/details` },
-  ]);
+  useLayoutEffect(() => {
+    setPageHeader(roleName, [
+      { title: 'Security', linkTo: '/security/users' },
+      { title: 'Roles', linkTo: '/security/roles' },
+      { title: roleName, linkTo: `/security/roles/${roleName}/details` },
+    ]);
+  }, [roleName]);
 
   const { applyUpdates } = useUpdateAclMutation();
 

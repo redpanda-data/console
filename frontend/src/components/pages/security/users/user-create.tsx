@@ -14,12 +14,12 @@ import { useNavigate } from '@tanstack/react-router';
 import { InfoIcon, LoaderCircleIcon, RotateCwIcon } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useCallback, useState } from 'react';
-import { useSupportedFeaturesStore } from 'state/supported-features';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { setPageHeader } from '../../../../state/ui-state';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -37,7 +37,6 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({
@@ -67,7 +66,12 @@ const UserCreatePage = () => {
   const isValidUsername = validateUsername(username);
   const isValidPassword = validatePassword(password);
 
-  useSecurityBreadcrumbs([{ title: 'Users', linkTo: '/security/users' }]);
+  useLayoutEffect(() => {
+    setPageHeader('Users', [
+      { title: 'Security', linkTo: '/security' },
+      { title: 'Users', linkTo: '/security/users' },
+    ]);
+  }, []);
 
   const onCreateUser = useCallback(async (): Promise<boolean> => {
     setIsSubmitting(true);
@@ -103,11 +107,7 @@ const UserCreatePage = () => {
 
   const navigate = useNavigate();
   const onCancel = () => navigate({ to: '/security/users' });
-  const onCreateAcls = () =>
-    navigate({
-      to: '/security/acls/create',
-      search: { principalType: 'User', principalName: username },
-    });
+  const onGoToUserDetails = () => navigate({ to: `/security/users/${username}/details` });
 
   const state = {
     username,
@@ -136,7 +136,7 @@ const UserCreatePage = () => {
           <CreateUserConfirmationModal
             closeModal={onCancel}
             mechanism={mechanism}
-            onCreateAcls={onCreateAcls}
+            onGoToUserDetails={onGoToUserDetails}
             password={password}
             username={username}
           />
@@ -299,8 +299,7 @@ type CreateUserConfirmationModalProps = {
   password: string;
   mechanism: SaslMechanism;
   closeModal: () => void;
-  onCreateAcls: () => void;
-  onAssignRoles?: () => void;
+  onGoToUserDetails: () => void;
 };
 
 export const CreateUserConfirmationModal = ({
@@ -308,83 +307,70 @@ export const CreateUserConfirmationModal = ({
   password,
   mechanism,
   closeModal,
-  onCreateAcls,
-  onAssignRoles,
-}: CreateUserConfirmationModalProps) => {
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  onGoToUserDetails,
+}: CreateUserConfirmationModalProps) => (
+  <>
+    <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
+      User created successfully
+    </h1>
 
-  return (
-    <>
-      <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
-        User created successfully
-      </h1>
+    <Alert className="my-2" icon={<InfoIcon />} variant="info">
+      <AlertDescription>
+        You will not be able to view this password again. Make sure that it is copied and saved.
+      </AlertDescription>
+    </Alert>
 
-      <Alert className="my-2" icon={<InfoIcon />} variant="info">
-        <AlertDescription>
-          You will not be able to view this password again. Make sure that it is copied and saved.
-        </AlertDescription>
-      </Alert>
-
-      <div
-        className="grid max-w-[460px] items-center gap-x-6 gap-y-2"
-        style={{ gridTemplateColumns: 'max-content 1fr' }}
-      >
-        <div className="font-bold" data-testid="username">
-          Username
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="overflow-hidden break-all">{username}</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <CopyButton content={username} variant="ghost" />
-            </TooltipTrigger>
-            <TooltipContent side="top">Copy username</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <div className="font-bold" data-testid="password">
-          Password
-        </div>
-        <div className="flex items-center gap-2">
-          <Input disabled readOnly testId="test_field" type="password" value={password} />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <CopyButton content={password} variant="ghost" />
-            </TooltipTrigger>
-            <TooltipContent side="top">Copy password</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <div className="font-bold" data-testid="mechanism">
-          Mechanism
-        </div>
-        <div>
-          <span className="truncate">{mechanism}</span>
-        </div>
+    <div className="grid max-w-[460px] items-center gap-x-6 gap-y-2" style={{ gridTemplateColumns: 'max-content 1fr' }}>
+      <div className="font-bold" data-testid="username">
+        Username
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="overflow-hidden break-all">{username}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <CopyButton content={username} variant="ghost" />
+          </TooltipTrigger>
+          <TooltipContent side="top">Copy username</TooltipContent>
+        </Tooltip>
       </div>
 
-      <div className="mt-3 border-t pt-6">
-        <h2 className="mb-2 font-semibold text-base">What's next?</h2>
-        <p className="my-3 text-muted-foreground text-sm">
-          This user has no permissions yet. Assign roles or create ACLs to grant access to cluster resources.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button onClick={onCreateAcls} testId="create-acls-button" variant="outline">
-            Create ACLs
-          </Button>
-          {featureRolesApi && onAssignRoles && (
-            <Button onClick={onAssignRoles} testId="assign-roles-button" variant="outline">
-              Assign Roles
-            </Button>
-          )}
-          <Button onClick={closeModal} testId="done-button" variant="link">
-            Done
-          </Button>
-        </div>
+      <div className="font-bold" data-testid="password">
+        Password
       </div>
-    </>
-  );
-};
+      <div className="flex items-center gap-2">
+        <Input disabled readOnly testId="test_field" type="password" value={password} />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <CopyButton content={password} variant="ghost" />
+          </TooltipTrigger>
+          <TooltipContent side="top">Copy password</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <div className="font-bold" data-testid="mechanism">
+        Mechanism
+      </div>
+      <div>
+        <span className="truncate">{mechanism}</span>
+      </div>
+    </div>
+
+    <div className="mt-3 border-t pt-6">
+      <h2 className="mb-2 font-semibold text-base">What's next?</h2>
+      <p className="my-3 text-muted-foreground text-sm">
+        This user has no permissions yet. Assign roles or create ACLs to grant access to cluster resources.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button onClick={onGoToUserDetails} testId="go-to-user-details-button" variant="outline">
+          Go to user details
+        </Button>
+        <Button onClick={closeModal} testId="done-button" variant="link">
+          Done
+        </Button>
+      </div>
+    </div>
+  </>
+);
 
 export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRoles: (roles: string[]) => void }) => {
   const {

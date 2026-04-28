@@ -28,17 +28,17 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'components/icons';
+import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutHeader,
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 
 import type { ListACLsRequest } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
@@ -47,6 +47,7 @@ import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-sta
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { setPageHeader } from '../../../../state/ui-state';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -63,9 +64,9 @@ import {
 } from '../../../redpanda-ui/components/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { TagsValue } from '../../../redpanda-ui/components/tags';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { Tooltip, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
+import { SecurityTabsNav } from '../shared/security-tabs-nav';
 import { CreateUserDialog } from '../users/user-create-dialog';
 import { ChangePasswordModal, ChangeRolesModal } from '../users/user-edit-modals';
 
@@ -121,7 +122,12 @@ const getCreateUserButtonProps = (
 };
 
 export const UsersTab: FC = () => {
-  useSecurityBreadcrumbs([{ title: 'Users', linkTo: '/security/users' }]);
+  useLayoutEffect(() => {
+    setPageHeader('Security', [
+      { title: 'Security', linkTo: '/security' },
+      { title: 'Users', linkTo: '/security/users' },
+    ]);
+  }, []);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
   const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
 
@@ -267,7 +273,7 @@ export const UsersTab: FC = () => {
     );
   }
 
-  const { disabled: createDisabled, tooltip: createTooltip } = getCreateUserButtonProps(
+  const { disabled: createDisabled } = getCreateUserButtonProps(
     isAdminApiConfigured,
     featureCreateUser,
     userData?.canManageUsers
@@ -275,9 +281,15 @@ export const UsersTab: FC = () => {
 
   return (
     <>
+      <SecurityTabsNav />
       <CreateUserDialog key={createDialogKey} onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen} />
       <ListLayout>
-        <ListLayoutHeader description="These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities (for example, OIDC, mTLS) on the Permissions List page." />
+        <p className="text-muted-foreground text-sm sm:text-base">
+          <DescriptionWithHelp short="SASL-SCRAM user accounts managed by your cluster." title="Users">
+            These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication
+            identities (for example, OIDC, mTLS) on the Permissions List page.
+          </DescriptionWithHelp>
+        </p>
 
         <ListLayoutFilters
           actions={
@@ -294,7 +306,6 @@ export const UsersTab: FC = () => {
                   Create user
                 </Button>
               </TooltipTrigger>
-              {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
             </Tooltip>
           }
         >

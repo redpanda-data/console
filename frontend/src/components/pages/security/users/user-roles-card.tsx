@@ -12,12 +12,14 @@
 import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
 import { ExternalLinkIcon, Trash2Icon } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
-import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
+import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { rolesApi } from '../../../../state/backend-api';
 import { Button } from '../../../redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { Combobox } from '../../../redpanda-ui/components/combobox';
+import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 
 type Role = {
@@ -27,46 +29,62 @@ type Role = {
 
 type UserRolesCardProps = {
   roles: Role[];
-  onChangeRoles?: () => void;
   userName?: string;
 };
 
-export const UserRolesCard = ({ roles, onChangeRoles, userName }: UserRolesCardProps) => {
+export const UserRolesCard = ({ roles, userName }: UserRolesCardProps) => {
   const navigate = useNavigate();
   const { mutateAsync: updateRoleMembership } = useUpdateRoleMembershipMutation();
+  const { data: rolesData } = useListRolesQuery();
+
+  const assignedRoleNames = useMemo(() => new Set(roles.map((r) => r.principalName)), [roles]);
+
+  const availableRoleOptions = useMemo(
+    () =>
+      (rolesData?.roles ?? [])
+        .filter((r) => !assignedRoleNames.has(r.name))
+        .map((r) => ({ value: r.name, label: r.name })),
+    [rolesData, assignedRoleNames]
+  );
 
   const removeFromRole = async (roleName: string) => {
     if (!userName) return;
-    const membership = create(UpdateRoleMembershipRequestSchema, {
-      roleName,
-      remove: [{ principal: userName }],
-    });
-    await updateRoleMembership(membership);
+    await updateRoleMembership(
+      create(UpdateRoleMembershipRequestSchema, { roleName, remove: [{ principal: userName }] })
+    );
+    await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+  };
+
+  const assignRole = async (roleName: string) => {
+    if (!(userName && roleName)) return;
+    await updateRoleMembership(create(UpdateRoleMembershipRequestSchema, { roleName, add: [{ principal: userName }] }));
     await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
   };
 
   const count = roles.length;
-  const headerTitle = count > 0 ? `Roles ${count} assigned` : 'Roles';
 
   return (
-    <Card size="full">
-      <CardHeader className="flex items-center justify-between">
-        <CardTitle>{headerTitle}</CardTitle>
-        <CardAction>
-          {Boolean(onChangeRoles) && (
-            <Button
-              onClick={onChangeRoles}
-              testId={count > 0 ? 'change-role-button' : 'assign-role-button'}
-              variant="outline"
-            >
-              Assign a role...
-            </Button>
-          )}
-        </CardAction>
-      </CardHeader>
-      <CardContent>
+    <ListLayout className="min-h-0 gap-3 py-0">
+      <ListLayoutFilters
+        actions={
+          userName ? (
+            <Combobox
+              className="w-56"
+              clearable={false}
+              onChange={assignRole}
+              options={availableRoleOptions}
+              placeholder="Assign a role..."
+              testId="assign-role-combobox"
+              value=""
+            />
+          ) : undefined
+        }
+      >
+        <h2 className="font-semibold text-base">Roles</h2>
+      </ListLayoutFilters>
+      <ListLayoutContent>
         {count === 0 ? (
-          <p>No permissions assigned to this user.</p>
+          <p>No roles assigned to this user.</p>
         ) : (
           <Table>
             <TableHeader>
@@ -106,7 +124,7 @@ export const UserRolesCard = ({ roles, onChangeRoles, userName }: UserRolesCardP
             </TableBody>
           </Table>
         )}
-      </CardContent>
-    </Card>
+      </ListLayoutContent>
+    </ListLayout>
   );
 };
