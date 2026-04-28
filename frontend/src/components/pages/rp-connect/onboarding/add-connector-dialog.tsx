@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectTiles } from './connect-tiles';
@@ -49,11 +48,10 @@ export const AddConnectorDialog = ({
 
   return (
     <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
-      <DialogContent showCloseButton={false} size="xl">
-        <DialogCloseButton />
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>{title ?? 'Add a connector'}</DialogTitle>
-          <DialogDescription className="mt-4">
+          <DialogDescription>
             Configure your pipeline.{' '}
             {docsUrl ? (
               <Link href={docsUrl} rel="noopener noreferrer" target="_blank">

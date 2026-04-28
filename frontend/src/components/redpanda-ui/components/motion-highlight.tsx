@@ -548,7 +548,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
           <AnimatePresence initial={false}>
             {isActive && !isDisabled && (
               <motion.div
-                animate={{ opacity: 1 }}
+                animate={{ opacity: 1, y: 0 }}
                 className={cn('absolute inset-0 z-0 bg-muted', contextClassName, activeClassName)}
                 data-slot="motion-highlight"
                 exit={{

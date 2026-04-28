@@ -56,11 +56,12 @@ function CommandDialog({
   onOpenAutoFocus,
   className,
   ...props
-}: React.ComponentProps<typeof Dialog> &
+}: Omit<React.ComponentProps<typeof Dialog>, 'children'> &
   Pick<FixedPositionContentProps, 'showOverlay' | 'container' | 'onOpenAutoFocus'> & {
     title?: string;
     description?: string;
     className?: string;
+    children?: React.ReactNode;
   }) {
   return (
     <Dialog {...props}>
@@ -156,7 +157,7 @@ function CommandItem({
   return (
     <CommandPrimitive.Item
       className={cn(
-        "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       data-slot="command-item"
@@ -215,7 +216,7 @@ function CommandSubTrigger({ className, children, inset, ...props }: CommandSubT
     <PopoverAnchor asChild>
       <CommandPrimitive.Item
         className={cn(
-          "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+          "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
           inset && 'pl-8',
           className
         )}

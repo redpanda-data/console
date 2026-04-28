@@ -35,9 +35,8 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   }),
 });
 
-// Mock ResizeObserver - not available in jsdom but required by RadixUI components
-// (Switch, Tabs, etc.) that use @radix-ui/react-use-size internally
-// Mock the ResizeObserver
+// Mock ResizeObserver - not available in jsdom but used by registry components
+// (Tabs, Tags, etc.) and other size-aware UI code.
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),

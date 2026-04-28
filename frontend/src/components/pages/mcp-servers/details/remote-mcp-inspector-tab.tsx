@@ -628,7 +628,7 @@ export const RemoteMCPInspectorTab = () => {
                             <div className="space-y-1" data-testid="mcp-tool-progress">
                               <Progress
                                 testId="mcp-tool-progress-bar"
-                                value={normalizeProgressPercent(streamProgress?.progress, streamProgress?.total)}
+                                value={normalizeProgressPercent(streamProgress?.progress, streamProgress?.total) ?? null}
                               />
                               <Text className="text-muted-foreground" variant="small">
                                 {streamProgress?.statusMessage ?? streamProgress?.status ?? 'Running tool...'}

@@ -615,7 +615,7 @@ const PipelineListPageContent = () => {
     // enablePipelineDiagrams: skip wizard, go straight to pipeline editor
     // otherwise: go through wizard (master behavior)
     if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
-      navigate({ to: '/rp-connect/create' });
+      navigate({ to: '/rp-connect/create', search: {} as never });
     } else {
       navigate({ to: '/rp-connect/wizard', search: { step: undefined, serverless: undefined } });
     }

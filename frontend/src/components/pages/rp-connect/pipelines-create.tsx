@@ -198,7 +198,7 @@ const RpConnectPipelinesCreateContent = () => {
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
         </Button>
-        <Link to="/connect-clusters">
+        <Link search={{} as never} to="/connect-clusters">
           <Button variant="link">Cancel</Button>
         </Link>
       </Flex>

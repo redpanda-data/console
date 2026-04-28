@@ -59,7 +59,7 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
   useLintPipelineConfigQuery,
@@ -360,7 +360,7 @@ function usePipelineSave({
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters' });
+          navigate({ to: '/connect-clusters', search: {} as never });
         },
         onError: (err) => {
           toast.error(
@@ -705,8 +705,8 @@ export default function PipelinePage() {
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
   const form = useForm<PipelineFormValues>({
-    resolver: zodResolver(pipelineFormSchema),
-    mode: 'onChange',
+    resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
+    mode: 'onSubmit',
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
 
@@ -835,7 +835,7 @@ export default function PipelinePage() {
       clearWizardStore();
     }
     if (mode === 'view') {
-      navigate({ to: '/connect-clusters' });
+      navigate({ to: '/connect-clusters', search: {} as never });
     } else {
       router.history.back();
     }

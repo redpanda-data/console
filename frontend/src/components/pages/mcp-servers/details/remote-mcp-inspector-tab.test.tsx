@@ -282,7 +282,7 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
 
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
-      expect(bar?.getAttribute('data-value')).toBe('50');
+      expect(bar?.getAttribute('aria-valuenow')).toBe('50');
     });
     expect(screen.queryByText('halfway')).toBeVisible();
 
@@ -309,7 +309,7 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       expect(bar).toBeTruthy();
-      const value = bar?.getAttribute('data-value');
+      const value = bar?.getAttribute('aria-valuenow');
       expect(value).not.toBeNull();
       expect(Number(value)).toBeLessThanOrEqual(100);
       expect(Number(value)).toBeGreaterThanOrEqual(0);
@@ -321,7 +321,7 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     });
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
-      const value = bar?.getAttribute('data-value');
+      const value = bar?.getAttribute('aria-valuenow');
       expect(Number(value)).toBeGreaterThanOrEqual(0);
     });
 
@@ -332,8 +332,8 @@ describe('RemoteMCPInspectorTab — streaming progress UI', () => {
     await waitFor(() => {
       const bar = screen.queryByTestId('mcp-tool-progress-bar');
       expect(bar).toBeTruthy();
-      const value = bar?.getAttribute('data-value');
-      // Either indeterminate (no data-value) or a valid clamped number.
+      const value = bar?.getAttribute('aria-valuenow');
+      // Either indeterminate (no aria-valuenow) or a valid clamped number.
       if (value !== null && value !== undefined) {
         const n = Number(value);
         if (!Number.isNaN(n)) {

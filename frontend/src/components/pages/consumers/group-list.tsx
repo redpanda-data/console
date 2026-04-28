@@ -144,7 +144,7 @@ const GroupListContent: FC = () => {
               header: 'ID',
               accessorKey: 'groupId',
               cell: ({ row: { original } }) => (
-                <Link params={{ groupId: encodeURIComponent(original.groupId) }} to="/groups/$groupId">
+                <Link params={{ groupId: encodeURIComponent(original.groupId) }} search={{} as never} to="/groups/$groupId">
                   <GroupId group={original} />
                 </Link>
               ),

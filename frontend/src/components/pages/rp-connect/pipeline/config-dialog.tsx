@@ -12,7 +12,14 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import {
   Form,
   FormControl,
@@ -27,7 +34,6 @@ import { KeyValueField } from 'components/redpanda-ui/components/key-value-field
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
@@ -205,36 +211,37 @@ type ConfigDialogProps = {
 };
 
 export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogProps) {
-  const handleSave = async () => {
+  const handleSave = form.handleSubmit(() => {
+    onOpenChange(false);
+  });
+
+  const onSaveClick = () => {
     // Strip empty tag rows before validation
     const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
     form.setValue('tags', tags);
-
-    const isValid = await form.trigger();
-    if (isValid) {
-      onOpenChange(false);
-    }
+    handleSave();
   };
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent showCloseButton={false} size="lg">
-        <DialogCloseButton />
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Pipeline settings' : mode === 'view' ? 'Pipeline settings' : 'Edit pipeline settings'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <ConfigFields mode={mode} />
-          {mode !== 'view' && (
-            <div className="flex justify-end gap-2 pt-4">
-              <Button onClick={handleSave} variant="primary">
-                Save
-              </Button>
-            </div>
-          )}
-        </Form>
+        <DialogBody>
+          <Form {...form}>
+            <ConfigFields mode={mode} />
+          </Form>
+        </DialogBody>
+        {mode !== 'view' && (
+          <DialogFooter>
+            <Button onClick={onSaveClick} variant="primary">
+              Save
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
