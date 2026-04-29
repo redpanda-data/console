@@ -65,6 +65,8 @@ export class SecurityPage {
       await this.fillUsername(username);
       await this.submitUserCreation();
       await this.page.getByTestId('user-created-successfully').waitFor({ state: 'visible' });
+      await this.page.getByTestId('go-to-user-details-button').click();
+      await this.page.waitForURL(`**/security/users/${username}/details`);
     });
   }
 

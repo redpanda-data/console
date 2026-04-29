@@ -12,8 +12,16 @@
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from 'components/redpanda-ui/components/list-layout';
-import { ChevronDown, ChevronRight, ExternalLink, ShieldIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, ShieldIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import {
   ACL_Operation,
@@ -88,13 +96,13 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
   const summaryText = (() => {
     if (group.directAclCount > 0 && group.inheritedAclCount > 0) {
-      return `${group.directAclCount} direct ACL${group.directAclCount !== 1 ? 's' : ''}, ${group.inheritedAclCount} ACL${group.inheritedAclCount !== 1 ? 's' : ''} inherited from roles`;
+      return `${pluralizeWithNumber(group.directAclCount, 'direct ACL')}, ${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} inherited from roles`;
     }
     if (group.inheritedAclCount > 0) {
-      return `${group.inheritedAclCount} ACL${group.inheritedAclCount !== 1 ? 's' : ''} inherited from roles`;
+      return `${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} inherited from roles`;
     }
     if (group.directAclCount > 0) {
-      return `${group.directAclCount} direct ACL${group.directAclCount !== 1 ? 's' : ''}`;
+      return pluralizeWithNumber(group.directAclCount, 'direct ACL');
     }
     return 'No ACLs';
   })();
@@ -240,7 +248,11 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
         )}
 
         {isExpanded && !hasAcls && (
-          <div className="border-t px-3 py-4 text-muted-foreground text-sm">No ACLs assigned.</div>
+          <Empty className="rounded-none border-x-0 border-b-0 border-dashed py-6">
+            <EmptyHeader>
+              <EmptyTitle>No ACLs assigned</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         )}
       </div>
     </>
@@ -378,9 +390,37 @@ export const PermissionsListTab: FC = () => {
           {isAclsLoading ? (
             <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
           ) : filteredGroups.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">
-              {searchQuery ? 'No principals match your search.' : 'No principals yet.'}
-            </div>
+            searchQuery ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">No principals match your search.</div>
+            ) : (
+              <div className="rounded-md border">
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <KeyRoundIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>No permissions yet</EmptyTitle>
+                    <EmptyDescription>
+                      A unified view of all principal permissions across your cluster. Create an ACL to get started.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <div className="flex items-center gap-3">
+                      <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
+                      <Button asChild variant="link">
+                        <a
+                          href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          Read the docs →
+                        </a>
+                      </Button>
+                    </div>
+                  </EmptyContent>
+                </Empty>
+              </div>
+            )
           ) : (
             <div className="rounded-md border">
               {filteredGroups.map((group) => (

@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi } from '@tanstack/react-router';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Users2Icon } from 'lucide-react';
 import {
   ListRoleMembersRequestSchema,
   UpdateRoleMembershipRequestSchema,
@@ -26,6 +26,14 @@ import { useListUsersQuery } from '../../../../react-query/api/user';
 import { setPageHeader } from '../../../../state/ui-state';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableRow } from '../../../redpanda-ui/components/table';
 import { parsePrincipal } from '../shared/acl-model';
@@ -97,7 +105,7 @@ const RoleDetailPage = () => {
           create: false,
         })
       );
-      toast.success('Member removed from role successfully');
+      toast.success(`User "${parsePrincipal(memberPrincipal).name}" removed from role`);
     } catch {
       // Error handled by onError in mutation
     } finally {
@@ -131,7 +139,28 @@ const RoleDetailPage = () => {
           {membersLoading ? (
             <div className="py-4 text-center text-muted-foreground text-sm">Loading members...</div>
           ) : allMembers.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No principals assigned to this role.</p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <Users2Icon />
+                </EmptyMedia>
+                <EmptyTitle>No principals assigned</EmptyTitle>
+                <EmptyDescription>
+                  Assign users to this role to grant them its permissions. Use the dropdown above to add a principal.
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </EmptyContent>
+            </Empty>
           ) : (
             <Table>
               <TableBody>

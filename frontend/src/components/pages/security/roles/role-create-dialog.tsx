@@ -55,7 +55,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
       handleClose();
       navigate({ to: '/security/roles/$roleName/details', params: { roleName: encodeURIComponent(trimmed) } });
     } catch (err) {
-      toast.error(`Failed to create role: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
     } finally {
       setIsSubmitting(false);
     }

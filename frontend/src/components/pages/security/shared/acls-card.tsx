@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { KeyRoundIcon } from 'lucide-react';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -40,6 +41,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../redpanda-ui/components/dialog';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { AddAclDialog } from '../users/add-acl-dialog';
@@ -201,11 +210,34 @@ export const AclsCard = ({ acls, principal }: AclsCardProps) => {
             </div>
           }
         >
-          <h2 className="font-semibold text-base">ACLs</h2>
+          <Heading as="h2" level={4}>
+            ACLs
+          </Heading>
         </ListLayoutFilters>
         <ListLayoutContent>
           {rows.length === 0 ? (
-            <p>No ACLs assigned.</p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <KeyRoundIcon />
+                </EmptyMedia>
+                <EmptyTitle>No ACLs assigned</EmptyTitle>
+                <EmptyDescription>
+                  Add ACLs to define what operations this role can perform on cluster resources.
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </EmptyContent>
+            </Empty>
           ) : (
             <Table>
               <TableHeader>

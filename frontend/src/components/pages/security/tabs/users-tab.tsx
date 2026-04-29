@@ -30,12 +30,21 @@ import {
 import { MoreHorizontalIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
+import { UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
@@ -342,9 +351,41 @@ export const UsersTab: FC = () => {
                   </TableRow>
                 ))
               ) : (
-                <TableRow>
-                  <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
-                    No users yet.
+                <TableRow className="hover:bg-transparent!">
+                  <TableCell colSpan={columns.length}>
+                    <Empty>
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <UsersIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>No users yet</EmptyTitle>
+                        <EmptyDescription>
+                          SASL-SCRAM user accounts managed by your cluster. Create one to start managing access.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                      <EmptyContent>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            disabled={createDisabled}
+                            onClick={() => {
+                              setCreateDialogKey((k) => k + 1);
+                              setIsCreateDialogOpen(true);
+                            }}
+                          >
+                            Create user
+                          </Button>
+                          <Button asChild variant="link">
+                            <a
+                              href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              Read the docs →
+                            </a>
+                          </Button>
+                        </div>
+                      </EmptyContent>
+                    </Empty>
                   </TableCell>
                 </TableRow>
               )}
