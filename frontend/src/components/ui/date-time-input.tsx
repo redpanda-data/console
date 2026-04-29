@@ -11,115 +11,279 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Calendar } from 'components/redpanda-ui/components/calendar';
-import { Input } from 'components/redpanda-ui/components/input';
-import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { Input, InputEnd } from 'components/redpanda-ui/components/input';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { CalendarIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-const DATE_PART_LENGTH = 10; // YYYY-MM-DD
-const TIME_PART_LENGTH = 8; // HH:mm:ss
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+export type DateTimeInputMode = 'local' | 'utc';
 
-const toLocalDate = (utcMs: number) => new Date(utcMs);
-
-const formatDateLabel = (utcMs: number) => {
-  const d = toLocalDate(utcMs);
-  return `${pad(d.getFullYear(), 4)}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-
-const formatTimeLabel = (utcMs: number) => {
-  const d = toLocalDate(utcMs);
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-};
-
-const composeUtcMs = (datePart: string, timePart: string): number | null => {
-  if (datePart.length !== DATE_PART_LENGTH) {
-    return null;
-  }
-  const normalizedTime = timePart.length === 5 ? `${timePart}:00` : timePart;
-  if (normalizedTime.length !== TIME_PART_LENGTH) {
-    return null;
-  }
-  const ms = Date.parse(`${datePart}T${normalizedTime}`);
-  return Number.isFinite(ms) ? ms : null;
-};
-
-type DateTimeInputProps = {
+export type DateTimeInputProps = {
+  /** UTC milliseconds, or undefined when no value is set yet. */
   value: number | undefined;
+  /** Always called with UTC milliseconds, regardless of the displayed mode. */
   onChange: (utcMs: number) => void;
   disabled?: boolean;
+  /** Default `local`. Lets the picker display values in UTC. */
+  defaultMode?: DateTimeInputMode;
+  /** Hide the Local/UTC toggle (e.g. for sites that don't care about UTC). */
+  hideTimezoneToggle?: boolean;
   className?: string;
+  placeholder?: string;
   'data-testid'?: string;
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const MS_PER_MINUTE = 60_000;
+
+const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+
+const isFiniteNumber = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
+
+type DateParts = {
+  year: number;
+  month: number;
+  day: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
+
 /**
- * Local date+time picker. Replaces `<DateTimeInput>` from `@redpanda-data/ui`,
- * which depended on date-fns-tz@2 and forced a build-time shim. Uses the
- * Calendar + Popover + Input registry components and works in the user's local
- * timezone — value/onChange remain UTC milliseconds for parity with the old API.
+ * Break a UTC moment into Y/M/D/h/m/s parts for display in either the user's
+ * local zone or UTC. The UTC path adjusts by the local offset so `Date#getX`
+ * returns UTC values.
  */
-export const DateTimeInput = ({ value, onChange, disabled, className, ...rest }: DateTimeInputProps) => {
-  const [open, setOpen] = useState(false);
-  const effectiveValue = value ?? Date.now();
+const partsFor = (utcMs: number, mode: DateTimeInputMode): DateParts => {
+  const d = mode === 'utc' ? new Date(utcMs + new Date(utcMs).getTimezoneOffset() * MS_PER_MINUTE) : new Date(utcMs);
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth(),
+    day: d.getDate(),
+    hours: d.getHours(),
+    minutes: d.getMinutes(),
+    seconds: d.getSeconds(),
+  };
+};
 
-  const dateLabel = useMemo(() => formatDateLabel(effectiveValue), [effectiveValue]);
-  const timeLabel = useMemo(() => formatTimeLabel(effectiveValue), [effectiveValue]);
+/** Inverse of `partsFor`. */
+const composeUtcMs = (parts: DateParts, mode: DateTimeInputMode): number => {
+  if (mode === 'utc') {
+    return Date.UTC(parts.year, parts.month, parts.day, parts.hours, parts.minutes, parts.seconds);
+  }
+  return new Date(parts.year, parts.month, parts.day, parts.hours, parts.minutes, parts.seconds).getTime();
+};
 
-  const setDate = (next: Date | undefined) => {
+const formatTimeInputValue = (utcMs: number, mode: DateTimeInputMode): string => {
+  const p = partsFor(utcMs, mode);
+  return `${pad(p.hours)}:${pad(p.minutes)}:${pad(p.seconds)}`;
+};
+
+// ---------------------------------------------------------------------------
+// Sub-components (kept local — easy to lift into the registry later)
+// ---------------------------------------------------------------------------
+
+type ModeToggleProps = {
+  mode: DateTimeInputMode;
+  onModeChange: (mode: DateTimeInputMode) => void;
+};
+
+const ModeToggle = ({ mode, onModeChange }: ModeToggleProps) => (
+  <div className="flex w-fit gap-1 rounded-md border p-1">
+    <Button
+      onClick={() => onModeChange('local')}
+      size="sm"
+      type="button"
+      variant={mode === 'local' ? 'outline' : 'ghost'}
+    >
+      Local
+    </Button>
+    <Button onClick={() => onModeChange('utc')} size="sm" type="button" variant={mode === 'utc' ? 'outline' : 'ghost'}>
+      UTC
+    </Button>
+  </div>
+);
+
+type DateTimePickerPanelProps = {
+  value: number | undefined;
+  onChange: (utcMs: number) => void;
+  mode: DateTimeInputMode;
+  onModeChange: (mode: DateTimeInputMode) => void;
+  disabled?: boolean;
+  hideTimezoneToggle?: boolean;
+};
+
+const DateTimePickerPanel = ({
+  value,
+  onChange,
+  mode,
+  onModeChange,
+  disabled,
+  hideTimezoneToggle,
+}: DateTimePickerPanelProps) => {
+  const baseMs = isFiniteNumber(value) ? value : Date.now();
+
+  const calendarSelected = useMemo(() => {
+    const p = partsFor(baseMs, mode);
+    return new Date(p.year, p.month, p.day);
+  }, [baseMs, mode]);
+
+  const timeInputValue = useMemo(() => formatTimeInputValue(baseMs, mode), [baseMs, mode]);
+
+  const setFromCalendar = (next: Date | undefined) => {
     if (!next) {
       return;
     }
-    const ms = composeUtcMs(
-      `${pad(next.getFullYear(), 4)}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`,
-      timeLabel
+    const time = partsFor(baseMs, mode);
+    onChange(
+      composeUtcMs(
+        {
+          year: next.getFullYear(),
+          month: next.getMonth(),
+          day: next.getDate(),
+          hours: time.hours,
+          minutes: time.minutes,
+          seconds: time.seconds,
+        },
+        mode
+      )
     );
-    if (ms !== null) {
-      onChange(ms);
-    }
   };
 
-  const setTime = (nextTime: string) => {
-    const ms = composeUtcMs(dateLabel, nextTime);
-    if (ms !== null) {
-      onChange(ms);
+  const setFromTime = (raw: string) => {
+    const [hh, mm, ss = '0'] = raw.split(':');
+    const hours = Number(hh);
+    const minutes = Number(mm);
+    const seconds = Number(ss);
+    if (![hours, minutes, seconds].every(Number.isFinite)) {
+      return;
     }
+    const date = partsFor(baseMs, mode);
+    onChange(composeUtcMs({ ...date, hours, minutes, seconds }, mode));
   };
 
   return (
-    <div className={cn('flex items-center gap-2', className)} data-testid={rest['data-testid']}>
-      <Popover onOpenChange={setOpen} open={open}>
-        <PopoverTrigger>
-          <Button
-            className={cn('w-[160px] justify-start font-normal', !value && 'text-muted-foreground')}
-            disabled={disabled}
-            type="button"
-            variant="outline"
-          >
-            <CalendarIcon className="mr-2 size-4" />
-            {dateLabel}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-0">
-          <Calendar
-            mode="single"
-            onSelect={(d) => {
-              setDate(d);
-              setOpen(false);
-            }}
-            selected={toLocalDate(effectiveValue)}
-          />
-        </PopoverContent>
-      </Popover>
-      <Input
-        className="w-[120px]"
-        disabled={disabled}
-        onChange={(e) => setTime(e.target.value)}
-        step={1}
-        type="time"
-        value={timeLabel}
-      />
+    <div
+      className="flex flex-col gap-3"
+      // Stop pointer/focus events from bubbling to base-ui's outside-press / focus-out
+      // detectors, which can otherwise misclassify in-popover interactions (notably
+      // Calendar day clicks and the native <input type="time"> picker) as outside
+      // presses and close-then-reopen the popup.
+      onFocus={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <Calendar mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
+      <div className="flex items-center gap-2">
+        <Input
+          className="flex-1"
+          disabled={disabled}
+          onChange={(e) => setFromTime(e.target.value)}
+          step={1}
+          type="time"
+          value={timeInputValue}
+        />
+        <Button disabled={disabled} onClick={() => onChange(Date.now())} size="sm" type="button" variant="primary">
+          Now
+        </Button>
+      </div>
+      {!hideTimezoneToggle && <ModeToggle mode={mode} onModeChange={onModeChange} />}
     </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Public component
+// ---------------------------------------------------------------------------
+
+const DEFAULT_PLACEHOLDER = 'Enter unix timestamp';
+
+/**
+ * Replacement for `<DateTimeInput>` from `@redpanda-data/ui`. Mirrors the
+ * original's display: the input shows the raw unix-millisecond number and
+ * accepts direct entry (commits on Enter / blur). A calendar icon button at
+ * the trailing edge opens a popover with a calendar, time input, "Now"
+ * shortcut, and an optional Local/UTC toggle. `value` and `onChange` always
+ * operate in UTC milliseconds.
+ */
+export const DateTimeInput = ({
+  value,
+  onChange,
+  disabled,
+  defaultMode = 'local',
+  hideTimezoneToggle = false,
+  className,
+  placeholder = DEFAULT_PLACEHOLDER,
+  ...rest
+}: DateTimeInputProps) => {
+  const [mode, setMode] = useState<DateTimeInputMode>(defaultMode);
+  const [draft, setDraft] = useState<string>('');
+
+  const numericText = isFiniteNumber(value) ? String(value) : '';
+  const displayedNumber = draft === '' ? numericText : draft;
+
+  const commitNumeric = () => {
+    if (draft === '') {
+      return;
+    }
+    const parsed = Number(draft);
+    if (Number.isFinite(parsed)) {
+      onChange(parsed);
+    }
+    setDraft('');
+  };
+
+  return (
+    <Popover>
+      <PopoverAnchor asChild>
+        <Input
+          className={className}
+          data-testid={rest['data-testid']}
+          disabled={disabled}
+          onBlur={commitNumeric}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commitNumeric();
+            }
+          }}
+          placeholder={placeholder}
+          size="lg"
+          type="number"
+          value={displayedNumber}
+        >
+          <InputEnd className="pointer-events-auto">
+            <PopoverTrigger asChild>
+              <button
+                aria-label="Open calendar"
+                className="text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+                type="button"
+              >
+                <CalendarIcon className="size-4" />
+              </button>
+            </PopoverTrigger>
+          </InputEnd>
+        </Input>
+      </PopoverAnchor>
+      <PopoverContent align="start" className="w-auto p-3">
+        <DateTimePickerPanel
+          disabled={disabled}
+          hideTimezoneToggle={hideTimezoneToggle}
+          mode={mode}
+          onChange={onChange}
+          onModeChange={setMode}
+          value={value}
+        />
+      </PopoverContent>
+    </Popover>
   );
 };
