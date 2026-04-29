@@ -28,7 +28,7 @@ ListLayout.displayName = 'ListLayout';
 
 interface ListLayoutHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   actions?: React.ReactNode;
 }
 

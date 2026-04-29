@@ -10,40 +10,174 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { EditIcon, TrashIcon } from 'components/icons';
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type Row,
+  type SortingState,
+  type Updater,
+  useReactTable,
+} from '@tanstack/react-table';
+import { MoreHorizontalIcon } from 'components/icons';
+import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
+import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import {
+  ListLayout,
+  ListLayoutContent,
+  ListLayoutFilters,
+  ListLayoutPagination,
+  ListLayoutSearchInput,
+} from 'components/redpanda-ui/components/list-layout';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { ShieldCheckIcon } from 'lucide-react';
+import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
-import { appGlobal } from '../../../../state/app-global';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { setPageHeader } from '../../../../state/ui-state';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../../misc/null-fallback-boundary';
-import Section from '../../../misc/section';
 import { Button } from '../../../redpanda-ui/components/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
-import { DeleteRoleConfirmModal } from '../shared/delete-role-confirm-modal';
-import { filterByName } from '../shared/filter-by-name';
+import { DataTableColumnHeader, DataTablePagination } from '../../../redpanda-ui/components/data-table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { DescriptionWithHelp } from '../shared/description-with-help';
+import { SecurityTabsNav } from '../shared/security-tabs-nav';
+
+type RoleEntry = {
+  name: string;
+  members: unknown[];
+};
+
+const nameFilterFn = (row: Row<RoleEntry>, columnId: string, filterValue: string) => {
+  if (!filterValue) return true;
+  try {
+    return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
+  } catch {
+    return String(row.getValue(columnId)).toLowerCase().includes(filterValue.toLowerCase());
+  }
+};
 
 export const RolesTab: FC = () => {
-  useSecurityBreadcrumbs([]);
+  useLayoutEffect(() => {
+    setPageHeader('Security', [
+      { title: 'Security', linkTo: '/security/users' },
+      { title: 'Roles', linkTo: '/security/roles' },
+    ]);
+  }, []);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { data: rolesData, isError: rolesIsError, error: rolesError } = useListRolesQuery();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [urlFilterParams, setUrlFilterParams] = useQueryStates({
+    name: parseAsString,
+  });
+
+  const columnFilters: ColumnFiltersState = urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : [];
+
+  const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
+    const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+    const nameFilter = next.find((f) => f.id === 'name');
+    setUrlFilterParams({ name: (nameFilter?.value as string) || null });
+  };
+
+  const { data: rolesData, isLoading: rolesLoading, isError: rolesIsError, error: rolesError } = useListRolesQuery();
   const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
 
-  const roles = filterByName(rolesData?.roles ?? [], searchQuery, (r) => r.name);
+  const rolesWithMembers: RoleEntry[] = (rolesData?.roles ?? []).map((r) => ({
+    name: r.name,
+    members: rolesApi.roleMembers.get(r.name) ?? [],
+  }));
 
-  const rolesWithMembers = roles.map((r) => {
-    const members = rolesApi.roleMembers.get(r.name) ?? [];
-    return { name: r.name, members };
+  const pagination: PaginationState = { pageIndex, pageSize };
+
+  const handlePaginationChange = (updater: Updater<PaginationState>) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater;
+    setPageIndex(next.pageIndex);
+    setPageSize(next.pageSize);
+  };
+
+  const columns: ColumnDef<RoleEntry>[] = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
+      cell: ({ row: { original: entry } }) => (
+        <Link
+          className="text-inherit no-underline hover:no-underline"
+          data-testid={`role-list-item-${entry.name}`}
+          params={{ roleName: encodeURIComponent(entry.name) }}
+          to="/security/roles/$roleName/details"
+        >
+          {entry.name}
+        </Link>
+      ),
+      filterFn: nameFilterFn,
+    },
+    {
+      id: 'assignedPrincipals',
+      header: 'Assigned principals',
+      enableSorting: false,
+      cell: ({ row: { original: entry } }) => entry.members.length,
+    },
+    {
+      id: 'menu',
+      header: '',
+      enableSorting: false,
+      meta: { align: 'right' as const },
+      cell: ({ row: { original: entry } }) => (
+        <RoleActions
+          memberCount={entry.members.length}
+          onDelete={async () => {
+            await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
+          }}
+          roleName={entry.name}
+        />
+      ),
+    },
+  ];
+
+  const table = useReactTable({
+    data: rolesWithMembers,
+    columns,
+    state: { sorting, pagination, columnFilters },
+    onSortingChange: setSorting,
+    onPaginationChange: handlePaginationChange,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    autoResetPageIndex: false,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (rolesIsError) {
@@ -59,114 +193,172 @@ export const RolesTab: FC = () => {
     .filter(Boolean)
     .join(' ');
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        This tab displays all roles. Roles are groups of access control lists (ACLs) that can be assigned to principals.
-        A principal represents any entity that can be authenticated, such as a user, service, or system (for example, a
-        SASL-SCRAM user, OIDC identity, or mTLS client).
-      </div>
-      <NullFallbackBoundary>
-        <FeatureLicenseNotification featureName="rbac" />
-      </NullFallbackBoundary>
-      <SearchField
-        placeholderText="Filter by name"
-        searchText={searchQuery}
-        setSearchText={setSearchQuery}
-        width="300px"
-      />
-      <Section>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                data-testid="create-role-button"
-                disabled={createRoleDisabled}
-                onClick={() => appGlobal.historyPush('/security/roles/create')}
-                variant="outline"
-              >
-                Create role
-              </Button>
-            </TooltipTrigger>
-            {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
-          </Tooltip>
-        </TooltipProvider>
+  const renderBody = () => {
+    if (rolesLoading) {
+      return [0, 1, 2].map((i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell />
+        </TableRow>
+      ));
+    }
+    if (table.getRowModel().rows.length) {
+      return table.getRowModel().rows.map((row) => (
+        <TableRow key={row.id}>
+          {row.getVisibleCells().map((cell) => (
+            <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    return (
+      <TableRow className="hover:bg-transparent">
+        <TableCell colSpan={columns.length}>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ShieldCheckIcon />
+              </EmptyMedia>
+              <EmptyTitle>No roles yet</EmptyTitle>
+              <EmptyDescription>
+                Roles are groups of ACLs that can be assigned to principals. Create one to start managing access
+                control.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <div className="flex items-center gap-3">
+                <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
+                  Create role
+                </Button>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </div>
+            </EmptyContent>
+          </Empty>
+        </TableCell>
+      </TableRow>
+    );
+  };
 
-        <div className="my-4">
-          <DataTable
-            columns={[
-              {
-                id: 'name',
-                size: Number.POSITIVE_INFINITY,
-                header: 'Role name',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return (
-                    <Link
-                      className="text-inherit no-underline hover:no-underline"
-                      data-testid={`role-list-item-${entry.name}`}
-                      params={{ roleName: encodeURIComponent(entry.name) }}
-                      to="/security/roles/$roleName/details"
-                    >
-                      {entry.name}
-                    </Link>
-                  );
-                },
-              },
-              {
-                id: 'assignedPrincipals',
-                header: 'Assigned principals',
-                cell: (ctx) => <>{ctx.row.original.members.length}</>,
-              },
-              {
-                size: 60,
-                id: 'menu',
-                header: '',
-                cell: (ctx) => {
-                  const entry = ctx.row.original;
-                  return (
-                    <div className="flex flex-row gap-4">
-                      <Button
-                        aria-label={`Edit role ${entry.name}`}
-                        data-testid={`edit-role-button-${entry.name}`}
-                        onClick={() => {
-                          appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
-                        }}
-                        size="icon-sm"
-                        variant="secondary-ghost"
-                      >
-                        <EditIcon className="h-4 w-4" />
-                      </Button>
-                      <DeleteRoleConfirmModal
-                        buttonEl={
-                          <Button
-                            aria-label={`Delete role ${entry.name}`}
-                            data-testid={`delete-role-button-${entry.name}`}
-                            size="icon-sm"
-                            variant="destructive-ghost"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        }
-                        numberOfPrincipals={entry.members.length}
-                        onConfirm={async () => {
-                          await deleteRoleMutation(
-                            create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true })
-                          );
-                        }}
-                        roleName={entry.name}
-                      />
-                    </div>
-                  );
-                },
-              },
-            ]}
-            data={rolesWithMembers}
-            pagination
-            sorting
+  return (
+    <>
+      <SecurityTabsNav />
+      <ListLayout>
+        <Text className="text-muted-foreground text-sm sm:text-base">
+          <DescriptionWithHelp short="Groups of ACLs that can be assigned to principals." title="Roles">
+            <Text>
+              Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents
+              any entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user,
+              OIDC identity, or mTLS client).
+            </Text>
+          </DescriptionWithHelp>{' '}
+          <NullFallbackBoundary>
+            <FeatureLicenseNotification as="badge" featureName="rbac" />
+          </NullFallbackBoundary>
+        </Text>
+
+        <ListLayoutFilters
+          actions={
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="create-role-button"
+                  disabled={createRoleDisabled}
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  Create role
+                </Button>
+              </TooltipTrigger>
+              {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
+            </Tooltip>
+          }
+        >
+          <ListLayoutSearchInput
+            onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
+            placeholder="Filter by name (regexp)..."
+            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           />
-        </div>
-      </Section>
-    </div>
+        </ListLayoutFilters>
+
+        <ListLayoutContent>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead align={(header.column.columnDef.meta as { align?: 'right' })?.align} key={header.id}>
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>{renderBody()}</TableBody>
+          </Table>
+        </ListLayoutContent>
+
+        <ListLayoutPagination>
+          <DataTablePagination table={table} />
+        </ListLayoutPagination>
+      </ListLayout>
+
+      <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
+    </>
+  );
+};
+
+const RoleActions = ({
+  roleName,
+  memberCount,
+  onDelete,
+}: {
+  roleName: string;
+  memberCount: number;
+  onDelete: () => Promise<void>;
+}) => {
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  return (
+    <>
+      <DeleteRoleConfirmModal
+        numberOfPrincipals={memberCount}
+        onConfirm={onDelete}
+        onOpenChange={setIsDeleteOpen}
+        open={isDeleteOpen}
+        roleName={roleName}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button data-testid={`role-actions-button-${roleName}`} size="icon-sm" variant="ghost">
+            <MoreHorizontalIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            data-testid={`delete-role-button-${roleName}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDeleteOpen(true);
+            }}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 };

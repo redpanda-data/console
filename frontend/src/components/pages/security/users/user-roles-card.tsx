@@ -9,18 +9,28 @@
  * by the Apache License, Version 2.0
  */
 
-import { useNavigate } from '@tanstack/react-router';
-import { Eye, EyeOff, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { create } from '@bufbuild/protobuf';
+import { Link } from '@tanstack/react-router';
+import { ShieldIcon } from 'components/icons';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import { ExternalLinkIcon, Trash2Icon } from 'lucide-react';
 
-import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
+import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
+import { rolesApi } from '../../../../state/backend-api';
 import { Button } from '../../../redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
+import { Combobox } from '../../../redpanda-ui/components/combobox';
+import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import type { AclDetail } from '../shared/acl-model';
-import { getRuleDataTestId } from '../shared/acl-model';
-import { OperationsBadge } from '../shared/operations-badge';
+import { Heading } from '../../../redpanda-ui/components/typography';
 
 type Role = {
   principalType: string;
@@ -29,135 +39,123 @@ type Role = {
 
 type UserRolesCardProps = {
   roles: Role[];
-  onChangeRoles?: () => void;
+  userName?: string;
+  isLoading?: boolean;
 };
 
-type RoleTableRowProps = {
-  role: Role;
-  isExpanded: boolean;
-  onToggle: () => void;
-};
+export const UserRolesCard = ({ roles, userName, isLoading }: UserRolesCardProps) => {
+  const { mutateAsync: updateRoleMembership } = useUpdateRoleMembershipMutation();
+  const { data: rolesData } = useListRolesQuery();
 
-const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
-  const navigate = useNavigate();
-  const { data: acls, isLoading } = useGetAclsByPrincipal<AclDetail[]>(
-    `RedpandaRole:${role.principalName}`,
-    undefined,
-    undefined,
-    {
-      enabled: isExpanded,
+  const assignedRoleNames = new Set(roles.map((r) => r.principalName));
+
+  const availableRoleOptions = (rolesData?.roles ?? [])
+    .filter((r) => !assignedRoleNames.has(r.name))
+    .map((r) => ({ value: r.name, label: r.name }));
+
+  const removeFromRole = async (roleName: string) => {
+    if (!userName) return;
+    await updateRoleMembership(
+      create(UpdateRoleMembershipRequestSchema, { roleName, remove: [{ principal: userName }] })
+    );
+    await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+  };
+
+  const assignRole = async (roleName: string) => {
+    if (!(userName && roleName)) return;
+    await updateRoleMembership(create(UpdateRoleMembershipRequestSchema, { roleName, add: [{ principal: userName }] }));
+    await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+  };
+
+  const count = roles.length;
+
+  const renderBody = () => {
+    if (isLoading) {
+      return [0, 1, 2].map((i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+          <TableCell />
+        </TableRow>
+      ));
     }
-  );
-  const rowKey = role.principalName;
-
-  return [
-    <TableRow className="hover:bg-gray-50" key={`role-${rowKey}`}>
-      <TableCell testId={`role-name-${rowKey}`}>{role.principalName}</TableCell>
-      <TableCell align="right">
-        <div className="flex items-center justify-end gap-2">
-          <Button onClick={onToggle} size="sm" testId={`toggle-role-${rowKey}`} variant="outline">
-            {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate({ to: `/security/roles/${role.principalName}/details` });
-            }}
-            size="sm"
-            testId={`view-role-${rowKey}`}
-            variant="outline"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>,
-    isLoading && (
-      <TableRow key={`role-${rowKey}-loading`}>
-        <TableCell>
-          <Skeleton />
-        </TableCell>
-        <TableCell>
-          <Skeleton />
-        </TableCell>
-      </TableRow>
-    ),
-    !isLoading && isExpanded && acls && acls.length > 0 && (
-      <TableRow key={`role-${rowKey}-expanded`}>
-        <TableCell className="bg-gray-50 p-6" colSpan={2}>
-          <div className="space-y-4">
-            <div className="font-semibold text-gray-700 text-sm">
-              ACL Rules ({acls.reduce((sum: number, acl: AclDetail) => sum + acl.rules.length, 0)})
-            </div>
-            {acls.map((acl: AclDetail) => (
-              <div key={`${acl.sharedConfig.principal}-${acl.sharedConfig.host}`}>
-                <div className="mb-2 text-gray-600 text-xs">Host: {acl.sharedConfig.host}</div>
-                {acl.rules.map((rule) => (
-                  <div
-                    className="rounded-lg border border-gray-200 bg-white p-4"
-                    data-testid={`rule-${getRuleDataTestId(rule)}`}
-                    key={rule.id}
+    if (count === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={2}>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <ShieldIcon />
+                </EmptyMedia>
+                <EmptyTitle>No roles assigned</EmptyTitle>
+                <EmptyDescription>Assign a role to grant this user permissions on cluster resources.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
-                    <OperationsBadge rule={rule} />
-                  </div>
-                ))}
-              </div>
-            ))}
+                    Read the docs →
+                  </a>
+                </Button>
+              </EmptyContent>
+            </Empty>
+          </TableCell>
+        </TableRow>
+      );
+    }
+    return roles.map((r) => (
+      <TableRow key={r.principalName}>
+        <TableCell testId={`role-name-${r.principalName}`}>{r.principalName}</TableCell>
+        <TableCell align="right">
+          <div className="flex items-center justify-end gap-1">
+            {Boolean(userName) && (
+              <Button
+                onClick={() => removeFromRole(r.principalName)}
+                size="icon-sm"
+                testId={`remove-role-${r.principalName}`}
+                variant="ghost"
+              >
+                <Trash2Icon className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            )}
+            <Button asChild size="icon-sm" testId={`view-role-${r.principalName}`} variant="ghost">
+              <Link params={{ roleName: r.principalName }} to="/security/roles/$roleName/details">
+                <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            </Button>
           </div>
         </TableCell>
       </TableRow>
-    ),
-  ];
-};
-
-export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-
-  const toggleRow = (key: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
+    ));
   };
 
-  if (roles.length === 0) {
-    return (
-      <Card size="full">
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>Roles</CardTitle>
-          <CardAction>
-            {Boolean(onChangeRoles) && (
-              <Button onClick={onChangeRoles} testId="assign-role-button" variant="outline">
-                Assign role
-              </Button>
-            )}
-          </CardAction>
-        </CardHeader>
-        <CardContent>
-          <p>No permissions assigned to this user.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card size="full">
-      <CardHeader className="flex items-center justify-between">
-        <CardTitle>Roles</CardTitle>
-        <CardAction>
-          {Boolean(onChangeRoles) && (
-            <Button onClick={onChangeRoles} testId="change-role-button" variant="outline">
-              Change Role
-            </Button>
-          )}
-        </CardAction>
-      </CardHeader>
-      <CardContent>
+    <ListLayout className="min-h-0 gap-3 py-0">
+      <ListLayoutFilters
+        actions={
+          userName ? (
+            <Combobox
+              className="w-56"
+              clearable={false}
+              onChange={assignRole}
+              options={availableRoleOptions}
+              placeholder="Assign a role..."
+              testId="assign-role-combobox"
+              value=""
+            />
+          ) : undefined
+        }
+      >
+        <Heading as="h2" level={4}>
+          Roles
+        </Heading>
+      </ListLayoutFilters>
+      <ListLayoutContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -165,23 +163,9 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
               <TableHead align="right">Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {roles.flatMap((r) => {
-              const rowKey = r.principalName;
-              const isExpanded = expandedRows.has(rowKey);
-
-              return (
-                <RoleTableRow
-                  isExpanded={isExpanded}
-                  key={`role-${rowKey}`}
-                  onToggle={() => toggleRow(rowKey)}
-                  role={r}
-                />
-              );
-            })}
-          </TableBody>
+          <TableBody>{renderBody()}</TableBody>
         </Table>
-      </CardContent>
-    </Card>
+      </ListLayoutContent>
+    </ListLayout>
   );
 };
