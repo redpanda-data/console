@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { Markdown } from '@redpanda-data/ui';
@@ -287,7 +285,7 @@ export const AIAgentCardTab = () => {
         }),
         {
           onSuccess: () => {
-            toast.success('Agent card updated successfully');
+            toast.success('Agent card updated');
             setIsEditing(false);
             setEditedCard(null);
           },
@@ -319,7 +317,7 @@ export const AIAgentCardTab = () => {
                 <Text className="font-semibold">Agent Card</Text>
               </CardTitle>
               <Text className="text-muted-foreground text-sm">
-                Configure optional metadata exposed via{' '}
+                Configure optional metadata exposed through{' '}
                 <a
                   className="underline hover:text-foreground"
                   href="https://a2a-protocol.org/latest/topics/key-concepts/#agent-cards"

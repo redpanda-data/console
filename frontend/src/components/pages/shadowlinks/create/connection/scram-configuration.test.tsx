@@ -10,9 +10,10 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 import { vi } from 'vitest';
 
 import { ScramConfiguration } from './scram-configuration';
@@ -81,6 +82,7 @@ describe('ScramConfiguration', () => {
 
   describe('Input validation', () => {
     test('should show validation errors when inputs are invalid', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         useScram: true,
@@ -97,15 +99,15 @@ describe('ScramConfiguration', () => {
       const passwordInput = await screen.findByTestId('scram-password-input');
 
       const submitButton = screen.getByTestId('submit-button');
-      fireEvent.click(submitButton);
+      await user.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText('Username is required when SCRAM is enabled')).toBeInTheDocument();
         expect(screen.getByText('Password is required when SCRAM is enabled')).toBeInTheDocument();
       });
 
-      fireEvent.change(usernameInput, { target: { value: 'admin' } });
-      fireEvent.change(passwordInput, { target: { value: 'secure-password-123' } });
+      await user.type(usernameInput, 'admin');
+      await user.type(passwordInput, 'secure-password-123');
 
       await waitFor(() => {
         expect(usernameInput).toHaveValue('admin');

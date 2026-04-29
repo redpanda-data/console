@@ -159,7 +159,12 @@ vi.mock('../onboarding/add-connector-dialog', () => ({
 // The real component needs secrets/topics/users RPCs which are complex to mock
 // Includes variant prop to distinguish dialog vs popover instances
 vi.mock('./pipeline-command-menu', async () => ({
-  PipelineCommandMenu: (props: { open: boolean; onOpenChange: (open: boolean) => void; variant?: string }) => {
+  PipelineCommandMenu: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    variant?: string;
+    initialFilter?: string;
+  }) => {
     if (!props.open) {
       return null;
     }
@@ -167,6 +172,7 @@ vi.mock('./pipeline-command-menu', async () => ({
     return (
       <div data-testid={props.variant === 'popover' ? 'slash-menu' : 'command-menu'} role="dialog">
         <span>{label}</span>
+        {props.initialFilter && <span data-testid="command-menu-filter">{props.initialFilter}</span>}
         <button onClick={() => props.onOpenChange(false)} type="button">
           Close
         </button>
@@ -289,9 +295,7 @@ describe('PipelinePage', () => {
 
     // Wait for debounced lint response to appear
     // LintHintList renders hints via SimpleCodeBlock with format "Line N, Col N: hint"
-    await waitFor(() => {
-      expect(screen.getByText('Line 1, Col 1: response lint warning')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Line 1, Col 1: response lint warning')).toBeInTheDocument();
   });
 
   it('cancelling during pipeline creation goes back to the previous page', async () => {
@@ -322,9 +326,7 @@ describe('PipelinePage', () => {
     });
 
     // When line is 0, LintHintList renders just the hint text (no "Line N, Col N:" prefix)
-    await waitFor(() => {
-      expect(screen.getByText('general config warning')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('general config warning')).toBeInTheDocument();
   });
 
   it('shows a count badge when multiple lint issues are found', async () => {
@@ -518,9 +520,7 @@ describe('PipelinePage', () => {
     render(<PipelinePage />, { transport: createTransport() });
 
     // Wait for the view mode toolbar to load
-    await waitFor(() => {
-      expect(screen.getByText('Edit pipeline')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Edit pipeline')).toBeInTheDocument();
 
     // The back button is the first button in the view toolbar
     const allButtons = screen.getAllByRole('button');
@@ -538,9 +538,7 @@ describe('PipelinePage', () => {
     render(<PipelinePage />, { transport: createTransport() });
 
     // The toolbar should show the displayName from the pipeline response, not the pipeline ID
-    await waitFor(() => {
-      expect(screen.getByText('Test Pipeline')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Test Pipeline')).toBeInTheDocument();
     expect(screen.queryByText('test-pipeline')).not.toBeInTheDocument();
   });
 
@@ -559,28 +557,22 @@ describe('PipelinePage', () => {
 
   // ── Command menu ───────────────────────────────────────────────────
 
-  it('pressing Cmd+Shift+P opens the variable insert menu', async () => {
+  it('clicking a sidebar variable button opens the command menu with the correct filter', async () => {
+    const user = userEvent.setup();
     render(<PipelinePage />, { transport: createTransport() });
 
-    // Dispatch keyboard event for Cmd+Shift+P
-    act(() => {
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'p',
-          metaKey: true,
-          shiftKey: true,
-          bubbles: true,
-        })
-      );
-    });
+    // The sidebar "Variables" button opens the command menu filtered to variables
+    const variablesButton = screen.getByRole('button', { name: /variables/i });
+    await user.click(variablesButton);
 
-    // The mocked PipelineCommandMenu renders "Command Menu" text when open
     await waitFor(() => {
-      expect(screen.getByText('Command Menu')).toBeInTheDocument();
+      expect(screen.getByTestId('command-menu')).toBeInTheDocument();
+      expect(screen.getByTestId('command-menu-filter')).toHaveTextContent('variables');
     });
   });
 
   it('typing / in the editor dismisses an open command menu to avoid overlap', async () => {
+    const user = userEvent.setup();
     // Enable the slash command feature flag for this test
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableConnectSlashMenu');
 
@@ -591,21 +583,13 @@ describe('PipelinePage', () => {
       expect(contentChangeListeners.length).toBeGreaterThan(0);
     });
 
-    // First open the command menu via Cmd+Shift+P
-    act(() => {
-      window.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'p',
-          metaKey: true,
-          shiftKey: true,
-          bubbles: true,
-        })
-      );
-    });
+    // Open the command menu via a sidebar button
+    const secretsButton = screen.getByRole('button', { name: /secrets/i });
+    await user.click(secretsButton);
 
     // Verify command menu is open
     await waitFor(() => {
-      expect(screen.getByText('Command Menu')).toBeInTheDocument();
+      expect(screen.getByTestId('command-menu')).toBeInTheDocument();
     });
 
     // Simulate a slash trigger via the mock editor's content change listener.
@@ -613,7 +597,7 @@ describe('PipelinePage', () => {
     // When a '/' is detected, detectSlashTrigger checks getPosition() + getModel().getLineContent().
     // Our mock returns position {lineNumber:1, column:4} and lineContent '  /' which means
     // slashColumn=3, charBefore=' ' (whitespace) → valid trigger position.
-    // The hook then calls onOpen (handleSlashOpen) which sets isCommandMenuOpen to false.
+    // The hook then calls onOpen (handleSlashOpen) which sets commandMenuFilter to null.
     act(() => {
       for (const cb of contentChangeListeners) {
         cb({ changes: [{ text: '/' }] });
@@ -622,7 +606,7 @@ describe('PipelinePage', () => {
 
     // The command dialog should now be closed
     await waitFor(() => {
-      expect(screen.queryByText('Command Menu')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('command-menu')).not.toBeInTheDocument();
     });
   });
 

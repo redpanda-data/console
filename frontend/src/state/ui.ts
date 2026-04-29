@@ -706,42 +706,73 @@ export const useUISettingsStore = create<UISettingsStore>()(
   )
 );
 
-// Subscribe to store changes for debounced auto-save
-useUISettingsStore.subscribe((state) => {
-  const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
-  scheduleSave(settingsToSave as UISettings);
-});
-
-// Auto save (on exit)
-window.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    return; // only save on close, minimize, tab-switch
+/**
+ * Installs side-effects for the UI-settings store:
+ *   - debounced auto-save on store change
+ *   - immediate auto-save on visibility change
+ *   - cross-tab settings sync via the `storage` event
+ *
+ * Returns a teardown function that removes all listeners / subscribers and
+ * clears any pending save timer.
+ *
+ * Installed from `app.tsx` / `embedded-app.tsx` inside a `useEffect` so
+ * React owns the lifecycle. No-op when `window` is undefined (SSR / vitest
+ * isolate resets before happy-dom installs globals).
+ */
+export function installUISettingsSideEffects(): () => void {
+  if (typeof window === 'undefined') {
+    return () => {
+      // no-op
+    };
   }
 
-  const state = useUISettingsStore.getState();
-  const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
-  saveImmediately(settingsToSave as UISettings);
-});
+  const unsubStore = useUISettingsStore.subscribe((state) => {
+    const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
+    scheduleSave(settingsToSave as UISettings);
+  });
 
-// When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
-// So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
-window.addEventListener('storage', (e) => {
-  if (e.key !== settingsName || e.newValue === null) {
-    return;
-  }
-  try {
-    const newSettings = JSON.parse(e.newValue);
-    if (!newSettings) {
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      return; // only save on close, minimize, tab-switch
+    }
+
+    const state = useUISettingsStore.getState();
+    const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
+    saveImmediately(settingsToSave as UISettings);
+  };
+  window.addEventListener('visibilitychange', onVisibilityChange);
+
+  // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
+  // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
+  const onStorage = (e: StorageEvent) => {
+    if (e.key !== settingsName || e.newValue === null) {
       return;
     }
-    // Applying changes here will of course trigger the auto-save, but that's fine.
-    // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
-    useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
-  } catch (err) {
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error('error applying settings update from another tab', { storageEvent: e, error: err });
-  }
-});
+    try {
+      const newSettings = JSON.parse(e.newValue);
+      if (!newSettings) {
+        return;
+      }
+      // Applying changes here will of course trigger the auto-save, but that's fine.
+      // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
+      useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
+    } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.error('error applying settings update from another tab', { storageEvent: e, error: err });
+    }
+  };
+  window.addEventListener('storage', onStorage);
+
+  return () => {
+    unsubStore();
+    window.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('storage', onStorage);
+    if (saveTimeoutId) {
+      clearTimeout(saveTimeoutId);
+      saveTimeoutId = null;
+    }
+  };
+}
 
 // Legacy exports for backward compatibility
 export const uiSettings = new Proxy({} as UISettings, {

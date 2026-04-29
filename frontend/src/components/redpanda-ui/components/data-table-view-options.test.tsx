@@ -34,8 +34,9 @@ import {
  * Regression tests for DataTable search, faceted filter, and view options.
  *
  * These components broke when React Compiler memoized stale closure values
- * in data-table.tsx and data-table-filter.tsx. The fix was adding 'use no memo'
- * to both files and replacing DropdownMenuPrimitive.Trigger with DropdownMenuTrigger.
+ * in data-table.tsx and data-table-filter.tsx. The fix was switching the compiler
+ * to opt-in mode (compilationMode: 'annotation') and replacing
+ * DropdownMenuPrimitive.Trigger with DropdownMenuTrigger.
  */
 
 // ── Harness: full toolbar with a table ──────────────────────────────────

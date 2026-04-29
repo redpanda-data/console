@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';

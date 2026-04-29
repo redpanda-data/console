@@ -80,6 +80,8 @@ components:
       properties:
         anthropic:
           $ref: '#/components/schemas/Anthropic'
+        bedrock:
+          $ref: '#/components/schemas/Bedrock'
         google:
           $ref: '#/components/schemas/Google'
         openai:
@@ -323,6 +325,22 @@ components:
         - ATTRIBUTE_OPERATOR_NOT_EQUALS
         - ATTRIBUTE_OPERATOR_IN
       type: string
+    Bedrock:
+      properties:
+        access_key_id_secret_ref:
+          description: |-
+            Optional secret reference for the AWS access key ID.
+            When omitted, uses the AWS default credential chain (IRSA, env vars, instance profile).
+          type: string
+        region:
+          description: AWS region for Bedrock inference (e.g., "us-east-1").
+          type: string
+        secret_access_key_secret_ref:
+          description: Optional secret reference for the AWS secret access key.
+          type: string
+      required:
+        - region
+      type: object
     ComponentType:
       description: Component type for this tool.
       enum:
@@ -471,13 +489,17 @@ components:
           type: string
       type: object
     GatewayConfig:
-      description: Gateway configuration for routing requests through an AI Gateway.
+      description: Optional gateway configuration for routing requests through an AI Gateway.
       properties:
-        virtual_gateway_id:
-          description: Virtual gateway ID (20-character XID format).
+        llm_provider:
+          title: |-
+            Name of the configured LLMProvider in the AI Gateway (aigw).
+            Used to determine which provider to route requests through.
+            Example: "my-openai-provider"
           type: string
-      required:
-        - virtual_gateway_id
+        virtual_gateway_id:
+          description: 'Deprecated: No longer needed — there is always one gateway per cluster.'
+          type: string
       type: object
     GetAIAgentResponse:
       properties:

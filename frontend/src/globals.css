@@ -1,8 +1,8 @@
-@source "../node_modules/streamdown/dist/index.js";
-
 @import "./components/redpanda-ui/style/theme.css";
 @import "tailwindcss";
 @import "tw-animate-css";
+
+@source "../node_modules/streamdown/dist/index.js";
 
 /* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
    which collides with Monaco's internal .monaco-hover.fade-in class,

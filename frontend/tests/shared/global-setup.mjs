@@ -405,15 +405,37 @@ export async function buildBackendImage(isEnterprise) {
     const isWorkspaceBuild = isEnterprise && existsSync(join(backendDir, 'go.work'));
     const workspaceDir = join(backendDir, '.e2e-workspace');
 
+    let originalGoWork = null;
     if (isWorkspaceBuild) {
       console.log('Workspace build detected (go.work found)');
-      const goWorkContent = readFileSync(join(backendDir, 'go.work'), 'utf-8');
+      originalGoWork = readFileSync(join(backendDir, 'go.work'), 'utf-8');
+
+      // Detect and recover from a corrupted go.work left by a previous interrupted run.
+      // A corrupted go.work references .e2e-workspace/ paths that no longer exist on disk.
+      // In that case, use go.ci.work (the canonical workspace template) as the base instead.
+      const hasStaleWorkspacePaths = originalGoWork.includes('.e2e-workspace/');
+      if (hasStaleWorkspacePaths) {
+        const ciWorkPath = join(backendDir, 'go.ci.work');
+        if (existsSync(ciWorkPath)) {
+          console.warn(
+            '  go.work contains stale .e2e-workspace/ paths (leftover from previous run). Resetting from go.ci.work...'
+          );
+          originalGoWork = readFileSync(ciWorkPath, 'utf-8');
+          writeFileSync(join(backendDir, 'go.work'), originalGoWork);
+          console.log('  ✓ Reset go.work from go.ci.work');
+        } else {
+          throw new Error(
+            'go.work contains stale .e2e-workspace/ references but go.ci.work was not found to recover from. ' +
+              'Please restore go.work manually.'
+          );
+        }
+      }
 
       // Parse workspace module paths (skip "." which is the backend itself)
       const useRegex = /^\s+(\S+)\s*$/gm;
       const rewrittenPaths = [];
       let match;
-      while ((match = useRegex.exec(goWorkContent)) !== null) {
+      while ((match = useRegex.exec(originalGoWork)) !== null) {
         const modulePath = match[1];
         if (modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')') continue;
 
@@ -435,7 +457,7 @@ export async function buildBackendImage(isEnterprise) {
 
       // Rewrite go.work to use local paths
       if (rewrittenPaths.length > 0) {
-        let newGoWork = goWorkContent;
+        let newGoWork = originalGoWork;
         for (const { original, local } of rewrittenPaths) {
           newGoWork = newGoWork.replace(original, local);
         }
@@ -460,6 +482,11 @@ export async function buildBackendImage(isEnterprise) {
       await execAsync(`rm -f "${tempDockerfile}"`).catch(() => {});
       if (isWorkspaceBuild) {
         await execAsync(`rm -rf "${workspaceDir}"`).catch(() => {});
+        // Restore original go.work so subsequent runs don't reference the deleted workspace dir
+        if (originalGoWork !== null) {
+          writeFileSync(join(backendDir, 'go.work'), originalGoWork);
+          console.log('  ✓ Restored original go.work');
+        }
       }
     }
 

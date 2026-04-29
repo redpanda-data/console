@@ -126,14 +126,21 @@ function AlertDialogTitle({
 
 function AlertDialogDescription({
 	className,
+	children,
 	...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+	// Render the Radix Description as a <div> (via asChild) instead of the default <p>
+	// so it can safely contain block-level children (Text, Input, List, etc.) without
+	// triggering React's validateDOMNesting warnings.
 	return (
-		<AlertDialogPrimitive.Description
-			data-slot="alert-dialog-description"
-			className={cn("text-muted-foreground text-sm", className)}
-			{...props}
-		/>
+		<AlertDialogPrimitive.Description asChild {...props}>
+			<div
+				data-slot="alert-dialog-description"
+				className={cn("text-muted-foreground text-sm", className)}
+			>
+				{children}
+			</div>
+		</AlertDialogPrimitive.Description>
 	);
 }
 

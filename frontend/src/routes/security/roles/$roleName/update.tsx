@@ -13,7 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
-import RoleUpdatePage from '../../../../components/pages/roles/role-update-page';
+import RoleUpdatePage from '../../../../components/pages/security/roles/role-update-page';
 
 const searchSchema = z.object({
   host: fallback(z.string().optional(), undefined),

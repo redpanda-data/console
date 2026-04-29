@@ -9,12 +9,14 @@ import {
 import { CopyButton } from "components/redpanda-ui/components/copy-button";
 import { Text } from "components/redpanda-ui/components/typography";
 import { cn } from "components/redpanda-ui/lib/utils";
-import type { ToolUIPart } from "ai";
+import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import {
   CheckIcon,
   ChevronDownIcon,
   ClockIcon,
   LoaderIcon,
+  ShieldAlertIcon,
+  ShieldCheckIcon,
   WrenchIcon,
   XIcon,
 } from "lucide-react";
@@ -22,6 +24,16 @@ import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { deepParseJson } from "utils/json-utils";
 import { CodeBlock } from "./code-block";
+
+/**
+ * Union of static and dynamic tool UI parts.
+ *
+ * Static (typed) tools come from `UITools`; dynamic tools (e.g. provider-executed
+ * MCP tools resolved at runtime) have `type: 'dynamic-tool'` and expose a
+ * `toolName` field. Callers that handle MCP tools should accept `ToolPart`
+ * rather than `ToolUIPart` to cover both shapes.
+ */
+export type ToolPart = ToolUIPart | DynamicToolUIPart;
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -34,14 +46,19 @@ export const Tool = ({ className, ...props }: ToolProps) => (
 
 export type ToolHeaderProps = {
   title?: string;
-  type: ToolUIPart["type"];
-  state: ToolUIPart["state"];
   className?: string;
   toolCallId?: string;
   durationMs?: number;
-};
+} & (
+  | { type: ToolUIPart["type"]; state: ToolUIPart["state"]; toolName?: never }
+  | {
+      type: DynamicToolUIPart["type"];
+      state: DynamicToolUIPart["state"];
+      toolName: string;
+    }
+);
 
-const getStatusBadge = (status: ToolUIPart["state"]) => {
+const getStatusBadge = (status: ToolPart["state"]) => {
   if (status === "output-available") {
     return (
       <Badge variant="success-inverted" className="rounded-full">
@@ -82,6 +99,36 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
       </Badge>
     );
   }
+  if (status === "approval-requested") {
+    return (
+      <Badge variant="warning-inverted" className="rounded-full">
+        <Text variant="small" className="flex items-center gap-2">
+          <ShieldAlertIcon className="size-4" />
+          Awaiting Approval
+        </Text>
+      </Badge>
+    );
+  }
+  if (status === "approval-responded") {
+    return (
+      <Badge variant="info-inverted" className="rounded-full">
+        <Text variant="small" className="flex items-center gap-2">
+          <ShieldCheckIcon className="size-4" />
+          Responded
+        </Text>
+      </Badge>
+    );
+  }
+  if (status === "output-denied") {
+    return (
+      <Badge variant="destructive-inverted" className="rounded-full">
+        <Text variant="small" className="flex items-center gap-2">
+          <XIcon className="size-4" />
+          Denied
+        </Text>
+      </Badge>
+    );
+  }
   return null;
 };
 
@@ -92,10 +139,16 @@ export const ToolHeader = ({
   state,
   toolCallId,
   durationMs,
+  toolName,
   ...props
 }: ToolHeaderProps) => {
-  const toolName = title ?? type.split("-").slice(1).join("-");
-  const textToCopy = toolCallId ? `${toolName} (${toolCallId})` : toolName;
+  // For dynamic tools (e.g. MCP tools resolved at runtime), use the provided
+  // `toolName` directly. For static tools the name is encoded in the part
+  // `type`, e.g. `tool-get-weather` → `get-weather`.
+  const derivedName =
+    type === "dynamic-tool" ? (toolName ?? "") : type.split("-").slice(1).join("-");
+  const displayName = title ?? derivedName;
+  const textToCopy = toolCallId ? `${displayName} (${toolCallId})` : displayName;
 
   const formatDuration = (ms: number): string => {
     if (ms < 1000) {
@@ -116,7 +169,7 @@ export const ToolHeader = ({
         <div className="flex items-center gap-2">
           <WrenchIcon className="size-4 text-muted-foreground" />
           <Text as="span" variant="small" className="font-medium">
-            {toolName}
+            {displayName}
           </Text>
           {getStatusBadge(state)}
           {durationMs !== undefined && (state === 'output-available' || state === 'output-error') && (
@@ -137,7 +190,7 @@ export const ToolHeader = ({
             size="icon"
             className="size-7"
             onClick={(e) => e.stopPropagation()}
-            title={toolCallId ? `Copy: ${toolName} (${toolCallId})` : `Copy: ${toolName}`}
+            title={toolCallId ? `Copy: ${displayName} (${toolCallId})` : `Copy: ${displayName}`}
           />
           <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
         </div>
@@ -160,7 +213,7 @@ export const ToolContent = ({ className, ...props }: ToolContentProps) => (
 );
 
 export type ToolInputProps = ComponentProps<"div"> & {
-  input: ToolUIPart["input"];
+  input: ToolPart["input"];
 };
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
@@ -185,8 +238,8 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
 };
 
 export type ToolOutputProps = ComponentProps<"div"> & {
-  output: ToolUIPart["output"];
-  errorText: ToolUIPart["errorText"];
+  output: ToolPart["output"];
+  errorText: ToolPart["errorText"];
 };
 
 export const ToolOutput = ({
@@ -221,7 +274,7 @@ export const ToolOutput = ({
       <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
         {errorText ? "Error" : "Result"}
       </h4>
-      <div className={cn("rounded-md", errorText ? "bg-muted/50" : "bg-muted/50")}>
+      <div className={cn("rounded-md", errorText ? "bg-destructive/10" : "bg-muted/50")}>
         {errorText && <CodeBlock code={errorText} language="text" />}
         {hasOutput && Output}
       </div>

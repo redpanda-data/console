@@ -16,7 +16,7 @@ import type { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Card, CardContent, CardHeader, CardTitle, CardVariant } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -46,6 +46,7 @@ type QuickAddSecretsProps = {
   hideHeader?: boolean;
   onError?: (errors: string[]) => void;
   onUpdateEditorContent?: (oldName: string, newName: string) => void;
+  cardVariant?: CardVariant;
 };
 
 const SecretFormSchema = z.record(
@@ -81,6 +82,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   enableNewSecrets = false,
   onError,
   onUpdateEditorContent,
+  cardVariant = 'elevated',
 }) => {
   const { mutateAsync: createSecret } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
@@ -241,7 +243,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       // Reset form
       newSecretForm.reset();
 
-      toast.success(`Secret "${normalizedName}" created successfully`);
+      toast.success(`Secret "${normalizedName}" created`);
     } catch (error) {
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,
@@ -265,7 +267,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   return (
     <div className="space-y-4">
       {missingSecrets.length > 0 && (
-        <Card size="full">
+        <Card size="full" variant={cardVariant}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-4 w-4" />
@@ -366,7 +368,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                   </FieldLabel>
                   <Input
                     id="new-secret-name"
-                    placeholder="e.g., API_KEY, DATABASE_PASSWORD"
+                    placeholder="API_KEY"
                     {...newSecretForm.register('name', {
                       onChange: (e) => {
                         const normalized = normalizeSecretName(e.target.value);

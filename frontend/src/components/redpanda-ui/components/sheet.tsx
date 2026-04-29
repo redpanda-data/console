@@ -216,13 +216,16 @@ function SheetTitle({ className, level = 2, ...props }: SheetTitleProps) {
 
 type SheetDescriptionProps = React.ComponentProps<typeof SheetPrimitive.Description>;
 
-function SheetDescription({ className, ...props }: SheetDescriptionProps) {
+function SheetDescription({ className, children, ...props }: SheetDescriptionProps) {
+  // Render the Radix Description as a <div> (via asChild) instead of the default <p>
+  // so it can safely contain block-level children (Text, Input, List, etc.) without
+  // triggering React's validateDOMNesting warnings.
   return (
-    <SheetPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
-      data-slot="sheet-description"
-      {...props}
-    />
+    <SheetPrimitive.Description asChild {...props}>
+      <div className={cn('text-muted-foreground text-sm', className)} data-slot="sheet-description">
+        {children}
+      </div>
+    </SheetPrimitive.Description>
   );
 }
 

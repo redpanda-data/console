@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { ConnectError } from '@connectrpc/connect';
 import { Clock, Search, Send, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -78,7 +76,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
   const callRetrievalAPI = useCallback(async () => {
     if (!query.trim()) {
       toast.error('Query Required', {
-        description: 'Please enter a query to retrieve results.',
+        description: 'Enter a query to retrieve results.',
       });
       return;
     }
@@ -222,7 +220,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
                   });
                 }
               }}
-              placeholder="Enter your query here... (e.g., 'which redpanda tiers exist? Show a table')"
+              placeholder="which redpanda tiers exist? Show a table"
               rows={3}
               value={query}
             />

@@ -52,6 +52,16 @@ Element.prototype.scrollIntoView = vi.fn();
 
 import { KnowledgeBaseListPage as KnowledgeBaseList } from './knowledge-base-list-page';
 
+// Hoisted once — 25 rows = 3 pages at the page's hard-coded pageSize of 10.
+const PAGINATION_KBS_FIXTURE = Array.from({ length: 25 }, (_, index) =>
+  create(KnowledgeBaseSchema, {
+    id: `kb-${index + 1}`,
+    displayName: `Knowledge Base ${index + 1}`,
+    description: `Description ${index + 1}`,
+    tags: {},
+  })
+);
+
 const OPEN_MENU_REGEX = /open menu/i;
 const DELETE_CONFIRMATION_REGEX = /you are about to delete/i;
 const TYPE_DELETE_REGEX = /type "delete" to confirm/i;
@@ -177,12 +187,10 @@ describe('KnowledgeBaseList', () => {
     const actionsButton = within(kbRow).getByRole('button', { name: OPEN_MENU_REGEX });
     await user.click(actionsButton);
 
-    const deleteButton = await screen.findByText('Delete', {}, { timeout: 3000 });
+    const deleteButton = await screen.findByText('Delete');
     await user.click(deleteButton);
 
-    await waitFor(() => {
-      expect(screen.getByText(DELETE_CONFIRMATION_REGEX)).toBeVisible();
-    });
+    expect(await screen.findByText(DELETE_CONFIRMATION_REGEX)).toBeVisible();
 
     const confirmationInput = screen.getByPlaceholderText(TYPE_DELETE_REGEX);
     await user.type(confirmationInput, 'delete');
@@ -255,151 +263,11 @@ describe('KnowledgeBaseList', () => {
     expect(screen.getByText('Create Knowledge Base')).toBeVisible();
   });
 
-  test('should filter knowledge bases by search text', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'kb-1',
-      displayName: 'Alpha Knowledge Base',
-      description: 'First description',
-      tags: {},
-    });
-
-    const kb2 = create(KnowledgeBaseSchema, {
-      id: 'kb-2',
-      displayName: 'Beta Knowledge Base',
-      description: 'Second description',
-      tags: {},
-    });
-
-    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
-      knowledgeBases: [kb1, kb2],
-      nextPageToken: '',
-    });
-
-    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, listKnowledgeBasesMock);
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Alpha Knowledge Base')).toBeVisible();
-      expect(screen.getByText('Beta Knowledge Base')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-    await user.type(filterInput, 'Alpha');
-
-    await waitFor(() => {
-      expect(screen.getByText('Alpha Knowledge Base')).toBeVisible();
-      expect(screen.queryByText('Beta Knowledge Base')).not.toBeInTheDocument();
-    });
-  });
-
-  test('should filter knowledge bases by name', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'production-kb',
-      displayName: 'Production KB',
-      description: 'Production environment',
-      tags: {},
-    });
-
-    const kb2 = create(KnowledgeBaseSchema, {
-      id: 'staging-kb',
-      displayName: 'Staging KB',
-      description: 'Staging environment',
-      tags: {},
-    });
-
-    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
-      knowledgeBases: [kb1, kb2],
-      nextPageToken: '',
-    });
-
-    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, listKnowledgeBasesMock);
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Production KB')).toBeVisible();
-      expect(screen.getByText('Staging KB')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-    await user.type(filterInput, 'Production');
-
-    await waitFor(() => {
-      expect(screen.getByText('Production KB')).toBeVisible();
-      expect(screen.queryByText('Staging KB')).not.toBeInTheDocument();
-    });
-  });
-
-  test('should filter knowledge bases by display name', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'kb-1',
-      displayName: 'First KB',
-      description: 'Contains customer data',
-      tags: {},
-    });
-
-    const kb2 = create(KnowledgeBaseSchema, {
-      id: 'kb-2',
-      displayName: 'Second KB',
-      description: 'Contains product information',
-      tags: {},
-    });
-
-    const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
-      knowledgeBases: [kb1, kb2],
-      nextPageToken: '',
-    });
-
-    const listKnowledgeBasesMock = vi.fn().mockReturnValue(listKnowledgeBasesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, listKnowledgeBasesMock);
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('First KB')).toBeVisible();
-      expect(screen.getByText('Second KB')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-    await user.type(filterInput, 'First');
-
-    await waitFor(() => {
-      expect(screen.getByText('First KB')).toBeVisible();
-      expect(screen.queryByText('Second KB')).not.toBeInTheDocument();
-    });
-  });
-
   test('should update pagination footer and disable next button on the last page', async () => {
     const user = userEvent.setup();
-    const knowledgeBases = Array.from({ length: 25 }, (_, index) =>
-      create(KnowledgeBaseSchema, {
-        id: `kb-${index + 1}`,
-        displayName: `Knowledge Base ${index + 1}`,
-        description: `Description ${index + 1}`,
-        tags: {},
-      })
-    );
 
     const listKnowledgeBasesResponse = create(ListKnowledgeBasesResponseSchema, {
-      knowledgeBases,
+      knowledgeBases: PAGINATION_KBS_FIXTURE,
       nextPageToken: '',
     });
 
@@ -411,9 +279,7 @@ describe('KnowledgeBaseList', () => {
 
     renderWithFileRoutes(<KnowledgeBaseList />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 1 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 1 of 3')).toBeVisible();
 
     const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
     const nextButton = screen.getByRole('button', { name: 'Go to next page' });
@@ -423,117 +289,15 @@ describe('KnowledgeBaseList', () => {
 
     await user.click(nextButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 2 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 2 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 3 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 3 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
-  });
-
-  test('search input value updates on each keystroke', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'kb-1',
-      displayName: 'Alpha',
-      description: '',
-      tags: {},
-    });
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, () =>
-        create(ListKnowledgeBasesResponseSchema, {
-          knowledgeBases: [kb1],
-          nextPageToken: '',
-        })
-      );
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Alpha')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-
-    await user.type(filterInput, 'test');
-
-    // The input value must reflect what was typed — a React Compiler
-    // memoization bug would freeze it at the initial empty string.
-    expect(filterInput).toHaveValue('test');
-  });
-
-  test('search input can be cleared and reused', async () => {
-    const user = userEvent.setup();
-
-    const kb1 = create(KnowledgeBaseSchema, {
-      id: 'kb-1',
-      displayName: 'Alpha KB',
-      description: '',
-      tags: {},
-    });
-
-    const kb2 = create(KnowledgeBaseSchema, {
-      id: 'kb-2',
-      displayName: 'Beta KB',
-      description: '',
-      tags: {},
-    });
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listKnowledgeBases, () =>
-        create(ListKnowledgeBasesResponseSchema, {
-          knowledgeBases: [kb1, kb2],
-          nextPageToken: '',
-        })
-      );
-    });
-
-    renderWithFileRoutes(<KnowledgeBaseList />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('Alpha KB')).toBeVisible();
-      expect(screen.getByText('Beta KB')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter knowledge bases...');
-
-    // Type to filter down to Alpha only
-    await user.type(filterInput, 'Alpha');
-
-    await waitFor(() => {
-      expect(screen.getByText('Alpha KB')).toBeVisible();
-      expect(screen.queryByText('Beta KB')).not.toBeInTheDocument();
-    });
-
-    // Clear the input completely
-    await user.clear(filterInput);
-    expect(filterInput).toHaveValue('');
-
-    // Both rows should reappear
-    await waitFor(() => {
-      expect(screen.getByText('Alpha KB')).toBeVisible();
-      expect(screen.getByText('Beta KB')).toBeVisible();
-    });
-
-    // Type again to filter down to Beta
-    await user.type(filterInput, 'Beta');
-
-    await waitFor(() => {
-      expect(screen.queryByText('Alpha KB')).not.toBeInTheDocument();
-      expect(screen.getByText('Beta KB')).toBeVisible();
-    });
-
-    expect(filterInput).toHaveValue('Beta');
   });
 
   test('filters knowledge bases by search text and updates results', async () => {

@@ -203,12 +203,14 @@ const FormControl = React.forwardRef<
 
 FormControl.displayName = 'FormControl';
 
-const FormDescription = React.forwardRef<HTMLParagraphElement, React.ComponentProps<'p'>>(
+// Rendered as <div> instead of <p> so consumers can nest block-level components
+// (Text, Alert, Input, etc.) without triggering React's validateDOMNesting warnings.
+const FormDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
   ({ className, ...props }, ref) => {
     const { formDescriptionId } = useFormField();
 
     return (
-      <p
+      <div
         className={cn('text-muted-foreground text-xs', className)}
         data-slot="form-description"
         id={formDescriptionId}
@@ -221,7 +223,8 @@ const FormDescription = React.forwardRef<HTMLParagraphElement, React.ComponentPr
 
 FormDescription.displayName = 'FormDescription';
 
-const FormMessage = React.forwardRef<HTMLParagraphElement, React.ComponentProps<'p'>>(
+// Rendered as <div> instead of <p> for the same reason as FormDescription above.
+const FormMessage = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
   ({ className, ...props }, ref) => {
     const { error, formMessageId } = useFormField();
     const body = error ? String(error?.message ?? '') : props.children;
@@ -231,7 +234,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.ComponentProps<
     }
 
     return (
-      <p
+      <div
         className={cn('text-destructive text-sm', className)}
         data-slot="form-message"
         id={formMessageId}
@@ -239,7 +242,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.ComponentProps<
         {...props}
       >
         {body}
-      </p>
+      </div>
     );
   }
 );

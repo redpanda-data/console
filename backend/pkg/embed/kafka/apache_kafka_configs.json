@@ -60,7 +60,8 @@
     "type": "INT",
     "documentation": "This configuration controls the segment file size for the log. Retention and cleaning is always done a file at a time so a larger segment size means fewer files but less granular control over retention.",
     "category": "Storage Internals",
-    "frontendFormat": "BYTE_SIZE"
+    "frontendFormat": "BYTE_SIZE",
+    "noInfiniteValue": true
   },
   {
     "name": "retention.ms",
@@ -102,7 +103,8 @@
     "type": "INT",
     "documentation": "The largest record batch size allowed by Kafka (after compression if compression is enabled). If this is increased and there are consumers older than 0.10.2, the consumers' fetch size must also be increased so that they can fetch record batches this large. In the latest message format version, records are always grouped into batches for efficiency. In previous message format versions, uncompressed records are not grouped into batches and this limit only applies to a single record in that case.",
     "category": "Message Handling",
-    "frontendFormat": "BYTE_SIZE"
+    "frontendFormat": "BYTE_SIZE",
+    "noInfiniteValue": true
   },
   {
     "name": "min.compaction.lag.ms",

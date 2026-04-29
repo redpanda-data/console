@@ -2,6 +2,11 @@ version: v2
 clean: true
 inputs:
   - directory: proto
+  - module: buf.build/redpandadata/cloud:4d513424c2de4ca4b584eba3f1dce48d
+    paths:
+      - redpanda/api/adp
+    exclude_paths:
+      - redpanda/api/adp/v1alpha1/agent.proto
 plugins:
   - remote: buf.build/bufbuild/es:v2.2.5
     out: frontend/src/protogen

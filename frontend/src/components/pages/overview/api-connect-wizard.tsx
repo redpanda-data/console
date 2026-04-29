@@ -1,5 +1,3 @@
-'use no memo';
-
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
 import { useNavigate, useRouter } from '@tanstack/react-router';

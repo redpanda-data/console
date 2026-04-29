@@ -8,8 +8,6 @@
  * use of this software will be governed by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
@@ -247,7 +245,6 @@ function SecretsStoreDataTableToolbar({ table }: { table: TanstackTable<SecretTa
 }
 
 export const SecretsStoreListPage = () => {
-  'use no memo';
   const navigate = useNavigate();
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -284,7 +281,7 @@ export const SecretsStoreListPage = () => {
     async (secretId: string) => {
       try {
         await deleteSecret({ request: { id: secretId } });
-        toast.success('Secret deleted successfully');
+        toast.success('Secret deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(

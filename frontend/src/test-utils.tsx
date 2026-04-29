@@ -1,11 +1,12 @@
 import type { Transport } from '@connectrpc/connect';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { type RenderOptions, render } from '@testing-library/react';
 import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
+import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
@@ -17,6 +18,24 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   transport?: Transport;
 }
 
+// Track every QueryClient and router created by the test harness so the
+// side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
+// tear them down after each test. A plain render + RTL cleanup only unmounts
+// the React tree — the QueryClient and the TanStack router are still held
+// alive by closures inside the test file, so every test's fetched data,
+// route matches, and history entries accumulate in the worker heap
+// otherwise. That retention is the primary cause of the +100–240 MB
+// intra-file heap growth measured during the TDD audit.
+//
+// `cleanupTestHarness` is kept in a separate module so that
+// `vitest.setup.integration.ts` does not transitively import `routeTree.gen`
+// (and therefore `config`), which would pin `isEmbedded`/`isAdpEnabled` live
+// bindings before test files' `vi.mock('config', ...)` hoists can take
+// effect.
+import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
+
+export { cleanupTestHarness } from '../tests/harness-cleanup';
+
 const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) => {
   function Wrapper({ children }: PropsWithChildren): JSX.Element {
     const finalTransport =
@@ -27,21 +46,22 @@ const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRend
 
     // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
     // This prevents the client from being recreated when the Wrapper re-renders
-    const [queryClient] = useState(
-      () =>
-        new QueryClient({
-          defaultOptions: {
-            queries: {
-              retry: false,
-              gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
-              staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
-            },
-            mutations: {
-              retry: false,
-            },
+    const [queryClient] = useState(() => {
+      const client = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+            gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
+            staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
           },
-        })
-    );
+          mutations: {
+            retry: false,
+          },
+        },
+      });
+      trackedQueryClients.add(client);
+      return client;
+    });
 
     return (
       <TransportProvider transport={finalTransport}>
@@ -69,9 +89,19 @@ export function renderWithFileRoutes(
     defaultOptions: {
       queries: {
         retry: false,
+        // gcTime + staleTime: 0 guarantees Connect Query caches are dropped
+        // the moment their observers unmount (end of test), so tests that
+        // render lists of fixtures don't retain those fixtures for the
+        // duration of the file.
+        gcTime: 0,
+        staleTime: 0,
+      },
+      mutations: {
+        retry: false,
       },
     },
   });
+  trackedQueryClients.add(queryClient);
 
   const finalTransport =
     renderOptions.transport ??
@@ -86,6 +116,7 @@ export function renderWithFileRoutes(
     }),
     context: { basePath: '', queryClient, dataplaneTransport: finalTransport, ...routerContext },
   });
+  trackedRouters.add(router);
 
   function Wrapper({ children }: PropsWithChildren): JSX.Element {
     return (
@@ -135,9 +166,12 @@ export function createTestRouterFromFiles(initialLocation = '/') {
     defaultOptions: {
       queries: {
         retry: false,
+        gcTime: 0,
+        staleTime: 0,
       },
     },
   });
+  trackedQueryClients.add(queryClient);
 
   const transport = createConnectTransport({
     baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
@@ -150,6 +184,7 @@ export function createTestRouterFromFiles(initialLocation = '/') {
     }),
     context: { basePath: '', queryClient, dataplaneTransport: transport },
   });
+  trackedRouters.add(router);
 
   return router;
 }
@@ -178,11 +213,13 @@ const connectQueryWrapper = (
   queryClientWrapper: JSXElementConstructor<PropsWithChildren>;
 } => {
   const queryClient = new QueryClient(config);
+  trackedQueryClients.add(queryClient);
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/'] }),
     context: { basePath: '', queryClient, dataplaneTransport: transport },
   });
+  trackedRouters.add(router);
 
   return {
     wrapper: ({ children }) => (

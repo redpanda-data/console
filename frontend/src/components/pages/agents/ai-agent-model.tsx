@@ -54,6 +54,11 @@ export const PROVIDER_INFO = {
     icon: ApiGenericLogo,
     modelPattern: /^$/,
   },
+  bedrock: {
+    label: 'AWS Bedrock',
+    icon: ApiGenericLogo,
+    modelPattern: /^(anthropic\.|us\.|eu\.|ap\.)/i,
+  },
 } as const;
 
 /**
@@ -185,11 +190,32 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: ApiGenericLogo,
     models: [],
   },
+  bedrock: {
+    label: 'AWS Bedrock',
+    icon: ApiGenericLogo,
+    models: [
+      {
+        value: 'anthropic.claude-sonnet-4-6',
+        name: 'Claude Sonnet 4.6',
+        description: 'Fast, intelligent model through Bedrock',
+      },
+      {
+        value: 'anthropic.claude-opus-4-6-v1',
+        name: 'Claude Opus 4.6',
+        description: 'Most capable model through Bedrock',
+      },
+      {
+        value: 'anthropic.claude-haiku-4-5-20251001-v1:0',
+        name: 'Claude Haiku 4.5',
+        description: 'Fast and cost-effective through Bedrock',
+      },
+    ],
+  },
 } as const;
 
 type AIAgentModelProps = {
   model: string;
-  providerType?: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
+  providerType?: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
   className?: string;
   showLogo?: boolean;
   size?: 'sm' | 'md' | 'lg';

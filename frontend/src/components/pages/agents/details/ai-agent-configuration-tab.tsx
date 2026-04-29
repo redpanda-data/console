@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { getRouteApi, Link } from '@tanstack/react-router';
@@ -53,8 +51,10 @@ import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { AI_AGENT_SECRET_TEXT, SecretSelector } from 'components/ui/secret/secret-selector';
 import { ServiceAccountSection } from 'components/ui/service-account/service-account-section';
-import { isFeatureFlagEnabled } from 'config';
-import { Edit, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
+import { config } from 'config';
+import { Edit, ExternalLink, Plus, Save, Settings, ShieldCheck, Trash2 } from 'lucide-react';
+import { LLMProviderType } from 'protogen/redpanda/api/adp/v1alpha1/llm_provider_pb';
+import { type MCPServer, MCPServerSchema, MCPServerType } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   AIAgent_AgentCard_ProviderSchema,
@@ -64,6 +64,7 @@ import {
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_BedrockSchema,
   AIAgent_Provider_GoogleSchema,
   AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
@@ -74,15 +75,25 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
-import { useListModelProvidersQuery } from 'react-query/api/ai-gateway/model-providers';
-import { useListModelsQuery } from 'react-query/api/ai-gateway/models';
-import { type MCPServer, MCPServer_State, useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
+import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER } from '../ai-agent-model';
+import { AIAgentModel, detectProvider, MODEL_OPTIONS_BY_PROVIDER, PROVIDER_INFO } from '../ai-agent-model';
+
+/**
+ * Maps LLMProviderType enum values to the form's provider type strings.
+ */
+const LLM_PROVIDER_TYPE_TO_FORM_ID: Record<LLMProviderType, string | undefined> = {
+  [LLMProviderType.LLM_PROVIDER_TYPE_OPENAI]: 'openai',
+  [LLMProviderType.LLM_PROVIDER_TYPE_ANTHROPIC]: 'anthropic',
+  [LLMProviderType.LLM_PROVIDER_TYPE_GOOGLE]: 'google',
+  [LLMProviderType.LLM_PROVIDER_TYPE_BEDROCK]: 'bedrock',
+  [LLMProviderType.LLM_PROVIDER_TYPE_OPENAI_COMPATIBLE]: 'openaiCompatible',
+  [LLMProviderType.LLM_PROVIDER_TYPE_UNSPECIFIED]: undefined,
+};
 
 type LocalAIAgent = {
   displayName: string;
@@ -104,7 +115,7 @@ type LocalAIAgent = {
     systemPrompt: string;
     selectedMcpServers: string[];
   }>;
-  gatewayId?: string;
+  llmProvider?: string;
   agentCard?: {
     iconUrl: string;
     documentationUrl: string;
@@ -180,6 +191,10 @@ const extractProviderInfo = (provider: AIAgent_Provider): { apiKeyTemplate: stri
       apiKeyTemplate = provider.provider.value.apiKey;
       baseUrl = provider.provider.value.baseUrl;
       break;
+    case 'bedrock':
+      // Bedrock has no apiKey/baseUrl; region is stored via the baseUrl field
+      baseUrl = provider.provider.value.region || '';
+      break;
     default:
       break;
   }
@@ -191,7 +206,7 @@ const extractProviderInfo = (provider: AIAgent_Provider): { apiKeyTemplate: stri
  * Creates updated provider with new API key reference
  */
 const createUpdatedProvider = (
-  providerCase: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | undefined,
+  providerCase: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock' | undefined,
   apiKeyRef: string,
   baseUrl: string
 ): AIAgent_Provider => {
@@ -223,6 +238,15 @@ const createUpdatedProvider = (
           value: create(AIAgent_Provider_OpenAICompatibleSchema, {
             apiKey: apiKeyRef,
             baseUrl,
+          }),
+        },
+      });
+    case 'bedrock':
+      return create(AIAgent_ProviderSchema, {
+        provider: {
+          case: 'bedrock',
+          value: create(AIAgent_Provider_BedrockSchema, {
+            region: baseUrl || undefined, // region is passed via baseUrl field for now
           }),
         },
       });
@@ -325,27 +349,16 @@ export const AIAgentConfigurationTab = () => {
   const { id } = routeApi.useParams();
   const { data: aiAgentData } = useGetAIAgentQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateAIAgent, isPending: isUpdateAIAgentPending } = useUpdateAIAgentMutation();
-  const { data: mcpServersData } = useListMCPServersQuery();
+  const { data: mcpServersData } = useListAigwMCPServersQuery(undefined, { enabled: !!config.aigwUrl });
   const { data: secretsData } = useListSecretsQuery();
-  const { data: gatewaysData } = useListGatewaysQuery();
-
-  const [editState, setEditState] = useState<{ isEditing: boolean; editedAgentData: LocalAIAgent | null }>({
-    isEditing: false,
-    editedAgentData: null,
-  });
-  const isEditing = editState.isEditing;
-  const editedAgentData = editState.editedAgentData;
-  const setIsEditing = (v: boolean) => setEditState((prev) => ({ ...prev, isEditing: v }));
-  const setEditedAgentData = (v: LocalAIAgent | null) => setEditState((prev) => ({ ...prev, editedAgentData: v }));
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedAgentData, setEditedAgentData] = useState<LocalAIAgent | null>(null);
   const [expandedSubagent, setExpandedSubagent] = useState<string | undefined>(undefined);
   const [systemPromptMode, setSystemPromptMode] = useState<MarkdownEditorMode>('editor');
   const [subagentPromptModes, setSubagentPromptModes] = useState<Record<number, MarkdownEditorMode>>({});
 
-  // Feature flag: when true, use legacy API key mode (hardcoded providers, no gateway API calls)
-  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
-
-  // Check if agent is using gateway AND feature flag allows it
-  const isUsingGateway = !isLegacyApiKeyMode && !!aiAgentData?.aiAgent?.gateway?.virtualGatewayId;
+  // Check if agent is using gateway (has an llmProvider configured)
+  const isUsingGateway = !!aiAgentData?.aiAgent?.gateway?.llmProvider;
 
   const getResourceTierFromAgent = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) {
@@ -391,7 +404,7 @@ export const AIAgentConfigurationTab = () => {
           systemPrompt: subagent.systemPrompt,
           selectedMcpServers: Object.values(subagent.mcpServers || {}).map((server) => server.id),
         })),
-        gatewayId: aiAgentData.aiAgent.gateway?.virtualGatewayId,
+        llmProvider: aiAgentData.aiAgent.gateway?.llmProvider,
         agentCard: aiAgentData.aiAgent.agentCard
           ? {
               iconUrl: aiAgentData.aiAgent.agentCard.iconUrl || '',
@@ -418,86 +431,74 @@ export const AIAgentConfigurationTab = () => {
 
   const selectedProvider = displayData?.provider?.provider.case;
 
-  // Fetch providers and models from AI Gateway when using gateway
-  const { data: providersData, isLoading: isLoadingProviders } = useListModelProvidersQuery(
-    { filter: 'enabled = "true"' },
+  // Fetch LLM providers from AI Gateway v2 when using gateway
+  const { data: providersData, isLoading: isLoadingProviders } = useListLLMProvidersQuery(
+    {},
     { enabled: isUsingGateway }
   );
 
-  const { data: modelsData, isLoading: isLoadingModels } = useListModelsQuery(
-    {
-      filter: selectedProvider ? `provider = "${selectedProvider}" AND enabled = "true"` : 'enabled = "true"',
-    },
-    { enabled: isUsingGateway && !!selectedProvider }
-  );
-
-  // Get available providers - from gateway API or hardcoded
+  // Get available providers - from aigw v2 API or hardcoded
   const availableProviders = useMemo(() => {
-    if (isUsingGateway && providersData?.modelProviders) {
-      // Map gateway providers to our format (already filtered for enabled at API level)
-      return providersData.modelProviders.map((provider) => {
-        // Strip "model_providers/" prefix from provider name
-        const providerName = provider.name.replace(/^model_providers\//, '');
-        const providerId = providerName.toLowerCase().replace(/\s+/g, '');
-
-        return {
-          id: providerId,
-          label: provider.displayName || providerName,
-          icon: MODEL_OPTIONS_BY_PROVIDER[providerId as keyof typeof MODEL_OPTIONS_BY_PROVIDER]?.icon || '',
-        };
-      });
+    if (isUsingGateway && providersData?.llmProviders) {
+      return providersData.llmProviders
+        .filter((provider) => provider.enabled && LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type] !== undefined)
+        .map((provider) => {
+          const formTypeId = LLM_PROVIDER_TYPE_TO_FORM_ID[provider.type]!;
+          return {
+            id: provider.name,
+            label: provider.displayName || provider.name,
+            icon: PROVIDER_INFO[formTypeId as keyof typeof PROVIDER_INFO]?.icon || '',
+            type: provider.type,
+          };
+        });
     }
     // Fallback to hardcoded providers
     return Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([id, provider]) => ({
       id,
       label: provider.label,
       icon: provider.icon,
+      type: undefined as LLMProviderType | undefined,
     }));
   }, [isUsingGateway, providersData]);
 
-  // Get available models - from gateway API or hardcoded
+  // Get available models - from aigw provider's models or hardcoded
   const filteredModels = useMemo(() => {
-    if (isUsingGateway && modelsData?.models) {
-      // Map gateway models to our format (already filtered for enabled at API level)
-      return modelsData.models.map((model) => {
-        // Strip "models/provider/" prefix from model name
-        const modelName = model.name.split('/').pop() || model.name;
-
-        return {
+    if (isUsingGateway && providersData?.llmProviders && displayData?.llmProvider) {
+      const provider = providersData.llmProviders.find((p) => p.name === displayData.llmProvider);
+      if (provider) {
+        return provider.models.map((modelName) => ({
           value: modelName,
-          name: model.displayName || modelName,
-          description: model.description || '',
-        };
-      });
+          name: modelName,
+          description: '',
+        }));
+      }
+      return [];
     }
     // Fallback to hardcoded models
     if (!selectedProvider) return [];
     const providerData = MODEL_OPTIONS_BY_PROVIDER[selectedProvider as keyof typeof MODEL_OPTIONS_BY_PROVIDER];
     return providerData?.models || [];
-  }, [isUsingGateway, modelsData, selectedProvider]);
+  }, [isUsingGateway, providersData, displayData?.llmProvider, selectedProvider]);
 
   // Get available MCP servers (includes placeholders for missing servers that agent references)
   const availableMcpServers = useMemo(() => {
     const existingServers = mcpServersData?.mcpServers ?? [];
-    const existingIds = new Set(existingServers.map((s) => s.id));
+    const existingNames = new Set(existingServers.map((s) => s.name));
 
-    // Find missing server IDs referenced by the agent
-    const connectedServerIds = Object.values(aiAgentData?.aiAgent?.mcpServers ?? {}).map((s) => s.id);
-    const missingServerIds = connectedServerIds.filter((id) => !existingIds.has(id));
+    // Find missing server names referenced by the agent
+    const connectedServerNames = Object.values(aiAgentData?.aiAgent?.mcpServers ?? {}).map((s) => s.id);
+    const missingServerNames = connectedServerNames.filter((name) => !existingNames.has(name));
 
-    // Create placeholders for missing servers
-    // Note: Cast required because MCPServer is a protobuf Message type with internal properties
-    const missingServers = missingServerIds.map(
-      (id) =>
-        ({
-          id,
-          displayName: `${id} (deleted)`,
-          description: 'This MCP server no longer exists',
-          tools: {},
-          tags: {},
-          state: MCPServer_State.UNSPECIFIED,
-          url: '',
-        }) as MCPServer
+    // Create placeholders for missing servers (disabled + unspecified type)
+    const missingServers = missingServerNames.map((name) =>
+      create(MCPServerSchema, {
+        name,
+        description: 'This MCP server no longer exists',
+        tools: [],
+        enabled: false,
+        type: MCPServerType.MCP_SERVER_TYPE_UNSPECIFIED,
+        url: '',
+      })
     );
 
     return [...existingServers, ...missingServers];
@@ -515,17 +516,6 @@ export const AIAgentConfigurationTab = () => {
         name: secret.id,
       }));
   }, [secretsData]);
-
-  // Get gateway display name
-  const gatewayDisplayName = useMemo(() => {
-    if (!(aiAgentData?.aiAgent?.gateway?.virtualGatewayId && gatewaysData?.gateways)) {
-      return null;
-    }
-    const gateway = gatewaysData.gateways.find(
-      (gw) => gw.name.split('/').pop() === aiAgentData.aiAgent!.gateway?.virtualGatewayId
-    );
-    return gateway?.displayName || aiAgentData.aiAgent!.gateway!.virtualGatewayId;
-  }, [aiAgentData, gatewaysData]);
 
   const updateField = useCallback(
     (updates: Partial<LocalAIAgent>) => {
@@ -738,84 +728,81 @@ export const AIAgentConfigurationTab = () => {
       }
     }
 
-    const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
-
-    // Build MCP servers map
-    const mcpServersMap: Record<string, { id: string }> = {};
-    for (const serverId of displayData.selectedMcpServers) {
-      mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
-    }
-
-    // Build subagents map
-    const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
-    for (const subagent of displayData.subagents) {
-      const trimmedName = subagent.name.trim();
-      if (trimmedName) {
-        const subagentMcpMap: Record<string, { id: string }> = {};
-        for (const serverId of subagent.selectedMcpServers) {
-          subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
-        }
-
-        subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
-          description: subagent.description?.trim() ?? '',
-          systemPrompt: subagent.systemPrompt.trim(),
-          mcpServers: subagentMcpMap,
-        });
-      }
-    }
-
-    const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
-    // When using gateway, keep the existing API key reference; otherwise use the selected secret
-    const currentProvider = aiAgentData.aiAgent!.provider;
-    const apiKeyRef =
-      isUsingGateway && currentProvider
-        ? extractProviderInfo(currentProvider).apiKeyTemplate
-        : `\${secrets.${displayData.apiKeySecret}}`;
-    const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
-
-    const gatewayId = displayData.gatewayId;
-    const gatewayConfig =
-      gatewayId && gatewayId.trim() !== ''
-        ? create(AIAgent_GatewayConfigSchema, { virtualGatewayId: gatewayId })
-        : undefined;
-
-    const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
-      if (!card) {
-        return false;
-      }
-      return !!(
-        card.iconUrl ||
-        card.documentationUrl ||
-        card.skills?.length > 0 ||
-        card.provider?.organization ||
-        card.provider?.url
-      );
-    };
-
-    const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
-      !!(provider?.organization || provider?.url);
-
-    const agentCard =
-      displayData.agentCard && hasAgentCardData(displayData.agentCard)
-        ? create(AIAgent_AgentCardSchema, {
-            iconUrl: displayData.agentCard.iconUrl || undefined,
-            documentationUrl: displayData.agentCard.documentationUrl || undefined,
-            provider:
-              displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
-                ? create(AIAgent_AgentCard_ProviderSchema, {
-                    organization: displayData.agentCard.provider.organization || undefined,
-                    url: displayData.agentCard.provider.url || undefined,
-                  })
-                : undefined,
-            skills: displayData.agentCard.skills.map(sanitizeSkill),
-          })
-        : undefined;
-
-    const cpuShares = selectedTier?.cpu || '100m';
-    const memoryShares = selectedTier?.memory || '400M';
-    const serviceAccount = aiAgentData.aiAgent.serviceAccount;
-
     try {
+      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === displayData.resources.tier);
+
+      // Build MCP servers map
+      const mcpServersMap: Record<string, { id: string }> = {};
+      for (const serverId of displayData.selectedMcpServers) {
+        mcpServersMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+      }
+
+      // Build subagents map
+      const subagentsMap: Record<string, ReturnType<typeof create<typeof AIAgent_SubagentSchema>>> = {};
+      for (const subagent of displayData.subagents) {
+        const trimmedName = subagent.name.trim();
+        if (trimmedName) {
+          const subagentMcpMap: Record<string, { id: string }> = {};
+          for (const serverId of subagent.selectedMcpServers) {
+            subagentMcpMap[serverId] = create(AIAgent_MCPServerSchema, { id: serverId });
+          }
+
+          subagentsMap[trimmedName] = create(AIAgent_SubagentSchema, {
+            description: subagent.description?.trim() ?? '',
+            systemPrompt: subagent.systemPrompt.trim(),
+            mcpServers: subagentMcpMap,
+          });
+        }
+      }
+
+      const tagsMap = buildTagsMap(aiAgentData.aiAgent!.tags, displayData.tags);
+      // When using gateway, keep the existing API key reference; otherwise use the selected secret
+      const currentProvider = aiAgentData.aiAgent!.provider;
+      const apiKeyRef =
+        isUsingGateway && currentProvider
+          ? extractProviderInfo(currentProvider).apiKeyTemplate
+          : `\${secrets.${displayData.apiKeySecret}}`;
+      const updatedProvider = createUpdatedProvider(displayData.provider.provider.case, apiKeyRef, displayData.baseUrl);
+
+      const gatewayConfig =
+        displayData.llmProvider && displayData.llmProvider.trim() !== ''
+          ? create(AIAgent_GatewayConfigSchema, {
+              llmProvider: displayData.llmProvider,
+            })
+          : undefined;
+
+      const hasAgentCardData = (card?: LocalAIAgent['agentCard']): boolean => {
+        if (!card) {
+          return false;
+        }
+        return !!(
+          card.iconUrl ||
+          card.documentationUrl ||
+          card.skills?.length > 0 ||
+          card.provider?.organization ||
+          card.provider?.url
+        );
+      };
+
+      const hasProviderData = (provider?: { organization?: string; url?: string }): boolean =>
+        !!(provider?.organization || provider?.url);
+
+      const agentCard =
+        displayData.agentCard && hasAgentCardData(displayData.agentCard)
+          ? create(AIAgent_AgentCardSchema, {
+              iconUrl: displayData.agentCard.iconUrl || undefined,
+              documentationUrl: displayData.agentCard.documentationUrl || undefined,
+              provider:
+                displayData.agentCard.provider && hasProviderData(displayData.agentCard.provider)
+                  ? create(AIAgent_AgentCard_ProviderSchema, {
+                      organization: displayData.agentCard.provider.organization || undefined,
+                      url: displayData.agentCard.provider.url || undefined,
+                    })
+                  : undefined,
+              skills: displayData.agentCard.skills.map(sanitizeSkill),
+            })
+          : undefined;
+
       await updateAIAgent(
         create(UpdateAIAgentRequestSchema, {
           id,
@@ -826,10 +813,10 @@ export const AIAgentConfigurationTab = () => {
             maxIterations: displayData.maxIterations,
             provider: updatedProvider,
             systemPrompt: displayData.systemPrompt,
-            serviceAccount,
+            serviceAccount: aiAgentData.aiAgent.serviceAccount,
             resources: {
-              cpuShares,
-              memoryShares,
+              cpuShares: selectedTier?.cpu || '100m',
+              memoryShares: selectedTier?.memory || '400M',
             },
             mcpServers: mcpServersMap,
             subagents: subagentsMap,
@@ -861,7 +848,7 @@ export const AIAgentConfigurationTab = () => {
         }),
         {
           onSuccess: () => {
-            toast.success('AI agent updated successfully');
+            toast.success('AI agent updated');
             setIsEditing(false);
             setEditedAgentData(null);
           },
@@ -881,24 +868,23 @@ export const AIAgentConfigurationTab = () => {
     if (!aiAgentData?.aiAgent?.mcpServers) {
       return [];
     }
-    const connectedServerIds = Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id);
-    const existingServersMap = new Map((mcpServersData?.mcpServers ?? []).map((s) => [s.id, s]));
+    const connectedServerNames = Object.values(aiAgentData.aiAgent.mcpServers).map((server) => server.id);
+    const existingServersMap = new Map((mcpServersData?.mcpServers ?? []).map((s) => [s.name, s]));
 
-    return connectedServerIds.map((id) => {
-      const existing = existingServersMap.get(id);
+    return connectedServerNames.map((name) => {
+      const existing = existingServersMap.get(name);
       if (existing) {
         return existing;
       }
       // Create placeholder for missing/deleted server
-      return {
-        id,
-        displayName: `${id} (deleted)`,
+      return create(MCPServerSchema, {
+        name,
         description: 'This MCP server no longer exists',
-        tools: {},
-        tags: {},
-        state: MCPServer_State.UNSPECIFIED,
+        tools: [],
+        enabled: false,
+        type: MCPServerType.MCP_SERVER_TYPE_UNSPECIFIED,
         url: '',
-      } as MCPServer;
+      });
     });
   }, [aiAgentData, mcpServersData]);
 
@@ -1096,7 +1082,8 @@ export const AIAgentConfigurationTab = () => {
                       );
 
                       return (
-                        <AccordionItem key={`subagent-${subagent.name || index}`} value={`subagent-${index}`}>
+                        // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for subagent items
+                        <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
                           <AccordionTrigger>
                             <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
                           </AccordionTrigger>
@@ -1109,7 +1096,7 @@ export const AIAgentConfigurationTab = () => {
                                   <Input
                                     id={`subagent-name-${index}`}
                                     onChange={(e) => handleUpdateSubagent(index, 'name', e.target.value)}
-                                    placeholder="e.g., code-reviewer"
+                                    placeholder="code-reviewer"
                                     value={subagent.name}
                                   />
                                 ) : (
@@ -1193,7 +1180,7 @@ export const AIAgentConfigurationTab = () => {
                 </CardTitle>
                 <Text variant="muted">
                   The service account is used by the agent to authenticate to other systems within the Redpanda Cloud
-                  Platform (e.g. MCP servers, Redpanda broker).
+                  Platform (for example, MCP servers, Redpanda broker).
                 </Text>
               </CardHeader>
               <CardContent className="px-4 pb-4">
@@ -1243,95 +1230,154 @@ export const AIAgentConfigurationTab = () => {
             <CardContent className="px-4 pb-4">
               {isEditing ? (
                 <div className="space-y-4">
-                  {/* AI Gateway - show if configured (read-only in edit mode) */}
-                  {gatewayDisplayName && (
-                    <div className="space-y-2">
-                      <Label>AI Gateway</Label>
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text variant="muted">{gatewayDisplayName}</Text>
-                      </div>
-                      <Text className="text-xs" variant="muted">
-                        Gateway configuration cannot be changed after creation
-                      </Text>
-                    </div>
-                  )}
-                  {/* Provider - now editable */}
+                  {/* Provider */}
                   <div className="space-y-2">
-                    <Label htmlFor="provider">Provider</Label>
-                    <Select
-                      disabled={isLoadingProviders}
-                      onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible') => {
-                        // Get models for the new provider
-                        const providerModels = isUsingGateway ? [] : MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
-                        const firstModel =
-                          providerModels.length > 0 && providerModels[0] ? providerModels[0].value : displayData.model;
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="provider">Provider</Label>
+                      {isUsingGateway && displayData?.llmProvider && (
+                        <a
+                          className="flex items-center gap-1 text-primary text-xs hover:underline"
+                          href={`/clusters/${config.clusterId}/adp/llm-providers/${displayData.llmProvider}?tab=overview`}
+                        >
+                          View provider
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    {isUsingGateway ? (
+                      <Select
+                        disabled={isLoadingProviders || availableProviders.length === 0}
+                        onValueChange={(value) => {
+                          // Find the selected aigw provider to infer the provider type
+                          const selectedGwProvider = availableProviders.find((p) => p.id === value);
+                          const formTypeId = (
+                            selectedGwProvider?.type != null
+                              ? (LLM_PROVIDER_TYPE_TO_FORM_ID[selectedGwProvider.type] ?? 'openaiCompatible')
+                              : displayData.provider?.provider.case || 'openai'
+                          ) as 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
 
-                        updateField({
-                          provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
-                          model: firstModel,
-                          apiKeySecret: '',
-                        });
-                      }}
-                      value={displayData.provider?.provider.case}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
-                          {Boolean(displayData.provider?.provider.case) && (
-                            <div className="flex items-center gap-2">
-                              <img
-                                alt={
-                                  MODEL_OPTIONS_BY_PROVIDER[
-                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
-                                  ]?.label
-                                }
-                                className="h-4 w-4"
-                                src={
-                                  MODEL_OPTIONS_BY_PROVIDER[
-                                    displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
-                                  ]?.icon
-                                }
-                              />
-                              <span>
-                                {displayData.provider.provider.case === 'openai' && 'OpenAI'}
-                                {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
-                                {displayData.provider.provider.case === 'google' && 'Google'}
-                                {displayData.provider.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
-                              </span>
-                            </div>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProviders.map((provider) => (
-                          <SelectItem key={provider.id} value={provider.id}>
-                            <div className="flex items-center gap-2">
-                              {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
-                              <span>{provider.label}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          // When switching to a bedrock provider, update the region from the LLM provider config
+                          let baseUrl = displayData.baseUrl || '';
+                          if (formTypeId === 'bedrock' && providersData?.llmProviders) {
+                            const fullProvider = providersData.llmProviders.find((p) => p.name === value);
+                            if (fullProvider?.providerConfig?.case === 'bedrockConfig') {
+                              baseUrl = fullProvider.providerConfig.value?.region || '';
+                            }
+                          }
+
+                          updateField({
+                            llmProvider: value,
+                            provider: createUpdatedProvider(formTypeId, '', baseUrl),
+                            baseUrl,
+                            model: '',
+                          });
+                        }}
+                        value={displayData?.llmProvider}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
+                            {displayData?.llmProvider &&
+                              (() => {
+                                const matched = availableProviders.find((p) => p.id === displayData.llmProvider);
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    {matched?.icon && (
+                                      <img alt={matched.label} className="h-4 w-4" src={matched.icon} />
+                                    )}
+                                    <span>{matched?.label || displayData.llmProvider}</span>
+                                  </div>
+                                );
+                              })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProviders.map((provider) => (
+                            <SelectItem key={provider.id} value={provider.id}>
+                              <div className="flex items-center gap-2">
+                                {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
+                                <span>{provider.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        disabled={isLoadingProviders}
+                        onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock') => {
+                          const providerModels = MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
+                          const firstModel =
+                            providerModels.length > 0 && providerModels[0]
+                              ? providerModels[0].value
+                              : displayData.model;
+
+                          updateField({
+                            provider: createUpdatedProvider(value, '', displayData.baseUrl || ''),
+                            model: firstModel,
+                            apiKeySecret: '',
+                          });
+                        }}
+                        value={displayData.provider?.provider.case}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingProviders ? 'Loading providers...' : 'Select provider'}>
+                            {Boolean(displayData.provider?.provider.case) && (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  alt={
+                                    MODEL_OPTIONS_BY_PROVIDER[
+                                      displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                    ]?.label
+                                  }
+                                  className="h-4 w-4"
+                                  src={
+                                    MODEL_OPTIONS_BY_PROVIDER[
+                                      displayData.provider.provider.case as keyof typeof MODEL_OPTIONS_BY_PROVIDER
+                                    ]?.icon
+                                  }
+                                />
+                                <span>
+                                  {displayData.provider.provider.case === 'openai' && 'OpenAI'}
+                                  {displayData.provider.provider.case === 'anthropic' && 'Anthropic'}
+                                  {displayData.provider.provider.case === 'google' && 'Google'}
+                                  {displayData.provider.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                                </span>
+                              </div>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProviders.map((provider) => (
+                            <SelectItem key={provider.id} value={provider.id}>
+                              <div className="flex items-center gap-2">
+                                {provider.icon && <img alt={provider.label} className="h-4 w-4" src={provider.icon} />}
+                                <span>{provider.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
                   {/* Model - filtered by provider */}
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
-                    {displayData.provider?.provider.case === 'openaiCompatible' ||
-                    (isUsingGateway && filteredModels.length === 0 && !isLoadingModels) ? (
+                    {(!isUsingGateway && displayData.provider?.provider.case === 'openaiCompatible') ||
+                    (isUsingGateway && filteredModels.length === 0 && !isLoadingProviders) ? (
                       <Input
                         onChange={(e) => updateField({ model: e.target.value })}
-                        placeholder="Enter model name (e.g., llama-3.1-70b)"
+                        placeholder="llama-3.1-70b"
                         value={displayData.model}
                       />
                     ) : (
                       <Select
-                        disabled={isLoadingModels}
+                        disabled={isLoadingProviders}
                         onValueChange={(value) => updateField({ model: value })}
                         value={displayData.model}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={isLoadingModels ? 'Loading models...' : 'Select model'}>
+                          <SelectValue placeholder={isLoadingProviders ? 'Loading models...' : 'Select model'}>
                             {Boolean(displayData.model) && detectProvider(displayData.model) ? (
                               <div className="flex items-center gap-2">
                                 <img
@@ -1347,7 +1393,7 @@ export const AIAgentConfigurationTab = () => {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {isLoadingModels ? (
+                          {isLoadingProviders ? (
                             <div className="p-2">
                               <Text variant="muted">Loading models...</Text>
                             </div>
@@ -1441,24 +1487,25 @@ export const AIAgentConfigurationTab = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* AI Gateway - show if configured */}
-                  {gatewayDisplayName && (
-                    <div className="space-y-2">
-                      <Label>AI Gateway</Label>
-                      <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text>{gatewayDisplayName}</Text>
-                      </div>
-                    </div>
-                  )}
                   <div className="space-y-2">
                     <Label>Provider</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>
-                        {agent.provider?.provider.case === 'openai' && 'OpenAI'}
-                        {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
-                        {agent.provider?.provider.case === 'google' && 'Google'}
-                        {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
-                      </Text>
+                      {isUsingGateway && displayData?.llmProvider ? (
+                        <a
+                          className="flex items-center gap-1.5 text-primary text-sm hover:underline"
+                          href={`/clusters/${config.clusterId}/adp/llm-providers/${displayData.llmProvider}?tab=overview`}
+                        >
+                          {displayData.llmProvider}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <Text>
+                          {agent.provider?.provider.case === 'openai' && 'OpenAI'}
+                          {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
+                          {agent.provider?.provider.case === 'google' && 'Google'}
+                          {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
+                        </Text>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-2">

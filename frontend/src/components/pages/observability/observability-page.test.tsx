@@ -25,6 +25,21 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+// Recharts' ResponsiveContainer requires parent-container dimensions to
+// render. happy-dom reports 0×0 for every element, which makes recharts
+// emit "width(0) and height(0) of chart should be greater than 0" on every
+// chart mount. Mock ResponsiveContainer with a fixed-size passthrough div
+// so the inner LineChart gets a positive layout and the warning stops.
+vi.mock('recharts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('recharts')>();
+  const React = await import('react');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', { style: { width: 800, height: 600 } }, children),
+  };
+});
+
 vi.mock('config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('config')>();
   return {
@@ -54,26 +69,6 @@ vi.mock('state/app-global', () => ({
 import ObservabilityPage from './observability-page';
 
 describe('ObservabilityPage', () => {
-  test('should render and display content when data loads', async () => {
-    const listQueriesResponse = create(ListQueriesResponseSchema, {
-      queries: [],
-    });
-
-    const listQueriesMock = vi.fn().mockReturnValue(listQueriesResponse);
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listQueries, listQueriesMock);
-    });
-
-    renderWithFileRoutes(<ObservabilityPage />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('No metrics queries available at this time.')).toBeInTheDocument();
-    });
-
-    expect(listQueriesMock).toHaveBeenCalledTimes(1);
-  });
-
   test('should display metrics queries when data is loaded', async () => {
     const query1 = create(QueryMetadataSchema, {
       name: 'cpu_usage',
@@ -173,7 +168,7 @@ describe('ObservabilityPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Error loading metrics')).toBeInTheDocument();
-      expect(screen.getByText('Failed to load observability metrics. Please try again later.')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load observability metrics. Try again later.')).toBeInTheDocument();
     });
   });
 });

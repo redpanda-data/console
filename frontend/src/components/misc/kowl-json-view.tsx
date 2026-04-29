@@ -135,10 +135,8 @@ export const KowlJsonView = (props: { srcObj: object | string | null | undefined
     <Box
       display="block"
       height="96"
-      maxHeight="45rem" // no chakra space equivalent exists
-      minHeight="40"
       position="relative"
-      style={props.style}
+      style={{ minHeight: '10rem', maxHeight: '45rem', ...props.style }}
     >
       <Box h="full" position="absolute" ref={containerRef} w="full">
         <KowlEditor language="json" onMount={handleMount} options={READ_ONLY_EDITOR_OPTIONS} value={str} />

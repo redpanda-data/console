@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 'use client';
 
 import { Code } from '@connectrpc/connect';
@@ -106,7 +104,6 @@ export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
 ];
 
 export const ShadowLinkListPage = () => {
-  'use no memo';
   const navigate = useNavigate();
 
   // React Query hooks

@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Link, useLocation } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/redpanda-ui/components/avatar';
 import {

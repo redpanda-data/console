@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import {
   Button,
   Checkbox,
@@ -247,7 +245,7 @@ const ImportExportTab: FC = () => {
                 } else {
                   toast({
                     status: 'success',
-                    description: 'Settings imported successfully',
+                    description: 'Settings imported',
                   });
                 }
                 setImportCode('');
@@ -267,7 +265,7 @@ const ImportExportTab: FC = () => {
               .then(() => {
                 toast({
                   status: 'success',
-                  description: 'Preferences copied to clipboard!',
+                  description: 'Preferences copied to clipboard',
                 });
               })
               .catch(navigatorClipboardErrorHandler);

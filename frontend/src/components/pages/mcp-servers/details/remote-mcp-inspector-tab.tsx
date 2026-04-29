@@ -11,8 +11,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: leave for now */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi } from '@tanstack/react-router';
 
@@ -23,6 +21,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
+import { Progress } from 'components/redpanda-ui/components/progress';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
@@ -37,7 +36,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useRef, useState } from 'react';
-import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
+import {
+  type MCPStreamProgress,
+  useGetMCPServerQuery,
+  useListMCPServerTools,
+  useStreamMCPServerToolMutation,
+} from 'react-query/api/remote-mcp';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 
@@ -145,6 +149,19 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
 const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
+const PROGRESS_MAX_PERCENT = 100;
+
+const normalizeProgressPercent = (progress: number | undefined, total: number | undefined): number | undefined => {
+  if (progress === undefined || total === undefined || total <= 0) {
+    return;
+  }
+  const percent = Math.round((progress / total) * PROGRESS_MAX_PERCENT);
+  if (!Number.isFinite(percent)) {
+    return;
+  }
+  return Math.max(0, Math.min(PROGRESS_MAX_PERCENT, percent));
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = routeApi.useParams();
@@ -161,13 +178,14 @@ export const RemoteMCPInspectorTab = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
+  const [streamProgress, setStreamProgress] = useState<MCPStreamProgress | null>(null);
   const {
     data: serverToolResponse,
     mutate: callMCPServerTool,
     isPending: isServerToolPending,
     error: toolError,
     reset: resetMCPServerToolCall,
-  } = useCallMCPServerToolMutation();
+  } = useStreamMCPServerToolMutation();
 
   const {
     data: mcpServerTools,
@@ -246,8 +264,7 @@ export const RemoteMCPInspectorTab = () => {
           // Validate that the topic_name exists in the available topics
           const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
           if (!topicExists) {
-            errors[requiredField] =
-              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+            errors[requiredField] = `Topic '${value}' does not exist. Select a valid topic name or create a new one.`;
             continue;
           }
         }
@@ -346,21 +363,18 @@ export const RemoteMCPInspectorTab = () => {
 
     const parameters = (toolParameters as Record<string, unknown>) || {};
 
+    setStreamProgress(null);
+
     callMCPServerTool(
       {
         serverUrl: mcpServerData.mcpServer.url,
         toolName: selectedTool,
         parameters,
         signal: abortController.signal,
+        onProgress: (update) => setStreamProgress((prev) => ({ ...prev, ...update })),
       },
       {
-        onError: (error) => {
-          if (error.message !== 'Request was cancelled') {
-            toast.error(error.message);
-          }
-        },
         onSettled: () => {
-          // Clear the abort controller reference when request completes
           if (abortControllerRef.current === abortController) {
             abortControllerRef.current = null;
           }
@@ -476,6 +490,8 @@ export const RemoteMCPInspectorTab = () => {
                         const initialData = initializeFormData(tool.inputSchema as JSONSchemaType);
                         setToolParameters(initialData);
                         resetMCPServerToolCall();
+                        // Clear progress from the previous tool's in-flight stream
+                        setStreamProgress(null);
                         // Clear validation errors when switching tools
                         setValidationErrors({});
                       }}
@@ -558,7 +574,7 @@ export const RemoteMCPInspectorTab = () => {
                                           });
 
                                           await createTopic(request);
-                                          toast.success(`Topic '${newTopicName}' created successfully`);
+                                          toast.success(`Topic '${newTopicName}' created`);
                                           await refetchTopics();
 
                                           // Use the provided path and updateField to update the correct field
@@ -608,6 +624,17 @@ export const RemoteMCPInspectorTab = () => {
                       {Boolean(isServerToolPending) && (
                         <div className="space-y-2">
                           <Label className="font-medium text-sm">Response</Label>
+                          {Boolean(streamProgress) && (
+                            <div className="space-y-1" data-testid="mcp-tool-progress">
+                              <Progress
+                                testId="mcp-tool-progress-bar"
+                                value={normalizeProgressPercent(streamProgress?.progress, streamProgress?.total)}
+                              />
+                              <Text className="text-muted-foreground" variant="small">
+                                {streamProgress?.statusMessage ?? streamProgress?.status ?? 'Running tool...'}
+                              </Text>
+                            </div>
+                          )}
                           <div className="flex flex-col space-y-3">
                             <Skeleton className="h-[250px] w-full rounded-xl" />
                             <div className="space-y-2">

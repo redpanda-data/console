@@ -1,11 +1,8 @@
-'use no memo';
-
 import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link as TanStackRouterLink } from '@tanstack/react-router';
-import { generatePassword } from 'components/pages/acls/user-create';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -50,6 +47,7 @@ import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
+import { generatePassword } from 'utils/password';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { SASL_MECHANISMS } from 'utils/user';
@@ -135,7 +133,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         username: defaultUsername || '',
         password: generatePassword(30, false),
         saslMechanism: defaultSaslMechanism || 'SCRAM-SHA-256',
-        superuser: true,
+        grantTopicPermissions: true,
         specialCharactersEnabled: false,
         passwordLength: 30,
         consumerGroup: defaultConsumerGroup || '',
@@ -360,14 +358,20 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     }, [form]);
 
     useImperativeHandle(ref, () => ({
-      triggerSubmit: async () => {
+      triggerSubmit: async (signal?: AbortSignal) => {
+        if (signal?.aborted) {
+          return { success: false };
+        }
+
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
-          // Service account doesn't use form validation
-          const userData = form.getValues(); // Pass dummy data
+          const userData = form.getValues();
           return handleSubmit(userData);
         }
 
         const isUserFormValid = await form.trigger();
+        if (signal?.aborted) {
+          return { success: false };
+        }
         if (isUserFormValid) {
           const userData = form.getValues();
           return handleSubmit(userData);
@@ -512,7 +516,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         )}
                       </div>
 
-                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && (
+                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
                         <Alert variant="info">
                           <AlertDescription>
                             A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will
@@ -531,7 +535,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               <CircleAlert className="h-4 w-4" /> User does not have required permissions
                             </AlertTitle>
                             <AlertDescription>
-                              <Text variant="small">
+                              <Text as="div" variant="small">
                                 The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
                                 <b>{topicName}</b> topic:
                                 <List>
@@ -564,7 +568,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               <CircleAlert className="h-4 w-4" /> User has required permissions
                             </AlertTitle>
                             <AlertDescription>
-                              <Text variant="small">
+                              <Text as="div" variant="small">
                                 The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
                                 <b>{topicName}</b> topic:
                                 <List>
@@ -661,7 +665,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         <FormField
                           control={form.control}
                           disabled={isPending || isReadOnly}
-                          name="superuser"
+                          name="grantTopicPermissions"
                           render={({ field }) => (
                             <FormItem>
                               <div className="flex flex-col gap-2">
@@ -694,11 +698,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                       <AlertDescription>
                                         <Text variant="small">
                                           You will need to configure{' '}
-                                          <TanStackRouterLink params={{ tab: 'acls' }} to="/security/$tab">
-                                            ACLs
-                                          </TanStackRouterLink>{' '}
-                                          for custom user permissions if you want the user to be able to read from the
-                                          topic.
+                                          <TanStackRouterLink to="/security/acls">ACLs</TanStackRouterLink> for custom
+                                          user permissions if you want the user to be able to read from the topic.
                                         </Text>
                                       </AlertDescription>
                                     </Alert>
@@ -758,7 +759,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                 <CircleAlert className="h-4 w-4" /> User has required consumer group permissions
                               </AlertTitle>
                               <AlertDescription>
-                                <Text variant="small">
+                                <Text as="div" variant="small">
                                   The user <b>{existingUserSelected?.name}</b> has the following permissions for the{' '}
                                   <b>{watchedConsumerGroup}</b> consumer group:
                                   <List>

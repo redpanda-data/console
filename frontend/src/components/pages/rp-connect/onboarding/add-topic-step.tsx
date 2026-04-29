@@ -25,6 +25,7 @@ import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topi
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { isFalsy } from 'utils/falsy';
@@ -104,18 +105,36 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
     const isPending = createTopicMutation.isPending;
 
+    // The RF field is readOnly in advanced-topic-settings, so the default is
+    // also the final value. Clamp to broker count so single-broker clusters
+    // (e.g. local-byoc) don't hit "not enough replicas" on CreateTopic.
+    const { data: kafkaInfo } = useGetKafkaInfoQuery();
+    const brokersOnline = kafkaInfo?.brokersOnline ?? 0;
+    const defaultReplicationFactor =
+      brokersOnline > 0
+        ? Math.min(TOPIC_FORM_DEFAULTS.replicationFactor, brokersOnline)
+        : TOPIC_FORM_DEFAULTS.replicationFactor;
+
     const defaultValues = useMemo(
       () => ({
         ...TOPIC_FORM_DEFAULTS,
+        replicationFactor: defaultReplicationFactor,
         topicName: defaultTopicName || TOPIC_FORM_DEFAULTS.topicName,
       }),
-      [defaultTopicName]
+      [defaultTopicName, defaultReplicationFactor]
     );
 
+    // Pass defaultValues AND values so react-hook-form reactively updates
+    // replicationFactor when the KafkaInfo query resolves after mount. The
+    // `values` prop is rhf's built-in mechanism for external reactive state;
+    // `keepDirtyValues` prevents fields the user has already touched from
+    // being overwritten when kafkaInfo lands late.
     const form = useForm<AddTopicFormData>({
       resolver: zodResolver(addTopicFormSchema),
       mode: 'onChange',
       defaultValues,
+      values: defaultValues,
+      resetOptions: { keepDirtyValues: true },
     });
 
     const watchedTopicName = useWatch({
@@ -147,7 +166,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       }
       if (topicConfig && !topicConfig.error) {
         const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
-        form.reset(allTopicValues, { keepDefaultValues: false });
+        // Override the form-level `keepDirtyValues: true` default — when a user
+        // selects an existing topic, its config must fully replace any partial
+        // input they've made.
+        form.reset(allTopicValues, { keepDefaultValues: false, keepDirtyValues: false });
       } else {
         form.setValue('topicName', existingTopicSelected.topicName, {
           shouldDirty: false,
@@ -210,7 +232,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
 
           return {
             success: true,
-            message: `Created topic "${data.topicName}" successfully!`,
+            message: `Topic "${data.topicName}" created`,
             data,
           };
         } catch (error) {
@@ -237,15 +259,21 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     }, [form]);
 
     useImperativeHandle(ref, () => ({
-      triggerSubmit: async () => {
+      triggerSubmit: async (signal?: AbortSignal) => {
+        if (signal?.aborted) {
+          return { success: false };
+        }
         const isValid = await form.trigger();
+        if (signal?.aborted) {
+          return { success: false };
+        }
         if (isValid) {
           const data = form.getValues();
           return handleSubmit(data);
         }
         return {
           success: false,
-          message: 'Please fix the form errors before proceeding',
+          message: 'Fix the form errors before proceeding',
           error: 'Form validation failed',
         };
       },

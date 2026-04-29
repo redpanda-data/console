@@ -1,5 +1,3 @@
-'use no memo';
-
 import {
   Alert,
   AlertIcon,
@@ -81,7 +79,10 @@ const ConfigEditorForm: FC<{
     },
   });
 
-  const hasInfiniteValue = editedEntry.frontendFormat && ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat);
+  const hasInfiniteValue =
+    editedEntry.frontendFormat &&
+    ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat) &&
+    !editedEntry.noInfiniteValue;
   const valueTypeOptions: Array<{
     label: string;
     value: Inputs['valueType'];
@@ -124,7 +125,7 @@ const ConfigEditorForm: FC<{
         status: 'success',
         description: (
           <span>
-            Successfully updated config <code>{editedEntry.name}</code>
+            Config <code>{editedEntry.name}</code> updated
           </span>
         ),
       });
@@ -441,6 +442,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
     case 'SELECT':
       return (
         <SingleSelect
+          chakraStyles={{ container: (base) => ({ ...base, minWidth: '240px' }) }}
           className={p.className}
           onChange={onChange}
           options={

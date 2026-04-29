@@ -34,7 +34,7 @@ import './globals.css';
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -46,10 +46,12 @@ import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
+import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { NotFoundPage } from './components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routeTree } from './routeTree.gen';
+import { installUISettingsSideEffects } from './state/ui';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
@@ -97,7 +99,12 @@ const App = () => {
   const developerView = useDeveloperView();
 
   useEffect(() => {
-    setup(EMPTY_SETUP_ARGS);
+    const setupTeardown = setup(EMPTY_SETUP_ARGS);
+    const uiSettingsTeardown = installUISettingsSideEffects();
+    return () => {
+      uiSettingsTeardown();
+      setupTeardown?.();
+    };
   }, []);
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp

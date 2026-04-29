@@ -31,6 +31,10 @@ export default defineConfig({
           'babel-plugin-react-compiler',
           {
             target: '18',
+            compilationMode: 'annotation',
+            panicThreshold: 'critical_errors',
+            // In annotation mode, this still gates which files CAN be opted in.
+            // Files excluded here are ineligible even with 'use memo'.
             sources: (filename: string) => {
               if (filename.includes('/lib/redpanda-ui/')) {
                 return false;
@@ -52,6 +56,7 @@ export default defineConfig({
     pluginYaml(),
     pluginModuleFederation({
       ...moduleFederationConfig,
+      dts: false,
     }),
     pluginNodePolyfill({
       globals: { process: true },
@@ -82,19 +87,16 @@ export default defineConfig({
       credentials: true,
     },
     proxy: [
-      // AI Gateway API - proxy to separate AI Gateway service
-      // Matches: /.redpanda/api/redpanda.api.aigateway.v1.*
-      // Proto package is: redpanda.api.aigateway.v1 (includes .api)
-      // AI Gateway now expects the full path with .api
-      ...(process.env.AI_GATEWAY_URL
+      // AIGW v2 API - proxy to new AI Gateway management API (LLMProviderService, ModelService)
+      ...(process.env.AIGW_URL
         ? [
             {
-              context: ['/.redpanda/api/redpanda.api.aigateway.v1'],
-              target: process.env.AI_GATEWAY_URL,
+              context: ['/.aigw/api'],
+              target: process.env.AIGW_URL,
               changeOrigin: true,
               secure: false,
               logLevel: 'debug',
-              // No pathRewrite - AI Gateway expects full path with .api
+              pathRewrite: { '^/\\.aigw/api': '' },
             },
           ]
         : []),
@@ -117,7 +119,7 @@ export default defineConfig({
     },
   },
   performance: {
-    buildCache: true,
+    buildCache: false,
   },
   output: {
     distPath: {

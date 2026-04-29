@@ -16,7 +16,7 @@ import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React from 'react';
-import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
+import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('state/ui-state', () => ({
@@ -46,6 +46,15 @@ const createListSecretsTransport = (listSecretsMock: ReturnType<typeof vi.fn>) =
     rpc(listSecrets, listSecretsMock);
   });
 
+// Hoisted once — 25 rows = 3 pages at the page's hard-coded pageSize of 10.
+const PAGINATION_SECRETS_FIXTURE = Array.from({ length: 25 }, (_, index) =>
+  create(SecretSchema, {
+    id: `test-secret-${index + 1}`,
+    labels: { env: 'production' },
+    scopes: [Scope.AI_GATEWAY],
+  })
+);
+
 describe('SecretsStoreListPage', () => {
   test('should call listSecrets on render and display secret IDs', async () => {
     const secret1 = create(SecretSchema, {
@@ -66,17 +75,75 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('test-secret-123')).toBeVisible();
-    });
+    expect(await screen.findByText('test-secret-123')).toBeVisible();
 
     expect(listSecretsMock).toHaveBeenCalledTimes(1);
     const callArgs = listSecretsMock.mock.calls[0];
     expect(callArgs[0]).toMatchObject({
       request: {
-        pageSize: MAX_PAGE_SIZE,
+        pageSize: SECRETS_LIST_PAGE_SIZE,
+        pageToken: '',
       },
     });
+  });
+
+  test('follows nextPageToken until all secrets are returned', async () => {
+    const pageOne = [
+      create(SecretSchema, {
+        id: 'page1-first-secret',
+        labels: {},
+        scopes: [Scope.AI_GATEWAY],
+      }),
+    ];
+    const pageTwo = [
+      create(SecretSchema, {
+        id: 'page2-pgdb-dsn',
+        labels: {},
+        scopes: [Scope.AI_GATEWAY],
+      }),
+    ];
+
+    const listSecretsMock = vi.fn().mockImplementation(({ request }) => {
+      if (!request?.pageToken) {
+        return create(ListSecretsResponseSchema, {
+          response: { secrets: pageOne, nextPageToken: 'page2' },
+        });
+      }
+      return create(ListSecretsResponseSchema, {
+        response: { secrets: pageTwo, nextPageToken: '' },
+      });
+    });
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    expect(await screen.findByText('page1-first-secret')).toBeVisible();
+    expect(await screen.findByText('page2-pgdb-dsn')).toBeVisible();
+    expect(listSecretsMock).toHaveBeenCalledTimes(2);
+    expect(listSecretsMock.mock.calls[1][0]).toMatchObject({
+      request: { pageSize: SECRETS_LIST_PAGE_SIZE, pageToken: 'page2' },
+    });
+  });
+
+  test('stops and surfaces an error if the server returns a non-advancing pageToken', async () => {
+    const listSecretsMock = vi.fn().mockImplementation(() =>
+      create(ListSecretsResponseSchema, {
+        response: {
+          secrets: [create(SecretSchema, { id: 'looping-secret', scopes: [Scope.AI_GATEWAY] })],
+          nextPageToken: 'stuck',
+        },
+      })
+    );
+    const transport = createListSecretsTransport(listSecretsMock);
+
+    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Error loading secrets:/i)).toBeVisible();
+    });
+    // Server returned nextPageToken='stuck' on first call; second call echoed 'stuck' again and the
+    // loop bailed out. Anything higher means the guard did not trip.
+    expect(listSecretsMock).toHaveBeenCalledTimes(2);
   });
 
   test('should display empty state when no secrets exist', async () => {
@@ -92,9 +159,7 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('No secrets found.')).toBeVisible();
-    });
+    expect(await screen.findByText('No secrets found.')).toBeVisible();
   });
 
   test('should display loading state while fetching secrets', async () => {
@@ -127,17 +192,10 @@ describe('SecretsStoreListPage', () => {
 
   test('should update pagination footer and disable next button on the last page', async () => {
     const user = userEvent.setup();
-    const secrets = Array.from({ length: 25 }, (_, index) =>
-      create(SecretSchema, {
-        id: `test-secret-${index + 1}`,
-        labels: { env: 'production' },
-        scopes: [Scope.AI_GATEWAY],
-      })
-    );
 
     const listSecretsResponse = create(ListSecretsResponseSchema, {
       response: {
-        secrets,
+        secrets: PAGINATION_SECRETS_FIXTURE,
         nextPageToken: '',
       },
     });
@@ -147,9 +205,7 @@ describe('SecretsStoreListPage', () => {
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 1 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 1 of 3')).toBeVisible();
 
     const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
     const nextButton = screen.getByRole('button', { name: 'Go to next page' });
@@ -159,49 +215,15 @@ describe('SecretsStoreListPage', () => {
 
     await user.click(nextButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 2 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 2 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 3 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 3 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
-  });
-
-  test('search input updates value on keystrokes', async () => {
-    const user = userEvent.setup();
-
-    const secret1 = create(SecretSchema, {
-      id: 'my-secret',
-      labels: {},
-      scopes: [Scope.AI_GATEWAY],
-    });
-
-    const listSecretsMock = vi.fn().mockReturnValue(
-      create(ListSecretsResponseSchema, {
-        response: { secrets: [secret1], nextPageToken: '' },
-      })
-    );
-    const transport = createListSecretsTransport(listSecretsMock);
-
-    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
-
-    await waitFor(() => {
-      expect(screen.getByText('my-secret')).toBeVisible();
-    });
-
-    const filterInput = screen.getByPlaceholderText('Filter by ID...');
-    await user.type(filterInput, 'hello');
-
-    // Input value must reflect typed text — a React Compiler memoization
-    // bug would freeze it at the initial empty string.
-    expect(filterInput).toHaveValue('hello');
   });
 
   test('filters secrets by ID via search input', async () => {

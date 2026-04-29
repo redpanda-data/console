@@ -9,7 +9,7 @@ import {
   Scope,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretService_connectquery';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 global.ResizeObserver = class ResizeObserver {
   observe() {
@@ -75,18 +75,18 @@ describe('SecretsStoreActionsCell', () => {
     await user.click(menuButton);
 
     // Click the delete option
-    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX, {}, { timeout: 3000 });
+    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX);
     await user.click(deleteMenuItem);
 
     // Wait for the confirmation dialog
     const confirmationInput = await screen.findByPlaceholderText(CONFIRMATION_PLACEHOLDER_REGEX);
 
     // Type the confirmation text
-    fireEvent.change(confirmationInput, { target: { value: 'delete' } });
+    await user.type(confirmationInput, 'delete');
 
     // Click the confirm delete button
     const confirmButton = screen.getByRole('button', { name: DELETE_TEXT_REGEX });
-    fireEvent.click(confirmButton);
+    await user.click(confirmButton);
 
     // Verify the delete mutation was called
     await waitFor(() => {
@@ -138,7 +138,7 @@ describe('SecretsStoreActionsCell', () => {
     await user.click(menuButton);
 
     // Click the delete option to open the dialog
-    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX, {}, { timeout: 3000 });
+    const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX);
     await user.click(deleteMenuItem);
 
     // Wait for resources query to be called with correct secret ID

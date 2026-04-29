@@ -13,7 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
-import AclDetailPage from '../../../../components/pages/acls/new-acl/acl-detail-page';
+import AclDetailPage from '../../../../components/pages/security/acls/acl-detail-page';
 
 const searchSchema = z.object({
   host: fallback(z.string().optional(), undefined),
