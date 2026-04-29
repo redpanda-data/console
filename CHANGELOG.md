@@ -3,12 +3,9 @@
 ## Master / Unreleased
 
 ## v3.7.2 / 2026-04-29
-- [BUGFIX] Fix default replication factor exceeding available broker count when creating topics.
 - [BUGFIX] Hide unavailable "Infinite" retention option for topics with capped configurations and fix topic config UI layout.
 - [BUGFIX] Fix secrets list returning only the first page instead of all entries.
 - [BUGFIX] Fix ACL rule key collision in edit mode causing incorrect rule management.
-- [BUGFIX] Fix pipeline UX issues including log explorer, config/details dialogs, and YAML editing.
-- [BUGFIX] Fix mutation hooks silently dropping errors instead of displaying toast notifications.
 - [IMPROVEMENT] Show Group principals in ACLs and Permissions List.
 - [IMPROVEMENT] Add `lockPrincipal` query parameter to ACL create page to pre-fill and lock the principal field.
 - [IMPROVEMENT] UX copy and typography improvements across console UI.
