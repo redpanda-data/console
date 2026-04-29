@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { KeyRoundIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -50,6 +51,7 @@ import {
   EmptyTitle,
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
+import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
@@ -88,9 +90,10 @@ type AclRow = {
 type AclsCardProps = {
   acls?: AclDetail[];
   principal?: string;
+  isLoading?: boolean;
 };
 
-export const AclsCard = ({ acls, principal }: AclsCardProps) => {
+export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [grantAllOpen, setGrantAllOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -188,6 +191,75 @@ export const AclsCard = ({ acls, principal }: AclsCardProps) => {
     setGrantAllOpen(false);
   };
 
+  const renderBody = () => {
+    if (isLoading) {
+      return [0, 1, 2].map((i) => (
+        <TableRow key={i}>
+          <TableCell />
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="xs" />
+          </TableCell>
+        </TableRow>
+      ));
+    }
+    if (rows.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6}>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <KeyRoundIcon />
+                </EmptyMedia>
+                <EmptyTitle>No ACLs assigned</EmptyTitle>
+                <EmptyDescription>
+                  Add ACLs to define what operations this role can perform on cluster resources.
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </EmptyContent>
+            </Empty>
+          </TableCell>
+        </TableRow>
+      );
+    }
+    return rows.map((row) => (
+      <TableRow key={row.id}>
+        <TableCell>
+          <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
+        </TableCell>
+        <TableCell className="text-muted-foreground">{row.resourceType}</TableCell>
+        <TableCell className="font-mono">{row.resourceName}</TableCell>
+        <TableCell>{row.operation}</TableCell>
+        <TableCell className={row.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
+          {row.permissionType}
+        </TableCell>
+        <TableCell className="text-muted-foreground">{row.host}</TableCell>
+      </TableRow>
+    ));
+  };
+
   return (
     <>
       <ListLayout className="min-h-0 gap-3 py-0">
@@ -215,64 +287,24 @@ export const AclsCard = ({ acls, principal }: AclsCardProps) => {
           </Heading>
         </ListLayoutFilters>
         <ListLayoutContent>
-          {rows.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <KeyRoundIcon />
-                </EmptyMedia>
-                <EmptyTitle>No ACLs assigned</EmptyTitle>
-                <EmptyDescription>
-                  Add ACLs to define what operations this role can perform on cluster resources.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button asChild variant="link">
-                  <a
-                    href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Read the docs →
-                  </a>
-                </Button>
-              </EmptyContent>
-            </Empty>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Checkbox
-                      checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                      onCheckedChange={toggleAll}
-                    />
-                  </TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Resource</TableHead>
-                  <TableHead>Operation</TableHead>
-                  <TableHead>Permission</TableHead>
-                  <TableHead>Host</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{row.resourceType}</TableCell>
-                    <TableCell className="font-mono">{row.resourceName}</TableCell>
-                    <TableCell>{row.operation}</TableCell>
-                    <TableCell className={row.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
-                      {row.permissionType}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{row.host}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Checkbox
+                    checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                    onCheckedChange={toggleAll}
+                  />
+                </TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Resource</TableHead>
+                <TableHead>Operation</TableHead>
+                <TableHead>Permission</TableHead>
+                <TableHead>Host</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>{renderBody()}</TableBody>
+          </Table>
         </ListLayoutContent>
       </ListLayout>
 

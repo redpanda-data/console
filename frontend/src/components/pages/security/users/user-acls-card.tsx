@@ -15,8 +15,9 @@ import { AclsCard } from '../shared/acls-card';
 type UserAclsCardProps = {
   acls?: AclDetail[];
   userName?: string;
+  isLoading?: boolean;
 };
 
-export const UserAclsCard = ({ acls, userName }: UserAclsCardProps) => (
-  <AclsCard acls={acls} principal={userName ? `User:${userName}` : undefined} />
+export const UserAclsCard = ({ acls, userName, isLoading }: UserAclsCardProps) => (
+  <AclsCard acls={acls} isLoading={isLoading} principal={userName ? `User:${userName}` : undefined} />
 );

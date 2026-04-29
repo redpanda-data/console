@@ -49,11 +49,13 @@ import {
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { ShieldCheckIcon } from 'lucide-react';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
@@ -101,85 +103,68 @@ export const RolesTab: FC = () => {
     name: parseAsString,
   });
 
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const result: ColumnFiltersState = [];
-    if (urlFilterParams.name) {
-      result.push({ id: 'name', value: urlFilterParams.name });
-    }
-    return result;
-  }, [urlFilterParams]);
+  const columnFilters: ColumnFiltersState = urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : [];
 
-  const handleColumnFiltersChange = useCallback(
-    (updater: Updater<ColumnFiltersState>) => {
-      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
-      const nameFilter = next.find((f) => f.id === 'name');
-      setUrlFilterParams({
-        name: (nameFilter?.value as string) || null,
-      });
-    },
-    [columnFilters, setUrlFilterParams]
-  );
+  const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
+    const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+    const nameFilter = next.find((f) => f.id === 'name');
+    setUrlFilterParams({ name: (nameFilter?.value as string) || null });
+  };
 
-  const { data: rolesData, isError: rolesIsError, error: rolesError } = useListRolesQuery();
+  const { data: rolesData, isLoading: rolesLoading, isError: rolesIsError, error: rolesError } = useListRolesQuery();
   const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
 
-  const rolesWithMembers: RoleEntry[] = (rolesData?.roles ?? []).map((r) => {
-    const members = rolesApi.roleMembers.get(r.name) ?? [];
-    return { name: r.name, members };
-  });
+  const rolesWithMembers: RoleEntry[] = (rolesData?.roles ?? []).map((r) => ({
+    name: r.name,
+    members: rolesApi.roleMembers.get(r.name) ?? [],
+  }));
 
-  const pagination = useMemo<PaginationState>(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
+  const pagination: PaginationState = { pageIndex, pageSize };
 
-  const handlePaginationChange = useCallback(
-    (updater: Updater<PaginationState>) => {
-      const next = typeof updater === 'function' ? updater(pagination) : updater;
-      setPageIndex(next.pageIndex);
-      setPageSize(next.pageSize);
+  const handlePaginationChange = (updater: Updater<PaginationState>) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater;
+    setPageIndex(next.pageIndex);
+    setPageSize(next.pageSize);
+  };
+
+  const columns: ColumnDef<RoleEntry>[] = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
+      cell: ({ row: { original: entry } }) => (
+        <Link
+          className="text-inherit no-underline hover:no-underline"
+          data-testid={`role-list-item-${entry.name}`}
+          params={{ roleName: encodeURIComponent(entry.name) }}
+          to="/security/roles/$roleName/details"
+        >
+          {entry.name}
+        </Link>
+      ),
+      filterFn: nameFilterFn,
     },
-    [pagination]
-  );
-
-  const columns = useMemo<ColumnDef<RoleEntry>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
-        cell: ({ row: { original: entry } }) => (
-          <Link
-            className="text-inherit no-underline hover:no-underline"
-            data-testid={`role-list-item-${entry.name}`}
-            params={{ roleName: encodeURIComponent(entry.name) }}
-            to="/security/roles/$roleName/details"
-          >
-            {entry.name}
-          </Link>
-        ),
-        filterFn: nameFilterFn,
-      },
-      {
-        id: 'assignedPrincipals',
-        header: 'Assigned principals',
-        enableSorting: false,
-        cell: ({ row: { original: entry } }) => entry.members.length,
-      },
-      {
-        id: 'menu',
-        header: '',
-        enableSorting: false,
-        meta: { align: 'right' as const },
-        cell: ({ row: { original: entry } }) => (
-          <RoleActions
-            memberCount={entry.members.length}
-            onDelete={async () => {
-              await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
-            }}
-            roleName={entry.name}
-          />
-        ),
-      },
-    ],
-    [deleteRoleMutation]
-  );
+    {
+      id: 'assignedPrincipals',
+      header: 'Assigned principals',
+      enableSorting: false,
+      cell: ({ row: { original: entry } }) => entry.members.length,
+    },
+    {
+      id: 'menu',
+      header: '',
+      enableSorting: false,
+      meta: { align: 'right' as const },
+      cell: ({ row: { original: entry } }) => (
+        <RoleActions
+          memberCount={entry.members.length}
+          onDelete={async () => {
+            await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
+          }}
+          roleName={entry.name}
+        />
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data: rolesWithMembers,
@@ -208,22 +193,83 @@ export const RolesTab: FC = () => {
     .filter(Boolean)
     .join(' ');
 
+  const renderBody = () => {
+    if (rolesLoading) {
+      return [0, 1, 2].map((i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell />
+        </TableRow>
+      ));
+    }
+    if (table.getRowModel().rows.length) {
+      return table.getRowModel().rows.map((row) => (
+        <TableRow key={row.id}>
+          {row.getVisibleCells().map((cell) => (
+            <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    return (
+      <TableRow className="hover:bg-transparent">
+        <TableCell colSpan={columns.length}>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ShieldCheckIcon />
+              </EmptyMedia>
+              <EmptyTitle>No roles yet</EmptyTitle>
+              <EmptyDescription>
+                Roles are groups of ACLs that can be assigned to principals. Create one to start managing access
+                control.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <div className="flex items-center gap-3">
+                <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
+                  Create role
+                </Button>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </div>
+            </EmptyContent>
+          </Empty>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
   return (
     <>
       <SecurityTabsNav />
       <ListLayout>
-        <p className="text-muted-foreground text-sm sm:text-base">
+        <Text className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp short="Groups of ACLs that can be assigned to principals." title="Roles">
-            <p>
+            <Text>
               Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents
               any entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user,
               OIDC identity, or mTLS client).
-            </p>
+            </Text>
           </DescriptionWithHelp>{' '}
           <NullFallbackBoundary>
             <FeatureLicenseNotification as="badge" featureName="rbac" />
           </NullFallbackBoundary>
-        </p>
+        </Text>
 
         <ListLayoutFilters
           actions={
@@ -261,52 +307,7 @@ export const RolesTab: FC = () => {
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow className="hover:bg-transparent!">
-                  <TableCell colSpan={columns.length}>
-                    <Empty>
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                          <ShieldCheckIcon />
-                        </EmptyMedia>
-                        <EmptyTitle>No roles yet</EmptyTitle>
-                        <EmptyDescription>
-                          Roles are groups of ACLs that can be assigned to principals. Create one to start managing
-                          access control.
-                        </EmptyDescription>
-                      </EmptyHeader>
-                      <EmptyContent>
-                        <div className="flex items-center gap-3">
-                          <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
-                            Create role
-                          </Button>
-                          <Button asChild variant="link">
-                            <a
-                              href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              Read the docs →
-                            </a>
-                          </Button>
-                        </div>
-                      </EmptyContent>
-                    </Empty>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+            <TableBody>{renderBody()}</TableBody>
           </Table>
         </ListLayoutContent>
 

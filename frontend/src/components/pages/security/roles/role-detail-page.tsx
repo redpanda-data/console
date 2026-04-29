@@ -35,7 +35,7 @@ import {
   EmptyTitle,
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
-import { Table, TableBody, TableCell, TableRow } from '../../../redpanda-ui/components/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -57,7 +57,7 @@ const RoleDetailPage = () => {
     );
   }, [roleName]);
 
-  const { data: aclData } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
+  const { data: aclData, isLoading: isAclsLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
 
   const { data: membersData, isLoading: membersLoading } = useListRoleMembersQuery(
     create(ListRoleMembersRequestSchema, { roleName })
@@ -115,7 +115,7 @@ const RoleDetailPage = () => {
 
   return (
     <div className="flex flex-col gap-6 pt-4">
-      <AclsCard acls={aclData} principal={`RedpandaRole:${roleName}`} />
+      <AclsCard acls={aclData} isLoading={isAclsLoading} principal={`RedpandaRole:${roleName}`} />
 
       {/* Principals */}
       <ListLayout className="min-h-0 gap-3 py-0">
@@ -136,35 +136,50 @@ const RoleDetailPage = () => {
           <h2 className="font-semibold text-base">Principals</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
-          {membersLoading ? (
-            <div className="py-4 text-center text-muted-foreground text-sm">Loading members...</div>
-          ) : allMembers.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Users2Icon />
-                </EmptyMedia>
-                <EmptyTitle>No principals assigned</EmptyTitle>
-                <EmptyDescription>
-                  Assign users to this role to grant them its permissions. Use the dropdown above to add a principal.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button asChild variant="link">
-                  <a
-                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Read the docs →
-                  </a>
-                </Button>
-              </EmptyContent>
-            </Empty>
-          ) : (
-            <Table>
-              <TableBody>
-                {allMembers.map((member) => {
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead align="right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {membersLoading ? (
+                <TableRow>
+                  <TableCell className="py-4 text-center text-muted-foreground text-sm" colSpan={2}>
+                    Loading members...
+                  </TableCell>
+                </TableRow>
+              ) : allMembers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2}>
+                    <Empty>
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <Users2Icon />
+                        </EmptyMedia>
+                        <EmptyTitle>No principals assigned</EmptyTitle>
+                        <EmptyDescription>
+                          Assign users to this role to grant them its permissions. Use the dropdown above to add a
+                          principal.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                      <EmptyContent>
+                        <Button asChild variant="link">
+                          <a
+                            href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            Read the docs →
+                          </a>
+                        </Button>
+                      </EmptyContent>
+                    </Empty>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                allMembers.map((member) => {
                   const parsed = parsePrincipal(member.principal);
                   const displayName = parsed.name || member.principal;
                   return (
@@ -183,10 +198,10 @@ const RoleDetailPage = () => {
                       </TableCell>
                     </TableRow>
                   );
-                })}
-              </TableBody>
-            </Table>
-          )}
+                })
+              )}
+            </TableBody>
+          </Table>
         </ListLayoutContent>
       </ListLayout>
     </div>

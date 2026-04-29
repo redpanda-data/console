@@ -136,8 +136,8 @@ export default UserDetailsPage;
 
 const UserPermissionDetailsContent = ({ userName }: { userName: string }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
-  const { data: rolesData } = useListRolesQuery({ filter: { principal: userName } });
-  const { data: acls } = useGetAclsByPrincipal(`User:${userName}`);
+  const { data: rolesData, isLoading: isRolesLoading } = useListRolesQuery({ filter: { principal: userName } });
+  const { data: acls, isLoading: isAclsLoading } = useGetAclsByPrincipal(`User:${userName}`);
 
   const roles = featureRolesApi
     ? (rolesData?.roles ?? []).map((r) => ({
@@ -148,8 +148,8 @@ const UserPermissionDetailsContent = ({ userName }: { userName: string }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      <UserRolesCard roles={roles} userName={userName} />
-      <UserAclsCard acls={acls} userName={userName} />
+      <UserRolesCard isLoading={isRolesLoading} roles={roles} userName={userName} />
+      <UserAclsCard acls={acls} isLoading={isAclsLoading} userName={userName} />
     </div>
   );
 };

@@ -107,7 +107,7 @@ function AppPageHeader() {
       <div className="flex items-center justify-between px-12 pt-6">
         <div className="flex flex-col gap-1">
           {backLink && (
-            <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" size="sm" variant="ghost">
+            <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" variant="ghost">
               <Link to={backLink.linkTo}>
                 <ChevronLeft className="h-4 w-4" />
                 {backLink.title}

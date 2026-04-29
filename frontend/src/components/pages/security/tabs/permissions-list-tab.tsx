@@ -33,6 +33,7 @@ import {
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { pluralizeWithNumber } from 'utils/string';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
@@ -51,7 +52,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
+import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { Text } from '../../../redpanda-ui/components/typography';
 import { type PrincipalPermissionGroup, usePrincipalPermissions } from '../hooks/use-principal-permissions';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
@@ -75,9 +78,9 @@ const AclTableRow: FC<{
     <TableCell className="text-muted-foreground">{host}</TableCell>
     <TableCell align="right">
       {editHref && (
-        <Link className="text-muted-foreground hover:text-foreground" to={editHref as never}>
+        <a className="text-muted-foreground hover:text-foreground" href={editHref}>
           <ExternalLink className="h-3.5 w-3.5" />
-        </Link>
+        </a>
       )}
     </TableCell>
   </TableRow>
@@ -359,21 +362,87 @@ export const PermissionsListTab: FC = () => {
     return <ErrorResult error={aclsError} />;
   }
 
+  const renderContent = () => {
+    if (isAclsLoading) {
+      return (
+        <div className="rounded-md border">
+          {[0, 1, 2].map((i) => (
+            <div className="flex items-center gap-3 border-b px-3 py-3 last:border-b-0" key={i}>
+              <Skeleton className="h-4 w-4 shrink-0" variant="rectangular" />
+              <Skeleton variant="text" width="md" />
+              <Skeleton variant="text" width="sm" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (filteredGroups.length === 0) {
+      if (searchQuery) {
+        return <div className="py-8 text-center text-muted-foreground text-sm">No principals match your search.</div>;
+      }
+      return (
+        <div className="rounded-md border">
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <KeyRoundIcon />
+              </EmptyMedia>
+              <EmptyTitle>No permissions yet</EmptyTitle>
+              <EmptyDescription>
+                A unified view of all principal permissions across your cluster. Create an ACL to get started.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <div className="flex items-center gap-3">
+                <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </div>
+            </EmptyContent>
+          </Empty>
+        </div>
+      );
+    }
+    return (
+      <div className="rounded-md border">
+        {filteredGroups.map((group) => (
+          <PrincipalRow
+            canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}
+            group={group}
+            isExpanded={expanded.has(group.principal)}
+            key={group.principal}
+            onDelete={(deleteUser, deleteAcls) => {
+              onDelete(group, deleteUser, deleteAcls).catch(() => {});
+            }}
+            onToggle={() => toggleExpanded(group.principal)}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <>
       <SecurityTabsNav />
       <ListLayout>
-        <p className="text-muted-foreground text-sm sm:text-base">
+        <Text className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp
             short="Unified view of all principal permissions across your cluster."
             title="Permissions"
           >
-            <p>
+            <Text>
               A unified view of all principal permissions across your cluster, including direct ACLs and those inherited
               from role bindings. Inherited ACLs are read-only here and must be edited on the respective role page.
-            </p>
+            </Text>
           </DescriptionWithHelp>
-        </p>
+        </Text>
 
         <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
           <input
@@ -386,58 +455,7 @@ export const PermissionsListTab: FC = () => {
 
         {aclFailed !== null && <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />}
 
-        <ListLayoutContent>
-          {isAclsLoading ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
-          ) : filteredGroups.length === 0 ? (
-            searchQuery ? (
-              <div className="py-8 text-center text-muted-foreground text-sm">No principals match your search.</div>
-            ) : (
-              <div className="rounded-md border">
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <KeyRoundIcon />
-                    </EmptyMedia>
-                    <EmptyTitle>No permissions yet</EmptyTitle>
-                    <EmptyDescription>
-                      A unified view of all principal permissions across your cluster. Create an ACL to get started.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <div className="flex items-center gap-3">
-                      <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
-                      <Button asChild variant="link">
-                        <a
-                          href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          Read the docs →
-                        </a>
-                      </Button>
-                    </div>
-                  </EmptyContent>
-                </Empty>
-              </div>
-            )
-          ) : (
-            <div className="rounded-md border">
-              {filteredGroups.map((group) => (
-                <PrincipalRow
-                  canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}
-                  group={group}
-                  isExpanded={expanded.has(group.principal)}
-                  key={group.principal}
-                  onDelete={(deleteUser, deleteAcls) => {
-                    onDelete(group, deleteUser, deleteAcls).catch(() => {});
-                  }}
-                  onToggle={() => toggleExpanded(group.principal)}
-                />
-              ))}
-            </div>
-          )}
-        </ListLayoutContent>
+        <ListLayoutContent>{renderContent()}</ListLayoutContent>
       </ListLayout>
 
       <AddAclDialog onOpenChange={setCreateAclOpen} open={createAclOpen} />

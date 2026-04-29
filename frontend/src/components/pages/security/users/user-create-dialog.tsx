@@ -93,7 +93,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
   return (
     <>
       <Dialog onOpenChange={handleClose} open={open}>
-        <DialogContent size="lg">
+        <DialogContent size="md">
           {step === 'form' && (
             <DialogHeader>
               <DialogTitle>Create user</DialogTitle>

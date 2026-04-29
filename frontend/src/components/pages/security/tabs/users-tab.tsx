@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from '@connectrpc/connect-query';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -47,7 +47,7 @@ import {
 import { UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import type { ListACLsRequest } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
@@ -71,9 +71,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
+import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { TagsValue } from '../../../redpanda-ui/components/tags';
 import { Tooltip, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { Text } from '../../../redpanda-ui/components/typography';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 import { CreateUserDialog } from '../users/user-create-dialog';
@@ -153,32 +155,24 @@ export const UsersTab: FC = () => {
     mechanism: parseAsArrayOf(parseAsString),
   });
 
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const result: ColumnFiltersState = [];
-    if (urlFilterParams.name) {
-      result.push({ id: 'name', value: urlFilterParams.name });
-    }
-    if (urlFilterParams.mechanism?.length) {
-      result.push({ id: 'mechanism', value: urlFilterParams.mechanism });
-    }
-    return result;
-  }, [urlFilterParams]);
+  const columnFilters: ColumnFiltersState = [
+    ...(urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : []),
+    ...(urlFilterParams.mechanism?.length ? [{ id: 'mechanism', value: urlFilterParams.mechanism }] : []),
+  ];
 
-  const handleColumnFiltersChange = useCallback(
-    (updater: Updater<ColumnFiltersState>) => {
-      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
-      const nameFilter = next.find((f) => f.id === 'name');
-      const mechanismFilter = next.find((f) => f.id === 'mechanism');
-      setUrlFilterParams({
-        name: (nameFilter?.value as string) || null,
-        mechanism: (mechanismFilter?.value as string[])?.length ? (mechanismFilter?.value as string[]) : null,
-      });
-    },
-    [columnFilters, setUrlFilterParams]
-  );
+  const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
+    const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+    const nameFilter = next.find((f) => f.id === 'name');
+    const mechanismFilter = next.find((f) => f.id === 'mechanism');
+    setUrlFilterParams({
+      name: (nameFilter?.value as string) || null,
+      mechanism: (mechanismFilter?.value as string[])?.length ? (mechanismFilter?.value as string[]) : null,
+    });
+  };
 
   const {
     data: usersData,
+    isLoading: usersLoading,
     isError,
     error,
   } = useListUsersQuery(undefined, {
@@ -192,70 +186,64 @@ export const UsersTab: FC = () => {
     mechanism: u.mechanism,
   }));
 
-  const pagination = useMemo<PaginationState>(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
+  const pagination: PaginationState = { pageIndex, pageSize };
 
-  const handlePaginationChange = useCallback(
-    (updater: Updater<PaginationState>) => {
-      const next = typeof updater === 'function' ? updater(pagination) : updater;
-      setPageIndex(next.pageIndex);
-      setPageSize(next.pageSize);
+  const handlePaginationChange = (updater: Updater<PaginationState>) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater;
+    setPageIndex(next.pageIndex);
+    setPageSize(next.pageSize);
+  };
+
+  const columns: ColumnDef<PrincipalEntry>[] = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
+      cell: ({ row: { original: entry } }) => (
+        <Link
+          className="text-inherit no-underline hover:no-underline"
+          params={{ userName: entry.name }}
+          to="/security/users/$userName/details"
+        >
+          {entry.name}
+        </Link>
+      ),
+      filterFn: nameFilterFn,
     },
-    [pagination]
-  );
-
-  const columns = useMemo<ColumnDef<PrincipalEntry>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
-        cell: ({ row: { original: entry } }) => (
-          <Link
-            className="text-inherit no-underline hover:no-underline"
-            params={{ userName: entry.name }}
-            to="/security/users/$userName/details"
-          >
-            {entry.name}
-          </Link>
-        ),
-        filterFn: nameFilterFn,
+    {
+      id: 'mechanism',
+      accessorFn: (entry) => mechanismLabel(entry.mechanism)?.toLowerCase() ?? '',
+      header: 'Mechanism',
+      enableSorting: false,
+      filterFn: mechanismFilterFn,
+      cell: ({ row: { original: entry } }) => {
+        const label = mechanismLabel(entry.mechanism);
+        return label ? (
+          <Badge variant="secondary">{label}</Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        );
       },
-      {
-        id: 'mechanism',
-        accessorFn: (entry) => mechanismLabel(entry.mechanism)?.toLowerCase() ?? '',
-        header: 'Mechanism',
-        enableSorting: false,
-        filterFn: mechanismFilterFn,
-        cell: ({ row: { original: entry } }) => {
-          const label = mechanismLabel(entry.mechanism);
-          return label ? (
-            <Badge variant="secondary">{label}</Badge>
-          ) : (
-            <span className="text-muted-foreground text-sm">—</span>
-          );
-        },
-      },
-      {
-        id: 'roles',
-        header: 'Roles',
-        enableSorting: false,
-        cell: ({ row: { original: entry } }) => <UserRolesCell userName={entry.name} />,
-      },
-      {
-        id: 'acls',
-        header: 'ACLs',
-        enableSorting: false,
-        cell: ({ row: { original: entry } }) => <UserAclsCell userName={entry.name} />,
-      },
-      {
-        id: 'menu',
-        header: '',
-        enableSorting: false,
-        meta: { align: 'right' as const },
-        cell: ({ row: { original: entry } }) => <UserActions user={entry} />,
-      },
-    ],
-    []
-  );
+    },
+    {
+      id: 'roles',
+      header: 'Roles',
+      enableSorting: false,
+      cell: ({ row: { original: entry } }) => <UserRolesCell userName={entry.name} />,
+    },
+    {
+      id: 'acls',
+      header: 'ACLs',
+      enableSorting: false,
+      cell: ({ row: { original: entry } }) => <UserAclsCell userName={entry.name} />,
+    },
+    {
+      id: 'menu',
+      header: '',
+      enableSorting: false,
+      meta: { align: 'right' as const },
+      cell: ({ row: { original: entry } }) => <UserActions user={entry} />,
+    },
+  ];
 
   const table = useReactTable({
     data: users,
@@ -288,17 +276,89 @@ export const UsersTab: FC = () => {
     userData?.canManageUsers
   );
 
+  const renderBody = () => {
+    if (usersLoading) {
+      return [0, 1, 2].map((i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="sm" />
+          </TableCell>
+          <TableCell>
+            <Skeleton variant="text" width="xs" />
+          </TableCell>
+          <TableCell />
+        </TableRow>
+      ));
+    }
+    if (table.getRowModel().rows.length) {
+      return table.getRowModel().rows.map((row) => (
+        <TableRow key={row.id}>
+          {row.getVisibleCells().map((cell) => (
+            <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    return (
+      <TableRow className="hover:bg-transparent">
+        <TableCell colSpan={columns.length}>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UsersIcon />
+              </EmptyMedia>
+              <EmptyTitle>No users yet</EmptyTitle>
+              <EmptyDescription>
+                SASL-SCRAM user accounts managed by your cluster. Create one to start managing access.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <div className="flex items-center gap-3">
+                <Button
+                  disabled={createDisabled}
+                  onClick={() => {
+                    setCreateDialogKey((k) => k + 1);
+                    setIsCreateDialogOpen(true);
+                  }}
+                >
+                  Create user
+                </Button>
+                <Button asChild variant="link">
+                  <a
+                    href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Read the docs →
+                  </a>
+                </Button>
+              </div>
+            </EmptyContent>
+          </Empty>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
   return (
     <>
       <SecurityTabsNav />
       <CreateUserDialog key={createDialogKey} onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen} />
       <ListLayout>
-        <p className="text-muted-foreground text-sm sm:text-base">
+        <Text className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp short="SASL-SCRAM user accounts managed by your cluster." title="Users">
             These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication
             identities (for example, OIDC, mTLS) on the Permissions List page.
           </DescriptionWithHelp>
-        </p>
+        </Text>
 
         <ListLayoutFilters
           actions={
@@ -339,57 +399,7 @@ export const UsersTab: FC = () => {
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow className="hover:bg-transparent!">
-                  <TableCell colSpan={columns.length}>
-                    <Empty>
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                          <UsersIcon />
-                        </EmptyMedia>
-                        <EmptyTitle>No users yet</EmptyTitle>
-                        <EmptyDescription>
-                          SASL-SCRAM user accounts managed by your cluster. Create one to start managing access.
-                        </EmptyDescription>
-                      </EmptyHeader>
-                      <EmptyContent>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            disabled={createDisabled}
-                            onClick={() => {
-                              setCreateDialogKey((k) => k + 1);
-                              setIsCreateDialogOpen(true);
-                            }}
-                          >
-                            Create user
-                          </Button>
-                          <Button asChild variant="link">
-                            <a
-                              href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              Read the docs →
-                            </a>
-                          </Button>
-                        </div>
-                      </EmptyContent>
-                    </Empty>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+            <TableBody>{renderBody()}</TableBody>
           </Table>
         </ListLayoutContent>
 
@@ -403,7 +413,6 @@ export const UsersTab: FC = () => {
 
 const UserRolesCell = ({ userName }: { userName: string }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
-  const navigate = useNavigate();
 
   if (!featureRolesApi) {
     return <span className="text-muted-foreground text-sm">—</span>;
@@ -425,16 +434,15 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
   return (
     <div className="flex flex-wrap gap-1">
       {roles.map((r) => (
-        <TagsValue key={r} onClick={() => navigate({ to: `/security/roles/${r}/details` })}>
-          {r}
-        </TagsValue>
+        <Link className="no-underline" key={r} params={{ roleName: r }} to="/security/roles/$roleName/details">
+          <TagsValue>{r}</TagsValue>
+        </Link>
       ))}
     </div>
   );
 };
 
 const UserAclsCell = ({ userName }: { userName: string }) => {
-  const navigate = useNavigate();
   const { data: aclCount } = useQuery(listACLs, { filter: { principal: `User:${userName}` } } as ListACLsRequest, {
     enabled: !!userName,
     select: (r) => r.resources.length,
@@ -445,9 +453,9 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
   }
 
   return (
-    <TagsValue onClick={() => navigate({ to: `/security/acls/${userName}/details` })}>
-      {`${aclCount} ACL${aclCount !== 1 ? 's' : ''}`}
-    </TagsValue>
+    <Link className="no-underline" params={{ aclName: userName }} to="/security/acls/$aclName/details">
+      <TagsValue>{`${aclCount} ACL${aclCount !== 1 ? 's' : ''}`}</TagsValue>
+    </Link>
   );
 };
 
