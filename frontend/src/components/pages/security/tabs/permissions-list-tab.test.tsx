@@ -172,13 +172,11 @@ vi.mock('../../../../state/backend-api', () => {
     ACLs: { isAuthorizerEnabled: true },
     userData: { canCreateRoles: true, canListAcls: true, canManageUsers: true, canViewPermissionsList: true },
     enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
-    serviceAccounts: null,
     isAdminApiConfigured: true,
   };
   return {
     api: {
       ...store,
-      deleteServiceAccount: vi.fn().mockResolvedValue(undefined),
       refreshAcls: vi.fn().mockResolvedValue(undefined),
       refreshClusterOverview: vi.fn().mockResolvedValue(undefined),
       refreshUserData: vi.fn().mockResolvedValue(undefined),

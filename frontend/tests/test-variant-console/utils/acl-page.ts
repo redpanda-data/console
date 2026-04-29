@@ -337,6 +337,40 @@ export class AclPage {
   }
 
   /**
+   * Form submission for tests that mock an ACL RPC error.
+   * - kind: 'http-error' → waits for a 4xx/5xx response (e.g., when using route.fulfill)
+   * - kind: 'network-abort' → does NOT wait for a response (e.g., when using route.abort),
+   *   because an aborted request never produces a response frame
+   */
+  async submitFormExpectingError(kind: 'http-error' | 'network-abort' = 'http-error') {
+    const submitButton = this.page.getByTestId('submit-acl-button').first();
+    await submitButton.waitFor({ state: 'visible' });
+    await submitButton.scrollIntoViewIfNeeded();
+
+    if (kind === 'network-abort') {
+      await submitButton.click();
+      return;
+    }
+
+    const responsePromise = this.page.waitForResponse(
+      (response) => {
+        const url = response.url();
+        const method = response.request().method();
+        const status = response.status();
+        return (
+          (url.includes('ACLService/CreateACL') || url.includes('ACLService/DeleteACLs')) &&
+          method === 'POST' &&
+          status >= 400
+        );
+      },
+      { timeout: 60_000 }
+    );
+
+    await submitButton.click();
+    await responsePromise;
+  }
+
+  /**
    * Summary validation methods
    */
   async validateSummaryItem(rule: Rule, operationName: string, permission: string) {
