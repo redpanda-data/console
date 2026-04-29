@@ -155,7 +155,7 @@ message TranscriptError {
 // gen_ai.operation.name = "execute_tool".
 message TranscriptToolCall {
   // Unique tool call identifier. Sourced from the OTel span ID.
-  string tool_call_id = 1 [(buf.validate.field).string.max_len = 128];
+  string tool_call_id = 1 [(buf.validate.field).string.max_len = 256];
   // Tool name. From gen_ai.tool.name span attribute.
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
@@ -183,7 +183,7 @@ message TranscriptTurn {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128
+    (buf.validate.field).string.max_len = 256
   ];
   // Role of this turn in the conversation.
   TranscriptTurnRole role = 2;
@@ -192,7 +192,7 @@ message TranscriptTurn {
   // Message content (user prompt, assistant response, or tool result).
   string content = 4;
   // LLM model used for this turn. From gen_ai.request.model.
-  string model = 5 [(buf.validate.field).string.max_len = 128];
+  string model = 5 [(buf.validate.field).string.max_len = 256];
   // Turn duration. Derived from the span's duration.
   google.protobuf.Duration latency = 6;
   // Token usage for this turn.
@@ -219,7 +219,7 @@ message TranscriptSummary {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128
+    (buf.validate.field).string.max_len = 256
   ];
   // Agent that produced this conversation. For managed agents this is the
   // Redpanda agent ID; for BYOA this is the agent identifier from the
@@ -244,7 +244,7 @@ message TranscriptSummary {
   // Aggregated token usage and cost across all turns.
   TranscriptUsage usage = 9;
   // Identifier of the user who initiated the conversation.
-  string user_id = 10 [(buf.validate.field).string.max_len = 128];
+  string user_id = 10 [(buf.validate.field).string.max_len = 256];
   // Whether any turn in the conversation had an error.
   bool has_errors = 11;
 }
@@ -325,7 +325,7 @@ message GetTranscriptRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 128
+    (buf.validate.field).string.max_len = 256
   ];
 }
 
