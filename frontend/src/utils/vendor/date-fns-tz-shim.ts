@@ -12,8 +12,8 @@
  * are unreachable: the only callers live inside `DateTimePicker` /
  * `DateTimeInput`, which are never invoked because we replaced their
  * usage with `components/ui/date-time-input`. Drop this file (and the
- * matching aliases in `rsbuild.config.ts`) once `@redpanda-data/ui` is
- * upgraded past v4.2.0.
+ * matching aliases in `rsbuild.config.ts`) once `@redpanda-data/ui`
+ * is fully replaced with our registry components.
  */
 
 const unreachable = () => {
