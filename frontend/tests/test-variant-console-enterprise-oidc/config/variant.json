@@ -1,0 +1,18 @@
+{
+  "name": "console-enterprise-oidc",
+  "displayName": "Console Enterprise OIDC (Zitadel)",
+  "isEnterprise": true,
+  "needsShadowlink": false,
+  "needsAuth": true,
+  "needsZitadel": true,
+  "requiresLicense": true,
+  "ports": {
+    "backend": 3200,
+    "redpandaKafka": 19292,
+    "redpandaSchemaRegistry": 18281,
+    "redpandaAdmin": 19844,
+    "redpandaPandaproxy": 18282,
+    "kafkaConnect": 18283,
+    "zitadel": 8085
+  }
+}
