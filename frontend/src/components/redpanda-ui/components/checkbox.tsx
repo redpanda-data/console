@@ -7,17 +7,28 @@ import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
+// Path-draw animation driven by CSS:
+// - pathLength={1} normalizes the stroke-dash coordinate space to 0..1
+//   regardless of actual path length.
+// - Hidden: stroke-dashoffset 1 + opacity 0 → path is shifted off-screen.
+// - Visible (data-visible="true"): stroke-dashoffset 0 + opacity 1, with a
+//   100ms delay so the box-fill transition leads the stroke draw-in slightly.
+// - The browser's native CSS transition handles the tween, so it's immune to
+//   React re-render frequency in controlled-mode parents.
+const pathDrawClassName =
+  '[stroke-dasharray:1] [stroke-dashoffset:1] opacity-0 transition-[stroke-dashoffset,opacity] duration-200 ease-out data-[visible=true]:[stroke-dashoffset:0] data-[visible=true]:opacity-100 data-[visible=true]:delay-[100ms]';
+
 const checkboxVariants = cva(
   'peer flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-sm border-2 transition-colors duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
         primary:
-          '!border-input data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-inverse',
+          '!border-input data-[state=checked]:border-primary data-[state=indeterminate]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:bg-primary data-[state=checked]:text-inverse data-[state=indeterminate]:text-inverse',
         secondary:
-          '!border-input data-[state=checked]:border-secondary data-[state=checked]:bg-secondary data-[state=checked]:text-inverse',
+          '!border-input data-[state=checked]:border-secondary data-[state=indeterminate]:border-secondary data-[state=checked]:bg-secondary data-[state=indeterminate]:bg-secondary data-[state=checked]:text-inverse data-[state=indeterminate]:text-inverse',
         outline:
-          '!border-input data-[state=checked]:border-foreground data-[state=checked]:bg-transparent data-[state=checked]:text-foreground',
+          '!border-input data-[state=checked]:border-foreground data-[state=indeterminate]:border-foreground data-[state=checked]:bg-transparent data-[state=indeterminate]:bg-transparent data-[state=checked]:text-foreground data-[state=indeterminate]:text-foreground',
       },
     },
     defaultVariants: {
@@ -71,6 +82,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
       (defaultChecked as unknown) === 'indeterminate' ? false : (defaultChecked as boolean | undefined);
 
     const dataState = isIndeterminate ? 'indeterminate' : isChecked ? 'checked' : 'unchecked';
+    const showCheckmark = isChecked === true && !isIndeterminate;
 
     const renderRoot = React.useCallback(
       // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Root attrs for the consumer element
@@ -88,48 +100,40 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
             keepMounted
             // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Indicator attrs for the consumer element
             render={(indicatorProps: Record<string, any>) => (
-              <motion.svg
+              <svg
                 {...indicatorProps}
-                animate={isChecked === true ? 'checked' : 'unchecked'}
                 className="size-3.5"
                 data-slot="checkbox-indicator"
                 data-state={dataState}
                 fill="none"
-                initial="unchecked"
                 stroke="currentColor"
                 strokeWidth="3.5"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <title>Checkbox</title>
-                <motion.path
+                <path
+                  className={pathDrawClassName}
                   d="M4.5 12.75l6 6 9-13.5"
+                  data-visible={showCheckmark}
+                  pathLength={1}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  variants={{
-                    checked: {
-                      pathLength: 1,
-                      opacity: 1,
-                      transition: {
-                        duration: 0.2,
-                        delay: 0.2,
-                      },
-                    },
-                    unchecked: {
-                      pathLength: 0,
-                      opacity: 0,
-                      transition: {
-                        duration: 0.2,
-                      },
-                    },
-                  }}
                 />
-              </motion.svg>
+                <path
+                  className={pathDrawClassName}
+                  d="M5 12h14"
+                  data-visible={isIndeterminate}
+                  pathLength={1}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
           />
         </motion.button>
       ),
-      [className, dataState, isChecked, testId, variant]
+      [className, dataState, isIndeterminate, showCheckmark, testId, variant]
     );
 
     return (

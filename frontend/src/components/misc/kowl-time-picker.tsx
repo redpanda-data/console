@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, DateTimeInput } from '@redpanda-data/ui';
+import { Box } from '@redpanda-data/ui';
+import { DateTimeInput } from 'components/ui/date-time-input';
 import { useState } from 'react';
 
 export function KowlTimePicker(props: { valueUtcMs: number; onChange: (utcMs: number) => void; disabled?: boolean }) {
@@ -18,6 +19,7 @@ export function KowlTimePicker(props: { valueUtcMs: number; onChange: (utcMs: nu
   return (
     <Box maxW={300}>
       <DateTimeInput
+        disabled={props.disabled}
         onChange={(value) => {
           setTimestampUtcMs(value);
           props.onChange(value);

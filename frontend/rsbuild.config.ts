@@ -13,6 +13,7 @@ import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
 import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
+import path from 'node:path';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
@@ -137,6 +138,15 @@ export default defineConfig({
       config.output ||= {};
       /* resolve symlinks so the proto generate code can be built. */
       config.resolve.symlinks = false;
+
+      // `@redpanda-data/ui@4.2.0` has module-level imports from `date-fns-tz` v2
+      // paths in its bundled dist. We replaced `<DateTimeInput>` (the only caller)
+      // with `components/ui/date-time-input`, so these imports are dead — but
+      // they still need to resolve at link time. Point them at no-op stubs.
+      Object.assign(config.resolve.alias as Record<string, string>, {
+        'date-fns-tz$': path.resolve(__dirname, 'src/utils/vendor/date-fns-tz-shim.ts'),
+        'date-fns-tz/zonedTimeToUtc$': path.resolve(__dirname, 'src/utils/vendor/zonedTimeToUtc.ts'),
+      });
 
       config.output.publicPath = 'auto';
 
