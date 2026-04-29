@@ -42,7 +42,7 @@ function EditableText({
   const [isEditing, setIsEditing] = useState(autoFocus ?? false);
   const [draft, setDraft] = useState(value);
   const [textWidth, setTextWidth] = useState<number | undefined>(undefined);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const spanRef = useRef<HTMLButtonElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
 

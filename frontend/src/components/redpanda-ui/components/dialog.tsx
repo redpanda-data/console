@@ -192,8 +192,8 @@ const dialogFooterVariants = cva('flex shrink-0 p-4 [[data-slot=dialog-body]+&]:
   variants: {
     direction: {
       column: 'flex-col',
-      row: 'flex-row',
-      responsive: 'flex-col-reverse sm:flex-row',
+      row: 'flex-row items-center',
+      responsive: 'flex-col-reverse sm:flex-row sm:items-center',
     },
     justify: {
       start: 'justify-start',
