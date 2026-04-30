@@ -31,6 +31,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
     password: generatePassword(30, false),
     mechanism: 'SCRAM-SHA-256' as SaslMechanism,
     generateWithSpecialChars: false,
+    selectedRoles: [] as string[],
   });
   const [step, setStep] = useState<'form' | 'confirmation'>('form');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,12 +41,13 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
   const { data: usersData } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
 
-  const { username, password, mechanism, generateWithSpecialChars } = formState;
+  const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
   const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
   const setPassword = (v: string) => setFormState((prev) => ({ ...prev, password: v }));
   const setMechanism = (v: SaslMechanism) => setFormState((prev) => ({ ...prev, mechanism: v }));
   const setGenerateWithSpecialChars = (v: boolean) =>
     setFormState((prev) => ({ ...prev, generateWithSpecialChars: v }));
+  const setSelectedRoles = (v: string[]) => setFormState((prev) => ({ ...prev, selectedRoles: v }));
 
   const handleClose = useCallback(() => {
     onOpenChange(false);
@@ -88,6 +90,8 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
     isValidUsername: validateUsername(username),
     isValidPassword: validatePassword(password),
     users,
+    selectedRoles,
+    setSelectedRoles,
   };
 
   return (

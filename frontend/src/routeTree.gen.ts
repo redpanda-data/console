@@ -60,6 +60,7 @@ import { Route as TopicsTopicNameProduceRecordRouteImport } from './routes/topic
 import { Route as ShadowlinksNameEditRouteImport } from './routes/shadowlinks/$name/edit';
 import { Route as SecurityUsersCreateRouteImport } from './routes/security/users/create';
 import { Route as SecurityRolesCreateRouteImport } from './routes/security/roles/create';
+import { Route as SecurityAclsCreateRouteImport } from './routes/security/acls/create';
 import { Route as SecretsIdEditRouteImport } from './routes/secrets/$id/edit';
 import { Route as RpConnectSecretsCreateRouteImport } from './routes/rp-connect/secrets/create';
 import { Route as RpConnectPipelineIdEditRouteImport } from './routes/rp-connect/$pipelineId/edit';
@@ -344,6 +345,11 @@ const SecurityRolesCreateRoute = SecurityRolesCreateRouteImport.update({
   path: '/roles/create',
   getParentRoute: () => SecurityRoute,
 } as any);
+const SecurityAclsCreateRoute = SecurityAclsCreateRouteImport.update({
+  id: '/acls/create',
+  path: '/acls/create',
+  getParentRoute: () => SecurityRoute,
+} as any);
 const SecretsIdEditRoute = SecretsIdEditRouteImport.update({
   id: '/secrets/$id/edit',
   path: '/secrets/$id/edit',
@@ -519,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/acls/create': typeof SecurityAclsCreateRoute;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
@@ -593,6 +600,7 @@ export interface FileRoutesByTo {
   '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/acls/create': typeof SecurityAclsCreateRoute;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
@@ -669,6 +677,7 @@ export interface FileRoutesById {
   '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/acls/create': typeof SecurityAclsCreateRoute;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
@@ -746,6 +755,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/edit'
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
+    | '/security/acls/create'
     | '/security/roles/create'
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
@@ -820,6 +830,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/edit'
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
+    | '/security/acls/create'
     | '/security/roles/create'
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
@@ -895,6 +906,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/edit'
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
+    | '/security/acls/create'
     | '/security/roles/create'
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
@@ -1349,6 +1361,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRolesCreateRouteImport;
       parentRoute: typeof SecurityRoute;
     };
+    '/security/acls/create': {
+      id: '/security/acls/create';
+      path: '/acls/create';
+      fullPath: '/security/acls/create';
+      preLoaderRoute: typeof SecurityAclsCreateRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
     '/secrets/$id/edit': {
       id: '/secrets/$id/edit';
       path: '/secrets/$id/edit';
@@ -1508,6 +1527,7 @@ declare module '@tanstack/react-router' {
 
 interface SecurityRouteChildren {
   SecurityIndexRoute: typeof SecurityIndexRoute;
+  SecurityAclsCreateRoute: typeof SecurityAclsCreateRoute;
   SecurityRolesCreateRoute: typeof SecurityRolesCreateRoute;
   SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
   SecurityPermissionsListIndexRoute: typeof SecurityPermissionsListIndexRoute;
@@ -1522,6 +1542,7 @@ interface SecurityRouteChildren {
 
 const SecurityRouteChildren: SecurityRouteChildren = {
   SecurityIndexRoute: SecurityIndexRoute,
+  SecurityAclsCreateRoute: SecurityAclsCreateRoute,
   SecurityRolesCreateRoute: SecurityRolesCreateRoute,
   SecurityUsersCreateRoute: SecurityUsersCreateRoute,
   SecurityPermissionsListIndexRoute: SecurityPermissionsListIndexRoute,
