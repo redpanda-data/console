@@ -16,8 +16,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
+import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { MoreHorizontal } from 'lucide-react';
+import React from 'react';
 import { toast } from 'sonner';
 
 import type { KnowledgeBaseTableRow } from './knowledge-base-list-page';
@@ -33,6 +34,8 @@ export const KnowledgeBaseActionsCell = ({
   onDelete,
   isDeletingKnowledgeBase,
 }: KnowledgeBaseActionsCellProps) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+
   const handleCopySuccess = () => {
     toast.success('Retrieval API URL copied to clipboard');
   };
@@ -60,15 +63,21 @@ export const KnowledgeBaseActionsCell = ({
             Copy URL
           </CopyButton>
           <DropdownMenuSeparator />
-          <DeleteResourceAlertDialog
+          <DeleteResourceMenuItem
             isDeleting={isDeletingKnowledgeBase}
-            onDelete={handleDelete}
-            resourceId={knowledgeBase.id}
-            resourceName={knowledgeBase.displayName}
-            resourceType="Knowledge Base"
+            onSelect={() => setIsDeleteDialogOpen(true)}
           />
         </DropdownMenuContent>
       </DropdownMenu>
+      <DeleteResourceAlertDialog
+        isDeleting={isDeletingKnowledgeBase}
+        onDelete={handleDelete}
+        onOpenChange={setIsDeleteDialogOpen}
+        open={isDeleteDialogOpen}
+        resourceId={knowledgeBase.id}
+        resourceName={knowledgeBase.displayName}
+        resourceType="Knowledge Base"
+      />
     </div>
   );
 };

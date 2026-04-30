@@ -46,6 +46,16 @@ const ResizeObserverMock = vi.fn(() => ({
 // Stub the global ResizeObserver
 vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
+// jsdom does not implement Element.getAnimations / Animation.finished, but
+// Base UI's ScrollAreaViewport calls them from a setTimeout, which would
+// otherwise surface as unhandled "viewport.getAnimations is not a function".
+if (typeof Element !== 'undefined' && typeof Element.prototype.getAnimations !== 'function') {
+  Element.prototype.getAnimations = () => [];
+}
+if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !== 'function') {
+  Document.prototype.getAnimations = () => [];
+}
+
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

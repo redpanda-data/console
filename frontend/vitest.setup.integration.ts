@@ -95,6 +95,17 @@ if (typeof window !== 'undefined') {
   };
 }
 
+// happy-dom does not implement Element.getAnimations / Document.getAnimations,
+// but Base UI's ScrollAreaViewport calls them from a setTimeout. The exception
+// surfaces as an unhandled "viewport.getAnimations is not a function" and
+// fails the test file even when the assertions themselves pass.
+if (typeof Element !== 'undefined' && typeof Element.prototype.getAnimations !== 'function') {
+  Element.prototype.getAnimations = () => [];
+}
+if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !== 'function') {
+  Document.prototype.getAnimations = () => [];
+}
+
 // ── Mocks ────────────────────────────────────────────────────────────
 // happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively,
 // but Chakra components still expect matchMedia to be a vi.fn so their
