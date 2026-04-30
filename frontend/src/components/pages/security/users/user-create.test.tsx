@@ -46,6 +46,7 @@ vi.mock('config', () => ({
 }));
 
 vi.mock('state/ui-state', () => ({
+  setPageHeader: vi.fn(),
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -59,8 +60,8 @@ vi.mock('utils/password', () => ({
 
 let mockRolesApiEnabled = false;
 
-vi.mock('../../../state/supported-features', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../state/supported-features')>();
+vi.mock('../../../../state/supported-features', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../state/supported-features')>();
   return {
     ...actual,
     Features: { ...actual.Features, createUser: true, deleteUser: true, rolesApi: true },

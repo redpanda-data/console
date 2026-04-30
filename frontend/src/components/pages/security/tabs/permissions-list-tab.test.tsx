@@ -11,6 +11,7 @@
 
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -23,104 +24,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
  *   (they're ACL-only principals, not SASL-SCRAM accounts)
  */
 
-const { listACLsData } = vi.hoisted(() => ({
-  listACLsData: {
-    // Return a SCRAM user, a non-SCRAM user (ACL-only), and a Group principal
-    data: [
-      { host: '*', principal: 'User:scram-admin', principalType: 'User', principalName: 'scram-admin', hasAcl: true },
-      {
-        host: '*',
-        principal: 'User:acl-only-user',
-        principalType: 'User',
-        principalName: 'acl-only-user',
-        hasAcl: true,
-      },
-      { host: '*', principal: 'Group:engineering', principalType: 'Group', principalName: 'engineering', hasAcl: true },
-    ],
-    error: null,
-    isError: false,
-    isLoading: false,
-  },
-}));
-
-vi.mock('@redpanda-data/ui', () => {
-  const Div = ({ children, ...props }: { children?: ReactNode; [key: string]: unknown }) => (
-    <div {...props}>{children}</div>
-  );
-
-  return {
-    Alert: Div,
-    AlertDescription: Div,
-    AlertIcon: () => <span />,
-    AlertTitle: Div,
-    Badge: Div,
-    Box: Div,
-    Button: ({
-      children,
-      isDisabled,
-      onClick,
-      ...props
-    }: {
-      children?: ReactNode;
-      isDisabled?: boolean;
-      onClick?: () => void;
-      [key: string]: unknown;
-    }) => (
-      <button disabled={isDisabled} onClick={onClick} {...props}>
-        {children}
-      </button>
-    ),
-    createStandaloneToast: () => ({
-      ToastContainer: () => null,
-      toast: vi.fn(),
-    }),
-    DataTable: ({
-      columns,
-      data,
-      emptyText,
-    }: {
-      columns: Array<{
-        cell?: (ctx: { row: { original: Record<string, unknown> } }) => ReactNode;
-        header?: ReactNode;
-        id?: string;
-      }>;
-      data: Record<string, unknown>[];
-      emptyText?: ReactNode;
-    }) =>
-      data.length > 0 ? (
-        <table>
-          <tbody>
-            {data.map((row, rowIndex) => (
-              <tr data-testid={`row-${row.name ?? rowIndex}`} key={String(row.name ?? rowIndex)}>
-                {columns.map((column, colIndex) => (
-                  <td key={column.id ?? colIndex}>{column.cell?.({ row: { original: row } }) ?? null}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <div>{emptyText}</div>
-      ),
-    Flex: Div,
-    SearchField: ({
-      placeholderText,
-      searchText,
-      setSearchText,
-    }: {
-      placeholderText?: string;
-      searchText?: string;
-      setSearchText?: (value: string) => void;
-    }) => (
-      <input onChange={(e) => setSearchText?.(e.target.value)} placeholder={placeholderText} value={searchText ?? ''} />
-    ),
-    Skeleton: Div,
-    Text: Div,
-    Tooltip: ({ children }: { children?: ReactNode }) => <>{children}</>,
-    redpandaTheme: {},
-    redpandaToastOptions: { defaultOptions: {} },
-  };
-});
+const NuqsWrapper = ({ children }: { children: ReactNode }) => <NuqsTestingAdapter>{children}</NuqsTestingAdapter>;
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>();
@@ -134,6 +38,10 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
     useNavigate: () => vi.fn(),
   };
 });
+
+vi.mock('../shared/security-tabs-nav', () => ({
+  SecurityTabsNav: () => null,
+}));
 
 vi.mock('../shared/delete-user-confirm-modal', () => ({
   DeleteUserConfirmModal: ({
@@ -153,10 +61,6 @@ vi.mock('../shared/delete-user-confirm-modal', () => ({
         </button>
       </div>
     ) : null,
-}));
-
-vi.mock('../shared/user-role-tags', () => ({
-  UserRoleTags: () => null,
 }));
 
 vi.mock('../../../../components/misc/error-result', () => ({
@@ -209,27 +113,60 @@ vi.mock('../../../../state/rest-interfaces', () => ({
   AclRequestDefault: {},
 }));
 
-vi.mock('../../../misc/section', () => ({
-  default: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
+vi.mock('../../../../react-query/api/acl', () => ({
+  useCreateACLMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteAclMutation: () => ({ mutateAsync: vi.fn() }),
 }));
 
-vi.mock('react-query/api/cluster-status', () => ({
-  useGetRedpandaInfoQuery: () => ({ data: {}, isSuccess: true }),
-}));
-
-vi.mock('react-query/api/user', () => ({
+vi.mock('../../../../react-query/api/user', () => ({
   useInvalidateUsersCache: () => vi.fn(),
   useDeleteUserMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
-  // "scram-admin" is a SCRAM user; "acl-only-user" is NOT (only has ACLs)
-  useListUsersQuery: () => ({
-    data: { users: [{ name: 'scram-admin' }] },
-    isLoading: false,
-  }),
+  useListUsersQuery: () => ({ data: { users: [] }, isLoading: false }),
 }));
 
-vi.mock('react-query/api/acl', () => ({
-  useDeleteAclMutation: () => ({ mutateAsync: vi.fn() }),
-  useListACLAsPrincipalGroups: () => listACLsData,
+vi.mock('../hooks/use-principal-permissions', () => ({
+  usePrincipalPermissions: () => ({
+    principalGroups: [
+      {
+        principal: 'User:scram-admin',
+        principalType: 'User',
+        principalName: 'scram-admin',
+        isScramUser: true,
+        directAcls: [],
+        roleAclGroups: [],
+        directAclCount: 0,
+        inheritedAclCount: 0,
+        denyCount: 0,
+      },
+      {
+        principal: 'User:acl-only-user',
+        principalType: 'User',
+        principalName: 'acl-only-user',
+        isScramUser: false,
+        directAcls: [],
+        roleAclGroups: [],
+        directAclCount: 0,
+        inheritedAclCount: 0,
+        denyCount: 0,
+      },
+      {
+        principal: 'Group:engineering',
+        principalType: 'Group',
+        principalName: 'engineering',
+        isScramUser: false,
+        directAcls: [],
+        roleAclGroups: [],
+        directAclCount: 0,
+        inheritedAclCount: 0,
+        denyCount: 0,
+      },
+    ],
+    isAclsLoading: false,
+    isAclsError: false,
+    aclsError: null,
+    isUsersError: false,
+    usersError: null,
+  }),
 }));
 
 import { PermissionsListTab } from './permissions-list-tab';
@@ -242,11 +179,11 @@ describe('Permissions List - delete dropdown for different principal types', () 
   test('Group principal does not show "Delete User" options in dropdown', async () => {
     const user = userEvent.setup();
 
-    render(<PermissionsListTab />);
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
 
     const groupRow = await screen.findByTestId('row-engineering');
-    const deleteButton = within(groupRow).getByRole('button');
-    await user.click(deleteButton);
+    const actionsDiv = within(groupRow).getByTestId('actions-engineering');
+    await user.click(within(actionsDiv).getByRole('button'));
 
     // Group should only have "Delete (ACLs only)", not user-delete options
     expect(screen.queryByText('Delete (User and ACLs)')).not.toBeInTheDocument();
@@ -257,12 +194,11 @@ describe('Permissions List - delete dropdown for different principal types', () 
   test('SCRAM user principal has "Delete User" options enabled', async () => {
     const user = userEvent.setup();
 
-    // "scram-admin" exists in usersData.users — it's a real SCRAM user
-    render(<PermissionsListTab />);
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
 
     const scramRow = await screen.findByTestId('row-scram-admin');
-    const deleteButton = within(scramRow).getByRole('button');
-    await user.click(deleteButton);
+    const actionsDiv = within(scramRow).getByTestId('actions-scram-admin');
+    await user.click(within(actionsDiv).getByRole('button'));
 
     // SCRAM user should have all delete options available and enabled
     const deleteUserAndAcls = screen.getByText('Delete (User and ACLs)');
@@ -277,13 +213,12 @@ describe('Permissions List - delete dropdown for different principal types', () 
   test('Group principal has "Delete (ACLs only)" available', async () => {
     const user = userEvent.setup();
 
-    render(<PermissionsListTab />);
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
 
     const groupRow = await screen.findByTestId('row-engineering');
-    const deleteButton = within(groupRow).getByRole('button');
-    await user.click(deleteButton);
+    const actionsDiv = within(groupRow).getByTestId('actions-engineering');
+    await user.click(within(actionsDiv).getByRole('button'));
 
-    // Even though user-delete options are hidden, "Delete (ACLs only)" is always available
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
   });
 });

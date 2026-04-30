@@ -29,14 +29,13 @@ describe('UserRolesCard', () => {
     renderWithFileRoutes(<UserRolesCard roles={[]} />);
 
     expect(screen.getByText('Roles')).toBeInTheDocument();
-    expect(screen.getByText('No permissions assigned to this user.')).toBeInTheDocument();
+    expect(screen.getByText('No roles assigned')).toBeInTheDocument();
   });
 
-  test('should render Assign Role button in empty state when onChangeRoles is provided', () => {
-    const mockOnChangeRoles = vi.fn();
-    renderWithFileRoutes(<UserRolesCard onChangeRoles={mockOnChangeRoles} roles={[]} />);
+  test('should render Assign Role combobox in empty state when userName is provided', () => {
+    renderWithFileRoutes(<UserRolesCard roles={[]} userName="test-user" />);
 
-    expect(screen.getByTestId('assign-role-button')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   test('should not render Assign Role button in empty state when onChangeRoles is not provided', () => {
@@ -57,10 +56,9 @@ describe('UserRolesCard', () => {
     expect(screen.getByTestId('view-role-viewer')).toBeInTheDocument();
   });
 
-  test('should render Change Role button when roles exist and onChangeRoles is provided', () => {
-    const mockOnChangeRoles = vi.fn();
-    renderWithFileRoutes(<UserRolesCard onChangeRoles={mockOnChangeRoles} roles={mockRoles} />);
+  test('should render Assign Role combobox when roles exist and userName is provided', () => {
+    renderWithFileRoutes(<UserRolesCard roles={mockRoles} userName="test-user" />);
 
-    expect(screen.getByTestId('change-role-button')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 });

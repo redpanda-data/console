@@ -126,7 +126,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
         userName={group.principalName}
       />
 
-      <div className="border-b">
+      <div className="border-b" data-testid={`row-${group.principalName}`}>
         {/* Principal header row */}
         <div
           className="flex cursor-pointer items-center gap-2 px-3 py-3 hover:bg-muted/20"
@@ -153,6 +153,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
           <div
             className="flex items-center gap-1"
+            data-testid={`actions-${group.principalName}`}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -368,7 +369,7 @@ export const PermissionsListTab: FC = () => {
         <div className="rounded-md border">
           {[0, 1, 2].map((i) => (
             <div className="flex items-center gap-3 border-b px-3 py-3 last:border-b-0" key={i}>
-              <Skeleton className="h-4 w-4 shrink-0" variant="rectangular" />
+              <Skeleton className="h-4 w-4 shrink-0" variant="rounded" />
               <Skeleton variant="text" width="md" />
               <Skeleton variant="text" width="sm" />
             </div>

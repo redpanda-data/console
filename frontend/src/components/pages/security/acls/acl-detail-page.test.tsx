@@ -10,7 +10,6 @@
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import AclDetailPage from './acl-detail-page';
@@ -47,6 +46,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 });
 
 vi.mock('state/ui-state', () => ({
+  setPageHeader: vi.fn(),
   uiState: { pageBreadcrumbs: [] },
 }));
 
@@ -124,13 +124,6 @@ describe('AclDetailPage — principal URL encoding', () => {
     render(<AclDetailPage />);
 
     const editButton = await screen.findByTestId('update-acl-button');
-    await userEvent.click(editButton);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/security/acls/Group:mygroup/update',
-        search: { host: '*' },
-      });
-    });
+    expect(editButton).toHaveAttribute('href', '/security/acls/Group:mygroup/update?host=*');
   });
 });

@@ -19,6 +19,7 @@ import { generatePassword } from 'utils/password';
 
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import {
   PASSWORD_MAX_LENGTH,
@@ -37,6 +38,7 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { Text } from '../../../redpanda-ui/components/typography';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({
@@ -162,12 +164,15 @@ type CreateUserModalProps = {
     isValidUsername: boolean;
     isValidPassword: boolean;
     users: string[];
+    selectedRoles: string[];
+    setSelectedRoles: (v: string[]) => void;
   };
   onCreateUser: () => Promise<boolean>;
   onCancel: () => void;
 };
 
 export const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
+  const rolesApiEnabled = useSupportedFeaturesStore((s) => s.rolesApi);
   const userAlreadyExists = state.users.includes(state.username);
   const hasError = (!state.isValidUsername || userAlreadyExists) && state.username.length > 0;
 
@@ -276,6 +281,13 @@ export const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserMod
           </Select>
         </Field>
       </div>
+
+      {rolesApiEnabled && (
+        <div className="mt-6">
+          <Text className="mb-2 font-medium text-sm">Assign roles</Text>
+          <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
+        </div>
+      )}
 
       <div className="mt-8 flex gap-4">
         <Button

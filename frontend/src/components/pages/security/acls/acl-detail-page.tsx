@@ -18,6 +18,7 @@ import { useLayoutEffect } from 'react';
 import { HostSelector } from './host-selector';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { setPageHeader } from '../../../../state/ui-state';
+import { Button } from '../../../redpanda-ui/components/button';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { ACLDetails } from '../shared/acl-details';
 import { parsePrincipalFromParam } from '../shared/principal-utils';
@@ -52,10 +53,17 @@ const AclDetailPage = () => {
     return <HostSelector baseUrl={`/security/acls/${aclName}/details`} hosts={data} principalName={principalName} />;
   }
 
+  const editHref = `/security/acls/${aclName}/update${host ? `?host=${host}` : ''}`;
+
   return (
     <div className="flex flex-col gap-4">
       <h2 className="pt-4 pb-3 font-semibold text-xl">ACL: {principalName}</h2>
       <Text>Configuration details</Text>
+      <Button asChild variant="outline">
+        <a data-testid="update-acl-button" href={editHref}>
+          Edit
+        </a>
+      </Button>
       <ACLDetails isSimpleView={false} rules={acls.rules} sharedConfig={acls.sharedConfig} />
     </div>
   );

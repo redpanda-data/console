@@ -58,14 +58,14 @@ describe('UserAclsCard', () => {
   test('should render empty state when no ACLs provided', () => {
     renderWithFileRoutes(<UserAclsCard acls={[]} />);
 
-    expect(screen.getByText('No ACLs assigned.')).toBeInTheDocument();
+    expect(screen.getByText('No ACLs assigned')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '+ Add ACL' })).toBeInTheDocument();
   });
 
   test('should render empty state when acls is undefined', () => {
     renderWithFileRoutes(<UserAclsCard acls={undefined} />);
 
-    expect(screen.getByText('No ACLs assigned.')).toBeInTheDocument();
+    expect(screen.getByText('No ACLs assigned')).toBeInTheDocument();
   });
 
   test('should render flat ACL table with correct row count and data', () => {
