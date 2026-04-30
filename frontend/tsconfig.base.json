@@ -34,7 +34,6 @@
     "src/**/*.test.tsx",
     "src/**/*.test.ts",
     "src/protogen",
-    "src/components/redpanda-ui/components/auto-form/**"
   ],
   "watchOptions": {
     "watchFile": "useFsEvents",
