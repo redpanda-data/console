@@ -47,12 +47,9 @@ import {
   type ConfigEntry,
   ConfigResourceType,
   type ConnectorValidationResult,
-  type CreateACLRequest,
   type CreateSecretResponse,
   type CreateTopicRequest,
   type CreateTopicResponse,
-  type CreateUserRequest,
-  type DeleteACLsRequest,
   type DeleteConsumerGroupOffsetsRequest,
   type DeleteConsumerGroupOffsetsResponse,
   type DeleteConsumerGroupOffsetsResponseTopic,
@@ -73,7 +70,6 @@ import {
   type GetTopicConsumersResponse,
   type GetTopicOffsetsByTimestampResponse,
   type GetTopicsResponse,
-  type GetUsersResponse,
   type GroupDescription,
   isApiError,
   type KafkaConnectors,
@@ -87,7 +83,6 @@ import {
   type PatchTopicConfigsRequest,
   type ProduceRecordsResponse,
   type PublishRecordsRequest,
-  type QuotaResponse,
   type ResourceConfig,
   type SchemaReferencedByEntry,
   type SchemaRegistryCompatibilityMode,
@@ -451,13 +446,7 @@ const _apiCreator = (set: any, get: any) => ({
   topicConsumers: new Map<string, TopicConsumer[]>(),
   topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
-  serviceAccounts: undefined as GetUsersResponse | undefined | null,
-  serviceAccountsLoading: false,
-  serviceAccountsError: null as WrappedApiError | null,
-
   ACLs: undefined as GetAclOverviewResponse | undefined | null,
-
-  Quotas: undefined as QuotaResponse | undefined | null,
 
   consumerGroups: new Map<string, GroupDescription>(),
   consumerGroupAcls: new Map<string, GetAclOverviewResponse | null>(),
@@ -1009,12 +998,6 @@ const _apiCreator = (set: any, get: any) => ({
       },
       addError
     );
-  },
-
-  refreshQuotas(force?: boolean) {
-    cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then((v) => {
-      set({ Quotas: v ?? null });
-    }, addError);
   },
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
@@ -1922,62 +1905,6 @@ const _apiCreator = (set: any, get: any) => ({
       body: JSON.stringify(request),
     });
     return parseOrUnwrap<CreateTopicResponse>(response, null);
-  },
-
-  async createACL(request: CreateACLRequest): Promise<void> {
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/acls`, {
-      method: 'POST',
-      headers: [['Content-Type', 'application/json']],
-      body: JSON.stringify(request),
-    });
-
-    return parseOrUnwrap<void>(response, null);
-  },
-
-  async deleteACLs(request: DeleteACLsRequest): Promise<void> {
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/acls`, {
-      method: 'DELETE',
-      headers: [['Content-Type', 'application/json']],
-      body: JSON.stringify(request),
-    });
-
-    return parseOrUnwrap<void>(response, null);
-  },
-
-  async refreshServiceAccounts(): Promise<void> {
-    set({ serviceAccountsLoading: true });
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/users`, {
-      method: 'GET',
-      headers: [['Content-Type', 'application/json']],
-    });
-    return parseOrUnwrap<void>(response, null)
-      .then((v) => {
-        set({ serviceAccounts: v ?? null });
-      })
-      .catch((err: WrappedApiError) => {
-        set({ serviceAccountsError: err });
-      })
-      .finally(() => {
-        set({ serviceAccountsLoading: false });
-      });
-  },
-
-  async createServiceAccount(request: CreateUserRequest): Promise<void> {
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/users`, {
-      method: 'POST',
-      headers: [['Content-Type', 'application/json']],
-      body: JSON.stringify(request),
-    });
-
-    return parseOrUnwrap<void>(response, null);
-  },
-
-  async deleteServiceAccount(principalId: string): Promise<void> {
-    const response = await appConfig.fetch(`${appConfig.restBasePath}/users/${encodeURIComponent(principalId)}`, {
-      method: 'DELETE',
-    });
-
-    return parseOrUnwrap<void>(response, null);
   },
 
   async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<CreateSecretResponse> {

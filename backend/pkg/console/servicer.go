@@ -25,13 +25,10 @@ type Servicer interface {
 	GetClusterInfo(ctx context.Context) (*ClusterInfo, error)
 	DeleteConsumerGroup(ctx context.Context, groupID string) error
 	GetConsumerGroupsOverview(ctx context.Context, groupIDs []string) ([]ConsumerGroupOverview, *rest.Error)
-	CreateACL(ctx context.Context, createReq kmsg.CreateACLsRequestCreation) *rest.Error
 	CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (CreateTopicResponse, *rest.Error)
-	DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestFilter) (DeleteACLsResponse, *rest.Error)
 	DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error)
 	DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	DeleteTopicRecords(ctx context.Context, deleteReq kmsg.DeleteRecordsRequestTopic) (DeleteTopicRecordsResponse, *rest.Error)
-	DescribeQuotas(ctx context.Context) QuotaResponse
 	EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, *rest.Error)
 	EditTopicConfig(ctx context.Context, topicName string, configs []kmsg.IncrementalAlterConfigsRequestResourceConfig) error
 	GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error)
