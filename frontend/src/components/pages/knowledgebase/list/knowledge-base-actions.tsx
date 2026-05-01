@@ -63,10 +63,7 @@ export const KnowledgeBaseActionsCell = ({
             Copy URL
           </CopyButton>
           <DropdownMenuSeparator />
-          <DeleteResourceMenuItem
-            isDeleting={isDeletingKnowledgeBase}
-            onSelect={() => setIsDeleteDialogOpen(true)}
-          />
+          <DeleteResourceMenuItem isDeleting={isDeletingKnowledgeBase} onSelect={() => setIsDeleteDialogOpen(true)} />
         </DropdownMenuContent>
       </DropdownMenu>
       <DeleteResourceAlertDialog
