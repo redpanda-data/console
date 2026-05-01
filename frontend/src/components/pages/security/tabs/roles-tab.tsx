@@ -218,6 +218,7 @@ export const RolesTab: FC = () => {
         </TableRow>
       ));
     }
+    const isFiltered = columnFilters.length > 0;
     return (
       <TableRow className="hover:bg-transparent">
         <TableCell colSpan={columns.length}>
@@ -226,28 +227,31 @@ export const RolesTab: FC = () => {
               <EmptyMedia variant="icon">
                 <ShieldCheckIcon />
               </EmptyMedia>
-              <EmptyTitle>No roles yet</EmptyTitle>
+              <EmptyTitle>{isFiltered ? 'No roles match your search' : 'No roles yet'}</EmptyTitle>
               <EmptyDescription>
-                Roles are groups of ACLs that can be assigned to principals. Create one to start managing access
-                control.
+                {isFiltered
+                  ? 'Try adjusting your filters.'
+                  : 'Roles are groups of ACLs that can be assigned to principals. Create one to start managing access control.'}
               </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
-              <div className="flex items-center gap-3">
-                <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
-                  Create role
-                </Button>
-                <Button asChild variant="link">
-                  <a
-                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Read the docs →
-                  </a>
-                </Button>
-              </div>
-            </EmptyContent>
+            {!isFiltered && (
+              <EmptyContent>
+                <div className="flex items-center gap-3">
+                  <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
+                    Create role
+                  </Button>
+                  <Button asChild variant="link">
+                    <a
+                      href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Read the docs →
+                    </a>
+                  </Button>
+                </div>
+              </EmptyContent>
+            )}
           </Empty>
         </TableCell>
       </TableRow>

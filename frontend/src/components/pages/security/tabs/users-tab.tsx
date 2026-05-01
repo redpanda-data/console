@@ -53,6 +53,7 @@ import type { ListACLsRequest } from '../../../../protogen/redpanda/api/dataplan
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
+import { useListRolesQuery } from '../../../../react-query/api/security';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -307,6 +308,7 @@ export const UsersTab: FC = () => {
         </TableRow>
       ));
     }
+    const isFiltered = columnFilters.length > 0;
     return (
       <TableRow className="hover:bg-transparent">
         <TableCell colSpan={columns.length}>
@@ -315,33 +317,37 @@ export const UsersTab: FC = () => {
               <EmptyMedia variant="icon">
                 <UsersIcon />
               </EmptyMedia>
-              <EmptyTitle>No users yet</EmptyTitle>
+              <EmptyTitle>{isFiltered ? 'No users match your search' : 'No users yet'}</EmptyTitle>
               <EmptyDescription>
-                SASL-SCRAM user accounts managed by your cluster. Create one to start managing access.
+                {isFiltered
+                  ? 'Try adjusting your filters.'
+                  : 'SASL-SCRAM user accounts managed by your cluster. Create one to start managing access.'}
               </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
-              <div className="flex items-center gap-3">
-                <Button
-                  disabled={createDisabled}
-                  onClick={() => {
-                    setCreateDialogKey((k) => k + 1);
-                    setIsCreateDialogOpen(true);
-                  }}
-                >
-                  Create user
-                </Button>
-                <Button asChild variant="link">
-                  <a
-                    href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
-                    rel="noopener noreferrer"
-                    target="_blank"
+            {!isFiltered && (
+              <EmptyContent>
+                <div className="flex items-center gap-3">
+                  <Button
+                    disabled={createDisabled}
+                    onClick={() => {
+                      setCreateDialogKey((k) => k + 1);
+                      setIsCreateDialogOpen(true);
+                    }}
                   >
-                    Read the docs →
-                  </a>
-                </Button>
-              </div>
-            </EmptyContent>
+                    Create user
+                  </Button>
+                  <Button asChild variant="link">
+                    <a
+                      href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Read the docs →
+                    </a>
+                  </Button>
+                </div>
+              </EmptyContent>
+            )}
           </Empty>
         </TableCell>
       </TableRow>
@@ -413,19 +419,20 @@ export const UsersTab: FC = () => {
 
 const UserRolesCell = ({ userName }: { userName: string }) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const { data, isLoading } = useListRolesQuery(
+    { filter: { principal: `User:${userName}` } },
+    { enabled: featureRolesApi }
+  );
 
   if (!featureRolesApi) {
     return <span className="text-muted-foreground text-sm">—</span>;
   }
 
-  const roles: string[] = [];
-  for (const [roleName, members] of rolesApi.roleMembers) {
-    if (
-      members.any((m: { name: string; principalType: string }) => m.name === userName && m.principalType === 'User')
-    ) {
-      roles.push(roleName);
-    }
+  if (isLoading) {
+    return <Skeleton variant="text" width="sm" />;
   }
+
+  const roles = data?.roles ?? [];
 
   if (roles.length === 0) {
     return <span className="text-muted-foreground text-sm">None</span>;
@@ -434,8 +441,13 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
   return (
     <div className="flex flex-wrap gap-1">
       {roles.map((r) => (
-        <Link className="no-underline" key={r} params={{ roleName: r }} to="/security/roles/$roleName/details">
-          <TagsValue>{r}</TagsValue>
+        <Link
+          className="no-underline"
+          key={r.name}
+          params={{ roleName: r.name }}
+          to="/security/roles/$roleName/details"
+        >
+          <TagsValue>{r.name}</TagsValue>
         </Link>
       ))}
     </div>
