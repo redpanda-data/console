@@ -1,5 +1,6 @@
-import { fileURLToPath } from 'node:url';
 import type { AliasOptions } from 'vite';
+
+import { fileURLToPath } from 'node:url';
 
 const fromHere = (relativePath: string) => fileURLToPath(new URL(relativePath, import.meta.url));
 

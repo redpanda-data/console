@@ -144,13 +144,15 @@ describe('AddTopicStep', () => {
     });
 
     // The component starts in "Existing" mode when topics exist.
-    // Open the combobox, type to filter, then select with Enter (autocomplete)
+    // Open the combobox, type to filter, then click the matching option.
+    // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
+    // load — clicking the rendered option is deterministic.)
     const comboboxInput = await screen.findByPlaceholderText('Select a topic');
     await user.click(comboboxInput);
     await user.type(comboboxInput, 'my-topic');
 
-    // Use Enter to autocomplete select the best match
-    await user.keyboard('{Enter}');
+    const option = await screen.findByRole('option', { name: 'my-topic' });
+    await user.click(option);
 
     // Submit
     const submitBtn = screen.getByTestId('submit');
