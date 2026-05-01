@@ -83,7 +83,7 @@ export const KnowledgeBaseCreateFormSchema = z
     // Redpanda Credentials
     redpandaUsername: z.string().min(1, 'Redpanda username is required'),
     redpandaPassword: z.string().min(1, 'Redpanda password is required'),
-    redpandaSaslMechanism: z.nativeEnum(SASLMechanism).default(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256),
+    redpandaSaslMechanism: z.enum(SASLMechanism).default(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256),
 
     // Reranker (optional)
     rerankerEnabled: z.boolean().default(true),
@@ -99,7 +99,7 @@ export const KnowledgeBaseCreateFormSchema = z
     // Validate chunk overlap is less than chunk size
     if (data.chunkOverlap >= data.chunkSize) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Chunk overlap must be less than chunk size',
         path: ['chunkOverlap'],
       });
@@ -111,7 +111,7 @@ export const KnowledgeBaseCreateFormSchema = z
 
     if (!(hasExactTopics || hasRegexPatterns)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'At least one exact topic or regex pattern is required',
         path: ['exactTopics'],
       });
@@ -128,7 +128,7 @@ export const KnowledgeBaseCreateFormSchema = z
         new RegExp(pattern);
       } catch (error) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: `Invalid regex pattern "${pattern}": ${(error as Error).message}`,
           path: ['regexPatterns'],
         });
@@ -138,7 +138,7 @@ export const KnowledgeBaseCreateFormSchema = z
     // Validate provider-specific API keys
     if (data.embeddingProvider === 'openai' && !data.openaiApiKey) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'OpenAI API Key is required',
         path: ['openaiApiKey'],
       });
@@ -146,7 +146,7 @@ export const KnowledgeBaseCreateFormSchema = z
 
     if (data.embeddingProvider === 'cohere' && !data.cohereApiKey) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Cohere API Key is required',
         path: ['cohereApiKey'],
       });
@@ -156,7 +156,7 @@ export const KnowledgeBaseCreateFormSchema = z
     if (data.rerankerEnabled) {
       if (!data.rerankerModel || data.rerankerModel.trim() === '') {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'Reranker model is required',
           path: ['rerankerModel'],
         });
@@ -164,7 +164,7 @@ export const KnowledgeBaseCreateFormSchema = z
 
       if (!data.rerankerApiKey || data.rerankerApiKey.trim() === '') {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'Reranker API Key is required',
           path: ['rerankerApiKey'],
         });
@@ -174,7 +174,7 @@ export const KnowledgeBaseCreateFormSchema = z
     // Validate that OpenAI API key is provided when using OpenAI for generation
     if (data.generationProvider === 'openai' && !data.openaiApiKey) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'OpenAI API Key is required for generation',
         path: ['openaiApiKey'],
       });

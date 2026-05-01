@@ -122,8 +122,7 @@ const tabsListVariants = cva('inline-flex h-10 items-center justify-center text-
   variants: {
     variant: {
       default: 'w-fit gap-1 rounded-lg bg-muted p-1',
-      underline:
-        '!border-border relative w-full justify-start rounded-t-xl border-b bg-background px-4 py-0 text-current',
+      underline: '!border-border relative w-full justify-start rounded-t-xl border-b bg-background py-0 text-current',
     },
     layout: {
       auto: '',
@@ -206,13 +205,11 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
         return;
       }
 
-      const listRect = list.getBoundingClientRect();
-      const activeRect = activeTab.getBoundingClientRect();
       const nextBounds: HighlightBounds = {
-        top: activeRect.top - listRect.top + list.scrollTop,
-        left: activeRect.left - listRect.left + list.scrollLeft,
-        width: activeRect.width,
-        height: activeRect.height,
+        top: activeTab.offsetTop,
+        left: activeTab.offsetLeft,
+        width: activeTab.offsetWidth,
+        height: activeTab.offsetHeight,
       };
       setBounds((prev) => (boundsEqual(prev, nextBounds) ? prev : nextBounds));
     }, []);

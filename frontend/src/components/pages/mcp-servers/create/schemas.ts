@@ -27,7 +27,7 @@ export const ToolSchema = z
       .trim()
       .min(1, { message: 'Tool name is required' })
       .max(100, { message: 'Tool name must be at most 100 characters' }),
-    componentType: z.nativeEnum(MCPServer_Tool_ComponentType, {
+    componentType: z.enum(MCPServer_Tool_ComponentType, {
       error: 'Component type is required',
     }),
     config: z.string({ error: 'YAML configuration is required' }).refine((val) => {
@@ -48,7 +48,7 @@ export const ToolSchema = z
         const label = (doc as { label?: unknown }).label;
         if (typeof label === 'string' && label !== val.name) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             message: 'YAML label must match Tool Name',
             path: ['name'],
           });
