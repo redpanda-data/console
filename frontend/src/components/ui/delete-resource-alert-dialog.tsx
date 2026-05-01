@@ -37,22 +37,15 @@ export type DeleteResourceAlertDialogProps = {
   onDelete: (id: string) => void;
   onOpenChange?: (open: boolean) => void;
   isDeleting?: boolean;
-  // Optional: Additional content to show in the dialog
   children?: ReactNode;
-  // Trigger variant: "dropdown" renders a DropdownMenuItem, "button" renders a Button
   triggerVariant?: 'dropdown' | 'button';
-  // Button-specific props when triggerVariant is "button"
   buttonVariant?: ButtonVariants['variant'];
   buttonIcon?: React.ReactNode;
   buttonText?: string;
-  /**
-   * Controlled open state. When provided, the component renders only the
-   * dialog body — the parent supplies its own trigger (typically a
-   * `DropdownMenuItem` rendered alongside the dropdown menu) and owns the
-   * open state. Use this when the trigger lives inside a `DropdownMenuContent`
-   * but the dialog must outlive the menu's close transition (otherwise the
-   * dialog and the menu would unmount together when the menu closes).
-   */
+  // When provided, the component renders only the dialog body — the parent
+  // supplies its own trigger and owns the open state. Use when the trigger
+  // lives inside a DropdownMenuContent but the dialog must outlive the menu's
+  // close transition (see `DeleteResourceMenuItem`).
   open?: boolean;
 };
 
@@ -136,10 +129,6 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     onOpenChange?.(next);
   };
 
-  // Controlled mode: parent owns the open state and renders the trigger
-  // separately (e.g. a `DropdownMenuItem` inside the dropdown). We render only
-  // the dialog body so it can live as a sibling of the dropdown and outlive
-  // the menu's close transition.
   if (isControlled) {
     return (
       <AlertDialog onOpenChange={handleOpenChange} open={open}>
@@ -203,12 +192,10 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   );
 };
 
-/**
- * `DropdownMenuItem` styled as the "Delete" entry that opens the controlled
- * `DeleteResourceAlertDialog`. Use this inside `DropdownMenuContent` while
- * keeping the dialog itself outside the menu (so the menu's unmount on close
- * does not tear down the dialog mid-flow).
- */
+// `DropdownMenuItem` styled as the "Delete" entry that opens a controlled
+// `DeleteResourceAlertDialog`. Use this inside `DropdownMenuContent` while
+// rendering the dialog itself as a sibling of the dropdown — otherwise the
+// menu's unmount on close tears down the dialog mid-flow.
 export const DeleteResourceMenuItem: React.FC<{
   isDeleting?: boolean;
   onSelect: () => void;

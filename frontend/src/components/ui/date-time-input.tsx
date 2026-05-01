@@ -16,10 +16,6 @@ import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from 'componen
 import { CalendarIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export type DateTimeInputMode = 'local' | 'utc';
 
 export type DateTimeInputProps = {
@@ -28,18 +24,12 @@ export type DateTimeInputProps = {
   /** Always called with UTC milliseconds, regardless of the displayed mode. */
   onChange: (utcMs: number) => void;
   disabled?: boolean;
-  /** Default `local`. Lets the picker display values in UTC. */
   defaultMode?: DateTimeInputMode;
-  /** Hide the Local/UTC toggle (e.g. for sites that don't care about UTC). */
   hideTimezoneToggle?: boolean;
   className?: string;
   placeholder?: string;
   'data-testid'?: string;
 };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 const MS_PER_MINUTE = 60_000;
 
@@ -56,11 +46,7 @@ type DateParts = {
   seconds: number;
 };
 
-/**
- * Break a UTC moment into Y/M/D/h/m/s parts for display in either the user's
- * local zone or UTC. The UTC path adjusts by the local offset so `Date#getX`
- * returns UTC values.
- */
+// UTC mode pre-shifts by the local offset so `Date#getX` returns UTC values.
 const partsFor = (utcMs: number, mode: DateTimeInputMode): DateParts => {
   const d = mode === 'utc' ? new Date(utcMs + new Date(utcMs).getTimezoneOffset() * MS_PER_MINUTE) : new Date(utcMs);
   return {
@@ -73,7 +59,6 @@ const partsFor = (utcMs: number, mode: DateTimeInputMode): DateParts => {
   };
 };
 
-/** Inverse of `partsFor`. */
 const composeUtcMs = (parts: DateParts, mode: DateTimeInputMode): number => {
   if (mode === 'utc') {
     return Date.UTC(parts.year, parts.month, parts.day, parts.hours, parts.minutes, parts.seconds);
@@ -85,10 +70,6 @@ const formatTimeInputValue = (utcMs: number, mode: DateTimeInputMode): string =>
   const p = partsFor(utcMs, mode);
   return `${pad(p.hours)}:${pad(p.minutes)}:${pad(p.seconds)}`;
 };
-
-// ---------------------------------------------------------------------------
-// Sub-components (kept local — easy to lift into the registry later)
-// ---------------------------------------------------------------------------
 
 type ModeToggleProps = {
   mode: DateTimeInputMode;
@@ -199,20 +180,12 @@ const DateTimePickerPanel = ({
   );
 };
 
-// ---------------------------------------------------------------------------
-// Public component
-// ---------------------------------------------------------------------------
-
 const DEFAULT_PLACEHOLDER = 'Enter unix timestamp';
 
-/**
- * Replacement for `<DateTimeInput>` from `@redpanda-data/ui`. Mirrors the
- * original's display: the input shows the raw unix-millisecond number and
- * accepts direct entry (commits on Enter / blur). A calendar icon button at
- * the trailing edge opens a popover with a calendar, time input, "Now"
- * shortcut, and an optional Local/UTC toggle. `value` and `onChange` always
- * operate in UTC milliseconds.
- */
+// Replacement for `<DateTimeInput>` from `@redpanda-data/ui`. The text input
+// shows the raw unix-millisecond number (commits on Enter/blur); the calendar
+// icon opens a popover with a calendar, time input, "Now", and Local/UTC
+// toggle. `value` and `onChange` always operate in UTC milliseconds.
 export const DateTimeInput = ({
   value,
   onChange,
