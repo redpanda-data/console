@@ -208,7 +208,13 @@ export const DateTimeInput = ({
     }
     const parsed = Number(draft);
     if (Number.isFinite(parsed)) {
-      onChange(parsed);
+      // Treat values < 10^11 as unix seconds (matches the original
+      // @redpanda-data/ui DateTimeInput behavior). 10^11 ms is March 1973;
+      // anything below it as a date in milliseconds is implausible, while
+      // 10^11 in seconds reaches year 5138, so this threshold cleanly
+      // separates the two units for any realistic timestamp.
+      const utcMs = parsed < 1e11 ? parsed * 1000 : parsed;
+      onChange(utcMs);
     }
     setDraft('');
   };
