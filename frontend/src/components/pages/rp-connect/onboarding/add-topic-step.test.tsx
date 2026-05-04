@@ -278,9 +278,9 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
-    // The ToggleGroup with "Existing" / "New" buttons should NOT be present
-    expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
+    // The ToggleGroup with "Existing" / "New" radios should NOT be present
+    expect(screen.queryByRole('radio', { name: 'Existing' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'New' })).not.toBeInTheDocument();
   });
 
   it('selectionMode=existing shows combobox', async () => {
@@ -309,8 +309,8 @@ describe('AddTopicStep', () => {
       expect(mockFetch).toHaveBeenCalled();
     });
 
-    // Switch to "New" tab (ToggleGroupItem renders as a button)
-    const newButton = await screen.findByRole('button', { name: 'New' });
+    // Switch to "New" tab (single-select ToggleGroupItem renders as role="radio")
+    const newButton = await screen.findByRole('radio', { name: 'New' });
     await user.click(newButton);
 
     // Type a name matching an existing topic
@@ -363,10 +363,10 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 
-    // ToggleGroupItem renders as a button
+    // Single-select ToggleGroupItem renders as role="radio"
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'New' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Existing' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'New' })).toBeInTheDocument();
     });
   });
 });

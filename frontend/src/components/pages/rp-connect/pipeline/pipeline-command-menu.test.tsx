@@ -165,8 +165,8 @@ describe('PipelineCommandMenu', () => {
       expect(getHeading('Secrets')).toBeInTheDocument();
     });
 
-    // Click the "Secrets" toggle button
-    await user.click(screen.getByRole('button', { name: 'Secrets' }));
+    // Click the "Secrets" toggle (single-select ToggleGroupItem renders as role="radio")
+    await user.click(screen.getByRole('radio', { name: 'Secrets' }));
 
     await waitFor(() => {
       expect(getHeading('Secrets')).toBeInTheDocument();
@@ -279,7 +279,7 @@ describe('PipelineCommandMenu', () => {
 
       expect(await screen.findByRole('button', { name: /create secret/i })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: 'Secrets' }));
+      await user.click(screen.getByRole('radio', { name: 'Secrets' }));
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /create secret/i })).toBeInTheDocument();
@@ -298,7 +298,7 @@ describe('PipelineCommandMenu', () => {
 
       expect(await screen.findByRole('button', { name: /create topic/i })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: 'Topics' }));
+      await user.click(screen.getByRole('radio', { name: 'Topics' }));
 
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: /create secret/i })).not.toBeInTheDocument();
@@ -317,7 +317,7 @@ describe('PipelineCommandMenu', () => {
 
       expect(await screen.findByRole('button', { name: /create user/i })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: 'Users' }));
+      await user.click(screen.getByRole('radio', { name: 'Users' }));
 
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: /create secret/i })).not.toBeInTheDocument();
@@ -336,7 +336,7 @@ describe('PipelineCommandMenu', () => {
 
       expect(await screen.findByRole('button', { name: /create secret/i })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: 'Variables' }));
+      await user.click(screen.getByRole('radio', { name: 'Variables' }));
 
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: /create secret/i })).not.toBeInTheDocument();
