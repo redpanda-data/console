@@ -123,12 +123,14 @@ function InputGroupButton({
   type = 'button',
   variant = 'ghost',
   size = 'xs',
+  testId,
   ...props
-}: Omit<React.ComponentProps<typeof Button>, 'size'> & VariantProps<typeof inputGroupButtonVariants>) {
+}: Omit<React.ComponentProps<typeof Button>, 'size'> & VariantProps<typeof inputGroupButtonVariants> & SharedProps) {
   return (
     <Button
       className={cn(inputGroupButtonVariants({ size }), className)}
       data-size={size}
+      testId={testId}
       type={type}
       variant={variant}
       {...props}
@@ -148,7 +150,7 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
   );
 }
 
-function InputGroupInput({ className, ...props }: Omit<React.ComponentProps<'input'>, 'size'>) {
+function InputGroupInput({ className, testId, ...props }: Omit<React.ComponentProps<'input'>, 'size'> & SharedProps) {
   return (
     <div className="flex-1">
       <Input
@@ -157,14 +159,15 @@ function InputGroupInput({ className, ...props }: Omit<React.ComponentProps<'inp
           className
         )}
         data-slot="input-group-control"
+        testId={testId}
         {...props}
       />
     </div>
   );
 }
 
-const InputGroupTextarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'textarea'>>(
-  ({ className, ...props }, ref) => (
+const InputGroupTextarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'textarea'> & SharedProps>(
+  ({ className, testId, ...props }, ref) => (
     <Textarea
       className={cn(
         'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent',
@@ -172,6 +175,7 @@ const InputGroupTextarea = React.forwardRef<HTMLTextAreaElement, React.Component
       )}
       data-slot="input-group-control"
       ref={ref}
+      testId={testId}
       {...props}
     />
   )

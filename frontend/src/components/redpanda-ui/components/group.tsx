@@ -62,7 +62,7 @@ const Group = ({
   });
 
   return (
-    <div className={cn('flex w-full items-end', !attached && 'gap-1.5', className)} data-testid={testId}>
+    <div className={cn('flex w-full items-stretch', !attached && 'items-end gap-1.5', className)} data-testid={testId}>
       {content}
     </div>
   );

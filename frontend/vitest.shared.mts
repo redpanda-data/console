@@ -1,5 +1,9 @@
 import type { AliasOptions } from 'vite';
 
+import { fileURLToPath } from 'node:url';
+
+const fromHere = (relativePath: string) => fileURLToPath(new URL(relativePath, import.meta.url));
+
 /**
  * Shared resolve aliases for all vitest configs.
  *
@@ -11,6 +15,10 @@ import type { AliasOptions } from 'vite';
  *   `@bufbuild/buf` (the Connect/Buf CLI-side package) but should resolve
  *   to the protobuf runtime at test time. Removing this alias breaks
  *   module resolution in unit tests that touch protobuf-generated types.
+ * - `date-fns-tz` is stubbed (matches the rsbuild aliases). `@redpanda-data/ui`
+ *   pulls in `date-fns-tz` v2 module-level, which then reaches into private
+ *   `date-fns/_lib/...` paths that v4 no longer exports. The only caller
+ *   (`<DateTimeInput>`) was replaced; the stub keeps imports resolvable.
  */
 export const sharedAliases: AliasOptions = [
   {
@@ -24,5 +32,13 @@ export const sharedAliases: AliasOptions = [
   {
     find: /^monaco-editor$/,
     replacement: 'monaco-editor/esm/vs/editor/editor.api.js',
+  },
+  {
+    find: /^date-fns-tz\/zonedTimeToUtc$/,
+    replacement: fromHere('./src/utils/vendor/zonedTimeToUtc.ts'),
+  },
+  {
+    find: /^date-fns-tz$/,
+    replacement: fromHere('./src/utils/vendor/date-fns-tz-shim.ts'),
   },
 ];

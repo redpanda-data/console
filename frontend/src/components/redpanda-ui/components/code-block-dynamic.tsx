@@ -1,4 +1,6 @@
 'use client';
+'use no memo'; // useShiki + useMemo loading skeleton must stay stable across renders.
+
 import type { Components } from 'hast-util-to-jsx-runtime';
 import { Check, Copy } from 'lucide-react';
 import {
@@ -146,17 +148,17 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         ref={ref}
         {...props}
         className={cn(
-          'group relative my-4 overflow-hidden rounded-lg border bg-fd-card text-sm outline-none',
+          'group relative my-4 overflow-hidden rounded-lg border bg-card text-sm outline-none',
           keepBackground && 'bg-(--shiki-light-bg) dark:bg-(--shiki-dark-bg)',
           props.className
         )}
         data-testid={testId}
       >
         {title ? (
-          <div className="flex items-center gap-2 bg-fd-secondary px-4 py-1.5">
+          <div className="flex items-center gap-2 bg-muted px-4 py-1.5">
             {icon ? (
               <div
-                className="text-fd-muted-foreground [&_svg]:size-3.5"
+                className="text-muted-foreground [&_svg]:size-3.5"
                 // biome-ignore lint/security/noDangerouslySetInnerHtml: part of DynamicCodeBlock implementation
                 // biome-ignore lint/security/noDangerouslySetInnerHtmlWithChildren: part of DynamicCodeBlock implementation
                 dangerouslySetInnerHTML={
@@ -170,7 +172,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
                 {typeof icon !== 'string' ? icon : null}
               </div>
             ) : null}
-            <figcaption className="flex-1 truncate text-fd-muted-foreground">{title}</figcaption>
+            <figcaption className="flex-1 truncate text-muted-foreground">{title}</figcaption>
             {allowCopy ? <CopyButton className="-me-2" onCopy={onCopy} /> : null}
           </div>
         ) : (
@@ -180,7 +182,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
           ref={areaRef}
           {...viewportProps}
           className={cn(
-            'fd-scroll-container max-h-[600px] overflow-auto py-3.5 text-[13px] [&_.line]:px-4',
+            'max-h-[600px] overflow-auto py-3.5 text-[13px] [&_.line]:px-4',
             props['data-line-numbers'] && '[&_.line]:pl-3',
             viewportProps?.className
           )}
@@ -215,6 +217,7 @@ function CopyButton({
       className={cn(
         buttonVariants({
           variant: 'ghost',
+          size: 'sm',
         }),
         'transition-opacity group-hover:opacity-100 [&_svg]:size-3.5',
         !checked && '[@media(hover:hover)]:opacity-0',
@@ -290,7 +293,8 @@ export function DynamicCodeBlock({
 
   return (
     <>
-      {/* @ts-expect-error -- href/precedence are React 19 style dedup props, safe to forward */}
+      {/* React 19 stylesheet hoisting props (href, precedence) — not yet typed in @types/react@18. */}
+      {/* @ts-expect-error remove once React types are upgraded to 19 */}
       <style href="shiki-dual-theme" precedence="medium">
         {shikiDualThemeStyles}
       </style>

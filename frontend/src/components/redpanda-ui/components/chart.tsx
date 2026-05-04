@@ -170,7 +170,7 @@ function ChartTooltipContent({
                 'flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground',
                 indicator === 'dot' && 'items-center'
               )}
-              key={item.dataKey}
+              key={`${item.dataKey ?? item.name ?? ''}-${index}`}
             >
               {formatter && item?.value !== undefined && item.name ? (
                 formatter(item.value, item.name, item, index, item.payload)
@@ -240,14 +240,14 @@ function ChartLegendContent({
 
   return (
     <div className={cn('flex items-center justify-center gap-4', verticalAlign === 'top' ? 'pb-3' : 'pt-3', className)}>
-      {payload.map((item) => {
+      {payload.map((item, index) => {
         const key = `${nameKey || item.dataKey || 'value'}`;
         const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
         return (
           <div
             className={cn('flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground')}
-            key={item.value}
+            key={`${item.dataKey ?? item.value ?? ''}-${index}`}
           >
             {itemConfig?.icon && !hideIcon ? (
               <itemConfig.icon />

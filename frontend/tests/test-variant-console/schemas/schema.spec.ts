@@ -205,13 +205,17 @@ test.describe('Schema Registry E2E Tests', () => {
       const hasTopics = await topicSelect.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (hasTopics) {
-        // Try to select the first available topic
-        // Click to open dropdown and check if options are available
+        // Open the topic select. Scope option lookup to the open popup (the
+        // registry's Base UI Select keeps a transitioning closed popup briefly,
+        // so the page-wide `[role="option"]` first match can be a stale item
+        // from the strategy select that's animating out).
         await topicSelect.click();
-        const firstOption = page.locator('[role="option"]').first();
-        const hasOptions = await firstOption.isVisible({ timeout: 500 }).catch(() => false);
+        const openPopup = page.locator('[data-slot="select-content"][data-state="open"]');
+        const hasOptions = await openPopup.isVisible({ timeout: 1000 }).catch(() => false);
 
         if (hasOptions) {
+          const firstOption = openPopup.locator('[role="option"]').first();
+          await expect(firstOption).toBeVisible();
           await firstOption.click();
 
           // Verify key/value radio appears

@@ -5,8 +5,8 @@ import React, { useContext } from 'react';
 import type { DropEvent, DropzoneOptions, FileRejection } from 'react-dropzone';
 import { useDropzone } from 'react-dropzone';
 
-import { Button } from './button';
-import { cn } from '../lib/utils';
+import { Button, type ButtonVariants } from './button';
+import { cn, type SharedProps } from '../lib/utils';
 
 type DropzoneContextType = {
   src?: File[];
@@ -23,7 +23,7 @@ const renderBytes = (bytes: number) => {
 
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
-    unitIndex++;
+    unitIndex += 1;
   }
 
   return `${size.toFixed(2)}${units[unitIndex]}`;
@@ -31,18 +31,33 @@ const renderBytes = (bytes: number) => {
 
 const DropzoneContext = React.createContext<DropzoneContextType | undefined>(undefined);
 
-export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> & {
-  src?: File[];
-  className?: string;
-  onDrop?: (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => void;
-  children?: React.ReactNode;
-  testId?: string;
-};
+export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> &
+  SharedProps & {
+    src?: File[];
+    className?: string;
+    onDrop?: (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => void;
+    children?: React.ReactNode;
+    variant?: ButtonVariants['variant'];
+  };
 
 export const Dropzone = React.forwardRef<HTMLButtonElement, DropzoneProps>(
   (
-    { accept, maxFiles = 1, maxSize, minSize, onDrop, onError, disabled, src, className, children, testId, ...props },
-    ref,
+    {
+      accept,
+      maxFiles = 1,
+      maxSize,
+      minSize,
+      onDrop,
+      onError,
+      disabled,
+      src,
+      className,
+      children,
+      testId,
+      variant = 'outline',
+      ...props
+    },
+    ref
   ) => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
       accept,
@@ -66,16 +81,16 @@ export const Dropzone = React.forwardRef<HTMLButtonElement, DropzoneProps>(
     return (
       <DropzoneContext.Provider key={JSON.stringify(src)} value={{ src, accept, maxSize, minSize, maxFiles }}>
         <Button
-          ref={ref}
-          type="button"
-          disabled={disabled}
-          variant="outline"
-          data-testid={testId}
           className={cn(
             'group relative h-auto w-full flex-col overflow-hidden p-8',
-            isDragActive && 'outline-none ring-1 ring-ring',
-            className,
+            isDragActive && 'outline-none ring-2 ring-ring',
+            className
           )}
+          data-testid={testId}
+          disabled={disabled}
+          ref={ref}
+          type="button"
+          variant={variant}
           {...getRootProps()}
         >
           <input {...getInputProps()} disabled={disabled} />
@@ -83,7 +98,7 @@ export const Dropzone = React.forwardRef<HTMLButtonElement, DropzoneProps>(
         </Button>
       </DropzoneContext.Provider>
     );
-  },
+  }
 );
 
 Dropzone.displayName = 'Dropzone';
@@ -167,12 +182,12 @@ export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStatePr
 
   return (
     <div className={cn('flex flex-col items-center justify-center', className)}>
-      <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
+      <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
         <UploadIcon size={16} />
       </div>
       <p className="my-2 w-full truncate text-wrap font-medium text-sm">Upload {maxFiles === 1 ? 'a file' : 'files'}</p>
       <p className="w-full truncate text-wrap text-muted-foreground text-xs">Drag and drop or click to upload</p>
-      {caption && <p className="text-wrap text-muted-foreground text-xs">{caption}.</p>}
+      {caption ? <p className="text-wrap text-muted-foreground text-xs">{caption}.</p> : null}
     </div>
   );
 };

@@ -35,9 +35,8 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   }),
 });
 
-// Mock ResizeObserver - not available in jsdom but required by RadixUI components
-// (Switch, Tabs, etc.) that use @radix-ui/react-use-size internally
-// Mock the ResizeObserver
+// Mock ResizeObserver - not available in jsdom but used by registry components
+// (Tabs, Tags, etc.) and other size-aware UI code.
 const ResizeObserverMock = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
@@ -46,6 +45,15 @@ const ResizeObserverMock = vi.fn(() => ({
 
 // Stub the global ResizeObserver
 vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+
+// Polyfill Element/Document.getAnimations — jsdom doesn't implement them
+// but Base UI's ScrollAreaViewport calls them from a setTimeout.
+if (typeof Element !== 'undefined' && typeof Element.prototype.getAnimations !== 'function') {
+  Element.prototype.getAnimations = () => [];
+}
+if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !== 'function') {
+  Document.prototype.getAnimations = () => [];
+}
 
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {

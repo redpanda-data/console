@@ -144,13 +144,15 @@ describe('AddTopicStep', () => {
     });
 
     // The component starts in "Existing" mode when topics exist.
-    // Open the combobox, type to filter, then select with Enter (autocomplete)
+    // Open the combobox, type to filter, then click the matching option.
+    // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
+    // load — clicking the rendered option is deterministic.)
     const comboboxInput = await screen.findByPlaceholderText('Select a topic');
     await user.click(comboboxInput);
     await user.type(comboboxInput, 'my-topic');
 
-    // Use Enter to autocomplete select the best match
-    await user.keyboard('{Enter}');
+    const option = await screen.findByRole('option', { name: 'my-topic' });
+    await user.click(option);
 
     // Submit
     const submitBtn = screen.getByTestId('submit');
@@ -276,9 +278,9 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
-    // The ToggleGroup with "Existing" / "New" buttons should NOT be present
-    expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
+    // The ToggleGroup with "Existing" / "New" radios should NOT be present
+    expect(screen.queryByRole('radio', { name: 'Existing' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'New' })).not.toBeInTheDocument();
   });
 
   it('selectionMode=existing shows combobox', async () => {
@@ -307,7 +309,7 @@ describe('AddTopicStep', () => {
       expect(mockFetch).toHaveBeenCalled();
     });
 
-    // Switch to "New" tab (ToggleGroupItem renders as role="radio")
+    // Switch to "New" tab (single-select ToggleGroupItem renders as role="radio")
     const newButton = await screen.findByRole('radio', { name: 'New' });
     await user.click(newButton);
 
@@ -361,7 +363,7 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 
-    // ToggleGroupItem renders as role="radio"
+    // Single-select ToggleGroupItem renders as role="radio"
     await waitFor(() => {
       expect(screen.getByRole('radio', { name: 'Existing' })).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: 'New' })).toBeInTheDocument();

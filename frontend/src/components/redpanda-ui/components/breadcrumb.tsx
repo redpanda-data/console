@@ -1,7 +1,7 @@
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
-import { Slot as SlotPrimitive } from 'radix-ui';
 import React from 'react';
 
+import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 function Breadcrumb({ testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
@@ -42,11 +42,11 @@ function BreadcrumbLink({
   asChild?: boolean;
   testId?: string;
 }) {
-  const Comp = asChild ? SlotPrimitive.Slot : 'a';
+  const Comp = asChild ? Slot : 'a';
 
   return (
     <Comp
-      className={cn('transition-colors hover:text-foreground', className)}
+      className={cn('cursor-pointer transition-colors hover:text-foreground', className)}
       data-slot="breadcrumb-link"
       data-testid={testId}
       {...props}

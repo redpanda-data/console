@@ -1,7 +1,6 @@
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
-import { type Label as LabelPrimitive, Slot as SlotPrimitive } from 'radix-ui';
 import React from 'react';
 import {
   Controller,
@@ -16,6 +15,7 @@ import {
 
 import { Label } from './label';
 import { Heading, Text } from './typography';
+import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const Form = FormProvider;
@@ -162,7 +162,7 @@ FormItem.displayName = 'FormItem';
 
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof Label>,
-  React.ComponentProps<typeof LabelPrimitive.Root> & { required?: boolean }
+  React.ComponentPropsWithoutRef<'label'> & { required?: boolean }
 >(({ className, required, children, ...props }, ref) => {
   const { error, formItemId } = useFormField();
 
@@ -183,14 +183,11 @@ const FormLabel = React.forwardRef<
 
 FormLabel.displayName = 'FormLabel';
 
-const FormControl = React.forwardRef<
-  React.ElementRef<typeof SlotPrimitive.Slot>,
-  React.ComponentProps<typeof SlotPrimitive.Slot>
->((props, ref) => {
+const FormControl = React.forwardRef<HTMLElement, React.ComponentProps<typeof Slot>>((props, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
   return (
-    <SlotPrimitive.Slot
+    <Slot
       aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`}
       aria-invalid={!!error}
       data-slot="form-control"
@@ -224,28 +221,26 @@ const FormDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'d
 FormDescription.displayName = 'FormDescription';
 
 // Rendered as <div> instead of <p> for the same reason as FormDescription above.
-const FormMessage = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
-  ({ className, ...props }, ref) => {
-    const { error, formMessageId } = useFormField();
-    const body = error ? String(error?.message ?? '') : props.children;
+const FormMessage = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(({ className, ...props }, ref) => {
+  const { error, formMessageId } = useFormField();
+  const body = error ? String(error?.message ?? '') : props.children;
 
-    if (!body) {
-      return null;
-    }
-
-    return (
-      <div
-        className={cn('text-destructive text-sm', className)}
-        data-slot="form-message"
-        id={formMessageId}
-        ref={ref}
-        {...props}
-      >
-        {body}
-      </div>
-    );
+  if (!body) {
+    return null;
   }
-);
+
+  return (
+    <div
+      className={cn('text-destructive text-sm', className)}
+      data-slot="form-message"
+      id={formMessageId}
+      ref={ref}
+      {...props}
+    >
+      {body}
+    </div>
+  );
+});
 
 FormMessage.displayName = 'FormMessage';
 

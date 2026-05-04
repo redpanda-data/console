@@ -11,6 +11,20 @@
   opacity: 1;
 }
 
+/* Tailwind v4's Preflight sets `border: 0 solid` on every element, which
+   leaves border-color defaulting to currentColor. Legacy Chakra components
+   were authored against v3's transparent default, so any Chakra node that
+   sets a border width without an explicit color now paints visibly.
+   Scope the reset to Chakra's own `chakra-*` class prefix so Registry
+   components rendered alongside (or inside) Chakra are unaffected. */
+@layer base {
+  [class*="chakra-"],
+  [class*="chakra-"]::before,
+  [class*="chakra-"]::after {
+    border-color: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

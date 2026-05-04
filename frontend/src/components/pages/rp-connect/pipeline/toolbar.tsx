@@ -251,7 +251,7 @@ export const Toolbar = memo(
       if (onCancel) {
         onCancel();
       } else {
-        navigate({ to: '/connect-clusters' });
+        navigate({ to: '/connect-clusters', search: {} as never });
       }
     }, [onCancel, navigate]);
 
@@ -379,8 +379,8 @@ export const Toolbar = memo(
             ) : (
               <EditableText
                 as="heading"
+                autoFocus={defaultEditing}
                 className="w-[280px]"
-                defaultEditing={defaultEditing}
                 error={!!nameError}
                 errorMessage={nameError}
                 headingLevel={1}

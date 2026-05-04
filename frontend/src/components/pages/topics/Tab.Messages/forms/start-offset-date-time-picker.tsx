@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { DateTimeInput } from '@redpanda-data/ui';
+import { DateTimeInput } from 'components/ui/date-time-input';
 import { useEffect, useRef, useState } from 'react';
 
 import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';

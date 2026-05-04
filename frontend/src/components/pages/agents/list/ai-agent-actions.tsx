@@ -24,7 +24,7 @@ import {
 import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
+import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { Loader2, MoreHorizontal, Pause, Play } from 'lucide-react';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React from 'react';
@@ -48,6 +48,7 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
   const { mutate: startAIAgent, isPending: isStarting } = useStartAIAgentMutation();
   const { mutate: stopAIAgent, isPending: isStopping } = useStopAIAgentMutation();
   const [deleteServiceAccountFlag, setDeleteServiceAccountFlag] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // Get service account and secret info from agent tags
   const serviceAccountId = agent.tags?.[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID] || null;
@@ -126,33 +127,37 @@ export const AIAgentActions = ({ agent, onDeleteWithServiceAccount, isDeletingAg
             </DropdownMenuItem>
           )}
           {Boolean(canStart || canStop) && <DropdownMenuSeparator />}
-          <DeleteResourceAlertDialog
-            isDeleting={isDeletingAgent}
-            onDelete={handleDelete}
-            onOpenChange={(open) => {
-              if (!open) {
-                setDeleteServiceAccountFlag(false);
-              }
-            }}
-            resourceId={agent.id}
-            resourceName={agent.name}
-            resourceType="AI Agent"
-          >
-            {Boolean(serviceAccountId && secretName) && (
-              <div className="flex items-center space-x-2 rounded-lg border border-muted bg-muted/10 p-4">
-                <Switch
-                  checked={deleteServiceAccountFlag}
-                  id="delete-service-account"
-                  onCheckedChange={setDeleteServiceAccountFlag}
-                />
-                <Label className="cursor-pointer font-normal" htmlFor="delete-service-account">
-                  Also delete associated service account and secret <InlineCode>{secretName}</InlineCode>
-                </Label>
-              </div>
-            )}
-          </DeleteResourceAlertDialog>
+          <DeleteResourceMenuItem isDeleting={isDeletingAgent} onSelect={() => setIsDeleteDialogOpen(true)} />
         </DropdownMenuContent>
       </DropdownMenu>
+      {/* Render the dialog as a sibling of the dropdown so it survives the menu's unmount on close. */}
+      <DeleteResourceAlertDialog
+        isDeleting={isDeletingAgent}
+        onDelete={handleDelete}
+        onOpenChange={(next) => {
+          setIsDeleteDialogOpen(next);
+          if (!next) {
+            setDeleteServiceAccountFlag(false);
+          }
+        }}
+        open={isDeleteDialogOpen}
+        resourceId={agent.id}
+        resourceName={agent.name}
+        resourceType="AI Agent"
+      >
+        {Boolean(serviceAccountId && secretName) && (
+          <div className="flex items-center space-x-2 rounded-lg border border-muted bg-muted/10 p-4">
+            <Switch
+              checked={deleteServiceAccountFlag}
+              id="delete-service-account"
+              onCheckedChange={setDeleteServiceAccountFlag}
+            />
+            <Label className="cursor-pointer font-normal" htmlFor="delete-service-account">
+              Also delete associated service account and secret <InlineCode>{secretName}</InlineCode>
+            </Label>
+          </div>
+        )}
+      </DeleteResourceAlertDialog>
     </div>
   );
 };

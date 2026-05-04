@@ -93,7 +93,7 @@ describe('ToolCard', () => {
 
     expect(screen.getByLabelText(/tool name/i)).toHaveValue('weather-by-city');
     expect(screen.getByLabelText(/template \(optional\)/i)).toHaveTextContent('HTTP Request');
-    expect(screen.getByText(HTTP_TEMPLATE_DESCRIPTION)).toBeVisible();
+    expect(screen.getByText(HTTP_TEMPLATE_DESCRIPTION, { selector: '[data-slot="field-description"]' })).toBeVisible();
     expect(screen.getByTestId('yaml-editor-value')).toHaveTextContent('label: weather-by-city');
 
     expect(getToolState()).toMatchObject({
@@ -112,7 +112,9 @@ describe('ToolCard', () => {
 
     expect(screen.getByLabelText(/tool name/i)).toHaveValue('memory_cache');
     expect(screen.getByLabelText(/template \(optional\)/i)).toHaveTextContent('Memory Cache');
-    expect(screen.getByText(MEMORY_CACHE_TEMPLATE_DESCRIPTION)).toBeVisible();
+    expect(
+      screen.getByText(MEMORY_CACHE_TEMPLATE_DESCRIPTION, { selector: '[data-slot="field-description"]' })
+    ).toBeVisible();
     expect(screen.getByText(CACHE_DESCRIPTION)).toBeVisible();
     expect(screen.getByTestId('yaml-editor-value')).toHaveTextContent('label: memory_cache');
     expect(screen.getByTestId('yaml-editor-value')).toHaveTextContent('memory:');
