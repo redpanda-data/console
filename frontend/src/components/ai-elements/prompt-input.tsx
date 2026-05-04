@@ -1240,11 +1240,7 @@ export const PromptInputModelSelectValue = ({
 
 export type PromptInputHoverCardProps = ComponentProps<typeof HoverCard>;
 
-// @ts-expect-error openDelay/closeDelay are not in HoverCard's typed props after registry update
-export const PromptInputHoverCard = ({ openDelay = 0, closeDelay = 0, ...props }: PromptInputHoverCardProps) => (
-  // @ts-expect-error openDelay/closeDelay are not in HoverCard's typed props after registry update
-  <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...props} />
-);
+export const PromptInputHoverCard = (props: PromptInputHoverCardProps) => <HoverCard {...props} />;
 
 export type PromptInputHoverCardTriggerProps = ComponentProps<
   typeof HoverCardTrigger

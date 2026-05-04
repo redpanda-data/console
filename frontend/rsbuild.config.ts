@@ -139,10 +139,8 @@ export default defineConfig({
       /* resolve symlinks so the proto generate code can be built. */
       config.resolve.symlinks = false;
 
-      // `@redpanda-data/ui@4.2.0` has module-level imports from `date-fns-tz` v2
-      // paths in its bundled dist. We replaced `<DateTimeInput>` (the only caller)
-      // with `components/ui/date-time-input`, so these imports are dead — but
-      // they still need to resolve at link time. Point them at no-op stubs.
+      // Stub `date-fns-tz` v2 imports from `@redpanda-data/ui` — see
+      // `src/utils/vendor/date-fns-tz-shim.ts` for context.
       Object.assign(config.resolve.alias as Record<string, string>, {
         'date-fns-tz$': path.resolve(__dirname, 'src/utils/vendor/date-fns-tz-shim.ts'),
         'date-fns-tz/zonedTimeToUtc$': path.resolve(__dirname, 'src/utils/vendor/zonedTimeToUtc.ts'),

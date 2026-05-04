@@ -42,10 +42,9 @@ export type DeleteResourceAlertDialogProps = {
   buttonVariant?: ButtonVariants['variant'];
   buttonIcon?: React.ReactNode;
   buttonText?: string;
-  // When provided, the component renders only the dialog body — the parent
-  // supplies its own trigger and owns the open state. Use when the trigger
-  // lives inside a DropdownMenuContent but the dialog must outlive the menu's
-  // close transition (see `DeleteResourceMenuItem`).
+  // Controlled-only mode: parent owns open state and renders the trigger.
+  // Use with `DeleteResourceMenuItem` when the dialog must outlive a closing
+  // dropdown menu.
   open?: boolean;
 };
 

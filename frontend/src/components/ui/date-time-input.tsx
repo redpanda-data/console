@@ -153,10 +153,8 @@ const DateTimePickerPanel = ({
   return (
     <div
       className="flex flex-col gap-3"
-      // Stop pointer/focus events from bubbling to base-ui's outside-press / focus-out
-      // detectors, which can otherwise misclassify in-popover interactions (notably
-      // Calendar day clicks and the native <input type="time"> picker) as outside
-      // presses and close-then-reopen the popup.
+      // Prevent base-ui from misclassifying in-popover clicks (Calendar days,
+      // <input type="time">) as outside-presses that would close the popup.
       onFocus={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
@@ -208,11 +206,8 @@ export const DateTimeInput = ({
     }
     const parsed = Number(draft);
     if (Number.isFinite(parsed)) {
-      // Treat values < 10^11 as unix seconds (matches the original
-      // @redpanda-data/ui DateTimeInput behavior). 10^11 ms is March 1973;
-      // anything below it as a date in milliseconds is implausible, while
-      // 10^11 in seconds reaches year 5138, so this threshold cleanly
-      // separates the two units for any realistic timestamp.
+      // Values < 10^11 are treated as unix seconds (10^11 ms is March 1973,
+      // 10^11 s is year 5138). Matches the original @redpanda-data/ui behavior.
       const utcMs = parsed < 1e11 ? parsed * 1000 : parsed;
       onChange(utcMs);
     }

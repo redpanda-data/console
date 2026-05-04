@@ -44,13 +44,9 @@ import {
 } from '../../shadowlink-helpers';
 import type { FormValues } from '../model';
 
-// Base UI's `<Select.Value>` only auto-resolves the selected item's label
-// after the popup has been mounted (which registers items into the store).
-// While the trigger is closed and the option list has never been opened,
-// `Select.Value` falls back to the raw `value` — for our enum-keyed selects
-// that means the trigger flashes the numeric enum (e.g. "1") instead of
-// "Any". Passing a children render-prop short-circuits that resolution and
-// renders the label deterministically, regardless of popup mount state.
+// Render labels via children to bypass Base UI's `<Select.Value>` auto-
+// resolution, which falls back to the raw numeric enum until the popup is
+// first opened.
 const renderResourceTypeLabel = (value: unknown): React.ReactNode =>
   value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value) as ACLResource);
 const renderPatternTypeLabel = (value: unknown): React.ReactNode =>
