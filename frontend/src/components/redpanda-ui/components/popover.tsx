@@ -5,7 +5,7 @@ import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from '
 import React from 'react';
 
 import { usePortalContainer } from '../lib/use-portal-container';
-import { asChildTrigger, narrowOpenChange, renderWithDataState, useMirroredOpen } from '../lib/base-ui-compat';
+import { asChildTrigger, narrowOpenChange, renderWithDataState, Slot, useMirroredOpen } from '../lib/base-ui-compat';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
 type PopoverContextType = {
@@ -168,11 +168,9 @@ type PopoverAnchorProps = {
 
 function PopoverAnchor({ asChild, children }: PopoverAnchorProps) {
   const ctx = React.useContext(PopoverAnchorContext);
-  const localRef = React.useRef<Element | null>(null);
 
   const setRef = React.useCallback(
     (node: Element | null) => {
-      localRef.current = node;
       if (ctx) {
         ctx.anchorRef.current = node;
         ctx.setHasAnchor(Boolean(node));
@@ -182,20 +180,11 @@ function PopoverAnchor({ asChild, children }: PopoverAnchorProps) {
   );
 
   if (asChild && React.isValidElement(children)) {
-    const child = children as React.ReactElement<Record<string, unknown>> & {
-      ref?: React.Ref<Element>;
-    };
-    const existingRef = child.ref;
-    return React.cloneElement(child, {
-      ref: (node: Element | null) => {
-        setRef(node);
-        if (typeof existingRef === 'function') {
-          existingRef(node);
-        } else if (existingRef && typeof existingRef === 'object') {
-          (existingRef as React.MutableRefObject<Element | null>).current = node;
-        }
-      },
-    } as Partial<Record<string, unknown>>);
+    return (
+      <Slot data-slot="popover-anchor" ref={setRef as React.Ref<HTMLElement>}>
+        {children}
+      </Slot>
+    );
   }
 
   return (

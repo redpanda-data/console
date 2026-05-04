@@ -258,6 +258,7 @@ function SheetDescription({ className, children, asChild, ...props }: SheetDescr
         asChild,
         children,
         className: typeof className === 'string' ? className : undefined,
+        dataSlot: 'sheet-description',
       })}
       {...props}
     />

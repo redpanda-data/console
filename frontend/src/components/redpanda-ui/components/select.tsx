@@ -15,14 +15,8 @@ type SelectRootProps = Omit<React.ComponentProps<typeof SelectPrimitive.Root>, '
     onValueChange?: (value: string) => void;
   };
 
-/**
- * Adapts the consumer's Radix-style `(value: string) => void` callback to Base
- * UI's `(value: unknown, details) => void` signature. Base UI types value as
- * `unknown` because `Select.Root` is generic; this wrapper trusts the string
- * narrowing since the registry's Select API fixes the item value type to
- * string (the compat helper `narrowCallback<string, …>` can't cross the
- * `unknown` contravariance gap without a local adapter).
- */
+// Base UI types `value` as `unknown` because `Select.Root` is generic; the
+// registry pins it to `string`, so we cast at the boundary.
 function adaptSelectValueChange(
   handler: ((value: string) => void) | undefined
 ): ((value: unknown) => void) | undefined {
@@ -59,24 +53,35 @@ type SelectValueProps = Omit<React.ComponentProps<typeof SelectPrimitive.Value>,
   children?: React.ReactNode | ((value: unknown) => React.ReactNode);
 };
 
+// Base UI only resolves an item's label after the popup has mounted. Until then
+// it stringifies the raw value, which flashes `1` instead of `Any` for
+// enum-backed selects with a controlled value. Pass a render-prop child or an
+// `items` map on `<Select>` to close the gap — see the `select-enum-label` demo.
 function SelectValue({ placeholder, children, ...props }: SelectValueProps) {
-  return (
-    <SelectPrimitive.Value data-slot="select-value" {...props}>
-      {(value: unknown) => {
-        if (typeof children === 'function') {
-          return (children as (value: unknown) => React.ReactNode)(value);
-        }
-        if (children !== undefined) {
-          return children;
-        }
-        const isEmpty = value === undefined || value === null || value === '';
-        if (isEmpty) {
-          return placeholder ?? null;
-        }
-        return value as React.ReactNode;
-      }}
-    </SelectPrimitive.Value>
-  );
+  // Fall back to placeholder when the render-prop returns null/undefined; Base
+  // UI's primitive ignores `placeholder` once `children` is set.
+  if (typeof children === 'function') {
+    const renderValue = children;
+    return (
+      <SelectPrimitive.Value data-slot="select-value" placeholder={placeholder} {...props}>
+        {(value: unknown) => {
+          const result = renderValue(value);
+          if ((result === null || result === undefined) && placeholder !== undefined) {
+            return placeholder;
+          }
+          return result;
+        }}
+      </SelectPrimitive.Value>
+    );
+  }
+  if (children !== undefined) {
+    return (
+      <SelectPrimitive.Value data-slot="select-value" placeholder={placeholder} {...props}>
+        {children as React.ComponentProps<typeof SelectPrimitive.Value>['children']}
+      </SelectPrimitive.Value>
+    );
+  }
+  return <SelectPrimitive.Value data-slot="select-value" placeholder={placeholder} {...props} />;
 }
 
 SelectValue.displayName = 'SelectValue';
@@ -130,19 +135,31 @@ SelectTrigger.displayName = 'SelectTrigger';
 type SelectContentProps = React.ComponentProps<typeof SelectPrimitive.Popup> &
   SharedProps &
   Pick<PortalContentProps, 'container'> & {
-    /**
-     * @deprecated Retained for API compatibility. Base UI positioning is handled by `SelectPositioner` automatically.
-     */
+    /** @deprecated Kept for API parity; Base UI positioning is automatic. */
     position?: 'item-aligned' | 'popper';
     side?: 'top' | 'right' | 'bottom' | 'left';
     align?: 'start' | 'center' | 'end';
     sideOffset?: number;
     alignOffset?: number;
+    /** Set `true` to overlay the selected item on the trigger (Base UI's native default). */
+    alignItemWithTrigger?: boolean;
   };
 
 const SelectContent = React.forwardRef<React.ComponentRef<typeof SelectPrimitive.Popup>, SelectContentProps>(
   (
-    { className, children, position = 'popper', testId, container, side, align, sideOffset = 4, alignOffset, ...props },
+    {
+      className,
+      children,
+      position = 'popper',
+      testId,
+      container,
+      side = 'bottom',
+      align,
+      sideOffset = 4,
+      alignOffset,
+      alignItemWithTrigger = false,
+      ...props
+    },
     ref
   ) => {
     const portalContainer = usePortalContainer();
@@ -150,6 +167,7 @@ const SelectContent = React.forwardRef<React.ComponentRef<typeof SelectPrimitive
       <SelectPrimitive.Portal container={container ?? portalContainer}>
         <SelectPrimitive.Positioner
           align={align}
+          alignItemWithTrigger={alignItemWithTrigger}
           alignOffset={alignOffset}
           className="z-50 max-h-[var(--available-height)]"
           side={side}

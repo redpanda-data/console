@@ -52,25 +52,34 @@ const useToggleGroup = (): ToggleGroupContextProps => {
   return context;
 };
 
-// Preserve the Radix public API (`type: 'single' | 'multiple'`) externally while
-// mapping to Base UI's `multiple: boolean`. Value semantics are also normalized:
-// `type="single"` uses a string value; `type="multiple"` uses a string[].
-type ToggleGroupProps = Omit<
+// Maps Radix's `type: 'single' | 'multiple'` to Base UI's `multiple: boolean`,
+// and normalizes `value` to string for single / string[] for multiple.
+type ToggleGroupBaseProps = Omit<
   React.ComponentProps<typeof ToggleGroupPrimitive>,
   'value' | 'defaultValue' | 'onValueChange' | 'multiple'
 > &
   Omit<VariantProps<typeof toggleVariants>, 'type'> &
   SharedProps & {
-    type?: 'single' | 'multiple';
-    value?: string | string[];
-    defaultValue?: string | string[];
-    // Radix called onValueChange(string) for single and onValueChange(string[]) for multiple.
-    // biome-ignore lint/suspicious/noExplicitAny: preserve Radix's polymorphic callback signature
-    onValueChange?: (value: any) => void;
     transition?: Transition;
     activeClassName?: string;
     attached?: boolean;
   };
+
+type ToggleGroupSingleProps = ToggleGroupBaseProps & {
+  type?: 'single';
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+};
+
+type ToggleGroupMultipleProps = ToggleGroupBaseProps & {
+  type: 'multiple';
+  value?: string[];
+  defaultValue?: string[];
+  onValueChange?: (value: string[]) => void;
+};
+
+type ToggleGroupProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
 
 function toValueArray(v: string | string[] | undefined): string[] | undefined {
   if (v === undefined) {
@@ -106,9 +115,9 @@ function ToggleGroup({
     }
     return (groupValue: unknown[]) => {
       if (isMultiple) {
-        onValueChange(groupValue as string[]);
+        (onValueChange as (next: string[]) => void)(groupValue as string[]);
       } else {
-        onValueChange((groupValue[0] as string | undefined) ?? '');
+        (onValueChange as (next: string) => void)((groupValue[0] as string | undefined) ?? '');
       }
     };
   }, [isMultiple, onValueChange]);
@@ -166,6 +175,8 @@ function ToggleGroup({
       defaultValue={arrayDefaultValue}
       multiple={isMultiple}
       onValueChange={handleValueChange}
+      // Restore Radix's "1 of N" radio-group semantics for single-select; Base UI's Toggle is a plain button.
+      role={isMultiple ? undefined : 'radiogroup'}
       value={arrayValue}
       {...props}
     >
@@ -224,6 +235,7 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
       positionClasses = 'rounded-none';
     }
 
+    const isSingle = type === 'single';
     return (
       <TogglePrimitive
         disabled={disabled}
@@ -232,12 +244,14 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
         render={(rootProps: Record<string, any>, state: { pressed?: boolean; disabled?: boolean }) => (
           <motion.button
             {...rootProps}
+            aria-checked={isSingle ? Boolean(state?.pressed) : undefined}
             data-slot="toggle-group-item"
             data-state={state?.pressed ? 'on' : 'off'}
             data-testid={testId}
             disabled={disabled ?? state?.disabled}
             initial={{ scale: 1 }}
             ref={itemRef}
+            role={isSingle ? 'radio' : undefined}
             whileTap={{ scale: 0.9 }}
             {...buttonProps}
             className={cn('relative', buttonProps?.className)}

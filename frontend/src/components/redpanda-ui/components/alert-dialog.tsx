@@ -46,9 +46,8 @@ function AlertDialogOverlay({ className, ...props }: React.ComponentProps<typeof
   return (
     <AlertDialogPrimitive.Backdrop
       className={cn(
-        // fill-mode-forwards keeps opacity 0 applied after the exit animation
-        // ends; otherwise the backdrop flashes back to full opacity for a
-        // frame before Base UI unmounts it.
+        // fill-mode-forwards holds the exit keyframe until Base UI unmounts;
+        // without it the backdrop flashes back to its natural opacity for one frame.
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 fill-mode-forwards data-[state=closed]:animate-out data-[state=open]:animate-in',
         className
       )}
@@ -125,10 +124,7 @@ function AlertDialogDescription({
   asChild,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Description> & { asChild?: boolean }) {
-  // Render as <div> instead of the default <p> so it can safely contain block-level
-  // children (Text, Input, List, etc.) without triggering validateDOMNesting warnings.
-  // `asChild` is a Radix-compat passthrough — when set, the child element is used
-  // as the render target (same semantics as Radix's asChild on Description).
+  // Render as <div> (not <p>) so block-level children don't trigger validateDOMNesting.
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
@@ -136,6 +132,7 @@ function AlertDialogDescription({
         asChild,
         children,
         className: typeof className === 'string' ? className : undefined,
+        dataSlot: 'alert-dialog-description',
       })}
       {...props}
     />

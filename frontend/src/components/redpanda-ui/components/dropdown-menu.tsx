@@ -80,8 +80,14 @@ function DropdownMenuTrigger({ className, ...props }: DropdownMenuTriggerProps) 
 
 type DropdownMenuGroupProps = React.ComponentProps<typeof DropdownMenuPrimitive.Group>;
 
+const DropdownMenuGroupContext = React.createContext(false);
+
 function DropdownMenuGroup(props: DropdownMenuGroupProps) {
-  return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
+  return (
+    <DropdownMenuGroupContext.Provider value={true}>
+      <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+    </DropdownMenuGroupContext.Provider>
+  );
 }
 
 type DropdownMenuPortalProps = React.ComponentProps<typeof DropdownMenuPrimitive.Portal>;
@@ -157,10 +163,12 @@ type DropdownMenuSubContentProps = React.ComponentProps<typeof DropdownMenuPrimi
 
 function DropdownMenuSubContent({ className, ...props }: DropdownMenuSubContentProps) {
   return (
-    <DropdownMenuPrimitive.Positioner className="z-50">
+    // `data-[anchor-hidden]:hidden` avoids a (0, 0) flicker when the parent
+    // menu unmounts mid-exit-animation.
+    <DropdownMenuPrimitive.Positioner className="z-50 data-[anchor-hidden]:hidden">
       <DropdownMenuPrimitive.Popup
         className={cn(
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 min-w-[8rem] origin-(--transform-origin) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 min-w-[8rem] origin-(--transform-origin) overflow-hidden rounded-md border bg-popover fill-mode-forwards p-1 text-popover-foreground shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in',
           className
         )}
         data-slot="dropdown-menu-sub-content"
@@ -179,6 +187,14 @@ type DropdownMenuContentProps = React.ComponentProps<typeof DropdownMenuPrimitiv
     align?: 'start' | 'center' | 'end';
     alignOffset?: number;
     side?: 'top' | 'right' | 'bottom' | 'left';
+    /**
+     * Keep the portal subtree mounted across close cycles. Set this when a
+     * descendant `<Dialog>` / `<AlertDialog>` needs to outlive menu close;
+     * trades the close animation for subtree survival. Avoid on long lists —
+     * prefer the sibling-dialog pattern there. See the
+     * `dropdown-menu-nested-dialog` demo. @default false
+     */
+    keepMounted?: boolean;
   };
 
 function DropdownMenuContent({
@@ -191,10 +207,83 @@ function DropdownMenuContent({
   transition = { duration: 0.2 },
   container,
   onOpenAutoFocus: _onOpenAutoFocus,
+  keepMounted = false,
   ...props
 }: DropdownMenuContentProps) {
   const { isOpen, highlightTransition, animateOnHover } = useDropdownMenu();
   const portalContainer = usePortalContainer();
+
+  const popup = (
+    <DropdownMenuPrimitive.Positioner
+      align={align}
+      alignOffset={alignOffset}
+      className="z-50 data-[anchor-hidden]:hidden"
+      side={side}
+      sideOffset={sideOffset}
+    >
+      <DropdownMenuPrimitive.Popup data-slot="dropdown-menu-popup" render={renderWithDataState('div')}>
+        <motion.div
+          animate={
+            keepMounted
+              ? undefined
+              : {
+                  opacity: 1,
+                  scale: 1,
+                }
+          }
+          className={cn(
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
+            className
+          )}
+          data-slot="dropdown-menu-content"
+          exit={
+            keepMounted
+              ? undefined
+              : {
+                  opacity: 0,
+                  scale: 0.95,
+                }
+          }
+          initial={
+            keepMounted
+              ? undefined
+              : {
+                  opacity: 0,
+                  scale: 0.95,
+                }
+          }
+          key="dropdown-menu-content"
+          style={{ willChange: 'opacity, transform' }}
+          transition={keepMounted ? undefined : transition}
+          {...props}
+        >
+          <MotionHighlight
+            className="rounded-sm"
+            controlledItems
+            enabled={animateOnHover}
+            hover
+            transition={highlightTransition}
+          >
+            {children}
+          </MotionHighlight>
+        </motion.div>
+      </DropdownMenuPrimitive.Popup>
+    </DropdownMenuPrimitive.Positioner>
+  );
+
+  // No `<AnimatePresence>` here on purpose — wrapping it would reintroduce the
+  // unmount-on-close that `keepMounted` exists to avoid.
+  if (keepMounted) {
+    return (
+      <DropdownMenuPrimitive.Portal
+        container={container ?? portalContainer}
+        data-slot="dropdown-menu-portal"
+        keepMounted
+      >
+        {popup}
+      </DropdownMenuPrimitive.Portal>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -204,49 +293,7 @@ function DropdownMenuContent({
           data-slot="dropdown-menu-portal"
           keepMounted
         >
-          <DropdownMenuPrimitive.Positioner
-            align={align}
-            alignOffset={alignOffset}
-            className="z-50"
-            side={side}
-            sideOffset={sideOffset}
-          >
-            <DropdownMenuPrimitive.Popup data-slot="dropdown-menu-popup" render={renderWithDataState('div')}>
-              <motion.div
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                }}
-                className={cn(
-                  'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
-                  className
-                )}
-                data-slot="dropdown-menu-content"
-                exit={{
-                  opacity: 0,
-                  scale: 0.95,
-                }}
-                initial={{
-                  opacity: 0,
-                  scale: 0.95,
-                }}
-                key="dropdown-menu-content"
-                style={{ willChange: 'opacity, transform' }}
-                transition={transition}
-                {...props}
-              >
-                <MotionHighlight
-                  className="rounded-sm"
-                  controlledItems
-                  enabled={animateOnHover}
-                  hover
-                  transition={highlightTransition}
-                >
-                  {children}
-                </MotionHighlight>
-              </motion.div>
-            </DropdownMenuPrimitive.Popup>
-          </DropdownMenuPrimitive.Positioner>
+          {popup}
         </DropdownMenuPrimitive.Portal>
       ) : null}
     </AnimatePresence>
@@ -257,11 +304,7 @@ type DropdownMenuItemProps = React.ComponentProps<typeof DropdownMenuPrimitive.I
   inset?: boolean;
   variant?: 'default' | 'destructive';
   asChild?: boolean;
-  /**
-   * Radix-compat: fired when the item is selected (click or Enter key).
-   * Base UI's primitive only exposes `onClick`; this prop is forwarded to
-   * `onClick` under the hood so consumer code keeps working.
-   */
+  /** Radix-compat: fired when the item is selected (click or Enter key). */
   onSelect?: (event: Event) => void;
 };
 
@@ -275,15 +318,12 @@ function DropdownMenuItem({
   onClick,
   ...props
 }: DropdownMenuItemProps) {
-  // Narrowed to React.MouseEvent here; Base UI's onClick type is BaseUIEvent<...>
-  // which structurally IS a React.MouseEvent plus a preventBaseUIHandler method
-  // we don't need to call. We forward the event to consumer onSelect/onClick as
-  // a plain React.MouseEvent, which is what Radix exposed.
   const handleClick = React.useCallback(
-    // biome-ignore lint/suspicious/noExplicitAny: Base UI's BaseUIEvent<T> narrows T with a preventBaseUIHandler method we don't use
-    (event: any) => {
-      (onClick as ((e: unknown) => void) | undefined)?.(event);
-      onSelect?.(event.nativeEvent);
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      (onClick as ((e: React.MouseEvent<HTMLDivElement>) => void) | undefined)?.(event);
+      if (event?.nativeEvent) {
+        onSelect?.(event.nativeEvent);
+      }
     },
     [onClick, onSelect]
   );
@@ -393,22 +433,21 @@ type DropdownMenuLabelProps = React.ComponentProps<typeof DropdownMenuPrimitive.
   inset?: boolean;
 };
 
-// Base UI's `Menu.GroupLabel` requires an ancestor `Menu.Group` or it throws
-// "MenuGroupRootContext is missing". Radix allowed a standalone label, and our
-// consumers (including the data-table demo) use it that way, so we wrap the
-// label in a Group internally to restore Radix-compatible behavior. If the
-// caller already wraps with DropdownMenuGroup, this nests harmlessly.
+// Base UI's GroupLabel throws without an ancestor Group; auto-wrap if needed.
 function DropdownMenuLabel({ className, inset, ...props }: DropdownMenuLabelProps) {
-  return (
-    <DropdownMenuPrimitive.Group>
-      <DropdownMenuPrimitive.GroupLabel
-        className={cn('px-2 py-1.5 font-semibold text-sm', inset && 'pl-8', className)}
-        data-inset={inset}
-        data-slot="dropdown-menu-label"
-        {...props}
-      />
-    </DropdownMenuPrimitive.Group>
+  const insideGroup = React.useContext(DropdownMenuGroupContext);
+  const label = (
+    <DropdownMenuPrimitive.GroupLabel
+      className={cn('px-2 py-1.5 font-semibold text-sm', inset && 'pl-8', className)}
+      data-inset={inset}
+      data-slot="dropdown-menu-label"
+      {...props}
+    />
   );
+  if (insideGroup) {
+    return label;
+  }
+  return <DropdownMenuPrimitive.Group>{label}</DropdownMenuPrimitive.Group>;
 }
 
 type DropdownMenuSeparatorProps = React.ComponentProps<typeof DropdownMenuPrimitive.Separator>;

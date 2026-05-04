@@ -237,24 +237,30 @@ type DescriptionRenderProps = {
   children?: React.ReactNode;
   className?: string;
   fallbackClassName?: string;
+  dataSlot?: string;
 };
 
 /**
- * Dialog / AlertDialog / Sheet descriptions default to `<p>` in Base UI but
- * frequently contain block-level children (inputs, lists). The shared fallback
- * renders a `<div>` with the registry's muted-foreground styling; `asChild`
- * preserves Radix's API where the caller supplies the render target.
- *
- * Returns the element to pass as Base UI's `render` prop.
+ * Renders a Dialog/AlertDialog/Sheet Description as a `<div>` (instead of Base
+ * UI's default `<p>`) so block-level children don't trigger validateDOMNesting.
+ * In `asChild` mode, clones `data-slot` onto the user's element so the Radix
+ * selector surface (`[data-slot="dialog-description"]`) keeps working.
  */
 export function renderDescription({
   asChild,
   children,
   className,
   fallbackClassName = 'text-muted-foreground text-sm',
+  dataSlot,
 }: DescriptionRenderProps): React.ReactElement {
-  if (asChild && React.isValidElement(children)) {
-    return children;
+  if (asChild && React.isValidElement<{ 'data-slot'?: string }>(children)) {
+    if (!dataSlot) {
+      return children;
+    }
+    if (children.props['data-slot']) {
+      return children;
+    }
+    return React.cloneElement(children, { 'data-slot': dataSlot });
   }
   const mergedClassName = [fallbackClassName, className].filter(Boolean).join(' ');
   return <div className={mergedClassName}>{children}</div>;

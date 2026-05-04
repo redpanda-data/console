@@ -59,9 +59,8 @@ function DialogClose({ ...props }: DialogCloseProps) {
 function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Backdrop>) {
   return (
     <DialogPrimitive.Backdrop
-      // fill-mode-forwards keeps the final keyframe (opacity 0) applied until
-      // Base UI unmounts the element; without it the backdrop snaps back to
-      // its natural opacity for one frame after the exit animation ends.
+      // fill-mode-forwards holds the exit keyframe until Base UI unmounts;
+      // without it the backdrop flashes back to its natural opacity for one frame.
       className={cn(
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 fill-mode-forwards backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in',
         className
@@ -73,9 +72,6 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
   );
 }
 
-// Base layout: flex column with capped height so a long DialogBody scrolls
-// while DialogHeader / DialogFooter stay pinned. Padding lives on the
-// sub-parts so their borders can extend edge-to-edge.
 const dialogContentVariants = cva(
   'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl border bg-background fill-mode-forwards shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in',
   {
@@ -157,8 +153,6 @@ function DialogContent({
   );
 }
 
-// `:has(+[data-slot=dialog-body])` only draws the bottom divider when a
-// DialogBody follows — keeps header-only and header+footer dialogs clean.
 const dialogHeaderVariants = cva('flex shrink-0 flex-col p-4 [&:has(+[data-slot=dialog-body])]:border-b', {
   variants: {
     align: {
@@ -186,8 +180,6 @@ function DialogHeader({ className, align, spacing, ...props }: DialogHeaderProps
   );
 }
 
-// Matches DialogHeader: only draw the top divider when a DialogBody is the
-// preceding sibling, so footer-only and header+footer dialogs stay clean.
 const dialogFooterVariants = cva('flex shrink-0 p-4 [[data-slot=dialog-body]+&]:border-t', {
   variants: {
     direction: {
@@ -242,10 +234,7 @@ function DialogDescription({
   asChild,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Description> & { asChild?: boolean }) {
-  // Render as <div> instead of the default <p> so it can safely contain block-level
-  // children (Text, Input, List, etc.) without triggering validateDOMNesting warnings.
-  // `asChild` is a Radix-compat passthrough — when set, the child element is used
-  // as the render target (same semantics as Radix's asChild on Description).
+  // Render as <div> (not <p>) so block-level children don't trigger validateDOMNesting.
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
@@ -253,15 +242,14 @@ function DialogDescription({
         asChild,
         children,
         className: typeof className === 'string' ? className : undefined,
+        dataSlot: 'dialog-description',
       })}
       {...props}
     />
   );
 }
 
-// Content layout helpers. DialogBody is the scrollable middle region inside
-// DialogContent — min-h-0 lets it shrink below its natural height so
-// overflow-y-auto actually scrolls when the content is tall.
+// min-h-0 lets the body shrink below its natural height so overflow-y-auto scrolls.
 const dialogBodyVariants = cva('min-h-0 flex-1 overflow-y-auto p-4', {
   variants: {
     spacing: {
