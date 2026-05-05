@@ -112,7 +112,7 @@ test.describe('Kafka Connect Connector Lifecycle', () => {
 
   test('connector detail page loads', async ({ page }) => {
     await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
-    await expect(page.getByText(CONNECTOR_NAME)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(CONNECTOR_NAME).first()).toBeVisible({ timeout: 10_000 });
     // Should show Overview / Configuration / Logs tabs
     await expect(page.getByRole('tab', { name: /overview/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: /configuration/i })).toBeVisible();
