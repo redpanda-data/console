@@ -12,8 +12,7 @@
 /*eslint block-scoped-var: "error"*/
 
 import { create, type Registry } from '@bufbuild/protobuf';
-import type { ConnectError } from '@connectrpc/connect';
-import { Code } from '@connectrpc/connect';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { createLinkedAbortController } from '@connectrpc/connect/protocol';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import {
@@ -122,6 +121,7 @@ import { uiState } from './ui-state';
 import { config as appConfig, isEmbedded } from '../config';
 import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
 import { trackHubspotUser } from '../hubspot/hubspot.helper';
+import { ErrorInfoSchema } from '../protogen/google/rpc/error_details_pb';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -165,6 +165,7 @@ import {
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { Reason } from '../protogen/redpanda/api/dataplane/v1alpha1/error_pb';
 import type {
   KnowledgeBase,
   KnowledgeBaseCreate,
@@ -294,6 +295,17 @@ function processVersionInfo(headers: Headers) {
 const _activeRequests: CacheEntry[] = [];
 
 const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
+const schemaRegistryNotConfiguredReason = `REASON_${Reason[Reason.FEATURE_NOT_CONFIGURED]}`;
+
+function isSchemaRegistryNotConfiguredError(error: unknown): error is ConnectError {
+  if (!(error instanceof ConnectError) || error.code !== Code.Unimplemented) {
+    return false;
+  }
+
+  const reasons = error.findDetails(ErrorInfoSchema).map((info) => info.reason);
+  return reasons.length === 0 || reasons.includes(schemaRegistryNotConfiguredReason);
+}
+
 class CacheEntry {
   url: string;
 
@@ -421,6 +433,7 @@ const _apiCreator = (set: any, get: any) => ({
     console: null,
     kafkaConnect: null,
     schemaRegistry: null,
+    schemaRegistryError: null,
   } as ClusterOverview,
   brokers: null as BrokerWithConfigAndStorage[] | null,
 
@@ -1073,12 +1086,22 @@ const _apiCreator = (set: any, get: any) => ({
       }),
     ];
 
-    // Conditionally add schema registry request
-    if (api.userData?.canViewSchemas) {
+    let schemaRegistryError: ConnectError | null = null;
+
+    if (api.userData?.canViewSchemas !== false) {
       requests.push(
-        client.getSchemaRegistryInfo({}).catch((e) => {
+        client.getSchemaRegistryInfo({}).catch((error: unknown) => {
+          if (isSchemaRegistryNotConfiguredError(error)) {
+            return null;
+          }
+
+          schemaRegistryError =
+            error instanceof ConnectError
+              ? error
+              : new ConnectError('Failed to fetch Schema Registry info', Code.Unknown, undefined, undefined, error);
+
           // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(e);
+          console.error(error);
           return null;
         })
       );
@@ -1108,6 +1131,7 @@ const _apiCreator = (set: any, get: any) => ({
         redpanda: redpandaResponse as any,
         // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
         schemaRegistry: schemaRegistryResponse as any,
+        schemaRegistryError,
         // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
         kafkaConnect: kafkaConnectResponse as any,
       },

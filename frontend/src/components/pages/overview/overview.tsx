@@ -336,6 +336,24 @@ function ClusterDetails() {
     name: c.name,
     status: formatStatus(c.status),
   }));
+  const schemaRegistryFallback = overview.schemaRegistryError ? (
+    <Tooltip hasArrow label={overview.schemaRegistryError.message}>
+      <Text>Unavailable</Text>
+    </Tooltip>
+  ) : (
+    'Not configured'
+  );
+  const schemaRegistryContent =
+    overview.schemaRegistry !== null
+      ? [
+          [
+            formatStatus(overview.schemaRegistry.status),
+            overview.schemaRegistry?.status?.status === StatusType.HEALTHY
+              ? `${overview.schemaRegistry.registeredSubjectsCount} schemas`
+              : undefined,
+          ],
+        ]
+      : [[schemaRegistryFallback]];
 
   return (
     <Grid alignItems="center" gap={2} templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }} w="full">
@@ -344,21 +362,7 @@ function ClusterDetails() {
           content={hasConnect ? clusterLines.map((c) => [c.name, c.status]) : [['Not configured']]}
           title="Kafka Connect"
         />
-        <Details
-          content={
-            overview.schemaRegistry !== null
-              ? [
-                  [
-                    formatStatus(overview.schemaRegistry.status),
-                    overview.schemaRegistry?.status?.status === StatusType.HEALTHY
-                      ? `${overview.schemaRegistry.registeredSubjectsCount} schemas`
-                      : undefined,
-                  ],
-                ]
-              : [['Not configured']]
-          }
-          title="Schema Registry"
-        />
+        <Details content={schemaRegistryContent} title="Schema Registry" />
       </DetailsBlock>
 
       <DetailsBlock title="Storage">
