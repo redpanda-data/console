@@ -1435,6 +1435,7 @@ export type ClusterOverview = {
   console: GetConsoleInfoResponse | null;
   kafkaConnect: GetKafkaConnectInfoResponse | null;
   schemaRegistry: GetSchemaRegistryInfoResponse | null;
+  schemaRegistryError?: ConnectError | null;
 };
 
 export type OverviewStatus = {
