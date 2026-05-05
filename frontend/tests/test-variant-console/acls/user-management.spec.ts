@@ -144,34 +144,30 @@ test.describe('ACL User Management', () => {
       await expect(table).toBeVisible();
     });
 
-    const filterInput = page.getByPlaceholder('Filter by name (regexp)...');
+    const filterInput = page.getByPlaceholder('Filter by name');
 
-    await test.step('3. Get filter input', async () => {
-      await expect(filterInput).toBeVisible();
-    });
-
-    await test.step('4. Filter by test', async () => {
+    await test.step('3. Filter by test', async () => {
       await filterInput.fill('test');
     });
 
-    await test.step('5. Verify URL contains query parameter name=test', async () => {
+    await test.step('4. Verify URL contains query parameter name=test', async () => {
       await expect(page).toHaveURL('/security/users/?name=test');
     });
 
-    await test.step('6. Verify filtered results show only users with test in name', async () => {
+    await test.step('5. Verify filtered results show only users with test in name', async () => {
       await expect(page.getByRole('link', { name: /test-user-.*/ }).first()).toBeVisible();
       await expect(page.getByRole('link', { name: 'e2euser', exact: true })).not.toBeVisible();
     });
 
-    await test.step('7. Clear filter', async () => {
+    await test.step('6. Clear filter', async () => {
       await filterInput.fill('');
     });
 
-    await test.step('8. Verify URL query parameter is removed', async () => {
+    await test.step('7. Verify URL query parameter is removed', async () => {
       await expect(page).toHaveURL('/security/users');
     });
 
-    await test.step('9. Verify e2euser is visible again', async () => {
+    await test.step('8. Verify e2euser is visible again', async () => {
       await expect(page.getByRole('link', { name: 'e2euser' })).toBeVisible();
     });
   });
@@ -189,7 +185,7 @@ test.describe('ACL User Management', () => {
       await expect(page).toHaveURL('/security/users');
     });
 
-    const filterInput = page.getByPlaceholder('Filter by name (regexp)...');
+    const filterInput = page.getByPlaceholder('Filter by name');
 
     await test.step('2. Filter by e2e', async () => {
       await filterInput.fill('e2e');
