@@ -9,7 +9,7 @@ test.describe('Users', () => {
     const securityPage = new SecurityPage(page);
     await securityPage.createUser(username);
 
-    await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+    await expect(page.getByText(`User: ${username}`)).toBeVisible();
 
     await securityPage.deleteUser(username);
   });
@@ -29,9 +29,9 @@ test.describe('Users', () => {
     await page.goto('/security/users/', {
       waitUntil: 'domcontentloaded',
     });
-    await page.getByPlaceholder('Filter by name (regexp)...').fill(`user-${r}-regexp-[1,2]`);
+    await page.getByPlaceholder('Filter by name').fill(`user-${r}-regexp-[1,2]`);
     // Wait for nuqs to push the filter into the URL (TanStack Router navigate is async)
-    await page.waitForURL(/[?&]name=/);
+    await page.waitForURL(/[?&]q=/);
 
     await expect(
       page.getByTestId('data-table-cell').locator(`a[href='/security/users/${userName1}/details']`)
