@@ -14,7 +14,7 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -171,11 +171,7 @@ export const ShadowLinkEditPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="space-y-2">
-        <Heading level={1}>Edit shadow link</Heading>
-        <Text variant="muted">Update shadow link configuration for disaster recovery replication.</Text>
-      </div>
+      <Text variant="muted">Update shadow link configuration for disaster recovery replication.</Text>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, onValidationError)}>

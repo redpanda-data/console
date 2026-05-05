@@ -11,7 +11,7 @@
 
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
-import { isServerless } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -47,6 +47,15 @@ function buildTabs(
       label: 'Roles',
       path: '/security/roles',
       disabled: !featureRolesApi || userData?.canManageUsers === false,
+    });
+  }
+
+  if (!isFeatureFlagEnabled('enableNewSecurityPage')) {
+    result.push({
+      key: 'acls',
+      label: 'ACLs',
+      path: '/security/acls',
+      disabled: userData?.canListAcls === false,
     });
   }
 

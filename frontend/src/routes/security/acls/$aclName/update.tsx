@@ -13,7 +13,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
-import RoleUpdatePage from '../../../../components/pages/security/roles/role-update-page';
+import AclUpdatePage from '../../../../components/pages/security/acls/acl-update-page';
 import { isFeatureFlagEnabled } from '../../../../config';
 
 const searchSchema = z.object({
@@ -21,19 +21,15 @@ const searchSchema = z.object({
 });
 
 // allow: error-boundary [legacy route, component handles its own error states]
-export const Route = createFileRoute('/security/roles/$roleName/update')({
+export const Route = createFileRoute('/security/acls/$aclName/update')({
   staticData: {
-    title: 'Update Role',
+    title: 'Update ACL',
   },
   validateSearch: zodValidator(searchSchema),
   beforeLoad: ({ params }) => {
     if (isFeatureFlagEnabled('enableNewSecurityPage')) {
-      throw redirect({
-        to: '/security/roles/$roleName/details',
-        params,
-        replace: true,
-      });
+      throw redirect({ to: '/security/acls/$aclName/details', params, replace: true });
     }
   },
-  component: RoleUpdatePage,
+  component: AclUpdatePage,
 });

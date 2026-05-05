@@ -162,3 +162,4 @@ dist
 .gemini/settings.json
 
 tests/**/playwright-report/
+tests/**/*.js

@@ -52,6 +52,7 @@ import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$
 import { Route as SecurityUsersIndexRouteImport } from './routes/security/users/index';
 import { Route as SecurityRolesIndexRouteImport } from './routes/security/roles/index';
 import { Route as SecurityPermissionsListIndexRouteImport } from './routes/security/permissions-list/index';
+import { Route as SecurityAclsIndexRouteImport } from './routes/security/acls/index';
 import { Route as RpConnectPipelineIdIndexRouteImport } from './routes/rp-connect/$pipelineId/index';
 import { Route as KnowledgebasesKnowledgebaseIdIndexRouteImport } from './routes/knowledgebases/$knowledgebaseId/index';
 import { Route as ConnectClustersClusterNameIndexRouteImport } from './routes/connect-clusters/$clusterName/index';
@@ -60,6 +61,7 @@ import { Route as TopicsTopicNameProduceRecordRouteImport } from './routes/topic
 import { Route as ShadowlinksNameEditRouteImport } from './routes/shadowlinks/$name/edit';
 import { Route as SecurityUsersCreateRouteImport } from './routes/security/users/create';
 import { Route as SecurityRolesCreateRouteImport } from './routes/security/roles/create';
+import { Route as SecurityAclsCreateRouteImport } from './routes/security/acls/create';
 import { Route as SecretsIdEditRouteImport } from './routes/secrets/$id/edit';
 import { Route as RpConnectSecretsCreateRouteImport } from './routes/rp-connect/secrets/create';
 import { Route as RpConnectPipelineIdEditRouteImport } from './routes/rp-connect/$pipelineId/edit';
@@ -72,6 +74,7 @@ import { Route as SecurityUsersUserNameDetailsRouteImport } from './routes/secur
 import { Route as SecurityRolesRoleNameUpdateRouteImport } from './routes/security/roles/$roleName/update';
 import { Route as SecurityRolesRoleNameEditRouteImport } from './routes/security/roles/$roleName/edit';
 import { Route as SecurityRolesRoleNameDetailsRouteImport } from './routes/security/roles/$roleName/details';
+import { Route as SecurityAclsAclNameUpdateRouteImport } from './routes/security/acls/$aclName/update';
 import { Route as SecurityAclsAclNameDetailsRouteImport } from './routes/security/acls/$aclName/details';
 import { Route as SchemaRegistrySubjectsSubjectNameEditModeRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-mode';
 import { Route as SchemaRegistrySubjectsSubjectNameEditCompatibilityRouteImport } from './routes/schema-registry/subjects/$subjectName/edit-compatibility';
@@ -300,6 +303,11 @@ const SecurityPermissionsListIndexRoute =
     path: '/permissions-list/',
     getParentRoute: () => SecurityRoute,
   } as any);
+const SecurityAclsIndexRoute = SecurityAclsIndexRouteImport.update({
+  id: '/acls/',
+  path: '/acls/',
+  getParentRoute: () => SecurityRoute,
+} as any);
 const RpConnectPipelineIdIndexRoute =
   RpConnectPipelineIdIndexRouteImport.update({
     id: '/rp-connect/$pipelineId/',
@@ -342,6 +350,11 @@ const SecurityUsersCreateRoute = SecurityUsersCreateRouteImport.update({
 const SecurityRolesCreateRoute = SecurityRolesCreateRouteImport.update({
   id: '/roles/create',
   path: '/roles/create',
+  getParentRoute: () => SecurityRoute,
+} as any);
+const SecurityAclsCreateRoute = SecurityAclsCreateRouteImport.update({
+  id: '/acls/create',
+  path: '/acls/create',
   getParentRoute: () => SecurityRoute,
 } as any);
 const SecretsIdEditRoute = SecretsIdEditRouteImport.update({
@@ -410,6 +423,12 @@ const SecurityRolesRoleNameDetailsRoute =
   SecurityRolesRoleNameDetailsRouteImport.update({
     id: '/roles/$roleName/details',
     path: '/roles/$roleName/details',
+    getParentRoute: () => SecurityRoute,
+  } as any);
+const SecurityAclsAclNameUpdateRoute =
+  SecurityAclsAclNameUpdateRouteImport.update({
+    id: '/acls/$aclName/update',
+    path: '/acls/$aclName/update',
     getParentRoute: () => SecurityRoute,
   } as any);
 const SecurityAclsAclNameDetailsRoute =
@@ -519,6 +538,7 @@ export interface FileRoutesByFullPath {
   '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/acls/create': typeof SecurityAclsCreateRoute;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
@@ -527,6 +547,7 @@ export interface FileRoutesByFullPath {
   '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/security/acls/': typeof SecurityAclsIndexRoute;
   '/security/permissions-list/': typeof SecurityPermissionsListIndexRoute;
   '/security/roles/': typeof SecurityRolesIndexRoute;
   '/security/users/': typeof SecurityUsersIndexRoute;
@@ -542,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
   '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
+  '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
   '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
@@ -593,6 +615,7 @@ export interface FileRoutesByTo {
   '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/acls/create': typeof SecurityAclsCreateRoute;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
@@ -601,6 +624,7 @@ export interface FileRoutesByTo {
   '/connect-clusters/$clusterName': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
+  '/security/acls': typeof SecurityAclsIndexRoute;
   '/security/permissions-list': typeof SecurityPermissionsListIndexRoute;
   '/security/roles': typeof SecurityRolesIndexRoute;
   '/security/users': typeof SecurityUsersIndexRoute;
@@ -616,6 +640,7 @@ export interface FileRoutesByTo {
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
   '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
+  '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
   '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
@@ -669,6 +694,7 @@ export interface FileRoutesById {
   '/rp-connect/$pipelineId/edit': typeof RpConnectPipelineIdEditRoute;
   '/rp-connect/secrets/create': typeof RpConnectSecretsCreateRoute;
   '/secrets/$id/edit': typeof SecretsIdEditRoute;
+  '/security/acls/create': typeof SecurityAclsCreateRoute;
   '/security/roles/create': typeof SecurityRolesCreateRoute;
   '/security/users/create': typeof SecurityUsersCreateRoute;
   '/shadowlinks/$name/edit': typeof ShadowlinksNameEditRoute;
@@ -677,6 +703,7 @@ export interface FileRoutesById {
   '/connect-clusters/$clusterName/': typeof ConnectClustersClusterNameIndexRoute;
   '/knowledgebases/$knowledgebaseId/': typeof KnowledgebasesKnowledgebaseIdIndexRoute;
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
+  '/security/acls/': typeof SecurityAclsIndexRoute;
   '/security/permissions-list/': typeof SecurityPermissionsListIndexRoute;
   '/security/roles/': typeof SecurityRolesIndexRoute;
   '/security/users/': typeof SecurityUsersIndexRoute;
@@ -692,6 +719,7 @@ export interface FileRoutesById {
   '/schema-registry/subjects/$subjectName/edit-compatibility': typeof SchemaRegistrySubjectsSubjectNameEditCompatibilityRoute;
   '/schema-registry/subjects/$subjectName/edit-mode': typeof SchemaRegistrySubjectsSubjectNameEditModeRoute;
   '/security/acls/$aclName/details': typeof SecurityAclsAclNameDetailsRoute;
+  '/security/acls/$aclName/update': typeof SecurityAclsAclNameUpdateRoute;
   '/security/roles/$roleName/details': typeof SecurityRolesRoleNameDetailsRoute;
   '/security/roles/$roleName/edit': typeof SecurityRolesRoleNameEditRoute;
   '/security/roles/$roleName/update': typeof SecurityRolesRoleNameUpdateRoute;
@@ -746,6 +774,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/edit'
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
+    | '/security/acls/create'
     | '/security/roles/create'
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
@@ -754,6 +783,7 @@ export interface FileRouteTypes {
     | '/connect-clusters/$clusterName/'
     | '/knowledgebases/$knowledgebaseId/'
     | '/rp-connect/$pipelineId/'
+    | '/security/acls/'
     | '/security/permissions-list/'
     | '/security/roles/'
     | '/security/users/'
@@ -769,6 +799,7 @@ export interface FileRouteTypes {
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
     | '/schema-registry/subjects/$subjectName/edit-mode'
     | '/security/acls/$aclName/details'
+    | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
     | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
@@ -820,6 +851,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/edit'
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
+    | '/security/acls/create'
     | '/security/roles/create'
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
@@ -828,6 +860,7 @@ export interface FileRouteTypes {
     | '/connect-clusters/$clusterName'
     | '/knowledgebases/$knowledgebaseId'
     | '/rp-connect/$pipelineId'
+    | '/security/acls'
     | '/security/permissions-list'
     | '/security/roles'
     | '/security/users'
@@ -843,6 +876,7 @@ export interface FileRouteTypes {
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
     | '/schema-registry/subjects/$subjectName/edit-mode'
     | '/security/acls/$aclName/details'
+    | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
     | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
@@ -895,6 +929,7 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/edit'
     | '/rp-connect/secrets/create'
     | '/secrets/$id/edit'
+    | '/security/acls/create'
     | '/security/roles/create'
     | '/security/users/create'
     | '/shadowlinks/$name/edit'
@@ -903,6 +938,7 @@ export interface FileRouteTypes {
     | '/connect-clusters/$clusterName/'
     | '/knowledgebases/$knowledgebaseId/'
     | '/rp-connect/$pipelineId/'
+    | '/security/acls/'
     | '/security/permissions-list/'
     | '/security/roles/'
     | '/security/users/'
@@ -918,6 +954,7 @@ export interface FileRouteTypes {
     | '/schema-registry/subjects/$subjectName/edit-compatibility'
     | '/schema-registry/subjects/$subjectName/edit-mode'
     | '/security/acls/$aclName/details'
+    | '/security/acls/$aclName/update'
     | '/security/roles/$roleName/details'
     | '/security/roles/$roleName/edit'
     | '/security/roles/$roleName/update'
@@ -1293,6 +1330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityPermissionsListIndexRouteImport;
       parentRoute: typeof SecurityRoute;
     };
+    '/security/acls/': {
+      id: '/security/acls/';
+      path: '/acls';
+      fullPath: '/security/acls/';
+      preLoaderRoute: typeof SecurityAclsIndexRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
     '/rp-connect/$pipelineId/': {
       id: '/rp-connect/$pipelineId/';
       path: '/rp-connect/$pipelineId';
@@ -1347,6 +1391,13 @@ declare module '@tanstack/react-router' {
       path: '/roles/create';
       fullPath: '/security/roles/create';
       preLoaderRoute: typeof SecurityRolesCreateRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
+    '/security/acls/create': {
+      id: '/security/acls/create';
+      path: '/acls/create';
+      fullPath: '/security/acls/create';
+      preLoaderRoute: typeof SecurityAclsCreateRouteImport;
       parentRoute: typeof SecurityRoute;
     };
     '/secrets/$id/edit': {
@@ -1433,6 +1484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRolesRoleNameDetailsRouteImport;
       parentRoute: typeof SecurityRoute;
     };
+    '/security/acls/$aclName/update': {
+      id: '/security/acls/$aclName/update';
+      path: '/acls/$aclName/update';
+      fullPath: '/security/acls/$aclName/update';
+      preLoaderRoute: typeof SecurityAclsAclNameUpdateRouteImport;
+      parentRoute: typeof SecurityRoute;
+    };
     '/security/acls/$aclName/details': {
       id: '/security/acls/$aclName/details';
       path: '/acls/$aclName/details';
@@ -1508,12 +1566,15 @@ declare module '@tanstack/react-router' {
 
 interface SecurityRouteChildren {
   SecurityIndexRoute: typeof SecurityIndexRoute;
+  SecurityAclsCreateRoute: typeof SecurityAclsCreateRoute;
   SecurityRolesCreateRoute: typeof SecurityRolesCreateRoute;
   SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
+  SecurityAclsIndexRoute: typeof SecurityAclsIndexRoute;
   SecurityPermissionsListIndexRoute: typeof SecurityPermissionsListIndexRoute;
   SecurityRolesIndexRoute: typeof SecurityRolesIndexRoute;
   SecurityUsersIndexRoute: typeof SecurityUsersIndexRoute;
   SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
+  SecurityAclsAclNameUpdateRoute: typeof SecurityAclsAclNameUpdateRoute;
   SecurityRolesRoleNameDetailsRoute: typeof SecurityRolesRoleNameDetailsRoute;
   SecurityRolesRoleNameEditRoute: typeof SecurityRolesRoleNameEditRoute;
   SecurityRolesRoleNameUpdateRoute: typeof SecurityRolesRoleNameUpdateRoute;
@@ -1522,12 +1583,15 @@ interface SecurityRouteChildren {
 
 const SecurityRouteChildren: SecurityRouteChildren = {
   SecurityIndexRoute: SecurityIndexRoute,
+  SecurityAclsCreateRoute: SecurityAclsCreateRoute,
   SecurityRolesCreateRoute: SecurityRolesCreateRoute,
   SecurityUsersCreateRoute: SecurityUsersCreateRoute,
+  SecurityAclsIndexRoute: SecurityAclsIndexRoute,
   SecurityPermissionsListIndexRoute: SecurityPermissionsListIndexRoute,
   SecurityRolesIndexRoute: SecurityRolesIndexRoute,
   SecurityUsersIndexRoute: SecurityUsersIndexRoute,
   SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
+  SecurityAclsAclNameUpdateRoute: SecurityAclsAclNameUpdateRoute,
   SecurityRolesRoleNameDetailsRoute: SecurityRolesRoleNameDetailsRoute,
   SecurityRolesRoleNameEditRoute: SecurityRolesRoleNameEditRoute,
   SecurityRolesRoleNameUpdateRoute: SecurityRolesRoleNameUpdateRoute,
