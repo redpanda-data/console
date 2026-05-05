@@ -150,8 +150,8 @@ test.describe('ACL User Management', () => {
       await filterInput.fill('test');
     });
 
-    await test.step('4. Verify URL contains query parameter name=test', async () => {
-      await expect(page).toHaveURL('/security/users/?name=test');
+    await test.step('4. Verify URL contains query parameter q=test', async () => {
+      await expect(page).toHaveURL('/security/users/?q=test');
     });
 
     await test.step('5. Verify filtered results show only users with test in name', async () => {
@@ -191,8 +191,8 @@ test.describe('ACL User Management', () => {
       await filterInput.fill('e2e');
     });
 
-    await test.step('3. Verify URL contains query parameter name=e2e', async () => {
-      await expect(page).toHaveURL('/security/users/?name=e2e');
+    await test.step('3. Verify URL contains query parameter q=e2e', async () => {
+      await expect(page).toHaveURL('/security/users/?q=e2e');
     });
 
     await test.step('4. Verify only e2euser is visible', async () => {
@@ -203,8 +203,8 @@ test.describe('ACL User Management', () => {
       await filterInput.fill('test');
     });
 
-    await test.step('6. Verify URL contains query parameter name=test', async () => {
-      await expect(page).toHaveURL('/security/users/?name=test');
+    await test.step('6. Verify URL contains query parameter q=test', async () => {
+      await expect(page).toHaveURL('/security/users/?q=test');
     });
 
     await test.step('7. Verify test-user is visible', async () => {
