@@ -58,37 +58,28 @@ describe('UserAclsCard', () => {
   test('should render empty state when no ACLs provided', () => {
     renderWithFileRoutes(<UserAclsCard acls={[]} />);
 
-    expect(screen.getByText('No ACLs assigned')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '+ Add ACL' })).toBeInTheDocument();
+    expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create ACL' })).toBeInTheDocument();
   });
 
   test('should render empty state when acls is undefined', () => {
     renderWithFileRoutes(<UserAclsCard acls={undefined} />);
 
-    expect(screen.getByText('No ACLs assigned')).toBeInTheDocument();
+    expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
   });
 
-  test('should render flat ACL table with correct row count and data', () => {
+  test('should render ACL table grouped by principal and host', () => {
     renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
-    // Resource types
-    expect(screen.getAllByText('Topic')).toHaveLength(2);
-    expect(screen.getByText('Cluster')).toBeInTheDocument();
+    // Table headers
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Hosts' })).toBeInTheDocument();
 
-    // Resource names
-    expect(screen.getAllByText('test-topic')).toHaveLength(2);
-    expect(screen.getByText('kafka-cluster')).toBeInTheDocument();
+    // Two rows, one per ACL group (principal+host)
+    expect(screen.getAllByText('User:test-user')).toHaveLength(2);
 
-    // Operations
-    expect(screen.getByText('Read')).toBeInTheDocument();
-    expect(screen.getByText('Write')).toBeInTheDocument();
-    expect(screen.getByText('Describe')).toBeInTheDocument();
-
-    // Permissions
-    expect(screen.getAllByText('Allow')).toHaveLength(3);
-
-    // Hosts
-    expect(screen.getAllByText('*')).toHaveLength(2);
+    // Host values
+    expect(screen.getByText('*')).toBeInTheDocument();
     expect(screen.getByText('192.168.1.1')).toBeInTheDocument();
   });
 });

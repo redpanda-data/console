@@ -171,7 +171,9 @@ export const ShadowLinkEditPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Text variant="muted">Update shadow link configuration for disaster recovery replication.</Text>
+      <Text data-testid="shadowLink-edit-page-description" variant="muted">
+        Update shadow link configuration for disaster recovery replication.
+      </Text>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, onValidationError)}>

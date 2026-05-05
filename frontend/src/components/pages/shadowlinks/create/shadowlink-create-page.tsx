@@ -265,7 +265,7 @@ export const ShadowLinkCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Text variant="muted">
+      <Text data-testid="shadowLink-create-page-description" variant="muted">
         Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
         preserved offsets and timestamps. Select the replicated content for this shadow link.
       </Text>

@@ -113,6 +113,15 @@ vi.mock('../../../../state/rest-interfaces', () => ({
   AclRequestDefault: {},
 }));
 
+vi.mock('../../../../config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../config')>();
+  return {
+    ...actual,
+    isFeatureFlagEnabled: (flag: string) =>
+      flag === 'enableNewSecurityPage' ? true : actual.isFeatureFlagEnabled(flag),
+  };
+});
+
 vi.mock('../../../../react-query/api/acl', () => ({
   useCreateACLMutation: () => ({ mutateAsync: vi.fn() }),
   useDeleteAclMutation: () => ({ mutateAsync: vi.fn() }),

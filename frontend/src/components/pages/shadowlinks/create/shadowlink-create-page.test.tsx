@@ -551,7 +551,7 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
     renderWithFileRoutes(<ShadowLinkCreatePage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Create shadow link')).toBeInTheDocument();
+      expect(screen.getByTestId('shadowLink-create-page-description')).toBeInTheDocument();
     });
 
     expect(window.location.href).toBe('');
