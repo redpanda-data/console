@@ -56,7 +56,7 @@ test.describe('ACL User Management', () => {
     });
   });
 
-  test('should navigate to Create ACLs with pre-populated principal after user creation', async ({ page }) => {
+  test('should navigate to user details after user creation via Add permissions button', async ({ page }) => {
     const timestamp = Date.now();
     const username = `test-user-acl-${timestamp}`;
 
@@ -68,26 +68,20 @@ test.describe('ACL User Management', () => {
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
     });
 
-    await test.step('2. Click Create ACLs button', async () => {
-      await page.getByTestId('create-acls-button').click();
+    await test.step('2. Click Add permissions button', async () => {
+      await page.getByTestId('go-to-user-details-button').click();
     });
 
-    await test.step('3. Verify URL contains principalType and principalName params', async () => {
-      await expect(page).toHaveURL(/\/security\/acls\/create/);
-      const url = new URL(page.url());
-      expect(url.searchParams.get('principalType')).toBe('User');
-      expect(url.searchParams.get('principalName')).toBe(username);
+    await test.step('3. Verify URL is the user details page', async () => {
+      await expect(page).toHaveURL(`/security/users/${username}/details`);
     });
 
-    await test.step('4. Verify principal input is pre-populated with username', async () => {
-      const principalInput = page.getByTestId('shared-principal-input');
-      await expect(principalInput).toBeVisible();
-      await expect(principalInput).toHaveValue(username);
+    await test.step('4. Verify user details page is shown', async () => {
+      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
     });
 
-    await test.step('5. Verify principal type is User', async () => {
-      const typeSelect = page.getByTestId('shared-principal-type-select');
-      await expect(typeSelect).toHaveText('User');
+    await test.step('5. Verify ACLs card is present', async () => {
+      await expect(page.getByRole('heading', { name: /ACLs/ })).toBeVisible();
     });
   });
 
