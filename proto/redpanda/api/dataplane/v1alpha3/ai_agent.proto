@@ -108,6 +108,9 @@ message AIAgent {
   // Not user-configurable: capabilities and authentication (managed by Redpanda).
   AgentCard agent_card = 17;
 
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 18;
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -294,6 +297,17 @@ message AIAgent {
       repeated string output_modes = 7;
     }
   }
+}
+
+// Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+message AIAgentTeamsBridge {
+  bool enabled = 1;
+  string bot_app_id = 2;
+  string bot_tenant_id = 3;
+  string bot_app_secret_ref = 4 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+  ];
 }
 
 // AIAgentService is the service for AI Agents.
@@ -614,6 +628,9 @@ message AIAgentCreate {
 
   // Optional A2A agent card configuration.
   AIAgent.AgentCard agent_card = 14;
+
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 15;
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -755,6 +772,9 @@ message AIAgentUpdate {
 
   // Optional A2A agent card configuration.
   AIAgent.AgentCard agent_card = 14;
+
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 15;
 }
 
 message UpdateAIAgentRequest {

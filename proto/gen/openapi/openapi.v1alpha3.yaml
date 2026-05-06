@@ -52,6 +52,8 @@ components:
             Tags are key-value pairs that can be assigned to an AI agent resource.
             They help organize AI agents and enable filtering when listing them.
           type: object
+        teams_bridge:
+          $ref: '#/components/schemas/AIAgentTeamsBridge'
         url:
           description: URL to connect to the AI agent endpoint.
           readOnly: true
@@ -164,12 +166,26 @@ components:
             type: string
           description: Optional list of tags to attach to an AI agent.
           type: object
+        teams_bridge:
+          $ref: '#/components/schemas/AIAgentTeamsBridge'
       required:
         - display_name
         - system_prompt
         - provider
         - model
         - service_account
+      type: object
+    AIAgentTeamsBridge:
+      description: Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+      properties:
+        bot_app_id:
+          type: string
+        bot_app_secret_ref:
+          type: string
+        bot_tenant_id:
+          type: string
+        enabled:
+          type: boolean
       type: object
     AIAgentUpdate:
       properties:
@@ -216,6 +232,8 @@ components:
             A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
+        teams_bridge:
+          $ref: '#/components/schemas/AIAgentTeamsBridge'
       type: object
     AgentCard:
       description: A2A agent card configuration for customizing agent discovery metadata.
