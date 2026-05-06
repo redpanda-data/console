@@ -9,20 +9,31 @@
  * by the Apache License, Version 2.0
  */
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
 import RoleUpdatePage from '../../../../components/pages/security/roles/role-update-page';
+import { isFeatureFlagEnabled } from '../../../../config';
 
 const searchSchema = z.object({
   host: fallback(z.string().optional(), undefined),
 });
 
+// allow: error-boundary [legacy route, component handles its own error states]
 export const Route = createFileRoute('/security/roles/$roleName/update')({
   staticData: {
     title: 'Update Role',
   },
   validateSearch: zodValidator(searchSchema),
+  beforeLoad: ({ params }) => {
+    if (isFeatureFlagEnabled('enableNewSecurityPage')) {
+      throw redirect({
+        to: '/security/roles/$roleName/details',
+        params,
+        replace: true,
+      });
+    }
+  },
   component: RoleUpdatePage,
 });

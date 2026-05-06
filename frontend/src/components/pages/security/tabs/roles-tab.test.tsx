@@ -11,8 +11,17 @@
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+
+import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
+
+const NuqsWrapper = ({ children }: { children: ReactNode }) => (
+  <NuqsTestingAdapter>
+    <TooltipProvider>{children}</TooltipProvider>
+  </NuqsTestingAdapter>
+);
 
 const { historyPushMock, refreshRoleMembersMock, refreshRolesMock, deleteRoleMutationMock } = vi.hoisted(() => ({
   historyPushMock: vi.fn(),
@@ -206,20 +215,16 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 
 vi.mock('../shared/delete-role-confirm-modal', () => ({
   DeleteRoleConfirmModal: ({
-    buttonEl,
     onConfirm,
     roleName,
   }: {
-    buttonEl: ReactNode;
     onConfirm: () => Promise<void> | void;
     roleName: string;
+    [key: string]: unknown;
   }) => (
-    <div>
-      {buttonEl}
-      <button data-testid={`mock-confirm-delete-${roleName}`} onClick={() => onConfirm()}>
-        Confirm delete
-      </button>
-    </div>
+    <button data-testid={`mock-confirm-delete-${roleName}`} onClick={() => onConfirm()}>
+      Confirm delete
+    </button>
   ),
 }));
 
@@ -290,7 +295,12 @@ vi.mock('../../../misc/section', () => ({
   default: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
 }));
 
+vi.mock('../shared/security-tabs-nav', () => ({
+  SecurityTabsNav: () => null,
+}));
+
 vi.mock('react-query/api/security', () => ({
+  useCreateRoleMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
   useDeleteRoleMutation: () => ({
     mutateAsync: deleteRoleMutationMock,
   }),
@@ -310,18 +320,8 @@ describe('RolesTab role navigation', () => {
     vi.clearAllMocks();
   });
 
-  test('navigates role edit actions to the encoded update route', async () => {
-    const user = userEvent.setup();
-
-    render(<RolesTab />);
-
-    await user.click(await screen.findByLabelText('Edit role topic reader/qa'));
-
-    expect(historyPushMock).toHaveBeenCalledWith('/security/roles/topic%20reader%2Fqa/update');
-  });
-
   test('renders role list from useListRolesQuery', async () => {
-    render(<RolesTab />);
+    render(<RolesTab />, { wrapper: NuqsWrapper });
 
     await expect(screen.findByTestId('role-list-item-topic reader/qa')).resolves.toBeInTheDocument();
   });
@@ -329,7 +329,7 @@ describe('RolesTab role navigation', () => {
   test('delete role calls deleteRoleMutation with correct arguments', async () => {
     const user = userEvent.setup();
 
-    render(<RolesTab />);
+    render(<RolesTab />, { wrapper: NuqsWrapper });
 
     await user.click(await screen.findByTestId('mock-confirm-delete-topic reader/qa'));
 

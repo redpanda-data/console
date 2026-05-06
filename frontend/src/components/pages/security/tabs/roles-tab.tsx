@@ -17,7 +17,9 @@ import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secu
 import type { FC } from 'react';
 import { useState } from 'react';
 
+import { RolesTabNew } from './roles-tab-new';
 import ErrorResult from '../../../../components/misc/error-result';
+import { isFeatureFlagEnabled } from '../../../../config';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
 import { appGlobal } from '../../../../state/app-global';
 import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
@@ -31,7 +33,7 @@ import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { DeleteRoleConfirmModal } from '../shared/delete-role-confirm-modal';
 import { filterByName } from '../shared/filter-by-name';
 
-export const RolesTab: FC = () => {
+const RolesTabOriginal: FC = () => {
   useSecurityBreadcrumbs([]);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
@@ -170,3 +172,6 @@ export const RolesTab: FC = () => {
     </div>
   );
 };
+
+export const RolesTab: FC = () =>
+  isFeatureFlagEnabled('enableNewSecurityPage') ? <RolesTabNew /> : <RolesTabOriginal />;

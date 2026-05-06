@@ -24,7 +24,9 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { PermissionsListTabNew } from './permissions-list-tab-new';
 import ErrorResult from '../../../../components/misc/error-result';
+import { isFeatureFlagEnabled } from '../../../../config';
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useDeleteUserMutation, useInvalidateUsersCache } from '../../../../react-query/api/user';
 import { appGlobal } from '../../../../state/app-global';
@@ -95,8 +97,10 @@ const PermissionsListActions = ({
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon-sm" variant="destructive-ghost">
-            <TrashIcon className="h-4 w-4" />
+          <Button asChild size="icon-sm" variant="destructive-ghost">
+            <button type="button">
+              <TrashIcon className="h-4 w-4" />
+            </button>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -139,7 +143,7 @@ const PermissionsListActions = ({
   );
 };
 
-export const PermissionsListTab: FC = () => {
+const PermissionsListTabOriginal: FC = () => {
   useSecurityBreadcrumbs([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
@@ -321,3 +325,6 @@ export const PermissionsListTab: FC = () => {
     </div>
   );
 };
+
+export const PermissionsListTab: FC = () =>
+  isFeatureFlagEnabled('enableNewSecurityPage') ? <PermissionsListTabNew /> : <PermissionsListTabOriginal />;

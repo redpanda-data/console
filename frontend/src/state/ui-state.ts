@@ -36,10 +36,16 @@ export type ServerVersionInfo = {
   branchBusiness?: string;
 };
 
+export type BackLink = {
+  title: string;
+  linkTo: string;
+};
+
 type UIStateStore = {
   // Core state
   _pageTitle: string | React.ReactElement;
   pageBreadcrumbs: BreadcrumbEntry[];
+  backLink: BackLink | null;
   shouldHidePageHeader: boolean;
   pathName: string;
   _currentTopicName: string | undefined;
@@ -56,6 +62,12 @@ type UIStateStore = {
   // Actions (setters)
   setPageTitle: (title: string | React.ReactElement) => void;
   setPageBreadcrumbs: (breadcrumbs: BreadcrumbEntry[]) => void;
+  setPageState: (
+    title: string | React.ReactElement,
+    breadcrumbs: BreadcrumbEntry[],
+    backLink?: BackLink | null
+  ) => void;
+  setBackLink: (backLink: BackLink | null) => void;
   setShouldHidePageHeader: (hide: boolean) => void;
   setPathName: (path: string) => void;
   setCurrentTopicName: (topicName: string | undefined) => void;
@@ -68,6 +80,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   // Initial state
   _pageTitle: ' ',
   pageBreadcrumbs: [],
+  backLink: null,
   shouldHidePageHeader: false,
   pathName: '',
   _currentTopicName: undefined,
@@ -132,6 +145,19 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
     set({ pageBreadcrumbs: breadcrumbs });
   },
 
+  setPageState: (title: string | React.ReactElement, breadcrumbs: BreadcrumbEntry[], backLink?: BackLink | null) => {
+    if (typeof title === 'string') {
+      document.title = `${title} - Redpanda Console`;
+    } else {
+      document.title = 'Redpanda Console';
+    }
+    set({ _pageTitle: title, pageBreadcrumbs: breadcrumbs, backLink: backLink ?? null });
+  },
+
+  setBackLink: (backLink: BackLink | null) => {
+    set({ backLink });
+  },
+
   setShouldHidePageHeader: (hide: boolean) => {
     set({ shouldHidePageHeader: hide });
   },
@@ -174,6 +200,7 @@ export const uiState = new Proxy(
   {} as {
     pageTitle: string | React.ReactElement;
     pageBreadcrumbs: BreadcrumbEntry[];
+    backLink: BackLink | null;
     shouldHidePageHeader: boolean;
     selectedClusterName: string | null;
     pathName: string;
@@ -232,8 +259,20 @@ export const uiState = new Proxy(
         store.setServerBuildTimestamp(value as number | undefined);
         return true;
       }
+      if (prop === 'backLink') {
+        store.setBackLink(value as BackLink | null);
+        return true;
+      }
 
       return true;
     },
   }
 );
+
+export function setPageHeader(
+  title: string | React.ReactElement,
+  breadcrumbs: BreadcrumbEntry[],
+  backLink?: BackLink | null
+) {
+  useUIStateStore.getState().setPageState(title, breadcrumbs, backLink);
+}

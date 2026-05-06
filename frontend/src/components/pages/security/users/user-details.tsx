@@ -14,9 +14,11 @@ import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console
 import { useEffect, useState } from 'react';
 
 import { UserAclsCard } from './user-acls-card';
+import { UserDetailsPageNew } from './user-details-new';
 import { ChangePasswordModal, ChangeRolesModal } from './user-edit-modals';
 import { UserInformationCard } from './user-information-card';
 import { UserRolesCard } from './user-roles-card';
+import { isFeatureFlagEnabled } from '../../../../config';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRolesQuery } from '../../../../react-query/api/security';
 import { invalidateUsersCache, useDeleteUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
@@ -25,6 +27,7 @@ import { api, rolesApi } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
+import { Heading } from '../../../redpanda-ui/components/typography';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 
@@ -70,7 +73,9 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
 
   return (
     <div>
-      <h2 className="pt-4 pb-3 font-semibold text-xl">User: {userName}</h2>
+      <Heading className="pt-4 pb-3 font-semibold text-xl" level={2}>
+        User: {userName}
+      </Heading>
       <div className="flex flex-col gap-4">
         <UserInformationCard
           onEditPassword={() => {
@@ -100,10 +105,9 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
                 try {
                   await deleteUserMutation({ name: userName });
                 } catch {
-                  return; // Error toast shown by mutation's onError
+                  return;
                 }
 
-                // Remove user from all its roles (best-effort)
                 const promises: Promise<UpdateRoleMembershipResponse>[] = [];
                 for (const [roleName, members] of rolesApi.roleMembers) {
                   if (members.any((m) => m.name === userName)) {
@@ -135,8 +139,6 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
   );
 };
 
-export default UserDetailsPage;
-
 const UserPermissionDetailsContent = ({
   userName,
   onChangeRoles,
@@ -162,3 +164,12 @@ const UserPermissionDetailsContent = ({
     </div>
   );
 };
+
+const UserDetailsPageDispatcher = ({ userName }: { userName: string }) =>
+  isFeatureFlagEnabled('enableNewSecurityPage') ? (
+    <UserDetailsPageNew userName={userName} />
+  ) : (
+    <UserDetailsPage userName={userName} />
+  );
+
+export default UserDetailsPageDispatcher;

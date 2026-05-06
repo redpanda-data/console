@@ -384,7 +384,7 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} to="/security/acls">
+              <Link key={0} to="/security/permissions-list">
                 {aclCount}
               </Link>,
             ],

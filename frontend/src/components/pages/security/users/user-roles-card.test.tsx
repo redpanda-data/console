@@ -33,8 +33,7 @@ describe('UserRolesCard', () => {
   });
 
   test('should render Assign Role button in empty state when onChangeRoles is provided', () => {
-    const mockOnChangeRoles = vi.fn();
-    renderWithFileRoutes(<UserRolesCard onChangeRoles={mockOnChangeRoles} roles={[]} />);
+    renderWithFileRoutes(<UserRolesCard onChangeRoles={vi.fn()} roles={[]} />);
 
     expect(screen.getByTestId('assign-role-button')).toBeInTheDocument();
   });
@@ -58,8 +57,7 @@ describe('UserRolesCard', () => {
   });
 
   test('should render Change Role button when roles exist and onChangeRoles is provided', () => {
-    const mockOnChangeRoles = vi.fn();
-    renderWithFileRoutes(<UserRolesCard onChangeRoles={mockOnChangeRoles} roles={mockRoles} />);
+    renderWithFileRoutes(<UserRolesCard onChangeRoles={vi.fn()} roles={mockRoles} />);
 
     expect(screen.getByTestId('change-role-button')).toBeInTheDocument();
   });

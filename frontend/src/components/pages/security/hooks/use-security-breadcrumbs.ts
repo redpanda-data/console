@@ -34,5 +34,6 @@ export function useSecurityBreadcrumbs(trail: { title: string; linkTo: string }[
   useLayoutEffect(() => {
     uiState.pageBreadcrumbs = [...trail, { title: 'Access Control', linkTo: '/security' }];
     uiState.pageTitle = 'Access Control';
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: key is a stable serialized representation of trail
+  }, [key]);
 }

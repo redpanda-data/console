@@ -106,7 +106,7 @@ class KafkaConnectOverview extends PageComponent<{
   isLoadingKafkaConnectors: boolean;
 }> {
   initPage(p: PageInitHelper): void {
-    p.title = 'Overview';
+    p.title = 'Connect';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
     this.initializeData();

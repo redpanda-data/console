@@ -16,6 +16,8 @@ import { parseAsString } from 'nuqs';
 import type { FC } from 'react';
 import { useState } from 'react';
 
+import { UsersTabNew } from './users-tab-new';
+import { isFeatureFlagEnabled } from '../../../../config';
 import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
@@ -59,7 +61,7 @@ const getCreateUserButtonProps = (
   };
 };
 
-export const UsersTab: FC = () => {
+const UsersTabOriginal: FC = () => {
   useSecurityBreadcrumbs([]);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
   const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
@@ -248,8 +250,10 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="deleteButton" size="icon-sm" variant="ghost">
-            <MoreHorizontalIcon className="h-4 w-4" />
+          <Button asChild className="deleteButton" size="icon-sm" variant="ghost">
+            <button type="button">
+              <MoreHorizontalIcon className="h-4 w-4" />
+            </button>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -284,3 +288,6 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
     </>
   );
 };
+
+export const UsersTab: FC = () =>
+  isFeatureFlagEnabled('enableNewSecurityPage') ? <UsersTabNew /> : <UsersTabOriginal />;

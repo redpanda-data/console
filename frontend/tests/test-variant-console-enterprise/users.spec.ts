@@ -9,7 +9,7 @@ test.describe('Users', () => {
     const securityPage = new SecurityPage(page);
     await securityPage.createUser(username);
 
-    await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+    await expect(page.getByText(`User: ${username}`)).toBeVisible();
 
     await securityPage.deleteUser(username);
   });

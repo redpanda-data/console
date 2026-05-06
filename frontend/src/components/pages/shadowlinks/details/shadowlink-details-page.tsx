@@ -43,6 +43,7 @@ export const ShadowLinkDetailsPage = () => {
   const [failoverTopicName, setFailoverTopicName] = useState<string>('');
 
   useEffect(() => {
+    uiState.pageTitle = name;
     uiState.pageBreadcrumbs = [
       { title: 'Shadow Links', linkTo: '/shadowlinks' },
       { title: name, linkTo: '' },

@@ -28,13 +28,19 @@ export const DeleteRoleConfirmModal: FC<{
   roleName: string;
   numberOfPrincipals: number;
   onConfirm: () => Promise<void> | void;
-  buttonEl: React.ReactElement;
-}> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => {
-  const [open, setOpen] = useState(false);
+  buttonEl?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl, open: openProp, onOpenChange: onOpenChangeProp }) => {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
 
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+
   const handleOpenChange = (o: boolean) => {
-    setOpen(o);
+    if (!isControlled) setInternalOpen(o);
+    onOpenChangeProp?.(o);
     if (!o) setConfirmText('');
   };
 
@@ -45,7 +51,7 @@ export const DeleteRoleConfirmModal: FC<{
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogTrigger asChild>{buttonEl}</DialogTrigger>
+      {buttonEl && <DialogTrigger asChild>{buttonEl}</DialogTrigger>}
       <DialogContent variant="destructive">
         <DialogHeader>
           <DialogTitle>Delete role {roleName}</DialogTitle>

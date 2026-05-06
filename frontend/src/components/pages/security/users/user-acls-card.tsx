@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { Text } from '../../../redpanda-ui/components/typography';
 import { type AclDetail, getRuleDataTestId, parsePrincipal } from '../shared/acl-model';
 import { OperationsBadge } from '../shared/operations-badge';
 
@@ -31,7 +32,7 @@ type AclTableRowProps = {
 
 const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
   const rowKey = `${acl.sharedConfig.principal}-${acl.sharedConfig.host}`;
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: '/security/users/$userName/details' });
 
   return [
     <TableRow className="hover:bg-gray-50" key={`acl-${rowKey}`}>
@@ -46,7 +47,8 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
             onClick={(e) => {
               e.stopPropagation();
               navigate({
-                to: `/security/acls/${parsePrincipal(acl.sharedConfig.principal).name}/details`,
+                to: '/security/acls/$aclName/details',
+                params: { aclName: parsePrincipal(acl.sharedConfig.principal).name },
                 search: { host: acl.sharedConfig.host },
               });
             }}
@@ -81,7 +83,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
 };
 
 export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: '/security/users/$userName/details' });
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const toggleRow = (key: string) => {
@@ -117,7 +119,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
           </CardAction>
         </CardHeader>
         <CardContent>
-          <p>No ACLs assigned to this user.</p>
+          <Text>No ACLs assigned to this user.</Text>
         </CardContent>
       </Card>
     );
@@ -141,7 +143,6 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
             {acls.flatMap((acl) => {
               const rowKey = `${acl.sharedConfig.principal}-${acl.sharedConfig.host}`;
               const isExpanded = expandedRows.has(rowKey);
-
               return (
                 <AclTableRow
                   acl={acl}

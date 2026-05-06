@@ -58,7 +58,6 @@ describe('UserAclsCard', () => {
   test('should render empty state when no ACLs provided', () => {
     renderWithFileRoutes(<UserAclsCard acls={[]} />);
 
-    expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
     expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create ACL' })).toBeInTheDocument();
   });
@@ -66,25 +65,21 @@ describe('UserAclsCard', () => {
   test('should render empty state when acls is undefined', () => {
     renderWithFileRoutes(<UserAclsCard acls={undefined} />);
 
-    expect(screen.getByText('ACLs (0)')).toBeInTheDocument();
     expect(screen.getByText('No ACLs assigned to this user.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create ACL' })).toBeInTheDocument();
   });
 
-  test('should render ACL table with rows, action buttons, and headers', () => {
+  test('should render ACL table grouped by principal and host', () => {
     renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
-    // Count, rows, action buttons, and headers all rendered together so we assert them once.
-    expect(screen.getByText('ACLs (2)')).toBeInTheDocument();
+    // Table headers
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Hosts' })).toBeInTheDocument();
 
-    // Principal and host values per row
-    expect(screen.getByTestId('acl-principal-User:test-user-*')).toHaveTextContent('User:test-user');
-    expect(screen.getByTestId('acl-principal-User:test-user-192.168.1.1')).toHaveTextContent('User:test-user');
-    expect(screen.getByTestId('acl-host-*')).toHaveTextContent('*');
-    expect(screen.getByTestId('acl-host-192.168.1.1')).toHaveTextContent('192.168.1.1');
+    // Two rows, one per ACL group (principal+host)
+    expect(screen.getAllByText('User:test-user')).toHaveLength(2);
 
-    // Action buttons per row
-    expect(screen.getByTestId('toggle-acl-User:test-user-*')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-acl-User:test-user-*')).toBeInTheDocument();
+    // Host values
+    expect(screen.getByText('*')).toBeInTheDocument();
+    expect(screen.getByText('192.168.1.1')).toBeInTheDocument();
   });
 });

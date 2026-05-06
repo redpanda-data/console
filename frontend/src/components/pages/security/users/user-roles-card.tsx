@@ -18,6 +18,7 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { Text } from '../../../redpanda-ui/components/typography';
 import type { AclDetail } from '../shared/acl-model';
 import { getRuleDataTestId } from '../shared/acl-model';
 import { OperationsBadge } from '../shared/operations-badge';
@@ -27,7 +28,7 @@ type Role = {
   principalName: string;
 };
 
-type UserRolesCardProps = {
+export type UserRolesCardProps = {
   roles: Role[];
   onChangeRoles?: () => void;
 };
@@ -39,14 +40,12 @@ type RoleTableRowProps = {
 };
 
 const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: '/security/users/$userName/details' });
   const { data: acls, isLoading } = useGetAclsByPrincipal<AclDetail[]>(
     `RedpandaRole:${role.principalName}`,
     undefined,
     undefined,
-    {
-      enabled: isExpanded,
-    }
+    { enabled: isExpanded }
   );
   const rowKey = role.principalName;
 
@@ -61,7 +60,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              navigate({ to: `/security/roles/${role.principalName}/details` });
+              navigate({ to: '/security/roles/$roleName/details', params: { roleName: role.principalName } });
             }}
             size="sm"
             testId={`view-role-${rowKey}`}
@@ -139,7 +138,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
           </CardAction>
         </CardHeader>
         <CardContent>
-          <p>No permissions assigned to this user.</p>
+          <Text>No permissions assigned to this user.</Text>
         </CardContent>
       </Card>
     );
@@ -169,7 +168,6 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
             {roles.flatMap((r) => {
               const rowKey = r.principalName;
               const isExpanded = expandedRows.has(rowKey);
-
               return (
                 <RoleTableRow
                   isExpanded={isExpanded}

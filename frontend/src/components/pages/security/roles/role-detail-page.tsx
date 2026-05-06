@@ -9,19 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { getRouteApi, useNavigate } from '@tanstack/react-router';
-
-const routeApi = getRouteApi('/security/roles/$roleName/details');
-
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { Eye, Pencil } from 'lucide-react';
-import { useMemo } from 'react';
 
 import { MatchingUsersCard } from './matching-users-card';
+import { RoleDetailPageNew } from './role-detail-page-new';
+import { isFeatureFlagEnabled } from '../../../../config';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Text } from '../../../redpanda-ui/components/typography';
+import { Heading, Text } from '../../../redpanda-ui/components/typography';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { ACLDetails } from '../shared/acl-details';
 import type { AclDetail } from '../shared/acl-model';
@@ -31,14 +29,15 @@ type SecurityAclRulesTableProps = {
   roleName: string;
 };
 
-// Table to display multiple ACL rules for a role
 const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: '/security/roles/$roleName/details' });
 
   return (
     <Card size="full">
       <CardHeader>
-        <h2 className="font-medium text-lg">Security ACL rules</h2>
+        <Heading className="font-medium text-lg" level={2}>
+          Security ACL rules
+        </Heading>
       </CardHeader>
       <CardContent>
         <Table>
@@ -66,7 +65,8 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                     <Button
                       onClick={() => {
                         navigate({
-                          to: `/security/roles/${roleName}/details`,
+                          to: '/security/roles/$roleName/details',
+                          params: { roleName },
                           search: { host: aclData.sharedConfig.host },
                         });
                       }}
@@ -79,7 +79,8 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                     <Button
                       onClick={() => {
                         navigate({
-                          to: `/security/roles/${roleName}/update`,
+                          to: '/security/roles/$roleName/update',
+                          params: { roleName },
                           search: { host: aclData.sharedConfig.host },
                         });
                       }}
@@ -101,20 +102,19 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
 };
 
 const RoleDetailPage = () => {
-  const { roleName } = routeApi.useParams();
+  const { roleName } = useParams({ from: '/security/roles/$roleName/details' });
   const navigate = useNavigate({ from: '/security/roles/$roleName/details' });
-  const search = routeApi.useSearch();
-  const host = search.host ?? undefined;
+  const { host: hostParam } = useSearch({ from: '/security/roles/$roleName/details' });
+  const host = hostParam ?? undefined;
 
   useSecurityBreadcrumbs([
     { title: 'Roles', linkTo: '/security/roles' },
     { title: roleName, linkTo: `/security/roles/${roleName}/details` },
   ]);
 
-  // Fetch ACLs for the role
   const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`, host);
 
-  const renderACLInformation = useMemo(() => {
+  const renderACLInformation = () => {
     if (!data || data.length === 0) {
       return (
         <div className="flex h-96 items-center justify-center">
@@ -128,7 +128,7 @@ const RoleDetailPage = () => {
       return <ACLDetails rules={acl.rules} sharedConfig={acl.sharedConfig} />;
     }
     return <SecurityAclRulesTable data={data} roleName={roleName} />;
-  }, [data, roleName]);
+  };
 
   if (isLoading) {
     return (
@@ -140,7 +140,9 @@ const RoleDetailPage = () => {
 
   return (
     <div>
-      <h2 className="pt-4 pb-3 font-semibold text-xl">Role: {roleName}</h2>
+      <Heading className="pt-4 pb-3 font-semibold text-xl" level={2}>
+        Role: {roleName}
+      </Heading>
       <div className="flex items-center justify-between">
         <Text>Configuration details</Text>
         {(!!host || data?.length === 1) && (
@@ -149,7 +151,8 @@ const RoleDetailPage = () => {
               data-testid="update-acl-button"
               onClick={() =>
                 navigate({
-                  to: `/security/roles/${roleName}/update`,
+                  to: '/security/roles/$roleName/update',
+                  params: { roleName },
                   search: { host },
                 })
               }
@@ -163,11 +166,14 @@ const RoleDetailPage = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="col-span-2 w-full">{renderACLInformation}</div>
+        <div className="col-span-2 w-full">{renderACLInformation()}</div>
         <MatchingUsersCard principal={`Redpanda:${roleName}`} principalType="RedpandaRole" />
       </div>
     </div>
   );
 };
 
-export default RoleDetailPage;
+const RoleDetailPageDispatcher = () =>
+  isFeatureFlagEnabled('enableNewSecurityPage') ? <RoleDetailPageNew /> : <RoleDetailPage />;
+
+export default RoleDetailPageDispatcher;

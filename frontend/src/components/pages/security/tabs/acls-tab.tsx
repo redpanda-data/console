@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
+import { isFeatureFlagEnabled } from 'config';
 import { InfoIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -47,9 +48,9 @@ import {
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
+import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
-export const AclsTab: FC = () => {
-  useSecurityBreadcrumbs([]);
+const AclsTabContent: FC = () => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
@@ -213,7 +214,7 @@ export const AclsTab: FC = () => {
                   return (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button className="deleteButton" size="icon-sm" variant="destructive-ghost">
+                        <Button className="deleteButton" onClick={() => {}} size="icon-sm" variant="destructive-ghost">
                           <TrashIcon className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -265,3 +266,17 @@ export const AclsTab: FC = () => {
     </div>
   );
 };
+
+const AclsTabLegacy: FC = () => {
+  useSecurityBreadcrumbs([]);
+  return <AclsTabContent />;
+};
+
+const AclsTabNew: FC = () => (
+  <>
+    <SecurityTabsNav />
+    <AclsTabContent />
+  </>
+);
+
+export const AclsTab: FC = () => (isFeatureFlagEnabled('enableNewSecurityPage') ? <AclsTabNew /> : <AclsTabLegacy />);

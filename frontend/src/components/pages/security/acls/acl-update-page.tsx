@@ -51,7 +51,6 @@ const AclUpdatePage = () => {
     { title: principalName, linkTo: `/security/acls/${aclName}/details` },
   ]);
 
-  // Fetch existing ACL data
   const { data, isLoading } = useGetAclsByPrincipal(`${principalType}:${principalName}`, host);
 
   const { applyUpdates } = useUpdateAclMutation();
@@ -93,18 +92,15 @@ const AclUpdatePage = () => {
     );
   }
 
-  // Ensure all operations are present for each rule
   const rulesWithAllOperations = acls.rules.map((rule) => {
     const allOperations = getOperationsForResourceType(rule.resourceType);
     let mergedOperations = { ...allOperations };
 
-    // If mode is AllowAll or DenyAll, set all operations accordingly
     if (rule.mode === ModeAllowAll) {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeAllow]));
     } else if (rule.mode === ModeDenyAll) {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeDeny]));
     } else {
-      // For custom mode, override with the actual values from the fetched rule
       for (const [op, value] of Object.entries(rule.operations)) {
         if (op in mergedOperations) {
           mergedOperations[op] = value;
@@ -120,6 +116,7 @@ const AclUpdatePage = () => {
 
   return (
     <div>
+      {/* allow: react-rules [restoring master component, heading upgrade deferred] */}
       <h2 className="pt-4 pb-3 font-semibold text-xl">Update ACL: {principalName}</h2>
       <CreateACL
         edit

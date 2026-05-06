@@ -439,11 +439,20 @@ export async function buildBackendImage(isEnterprise) {
         const modulePath = match[1];
         if (modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')') continue;
 
-        // Resolve the actual path relative to backendDir
-        const absModulePath = resolve(backendDir, modulePath);
+        // Resolve the actual path relative to backendDir, or fall back to the
+        // repo root (parent of backendDir). go.work paths like ../console/backend
+        // are authored relative to the repo root, not the backend/ subdir.
+        let absModulePath = resolve(backendDir, modulePath);
         if (!existsSync(absModulePath)) {
-          console.warn(`  Workspace module not found: ${absModulePath}, skipping`);
-          continue;
+          const parentDir = resolve(backendDir, '..');
+          const fromParent = resolve(parentDir, modulePath);
+          if (existsSync(fromParent)) {
+            console.log(`  Resolving ${modulePath} from repo root: ${fromParent}`);
+            absModulePath = fromParent;
+          } else {
+            console.warn(`  Workspace module not found: ${absModulePath} (also tried ${fromParent}), skipping`);
+            continue;
+          }
         }
 
         // Create a sanitized directory name

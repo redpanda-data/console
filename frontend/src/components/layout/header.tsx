@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, ColorModeSwitch, CopyButton, Flex } from '@redpanda-data/ui';
+import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
 import { isEmbedded, isFeatureFlagEnabled } from '../../config';
@@ -28,6 +29,7 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from '../redpanda-ui/components/breadcrumb';
+import { Button as RegistryButton } from '../redpanda-ui/components/button';
 import { Separator } from '../redpanda-ui/components/separator';
 import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
 
@@ -38,8 +40,8 @@ type BreadcrumbHeaderRowProps = {
 
 function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeaderRowProps) {
   return (
-    <Flex alignItems="center" justifyContent="space-between">
-      <Flex alignItems="center" gap={2}>
+    <div className={cn('w-full border-b', useNewSidebar && 'py-4')}>
+      <div className="flex items-center gap-2">
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
@@ -50,7 +52,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbItems.map((item, index) => (
-                <Fragment key={item.linkTo}>
+                <Fragment key={`${index}-${item.linkTo}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
@@ -62,8 +64,8 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
             </BreadcrumbList>
           </Breadcrumb>
         )}
-      </Flex>
-    </Flex>
+      </div>
+    </div>
   );
 }
 
@@ -74,9 +76,10 @@ function AppPageHeader() {
   const useNewSidebar = !isEmbedded();
 
   const pageBreadcrumbs = useUIStateStore((s) => s.pageBreadcrumbs);
+  const pageTitle = useUIStateStore((s) => s._pageTitle);
+  const backLink = useUIStateStore((s) => s.backLink);
   const selectedClusterName = useUIStateStore((s) => s.selectedClusterName);
   const shouldHidePageHeader = useUIStateStore((s) => s.shouldHidePageHeader);
-
   const breadcrumbItems = useMemo(() => {
     const items: BreadcrumbEntry[] = [...pageBreadcrumbs];
 
@@ -92,38 +95,41 @@ function AppPageHeader() {
   }, [pageBreadcrumbs, selectedClusterName]);
 
   const lastBreadcrumb = breadcrumbItems.at(-1);
-  const breadcrumbsExceptLast = breadcrumbItems.slice(0, -1);
 
   if (shouldHideHeader || shouldHidePageHeader) {
     return null;
   }
 
   return (
-    <Box>
-      {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
-      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbsExceptLast} useNewSidebar={useNewSidebar} />
+    <div>
+      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
 
-      <Flex alignItems="center" justifyContent="space-between" pb={2}>
-        <Flex alignItems="center">
-          {lastBreadcrumb ? (
-            <Heading
-              // as="span"
-              className={cn('mr-2', lastBreadcrumb.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
-              level={1}
-            >
-              {lastBreadcrumb.titleNode ?? lastBreadcrumb.title}
-            </Heading>
-          ) : null}
-          {lastBreadcrumb ? (
-            <Box>
-              {lastBreadcrumb.options?.canBeCopied ? (
-                <CopyButton content={lastBreadcrumb.title} variant="ghost" />
-              ) : null}
-            </Box>
-          ) : null}
-          {Boolean(showRefresh) && <DataRefreshButton />}
-        </Flex>
-        <Flex alignItems="center" gap={2}>
+      <div className="flex items-center justify-between pt-6">
+        <div className="flex flex-col gap-1">
+          {backLink && (
+            <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" variant="ghost">
+              <Link to={backLink.linkTo}>
+                <ChevronLeft className="h-4 w-4" />
+                {backLink.title}
+              </Link>
+            </RegistryButton>
+          )}
+          <div className="flex items-center">
+            {pageTitle ? (
+              <Heading
+                className={cn('mr-2', lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
+                level={1}
+              >
+                {pageTitle}
+              </Heading>
+            ) : null}
+            {lastBreadcrumb?.options?.canBeCopied ? (
+              <CopyButton content={lastBreadcrumb.title} variant="ghost" />
+            ) : null}
+            {Boolean(showRefresh) && <DataRefreshButton />}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
           {!isEmbedded() && api.isRedpanda && (
             <Link to="/debug-bundle">
               <Button
@@ -139,9 +145,9 @@ function AppPageHeader() {
           )}
           <UserPreferencesButton />
           {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
-        </Flex>
-      </Flex>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -165,16 +171,17 @@ function useShouldShowRefresh() {
   const getStartedApiMatch = matchRoute({ to: '/get-started/api' });
 
   // matches acls
-  const aclCreateMatch = matchRoute({ to: '/security/acls/create' });
-  const aclUpdateMatch = matchRoute({ to: '/security/acls/$aclName/update' });
   const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
-  const isACLRelated = aclCreateMatch || aclUpdateMatch || aclDetailMatch;
+  const isACLRelated = aclDetailMatch;
 
   // matches roles
   const roleCreateMatch = matchRoute({ to: '/security/roles/create' });
   const roleUpdateMatch = matchRoute({ to: '/security/roles/$roleName/update' });
   const roleDetailMatch = matchRoute({ to: '/security/roles/$roleName/details' });
   const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
+
+  // matches user detail
+  const userDetailMatch = matchRoute({ to: '/security/users/$userName/details' });
 
   if (connectClusterMatch && connectClusterMatch.connector === 'create-connector') {
     return false;
@@ -192,6 +199,9 @@ function useShouldShowRefresh() {
     return false;
   }
   if (isRoleRelated) {
+    return false;
+  }
+  if (userDetailMatch) {
     return false;
   }
   if (connectWizardPagesMatch) {
