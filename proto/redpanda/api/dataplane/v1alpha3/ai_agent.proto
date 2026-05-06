@@ -111,6 +111,9 @@ message AIAgent {
   // Optional Microsoft Teams bridge configuration.
   AIAgentTeamsBridge teams_bridge = 18;
 
+  // Messaging endpoint URL for the Teams bridge, populated by the bridge controller.
+  optional string teams_bridge_endpoint = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message Provider {
     message OpenAI {
       string api_key = 1 [

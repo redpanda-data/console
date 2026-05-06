@@ -57,22 +57,6 @@ const extractSecretName = (ref: string): string => {
   return match ? match[1] : '';
 };
 
-// Agent URL format: https://<agent-id>.ai-agents.<cluster>.clusters.ign.rdpa.co
-const getMessagingEndpointUrl = (agentUrl: string, agentId: string): string => {
-  try {
-    const url = new URL(agentUrl);
-    const hostParts = url.hostname.split('.');
-    const aiAgentsIndex = hostParts.indexOf('ai-agents');
-    if (aiAgentsIndex < 0 || aiAgentsIndex + 1 >= hostParts.length) {
-      return '';
-    }
-    const clusterDomain = hostParts.slice(aiAgentsIndex + 1).join('.');
-    return `https://msteams-bridge.${clusterDomain}/msteams/v1/${agentId}`;
-  } catch {
-    return '';
-  }
-};
-
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Integrations tab with edit/view mode conditionals
 export const AIAgentIntegrationsTab = () => {
   const { id } = routeApi.useParams();
@@ -157,8 +141,6 @@ export const AIAgentIntegrationsTab = () => {
     setIsEditing(false);
     setEditedState(null);
   };
-
-  const messagingEndpointUrl = agent.teamsBridge?.enabled && agent.url ? getMessagingEndpointUrl(agent.url, id) : '';
 
   return (
     <div className="space-y-4">
@@ -265,14 +247,14 @@ export const AIAgentIntegrationsTab = () => {
             )}
           </div>
 
-          {/* Messaging endpoint URL - shown when integration is saved and enabled */}
-          {Boolean(agent.teamsBridge?.enabled && messagingEndpointUrl) && (
+          {/* Messaging endpoint URL - populated by the bridge controller */}
+          {Boolean(agent.teamsBridgeEndpoint) && (
             <div className="space-y-2">
               <Label>Messaging Endpoint</Label>
               <Text className="text-muted-foreground text-sm">
                 Configure this URL as the messaging endpoint in your Azure Bot registration.
               </Text>
-              <DynamicCodeBlock code={messagingEndpointUrl} lang="text" />
+              <DynamicCodeBlock code={agent.teamsBridgeEndpoint ?? ''} lang="text" />
             </div>
           )}
         </CardContent>

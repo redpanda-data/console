@@ -54,6 +54,11 @@ components:
           type: object
         teams_bridge:
           $ref: '#/components/schemas/AIAgentTeamsBridge'
+        teams_bridge_endpoint:
+          description: Messaging endpoint URL for the Teams bridge, populated by the bridge controller.
+          nullable: true
+          readOnly: true
+          type: string
         url:
           description: URL to connect to the AI agent endpoint.
           readOnly: true
