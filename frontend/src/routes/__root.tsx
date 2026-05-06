@@ -69,7 +69,7 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          <div className="container mx-auto max-w-[1500px]">
+          <div className="container mx-auto max-w-[1500px] px-12">
             <AppContent />
           </div>
         </SidebarInset>
@@ -94,7 +94,7 @@ function AppContent() {
         <AppPageHeader />
 
         <ErrorDisplay>
-          <div className="px-12 pt-8">
+          <div className="pt-8">
             <Outlet />
           </div>
         </ErrorDisplay>

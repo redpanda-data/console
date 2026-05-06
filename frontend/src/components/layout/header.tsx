@@ -40,8 +40,8 @@ type BreadcrumbHeaderRowProps = {
 
 function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeaderRowProps) {
   return (
-    <div className="w-full border-b">
-      <div className="flex items-center gap-2 px-6 py-4">
+    <div className={cn('w-full border-b', useNewSidebar && 'py-4')}>
+      <div className="flex items-center gap-2">
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
@@ -104,7 +104,7 @@ function AppPageHeader() {
     <div>
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
 
-      <div className="flex items-center justify-between px-12 pt-6">
+      <div className="flex items-center justify-between pt-6">
         <div className="flex flex-col gap-1">
           {backLink && (
             <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" variant="ghost">
