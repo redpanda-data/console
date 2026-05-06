@@ -57,14 +57,16 @@ const extractSecretName = (ref: string): string => {
   return match ? match[1] : '';
 };
 
+// Agent URL format: https://<agent-id>.ai-agents.<cluster>.clusters.ign.rdpa.co
 const getMessagingEndpointUrl = (agentUrl: string, agentId: string): string => {
   try {
     const url = new URL(agentUrl);
     const hostParts = url.hostname.split('.');
-    if (hostParts.length < 2) {
+    const aiAgentsIndex = hostParts.indexOf('ai-agents');
+    if (aiAgentsIndex < 0 || aiAgentsIndex + 1 >= hostParts.length) {
       return '';
     }
-    const clusterDomain = hostParts.slice(1).join('.');
+    const clusterDomain = hostParts.slice(aiAgentsIndex + 1).join('.');
     return `https://msteams-bridge.${clusterDomain}/msteams/v1/${agentId}`;
   } catch {
     return '';
