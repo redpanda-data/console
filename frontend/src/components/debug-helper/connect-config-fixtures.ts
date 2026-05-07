@@ -51,47 +51,43 @@ output:
     client_id: connect-debug
 `;
 
-const noisyLogs = `# Generates messages and logs at multiple levels — for testing the Logs tab UI
-# (level filtering, search, color coding, scroll behaviour with high volume).
+const noisyLogs = `# Generates messages at high volume and logs at INFO + WARN + ERROR — for
+# testing the Logs tab UI (filtering, search, color coding, scroll behaviour).
+#
+# NOTE: in Redpanda Cloud Connect the platform forces a fixed log level
+# (INFO and above), so 'log' processors at DEBUG or TRACE are silently
+# dropped before reaching the UI — and 'logger.level' in user YAML is
+# ignored. Stick to INFO/WARN/ERROR for visible output.
 input:
   generate:
     interval: 200ms
     mapping: |
       root.id = uuid_v4()
-      root.level = ["TRACE","DEBUG","INFO","WARN","ERROR"].index(random_int(min: 0, max: 4))
       root.user_id = random_int(min: 1, max: 1000)
       root.action = ["login","logout","click","purchase","error"].index(random_int(min: 0, max: 4))
 
 pipeline:
   processors:
     - log:
-        level: TRACE
-        message: 'TRACE event \${! json("id") } user=\${! json("user_id") }'
-    - log:
-        level: DEBUG
-        message: 'DEBUG event \${! json("id") } action=\${! json("action") }'
-    - log:
         level: INFO
-        message: 'INFO event processed: \${! content() }'
+        message: 'event processed: \${! content() }'
     - branch:
         request_map: 'root = this'
         processors:
           - mapping: |
               root = if this.action == "error" {
                 throw("synthetic error for user " + this.user_id.string())
+              } else if this.action == "purchase" {
+                throw("warn-level: purchase needs review for user " + this.user_id.string())
               } else { this }
     - catch:
         - log:
-            level: ERROR
-            message: 'ERROR caught: \${! error() }'
+            level: WARN
+            message: 'WARN caught: \${! error() }'
         - mapping: 'root = deleted()'
 
 output:
   drop: {}
-
-logger:
-  level: TRACE
-  format: logfmt
 `;
 
 const stdinStdoutDisabled = `# Uses stdin/stdout — disabled in Cloud Connect for security.
@@ -415,8 +411,8 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'simple-noisy-logs',
-    name: 'Simple — noisy multi-level logs',
-    description: 'Emits TRACE/DEBUG/INFO/ERROR at 5 msg/sec — for testing the Logs tab.',
+    name: 'Simple — noisy INFO/WARN/ERROR logs',
+    description: 'Emits 5 msg/sec at INFO + WARN + ERROR. (DEBUG/TRACE are dropped by Cloud.)',
     yaml: noisyLogs,
     tags: ['simple'],
   },
