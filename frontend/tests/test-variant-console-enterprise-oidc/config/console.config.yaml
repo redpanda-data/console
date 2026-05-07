@@ -1,0 +1,52 @@
+serveFrontend: true
+
+kafka:
+  brokers: ["redpanda:9092"]
+  sasl:
+    enabled: true
+    mechanism: SCRAM-SHA-256
+    username: e2euser
+    password: very-secret
+
+authentication:
+  jwtSigningKey: vazxnT+ZHtxKslK6QlDGovcYnSjTk/lKMmZ+mHrBVE+YdVDkLgSuP6AszAKe9999
+  useSecureCookies: false
+  oidc:
+    enabled: true
+    issuerUrl: "__ZITADEL_ISSUER_URL__"
+    clientId: "__ZITADEL_CLIENT_ID__"
+    clientSecret: "__ZITADEL_CLIENT_SECRET__"
+
+redpanda:
+  adminApi:
+    enabled: true
+    urls: ["http://redpanda:9644"]
+
+schemaRegistry:
+  enabled: true
+  urls: ["http://redpanda:8081"]
+
+server:
+  listenPort: 3000
+  allowedOrigins: ["http://localhost:3000", "http://localhost:3200"]
+
+licenseFilepath: /etc/console/redpanda.license
+
+authorization:
+  # GroupBindings: map OIDC group claims to Console roles
+  groupBindings:
+    - roleName: admin
+      groups:
+        - "platform-admins"
+    - roleName: editor
+      groups:
+        - "developers"
+    - roleName: viewer
+      groups:
+        - "analysts"
+  # RoleBindings: direct user-to-role mappings (tested alongside groupBindings)
+  roleBindings:
+    - roleName: admin
+      users:
+        - loginType: OIDC
+          name: direct-admin
