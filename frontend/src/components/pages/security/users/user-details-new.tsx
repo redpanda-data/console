@@ -21,12 +21,11 @@ import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRolesQuery } from '../../../../react-query/api/security';
 import { invalidateUsersCache, useDeleteUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { appGlobal } from '../../../../state/app-global';
-import { api, rolesApi, useRolesStore } from '../../../../state/backend-api';
+import { api, rolesApi } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
-import { useStore } from 'zustand';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 
 type UserDetailsPageProps = {
@@ -42,7 +41,6 @@ const formatMechanism = (mechanism?: SASLMechanism): string | null => {
 export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
 
   const { data: usersData, isLoading: isUsersLoading } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];

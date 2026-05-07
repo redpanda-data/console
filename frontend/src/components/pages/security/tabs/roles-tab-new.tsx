@@ -55,12 +55,12 @@ import { ShieldCheckIcon } from 'lucide-react';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useStore } from 'zustand';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
-import { useApiStoreHook, useRolesStore } from '../../../../state/backend-api';
+import { rolesApi, useApiStoreHook, useRolesStore } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
@@ -92,6 +92,10 @@ export const RolesTabNew: FC = () => {
       { title: 'Security', linkTo: '/security/users' },
       { title: 'Roles', linkTo: '/security/roles' },
     ]);
+  }, []);
+
+  useEffect(() => {
+    rolesApi.refreshRoleMembers().catch(() => {});
   }, []);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);

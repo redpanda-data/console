@@ -132,7 +132,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
       await createACL(
         create(CreateACLRequestSchema, {
           resourceType: values.resourceType,
-          resourceName: values.resourceName || '*',
+          resourceName: values.resourceType === ACL_ResourceType.CLUSTER ? 'kafka-cluster' : values.resourceName || '*',
           resourcePatternType: values.patternType,
           principal: effectivePrincipal,
           host: values.host || '*',
