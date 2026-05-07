@@ -35,8 +35,6 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 const routeApi = getRouteApi('/agents/$id/');
 
-const SECRET_TEMPLATE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
-
 const TEAMS_SECRET_TEXT = {
   dialogDescription: 'Create a new secret for your Microsoft Teams bot client secret.',
   secretNamePlaceholder: 'e.g., TEAMS_CLIENT_SECRET',
@@ -50,11 +48,6 @@ type TeamsBridgeState = {
   botAppId: string;
   botTenantId: string;
   botAppSecretName: string;
-};
-
-const extractSecretName = (ref: string): string => {
-  const match = ref.match(SECRET_TEMPLATE_REGEX);
-  return match ? match[1] : '';
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Integrations tab with edit/view mode conditionals
@@ -86,7 +79,7 @@ export const AIAgentIntegrationsTab = () => {
     enabled: agent.teamsBridge?.enabled ?? false,
     botAppId: agent.teamsBridge?.botAppId ?? '',
     botTenantId: agent.teamsBridge?.botTenantId ?? '',
-    botAppSecretName: extractSecretName(agent.teamsBridge?.botAppSecretRef ?? ''),
+    botAppSecretName: agent.teamsBridge?.botAppSecretRef ?? '',
   };
 
   const updateField = (updates: Partial<TeamsBridgeState>) => {
@@ -98,7 +91,7 @@ export const AIAgentIntegrationsTab = () => {
       return;
     }
 
-    const secretRef = displayState.botAppSecretName ? `\${secrets.${displayState.botAppSecretName}}` : '';
+    const secretRef = displayState.botAppSecretName || '';
 
     try {
       await updateAIAgent(

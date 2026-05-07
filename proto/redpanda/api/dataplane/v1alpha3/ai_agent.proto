@@ -309,7 +309,7 @@ message AIAgentTeamsBridge {
   string bot_tenant_id = 3;
   string bot_app_secret_ref = 4 [
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
-    (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+    (buf.validate.field).string.pattern = "^[A-Za-z_][A-Za-z0-9_]*$"
   ];
 }
 
