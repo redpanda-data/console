@@ -21,12 +21,21 @@ import {
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
 import { ExternalLinkIcon, Trash2Icon } from 'lucide-react';
+import { useState } from 'react';
 
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { rolesApi } from '../../../../state/backend-api';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../../redpanda-ui/components/dialog';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
@@ -44,8 +53,9 @@ type UserRolesCardNewProps = {
 };
 
 export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNewProps) => {
-  const { mutateAsync: updateRoleMembership } = useUpdateRoleMembershipMutation();
+  const { mutateAsync: updateRoleMembership, isPending } = useUpdateRoleMembershipMutation();
   const { data: rolesData } = useListRolesQuery();
+  const [pendingRemoveRole, setPendingRemoveRole] = useState<string | null>(null);
 
   const assignedRoleNames = new Set(roles.map((r) => r.principalName));
 
@@ -59,6 +69,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
       create(UpdateRoleMembershipRequestSchema, { roleName, remove: [{ principal: userName }] })
     );
     await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+    setPendingRemoveRole(null);
   };
 
   const assignRole = async (roleName: string) => {
@@ -115,7 +126,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
           <div className="flex items-center justify-end gap-1">
             {Boolean(userName) && (
               <Button
-                onClick={() => removeFromRole(r.principalName)}
+                onClick={() => setPendingRemoveRole(r.principalName)}
                 size="icon-sm"
                 testId={`remove-role-${r.principalName}`}
                 variant="ghost"
@@ -135,37 +146,64 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   };
 
   return (
-    <ListLayout className="min-h-0 gap-3 py-0">
-      <ListLayoutFilters
-        actions={
-          userName ? (
-            <Combobox
-              className="w-56"
-              clearable={false}
-              onChange={assignRole}
-              options={availableRoleOptions}
-              placeholder="Assign a role..."
-              testId="assign-role-combobox"
-              value=""
-            />
-          ) : undefined
-        }
-      >
-        <Heading as="h2" level={4}>
-          Roles
-        </Heading>
-      </ListLayoutFilters>
-      <ListLayoutContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead align="right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>{renderBody()}</TableBody>
-        </Table>
-      </ListLayoutContent>
-    </ListLayout>
+    <>
+      <ListLayout className="min-h-0 gap-3 py-0">
+        <ListLayoutFilters
+          actions={
+            userName ? (
+              <Combobox
+                className="w-56"
+                clearable={false}
+                onChange={assignRole}
+                options={availableRoleOptions}
+                placeholder="Assign a role..."
+                testId="assign-role-combobox"
+                value=""
+              />
+            ) : undefined
+          }
+        >
+          <Heading as="h2" level={4}>
+            Roles
+          </Heading>
+        </ListLayoutFilters>
+        <ListLayoutContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead align="right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>{renderBody()}</TableBody>
+          </Table>
+        </ListLayoutContent>
+      </ListLayout>
+
+      <Dialog onOpenChange={(open) => !open && setPendingRemoveRole(null)} open={pendingRemoveRole !== null}>
+        <DialogContent variant="destructive">
+          <DialogHeader>
+            <DialogTitle>Remove role</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            Remove role <strong>{pendingRemoveRole}</strong> from user <strong>{userName}</strong>? The user will lose
+            all permissions granted by this role.
+          </DialogDescription>
+          <DialogFooter>
+            <Button onClick={() => setPendingRemoveRole(null)} variant="outline">
+              Cancel
+            </Button>
+            <Button
+              disabled={isPending}
+              onClick={() => pendingRemoveRole && removeFromRole(pendingRemoveRole)}
+              testId="confirm-remove-role-button"
+              variant="destructive"
+            >
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
