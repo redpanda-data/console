@@ -22,6 +22,7 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
+import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import {
@@ -34,7 +35,9 @@ import {
   ClipboardCopy,
   Cog,
   Eye,
+  Flag,
   Navigation,
+  RotateCw,
   Trash2,
   Wrench,
 } from 'lucide-react';
@@ -42,8 +45,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
+import {
+  clearOverrides as clearFlagOverrides,
+  getAllFlagKeys,
+  getEffectiveFlags,
+  getOverrides as getFlagOverrides,
+  setOverride as setFlagOverride,
+} from './feature-flag-overrides';
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
+import { FEATURE_FLAGS } from '../constants';
 
 const TAG_VARIANT: Record<ConnectConfigFixture['tags'][number], React.ComponentProps<typeof Badge>['variant']> = {
   simple: 'success-inverted',
@@ -338,7 +349,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <code className="truncate font-mono text-xs font-medium">{storageKey}</code>
+            <code className="truncate font-medium font-mono text-xs">{storageKey}</code>
             <Badge size="sm" variant="simple-outline">
               {sizeBytes < 1024 ? `${sizeBytes} B` : `${(sizeBytes / 1024).toFixed(1)} KB`}
             </Badge>
@@ -466,11 +477,7 @@ function StorageTab() {
       <Text className="text-muted-foreground" variant="small">
         Inspect or clear browser storage. Clearing will sign you out of preferences and reset feature toggles.
       </Text>
-      <Input
-        onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter by key or value…"
-        value={filter}
-      />
+      <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by key or value…" value={filter} />
       <StorageSection
         confirming={confirmingClear === 'local'}
         filter={filter}
@@ -536,7 +543,105 @@ function EnvironmentTab() {
   );
 }
 
-type Tab = 'configs' | 'navigation' | 'toasts' | 'boundaries' | 'storage' | 'env';
+function FeatureFlagsTab({ filter }: { filter: string }) {
+  // Tick to force re-render after mutating overrides.
+  const [, setTick] = useState(0);
+  const bump = useCallback(() => setTick((n) => n + 1), []);
+
+  const overrides = getFlagOverrides();
+  const effective = getEffectiveFlags();
+  const allKeys = useMemo(() => getAllFlagKeys(), []);
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) {
+      return allKeys;
+    }
+    return allKeys.filter((k) => k.toLowerCase().includes(q));
+  }, [allKeys, filter]);
+
+  const hasAnyOverride = Object.keys(overrides).length > 0;
+
+  return (
+    <div className="space-y-3">
+      <Text className="text-muted-foreground" variant="small">
+        Override <InlineCode>config.featureFlags</InlineCode> locally. Persists to <InlineCode>localStorage</InlineCode>{' '}
+        and re-applies on reload. Most components only read flags during render, so a reload is recommended after
+        toggling.
+      </Text>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="sm" variant="primary">
+          Reload to apply
+        </Button>
+        <Button
+          disabled={!hasAnyOverride}
+          icon={<Trash2 />}
+          onClick={() => {
+            clearFlagOverrides();
+            toast.success('Cleared all feature-flag overrides');
+            bump();
+          }}
+          size="sm"
+          variant="destructive-ghost"
+        >
+          Clear all overrides ({Object.keys(overrides).length})
+        </Button>
+      </div>
+      <div className="rounded-md border">
+        {filtered.length === 0 ? (
+          <Text className="px-3 py-4 text-center text-muted-foreground" variant="small">
+            No flags match “{filter}”.
+          </Text>
+        ) : (
+          filtered.map((key) => {
+            const isOverridden = key in overrides;
+            const defaultValue = FEATURE_FLAGS[key];
+            const effectiveValue = effective[key];
+            return (
+              <div className="flex items-center gap-3 border-b px-3 py-2 last:border-0" key={key}>
+                <Switch
+                  checked={effectiveValue}
+                  onCheckedChange={(checked) => {
+                    setFlagOverride(key, checked);
+                    bump();
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="font-medium font-mono text-xs">{key}</code>
+                    {isOverridden && (
+                      <Badge size="sm" variant="warning-inverted">
+                        overridden
+                      </Badge>
+                    )}
+                  </div>
+                  <Text className="text-muted-foreground" variant="small">
+                    default: <InlineCode>{String(defaultValue)}</InlineCode> · effective:{' '}
+                    <InlineCode>{String(effectiveValue)}</InlineCode>
+                  </Text>
+                </div>
+                {isOverridden && (
+                  <Button
+                    onClick={() => {
+                      setFlagOverride(key, null);
+                      bump();
+                    }}
+                    size="xs"
+                    variant="secondary-ghost"
+                  >
+                    Reset
+                  </Button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+type Tab = 'configs' | 'navigation' | 'toasts' | 'boundaries' | 'storage' | 'env' | 'flags';
 
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [tab, setTab] = useState<Tab>('configs');
@@ -547,7 +652,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
-        className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        className="flex h-[85vh] max-h-[85vh] w-[min(900px,95vw)] max-w-[95vw] flex-col gap-0 overflow-hidden p-0"
         size="full"
       >
         <div className="shrink-0 border-b px-6 py-4 pr-12">
@@ -565,17 +670,17 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         </div>
 
         <Tabs
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
           onValueChange={(v) => setTab(v as Tab)}
           value={tab}
         >
-          <div className="shrink-0 px-6 pt-4">
+          <div className="shrink-0 overflow-x-auto px-6 pt-4">
             <TabsList>
               <TabsTrigger value="configs">
-                <Wrench className="mr-1 h-3.5 w-3.5" /> Connect configs
+                <Wrench className="mr-1 h-3.5 w-3.5" /> Configs
               </TabsTrigger>
               <TabsTrigger value="navigation">
-                <Navigation className="mr-1 h-3.5 w-3.5" /> Navigation
+                <Navigation className="mr-1 h-3.5 w-3.5" /> Routes
               </TabsTrigger>
               <TabsTrigger value="toasts">
                 <Bug className="mr-1 h-3.5 w-3.5" /> Toasts
@@ -586,22 +691,25 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               <TabsTrigger value="storage">
                 <Trash2 className="mr-1 h-3.5 w-3.5" /> Storage
               </TabsTrigger>
+              <TabsTrigger value="flags">
+                <Flag className="mr-1 h-3.5 w-3.5" /> Flags
+              </TabsTrigger>
               <TabsTrigger value="env">
-                <Cog className="mr-1 h-3.5 w-3.5" /> Environment
+                <Cog className="mr-1 h-3.5 w-3.5" /> Env
               </TabsTrigger>
             </TabsList>
-            {tab === 'configs' && (
+            {(tab === 'configs' || tab === 'flags') && (
               <div className="mt-3">
                 <Input
                   onChange={(e) => setFilter(e.target.value)}
-                  placeholder="Filter by name, tag, or description…"
+                  placeholder={tab === 'configs' ? 'Filter by name, tag, or description…' : 'Filter by flag name…'}
                   value={filter}
                 />
               </div>
             )}
           </div>
 
-          <ScrollArea className="min-h-0 flex-1 px-6 py-4">
+          <ScrollArea className="min-h-0 min-w-0 flex-1 px-6 py-4">
             <TabsContent value="configs">
               <ConnectConfigsTab filter={filter} />
             </TabsContent>
@@ -616,6 +724,9 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             </TabsContent>
             <TabsContent value="storage">
               <StorageTab />
+            </TabsContent>
+            <TabsContent value="flags">
+              <FeatureFlagsTab filter={filter} />
             </TabsContent>
             <TabsContent value="env">
               <EnvironmentTab />
