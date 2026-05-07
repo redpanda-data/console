@@ -9,6 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+// Pipeline fixtures use the modern `redpanda` input/output component
+// (recommended over the older `kafka_franz` / `kafka` aliases) and follow
+// the Cloud Connect quickstart credentials pattern: `${REDPANDA_BROKERS}`
+// for the broker contextual variable and `${secrets.X}` for SASL/TLS material.
+// See: https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/
+
 export type ConnectConfigFixture = {
   id: string;
   name: string;
@@ -35,7 +41,8 @@ output:
   drop: {}
 `;
 
-const generateToKafka = `# Generates synthetic JSON every second and writes to a Kafka topic.
+const generateToRedpanda = `# Generate synthetic JSON every second and write it to a Redpanda topic
+# using SCRAM-SHA-256 + TLS — the canonical Cloud quickstart pattern.
 input:
   generate:
     interval: 1s
@@ -45,10 +52,17 @@ input:
       root.value = random_int(min: 0, max: 100)
 
 output:
-  kafka_franz:
-    seed_brokers: ["localhost:9092"]
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
     topic: demo-events
-    client_id: connect-debug
+    key: \${! json("id") }
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER}
+        password: \${secrets.KAFKA_PASSWORD}
+    tls:
+      enabled: true
 `;
 
 const noisyLogs = `# Generates messages at high volume and logs at INFO + WARN + ERROR — for
@@ -60,7 +74,7 @@ const noisyLogs = `# Generates messages at high volume and logs at INFO + WARN +
 # ignored. Stick to INFO/WARN/ERROR for visible output.
 input:
   generate:
-    interval: 200ms
+    interval: 5s
     mapping: |
       root.id = uuid_v4()
       root.user_id = random_int(min: 1, max: 1000)
@@ -90,17 +104,9 @@ output:
   drop: {}
 `;
 
-const stdinStdoutDisabled = `# Uses stdin/stdout — disabled in Cloud Connect for security.
-# Should produce: "unable to infer component type: stdout".
-# Useful for testing the validation error UI.
-input:
-  stdin: {}
-
-output:
-  stdout: {}
-`;
-
-const httpToKafkaWithProcessors = `# HTTP server -> JSON validation/enrichment -> Kafka.
+const httpToRedpanda = `# HTTP server -> validate/enrich -> Redpanda. Sources events from a webhook,
+# decodes against the Schema Registry, falls back gracefully on schema errors,
+# and writes to Redpanda with the event id as the partition key.
 input:
   http_server:
     address: "0.0.0.0:4195"
@@ -116,29 +122,218 @@ pipeline:
         root.source = "http"
     - try:
         - schema_registry_decode:
-            url: http://localhost:8081
-        - mapping: |
-            root.validated = true
+            url: \${secrets.SCHEMA_REGISTRY_URL}
+            basic_auth:
+              enabled: true
+              username: \${secrets.SCHEMA_REGISTRY_USER}
+              password: \${secrets.SCHEMA_REGISTRY_PASSWORD}
+        - mapping: 'root.validated = true'
     - catch:
         - log:
             level: WARN
-            message: "schema decode failed: \${! error() }"
-        - mapping: |
-            root.validated = false
+            message: 'schema decode failed: \${! error() }'
+        - mapping: 'root.validated = false'
 
 output:
-  kafka_franz:
-    seed_brokers: ["localhost:9092"]
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
     topic: events-validated
     key: \${! json("id") }
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER}
+        password: \${secrets.KAFKA_PASSWORD}
+    tls:
+      enabled: true
 `;
 
-const longComplexEnterprise = `# Multi-stage enterprise pipeline:
-# Kafka -> dedupe -> branch (enrich + side-effect) -> filter -> S3 + Kafka DLQ.
+const postgresCdcToRedpanda = `# Postgres CDC -> Redpanda. Captures row-level changes from Postgres
+# via logical replication and forwards them to a Redpanda topic, keyed
+# by the table's primary key for in-order partition consumption downstream.
+# See: https://docs.redpanda.com/redpanda-connect/components/inputs/postgres_cdc/
 input:
-  kafka_franz:
-    seed_brokers: ["broker-0:9092", "broker-1:9092", "broker-2:9092"]
-    topics: ["raw-events"]
+  postgres_cdc:
+    dsn: \${secrets.POSTGRES_DSN}
+    schema: public
+    tables:
+      - orders
+      - order_items
+    slot_name: connect_orders_slot
+    stream_snapshot: true
+    snapshot_batch_size: 10000
+    temporary_slot: false
+    include_transaction_markers: false
+
+pipeline:
+  processors:
+    - mapping: |
+        # Flatten the CDC envelope and stamp metadata.
+        root = this
+        root.cdc_timestamp = now()
+        meta kafka_key = if this.operation == "delete" {
+          this.before.id.string()
+        } else {
+          this.after.id.string()
+        }
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${! "cdc." + meta("table") }
+    key: \${! meta("kafka_key") }
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER}
+        password: \${secrets.KAFKA_PASSWORD}
+    tls:
+      enabled: true
+    partitioner: murmur2_hash
+    max_in_flight: 256
+    batching:
+      count: 100
+      period: 1s
+`;
+
+const enrichmentWorkflow = `# Multi-branch workflow enrichment — Redpanda -> parallel HTTP enrichments
+# (claims + hyperbole, then fake-news scoring depending on both) -> Redpanda.
+# Adapted from the official "enrichments" cookbook.
+# See: https://docs.redpanda.com/redpanda-connect/cookbooks/enrichments/
+input:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics: [articles]
+    consumer_group: connect-enrichments
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER}
+        password: \${secrets.KAFKA_PASSWORD}
+    tls:
+      enabled: true
+
+pipeline:
+  threads: 4
+  processors:
+    - workflow:
+        meta_path: ""
+        branches:
+          claims:
+            request_map: 'root.text = this.article.content'
+            processors:
+              - http:
+                  url: http://claim-svc.internal/claims
+                  verb: POST
+                  timeout: 2s
+                  retries: 3
+            result_map: 'root.tmp.claims = this.claims'
+          hyperbole:
+            request_map: 'root.text = this.article.content'
+            processors:
+              - http:
+                  url: http://hyperbole-svc.internal/score
+                  verb: POST
+                  timeout: 2s
+            result_map: 'root.tmp.hyperbole_rank = this.hyperbole_rank'
+          fake_news:
+            request_map: |
+              root.text = this.article.content
+              root.claims = this.tmp.claims
+              root.hyperbole_rank = this.tmp.hyperbole_rank
+            processors:
+              - http:
+                  url: http://fake-news-svc.internal/score
+                  verb: POST
+                  timeout: 5s
+            result_map: 'root.article.fake_news_score = this.fake_news_rank'
+    - catch:
+        - log:
+            level: WARN
+            message: 'enrichment failed: \${! error() }'
+    - mapping: |
+        root = this
+        root.tmp = deleted()
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: articles-enriched
+    key: \${! json("article.id") }
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER}
+        password: \${secrets.KAFKA_PASSWORD}
+    tls:
+      enabled: true
+`;
+
+const ragEmbeddingPipeline = `# RAG ingestion: Redpanda -> chunk + embed -> PGVector.
+# Reads documents off a topic, splits them, generates OpenAI embeddings,
+# and upserts vectors into Postgres for retrieval-augmented generation.
+input:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics: [documents-raw]
+    consumer_group: connect-rag-ingest
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${secrets.KAFKA_USER}
+        password: \${secrets.KAFKA_PASSWORD}
+    tls:
+      enabled: true
+
+pipeline:
+  threads: 4
+  processors:
+    - mapping: |
+        # Split body into ~500-char chunks with overlap.
+        root.doc_id = this.id
+        root.chunks = this.body.re_find_all_object("(?s).{1,500}")
+    - unarchive:
+        format: json_array
+    - branch:
+        request_map: 'root = this.chunks'
+        processors:
+          - openai_embeddings:
+              api_key: \${secrets.OPENAI_API_KEY}
+              model: text-embedding-3-small
+        result_map: 'root.embedding = this'
+    - mapping: |
+        root.id = uuid_v4()
+        root.doc_id = this.doc_id
+        root.text = this.chunks
+        root.embedding = this.embedding
+        root.created_at = now()
+
+output:
+  sql_insert:
+    driver: postgres
+    dsn: \${secrets.POSTGRES_DSN}
+    table: doc_chunks
+    columns: ["id", "doc_id", "text", "embedding", "created_at"]
+    args_mapping: |
+      root = [
+        this.id,
+        this.doc_id,
+        this.text,
+        this.embedding,
+        this.created_at,
+      ]
+    batching:
+      count: 50
+      period: 2s
+`;
+
+const enterpriseEnrichment = `# Multi-stage enterprise pipeline:
+# Redpanda -> dedupe -> branch enrich (HTTP + Lambda) -> filter -> S3 + DLQ.
+input:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics: [raw-events]
     consumer_group: connect-enrichment
     sasl:
       - mechanism: SCRAM-SHA-256
@@ -155,45 +350,46 @@ pipeline:
         operator: add
         key: \${! json("event_id") }
         value: "1"
-    - mapping: |
-        root = if errored() { deleted() } else { this }
+    - mapping: 'root = if errored() { deleted() } else { this }'
     - branch:
-        request_map: |
-          root.user_id = this.user_id
+        request_map: 'root.user_id = this.user_id'
         processors:
           - http:
               url: https://internal.api/users/\${! json("user_id") }
               verb: GET
               timeout: 2s
               retries: 3
-        result_map: |
-          root.user_profile = this
+        result_map: 'root.user_profile = this'
     - branch:
-        request_map: |
-          root = this
+        request_map: 'root = this'
         processors:
           - aws_lambda:
               function: enrich-geo
               region: us-east-1
-        result_map: |
-          root.geo = this
-    - mapping: |
-        root = if this.user_profile.tier == "premium" { this } else { deleted() }
+        result_map: 'root.geo = this'
+    - mapping: 'root = if this.user_profile.tier == "premium" { this } else { deleted() }'
     - rate_limit:
         resource: downstream_limiter
     - log:
-        level: DEBUG
-        message: "enriched event \${! json(\\"event_id\\") }"
+        level: INFO
+        message: 'enriched event \${! json("event_id") }'
 
 output:
   switch:
     cases:
       - check: errored()
         output:
-          kafka_franz:
-            seed_brokers: ["broker-0:9092"]
+          redpanda:
+            seed_brokers:
+              - \${REDPANDA_BROKERS}
             topic: events-dlq
             key: \${! json("event_id") }
+            sasl:
+              - mechanism: SCRAM-SHA-256
+                username: \${secrets.KAFKA_USER}
+                password: \${secrets.KAFKA_PASSWORD}
+            tls:
+              enabled: true
             metadata:
               include_patterns: [".*"]
       - output:
@@ -211,7 +407,7 @@ cache_resources:
   - label: dedupe_cache
     redis:
       url: redis://cache:6379
-      prefix: dedupe:
+      prefix: "dedupe:"
       default_ttl: 1h
 
 rate_limit_resources:
@@ -219,23 +415,23 @@ rate_limit_resources:
     local:
       count: 1000
       interval: 1s
-
-metrics:
-  prometheus:
-    use_histogram_timing: true
-
-logger:
-  level: INFO
-  format: json
 `;
 
 const allComponentsKitchenSink = `# Kitchen sink: many components for stress-testing the editor.
 input:
   broker:
     inputs:
-      - generate:
-          interval: 100ms
-          mapping: 'root = {"src":"gen-1"}'
+      - redpanda:
+          seed_brokers:
+            - \${REDPANDA_BROKERS}
+          topics: [events-primary]
+          consumer_group: kitchen-sink
+          sasl:
+            - mechanism: SCRAM-SHA-256
+              username: \${secrets.KAFKA_USER}
+              password: \${secrets.KAFKA_PASSWORD}
+          tls:
+            enabled: true
       - generate:
           interval: 250ms
           mapping: 'root = {"src":"gen-2"}'
@@ -269,7 +465,7 @@ pipeline:
         processors:
           - sql_raw:
               driver: postgres
-              dsn: postgres://user:pass@db/x
+              dsn: \${secrets.POSTGRES_DSN}
               query: "INSERT INTO events VALUES ($1)"
               args_mapping: 'root = [this.id]'
     - group_by_value:
@@ -299,9 +495,16 @@ output:
       - drop_on:
           error: true
           output:
-            kafka_franz:
-              seed_brokers: ["localhost:9092"]
+            redpanda:
+              seed_brokers:
+                - \${REDPANDA_BROKERS}
               topic: events-archive
+              sasl:
+                - mechanism: SCRAM-SHA-256
+                  username: \${secrets.KAFKA_USER}
+                  password: \${secrets.KAFKA_PASSWORD}
+              tls:
+                enabled: true
 
 tracer:
   open_telemetry_collector:
@@ -313,7 +516,7 @@ tracer:
 
 const malformedYaml = `# Intentionally broken — for testing editor error states.
 input:
-  kafka_franz
+  redpanda
     seed_brokers: ["localhost:9092"
     topics: events
    consumer_group:    bad-indent
@@ -328,11 +531,23 @@ output:
 `;
 
 const missingRequiredFields = `# Schema-valid YAML but missing required fields — for testing validation.
+# A 'redpanda' input needs seed_brokers + (topics OR regexp_topics_include);
+# the output needs seed_brokers + topic. Neither is set here.
 input:
-  kafka_franz: {}
+  redpanda: {}
 
 output:
-  kafka_franz: {}
+  redpanda: {}
+`;
+
+const stdinStdoutDisabled = `# Uses stdin/stdout — disabled in Cloud Connect for security.
+# Should produce: "unable to infer component type: stdout".
+# Useful for testing the validation error UI.
+input:
+  stdin: {}
+
+output:
+  stdout: {}
 `;
 
 const giantConfig = (() => {
@@ -361,11 +576,12 @@ output:
 
 const secretsHeavy = `# Many secret references — for testing the secret-detection UI.
 input:
-  kafka_franz:
+  redpanda:
     seed_brokers:
       - \${secrets.BROKER_1}
       - \${secrets.BROKER_2}
     topics: ["\${secrets.TOPIC_NAME}"]
+    consumer_group: connect-secrets-test
     sasl:
       - mechanism: SCRAM-SHA-512
         username: \${secrets.KAFKA_USER}
@@ -403,10 +619,10 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
     tags: ['simple'],
   },
   {
-    id: 'simple-generate-to-kafka',
-    name: 'Simple — generate to Kafka',
-    description: 'Synthetic JSON every second written to Kafka.',
-    yaml: generateToKafka,
+    id: 'simple-generate-to-redpanda',
+    name: 'Simple — generate to Redpanda',
+    description: 'Synthetic JSON every second to a Redpanda topic with SCRAM-SHA-256 + TLS.',
+    yaml: generateToRedpanda,
     tags: ['simple'],
   },
   {
@@ -417,30 +633,51 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
     tags: ['simple'],
   },
   {
-    id: 'medium-http-to-kafka',
-    name: 'Medium — HTTP to Kafka with processors',
-    description: 'HTTP ingest, schema decode, try/catch enrichment.',
-    yaml: httpToKafkaWithProcessors,
+    id: 'medium-http-to-redpanda',
+    name: 'Medium — HTTP to Redpanda',
+    description: 'Webhook ingest, schema-registry decode with try/catch, write to Redpanda.',
+    yaml: httpToRedpanda,
     tags: ['medium'],
   },
   {
+    id: 'medium-postgres-cdc',
+    name: 'Medium — Postgres CDC to Redpanda',
+    description: 'Logical-replication CDC → Redpanda topic per table, keyed by primary key.',
+    yaml: postgresCdcToRedpanda,
+    tags: ['medium'],
+  },
+  {
+    id: 'complex-enrichment-workflow',
+    name: 'Complex — workflow enrichment',
+    description: 'Multi-branch parallel HTTP enrichment (cookbook-style). Redpanda → Redpanda.',
+    yaml: enrichmentWorkflow,
+    tags: ['complex'],
+  },
+  {
+    id: 'complex-rag-ingest',
+    name: 'Complex — RAG ingest (embeddings → PGVector)',
+    description: 'Chunk → OpenAI embeddings → Postgres for retrieval-augmented generation.',
+    yaml: ragEmbeddingPipeline,
+    tags: ['complex'],
+  },
+  {
     id: 'complex-enterprise',
-    name: 'Complex — multi-stage enterprise',
-    description: 'Kafka -> dedupe -> branch enrich -> filter -> S3 + Kafka DLQ.',
-    yaml: longComplexEnterprise,
+    name: 'Complex — enterprise enrichment',
+    description: 'Redpanda → dedupe → branch enrich → filter → S3 + DLQ. Cache + rate limit resources.',
+    yaml: enterpriseEnrichment,
     tags: ['complex'],
   },
   {
     id: 'complex-kitchen-sink',
     name: 'Complex — kitchen sink',
-    description: 'Many component types for stress-testing the editor.',
+    description: 'Many component types (broker, workflow, parallel, retry, fan_out) for editor stress-testing.',
     yaml: allComponentsKitchenSink,
     tags: ['complex'],
   },
   {
     id: 'edge-secrets-heavy',
     name: 'Edge — many secret references',
-    description: 'Stress-test the ${secrets.X} parser/detector.',
+    description: 'Stress-test the ${secrets.X} parser/detector with brokers, SASL, TLS, headers, and S3 creds all interpolated.',
     yaml: secretsHeavy,
     tags: ['edge-case'],
   },
