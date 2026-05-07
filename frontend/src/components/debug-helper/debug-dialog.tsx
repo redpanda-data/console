@@ -347,18 +347,22 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
         >
           {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <code className="truncate font-medium font-mono text-xs">{storageKey}</code>
-            <Badge size="sm" variant="simple-outline">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 items-center gap-2">
+            <code className="min-w-0 flex-1 truncate font-medium font-mono text-xs" title={storageKey}>
+              {storageKey}
+            </code>
+            <Badge className="shrink-0" size="sm" variant="simple-outline">
               {sizeBytes < 1024 ? `${sizeBytes} B` : `${(sizeBytes / 1024).toFixed(1)} KB`}
             </Badge>
           </div>
           {!expanded && (
-            <div className="truncate font-mono text-muted-foreground text-xs">{formatted.split('\n')[0]}</div>
+            <div className="min-w-0 truncate font-mono text-muted-foreground text-xs">
+              {formatted.split('\n')[0]}
+            </div>
           )}
           {expanded && (
-            <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded border bg-muted/40 p-2 font-mono text-xs">
+            <pre className="mt-1 max-h-64 max-w-full overflow-auto whitespace-pre-wrap break-all rounded border bg-muted/40 p-2 font-mono text-xs">
               {formatted}
             </pre>
           )}
@@ -413,15 +417,15 @@ function StorageSection({
   }, [storage, filter]);
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-hidden rounded-md border">
       <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Text className="font-medium">{title}</Text>
-          <Badge size="sm" variant="simple-outline">
+        <div className="flex min-w-0 items-center gap-2">
+          <Text className="truncate font-medium">{title}</Text>
+          <Badge className="shrink-0" size="sm" variant="simple-outline">
             {storage.length} keys
           </Badge>
         </div>
-        <div className="flex gap-1">
+        <div className="flex shrink-0 gap-1">
           <Button
             icon={<Clipboard />}
             onClick={() => copyToClipboard(JSON.stringify(dumpStorage(storage), null, 2), `Copied ${title} JSON`)}
@@ -652,7 +656,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
-        className="flex h-[85vh] max-h-[85vh] w-[min(900px,95vw)] max-w-[95vw] flex-col gap-0 overflow-hidden p-0"
+        className="flex h-[85vh] max-h-[85vh] w-full max-w-[900px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]"
         size="full"
       >
         <div className="shrink-0 border-b px-6 py-4 pr-12">
