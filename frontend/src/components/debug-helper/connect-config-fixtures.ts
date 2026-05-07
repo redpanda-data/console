@@ -41,6 +41,56 @@ output:
   drop: {}
 `;
 
+const generateToRedpandaLocal = `# cloudv2 local Tilt — needs ONE Console secret created first.
+#
+# The pipeline-lint allowlist (apps/redpanda-connect-api/config/config.go
+# Variables struct) only accepts these env vars without a Console secret:
+#   REDPANDA_BROKERS, REDPANDA_TLS_ENABLED, REDPANDA_SCHEMA_REGISTRY_URL,
+#   REDPANDA_REGION, REDPANDA_ID, PRIVATE_REDPANDA_*
+# REDPANDA_SASL_* are NOT on the allowlist (the deployment exports them
+# at runtime, but the linter blocks save first), so SASL must go through
+# Console secrets.
+#
+# One-time setup:
+#   1. cloudv2 Tilt creates TWO k3d clusters. The rpcn-sasl Secret lives on
+#      the BYOC cluster, not cloudv2-dev. Get its kubeconfig first:
+#        k3d kubeconfig get byoc-d7l77j42 > /tmp/byoc-kubeconfig
+#
+#   2. Get the local Redpanda admin password:
+#        KUBECONFIG=/tmp/byoc-kubeconfig kubectl -n redpanda-connect \\
+#          get secret rpcn-sasl -o jsonpath='{.data.password}' | base64 -d
+#
+#   3. In Console UI go to /rp-connect/secrets → Create secret:
+#        name:  LOCAL_RP_PASSWORD
+#        value: <paste from step 2>
+#
+#   4. Create the destination topic (Redpanda doesn't auto-create):
+#        Console UI → Topics → Create → demo-events (defaults are fine)
+#
+#   5. Save this pipeline.
+#
+# Mechanism + username are hardcoded (admin is the local superuser provisioned
+# by the Helm chart). Only the password needs to be a secret.
+input:
+  generate:
+    interval: 1s
+    mapping: |
+      root.id = uuid_v4()
+      root.timestamp = now()
+      root.value = random_int(min: 0, max: 100)
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: demo-events
+    key: \${! json("id") }
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: admin
+        password: \${secrets.LOCAL_RP_PASSWORD}
+`;
+
 const generateToRedpanda = `# Generate synthetic JSON every second and write it to a Redpanda topic
 # using SCRAM-SHA-256 + TLS — the canonical Cloud quickstart pattern.
 input:
@@ -619,9 +669,16 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
     tags: ['simple'],
   },
   {
-    id: 'simple-generate-to-redpanda',
-    name: 'Simple — generate to Redpanda',
-    description: 'Synthetic JSON every second to a Redpanda topic with SCRAM-SHA-256 + TLS.',
+    id: 'simple-generate-to-redpanda-local',
+    name: 'Simple — generate to Redpanda (local Tilt)',
+    description: 'cloudv2 Tilt — needs one Console secret (LOCAL_RP_PASSWORD). Setup steps in YAML comments.',
+    yaml: generateToRedpandaLocal,
+    tags: ['simple'],
+  },
+  {
+    id: 'simple-generate-to-redpanda-cloud',
+    name: 'Simple — generate to Redpanda (Cloud)',
+    description: 'SCRAM-SHA-256 + TLS using ${secrets.X}. Canonical Cloud quickstart pattern.',
     yaml: generateToRedpanda,
     tags: ['simple'],
   },
