@@ -11,6 +11,7 @@
 
 import { useQuery } from '@connectrpc/connect-query';
 import { useMemo } from 'react';
+import { useStore } from 'zustand';
 
 import { usePrincipalList } from './use-principal-list';
 import {
@@ -20,7 +21,7 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { getACLOperation } from '../../../../react-query/api/acl';
-import { rolesApi } from '../../../../state/backend-api';
+import { type RolePrincipal, useRolesStore } from '../../../../state/backend-api';
 
 export type FlatAclEntry = {
   resourceType: string;
@@ -65,6 +66,7 @@ export function usePrincipalPermissions() {
   } = useQuery(listACLs, {} as ListACLsRequest);
 
   const { principals, isUsersError, usersError } = usePrincipalList();
+  const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
 
   const principalGroups = useMemo<PrincipalPermissionGroup[]>(() => {
     if (!allAclsData) return [];
@@ -102,8 +104,8 @@ export function usePrincipalPermissions() {
         const directAcls = aclsByPrincipal.get(principalKey) ?? [];
 
         const belongsToRoles: string[] = [];
-        for (const [roleName, members] of rolesApi.roleMembers) {
-          if (members.some((m) => m.name === p.name && m.principalType === p.principalType)) {
+        for (const [roleName, members] of roleMembers) {
+          if (members.some((m: RolePrincipal) => m.name === p.name && m.principalType === p.principalType)) {
             belongsToRoles.push(roleName);
           }
         }
@@ -129,7 +131,7 @@ export function usePrincipalPermissions() {
           denyCount,
         };
       });
-  }, [allAclsData, principals]);
+  }, [allAclsData, principals, roleMembers]);
 
   return {
     principalGroups,

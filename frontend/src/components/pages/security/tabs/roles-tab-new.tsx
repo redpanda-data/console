@@ -56,10 +56,11 @@ import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
+import { useStore } from 'zustand';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
-import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
+import { useApiStoreHook, useRolesStore } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
@@ -94,6 +95,7 @@ export const RolesTabNew: FC = () => {
   }, []);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
+  const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
@@ -116,7 +118,7 @@ export const RolesTabNew: FC = () => {
 
   const rolesWithMembers: RoleEntry[] = (rolesData?.roles ?? []).map((r) => ({
     name: r.name,
-    members: rolesApi.roleMembers.get(r.name) ?? [],
+    members: roleMembers.get(r.name) ?? [],
   }));
 
   const pagination: PaginationState = { pageIndex, pageSize };
@@ -263,6 +265,11 @@ export const RolesTabNew: FC = () => {
       <SecurityTabsNav />
       <ListLayout>
         <Text className="text-muted-foreground text-sm sm:text-base">
+          <NullFallbackBoundary>
+            <div className="mb-4">
+              <FeatureLicenseNotification featureName="rbac" />
+            </div>
+          </NullFallbackBoundary>
           <DescriptionWithHelp short="Groups of ACLs that can be assigned to principals." title="Roles">
             <Text>
               Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents
@@ -270,9 +277,6 @@ export const RolesTabNew: FC = () => {
               OIDC identity, or mTLS client).
             </Text>
           </DescriptionWithHelp>{' '}
-          <NullFallbackBoundary>
-            <FeatureLicenseNotification as="badge" featureName="rbac" />
-          </NullFallbackBoundary>
         </Text>
 
         <ListLayoutFilters

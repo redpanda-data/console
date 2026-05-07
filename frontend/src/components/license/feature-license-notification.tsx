@@ -27,7 +27,6 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backend-api';
 import { Alert, AlertDescription } from '../redpanda-ui/components/alert';
-import { Badge } from '../redpanda-ui/components/badge';
 
 // biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
 const getLicenseAlertContentForFeature = (
@@ -175,8 +174,7 @@ const getLicenseAlertContentForFeature = (
 
 export const FeatureLicenseNotification: FC<{
   featureName: 'reassignPartitions' | 'rbac';
-  as?: 'alert' | 'badge';
-}> = ({ featureName, as: renderAs = 'alert' }) => {
+}> = ({ featureName }) => {
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
@@ -225,10 +223,6 @@ export const FeatureLicenseNotification: FC<{
   }
 
   const { message, variant } = alertContent;
-
-  if (renderAs === 'badge') {
-    return <Badge variant={variant === 'destructive' ? 'destructive' : 'simple'}>{message}</Badge>;
-  }
 
   return (
     <>
