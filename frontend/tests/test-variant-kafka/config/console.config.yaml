@@ -1,0 +1,20 @@
+serveFrontend: true
+
+kafka:
+  brokers: ["kafka:9092"]
+  sasl:
+    enabled: true
+    mechanism: PLAIN
+    username: e2euser
+    password: very-secret
+
+schemaRegistry:
+  enabled: false
+
+redpanda:
+  adminApi:
+    enabled: false
+
+server:
+  listenPort: 3000
+  allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]

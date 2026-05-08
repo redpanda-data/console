@@ -1,0 +1,12 @@
+{
+  "name": "kafka",
+  "displayName": "Apache Kafka",
+  "isEnterprise": false,
+  "isKafka": true,
+  "needsShadowlink": false,
+  "needsAuth": false,
+  "ports": {
+    "backend": 3002,
+    "kafkaKafka": 19094
+  }
+}
