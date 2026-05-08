@@ -14,9 +14,15 @@ import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
+import { vi } from 'vitest';
 
 import { BootstrapServers } from './bootstrap-servers';
 import { FormSchema, type FormValues, initialValues } from '../model';
+
+vi.mock('config', () => ({
+  isEmbedded: vi.fn(() => false),
+  isFeatureFlagEnabled: vi.fn(() => false),
+}));
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({
@@ -167,6 +173,79 @@ describe('BootstrapServers', () => {
         expect(getBootstrapInput(0)).toHaveValue('broker2:9092');
         expect(screen.queryByTestId('bootstrap-server-input-1')).not.toBeInTheDocument();
       });
+    });
+  });
+
+  describe('TLS disclosures', () => {
+    test('should hide disclosures and intro when TLS is off', () => {
+      const customValues: FormValues = {
+        ...initialValues,
+        useTls: false,
+      };
+
+      render(<TestWrapper defaultValues={customValues} />);
+
+      expect(screen.queryByTestId('tls-intro')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('tls-ca-disclosure')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('tls-mtls-disclosure')).not.toBeInTheDocument();
+    });
+
+    test('should render intro and both disclosures collapsed by default when TLS is on', () => {
+      render(<TestWrapper />);
+
+      expect(screen.getByTestId('tls-intro')).toBeInTheDocument();
+      expect(screen.getByTestId('tls-ca-disclosure-trigger')).toBeInTheDocument();
+      expect(screen.getByTestId('tls-mtls-disclosure-trigger')).toBeInTheDocument();
+      // Bodies are collapsed: cert add buttons should not be present
+      expect(screen.queryByTestId('add-ca-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-clientKey-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-clientCert-button')).not.toBeInTheDocument();
+    });
+
+    test('should reveal CA cert button when expanding the CA disclosure', async () => {
+      const user = userEvent.setup();
+      render(<TestWrapper />);
+
+      await user.click(screen.getByTestId('tls-ca-disclosure-trigger'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-ca-button')).toBeInTheDocument();
+      });
+    });
+
+    test('should reveal client key first, then certificate, plus pair hint when expanding mTLS', async () => {
+      const user = userEvent.setup();
+      render(<TestWrapper />);
+
+      await user.click(screen.getByTestId('tls-mtls-disclosure-trigger'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-clientKey-button')).toBeInTheDocument();
+        expect(screen.getByTestId('add-clientCert-button')).toBeInTheDocument();
+        expect(screen.getByTestId('tls-mtls-pair-hint')).toHaveTextContent(
+          'Client certificate and private key must be provided together.'
+        );
+      });
+
+      // Order: client key appears before client certificate in the DOM
+      const keyButton = screen.getByTestId('add-clientKey-button');
+      const certButton = screen.getByTestId('add-clientCert-button');
+      expect(keyButton.compareDocumentPosition(certButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    test('should auto-open mTLS disclosure when client cert is already filled', () => {
+      const customValues: FormValues = {
+        ...initialValues,
+        mtls: {
+          ...initialValues.mtls,
+          clientCert: { pemContent: 'PEM-CONTENT', fileName: 'client.crt' },
+        },
+      };
+
+      render(<TestWrapper defaultValues={customValues} />);
+
+      expect(screen.getByTestId('add-clientKey-button')).toBeInTheDocument();
+      expect(screen.getByTestId('clientCert-status')).toBeInTheDocument();
     });
   });
 
