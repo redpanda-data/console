@@ -94,11 +94,13 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
   const lineCount = useMemo(() => fixture.yaml.split('\n').length, [fixture.yaml]);
 
   return (
-    <div className="rounded-md border bg-card p-3">
+    <div className="rounded-md border bg-card px-3 py-2.5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Text className="font-medium">{fixture.name}</Text>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Text className="font-medium" variant="bodyStrongSmall">
+              {fixture.name}
+            </Text>
             {fixture.tags.map((tag) => (
               <Badge key={tag} size="sm" variant={TAG_VARIANT[tag]}>
                 {tag}
@@ -108,18 +110,18 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
               {lineCount} lines
             </Badge>
           </div>
-          <Text className="mt-1 text-muted-foreground" variant="small">
+          <Text className="text-muted-foreground" variant="bodySmall">
             {fixture.description}
           </Text>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="sm" variant="secondary-ghost">
+        <div className="flex shrink-0 gap-1.5">
+          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="secondary-ghost">
             {previewing ? 'Hide' : 'Preview'}
           </Button>
           <Button
             icon={<ClipboardCopy />}
             onClick={() => copyToClipboard(fixture.yaml, `Copied “${fixture.name}”`)}
-            size="sm"
+            size="xs"
             variant="primary"
           >
             Copy YAML
@@ -127,7 +129,7 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
         </div>
       </div>
       {previewing && (
-        <pre className="mt-3 max-h-64 overflow-auto rounded border bg-muted p-3 font-mono text-xs">{fixture.yaml}</pre>
+        <pre className="mt-2.5 max-h-64 overflow-auto rounded border bg-muted p-2.5 font-mono text-xs">{fixture.yaml}</pre>
       )}
     </div>
   );
@@ -146,17 +148,17 @@ function ConnectConfigsTab({ filter }: { filter: string }) {
   }, [filter]);
 
   return (
-    <div className="space-y-2">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Pre-built Connect pipeline YAMLs for stress-testing the editor and validation. Click <strong>Copy YAML</strong>,
         then paste into the editor on the create or edit page.
       </Text>
       {filtered.length === 0 ? (
-        <Text className="py-8 text-center text-muted-foreground" variant="small">
+        <Text className="py-6 text-center text-muted-foreground" variant="bodySmall">
           No fixtures match “{filter}”.
         </Text>
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-1.5">
           {filtered.map((fixture) => (
             <ConfigFixtureRow fixture={fixture} key={fixture.id} />
           ))}
@@ -169,11 +171,11 @@ function ConnectConfigsTab({ filter }: { filter: string }) {
 function NavigationTab({ onNavigate }: { onNavigate: () => void }) {
   const router = useRouter();
   return (
-    <div className="space-y-3">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Jump to common app routes. Closes the dialog on click.
       </Text>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         {QUICK_ROUTES.map((route) => (
           <Button
             key={route.to}
@@ -181,11 +183,12 @@ function NavigationTab({ onNavigate }: { onNavigate: () => void }) {
               router.history.push(route.to);
               onNavigate();
             }}
+            size="sm"
             variant="secondary"
           >
-            <span className="flex flex-col items-start">
-              <span className="text-sm">{route.label}</span>
-              <span className="text-muted-foreground text-xs">{route.to}</span>
+            <span className="flex flex-col items-start gap-0.5">
+              <span className="text-xs">{route.label}</span>
+              <span className="text-muted-foreground text-[10px]">{route.to}</span>
             </span>
           </Button>
         ))}
@@ -196,21 +199,21 @@ function NavigationTab({ onNavigate }: { onNavigate: () => void }) {
 
 function ToastsTab() {
   return (
-    <div className="space-y-3">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Trigger each toast variant to verify rendering, stacking, and rich colors.
       </Text>
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => toast.success('Looking good — operation succeeded.')} variant="primary">
+      <div className="flex flex-wrap gap-1.5">
+        <Button onClick={() => toast.success('Looking good — operation succeeded.')} size="sm" variant="primary">
           Success
         </Button>
-        <Button onClick={() => toast.info('Heads up — informational toast.')} variant="secondary">
+        <Button onClick={() => toast.info('Heads up — informational toast.')} size="sm" variant="secondary">
           Info
         </Button>
-        <Button onClick={() => toast.warning('Be careful — this might be slow.')} variant="secondary">
+        <Button onClick={() => toast.warning('Be careful — this might be slow.')} size="sm" variant="secondary">
           Warning
         </Button>
-        <Button onClick={() => toast.error('Something broke. Check the console.')} variant="destructive">
+        <Button onClick={() => toast.error('Something broke. Check the console.')} size="sm" variant="destructive">
           Error
         </Button>
         <Button
@@ -220,6 +223,7 @@ function ToastsTab() {
               action: { label: 'Undo', onClick: () => toast('Undone') },
             })
           }
+          size="sm"
           variant="secondary"
         >
           With action
@@ -229,6 +233,7 @@ function ToastsTab() {
             const id = toast.loading('Processing… (5s)');
             setTimeout(() => toast.success('Done', { id }), 5000);
           }}
+          size="sm"
           variant="secondary"
         >
           Loading → success
@@ -239,6 +244,7 @@ function ToastsTab() {
               toast(`Stacked toast #${i + 1}`);
             }
           }}
+          size="sm"
           variant="secondary-ghost"
         >
           Stack 6
@@ -255,11 +261,11 @@ function ErrorThrower(): never {
 function BoundariesTab({ onClose }: { onClose: () => void }) {
   const [renderThrow, setRenderThrow] = useState(false);
   return (
-    <div className="space-y-3">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Force errors to verify ErrorBoundary, error toasts, and unhandled-rejection paths.
       </Text>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         <Button
           icon={<AlertCircle />}
           onClick={() => {
@@ -267,6 +273,7 @@ function BoundariesTab({ onClose }: { onClose: () => void }) {
             // Defer so the dialog can finish unmounting before the boundary trips.
             setTimeout(() => setRenderThrow(true), 50);
           }}
+          size="sm"
           variant="destructive"
         >
           Throw in render (ErrorBoundary)
@@ -277,6 +284,7 @@ function BoundariesTab({ onClose }: { onClose: () => void }) {
             console.error('DebugDialog: synthetic console.error');
             throw new Error('DebugDialog: uncaught synthetic error from event handler');
           }}
+          size="sm"
           variant="destructive"
         >
           Throw in event handler
@@ -286,6 +294,7 @@ function BoundariesTab({ onClose }: { onClose: () => void }) {
             // Unhandled rejection.
             void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'));
           }}
+          size="sm"
           variant="destructive"
         >
           Unhandled promise rejection
@@ -300,6 +309,7 @@ function BoundariesTab({ onClose }: { onClose: () => void }) {
             console.info('DebugDialog: synthetic console.info');
             toast.success('Wrote 3 messages to the console');
           }}
+          size="sm"
           variant="secondary"
         >
           Console noise
@@ -338,17 +348,17 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
 
   return (
     <div className="border-b last:border-0">
-      <div className="flex items-start gap-2 px-3 py-2">
+      <div className="flex items-start gap-2 px-3 py-1.5">
         <button
           aria-label={expanded ? 'Collapse value' : 'Expand value'}
           className="mt-0.5 shrink-0 rounded p-0.5 hover:bg-muted"
           onClick={() => setExpanded((v) => !v)}
           type="button"
         >
-          {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </button>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex min-w-0 items-center gap-1.5">
             <code className="min-w-0 flex-1 truncate font-medium font-mono text-xs" title={storageKey}>
               {storageKey}
             </code>
@@ -357,7 +367,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             </Badge>
           </div>
           {!expanded && (
-            <div className="min-w-0 truncate font-mono text-muted-foreground text-xs">
+            <div className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
               {formatted.split('\n')[0]}
             </div>
           )}
@@ -418,9 +428,11 @@ function StorageSection({
 
   return (
     <div className="overflow-hidden rounded-md border">
-      <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <Text className="truncate font-medium">{title}</Text>
+      <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Text className="truncate font-medium" variant="bodyStrongSmall">
+            {title}
+          </Text>
           <Badge className="shrink-0" size="sm" variant="simple-outline">
             {storage.length} keys
           </Badge>
@@ -446,7 +458,7 @@ function StorageSection({
         </div>
       </div>
       {entries.length === 0 ? (
-        <Text className="px-3 py-4 text-center text-muted-foreground" variant="small">
+        <Text className="px-3 py-3 text-center text-muted-foreground" variant="bodySmall">
           {storage.length === 0 ? 'Empty' : `No matches for “${filter}”`}
         </Text>
       ) : (
@@ -477,8 +489,8 @@ function StorageTab() {
   };
 
   return (
-    <div className="space-y-3">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Inspect or clear browser storage. Clearing will sign you out of preferences and reset feature toggles.
       </Text>
       <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by key or value…" value={filter} />
@@ -517,17 +529,17 @@ function EnvironmentTab() {
     userAgent: navigator.userAgent,
   };
   return (
-    <div className="space-y-3">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Snapshot of build, route, and runtime env. Useful when filing bugs.
       </Text>
-      <div className="rounded-md border bg-muted/40">
-        <table className="w-full text-sm">
+      <div className="overflow-hidden rounded-md border bg-muted/40">
+        <table className="w-full text-xs">
           <tbody>
             {Object.entries(info).map(([k, v]) => (
               <tr className="border-b last:border-0" key={k}>
-                <td className="px-3 py-2 align-top font-medium">{k}</td>
-                <td className="break-all px-3 py-2 font-mono text-xs">
+                <td className="px-3 py-1.5 align-top font-medium">{k}</td>
+                <td className="break-all px-3 py-1.5 font-mono text-[11px]">
                   <InlineCode>{String(v)}</InlineCode>
                 </td>
               </tr>
@@ -536,9 +548,10 @@ function EnvironmentTab() {
         </table>
       </div>
       <Button
+        className="self-start"
         icon={<Clipboard />}
         onClick={() => copyToClipboard(JSON.stringify(info, null, 2), 'Copied environment snapshot')}
-        size="sm"
+        size="xs"
         variant="secondary"
       >
         Copy environment snapshot
@@ -567,14 +580,14 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
   const hasAnyOverride = Object.keys(overrides).length > 0;
 
   return (
-    <div className="space-y-3">
-      <Text className="text-muted-foreground" variant="small">
+    <div className="flex flex-col gap-2.5">
+      <Text className="text-muted-foreground" variant="bodySmall">
         Override <InlineCode>config.featureFlags</InlineCode> locally. Persists to <InlineCode>localStorage</InlineCode>{' '}
         and re-applies on reload. Most components only read flags during render, so a reload is recommended after
         toggling.
       </Text>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="sm" variant="primary">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="xs" variant="primary">
           Reload to apply
         </Button>
         <Button
@@ -585,15 +598,15 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
             toast.success('Cleared all feature-flag overrides');
             bump();
           }}
-          size="sm"
+          size="xs"
           variant="destructive-ghost"
         >
           Clear all overrides ({Object.keys(overrides).length})
         </Button>
       </div>
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-md border">
         {filtered.length === 0 ? (
-          <Text className="px-3 py-4 text-center text-muted-foreground" variant="small">
+          <Text className="px-3 py-3 text-center text-muted-foreground" variant="bodySmall">
             No flags match “{filter}”.
           </Text>
         ) : (
@@ -602,7 +615,7 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
             const defaultValue = FEATURE_FLAGS[key];
             const effectiveValue = effective[key];
             return (
-              <div className="flex items-center gap-3 border-b px-3 py-2 last:border-0" key={key}>
+              <div className="flex items-center gap-2.5 border-b px-3 py-1.5 last:border-0" key={key}>
                 <Switch
                   checked={effectiveValue}
                   onCheckedChange={(checked) => {
@@ -610,8 +623,8 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
                     bump();
                   }}
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <code className="font-medium font-mono text-xs">{key}</code>
                     {isOverridden && (
                       <Badge size="sm" variant="warning-inverted">
@@ -619,7 +632,7 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
                       </Badge>
                     )}
                   </div>
-                  <Text className="text-muted-foreground" variant="small">
+                  <Text className="text-[11px] text-muted-foreground">
                     default: <InlineCode>{String(defaultValue)}</InlineCode> · effective:{' '}
                     <InlineCode>{String(effectiveValue)}</InlineCode>
                   </Text>
@@ -655,18 +668,15 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent
-        className="flex h-[85vh] max-h-[85vh] w-full max-w-[900px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]"
-        size="full"
-      >
-        <div className="shrink-0 border-b px-6 py-4 pr-12">
+      <DialogContent className="flex h-[85vh] max-h-[85vh] w-full max-w-[900px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]">
+        <div className="shrink-0 border-b px-5 py-3 pr-12">
           <DialogHeader align="left" className="space-y-0">
-            <DialogTitle className="flex items-center gap-2">
-              <Bug className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Bug className="h-4 w-4" />
               Debug helpers
             </DialogTitle>
             <DialogDescription>
-              <span className="text-muted-foreground text-sm">
+              <span className="text-muted-foreground text-xs">
                 Connect-app debugging tools — configs, navigation, error simulators.
               </span>
             </DialogDescription>
@@ -678,32 +688,32 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           onValueChange={(v) => setTab(v as Tab)}
           value={tab}
         >
-          <div className="shrink-0 overflow-x-auto px-6 pt-4">
+          <div className="shrink-0 overflow-x-auto px-5 pt-3">
             <TabsList>
               <TabsTrigger value="configs">
-                <Wrench className="mr-1 h-3.5 w-3.5" /> Configs
+                <Wrench className="mr-1 h-3 w-3" /> Configs
               </TabsTrigger>
               <TabsTrigger value="navigation">
-                <Navigation className="mr-1 h-3.5 w-3.5" /> Routes
+                <Navigation className="mr-1 h-3 w-3" /> Routes
               </TabsTrigger>
               <TabsTrigger value="toasts">
-                <Bug className="mr-1 h-3.5 w-3.5" /> Toasts
+                <Bug className="mr-1 h-3 w-3" /> Toasts
               </TabsTrigger>
               <TabsTrigger value="boundaries">
-                <AlertCircle className="mr-1 h-3.5 w-3.5" /> Errors
+                <AlertCircle className="mr-1 h-3 w-3" /> Errors
               </TabsTrigger>
               <TabsTrigger value="storage">
-                <Trash2 className="mr-1 h-3.5 w-3.5" /> Storage
+                <Trash2 className="mr-1 h-3 w-3" /> Storage
               </TabsTrigger>
               <TabsTrigger value="flags">
-                <Flag className="mr-1 h-3.5 w-3.5" /> Flags
+                <Flag className="mr-1 h-3 w-3" /> Flags
               </TabsTrigger>
               <TabsTrigger value="env">
-                <Cog className="mr-1 h-3.5 w-3.5" /> Env
+                <Cog className="mr-1 h-3 w-3" /> Env
               </TabsTrigger>
             </TabsList>
             {(tab === 'configs' || tab === 'flags') && (
-              <div className="mt-3">
+              <div className="mt-2.5">
                 <Input
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder={tab === 'configs' ? 'Filter by name, tag, or description…' : 'Filter by flag name…'}
@@ -713,7 +723,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             )}
           </div>
 
-          <ScrollArea className="min-h-0 min-w-0 flex-1 px-6 py-4">
+          <ScrollArea className="min-h-0 min-w-0 flex-1 overflow-x-hidden px-5 py-3">
             <TabsContent value="configs">
               <ConnectConfigsTab filter={filter} />
             </TabsContent>
@@ -738,7 +748,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </ScrollArea>
         </Tabs>
 
-        <div className="flex shrink-0 items-center justify-between gap-4 border-t bg-muted/30 px-6 py-2">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t bg-muted/30 px-5 py-1.5">
           <div className="flex items-center gap-3">
             <Text className="text-muted-foreground" variant="small">
               Dev-only · {IsDev ? 'enabled' : 'disabled'}
