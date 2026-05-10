@@ -162,7 +162,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
                   status: 'success',
                   duration: 4000,
                   isClosable: false,
-                  title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`,
+                  title: `Pipeline ${isStopped ? 'started' : 'stopped'}`,
                 });
 
                 // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections

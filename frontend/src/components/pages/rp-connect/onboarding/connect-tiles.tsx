@@ -321,13 +321,13 @@ export const ConnectTiles = memo(
             const values = form.getValues();
             return {
               success: true,
-              message: 'Connector selected successfully',
+              message: 'Connector selected',
               data: values,
             };
           }
           return {
             success: false,
-            message: 'Please fix the form errors before proceeding',
+            message: 'Fix the form errors before proceeding',
             error: 'Form validation failed',
           };
         },

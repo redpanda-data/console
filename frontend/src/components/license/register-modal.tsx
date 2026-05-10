@@ -159,7 +159,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               </Box>
               <VStack align="center" spacing={2}>
                 <Text fontSize="lg" fontWeight="bold" textAlign="center">
-                  This cluster has been successfully registered
+                  Cluster registered
                 </Text>
                 <Text color="gray.600" textAlign="center">
                   Enjoy 30 more days of enterprise features.
@@ -256,7 +256,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                       required: 'Email address is required',
                       pattern: {
                         value: EMAIL_VALIDATION_REGEX,
-                        message: 'Please enter a valid email address',
+                        message: 'Enter a valid email address',
                       },
                     }}
                   />

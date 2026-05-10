@@ -751,7 +751,7 @@ export const DynamicJSONForm = ({
               content={JSON.stringify(value, null, 2)}
               onCopy={() =>
                 toast.success('JSON copied', {
-                  description: 'The JSON data has been successfully copied to your clipboard.',
+                  description: 'JSON copied to clipboard.',
                 })
               }
               size="sm"

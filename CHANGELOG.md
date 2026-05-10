@@ -2,6 +2,15 @@
 
 ## Master / Unreleased
 
+## v3.7.2 / 2026-04-29
+- [BUGFIX] Hide unavailable "Infinite" retention option for topics with capped configurations and fix topic config UI layout.
+- [BUGFIX] Fix secrets list returning only the first page instead of all entries.
+- [BUGFIX] Fix ACL rule key collision in edit mode causing incorrect rule management.
+- [IMPROVEMENT] Show Group principals in ACLs and Permissions List.
+- [IMPROVEMENT] Add `lockPrincipal` query parameter to ACL create page to pre-fill and lock the principal field.
+- [IMPROVEMENT] UX copy and typography improvements across console UI.
+- [SECURITY] Resolve security vulnerabilities in frontend and backend dependencies.
+
 ## v3.7.1 / 2026-04-08
 - [IMPROVEMENT] Schema Registry pagination and sort order are now reflected in URL query parameters, enabling bookmarkable views.
 - [IMPROVEMENT] Add user-friendly Kafka error messages with detailed per-error context.

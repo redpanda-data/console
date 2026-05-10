@@ -1,0 +1,66 @@
+---
+name: Fork PR dispatch to enterprise
+on:
+  workflow_run:
+    workflows: ["PR verification (forks)"]
+    types: [completed]
+permissions:
+  id-token: write
+  contents: read
+  statuses: write
+jobs:
+  dispatch:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.fork == true
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/actions_bot_token
+          parse-json-secrets: true
+      - name: Build dispatch payload
+        id: payload
+        env:
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const payload = {
+              branch: process.env.HEAD_BRANCH,
+              commit_sha: process.env.HEAD_SHA,
+              head_repository: process.env.HEAD_REPO,
+              is_fork: true,
+            };
+            core.setOutput('json', JSON.stringify(payload));
+            core.setOutput('sha', process.env.HEAD_SHA);
+      - name: Repository dispatch for fork PR
+        uses: peter-evans/repository-dispatch@caebe2a7c967e9f927ff8780fea8e16e50b5ce40
+        with:
+          token: ${{ env.ACTIONS_BOT_TOKEN }}
+          repository: redpanda-data/console-enterprise
+          event-type: push
+          client-payload: ${{ steps.payload.outputs.json }}
+      - name: Set pending enterprise CI status
+        env:
+          HEAD_SHA: ${{ steps.payload.outputs.sha }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.ACTIONS_BOT_TOKEN }}
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: 'redpanda-data',
+              repo: 'console',
+              sha: process.env.HEAD_SHA,
+              state: 'pending',
+              description: 'Enterprise CI is running...',
+              context: 'Enterprise CI'
+            });

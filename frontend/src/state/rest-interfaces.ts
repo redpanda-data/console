@@ -277,6 +277,7 @@ export type ConfigEntryExtended = ConfigEntry & {
     | 'DECIMAL'
     | 'INTEGER';
   enumValues?: string[];
+  noInfiniteValue?: boolean;
 
   // added by frontend
   currentValue: string | number | null | undefined;

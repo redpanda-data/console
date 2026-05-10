@@ -361,7 +361,7 @@ export const KnowledgeBaseDetailsPage = () => {
 
       updateKnowledgeBase(request, {
         onSuccess: () => {
-          toast.success('Knowledge base updated successfully');
+          toast.success('Knowledge base updated');
           refetchKnowledgeBase();
           setIsEditMode(false);
           form.reset(updatedKnowledgeBase, { keepValues: true });

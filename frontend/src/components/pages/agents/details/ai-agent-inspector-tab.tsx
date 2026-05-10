@@ -96,7 +96,7 @@ export const AIAgentInspectorTab = () => {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Text className="text-muted-foreground">Agent URL not available</Text>
             <Text className="text-muted-foreground" variant="small">
-              Please try restarting the agent
+              Try restarting the agent
             </Text>
           </div>
         </CardContent>

@@ -92,7 +92,7 @@ const getResourceName = (resourceType: ResourceType): string => {
     [ResourceTypeConsumerGroup]: 'Consumer group',
     [ResourceTypeTransactionalId]: 'Transactional ID',
     [ResourceTypeSubject]: 'Subject',
-    [ResourceTypeSchemaRegistry]: 'Schema registry',
+    [ResourceTypeSchemaRegistry]: 'Schema Registry',
   };
   return resourceNames[resourceType] || resourceType;
 };
@@ -919,7 +919,7 @@ export default function CreateACL({
     if (!schemaRegistryEnabled) {
       return 'Schema Registry is not enabled.';
     }
-    return 'Only one schema registry rule is allowed. A schema registry rule already exists.';
+    return 'Only one Schema Registry rule is allowed. A Schema Registry rule already exists.';
   };
 
   const getSubjectTooltipText = () => {

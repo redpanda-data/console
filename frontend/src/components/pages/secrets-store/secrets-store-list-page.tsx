@@ -281,7 +281,7 @@ export const SecretsStoreListPage = () => {
     async (secretId: string) => {
       try {
         await deleteSecret({ request: { id: secretId } });
-        toast.success('Secret deleted successfully');
+        toast.success('Secret deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(

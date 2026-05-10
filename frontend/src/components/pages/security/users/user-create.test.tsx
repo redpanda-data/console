@@ -196,7 +196,7 @@ describe('UserCreatePage', () => {
     await user.click(screen.getByTestId('create-user-submit'));
 
     await waitFor(() => {
-      expect(screen.getByText('User created successfully')).toBeInTheDocument();
+      expect(screen.getByText('User created')).toBeInTheDocument();
     });
   });
 
@@ -218,7 +218,7 @@ describe('UserCreatePage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('create-user-name')).toBeInTheDocument();
     });
-    expect(screen.queryByText('User created successfully')).not.toBeInTheDocument();
+    expect(screen.queryByText('User created')).not.toBeInTheDocument();
   });
 
   test('calls updateRoleMembership gRPC for each selected role', async () => {
@@ -310,7 +310,7 @@ describe('UserCreatePage', () => {
 
     // Confirmation screen still shown despite role failure (Promise.allSettled)
     await waitFor(() => {
-      expect(screen.getByText('User created successfully')).toBeInTheDocument();
+      expect(screen.getByText('User created')).toBeInTheDocument();
     });
   });
 

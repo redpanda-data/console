@@ -169,7 +169,7 @@ describe('ObservabilityPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Error loading metrics')).toBeInTheDocument();
-      expect(screen.getByText('Failed to load observability metrics. Please try again later.')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load observability metrics. Try again later.')).toBeInTheDocument();
     });
   });
 });

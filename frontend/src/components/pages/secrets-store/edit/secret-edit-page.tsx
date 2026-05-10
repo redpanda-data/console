@@ -112,7 +112,7 @@ export const SecretEditPage = () => {
 
     try {
       await updateSecret({ request });
-      toast.success('Secret updated successfully');
+      toast.success('Secret updated');
       navigate({ to: '/secrets' });
     } catch (updateError) {
       const connectError = ConnectError.from(updateError);

@@ -31,17 +31,17 @@ function getErrorMessage(error: ConnectError): { title: string; description: str
     case Code.DeadlineExceeded:
       return {
         title: 'Request Timeout',
-        description: 'The server took too long to respond. Please try again.',
+        description: 'The server took too long to respond. Try again.',
       };
     case Code.Internal:
       return {
         title: 'Internal Server Error',
-        description: 'An unexpected error occurred on the server. Please try again.',
+        description: 'An unexpected error occurred on the server. Try again.',
       };
     default:
       return {
         title: 'Connection Error',
-        description: 'Unable to connect to the server. Please check your connection and try again.',
+        description: 'Unable to connect to the server. Check your connection and try again.',
       };
   }
 }

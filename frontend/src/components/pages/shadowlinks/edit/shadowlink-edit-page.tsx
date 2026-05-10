@@ -92,7 +92,7 @@ export const ShadowLinkEditPage = () => {
   // Handle success/error for mutations
   useEffect(() => {
     if (dataplaneUpdate.isSuccess || controlplaneUpdate.isSuccess) {
-      toast.success('Shadow link updated successfully');
+      toast.success('Shadow link updated');
       navigate({ to: `/shadowlinks/${name}` });
     }
   }, [dataplaneUpdate.isSuccess, controlplaneUpdate.isSuccess, navigate, name]);

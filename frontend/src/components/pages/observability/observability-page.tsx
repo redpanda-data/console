@@ -67,7 +67,7 @@ const ObservabilityPage: FC = () => {
     return (
       <Alert variant="destructive">
         <AlertTitle>Error loading metrics</AlertTitle>
-        <AlertDescription>Failed to load observability metrics. Please try again later.</AlertDescription>
+        <AlertDescription>Failed to load observability metrics. Try again later.</AlertDescription>
       </Alert>
     );
   }

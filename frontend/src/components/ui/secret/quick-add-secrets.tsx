@@ -243,7 +243,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       // Reset form
       newSecretForm.reset();
 
-      toast.success(`Secret "${normalizedName}" created successfully`);
+      toast.success(`Secret "${normalizedName}" created`);
     } catch (error) {
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,
@@ -368,7 +368,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                   </FieldLabel>
                   <Input
                     id="new-secret-name"
-                    placeholder="e.g., API_KEY, DATABASE_PASSWORD"
+                    placeholder="API_KEY"
                     {...newSecretForm.register('name', {
                       onChange: (e) => {
                         const normalized = normalizeSecretName(e.target.value);

@@ -1676,7 +1676,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <Box>
             <AlertTitle>Backend Error</AlertTitle>
             <AlertDescription>
-              <Box>Please check and modify the request before resubmitting.</Box>
+              <Box>Check and modify the request before resubmitting.</Box>
               <Box mt="4">
                 <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
               </Box>

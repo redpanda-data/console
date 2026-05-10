@@ -11,6 +11,7 @@
 
 import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
+import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useEffect } from 'react';
 
@@ -18,8 +19,6 @@ import { GroupState } from './group-details';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription } from '../../../state/rest-interfaces';
-import { useUISettingsStore } from '../../../state/ui';
-import { editQuery } from '../../../utils/query-helper';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { BrokerList } from '../../misc/broker-list';
 import PageContent from '../../misc/page-content';
@@ -48,33 +47,12 @@ class GroupList extends PageComponent {
 
 const GroupListContent: FC = () => {
   const consumerGroups = useApiStoreHook((s) => s.consumerGroups);
-  const { consumerGroupList, updateSettings } = useUISettingsStore();
-  const { quickSearch } = consumerGroupList;
+  const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
   useEffect(() => {
     api.refreshConsumerGroups(true);
     appGlobal.onRefresh = () => api.refreshConsumerGroups(true);
   }, []);
-
-  // Initialize from URL query param on mount
-  useEffect(() => {
-    editQuery((query) => {
-      if (query.q) {
-        updateSettings({ consumerGroupList: { ...consumerGroupList, quickSearch: String(query.q) } });
-      }
-    });
-  }, []);
-
-  // Sync quickSearch to URL when it changes
-  useEffect(() => {
-    editQuery((query) => {
-      if (quickSearch) {
-        query.q = quickSearch;
-      } else {
-        delete query.q;
-      }
-    });
-  }, [quickSearch]);
 
   if (!consumerGroups) {
     return DefaultSkeleton;
@@ -128,7 +106,7 @@ const GroupListContent: FC = () => {
           <SearchField
             placeholderText="Enter search term/regex"
             searchText={quickSearch}
-            setSearchText={(x) => updateSettings({ consumerGroupList: { ...consumerGroupList, quickSearch: x } })}
+            setSearchText={(x) => setQuickSearch(x || null)}
             width="350px"
           />
         </div>

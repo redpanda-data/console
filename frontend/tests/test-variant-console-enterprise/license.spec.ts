@@ -25,6 +25,6 @@ test.describe('Licenses', () => {
 
     await page.getByTestId('license').fill(licenseContent);
     await page.getByTestId('upload-license').click();
-    await expect(page.locator('h1:has-text("License uploaded successfully")')).toBeVisible();
+    await expect(page.locator('h1:has-text("License uploaded")')).toBeVisible();
   });
 });

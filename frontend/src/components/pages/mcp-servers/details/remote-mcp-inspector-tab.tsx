@@ -264,8 +264,7 @@ export const RemoteMCPInspectorTab = () => {
           // Validate that the topic_name exists in the available topics
           const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
           if (!topicExists) {
-            errors[requiredField] =
-              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+            errors[requiredField] = `Topic '${value}' does not exist. Select a valid topic name or create a new one.`;
             continue;
           }
         }
@@ -575,7 +574,7 @@ export const RemoteMCPInspectorTab = () => {
                                           });
 
                                           await createTopic(request);
-                                          toast.success(`Topic '${newTopicName}' created successfully`);
+                                          toast.success(`Topic '${newTopicName}' created`);
                                           await refetchTopics();
 
                                           // Use the provided path and updateField to update the correct field

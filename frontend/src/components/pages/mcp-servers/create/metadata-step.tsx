@@ -94,7 +94,7 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
               </FieldLabel>
               <Input
                 id="serviceAccountName"
-                placeholder="e.g., cluster-abc123-mcp-my-server-sa"
+                placeholder="cluster-abc123-mcp-my-server-sa"
                 {...form.register('serviceAccountName')}
                 aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
                 aria-invalid={!!form.formState.errors.serviceAccountName}

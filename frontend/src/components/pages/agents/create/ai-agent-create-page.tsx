@@ -41,6 +41,7 @@ import {
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_BedrockSchema,
   AIAgent_Provider_GoogleSchema,
   AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
@@ -53,6 +54,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
+import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
 import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -70,6 +72,7 @@ export const AIAgentCreatePage = () => {
   const { mutateAsync: createAgent, isPending: isCreateAgentPending } = useCreateAIAgentMutation();
   const { data: secretsData } = useListSecretsQuery();
   const { data: mcpServersData } = useListAigwMCPServersQuery(undefined, { enabled: !!config.aigwUrl });
+  const { data: llmProvidersData } = useListLLMProvidersQuery(undefined, { enabled: !!config.aigwUrl });
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
     skipInvalidation: true,
   });
@@ -344,6 +347,22 @@ export const AIAgentCreatePage = () => {
           },
         });
         break;
+      case 'bedrock': {
+        // Region lives on the gateway's LLMProvider config; mirror it into the
+        // agent's Bedrock config so proto validation (region required) passes.
+        const selectedGwProvider = llmProvidersData?.llmProviders?.find((p) => p.name === values.llmProvider);
+        const region =
+          selectedGwProvider?.providerConfig?.case === 'bedrockConfig'
+            ? selectedGwProvider.providerConfig.value.region
+            : '';
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'bedrock',
+            value: create(AIAgent_Provider_BedrockSchema, { region }),
+          },
+        });
+        break;
+      }
       default: // openai
         providerConfig = create(AIAgent_ProviderSchema, {
           provider: {
@@ -387,7 +406,7 @@ export const AIAgentCreatePage = () => {
         onError: handleValidationError,
         onSuccess: (data) => {
           if (data?.aiAgent?.id) {
-            toast.success('AI agent created successfully');
+            toast.success('AI agent created');
             navigate({ to: `/agents/${data.aiAgent.id}` });
           }
         },
@@ -587,7 +606,7 @@ export const AIAgentCreatePage = () => {
                   <FieldLabel htmlFor="serviceAccountName">Service Account Name</FieldLabel>
                   <Input
                     id="serviceAccountName"
-                    placeholder="e.g., cluster-abc123-agent-my-agent-sa"
+                    placeholder="cluster-abc123-agent-my-agent-sa"
                     {...form.register('serviceAccountName')}
                     aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
                     aria-invalid={!!form.formState.errors.serviceAccountName}

@@ -48,7 +48,7 @@ const RoleCreatePage = () => {
     const roleName = parsePrincipal(principal).name;
 
     if (!roleName || roleName.trim() === '') {
-      toast.error('Please enter a role name');
+      toast.error('Enter a role name');
       return;
     }
 
@@ -62,7 +62,7 @@ const RoleCreatePage = () => {
         })
       );
 
-      toast.success(`Role "${roleName}" created successfully`);
+      toast.success(`Role "${roleName}" created`);
 
       // Then create the ACLs for the role
       const result = convertRulesToCreateACLRequests(rules, principal, host);

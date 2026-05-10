@@ -89,7 +89,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
               </div>
               <Text className="text-muted-foreground" variant="small">
                 {selectedScope === 'user' && 'Configuration available across all your projects'}
-                {selectedScope === 'project' && 'Configuration shared with team via project settings'}
+                {selectedScope === 'project' && 'Configuration shared with team through project settings'}
               </Text>
             </div>
           </ListItem>

@@ -323,7 +323,7 @@ export const CreateUserConfirmationModal = ({
 }: CreateUserConfirmationModalProps) => (
   <>
     <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
-      User created successfully
+      User created
     </h1>
 
     <Alert className="my-2" icon={<InfoIcon />} variant="info">
