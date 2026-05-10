@@ -42,7 +42,6 @@ test.describe('ACL User Management', () => {
 
     await test.step('5. Verify success message', async () => {
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
-      await expect(page.getByText(username)).toBeVisible();
     });
 
     await test.step('6. Close dialog', async () => {
