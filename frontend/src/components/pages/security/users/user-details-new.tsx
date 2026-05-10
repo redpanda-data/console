@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import { KeyRoundIcon, Trash2Icon } from 'lucide-react';
 import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useLayoutEffect, useState } from 'react';
@@ -45,7 +48,7 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
   const { data: usersData, isLoading: isUsersLoading } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
   const currentUser = usersData?.users?.find((u) => u.name === userName);
-  formatMechanism(currentUser?.mechanism);
+  const mechanismLabel = formatMechanism(currentUser?.mechanism);
 
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
 
@@ -103,15 +106,34 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
-          Change Password
-        </Button>
-        {Boolean(isServiceAccount) && (
-          <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
-            Delete User
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-secondary text-sm">Principal:</span>
+          <CopyButton content={`User:${userName}`} size="sm" variant="outline">
+            User:{userName}
+          </CopyButton>
+          {mechanismLabel !== null && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-secondary text-sm">Mechanism:</span>
+              <Badge size="sm" variant="neutral-outline">
+                {mechanismLabel}
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
+            <KeyRoundIcon />
+            Change Password
           </Button>
-        )}
+          {Boolean(isServiceAccount) && (
+            <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
+              <Trash2Icon />
+              Delete User
+            </Button>
+          )}
+        </div>
       </div>
 
       <UserPermissionDetailsContent userName={userName} />
