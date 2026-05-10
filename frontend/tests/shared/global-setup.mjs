@@ -1,6 +1,6 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
-import { KAFKA_CONNECT_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
+import { KAFKA_CONNECT_IMAGE, KAFKA_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
 import { exec } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -154,6 +154,39 @@ async function verifyRedpandaServices(state, ports) {
   } catch (error) {
     console.log('⚠ SASL authentication check failed:', error.message);
   }
+}
+
+async function startKafkaContainer(network, state, ports, variantName) {
+  console.log('Starting Apache Kafka container (KRaft, SASL/PLAIN)...');
+  const jaasConfPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', 'kafka_server_jaas.conf');
+  const kafka = await new GenericContainer(KAFKA_IMAGE)
+    .withNetwork(network)
+    .withNetworkAliases('kafka')
+    .withExposedPorts({ container: 9092, host: ports.kafkaKafka })
+    .withBindMounts([{ source: jaasConfPath, target: '/etc/kafka/jaas.conf', mode: 'ro' }])
+    .withEnvironment({
+      KAFKA_NODE_ID: '1',
+      KAFKA_PROCESS_ROLES: 'broker,controller',
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093',
+      KAFKA_LISTENERS: 'SASL_PLAINTEXT://:9092,CONTROLLER://:9093',
+      KAFKA_ADVERTISED_LISTENERS: 'SASL_PLAINTEXT://kafka:9092',
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'SASL_PLAINTEXT:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT',
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER',
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'SASL_PLAINTEXT',
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN',
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN',
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1',
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true',
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk',
+      KAFKA_OPTS: '-Djava.security.auth.login.config=/etc/kafka/jaas.conf',
+    })
+    .withWaitStrategy(Wait.forLogMessage(/Kafka Server started/i))
+    .withStartupTimeout(120_000)
+    .start();
+
+  state.kafkaId = kafka.getId();
+  state.kafkaContainer = kafka;
+  console.log(`✓ Apache Kafka container started: ${state.kafkaId}`);
 }
 
 async function startOwlShop(network, state) {
@@ -942,6 +975,12 @@ async function cleanupOnFailure(state) {
       console.log(`Failed to stop destination Redpanda container: ${error.message}`);
     });
   }
+  if (state.kafkaContainer) {
+    console.log('Stopping Kafka container using testcontainers API...');
+    await state.kafkaContainer.stop().catch((error) => {
+      console.log(`Failed to stop Kafka container: ${error.message}`);
+    });
+  }
   if (state.redpandaContainer) {
     console.log('Stopping Redpanda container using testcontainers API...');
     await state.redpandaContainer.stop().catch((error) => {
@@ -1001,6 +1040,24 @@ export default async function globalSetup(config = {}) {
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
+
+    // --- Kafka variant: simple KRaft broker, no Redpanda/owlshop/connect ---
+    if (variantConfig.isKafka) {
+      await startKafkaContainer(network, state, ports, variantName);
+      const backendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
+      await startBackendServerWithConfig(
+        network,
+        isEnterprise,
+        imageTag,
+        state,
+        backendConfigPath,
+        ports.backend,
+        'console-backend'
+      );
+      writeFileSync(getStateFile(variantName), JSON.stringify(state, null, 2));
+      console.log('\n✅ All services ready! Starting tests...\n');
+      return;
+    }
 
     // --- Group 1: Start clusters in parallel ---
     const clusterPromises = [

@@ -15,6 +15,10 @@
     "owlShop": {
       "repository": "quay.io/cloudhut/owl-shop",
       "tag": "master"
+    },
+    "kafka": {
+      "repository": "apache/kafka",
+      "tag": "3.9.0"
     }
   }
 }
