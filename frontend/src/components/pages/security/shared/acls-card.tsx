@@ -267,7 +267,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           actions={
             <div className="flex items-center gap-2">
               {someSelected && (
-                <Button disabled={isDeleting} onClick={deleteSelected} size="sm" variant="destructive">
+                <Button disabled={isDeleting} onClick={deleteSelected} variant="destructive">
                   Delete selected ({selected.size})
                 </Button>
               )}
