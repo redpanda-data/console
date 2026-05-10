@@ -1,10 +1,8 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import {
-  Box,
   Button,
   Checkbox,
-  CopyButton,
   Flex,
   FormField,
   IconButton,
@@ -34,6 +32,7 @@ import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
 import { SingleSelect } from '../../../misc/select';
+import { CopyButton } from '../../../redpanda-ui/components/copy-button';
 
 type ChangePasswordModalProps = {
   userName: string;
@@ -115,10 +114,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                     />
                   </Tooltip>
                   <Tooltip hasArrow label={'Copy password'} placement="top">
-                    {/* Wrapper needed: CopyButton doesn't forward refs, so Chakra Tooltip can't position itself without a DOM element to measure */}
-                    <Box as="span" display="inline-flex">
-                      <CopyButton content={password} variant="ghost" />
-                    </Box>
+                    <CopyButton content={password} variant="ghost" />
                   </Tooltip>
                 </Flex>
                 <Checkbox
