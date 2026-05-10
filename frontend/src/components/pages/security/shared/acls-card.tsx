@@ -311,7 +311,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
       {principal && <AddAclDialog onOpenChange={setDialogOpen} open={dialogOpen} principal={principal} />}
 
       <Dialog onOpenChange={setGrantAllOpen} open={grantAllOpen}>
-        <DialogContent size="md">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Allow all operations</DialogTitle>
             <DialogDescription>
