@@ -337,7 +337,7 @@ export const CreateUserConfirmationModal = ({
         Username
       </div>
       <div className="flex items-center gap-2">
-        <span className="overflow-hidden break-all">{username}</span>
+        <Input containerClassName="flex-1" readOnly type="text" value={username} />
         <Tooltip>
           <TooltipTrigger asChild>
             <CopyButton content={username} variant="ghost" />
@@ -350,7 +350,7 @@ export const CreateUserConfirmationModal = ({
         Password
       </div>
       <div className="flex items-center gap-2">
-        <Input disabled readOnly testId="test_field" type="password" value={password} />
+        <Input readOnly testId="test_field" type="password" value={password} />
         <Tooltip>
           <TooltipTrigger asChild>
             <CopyButton content={password} variant="ghost" />
