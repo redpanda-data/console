@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useQuery } from '@connectrpc/connect-query';
 import { Link } from '@tanstack/react-router';
 import {
   type ColumnDef,
@@ -44,13 +43,12 @@ import {
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { UsersIcon } from 'lucide-react';
+import { ShieldIcon, UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
+import { pluralize } from 'utils/string';
 
-import type { ListACLsRequest } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
-import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useListRolesQuery } from '../../../../react-query/api/security';
@@ -72,11 +70,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '../../../redpanda-ui/components/popover';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { TagsValue } from '../../../redpanda-ui/components/tags';
 import { Tooltip, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 import { Text } from '../../../redpanda-ui/components/typography';
+import { type FlatAclEntry, type RoleAclGroup, useUserPermissions } from '../hooks/use-principal-permissions';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 import { CreateUserDialog } from '../users/user-create-dialog';
@@ -151,6 +151,10 @@ export const UsersTabNew: FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createDialogKey, setCreateDialogKey] = useState(0);
+  const openCreateDialog = () => {
+    setCreateDialogKey((k) => k + 1);
+    setIsCreateDialogOpen(true);
+  };
   const [urlFilterParams, setUrlFilterParams] = useQueryStates({
     name: parseAsString,
     mechanism: parseAsArrayOf(parseAsString),
@@ -327,13 +331,7 @@ export const UsersTabNew: FC = () => {
             {!isFiltered && (
               <EmptyContent>
                 <div className="flex items-center gap-3">
-                  <Button
-                    disabled={createDisabled}
-                    onClick={() => {
-                      setCreateDialogKey((k) => k + 1);
-                      setIsCreateDialogOpen(true);
-                    }}
-                  >
+                  <Button disabled={createDisabled} onClick={openCreateDialog}>
                     Create user
                   </Button>
                   <Button asChild variant="link">
@@ -370,14 +368,7 @@ export const UsersTabNew: FC = () => {
           actions={
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  data-testid="create-user-button"
-                  disabled={createDisabled}
-                  onClick={() => {
-                    setCreateDialogKey((k) => k + 1);
-                    setIsCreateDialogOpen(true);
-                  }}
-                >
+                <Button data-testid="create-user-button" disabled={createDisabled} onClick={openCreateDialog}>
                   Create user
                 </Button>
               </TooltipTrigger>
@@ -454,20 +445,72 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
   );
 };
 
-const UserAclsCell = ({ userName }: { userName: string }) => {
-  const { data: aclCount } = useQuery(listACLs, { filter: { principal: `User:${userName}` } } as ListACLsRequest, {
-    enabled: !!userName,
-    select: (r) => r.resources.length,
-  });
+const AclPermissionRow = ({ acl }: { acl: FlatAclEntry }) => (
+  <TableRow>
+    <TableCell className="text-muted-foreground">{acl.resourceType}</TableCell>
+    <TableCell className="font-mono">{acl.resourceName}</TableCell>
+    <TableCell>{acl.operation}</TableCell>
+    <TableCell className={acl.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
+      {acl.permissionType}
+    </TableCell>
+    <TableCell className="text-muted-foreground">{acl.host}</TableCell>
+  </TableRow>
+);
 
-  if (!aclCount) {
+const UserAclsCell = ({ userName }: { userName: string }) => {
+  const [open, setOpen] = useState(false);
+  const { directAcls, roleAclGroups, isLoading } = useUserPermissions(userName);
+  const total = directAcls.length + roleAclGroups.reduce((s, g) => s + g.acls.length, 0);
+
+  if (!isLoading && total === 0) {
     return <span className="text-muted-foreground text-sm">None</span>;
   }
 
   return (
-    <Link className="no-underline" params={{ aclName: userName }} to="/security/acls/$aclName/details">
-      <TagsValue>{`${aclCount} ACL${aclCount !== 1 ? 's' : ''}`}</TagsValue>
-    </Link>
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger
+        className="m-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-sm text-strong transition-colors hover:bg-surface-strong"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <span className="leading-tight">{`${directAcls.length} ${pluralize(directAcls.length, 'ACL')}`}</span>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[620px]" transition={{ duration: 0 }}>
+        <Table size="sm" variant="simple">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Resource</TableHead>
+              <TableHead>Operation</TableHead>
+              <TableHead>Permission</TableHead>
+              <TableHead>Host</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {directAcls.map((acl, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
+              <AclPermissionRow acl={acl} key={i} />
+            ))}
+          </TableBody>
+          {roleAclGroups.map((rg: RoleAclGroup) => (
+            <TableBody key={rg.roleName}>
+              <TableRow>
+                <TableCell className="bg-muted/40 py-1.5 text-muted-foreground text-xs" colSpan={5}>
+                  <div className="flex items-center gap-1.5">
+                    <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+              {rg.acls.map((acl, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
+                <AclPermissionRow acl={acl} key={i} />
+              ))}
+            </TableBody>
+          ))}
+        </Table>
+      </PopoverContent>
+    </Popover>
   );
 };
 

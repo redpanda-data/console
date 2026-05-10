@@ -632,3 +632,34 @@ export const handleResponses = (errors: ConnectError[], created: boolean) => {
 
 export const handleUrlWithHost = (baseUrl: string, host?: string): string =>
   host ? `${baseUrl}?host=${encodeURIComponent(host)}` : baseUrl;
+
+export const aclResourceTypeLabel = (type: ACL_ResourceType): string => {
+  const map: Partial<Record<ACL_ResourceType, string>> = {
+    [ACL_ResourceType.TOPIC]: 'Topic',
+    [ACL_ResourceType.GROUP]: 'Group',
+    [ACL_ResourceType.CLUSTER]: 'Cluster',
+    [ACL_ResourceType.TRANSACTIONAL_ID]: 'Transactional ID',
+    [ACL_ResourceType.SUBJECT]: 'Subject',
+    [ACL_ResourceType.REGISTRY]: 'Registry',
+  };
+  return map[type] ?? 'Unknown';
+};
+
+export const aclOperationLabel = (op: ACL_Operation): string => {
+  const map: Partial<Record<ACL_Operation, string>> = {
+    [ACL_Operation.ALL]: 'All',
+    [ACL_Operation.READ]: 'Read',
+    [ACL_Operation.WRITE]: 'Write',
+    [ACL_Operation.CREATE]: 'Create',
+    [ACL_Operation.DELETE]: 'Delete',
+    [ACL_Operation.ALTER]: 'Alter',
+    [ACL_Operation.DESCRIBE]: 'Describe',
+    [ACL_Operation.CLUSTER_ACTION]: 'Cluster Action',
+    [ACL_Operation.DESCRIBE_CONFIGS]: 'Describe Configs',
+    [ACL_Operation.ALTER_CONFIGS]: 'Alter Configs',
+    [ACL_Operation.IDEMPOTENT_WRITE]: 'Idempotent Write',
+    [ACL_Operation.CREATE_TOKENS]: 'Create Tokens',
+    [ACL_Operation.DESCRIBE_TOKENS]: 'Describe Tokens',
+  };
+  return map[op] ?? 'Unknown';
+};

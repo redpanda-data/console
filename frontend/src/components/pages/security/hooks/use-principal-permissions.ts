@@ -57,6 +57,54 @@ const RESOURCE_TYPE_LABELS: Partial<Record<ACL_ResourceType, string>> = {
   [ACL_ResourceType.REGISTRY]: 'Schema Registry',
 };
 
+export function useUserPermissions(userName: string) {
+  const { data: allAclsData, isLoading } = useQuery(listACLs, {} as ListACLsRequest);
+  const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
+
+  const permissions = useMemo(() => {
+    if (!allAclsData) return { directAcls: [] as FlatAclEntry[], roleAclGroups: [] as RoleAclGroup[] };
+
+    const aclsByPrincipal = new Map<string, FlatAclEntry[]>();
+    for (const resource of allAclsData.resources) {
+      for (const acl of resource.acls) {
+        const key = acl.principal;
+        if (!aclsByPrincipal.has(key)) aclsByPrincipal.set(key, []);
+        aclsByPrincipal.get(key)!.push({
+          resourceType: RESOURCE_TYPE_LABELS[resource.resourceType] ?? String(resource.resourceType),
+          resourceName: resource.resourceName || '*',
+          operation: getACLOperation(acl.operation),
+          permissionType: acl.permissionType === ACL_PermissionType.DENY ? 'Deny' : 'Allow',
+          host: acl.host || '*',
+        });
+      }
+    }
+
+    const roleAcls = new Map<string, FlatAclEntry[]>();
+    for (const [principal, acls] of aclsByPrincipal) {
+      if (principal.startsWith('RedpandaRole:')) {
+        roleAcls.set(principal.slice('RedpandaRole:'.length), acls);
+      }
+    }
+
+    const directAcls = aclsByPrincipal.get(`User:${userName}`) ?? [];
+
+    const belongsToRoles: string[] = [];
+    for (const [roleName, members] of roleMembers) {
+      if (members.some((m: RolePrincipal) => m.name === userName && m.principalType === 'User')) {
+        belongsToRoles.push(roleName);
+      }
+    }
+
+    const roleAclGroups: RoleAclGroup[] = belongsToRoles
+      .map((roleName) => ({ roleName, acls: roleAcls.get(roleName) ?? [] }))
+      .filter((g) => g.acls.length > 0);
+
+    return { directAcls, roleAclGroups };
+  }, [allAclsData, roleMembers, userName]);
+
+  return { ...permissions, isLoading };
+}
+
 export function usePrincipalPermissions() {
   const {
     data: allAclsData,
