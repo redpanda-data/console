@@ -51,7 +51,7 @@ import {
 } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { ShieldCheckIcon } from 'lucide-react';
+import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
@@ -368,7 +368,9 @@ const RoleActions = ({
               e.stopPropagation();
               setIsDeleteOpen(true);
             }}
+            variant="destructive"
           >
+            <Trash2Icon />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

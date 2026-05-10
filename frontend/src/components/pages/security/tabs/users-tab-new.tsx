@@ -43,7 +43,7 @@ import {
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { ShieldIcon, UsersIcon } from 'lucide-react';
+import { KeyRoundIcon, ShieldIcon, Trash2Icon, UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
@@ -572,6 +572,7 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
               setIsChangePasswordModalOpen(true);
             }}
           >
+            <KeyRoundIcon />
             Change password
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -579,7 +580,9 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
               e.stopPropagation();
               setIsDeleteModalOpen(true);
             }}
+            variant="destructive"
           >
+            <Trash2Icon />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -21,7 +21,7 @@ import {
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from 'components/redpanda-ui/components/list-layout';
-import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, ShieldIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, ShieldIcon, Trash2Icon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import {
   ACL_Operation,
@@ -46,6 +46,14 @@ import { Code as CodeEl } from '../../../../utils/tsx-utils';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../../redpanda-ui/components/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,7 +103,7 @@ type PrincipalRowProps = {
 };
 
 const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDelete, canDeleteUser }) => {
-  const [pendingDelete, setPendingDelete] = useState<'user-and-acls' | 'user-only' | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<'user-and-acls' | 'user-only' | 'acls-only' | null>(null);
 
   const summaryText = (() => {
     if (group.directAclCount > 0 && group.inheritedAclCount > 0) {
@@ -122,9 +130,41 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
         onOpenChange={(open) => {
           if (!open) setPendingDelete(null);
         }}
-        open={pendingDelete !== null}
+        open={pendingDelete === 'user-and-acls' || pendingDelete === 'user-only'}
         userName={group.principalName}
       />
+
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        open={pendingDelete === 'acls-only'}
+      >
+        <DialogContent variant="destructive">
+          <DialogHeader>
+            <DialogTitle>Delete ACLs for {group.principalName}</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            All ACLs assigned directly to <strong>{group.principalName}</strong> will be permanently deleted. This
+            action cannot be undone.
+          </DialogDescription>
+          <DialogFooter>
+            <Button onClick={() => setPendingDelete(null)} variant="outline">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                onDelete(false, true);
+                setPendingDelete(null);
+              }}
+              variant="destructive"
+            >
+              <Trash2Icon />
+              Delete ACLs
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="border-b" data-testid={`row-${group.principalName}`}>
         {/* Principal header row */}
@@ -186,7 +226,9 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                         e.stopPropagation();
                         setPendingDelete('user-and-acls');
                       }}
+                      variant="destructive"
                     >
+                      <Trash2Icon />
                       Delete (User and ACLs)
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -195,7 +237,9 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                         e.stopPropagation();
                         setPendingDelete('user-only');
                       }}
+                      variant="destructive"
                     >
+                      <Trash2Icon />
                       Delete (User only)
                     </DropdownMenuItem>
                   </>
@@ -203,9 +247,11 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(false, true);
+                    setPendingDelete('acls-only');
                   }}
+                  variant="destructive"
                 >
+                  <Trash2Icon />
                   Delete (ACLs only)
                 </DropdownMenuItem>
               </DropdownMenuContent>
