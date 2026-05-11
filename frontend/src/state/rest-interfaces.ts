@@ -778,92 +778,6 @@ export type AclRule = {
   permissionType: AclStrPermission;
 };
 
-export type CreateACLRequest = {
-  // ResourceType is the type of resource this acl entry will be on.
-  // It is invalid to use UNKNOWN or ANY.
-  resourceType: AclStrResourceType;
-
-  // ResourceName is the name of the resource this acl entry will be on.
-  // For CLUSTER, this must be "kafka-cluster".
-  resourceName: string;
-
-  // ResourcePatternType is the pattern type to use for the resource name.
-  // This cannot be UNKNOWN or MATCH (i.e. this must be LITERAL or PREFIXED).
-  // The default for pre-Kafka 2.0.0 is effectively LITERAL.
-  //
-  // This field has a default of 3 (prefixed).
-  resourcePatternType: ('Literal' | 'Prefixed') & AclStrResourcePatternType;
-
-  // Principal is the user to apply this acl for. With the Kafka simple
-  // authorizer, this must begin with "User:".
-  principal: string;
-
-  // Host is the host address to use for this acl. Each host to allow
-  // the principal access from must be specified as a new creation. KIP-252
-  // might solve this someday. The special wildcard host "*" allows all hosts.
-  host: '*' | string;
-
-  // Operation is the operation this acl is for. This must not be UNKNOWN or
-  // ANY.
-  operation: Exclude<AclStrOperation, 'Unknown' | 'Any'>;
-
-  // PermissionType is the permission of this acl. This must be either ALLOW
-  // or DENY.
-  permissionType: ('Allow' | 'Deny') & AclStrPermission;
-};
-
-export type DeleteACLsRequest = {
-  resourceType: AclStrResourceType;
-
-  // Unset will match any resource name
-  resourceName?: string;
-
-  resourcePatternType: AclStrResourcePatternType;
-
-  // Unset will match any principal
-  principal?: string;
-
-  // Unset will match any host
-  host?: string;
-
-  operation: AclStrOperation;
-
-  permissionType: AclStrPermission;
-};
-
-export type QuotaResponse = {
-  error?: string;
-  items: QuotaResponseItem[];
-};
-
-export type QuotaResponseItem = {
-  entityType: 'client-id' | 'user' | 'ip';
-  entityName?: string;
-  settings: QuotaResponseSetting[];
-};
-
-export const QuotaType = {
-  // A rate representing the upper bound (bytes/sec) for producer traffic
-  PRODUCER_BYTE_RATE: 'producer_byte_rate',
-  // A rate representing the upper bound (bytes/sec) for consumer traffic.
-  CONSUMER_BYTE_RATE: 'consumer_byte_rate',
-  // A percentage representing the upper bound of time spent for processing requests.
-  REQUEST_PERCENTAGE: 'request_percentage',
-  // The rate at which mutations are accepted for the create "topics request,
-  // the create partitions request and the delete topics request. The rate is accumulated by
-  // the number of partitions created or deleted.
-  CONTROLLER_MUTATION_RATE: 'controller_mutation_rate',
-  // An int representing the upper bound of connections accepted for the specified IP.
-  CONNECTION_CREATION_RATE: 'connection_creation_rate',
-} as const;
-
-export type QuotaTypeType = (typeof QuotaType)[keyof typeof QuotaType];
-
-export type QuotaResponseSetting = {
-  key: QuotaTypeType;
-  value: number;
-};
-
 export const SchemaType = {
   AVRO: 'AVRO',
   JSON: 'JSON',
@@ -1400,19 +1314,6 @@ export type CreateTopicResponse = {
   partitionCount: number;
   replicationFactor: number;
   configs: TopicConfigEntry[];
-};
-
-// GET api/users
-export type GetUsersResponse = {
-  users: string[];
-  isComplete: boolean;
-};
-
-// POST api/users
-export type CreateUserRequest = {
-  username: string;
-  password: string;
-  mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
 };
 
 export type CreateSecretRequest = {

@@ -294,11 +294,6 @@ type UISettings = {
     sorting: SortingState;
   };
 
-  consumerGroupList: {
-    pageSize: number;
-    quickSearch: string;
-  };
-
   consumerGroupDetails: {
     pageSize: number;
     showStatisticsBar: boolean;
@@ -474,11 +469,6 @@ const defaultUiSettings: UISettings = {
   pipelinesDetails: {
     logsQuickSearch: '',
     sorting: [] as SortingState,
-  },
-
-  consumerGroupList: {
-    pageSize: DEFAULT_TABLE_PAGE_SIZE,
-    quickSearch: '',
   },
 
   consumerGroupDetails: {

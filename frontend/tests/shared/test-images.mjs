@@ -43,3 +43,9 @@ export const KAFKA_CONNECT_IMAGE = process.env.TEST_IMAGE_KAFKA_CONNECT || forma
  * Override with TEST_IMAGE_OWL_SHOP environment variable.
  */
 export const OWL_SHOP_IMAGE = process.env.TEST_IMAGE_OWL_SHOP || formatImage(config.images.owlShop);
+
+/**
+ * Apache Kafka (bitnami) Docker image.
+ * Override with TEST_IMAGE_KAFKA environment variable.
+ */
+export const KAFKA_IMAGE = process.env.TEST_IMAGE_KAFKA || formatImage(config.images.kafka);
