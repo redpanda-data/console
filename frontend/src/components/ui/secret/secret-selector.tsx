@@ -17,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "components/redpanda-ui/components/button";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -241,13 +242,13 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 
 					<Form {...form}>
 						<form
-							className="space-y-4"
 							onSubmit={(e) => {
 								e.stopPropagation();
 								form.handleSubmit(handleCreateSecret)(e);
 							}}
 						>
-							<Field data-invalid={!!form.formState.errors.name}>
+							<DialogBody>
+								<Field data-invalid={!!form.formState.errors.name}>
 								<FieldLabel htmlFor="secret-name">Secret name</FieldLabel>
 								<Input
 									id="secret-name"
@@ -280,6 +281,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 									<FieldError>{form.formState.errors.value.message}</FieldError>
 								)}
 							</Field>
+							</DialogBody>
 
 							<DialogFooter>
 								<Button

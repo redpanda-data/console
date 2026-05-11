@@ -12,6 +12,7 @@ import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -76,12 +77,12 @@ const ExpandedYamlDialogContent: React.FC<ExpandedYamlDialogContentProps> = ({
 }) => {
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col p-0" size="full">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6">
+      <DialogContent className="h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw]" size="full">
+        <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6">
+        <DialogBody className="flex flex-col overflow-hidden" spacing="none">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden pb-4">
             <YamlEditorCard
               height="100%"
@@ -98,15 +99,15 @@ const ExpandedYamlDialogContent: React.FC<ExpandedYamlDialogContentProps> = ({
           </div>
 
           {(configError || Object.keys(lintHints).length > 0) && (
-            <div className="flex-shrink-0 space-y-2 pb-4">
+            <div className="flex-shrink-0 space-y-2">
               {configError && <div className="text-red-600 text-sm">{configError.message}</div>}
 
               {Object.keys(lintHints).length > 0 && <LintHintList lintHints={lintHints} />}
             </div>
           )}
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="flex-shrink-0 px-6 pb-6">
+        <DialogFooter>
           <Button onClick={onClose} variant="outline">
             Close
           </Button>

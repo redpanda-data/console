@@ -19,7 +19,14 @@ import {
   CommandItem,
   CommandList,
 } from 'components/redpanda-ui/components/command';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
@@ -561,38 +568,42 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       />
 
       <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
-        <DialogContent className="max-h-screen overflow-y-scroll" showCloseButton={false} size="lg">
+        <DialogContent showCloseButton={false} size="lg">
           <DialogCloseButton />
           <DialogHeader>
             <DialogTitle>Create a topic</DialogTitle>
           </DialogHeader>
-          <AddTopicStep className="border-1" hideTitle ref={topicStepRef} selectionMode="new" />
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogBody>
+            <AddTopicStep className="border-1" hideTitle ref={topicStepRef} selectionMode="new" />
+          </DialogBody>
+          <DialogFooter>
             <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
             <Button className="min-w-[70px]" disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary">
               {isTopicSubmitting ? <Spinner /> : 'Create'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
-        <DialogContent className="max-h-screen overflow-y-scroll" showCloseButton={false} size="lg">
+        <DialogContent showCloseButton={false} size="lg">
           <DialogCloseButton />
           <DialogHeader>
             <DialogTitle>Create a user</DialogTitle>
           </DialogHeader>
-          <AddUserStep className="border-1" hideTitle ref={userStepRef} selectionMode="new" />
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogBody>
+            <AddUserStep className="border-1" hideTitle ref={userStepRef} selectionMode="new" />
+          </DialogBody>
+          <DialogFooter>
             <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
             <Button className="min-w-[70px]" disabled={isUserSubmitting} onClick={handleCreateUser} variant="primary">
               {isUserSubmitting ? <Spinner /> : 'Create'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
