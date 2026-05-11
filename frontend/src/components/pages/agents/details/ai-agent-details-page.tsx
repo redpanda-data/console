@@ -14,6 +14,7 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 const routeApi = getRouteApi('/agents/$id/');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, FileText, Loader2, Network, Plug, Search, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
@@ -80,6 +81,8 @@ export const AIAgentDetailsPage = () => {
     return null;
   }
 
+  const showTeamsBridge = isFeatureFlagEnabled('enableTeamsBridge');
+
   return (
     <div className="flex flex-col gap-4 pb-1">
       <AIAgentDetailsHeader />
@@ -92,12 +95,14 @@ export const AIAgentDetailsPage = () => {
               Configuration
             </div>
           </TabsTrigger>
-          <TabsTrigger className="gap-2" value="integrations">
-            <div className="flex items-center gap-2">
-              <Plug className="h-4 w-4" />
-              Integrations
-            </div>
-          </TabsTrigger>
+          {showTeamsBridge && (
+            <TabsTrigger className="gap-2" value="integrations">
+              <div className="flex items-center gap-2">
+                <Plug className="h-4 w-4" />
+                Integrations
+              </div>
+            </TabsTrigger>
+          )}
           <TabsTrigger className="gap-2" value="agent-card">
             <div className="flex items-center gap-2">
               <Network className="h-4 w-4" />
@@ -119,9 +124,11 @@ export const AIAgentDetailsPage = () => {
         <TabsContent value="configuration">
           <AIAgentConfigurationTab />
         </TabsContent>
-        <TabsContent value="integrations">
-          <AIAgentIntegrationsTab />
-        </TabsContent>
+        {showTeamsBridge && (
+          <TabsContent value="integrations">
+            <AIAgentIntegrationsTab />
+          </TabsContent>
+        )}
         <TabsContent value="agent-card">
           <AIAgentCardTab />
         </TabsContent>

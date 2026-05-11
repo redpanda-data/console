@@ -303,10 +303,19 @@ message AIAgent {
 }
 
 // Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+// Each agent gets its own Azure Bot registration; the bridge validates
+// inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
 message AIAgentTeamsBridge {
+  // Whether the Teams bridge is active for this agent.
   bool enabled = 1;
+  // Azure Bot registration Application (client) ID.
   string bot_app_id = 2;
+  // AAD tenant ID the bot registration lives in.
   string bot_tenant_id = 3;
+  // Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+  // Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+  // this is a plain identifier — the bridge resolves it directly via the
+  // tenant-scoped secret store prefix.
   string bot_app_secret_ref = 4 [
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
     (buf.validate.field).string.pattern = "^[A-Za-z_][A-Za-z0-9_]*$"

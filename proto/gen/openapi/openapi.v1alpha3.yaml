@@ -181,15 +181,26 @@ components:
         - service_account
       type: object
     AIAgentTeamsBridge:
-      description: Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+      description: |-
+        Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+        Each agent gets its own Azure Bot registration; the bridge validates
+        inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
       properties:
         bot_app_id:
+          description: Azure Bot registration Application (client) ID.
           type: string
         bot_app_secret_ref:
+          description: |-
+            Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+            Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+            this is a plain identifier — the bridge resolves it directly via the
+            tenant-scoped secret store prefix.
           type: string
         bot_tenant_id:
+          description: AAD tenant ID the bot registration lives in.
           type: string
         enabled:
+          description: Whether the Teams bridge is active for this agent.
           type: boolean
       type: object
     AIAgentUpdate:

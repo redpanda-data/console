@@ -296,12 +296,21 @@ func (x *AIAgent) GetTeamsBridgeEndpoint() string {
 }
 
 // Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+// Each agent gets its own Azure Bot registration; the bridge validates
+// inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
 type AIAgentTeamsBridge struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Enabled         bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	BotAppId        string                 `protobuf:"bytes,2,opt,name=bot_app_id,json=botAppId,proto3" json:"bot_app_id,omitempty"`
-	BotTenantId     string                 `protobuf:"bytes,3,opt,name=bot_tenant_id,json=botTenantId,proto3" json:"bot_tenant_id,omitempty"`
-	BotAppSecretRef string                 `protobuf:"bytes,4,opt,name=bot_app_secret_ref,json=botAppSecretRef,proto3" json:"bot_app_secret_ref,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether the Teams bridge is active for this agent.
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Azure Bot registration Application (client) ID.
+	BotAppId string `protobuf:"bytes,2,opt,name=bot_app_id,json=botAppId,proto3" json:"bot_app_id,omitempty"`
+	// AAD tenant ID the bot registration lives in.
+	BotTenantId string `protobuf:"bytes,3,opt,name=bot_tenant_id,json=botTenantId,proto3" json:"bot_tenant_id,omitempty"`
+	// Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+	// Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+	// this is a plain identifier — the bridge resolves it directly via the
+	// tenant-scoped secret store prefix.
+	BotAppSecretRef string `protobuf:"bytes,4,opt,name=bot_app_secret_ref,json=botAppSecretRef,proto3" json:"bot_app_secret_ref,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }

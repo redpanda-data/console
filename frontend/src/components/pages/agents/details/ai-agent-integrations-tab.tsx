@@ -57,8 +57,8 @@ export const AIAgentIntegrationsTab = () => {
   const { mutateAsync: updateAIAgent, isPending: isUpdatePending } = useUpdateAIAgentMutation();
   const { data: secretsData } = useListSecretsQuery();
 
-  const [isEditing, setIsEditing] = useState(false);
   const [editedState, setEditedState] = useState<TeamsBridgeState | null>(null);
+  const isEditing = editedState !== null;
 
   const agent = aiAgentData?.aiAgent;
 
@@ -85,6 +85,10 @@ export const AIAgentIntegrationsTab = () => {
   const updateField = (updates: Partial<TeamsBridgeState>) => {
     setEditedState({ ...displayState, ...updates });
   };
+
+  const isSaveDisabled =
+    isUpdatePending ||
+    (displayState.enabled && !(displayState.botAppId && displayState.botTenantId && displayState.botAppSecretName));
 
   const handleSave = async () => {
     if (!id) {
@@ -117,7 +121,6 @@ export const AIAgentIntegrationsTab = () => {
         {
           onSuccess: () => {
             toast.success('Teams integration updated');
-            setIsEditing(false);
             setEditedState(null);
           },
           onError: (error) => {
@@ -131,7 +134,6 @@ export const AIAgentIntegrationsTab = () => {
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
     setEditedState(null);
   };
 
@@ -150,7 +152,7 @@ export const AIAgentIntegrationsTab = () => {
           <div className="flex gap-2">
             {isEditing ? (
               <>
-                <Button disabled={isUpdatePending} onClick={handleSave} variant="primary">
+                <Button disabled={isSaveDisabled} onClick={handleSave} variant="primary">
                   <Save className="h-4 w-4" />
                   {isUpdatePending ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -159,7 +161,7 @@ export const AIAgentIntegrationsTab = () => {
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setIsEditing(true)} variant="primary">
+              <Button onClick={() => setEditedState(displayState)} variant="primary">
                 <Edit className="h-4 w-4" />
                 Edit Configuration
               </Button>
@@ -196,7 +198,7 @@ export const AIAgentIntegrationsTab = () => {
                   value={displayState.botAppId}
                 />
               ) : (
-                <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                <div className="flex h-10 items-center rounded-md border border-border bg-muted px-3 py-2">
                   <Text className="truncate">{displayState.botAppId || '-'}</Text>
                 </div>
               )}
@@ -212,7 +214,7 @@ export const AIAgentIntegrationsTab = () => {
                   value={displayState.botTenantId}
                 />
               ) : (
-                <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                <div className="flex h-10 items-center rounded-md border border-border bg-muted px-3 py-2">
                   <Text className="truncate">{displayState.botTenantId || '-'}</Text>
                 </div>
               )}
@@ -234,7 +236,7 @@ export const AIAgentIntegrationsTab = () => {
                 />
               </div>
             ) : (
-              <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+              <div className="flex h-10 items-center rounded-md border border-border bg-muted px-3 py-2">
                 <Text className="truncate">{displayState.botAppSecretName || '-'}</Text>
               </div>
             )}

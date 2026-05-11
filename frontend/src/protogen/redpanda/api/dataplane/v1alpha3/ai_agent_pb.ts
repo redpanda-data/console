@@ -639,26 +639,39 @@ export const AIAgent_StateSchema: GenEnum<AIAgent_State> = /*@__PURE__*/
 
 /**
  * Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+ * Each agent gets its own Azure Bot registration; the bridge validates
+ * inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
  *
  * @generated from message redpanda.api.dataplane.v1alpha3.AIAgentTeamsBridge
  */
 export type AIAgentTeamsBridge = Message<"redpanda.api.dataplane.v1alpha3.AIAgentTeamsBridge"> & {
   /**
+   * Whether the Teams bridge is active for this agent.
+   *
    * @generated from field: bool enabled = 1;
    */
   enabled: boolean;
 
   /**
+   * Azure Bot registration Application (client) ID.
+   *
    * @generated from field: string bot_app_id = 2;
    */
   botAppId: string;
 
   /**
+   * AAD tenant ID the bot registration lives in.
+   *
    * @generated from field: string bot_tenant_id = 3;
    */
   botTenantId: string;
 
   /**
+   * Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+   * Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+   * this is a plain identifier — the bridge resolves it directly via the
+   * tenant-scoped secret store prefix.
+   *
    * @generated from field: string bot_app_secret_ref = 4;
    */
   botAppSecretRef: string;
