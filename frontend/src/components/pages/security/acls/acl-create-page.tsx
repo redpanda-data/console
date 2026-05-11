@@ -34,6 +34,13 @@ const AclCreatePage = () => {
     const applyResult = await createAcls(result);
     handleResponses(applyResult.errors, applyResult.created);
 
+    // Only navigate to the detail page on success. Without this guard, any CreateACL
+    // failure (invalid principal, duplicate, permission denied, server error) routes
+    // the user to a detail page for an ACL that was never created. See UX-1218.
+    if (!(applyResult.created && applyResult.errors.length === 0)) {
+      return;
+    }
+
     const { principalType: parsedType, principalName } = parsePrincipalFromParam(principal);
     const aclName = parsedType === 'User' ? principalName : principal;
     navigate({
