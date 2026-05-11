@@ -23,7 +23,7 @@ import (
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"golang.org/x/net/http2/h2c" //nolint:staticcheck // TODO migrate to http.Server.Protocols (Go 1.24+); follow-up after Snyk dep bump.
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -134,7 +134,7 @@ func (api *API) Start() {
 	}
 
 	// need this to make gRPC protocol work
-	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{})
+	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{}) //nolint:staticcheck // TODO migrate to http.Server.Protocols (Go 1.24+); follow-up after Snyk dep bump.
 
 	err = api.server.Start()
 	if err != nil {
