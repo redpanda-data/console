@@ -278,7 +278,6 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
-    // The ToggleGroup with "Existing" / "New" radios should NOT be present
     expect(screen.queryByRole('radio', { name: 'Existing' })).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'New' })).not.toBeInTheDocument();
   });
@@ -363,7 +362,6 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 
-    // Single-select ToggleGroupItem renders as role="radio"
     await waitFor(() => {
       expect(screen.getByRole('radio', { name: 'Existing' })).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: 'New' })).toBeInTheDocument();
