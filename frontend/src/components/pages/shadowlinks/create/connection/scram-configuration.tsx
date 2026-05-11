@@ -33,6 +33,14 @@ import type { FormValues } from '../model';
 // Regex to extract secret ID from ${secrets.SECRET_NAME} format
 const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
 
+// Base UI's <Select.Value> can't resolve an item's label until the popup
+// mounts, so an enum-backed controlled value renders as the raw string ("1")
+// on first paint. Passing an `items` map closes the gap eagerly.
+const SCRAM_MECHANISM_ITEMS: Record<string, string> = {
+  [String(ScramMechanism.SCRAM_SHA_256)]: 'SCRAM-SHA-256',
+  [String(ScramMechanism.SCRAM_SHA_512)]: 'SCRAM-SHA-512',
+};
+
 /** Custom text for SCRAM password secret */
 const SCRAM_PASSWORD_SECRET_TEXT: SecretSelectorCustomText = {
   dialogDescription: 'Create a new secret for your SCRAM authentication password. The secret will be stored securely.',
@@ -155,7 +163,11 @@ export const ScramConfiguration = () => {
             render={({ field }) => (
               <FormItem data-testid="scram-mechanism-field">
                 <FormLabel>SASL mechanism</FormLabel>
-                <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                <Select
+                  items={SCRAM_MECHANISM_ITEMS}
+                  onValueChange={(value) => field.onChange(Number(value))}
+                  value={String(field.value)}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select mechanism" />
