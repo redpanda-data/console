@@ -223,7 +223,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         >
           Update
         </Button>
-        <Link params={{ pipelineId }} to="/rp-connect/$pipelineId">
+        <Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
           <Button variant="link">Cancel</Button>
         </Link>
       </Flex>

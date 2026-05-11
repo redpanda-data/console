@@ -12,6 +12,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -133,7 +134,7 @@ export function CertificateDialog({
           </Text>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <DialogBody>
           {mode === TLS_MODE.PEM ? (
             <div className="space-y-2">
               <Dropzone
@@ -175,7 +176,7 @@ export function CertificateDialog({
               </Text>
             </div>
           )}
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button data-testid="cancel-button" onClick={handleCancel} variant="secondary-ghost">

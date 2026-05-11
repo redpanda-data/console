@@ -58,9 +58,18 @@ export type ModalRootProps = PortalRootProps & {
  * These props control auto-focus behavior when content opens/closes.
  */
 export type FocusScopeContentProps = {
-  /** Callback to prevent auto-focus when content opens (passed to Radix primitive) */
+  /**
+   * @deprecated Radix-compat shim. Base UI primitives do not expose an
+   * `onOpenAutoFocus` hook; the callback is ignored at runtime and will emit
+   * a dev-mode warning. Use `initialFocus` on the underlying Base UI `Popup`
+   * (or equivalent) instead. Scheduled for removal in a future major.
+   */
   onOpenAutoFocus?: (event: Event) => void;
-  /** Callback to control focus when content closes */
+  /**
+   * @deprecated Radix-compat shim. Base UI primitives do not expose an
+   * `onCloseAutoFocus` hook; handle close-focus in a `ref` callback or
+   * `onOpenChange` handler instead. Scheduled for removal in a future major.
+   */
   onCloseAutoFocus?: (event: Event) => void;
 };
 
@@ -70,7 +79,7 @@ export type FocusScopeContentProps = {
  */
 export type PortalContentProps = FocusScopeContentProps & {
   /** Container element for inline rendering (no portal to body) */
-  container?: Element;
+  container?: HTMLElement;
 };
 
 /**

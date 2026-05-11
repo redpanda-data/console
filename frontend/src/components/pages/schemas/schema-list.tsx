@@ -562,12 +562,12 @@ const SchemaList: FC = () => {
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={showSoftDeleted}
-                  data-testid="schema-list-show-soft-deleted-checkbox"
                   id="show-soft-deleted"
                   onCheckedChange={(checked) => {
                     setShowSoftDeleted(checked === true);
                     setPageIndex(0);
                   }}
+                  testId="schema-list-show-soft-deleted-checkbox"
                 />
                 <Label htmlFor="show-soft-deleted">Show soft-deleted</Label>
               </div>

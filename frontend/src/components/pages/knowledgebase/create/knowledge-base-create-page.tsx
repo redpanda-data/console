@@ -37,7 +37,7 @@ import {
   KnowledgeBaseCreateSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { useEffect, useMemo } from 'react';
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateKnowledgeBaseMutation } from 'react-query/api/knowledge-base';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -63,7 +63,7 @@ export const KnowledgeBaseCreatePage = () => {
 
   // Form setup
   const form = useForm<KnowledgeBaseCreateFormValues>({
-    resolver: zodResolver(KnowledgeBaseCreateFormSchema),
+    resolver: zodResolver(KnowledgeBaseCreateFormSchema) as Resolver<KnowledgeBaseCreateFormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });

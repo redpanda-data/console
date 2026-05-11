@@ -1,5 +1,5 @@
+import { Separator as SeparatorPrimitive } from '@base-ui/react/separator';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Separator as SeparatorPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
@@ -22,6 +22,18 @@ const separatorVariants = cva(
 
 export type SeparatorVariant = VariantProps<typeof separatorVariants>['variant'];
 
+type SeparatorProps = React.ComponentProps<typeof SeparatorPrimitive> &
+  SharedProps & {
+    variant?: SeparatorVariant;
+    /**
+     * When `true` (the Radix default), the separator is purely decorative and
+     * will not be announced to assistive tech (`role="none"` + `aria-hidden`).
+     * When `false`, the native Base UI `role="separator"` with an orientation
+     * is used. Honored faithfully — this is not a compat no-op.
+     */
+    decorative?: boolean;
+  };
+
 function Separator({
   className,
   orientation = 'horizontal',
@@ -29,17 +41,16 @@ function Separator({
   variant,
   testId,
   ...props
-}: React.ComponentProps<typeof SeparatorPrimitive.Root> &
-  SharedProps & {
-    variant?: SeparatorVariant;
-  }) {
+}: SeparatorProps) {
+  const a11yProps = decorative ? { 'aria-hidden': true, role: 'none' as const } : {};
   return (
-    <SeparatorPrimitive.Root
+    <SeparatorPrimitive
       className={cn(separatorVariants({ variant }), className)}
+      data-orientation={orientation}
       data-slot="separator"
       data-testid={testId}
-      decorative={decorative}
       orientation={orientation}
+      {...a11yProps}
       {...props}
     />
   );

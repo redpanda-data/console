@@ -53,13 +53,7 @@ export const ConnectTile = ({
   onChange: () => void;
 }) => {
   const content = (
-    <ChoiceboxItem
-      checked={checked}
-      className={cn('relative h-[78px]')}
-      key={uniqueKey}
-      onClick={onChange}
-      value={component.name}
-    >
+    <ChoiceboxItem className={cn('relative h-[78px]')} key={uniqueKey} onClick={onChange} value={component.name}>
       {/* padding right to compensate for the absolute position of the logo */}
       <div className="relative flex h-full w-full items-center gap-2 pr-10">
         <div className="flex min-w-0 flex-col gap-1">

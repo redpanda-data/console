@@ -1,4 +1,4 @@
-import { ScrollArea as ScrollAreaPrimitive } from 'radix-ui';
+import { ScrollArea as ScrollAreaPrimitive } from '@base-ui/react/scroll-area';
 import React from 'react';
 
 import { cn } from '../lib/utils';
@@ -20,10 +20,10 @@ const ScrollArea = React.forwardRef<
 ));
 
 const ScrollBar = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
-  React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
+  React.ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
+  React.ComponentProps<typeof ScrollAreaPrimitive.Scrollbar>
 >(({ className, orientation = 'vertical', ...props }, ref) => (
-  <ScrollAreaPrimitive.ScrollAreaScrollbar
+  <ScrollAreaPrimitive.Scrollbar
     className={cn(
       'flex touch-none select-none p-px transition-colors',
       orientation === 'vertical' && 'h-full w-2.5 border-l border-l-transparent',
@@ -35,11 +35,8 @@ const ScrollBar = React.forwardRef<
     ref={ref}
     {...props}
   >
-    <ScrollAreaPrimitive.ScrollAreaThumb
-      className="relative flex-1 rounded-full bg-border"
-      data-slot="scroll-area-thumb"
-    />
-  </ScrollAreaPrimitive.ScrollAreaScrollbar>
+    <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-border" data-slot="scroll-area-thumb" />
+  </ScrollAreaPrimitive.Scrollbar>
 ));
 
 const ScrollViewport = React.forwardRef<

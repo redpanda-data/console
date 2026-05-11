@@ -3,9 +3,9 @@
 import { type LottieOptions, useLottie } from 'lottie-react';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-export interface LoadingAnimationProps {
+export interface LoadingAnimationProps extends SharedProps {
   type: 'lottie' | 'svg';
   // biome-ignore lint/suspicious/noExplicitAny: part of the lottie-react library
   data?: any;
@@ -42,9 +42,10 @@ export const LoadingAnimation = React.forwardRef<HTMLDivElement, LoadingAnimatio
       responsive = true,
       centered = true,
       progress,
+      testId,
       ...props
     },
-    ref,
+    ref
   ) => {
     const lottieView = useLottie(
       type === 'lottie' && data
@@ -54,7 +55,7 @@ export const LoadingAnimation = React.forwardRef<HTMLDivElement, LoadingAnimatio
             autoplay: progress === undefined,
             ...lottieOptions,
           }
-        : { animationData: null },
+        : { animationData: null }
     );
 
     const containerStyle: React.CSSProperties = {
@@ -67,9 +68,9 @@ export const LoadingAnimation = React.forwardRef<HTMLDivElement, LoadingAnimatio
     };
 
     const containerClasses = cn(
-      responsive && 'w-full h-full',
+      responsive && 'h-full w-full',
       centered && 'flex items-center justify-center',
-      className,
+      className
     );
 
     // Clone children and pass progress prop to them if it's an SVG animation
@@ -83,7 +84,14 @@ export const LoadingAnimation = React.forwardRef<HTMLDivElement, LoadingAnimatio
 
     if (type === 'svg') {
       return (
-        <div ref={ref} className={containerClasses} style={containerStyle} {...containerProps} {...props}>
+        <div
+          className={containerClasses}
+          ref={ref}
+          style={containerStyle}
+          {...containerProps}
+          {...props}
+          data-testid={testId}
+        >
           {childrenWithProgress}
         </div>
       );
@@ -91,18 +99,32 @@ export const LoadingAnimation = React.forwardRef<HTMLDivElement, LoadingAnimatio
 
     if (type === 'lottie' && data) {
       return (
-        <div ref={ref} className={containerClasses} style={containerStyle} {...containerProps} {...props}>
+        <div
+          className={containerClasses}
+          ref={ref}
+          style={containerStyle}
+          {...containerProps}
+          {...props}
+          data-testid={testId}
+        >
           {lottieView.View}
         </div>
       );
     }
 
     return (
-      <div ref={ref} className={containerClasses} style={containerStyle} {...containerProps} {...props}>
+      <div
+        className={containerClasses}
+        ref={ref}
+        style={containerStyle}
+        {...containerProps}
+        {...props}
+        data-testid={testId}
+      >
         {childrenWithProgress}
       </div>
     );
-  },
+  }
 );
 
 LoadingAnimation.displayName = 'LoadingAnimation';

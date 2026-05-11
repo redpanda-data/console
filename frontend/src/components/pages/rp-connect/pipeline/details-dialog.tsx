@@ -14,7 +14,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, ListItem, Text } from 'components/redpanda-ui/components/typography';
@@ -89,7 +89,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleti
         </DialogHeader>
 
         {pipeline ? (
-          <div className="flex max-h-[70vh] flex-col gap-6 overflow-y-auto">
+          <DialogBody className="flex flex-col gap-6" spacing="none">
             <Card size="full" variant="outlined">
               <CardHeader>
                 <CardTitle>Pipeline</CardTitle>
@@ -228,7 +228,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleti
                 </Card>
               </div>
             ) : null}
-          </div>
+          </DialogBody>
         ) : null}
       </DialogContent>
     </Dialog>

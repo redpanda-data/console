@@ -46,7 +46,7 @@ export const FormSchema = z
       .object({
         username: z.string(),
         password: z.string(),
-        mechanism: z.nativeEnum(ScramMechanism),
+        mechanism: z.enum(ScramMechanism),
       })
       .optional(),
     advanceClientOptions: z.object({
@@ -91,8 +91,8 @@ export const FormSchema = z
     topicsMode: z.enum(['all', 'specify']),
     topics: z.array(
       z.object({
-        patternType: z.nativeEnum(PatternType),
-        filterType: z.nativeEnum(FilterType),
+        patternType: z.enum(PatternType),
+        filterType: z.enum(FilterType),
         name: z.string().trim().min(1, 'name is required'),
       })
     ),
@@ -105,8 +105,8 @@ export const FormSchema = z
     consumersMode: z.enum(['all', 'specify']),
     consumers: z.array(
       z.object({
-        patternType: z.nativeEnum(PatternType),
-        filterType: z.nativeEnum(FilterType),
+        patternType: z.enum(PatternType),
+        filterType: z.enum(FilterType),
         name: z.string().trim().min(1, 'name is required'),
       })
     ),
@@ -117,14 +117,14 @@ export const FormSchema = z
       .array(
         z.object({
           // Resource filter
-          resourceType: z.nativeEnum(ACLResource).optional(),
-          resourcePattern: z.nativeEnum(ACLPattern).optional(),
+          resourceType: z.enum(ACLResource).optional(),
+          resourcePattern: z.enum(ACLPattern).optional(),
           resourceName: z.string().optional(),
 
           // Access filter
           principal: z.string().optional(),
-          operation: z.nativeEnum(ACLOperation).optional(),
-          permissionType: z.nativeEnum(ACLPermissionType).optional(),
+          operation: z.enum(ACLOperation).optional(),
+          permissionType: z.enum(ACLPermissionType).optional(),
           host: z.string().optional(),
         })
       )
@@ -138,14 +138,14 @@ export const FormSchema = z
     if (data.useScram) {
       if (!data.scramCredentials?.username?.trim()) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'Username is required when SCRAM is enabled',
           path: ['scramCredentials', 'username'],
         });
       }
       if (!data.scramCredentials?.password) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'Password is required when SCRAM is enabled',
           path: ['scramCredentials', 'password'],
         });
@@ -165,7 +165,7 @@ export const FormSchema = z
 
     if (hasClientKey && !hasClientCert) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Client certificate is required when client private key is provided',
         path: ['mtls', 'clientCert'],
       });
@@ -173,7 +173,7 @@ export const FormSchema = z
 
     if (hasClientCert && !hasClientKey) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Client private key is required when client certificate is provided',
         path: ['mtls', 'clientKey'],
       });

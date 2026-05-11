@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -50,13 +51,15 @@ export const DeleteRoleConfirmModal: FC<{
         <DialogHeader>
           <DialogTitle>Delete role {roleName}</DialogTitle>
         </DialogHeader>
-        <DialogDescription>
-          This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}.
-          Deleting it will remove it from these principals and take those permissions away. The ACLs will all be
-          deleted. To restore the permissions, the role will need to be recreated and reassigned to these principals. To
-          confirm, type the role name in the confirmation box below.
-        </DialogDescription>
-        <Input onChange={(e) => setConfirmText(e.target.value)} placeholder={roleName} value={confirmText} />
+        <DialogBody>
+          <DialogDescription>
+            This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}.
+            Deleting it will remove it from these principals and take those permissions away. The ACLs will all be
+            deleted. To restore the permissions, the role will need to be recreated and reassigned to these principals.
+            To confirm, type the role name in the confirmation box below.
+          </DialogDescription>
+          <Input onChange={(e) => setConfirmText(e.target.value)} placeholder={roleName} value={confirmText} />
+        </DialogBody>
         <DialogFooter>
           <Button onClick={() => handleOpenChange(false)} variant="outline">
             Cancel

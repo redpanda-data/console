@@ -1,15 +1,15 @@
+import { Progress as ProgressPrimitive } from '@base-ui/react/progress';
 import { motion, type Transition } from 'motion/react';
-import { Progress as ProgressPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { cn } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 const MotionProgressIndicator = motion.create(ProgressPrimitive.Indicator);
 
-type ProgressProps = React.ComponentProps<typeof ProgressPrimitive.Root> & {
-  transition?: Transition;
-  testId?: string;
-};
+type ProgressProps = React.ComponentProps<typeof ProgressPrimitive.Root> &
+  SharedProps & {
+    transition?: Transition;
+  };
 
 function Progress({
   className,
@@ -20,16 +20,17 @@ function Progress({
 }: ProgressProps) {
   return (
     <ProgressPrimitive.Root
+      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-secondary', className)}
       data-slot="progress"
       data-testid={testId}
-      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-secondary', className)}
       value={value}
       {...props}
     >
       <MotionProgressIndicator
-        data-slot="progress-indicator"
-        className="h-full w-full flex-1 bg-primary rounded-full"
         animate={{ x: `-${100 - (value || 0)}%` }}
+        className="h-full w-full flex-1 rounded-full bg-primary"
+        data-slot="progress-indicator"
+        style={{ width: '100%' }}
         transition={transition}
       />
     </ProgressPrimitive.Root>

@@ -146,7 +146,7 @@ function KeyValueRow({
       >
         <X size={16} />
       </Button>
-      <ErrorRow keyError={error?.key} valueError={error?.value} />
+      <ErrorRow keyError={isDuplicate ? 'Duplicate key' : error?.key} valueError={error?.value} />
       {onAdd && isLast ? (
         <Button
           className="col-span-2"

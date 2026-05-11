@@ -257,7 +257,6 @@ function EditSchemaMode({
           >
             {allOptions.map((option) => (
               <ChoiceboxItem
-                checked={selectedMode === option.value}
                 className={`max-w-full ${selectedMode === option.value ? 'bg-accent' : ''}`}
                 key={option.value}
                 value={option.value}
