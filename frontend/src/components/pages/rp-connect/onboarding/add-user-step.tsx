@@ -491,6 +491,12 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                           cardinality: 'infinite',
                                         }),
                                       });
+                                      queryClient.invalidateQueries({
+                                        queryKey: createConnectQueryKey({
+                                          schema: listACLs,
+                                          cardinality: 'finite',
+                                        }),
+                                      });
                                     }}
                                     options={userOptions}
                                     placeholder="Select a user"
@@ -549,6 +555,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                 <TanStackRouterLink
                                   className="text-blue-800"
                                   params={{ userName: existingUserSelected.name }}
+                                  target="_blank"
                                   to="/security/users/$userName/details"
                                 >
                                   ACLs
@@ -698,8 +705,11 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                       <AlertDescription>
                                         <Text variant="small">
                                           You will need to configure{' '}
-                                          <TanStackRouterLink to="/security/acls">ACLs</TanStackRouterLink> for custom
-                                          user permissions if you want the user to be able to read from the topic.
+                                          <TanStackRouterLink target="_blank" to="/security/acls">
+                                            ACLs
+                                          </TanStackRouterLink>{' '}
+                                          for custom user permissions if you want the user to be able to read from the
+                                          topic.
                                         </Text>
                                       </AlertDescription>
                                     </Alert>
@@ -734,6 +744,14 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                     {...field}
                                     className="w-[300px]"
                                     disabled={isPending}
+                                    onFocus={() => {
+                                      queryClient.invalidateQueries({
+                                        queryKey: createConnectQueryKey({
+                                          schema: listACLs,
+                                          cardinality: 'finite',
+                                        }),
+                                      });
+                                    }}
                                     placeholder="Enter a consumer group name"
                                   />
                                 </FormControl>

@@ -82,9 +82,8 @@ export class ShadowlinkPage {
 
     // Configure SASL if provided
     if (params.username && params.password) {
-      // Find and toggle SCRAM switch - look for the switch near "SCRAM" text
-      const scramSection = this.page.getByText('SCRAM').locator('..');
-      const scramToggle = scramSection.getByRole('switch');
+      // Toggle the SASL/SCRAM switch via its stable test id (label text is "Use SASL authentication")
+      const scramToggle = this.page.getByTestId('scram-toggle');
 
       // Check if SCRAM is already enabled
       const isScramEnabled = await scramToggle.isChecked();

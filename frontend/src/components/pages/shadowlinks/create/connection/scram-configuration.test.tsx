@@ -49,7 +49,13 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 
 describe('ScramConfiguration', () => {
   describe('SCRAM enabled state', () => {
-    test('should show credentials form when switch is enabled', () => {
+    test('should render SASL toggle label', () => {
+      render(<TestWrapper />);
+
+      expect(screen.getByText('Use SASL authentication')).toBeInTheDocument();
+    });
+
+    test('should show credentials form and source-cluster callout when switch is enabled', () => {
       const customValues: FormValues = {
         ...initialValues,
         useScram: true,
@@ -62,9 +68,14 @@ describe('ScramConfiguration', () => {
       expect(screen.getByTestId('scram-username-field')).toBeInTheDocument();
       expect(screen.getByTestId('scram-password-field')).toBeInTheDocument();
       expect(screen.getByTestId('scram-mechanism-field')).toBeInTheDocument();
+
+      const callout = screen.getByTestId('scram-source-cluster-callout');
+      expect(callout).toBeInTheDocument();
+      expect(callout).toHaveTextContent('The user must exist on the source cluster.');
+      expect(screen.getByRole('link', { name: /view required acls/i })).toBeInTheDocument();
     });
 
-    test('should hide credentials form when switch is disabled', () => {
+    test('should hide credentials form and callout when switch is disabled', () => {
       const customValues: FormValues = {
         ...initialValues,
         useScram: false,
@@ -77,6 +88,7 @@ describe('ScramConfiguration', () => {
       expect(screen.queryByTestId('scram-username-field')).not.toBeInTheDocument();
       expect(screen.queryByTestId('scram-password-field')).not.toBeInTheDocument();
       expect(screen.queryByTestId('scram-mechanism-field')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('scram-source-cluster-callout')).not.toBeInTheDocument();
     });
   });
 
