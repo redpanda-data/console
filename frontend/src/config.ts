@@ -468,20 +468,33 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     currentSetupTeardown = installUiStateSubscriptions();
   }, 50);
 
-  // Set MonacoEnvironment synchronously before loader.init() to avoid race
-  // where the editor mounts before the worker URL resolver is available
+  // Create Monaco workers via `new Worker(new URL(..., import.meta.url))` so
+  // rsbuild bundles each one as a dedicated chunk — that path correctly
+  // handles monaco-yaml's `yaml` package CJS/ESM interop, unlike
+  // MonacoWebpackPlugin's child compilation. When embedded under a different
+  // origin (cloud-ui host loading console remote), wrap cross-origin worker
+  // URLs in a same-origin Blob that `importScripts` the real file.
+  const createMonacoWorker = (workerUrl: URL): Worker => {
+    if (typeof window !== 'undefined' && workerUrl.origin !== window.location.origin) {
+      const bootstrap = `importScripts(${JSON.stringify(workerUrl.href)});`;
+      const blob = new Blob([bootstrap], { type: 'application/javascript' });
+      return new Worker(URL.createObjectURL(blob));
+    }
+    return new Worker(workerUrl);
+  };
+
   window.MonacoEnvironment = {
-    getWorkerUrl(_, label: string): string {
+    getWorker(_workerId, label) {
       switch (label) {
-        case 'editorWorkerService': {
-          return `${window.location.origin}/static/js/editor.worker.js`;
-        }
-        case 'typescript': {
-          return `${window.location.origin}/static/js/ts.worker.js`;
-        }
-        default: {
-          return `${window.location.origin}/static/js/${label}.worker.js`;
-        }
+        case 'json':
+          return createMonacoWorker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
+        case 'yaml':
+          return createMonacoWorker(new URL('monaco-yaml/yaml.worker', import.meta.url));
+        case 'typescript':
+        case 'javascript':
+          return createMonacoWorker(new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url));
+        default:
+          return createMonacoWorker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
       }
     },
   };

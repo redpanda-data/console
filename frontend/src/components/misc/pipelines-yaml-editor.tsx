@@ -58,7 +58,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 
 export const monacoYamlOptions = {
   enableSchemaRequest: false,
-  format: true,
+  format: { enable: true },
   completion: true,
   validate: true,
   schemas: [

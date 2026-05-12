@@ -78,7 +78,7 @@ function buildMonacoYamlOptions(
 
   return {
     enableSchemaRequest: false,
-    format: true,
+    format: { enable: true },
     completion: true,
     validate: true,
     schemas: [
