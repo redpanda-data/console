@@ -51,6 +51,14 @@ declare global {
   // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Window {
     MonacoEnvironment?: monaco.Environment;
+    // Set by federation/embedded entrypoints. On `window` so it survives HMR.
+    __RP_CONSOLE_EMBEDDED__?: boolean;
+  }
+}
+
+export function markEmbeddedMode() {
+  if (typeof window !== 'undefined') {
+    window.__RP_CONSOLE_EMBEDDED__ = true;
   }
 }
 
@@ -374,6 +382,9 @@ function installUiStateSubscriptions(): () => void {
 }
 
 export function isEmbedded() {
+  if (typeof window !== 'undefined' && window.__RP_CONSOLE_EMBEDDED__) {
+    return true;
+  }
   return config.jwt !== null && config.jwt !== undefined;
 }
 

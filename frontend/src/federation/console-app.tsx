@@ -40,9 +40,19 @@ import { FederatedProviders } from './federated-providers';
 import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
-import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
+import {
+  addBearerTokenInterceptor,
+  checkExpiredLicenseInterceptor,
+  config,
+  getGrpcBasePath,
+  markEmbeddedMode,
+  setup,
+} from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
+
+// Module-scope so the flag is set before any route evaluates `isEmbedded()`, incl. after HMR.
+markEmbeddedMode();
 
 /**
  * Creates an interceptor that refreshes the token on 401 and retries the request.
