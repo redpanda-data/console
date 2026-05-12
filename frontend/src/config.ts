@@ -489,6 +489,31 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // Tell monaco editor where to load dependencies from
   loader.config({ monaco });
 
+  // Override the built-in `vs` (light) theme so every editor that doesn't
+  // explicitly set a `theme` prop picks up our colors — @monaco-editor/react
+  // defaults `theme` to `'light'` (aliased to `vs`), which would otherwise
+  // override anything we set with `setTheme`.
+  const kowlThemeColors = {
+    'editor.background': '#fcfcfc',
+    'editorGutter.background': '#00000018',
+    'editor.lineHighlightBackground': '#aaaaaa20',
+    'editor.lineHighlightBorder': '#00000000',
+    'editorLineNumber.foreground': '#8c98a8',
+    'editorOverviewRuler.background': '#606060',
+  };
+  monaco.editor.defineTheme('vs', {
+    base: 'vs',
+    inherit: true,
+    colors: kowlThemeColors,
+    rules: [],
+  });
+  monaco.editor.defineTheme('kowl', {
+    base: 'vs',
+    inherit: false,
+    colors: kowlThemeColors,
+    rules: [],
+  });
+
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is
   // protected, so we need to delay the call until the user is logged in.
