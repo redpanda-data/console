@@ -21,6 +21,7 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
+import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
@@ -348,6 +349,12 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                                   queryClient.invalidateQueries({
                                     queryKey: createConnectQueryKey({
                                       schema: listTopics,
+                                      cardinality: 'infinite',
+                                    }),
+                                  });
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listACLs,
                                       cardinality: 'finite',
                                     }),
                                   });
