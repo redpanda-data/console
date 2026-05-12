@@ -80,20 +80,15 @@ export class ShadowlinkPage {
       await tlsToggle.click();
     }
 
-    // Configure SASL if provided
+    // Configure SASL if provided. The authentication picker is a 3-way Tabs
+    // (None / SCRAM / PLAIN); SCRAM is the default. Click the tab explicitly
+    // to guarantee state even if the default ever changes.
     if (params.username && params.password) {
-      // Toggle the SASL/SCRAM switch via its stable test id (label text is "Use SASL authentication")
-      const scramToggle = this.page.getByTestId('scram-toggle');
+      const scramTab = this.page.getByTestId('auth-method-scram');
+      await scramTab.click();
+      // Wait for SCRAM credential fields to render
+      await this.page.getByTestId('scram-username-input').waitFor({ state: 'visible', timeout: 5000 });
 
-      // Check if SCRAM is already enabled
-      const isScramEnabled = await scramToggle.isChecked();
-      if (!isScramEnabled) {
-        await scramToggle.click();
-        // Wait for username field to appear after toggle
-        await this.page.getByLabel(/username/i).waitFor({ state: 'visible', timeout: 5000 });
-      }
-
-      // Fill username and password using labels
       const usernameInput = this.page.getByLabel(/username/i);
       await usernameInput.fill(params.username);
 
