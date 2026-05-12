@@ -57,6 +57,10 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   stickyScroll: {
     enabled: false,
   },
+  // Monaco's EditContext path (Chrome/Edge default) drops `textupdate` events
+  // in this app — spaces and accept-suggestion stop working. Pin to the legacy
+  // textarea input until upstream stabilizes (microsoft/vscode#229825 region).
+  editContext: false,
 } as const;
 
 function buildMonacoYamlOptions(
