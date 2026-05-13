@@ -468,14 +468,8 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     currentSetupTeardown = installUiStateSubscriptions();
   }, 50);
 
-  // Create Monaco workers via `new Worker(new URL(..., import.meta.url))` so
-  // rsbuild bundles each as a dedicated chunk. Required for monaco-yaml's
-  // `yaml` package CJS/ESM interop, which MonacoWebpackPlugin's child
-  // compilation gets wrong. In production this also gives us same-origin
-  // worker URLs. (In federation dev — cloud-ui at :3000 loading console
-  // bundles from :4200 — these worker URLs become cross-origin, which the
-  // browser blocks; language services then run on the main thread. Fix by
-  // proxying console assets through cloud-ui's dev server.)
+  // Use `new Worker(new URL(...))` so rsbuild bundles each as its own chunk
+  // (needed for monaco-yaml's CJS/ESM interop).
   window.MonacoEnvironment = {
     getWorker(_workerId, label) {
       switch (label) {
@@ -495,10 +489,8 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // Tell monaco editor where to load dependencies from
   loader.config({ monaco });
 
-  // Override the built-in `vs` (light) theme so every editor that doesn't
-  // explicitly set a `theme` prop picks up our colors — @monaco-editor/react
-  // defaults `theme` to `'light'` (aliased to `vs`), which would otherwise
-  // override anything we set with `setTheme`.
+  // Override `vs` (the default theme `@monaco-editor/react` applies) so every
+  // editor without an explicit `theme` prop uses these colors.
   const kowlThemeColors = {
     'editor.background': '#fcfcfc',
     'editorGutter.background': '#00000018',

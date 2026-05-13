@@ -559,6 +559,7 @@ function EditorPanel({
                 onEditorMount={onEditorMount}
                 options={slashTipVisible ? { padding: { top: 32 } } : undefined}
                 schema={yamlEditorSchema}
+                transparentBackground
                 value={yamlContent}
               />
             </>

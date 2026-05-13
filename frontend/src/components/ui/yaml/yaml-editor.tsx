@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef } from 'react';
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
+  transparentBackground?: boolean;
   onEditorMount?: (editor: editor.IStandaloneCodeEditor) => void;
   schema?: {
     definitions?: Record<string, JSONSchema>;
@@ -57,9 +58,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   stickyScroll: {
     enabled: false,
   },
-  // Monaco's EditContext path (Chrome/Edge default) drops `textupdate` events
-  // in this app — spaces and accept-suggestion stop working. Pin to the legacy
-  // textarea input until upstream stabilizes (microsoft/vscode#229825 region).
+  // EditContext drops textupdate events here, breaking space + suggestions.
   editContext: false,
 } as const;
 
@@ -126,7 +125,7 @@ function buildMonacoYamlOptions(
 }
 
 export const YamlEditor = (props: YamlEditorProps) => {
-  const { options: givenOptions, schema, onEditorMount, ...rest } = props;
+  const { options: givenOptions, schema, transparentBackground, onEditorMount, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const yamlRef = useRef<MonacoYaml | null>(null);
   const hasInitializedRef = useRef(false);
@@ -159,6 +158,17 @@ export const YamlEditor = (props: YamlEditorProps) => {
     <Editor
       beforeMount={(monaco) => {
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+        if (transparentBackground) {
+          monaco.editor.defineTheme('kowl-transparent', {
+            base: 'vs',
+            inherit: true,
+            colors: {
+              'editor.background': '#00000000',
+              'editorGutter.background': '#00000000',
+            },
+            rules: [],
+          });
+        }
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
@@ -167,6 +177,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
       }}
       options={options}
       path="pipeline.yaml"
+      theme={transparentBackground ? 'kowl-transparent' : undefined}
       wrapperProps={{
         style: {
           minWidth: 0,
