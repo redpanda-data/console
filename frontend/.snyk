@@ -1,0 +1,16 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.1
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JS-UUID-16133035:
+    - '*':
+        reason: >-
+          Not reachable in browser UI: frontend source has no direct uuid runtime
+          imports and does not call uuid v3/v5/v6 with caller-provided output
+          buffers/offsets. Remaining paths are @a2a-js/sdk, Mermaid via
+          streamdown, @hookform/devtools via @redpanda-data/ui, SockJS
+          dev-server tooling, and Docker test tooling; none expose the
+          vulnerable external-buffer API to user input. Revisit before expiry
+          or if direct uuid buffer APIs are introduced.
+        expires: 2026-08-11T09:58:05.000Z
+        created: 2026-05-13T09:58:12.566Z
