@@ -15,6 +15,9 @@ import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'mo
 import { type ComponentType, lazy, Suspense, useCallback, useEffect, useState } from 'react';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
+import { annotateAnyOfTitles } from '../ui/yaml/yaml-editor';
+
+annotateAnyOfTitles(benthosSchema);
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;

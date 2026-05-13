@@ -64,7 +64,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 
 // Give each `anyOf` variant a title (its first property name) so monaco-yaml's
 // hover doesn't render `|| || ||` between empty alternatives.
-function annotateAnyOfTitles(node: unknown): void {
+export function annotateAnyOfTitles(node: unknown): void {
   if (!node || typeof node !== 'object') {
     return;
   }
