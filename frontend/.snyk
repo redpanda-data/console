@@ -1,8 +1,42 @@
 # Snyk (https://snyk.io) policy file
 version: v1.25.1
 ignore:
+  SNYK-JS-UUID-16133035:
+    - '*':
+        reason: >-
+          Direct uuid runtime dependency is upgraded to 11.1.1. Remaining
+          uuid@8.3.2 paths are transitive through @redpanda-data/ui
+          (@hookform/devtools) and SockJS dev-server tooling. Frontend source
+          imports uuid directly only for v4() generation and does not call
+          uuid v3/v5/v6 with caller-provided output buffers/offsets, which is
+          the vulnerable API shape. Revisit before expiry or if direct uuid
+          buffer APIs are introduced.
+        expires: '2026-08-11T00:00:00.000Z'
+        created: '2026-05-13T00:00:00.000Z'
+  SNYK-JS-LODASH-15053838:
+    - '*':
+        reason: >-
+          Prototype pollution in lodash path APIs. Frontend source does not
+          import lodash directly or call lodash path mutation helpers. Remaining
+          paths are transitive dev/UI tooling (@hookform/devtools,
+          node-emoji/remark-emoji, jsdom/whatwg-url, rsdoctor, and bundle
+          analyzer) and do not expose lodash path mutation APIs to untrusted
+          runtime input in this browser UI.
+        expires: '2026-08-11T00:00:00.000Z'
+        created: '2026-05-13T00:00:00.000Z'
+  SNYK-JS-LODASH-15869619:
+    - '*':
+        reason: >-
+          Prototype pollution in lodash path APIs. Frontend source does not
+          import lodash directly or call lodash path mutation helpers. Remaining
+          paths are transitive dev/UI tooling (@hookform/devtools,
+          node-emoji/remark-emoji, jsdom/whatwg-url, rsdoctor, and bundle
+          analyzer) and do not expose lodash path mutation APIs to untrusted
+          runtime input in this browser UI.
+        expires: '2026-08-11T00:00:00.000Z'
+        created: '2026-05-13T00:00:00.000Z'
   SNYK-JS-LODASH-15869625:
-    - '@redpanda-data/ui > @hookform/devtools > lodash':
+    - '*':
         reason: >-
           CVE-2026-4800 / Arbitrary Code Injection in lodash _.template with
           options.imports. Vulnerable surface is _.template. Reachability
@@ -13,19 +47,6 @@ ignore:
           Additionally, @hookform/devtools is gated inside @redpanda-data/ui
           behind a developerView flag and is not used anywhere in frontend/src.
           No untrusted input reaches lodash through this path.
-        expires: '2027-04-22T00:00:00.000Z'
-        created: '2026-04-22T00:00:00.000Z'
-    - '@redpanda-data/ui > remark-emoji > node-emoji > lodash':
-        reason: >-
-          CVE-2026-4800 / Arbitrary Code Injection in lodash _.template with
-          options.imports. Vulnerable surface is _.template. Reachability
-          analysis: the legacy node-emoji@1.11.0 pulled transitively through
-          @redpanda-data/ui's bundled remark-emoji@3.1.2 only imports
-          lodash/toArray (see
-          node_modules/@redpanda-data/ui/node_modules/remark-emoji/node_modules/node-emoji/lib/emoji.js).
-          The vulnerable _.template API is never loaded or invoked. Frontend
-          source code does not call lodash directly and does not import
-          node-emoji directly. No untrusted input reaches _.template.
         expires: '2027-04-22T00:00:00.000Z'
         created: '2026-04-22T00:00:00.000Z'
   SNYK-JS-UNDICI-15518064:
@@ -99,4 +120,3 @@ ignore:
           never executed in this browser-only MF remote.
         expires: '2027-04-22T00:00:00.000Z'
         created: '2026-04-22T00:00:00.000Z'
-patch: {}
