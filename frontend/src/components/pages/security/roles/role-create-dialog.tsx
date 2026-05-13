@@ -54,7 +54,11 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
       await createRole(create(CreateRoleRequestSchema, { role: { name: trimmed } }));
       toast.success(`Role "${trimmed}" created`);
       handleClose();
-      navigate({ to: '/security/roles/$roleName/details', params: { roleName: encodeURIComponent(trimmed) } });
+      navigate({
+        to: '/security/roles/$roleName/details',
+        params: { roleName: encodeURIComponent(trimmed) },
+        search: { host: undefined },
+      });
     } catch (err) {
       toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
     } finally {

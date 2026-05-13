@@ -135,7 +135,11 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
               </Button>
             )}
             <Button asChild size="icon-sm" testId={`view-role-${r.principalName}`} variant="ghost">
-              <Link params={{ roleName: r.principalName }} to="/security/roles/$roleName/details">
+              <Link
+                params={{ roleName: r.principalName }}
+                search={{ host: undefined }}
+                to="/security/roles/$roleName/details"
+              >
                 <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
               </Link>
             </Button>

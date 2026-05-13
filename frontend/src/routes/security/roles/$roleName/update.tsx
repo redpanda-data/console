@@ -31,6 +31,7 @@ export const Route = createFileRoute('/security/roles/$roleName/update')({
       throw redirect({
         to: '/security/roles/$roleName/details',
         params,
+        search: { host: undefined },
         replace: true,
       });
     }

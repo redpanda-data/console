@@ -28,7 +28,7 @@ export const Route = createFileRoute('/security/acls/$aclName/update')({
   validateSearch: zodValidator(searchSchema),
   beforeLoad: ({ params }) => {
     if (isFeatureFlagEnabled('enableNewSecurityPage')) {
-      throw redirect({ to: '/security/acls/$aclName/details', params, replace: true });
+      throw redirect({ to: '/security/acls/$aclName/details', params, search: { host: undefined }, replace: true });
     }
   },
   component: AclUpdatePage,

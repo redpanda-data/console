@@ -169,8 +169,8 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                 <Label>Principal</Label>
                 <div className="flex gap-2">
                   <Select
-                    onValueChange={(v: 'User' | 'Group') => {
-                      setPrincipalType(v);
+                    onValueChange={(v) => {
+                      setPrincipalType(v as 'User' | 'Group');
                       setPrincipalValue('');
                     }}
                     value={principalType}

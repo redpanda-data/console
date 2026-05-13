@@ -60,7 +60,11 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              navigate({ to: '/security/roles/$roleName/details', params: { roleName: role.principalName } });
+              navigate({
+                to: '/security/roles/$roleName/details',
+                params: { roleName: role.principalName },
+                search: { host: undefined },
+              });
             }}
             size="sm"
             testId={`view-role-${rowKey}`}

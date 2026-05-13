@@ -436,6 +436,7 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
           className="no-underline"
           key={r.name}
           params={{ roleName: r.name }}
+          search={{ host: undefined }}
           to="/security/roles/$roleName/details"
         >
           <TagsValue>{r.name}</TagsValue>
