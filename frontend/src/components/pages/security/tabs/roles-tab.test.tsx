@@ -249,7 +249,6 @@ vi.mock('../../../../state/backend-api', () => {
       canViewPermissionsList: true,
     },
     enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
-    serviceAccounts: null as null | { users: string[] },
     isAdminApiConfigured: false,
   };
   return {

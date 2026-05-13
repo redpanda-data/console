@@ -22,8 +22,10 @@ import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
@@ -59,7 +61,7 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
   useLintPipelineConfigQuery,
@@ -360,7 +362,7 @@ function usePipelineSave({
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters' });
+          navigate({ to: '/connect-clusters', search: {} as never });
         },
         onError: (err) => {
           toast.error(
@@ -705,8 +707,8 @@ export default function PipelinePage() {
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
   const form = useForm<PipelineFormValues>({
-    resolver: zodResolver(pipelineFormSchema),
-    mode: 'onChange',
+    resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
+    mode: 'onSubmit',
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
 
@@ -835,7 +837,7 @@ export default function PipelinePage() {
       clearWizardStore();
     }
     if (mode === 'view') {
-      navigate({ to: '/connect-clusters' });
+      navigate({ to: '/connect-clusters', search: {} as never });
     } else {
       router.history.back();
     }
@@ -943,17 +945,19 @@ export default function PipelinePage() {
         }}
         open={topicDialog.isOpen}
       >
-        <DialogContent className="max-h-screen overflow-y-scroll" showCloseButton={false} size="lg">
+        <DialogContent showCloseButton={false} size="lg">
           <DialogCloseButton />
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
-            <DialogDescription className="mt-4">
+            <DialogDescription>
               This component requires a Redpanda topic for logging the data. Select an existing topic, or create a new
               one.
             </DialogDescription>
           </DialogHeader>
-          <AddTopicStep className="border" hideTitle ref={topicStepRef} />
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogBody>
+            <AddTopicStep className="border" hideTitle ref={topicStepRef} />
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={topicDialog.close} variant="secondary-ghost">
               Cancel
             </Button>
@@ -964,7 +968,7 @@ export default function PipelinePage() {
             >
               Add
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -976,16 +980,16 @@ export default function PipelinePage() {
         }}
         open={userDialog.isOpen}
       >
-        <DialogContent className="max-h-screen overflow-hidden" showCloseButton={false} size="lg">
+        <DialogContent showCloseButton={false} size="lg">
           <DialogCloseButton />
-          <div className="overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add user</DialogTitle>
-              <DialogDescription className="mt-4">
-                Select or create a user for this connector. ACLs will be configured automatically for the topic when
-                creating a new user.
-              </DialogDescription>
-            </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add user</DialogTitle>
+            <DialogDescription>
+              Select or create a user for this connector. ACLs will be configured automatically for the topic when
+              creating a new user.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody>
             {connectorTopics && connectorTopics.length > 1 && (
               <Alert variant="warning">
                 <AlertTitle>Multiple topics configured</AlertTitle>
@@ -1002,19 +1006,19 @@ export default function PipelinePage() {
               showConsumerGroupFields={userDialog.target?.section === 'input'}
               topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
             />
-            <div className="flex justify-end gap-2 pt-4">
-              <Button onClick={userDialog.close} variant="secondary-ghost">
-                Cancel
-              </Button>
-              <Button
-                disabled={userDialog.isSubmitting}
-                icon={userDialog.isSubmitting ? <Spinner /> : undefined}
-                onClick={userDialog.submit}
-              >
-                Add
-              </Button>
-            </div>
-          </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={userDialog.close} variant="secondary-ghost">
+              Cancel
+            </Button>
+            <Button
+              disabled={userDialog.isSubmitting}
+              icon={userDialog.isSubmitting ? <Spinner /> : undefined}
+              onClick={userDialog.submit}
+            >
+              Add
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -308,7 +308,7 @@ export const ConnectOnboardingWizard = ({
       navigate({ to: '/overview' });
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     } else {
-      navigate({ to: '/connect-clusters' });
+      navigate({ to: '/connect-clusters', search: {} as never });
     }
   }, [onCancelProp, navigate, resetOnboardingWizardStore, search.serverless]);
 

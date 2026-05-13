@@ -1,11 +1,10 @@
 'use client';
 
+import { ScrollArea as ScrollAreaPrimitive, type ScrollAreaViewportProps } from '@base-ui/react/scroll-area';
 import { cva, type VariantProps } from 'class-variance-authority';
-import type { ScrollArea as ScrollAreaPrimitive } from 'radix-ui';
 import { forwardRef, type HTMLAttributes, type ReactNode, type RefObject, useCallback, useRef, useState } from 'react';
 
 import { CopyButton } from './copy-button';
-import { ScrollArea, ScrollBar, ScrollViewport } from './scroll-area';
 import { cn, type SharedProps } from '../lib/utils';
 
 const codeBlockVariants = cva(
@@ -25,10 +24,10 @@ const codeBlockVariants = cva(
         full: 'w-full',
       },
       maxHeight: {
-        sm: '[&_[data-radix-scroll-area-viewport]]:max-h-[300px]',
-        md: '[&_[data-radix-scroll-area-viewport]]:max-h-[600px]',
-        lg: '[&_[data-radix-scroll-area-viewport]]:max-h-[800px]',
-        none: '[&_[data-radix-scroll-area-viewport]]:max-h-none',
+        sm: '[&_[data-slot=scroll-area-viewport]]:max-h-[300px]',
+        md: '[&_[data-slot=scroll-area-viewport]]:max-h-[600px]',
+        lg: '[&_[data-slot=scroll-area-viewport]]:max-h-[800px]',
+        none: '[&_[data-slot=scroll-area-viewport]]:max-h-none',
       },
     },
     defaultVariants: {
@@ -44,7 +43,7 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> &
   SharedProps & {
     icon?: ReactNode;
     allowCopy?: boolean;
-    viewportProps?: ScrollAreaPrimitive.ScrollAreaViewportProps;
+    viewportProps?: ScrollAreaViewportProps;
     onCopy?: () => void;
   };
 
@@ -145,16 +144,40 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
             />
           )
         )}
-        <ScrollArea dir="ltr">
-          <ScrollViewport
+        <ScrollAreaPrimitive.Root className="relative" data-slot="scroll-area" dir="ltr">
+          <ScrollAreaPrimitive.Viewport
             ref={areaRef as RefObject<HTMLDivElement>}
             {...viewportProps}
-            className={cn('selection:bg-selected selection:text-selected-foreground', viewportProps?.className)}
+            className={cn(
+              'size-full rounded-[inherit] outline-none selection:bg-selected selection:text-selected-foreground focus-visible:outline-1 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              viewportProps?.className
+            )}
+            data-slot="scroll-area-viewport"
           >
             {props.children}
-          </ScrollViewport>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+          </ScrollAreaPrimitive.Viewport>
+          <ScrollAreaPrimitive.Scrollbar
+            className="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors"
+            data-slot="scroll-area-scrollbar"
+            orientation="horizontal"
+          >
+            <ScrollAreaPrimitive.Thumb
+              className="relative flex-1 rounded-full bg-border"
+              data-slot="scroll-area-thumb"
+            />
+          </ScrollAreaPrimitive.Scrollbar>
+          <ScrollAreaPrimitive.Scrollbar
+            className="flex h-full w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors"
+            data-slot="scroll-area-scrollbar"
+            orientation="vertical"
+          >
+            <ScrollAreaPrimitive.Thumb
+              className="relative flex-1 rounded-full bg-border"
+              data-slot="scroll-area-thumb"
+            />
+          </ScrollAreaPrimitive.Scrollbar>
+          <ScrollAreaPrimitive.Corner />
+        </ScrollAreaPrimitive.Root>
       </figure>
     );
   }

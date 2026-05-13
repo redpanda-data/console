@@ -17,6 +17,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -171,7 +172,7 @@ export const AIAgentInspectorTab = () => {
             </Button>
           </DialogTrigger>
           <DialogContent
-            className="max-h-[85vh] w-[70vw] max-w-[1200px] overflow-y-auto"
+            className="max-h-[85vh] w-[70vw] max-w-[1200px]"
             onOpenAutoFocus={(e) => e.preventDefault()}
             size="full"
           >
@@ -179,7 +180,7 @@ export const AIAgentInspectorTab = () => {
               <DialogTitle>Agent Card</DialogTitle>
               {Boolean(cardUrl) && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}
             </DialogHeader>
-            <div className="mt-2">
+            <DialogBody>
               {(() => {
                 if (isLoadingCard) {
                   return (
@@ -208,7 +209,7 @@ export const AIAgentInspectorTab = () => {
                   </div>
                 );
               })()}
-            </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
       }

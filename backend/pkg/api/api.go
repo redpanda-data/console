@@ -26,7 +26,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	"golang.org/x/net/http2/h2c" //nolint:staticcheck // TODO migrate to http.Server.Protocols (Go 1.24+); follow-up after Snyk dep bump.
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -207,7 +207,7 @@ func (api *API) Start(ctx context.Context) error {
 	api.server = srv
 
 	// need this to make gRPC protocol work
-	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{})
+	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{}) //nolint:staticcheck // TODO migrate to http.Server.Protocols (Go 1.24+); follow-up after Snyk dep bump.
 
 	if err := api.server.Start(); err != nil {
 		// Don't treat a graceful shutdown as an error.

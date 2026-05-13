@@ -9,11 +9,11 @@ import {
   type Stepper as StepperType,
 } from '@stepperize/react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot as SlotPrimitive } from 'radix-ui';
 import React from 'react';
 
 import { Button } from './button';
 import { Heading, Text } from './typography';
+import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const StepperContext = React.createContext<Stepper.ConfigProps | null>(null);
@@ -196,17 +196,21 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       Title,
       Description,
       Panel: ({ children, asChild, ...props }) => {
-        const Comp = asChild ? SlotPrimitive.Slot : 'div';
+        const Comp = asChild ? Slot : 'div';
         const { tracking } = useStepperProvider();
 
         return (
-          <Comp date-component="stepper-step-panel" ref={(node) => scrollIntoStepperPanel(node, tracking)} {...props}>
+          <Comp
+            date-component="stepper-step-panel"
+            ref={(node: HTMLDivElement | null) => scrollIntoStepperPanel(node, tracking)}
+            {...props}
+          >
             {children}
           </Comp>
         );
       },
       Controls: ({ children, className, asChild, ...props }) => {
-        const Comp = asChild ? SlotPrimitive.Slot : 'div';
+        const Comp = asChild ? Slot : 'div';
         return (
           <Comp className={cn('flex justify-end gap-4', className)} date-component="stepper-controls" {...props}>
             {children}
@@ -218,7 +222,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
 };
 
 const Title = ({ children, className, asChild, ...props }: React.ComponentProps<'h4'> & { asChild?: boolean }) => {
-  const Comp = asChild ? SlotPrimitive.Slot : Heading;
+  const Comp = asChild ? Slot : Heading;
 
   return (
     <Comp
@@ -233,7 +237,7 @@ const Title = ({ children, className, asChild, ...props }: React.ComponentProps<
 };
 
 const Description = ({ children, className, asChild, ...props }: React.ComponentProps<'p'> & { asChild?: boolean }) => {
-  const Comp = asChild ? SlotPrimitive.Slot : Text;
+  const Comp = asChild ? Slot : Text;
 
   return (
     <Comp

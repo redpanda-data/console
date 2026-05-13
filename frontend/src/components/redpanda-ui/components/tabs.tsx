@@ -1,12 +1,76 @@
 'use client';
 
+import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { type HTMLMotionProps, motion, type Transition } from 'motion/react';
-import { Tabs as TabsPrimitive } from 'radix-ui';
+import {
+  AnimatePresence,
+  type HTMLMotionProps,
+  MotionConfigContext,
+  motion,
+  type Transition,
+  useReducedMotion,
+} from 'motion/react';
 import React from 'react';
 
-import { MotionHighlight, MotionHighlightItem } from './motion-highlight';
 import { cn, type SharedProps } from '../lib/utils';
+
+type HighlightBounds = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
+function boundsEqual(a: HighlightBounds | null, b: HighlightBounds | null): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (!(a && b)) {
+    return false;
+  }
+  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: compat helper must accept any Base UI render prop shape
+type TabsRenderFn = any;
+
+type TabsRenderProp = React.ReactElement | TabsRenderFn | undefined;
+
+/**
+ * Build the data-state attribute from Base UI's render-prop state so Radix-era
+ * CSS selectors (`data-[state=active]:...`) keep working.
+ */
+function dataStateFromBaseUi(state: { active?: boolean; hidden?: boolean }): Record<string, unknown> {
+  const attrs: Record<string, unknown> = {};
+  if (typeof state?.active === 'boolean') {
+    attrs['data-state'] = state.active ? 'active' : 'inactive';
+  } else if (typeof state?.hidden === 'boolean') {
+    attrs['data-state'] = state.hidden ? 'inactive' : 'active';
+  }
+  return attrs;
+}
+
+/**
+ * Render prop factory. When no user-supplied render is provided, render the
+ * given element tag with injected `data-state`. When the user supplies a
+ * render (JSX element or function), compose it with `data-state` so router
+ * links / anchors keep working as Tabs triggers.
+ */
+function renderTabWithActiveState(Element: 'button' | 'div', userRender?: TabsRenderProp): TabsRenderFn {
+  return ((props: Record<string, unknown>, state: { active?: boolean; hidden?: boolean }) => {
+    const mergedProps = { ...props, ...dataStateFromBaseUi(state) };
+    if (userRender == null) {
+      return React.createElement(Element as string, mergedProps);
+    }
+    if (React.isValidElement(userRender)) {
+      return React.cloneElement(userRender as React.ReactElement, mergedProps);
+    }
+    if (typeof userRender === 'function') {
+      return (userRender as TabsRenderFn)(mergedProps, state);
+    }
+    return React.createElement(Element as string, mergedProps);
+  }) as TabsRenderFn;
+}
 
 const tabsVariants = cva('flex flex-col', {
   variants: {
@@ -29,14 +93,26 @@ const tabsVariants = cva('flex flex-col', {
   },
 });
 
-type TabsProps = React.ComponentProps<typeof TabsPrimitive.Root> & VariantProps<typeof tabsVariants> & SharedProps;
+type TabsProps = Omit<React.ComponentProps<typeof TabsPrimitive.Root>, 'onValueChange'> &
+  VariantProps<typeof tabsVariants> &
+  SharedProps & {
+    onValueChange?: (value: string) => void;
+  };
 
-function Tabs({ className, size, variant, testId, ...props }: TabsProps) {
+function Tabs({ className, size, variant, testId, onValueChange, ...props }: TabsProps) {
+  const handleValueChange = React.useCallback(
+    (nextValue: unknown) => {
+      onValueChange?.(nextValue as string);
+    },
+    [onValueChange]
+  );
+
   return (
     <TabsPrimitive.Root
       className={cn(tabsVariants({ size, variant }), className)}
       data-slot="tabs"
       data-testid={testId}
+      onValueChange={onValueChange ? handleValueChange : undefined}
       {...props}
     />
   );
@@ -46,8 +122,7 @@ const tabsListVariants = cva('inline-flex h-10 items-center justify-center text-
   variants: {
     variant: {
       default: 'w-fit gap-1 rounded-lg bg-muted p-1',
-      underline:
-        '!border-border relative w-full justify-start rounded-t-xl border-b bg-background px-4 py-0 text-current',
+      underline: '!border-border relative w-full justify-start rounded-t-xl border-b bg-background py-0 text-current',
     },
     layout: {
       auto: '',
@@ -112,67 +187,114 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current || document.createElement('div'));
 
-    const [activeValue, setActiveValue] = React.useState<string | undefined>(undefined);
-    const lastKnownActiveValue = React.useRef<string | undefined>(undefined);
+    const [bounds, setBounds] = React.useState<HighlightBounds | null>(null);
+    const [orientation, setOrientation] = React.useState<'horizontal' | 'vertical'>('horizontal');
 
-    const getActiveValue = React.useCallback(() => {
-      if (!localRef.current) {
+    const syncHighlight = React.useCallback(() => {
+      const list = localRef.current;
+      if (!list) {
         return;
       }
-      const activeTab = localRef.current.querySelector<HTMLElement>('[data-state="active"]');
+      const activeTab = list.querySelector<HTMLElement>('[data-slot="tabs-trigger"][data-state="active"]');
+      const nextOrientation =
+        (list.getAttribute('data-orientation') as 'horizontal' | 'vertical' | null) ?? 'horizontal';
+      setOrientation((prev) => (prev === nextOrientation ? prev : nextOrientation));
+
       if (!activeTab) {
+        setBounds((prev) => (prev === null ? prev : null));
         return;
       }
-      const newValue = activeTab.getAttribute('data-value') ?? undefined;
-      if (newValue) {
-        lastKnownActiveValue.current = newValue;
-        setActiveValue(newValue);
-      }
+
+      const nextBounds: HighlightBounds = {
+        top: activeTab.offsetTop,
+        left: activeTab.offsetLeft,
+        width: activeTab.offsetWidth,
+        height: activeTab.offsetHeight,
+      };
+      setBounds((prev) => (boundsEqual(prev, nextBounds) ? prev : nextBounds));
     }, []);
 
-    React.useEffect(() => {
-      // Initial sync
-      getActiveValue();
+    React.useLayoutEffect(() => {
+      const list = localRef.current;
+      if (!list) {
+        return;
+      }
 
-      const observer = new MutationObserver(() => {
-        // Use requestAnimationFrame to ensure DOM is stable
-        requestAnimationFrame(getActiveValue);
+      // Initial sync (before first paint).
+      syncHighlight();
+
+      let rafId = 0;
+      const scheduleSync = () => {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(syncHighlight);
+      };
+
+      const mutationObserver = new MutationObserver(scheduleSync);
+      mutationObserver.observe(list, {
+        attributes: true,
+        attributeFilter: ['data-state', 'data-orientation', 'data-value'],
+        childList: true,
+        subtree: true,
       });
 
-      if (localRef.current) {
-        observer.observe(localRef.current, {
-          attributes: true,
-          childList: true,
-          subtree: true,
-        });
+      const resizeObserver = new ResizeObserver(scheduleSync);
+      resizeObserver.observe(list);
+      for (const tab of list.querySelectorAll<HTMLElement>('[data-slot="tabs-trigger"]')) {
+        resizeObserver.observe(tab);
       }
 
       return () => {
-        observer.disconnect();
+        cancelAnimationFrame(rafId);
+        mutationObserver.disconnect();
+        resizeObserver.disconnect();
       };
-    }, [getActiveValue]);
+    }, [syncHighlight]);
+
+    const isHorizontal = orientation !== 'vertical';
+    // Lock the perpendicular axis: when the active tab moves to a different
+    // row (horizontal) or column (vertical), the highlight should snap on that
+    // axis instead of animating in 2D, which looks amateur.
+    const axisLockedTransition: Transition = React.useMemo(() => {
+      const snap = { duration: 0 } as const;
+      return isHorizontal ? { ...transition, top: snap, height: snap } : { ...transition, left: snap, width: snap };
+    }, [transition, isHorizontal]);
+
+    const showHighlight = bounds !== null;
 
     return (
-      <MotionHighlight
-        className={cn(tabsListActiveVariants({ variant }), activeClassName)}
-        controlledItems
-        transition={transition}
-        value={activeValue || lastKnownActiveValue.current}
+      <TabsPrimitive.List
+        className={cn(
+          'relative',
+          tabsListVariants({ variant, layout, gap }),
+          layout === 'equal' && columns && `grid-cols-${columns}`,
+          className
+        )}
+        data-slot="tabs-list"
+        data-testid={testId}
+        ref={localRef}
+        {...props}
       >
-        <TabsPrimitive.List
-          className={cn(
-            tabsListVariants({ variant, layout, gap }),
-            layout === 'equal' && columns && `grid-cols-${columns}`,
-            className
-          )}
-          data-slot="tabs-list"
-          data-testid={testId}
-          ref={localRef}
-          {...props}
-        >
-          {children}
-        </TabsPrimitive.List>
-      </MotionHighlight>
+        <AnimatePresence initial={false}>
+          {showHighlight ? (
+            <motion.div
+              animate={{
+                top: bounds.top,
+                left: bounds.left,
+                width: bounds.width,
+                height: bounds.height,
+                opacity: 1,
+              }}
+              aria-hidden
+              className={cn('pointer-events-none absolute z-0', tabsListActiveVariants({ variant }), activeClassName)}
+              data-slot="tabs-list-highlight"
+              exit={{ opacity: 0, transition: { duration: 0.15 } }}
+              initial={false}
+              transition={axisLockedTransition}
+            />
+          ) : null}
+        </AnimatePresence>
+        {children}
+      </TabsPrimitive.List>
     );
   }
 );
@@ -194,27 +316,42 @@ const tabsTriggerVariants = cva(
   }
 );
 
-type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.Trigger> &
+type TabsTriggerProps = Omit<React.ComponentProps<typeof TabsPrimitive.Tab>, 'render'> &
   SharedProps & {
     variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
+    /**
+     * Base UI render prop. Pass a JSX element (e.g. a router `<Link />`) or a
+     * function to swap the rendered element while keeping Tab keyboard and
+     * active-state behavior. Defaults to a native `<button>`.
+     */
+    render?: TabsRenderProp;
   };
 
-function TabsTrigger({ className, value, variant, testId, disabled, ...props }: TabsTriggerProps) {
+function TabsTrigger({ className, value, variant, testId, disabled, render, ...props }: TabsTriggerProps) {
+  // If the consumer's render is a non-button intrinsic (e.g. `<a href>` for
+  // link-style tabs), tell Base UI to polyfill button semantics instead of
+  // asserting a native button. Function-form renders and component children
+  // are assumed to render a <button>; consumers can pass nativeButton={false}
+  // explicitly otherwise.
+  const nativeButton =
+    React.isValidElement(render) && typeof render.type === 'string' && render.type !== 'button' ? false : undefined;
+
   return (
-    <MotionHighlightItem className={cn('size-full', disabled && 'pointer-events-none')} value={value}>
-      <TabsPrimitive.Trigger
-        className={cn(tabsTriggerVariants({ variant }), className)}
-        data-slot="tabs-trigger"
-        data-testid={testId}
-        disabled={disabled}
-        value={value}
-        {...props}
-      />
-    </MotionHighlightItem>
+    <TabsPrimitive.Tab
+      className={cn(tabsTriggerVariants({ variant }), className)}
+      data-slot="tabs-trigger"
+      data-testid={testId}
+      data-value={value}
+      disabled={disabled}
+      nativeButton={nativeButton}
+      render={renderTabWithActiveState('button', render)}
+      value={value}
+      {...props}
+    />
   );
 }
 
-type TabsContentProps = React.ComponentProps<typeof TabsPrimitive.Content> &
+type TabsContentProps = React.ComponentProps<typeof TabsPrimitive.Panel> &
   HTMLMotionProps<'div'> &
   SharedProps & {
     transition?: Transition;
@@ -230,22 +367,35 @@ function TabsContent({
   testId,
   ...props
 }: TabsContentProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const reducedMotionConfig = React.useContext(MotionConfigContext).reducedMotion;
+  const shouldReduceMotion = reducedMotionConfig === 'always' || prefersReducedMotion;
+
   return (
-    <TabsPrimitive.Content asChild {...props}>
-      <motion.div
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        className={cn('flex-1 space-y-6 outline-none', className)}
-        data-slot="tabs-content"
-        data-testid={testId}
-        exit={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-        initial={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-        layout
-        transition={transition}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    </TabsPrimitive.Content>
+    <TabsPrimitive.Panel
+      render={
+        <motion.div
+          className={cn('flex-1 space-y-6 outline-none', className)}
+          data-slot="tabs-content"
+          data-testid={testId}
+          {...(shouldReduceMotion
+            ? {
+                initial: false,
+                layout: false,
+              }
+            : {
+                animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+                exit: { opacity: 0, y: 10, filter: 'blur(4px)' },
+                initial: { opacity: 0, y: -10, filter: 'blur(4px)' },
+                layout: true,
+                transition,
+              })}
+        >
+          {children}
+        </motion.div>
+      }
+      {...props}
+    />
   );
 }
 

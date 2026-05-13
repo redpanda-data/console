@@ -31,11 +31,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { ChevronDown, Info, X } from 'lucide-react';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
+import type React from 'react';
 import { useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
 import { ACLFilterResume } from './acl-filter-resume';
+import {
+  getOperationLabel,
+  getPatternTypeLabel,
+  getPermissionTypeLabel,
+  getResourceTypeLabel,
+} from '../../shadowlink-helpers';
 import type { FormValues } from '../model';
+
+// Render labels via children to bypass Base UI's `<Select.Value>` auto-
+// resolution, which falls back to the raw numeric enum until the popup is
+// first opened.
+const renderResourceTypeLabel = (value: unknown): React.ReactNode =>
+  value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value) as ACLResource);
+const renderPatternTypeLabel = (value: unknown): React.ReactNode =>
+  value === undefined || value === null || value === '' ? null : getPatternTypeLabel(Number(value) as ACLPattern);
+const renderOperationLabel = (value: unknown): React.ReactNode =>
+  value === undefined || value === null || value === '' ? null : getOperationLabel(Number(value) as ACLOperation);
+const renderPermissionTypeLabel = (value: unknown): React.ReactNode =>
+  value === undefined || value === null || value === ''
+    ? null
+    : getPermissionTypeLabel(Number(value) as ACLPermissionType);
 
 const allAclsFilter = {
   resourceType: ACLResource.ACL_RESOURCE_ANY,
@@ -203,7 +224,7 @@ export const AclsStep = () => {
                                   >
                                     <FormControl>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select type" />
+                                        <SelectValue placeholder="Select type">{renderResourceTypeLabel}</SelectValue>
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -245,7 +266,7 @@ export const AclsStep = () => {
                                   >
                                     <FormControl>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select pattern" />
+                                        <SelectValue placeholder="Select pattern">{renderPatternTypeLabel}</SelectValue>
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -313,7 +334,7 @@ export const AclsStep = () => {
                                   >
                                     <FormControl>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select operation" />
+                                        <SelectValue placeholder="Select operation">{renderOperationLabel}</SelectValue>
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -361,7 +382,9 @@ export const AclsStep = () => {
                                   >
                                     <FormControl>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Select permission" />
+                                        <SelectValue placeholder="Select permission">
+                                          {renderPermissionTypeLabel}
+                                        </SelectValue>
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>

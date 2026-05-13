@@ -53,7 +53,7 @@ export const FormSchema = z
     provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible', 'bedrock']).default('openai'),
     apiKeySecret: z.string(),
     model: z.string().min(1, 'Model is required'),
-    baseUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    baseUrl: z.url('Must be a valid URL').optional().or(z.literal('')),
     maxIterations: z
       .number()
       .min(10, 'Max iterations must be at least 10')
@@ -89,7 +89,7 @@ export const FormSchema = z
     if (!hasLlmProvider && (!data.apiKeySecret || data.apiKeySecret.trim() === '')) {
       // No LLM provider selected: API Key is required
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'API Token is required',
         path: ['apiKeySecret'],
       });
@@ -98,7 +98,7 @@ export const FormSchema = z
     if (data.provider === 'openaiCompatible') {
       if (!data.baseUrl || data.baseUrl.trim() === '') {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'Base URL is required for OpenAI-compatible provider',
           path: ['baseUrl'],
         });
@@ -107,14 +107,14 @@ export const FormSchema = z
           new URL(data.baseUrl);
           if (!(data.baseUrl.startsWith('http://') || data.baseUrl.startsWith('https://'))) {
             ctx.addIssue({
-              code: z.ZodIssueCode.custom,
+              code: 'custom',
               message: 'Base URL must start with http:// or https://',
               path: ['baseUrl'],
             });
           }
         } catch {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             message: 'Must be a valid URL',
             path: ['baseUrl'],
           });
@@ -128,7 +128,7 @@ export const FormSchema = z
       (!data.apiKeySecret || data.apiKeySecret.trim() === '')
     ) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'API Token is required when not using an LLM provider',
         path: ['apiKeySecret'],
       });

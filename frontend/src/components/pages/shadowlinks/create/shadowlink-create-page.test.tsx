@@ -136,7 +136,15 @@ const performCreateAction = async (
       await enableTLS(user, scr);
       break;
     case 'addCertificateFilePath': {
-      // First, switch to file path mode
+      // Expand the disclosure that owns this cert type. CA lives under the CA disclosure;
+      // clientCert/clientKey live under the mTLS disclosure.
+      const triggerTestId = action.certType === 'ca' ? 'tls-ca-disclosure-trigger' : 'tls-mtls-disclosure-trigger';
+      const trigger = scr.getByTestId(triggerTestId);
+      if (trigger.getAttribute('data-state') !== 'open') {
+        await user.click(trigger);
+      }
+
+      // The mode picker only renders once a disclosure is open. Switch to file path.
       await waitFor(
         () => {
           expect(scr.getByTestId('mtls-mode-file-path-tab')).toBeInTheDocument();
@@ -169,6 +177,14 @@ const performCreateAction = async (
       break;
     }
     case 'addCertificatePEM': {
+      // Expand the disclosure that owns this cert type, then drop a file directly into
+      // the inline Dropzone. No modal, no save step.
+      const pemTriggerTestId = action.certType === 'ca' ? 'tls-ca-disclosure-trigger' : 'tls-mtls-disclosure-trigger';
+      const pemTrigger = scr.getByTestId(pemTriggerTestId);
+      if (pemTrigger.getAttribute('data-state') !== 'open') {
+        await user.click(pemTrigger);
+      }
+
       await waitFor(
         () => {
           expect(scr.getByTestId(`add-${action.certType}-button`)).toBeInTheDocument();
@@ -176,35 +192,16 @@ const performCreateAction = async (
         { timeout: 200 }
       );
 
-      const addButton = scr.getByTestId(`add-${action.certType}-button`);
-      await user.click(addButton);
-
-      await waitFor(
-        () => {
-          const dropzone = scr.getByTestId('certificate-dropzone');
-          expect(dropzone).toBeVisible();
-        },
-        { timeout: 200 }
-      );
-
-      const file = new File([action.pemContent], `${action.certType}.pem`, { type: 'application/x-pem-file' });
-      const dropzone = scr.getByTestId('certificate-dropzone');
+      const dropzone = scr.getByTestId(`add-${action.certType}-button`);
       const input = dropzone.querySelector('input[type="file"]');
+      const file = new File([action.pemContent], `${action.certType}.pem`, { type: 'application/x-pem-file' });
 
       if (input) {
         await user.upload(input as HTMLInputElement, file);
       }
 
       await waitFor(() => {
-        const saveButton = scr.getByTestId('save-certificate-button');
-        expect(saveButton).not.toBeDisabled();
-      });
-
-      const saveButton = scr.getByTestId('save-certificate-button');
-      await user.click(saveButton);
-
-      await waitFor(() => {
-        expect(scr.queryByTestId(`certificate-dialog-${action.certType}`)).not.toBeInTheDocument();
+        expect(scr.getByTestId(`${action.certType}-status`)).toBeInTheDocument();
       });
       break;
     }

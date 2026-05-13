@@ -594,13 +594,6 @@ func (api *API) routes() *chi.Mux {
 
 				// ACLs
 				r.Get("/acls", api.handleGetACLsOverview())
-				r.Post("/acls", api.handleCreateACL())
-				r.Delete("/acls", api.handleDeleteACLs())
-
-				// Kafka Users/Principals
-				r.Get("/users", api.handleGetUsers())
-				r.Post("/users", api.handleCreateUser())
-				r.Delete("/users/{principalID}", api.handleDeleteUser())
 
 				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
@@ -615,9 +608,6 @@ func (api *API) routes() *chi.Mux {
 				r.Patch("/topics/{topicName}/configuration", api.handleEditTopicConfig())
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())
-
-				// Quotas
-				r.Get("/quotas", api.handleGetQuotas())
 
 				// Consumer Groups
 				r.Get("/consumer-groups", api.handleGetConsumerGroups())

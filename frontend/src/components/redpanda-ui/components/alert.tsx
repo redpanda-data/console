@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
+import { InfoIcon } from 'lucide-react';
 import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
@@ -26,9 +27,7 @@ const alertVariants = cva(
 const Alert = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'> & VariantProps<typeof alertVariants> & SharedProps & { icon?: React.ReactNode }
->(({ className, variant, testId, icon: iconProp, children, ...props }, ref) => {
-	const icon = iconProp === undefined ? undefined : iconProp;
-	return (
+>(({ className, variant, testId, icon = <InfoIcon />, children, ...props }, ref) => (
   <div
     className={cn(alertVariants({ variant }), className)}
     data-slot="alert"
@@ -40,7 +39,7 @@ const Alert = React.forwardRef<
     {icon}
     {children}
   </div>
-)});
+));
 
 Alert.displayName = 'Alert';
 

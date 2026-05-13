@@ -29,7 +29,7 @@ import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
@@ -45,7 +45,7 @@ export const SecretCreatePage = () => {
   const { data: secretList } = useListSecretsQuery();
 
   const form = useForm<SecretCreateFormValues>({
-    resolver: zodResolver(SecretCreateFormSchema),
+    resolver: zodResolver(SecretCreateFormSchema) as Resolver<SecretCreateFormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -144,7 +144,6 @@ export const SecretCreatePage = () => {
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel required>Scopes</FieldLabel>
               <MultiSelect
-                items={SCOPE_OPTIONS}
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >

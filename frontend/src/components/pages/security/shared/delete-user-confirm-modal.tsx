@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -63,16 +64,19 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
         <DialogHeader>
           <DialogTitle>Delete user {userName}</DialogTitle>
         </DialogHeader>
-        <DialogDescription>
-          This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need
-          to be recreated and reassigned to them to be used again. To confirm, type the user name in the box below.
-        </DialogDescription>
-        <Input
-          onChange={(e) => setConfirmText(e.target.value)}
-          placeholder={`Type "${userName}" to confirm`}
-          testId="txt-confirmation-delete"
-          value={confirmText}
-        />
+        <DialogBody>
+          <DialogDescription>
+            This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will
+            need to be recreated and reassigned to them to be used again. To confirm, type the user name in the box
+            below.
+          </DialogDescription>
+          <Input
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={`Type "${userName}" to confirm`}
+            testId="txt-confirmation-delete"
+            value={confirmText}
+          />
+        </DialogBody>
         <DialogFooter>
           <Button onClick={() => handleOpenChange(false)} variant="outline">
             Cancel

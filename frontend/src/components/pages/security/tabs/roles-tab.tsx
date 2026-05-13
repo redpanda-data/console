@@ -108,6 +108,7 @@ const RolesTabOriginal: FC = () => {
                       className="text-inherit no-underline hover:no-underline"
                       data-testid={`role-list-item-${entry.name}`}
                       params={{ roleName: encodeURIComponent(entry.name) }}
+                      search={{} as never}
                       to="/security/roles/$roleName/details"
                     >
                       {entry.name}

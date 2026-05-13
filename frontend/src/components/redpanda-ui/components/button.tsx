@@ -1,10 +1,11 @@
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot as SlotPrimitive } from 'radix-ui';
 import React, { type ElementType } from 'react';
 
 import { useGroup } from './group';
+import { Spinner } from './spinner';
+import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const buttonVariants = cva(
@@ -170,6 +171,11 @@ export type ButtonProps = React.ComponentProps<'button'> &
     as?: ElementType;
     to?: string;
     icon?: React.ReactNode;
+    /**
+     * Renders a centered spinner overlay while keeping the button at its
+     * natural width. Also disables interaction and sets aria-busy.
+     */
+    isLoading?: boolean;
     // Support anchor element props when as="a"
     href?: string;
     target?: string;
@@ -177,8 +183,24 @@ export type ButtonProps = React.ComponentProps<'button'> &
   } & SharedProps;
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, testId, as, to, icon, children, ...props }, ref) => {
-    const Comp = as ?? (asChild ? SlotPrimitive.Slot : 'button');
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      testId,
+      as,
+      to,
+      icon,
+      isLoading = false,
+      disabled,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const Comp = as ?? (asChild ? Slot : 'button');
     const { attached, position } = useGroup();
 
     let positionClasses = 'rounded-md';
@@ -190,6 +212,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       positionClasses = 'rounded-none border-r-0 border-l-0';
     }
 
+    const isDisabled = disabled || isLoading;
+
     // When asChild is used with Slot, we can only pass ONE child element
     // to satisfy React.Children.only(). In asChild mode, users must include
     // icons inside children instead of using the icon prop.
@@ -199,23 +223,43 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       }
 
       // Normal button mode - can have children + icon prop
-      if (icon) {
+      const content = icon ? (
+        <>
+          {children}
+          {icon}
+        </>
+      ) : (
+        children
+      );
+
+      if (isLoading) {
         return (
           <>
-            {children}
-            {icon}
+            <span className="invisible inline-flex items-center justify-center [gap:inherit]">{content}</span>
+            <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </span>
           </>
         );
       }
 
-      return children;
+      return content;
     };
 
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }), positionClasses, icon && 'gap-2', className)}
+        aria-busy={isLoading || undefined}
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          positionClasses,
+          icon && 'gap-2',
+          isLoading && 'relative',
+          className
+        )}
+        data-loading={isLoading || undefined}
         data-slot="button"
         data-testid={testId}
+        disabled={isDisabled}
         ref={ref}
         to={to}
         {...props}

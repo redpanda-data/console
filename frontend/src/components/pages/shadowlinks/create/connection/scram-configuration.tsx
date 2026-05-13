@@ -9,9 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Card, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import {
   Select,
   SelectContent,
@@ -22,16 +24,26 @@ import {
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
+import { ExternalLink, InfoIcon } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
+import { extractSecretId, toSecretReference } from './secret-reference';
 import type { FormValues } from '../model';
 
-// Regex to extract secret ID from ${secrets.SECRET_NAME} format
-const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+const SHADOW_LINK_DOCS_URL =
+  'https://docs.redpanda.com/current/manage/disaster-recovery/shadowing/setup/#replication-service-permissions';
+
+// Base UI's <Select.Value> can't resolve an item's label until the popup
+// mounts, so an enum-backed controlled value renders as the raw string ("1")
+// on first paint. Passing an `items` map closes the gap eagerly.
+const SCRAM_MECHANISM_ITEMS: Record<string, string> = {
+  [String(ScramMechanism.SCRAM_SHA_256)]: 'SCRAM-SHA-256',
+  [String(ScramMechanism.SCRAM_SHA_512)]: 'SCRAM-SHA-512',
+};
 
 /** Custom text for SCRAM password secret */
 const SCRAM_PASSWORD_SECRET_TEXT: SecretSelectorCustomText = {
@@ -54,21 +66,9 @@ export const ScramConfiguration = () => {
       return [];
     }
     return secretsData.secrets
-      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => !!secret?.id)
-      .map((secret) => ({
-        id: secret.id,
-        name: secret.id,
-      }));
+      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => Boolean(secret?.id))
+      .map((secret) => ({ id: secret.id, name: secret.id }));
   }, [secretsData]);
-
-  // Helper to extract secret ID from ${secrets.SECRET_NAME} format
-  const extractSecretId = (password: string | undefined): string => {
-    if (!password) {
-      return '';
-    }
-    const match = password.match(SECRET_REFERENCE_REGEX);
-    return match?.[1] || '';
-  };
 
   const handleScramToggle = (checked: boolean) => {
     setValue('useScram', checked);
@@ -92,21 +92,38 @@ export const ScramConfiguration = () => {
       <CardHeader>
         <CardTitle>Authentication</CardTitle>
       </CardHeader>
-      <FormField
-        control={control}
-        name="useScram"
-        render={() => (
-          <FormItem className="flex flex-row items-center gap-3">
-            <FormLabel>Use SCRAM authentication</FormLabel>
-            <FormControl>
-              <Switch checked={useScram} onCheckedChange={handleScramToggle} testId="scram-toggle" />
-            </FormControl>
-          </FormItem>
-        )}
-      />
+
+      <div className="flex items-center gap-3">
+        <Switch checked={useScram} id="use-sasl-toggle" onCheckedChange={handleScramToggle} testId="scram-toggle" />
+        <Label htmlFor="use-sasl-toggle">Use SASL authentication</Label>
+      </div>
 
       {Boolean(useScram) && (
         <div className="space-y-4" data-testid="scram-credentials-form">
+          <Alert
+            className="border-primary/20 bg-primary/5 text-foreground"
+            data-testid="scram-source-cluster-callout"
+            icon={<InfoIcon className="text-primary" />}
+            variant="info"
+          >
+            <AlertTitle className="font-medium text-foreground">The user must exist on the source cluster.</AlertTitle>
+            <AlertDescription className="!block text-muted-foreground">
+              <p className="leading-relaxed">
+                Provide credentials for a service account on the source cluster (the one being shadowed) with ACLs to
+                manage shadow link replication.{' '}
+                <a
+                  className="inline-flex items-center gap-0.5 whitespace-nowrap text-primary hover:underline"
+                  href={SHADOW_LINK_DOCS_URL}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  View required ACLs
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </p>
+            </AlertDescription>
+          </Alert>
+
           <FormField
             control={control}
             name="scramCredentials.username"
@@ -133,8 +150,7 @@ export const ScramConfiguration = () => {
                       availableSecrets={availableSecrets}
                       customText={SCRAM_PASSWORD_SECRET_TEXT}
                       onChange={(secretId) => {
-                        // Store the complete secret reference structure: ${secrets.<NAME>}
-                        field.onChange(secretId ? `\${secrets.${secretId}}` : '');
+                        field.onChange(secretId ? toSecretReference(secretId) : '');
                       }}
                       placeholder="Select or create password secret"
                       scopes={[Scope.REDPANDA_CLUSTER]}
@@ -155,7 +171,11 @@ export const ScramConfiguration = () => {
             render={({ field }) => (
               <FormItem data-testid="scram-mechanism-field">
                 <FormLabel>SASL mechanism</FormLabel>
-                <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                <Select
+                  items={SCRAM_MECHANISM_ITEMS}
+                  onValueChange={(value) => field.onChange(Number(value))}
+                  value={String(field.value)}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select mechanism" />

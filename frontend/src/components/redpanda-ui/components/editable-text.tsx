@@ -23,7 +23,7 @@ type EditableTextProps = {
   headingLevel?: 1 | 2 | 3 | 4 | 5;
   error?: boolean;
   errorMessage?: string;
-  defaultEditing?: boolean;
+  autoFocus?: boolean;
 };
 
 function EditableText({
@@ -37,9 +37,9 @@ function EditableText({
   headingLevel = 1,
   error,
   errorMessage,
-  defaultEditing,
+  autoFocus,
 }: EditableTextProps) {
-  const [isEditing, setIsEditing] = useState(defaultEditing ?? false);
+  const [isEditing, setIsEditing] = useState(autoFocus ?? false);
   const [draft, setDraft] = useState(value);
   const [textWidth, setTextWidth] = useState<number | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
