@@ -838,8 +838,10 @@ export default function PipelinePage() {
     }
     if (mode === 'view') {
       navigate({ to: '/connect-clusters', search: {} as never });
-    } else {
+    } else if (router.history.canGoBack()) {
       router.history.back();
+    } else {
+      navigate({ to: '/connect-clusters', search: {} as never });
     }
   }, [mode, clearWizardStore, navigate, router]);
 
