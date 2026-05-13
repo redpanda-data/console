@@ -207,7 +207,6 @@
     "lefthook": "^2.0.12",
     "node-fetch": "^3.3.2",
     "react-doctor": "^0.0.29",
-    "rsbuild-plugin-devtools-json": "^1.0.0",
     "tar-stream": "^3.1.7",
     "testcontainers": "^11.14.0",
     "ts-node": "^10.9.2",

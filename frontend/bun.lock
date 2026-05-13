@@ -140,7 +140,6 @@
         "lefthook": "^2.0.12",
         "node-fetch": "^3.3.2",
         "react-doctor": "^0.0.29",
-        "rsbuild-plugin-devtools-json": "^1.0.0",
         "tar-stream": "^3.1.7",
         "testcontainers": "^11.14.0",
         "ts-node": "^10.9.2",
@@ -3272,8 +3271,6 @@
     "roughjs": ["roughjs@4.6.6", "", { "dependencies": { "hachure-fill": "^0.5.2", "path-data-parser": "^0.1.0", "points-on-curve": "^0.2.0", "points-on-path": "^0.2.1" } }, "sha512-ZUz/69+SYpFN/g/lUlo2FXcIjRkSu3nDarreVdGGndHEBJ6cXPdKguS8JGxwj5HA5xIbVKSmLgr5b3AWxtRfvQ=="],
 
     "router": ["router@2.2.0", "", { "dependencies": { "debug": "^4.4.0", "depd": "^2.0.0", "is-promise": "^4.0.0", "parseurl": "^1.3.3", "path-to-regexp": "^8.0.0" } }, "sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ=="],
-
-    "rsbuild-plugin-devtools-json": ["rsbuild-plugin-devtools-json@1.0.0", "", { "peerDependencies": { "@rsbuild/core": "^1.4.0 || ^2.0.0-0" }, "optionalPeers": ["@rsbuild/core"] }, "sha512-xQoXPuZJGlSIXccHSyZX1+mI1jfUoKat10CzW77Jox4k+nLSaqHAOZQHFg2HMQxAAcU4bz/1gMLTp+ORAhbELw=="],
 
     "rslog": ["rslog@1.3.2", "", {}, "sha512-1YyYXBvN0a2b1MSIDLwDTqqgjDzRKxUg/S/+KO6EAgbtZW1B3fdLHAMhEEtvk1patJYMqcRvlp3HQwnxj7AdGQ=="],
 
