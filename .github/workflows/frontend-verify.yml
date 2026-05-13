@@ -4,6 +4,7 @@ on:
   workflow_call:
 env:
   CI: true
+  BUN_CACHE_SALT: 2026-05-13
 jobs:
   lint:
     timeout-minutes: 3
@@ -70,9 +71,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: frontend/node_modules/.cache
-          key: ${{ runner.os }}-rspack-2026-05-13-${{ hashFiles('frontend/bun.lock', 'frontend/package.json', 'frontend/src/**', 'frontend/rsbuild.config.ts') }}
+          key: ${{ runner.os }}-rspack-${{ env.BUN_CACHE_SALT }}-${{ hashFiles('frontend/bun.lock', 'frontend/package.json', 'frontend/src/**', 'frontend/rsbuild.config.ts') }}
           restore-keys: |
-            ${{ runner.os }}-rspack-2026-05-13-
+            ${{ runner.os }}-rspack-${{ env.BUN_CACHE_SALT }}-
       - name: Run build frontend
         run: |
           REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
