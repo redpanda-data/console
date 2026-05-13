@@ -20,7 +20,7 @@ test.describe('User deletion - error paths', () => {
 
     // Seed a real user via happy path so there's a row to attempt deleting.
     await securityPage.createUser(username);
-    await page.getByRole('button', { name: 'Done' }).click();
+    await page.goto('/security/users');
     await expect(page).toHaveURL('/security/users');
 
     // Now intercept DeleteUser so the attempt fails deterministically.
