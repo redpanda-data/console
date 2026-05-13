@@ -29,6 +29,7 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -162,186 +163,188 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
           <DialogTitle>Add ACL</DialogTitle>
           {principal && <DialogDescription>Define a new access control rule for {principal}.</DialogDescription>}
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="space-y-4 py-2">
-            {!principal && (
-              <div className="space-y-2">
-                <Label>Principal</Label>
-                <div className="flex gap-2">
-                  <Select
-                    onValueChange={(v) => {
-                      setPrincipalType(v as 'User' | 'Group');
-                      setPrincipalValue('');
-                    }}
-                    value={principalType}
-                  >
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="User">User</SelectItem>
-                      <SelectItem value="Group">Group</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {principalType === 'User' ? (
-                    <Combobox
-                      className="flex-1"
-                      clearable={false}
-                      onChange={setPrincipalValue}
-                      options={userOptions}
-                      placeholder="Select a user..."
-                      value={principalValue}
-                    />
-                  ) : (
-                    <input
-                      // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
-                      autoFocus
-                      className="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      onChange={(e) => setPrincipalValue(e.target.value)}
-                      placeholder="Enter group name..."
-                      value={principalValue}
-                    />
-                  )}
+
+        <DialogBody>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="space-y-4 py-2">
+              {!principal && (
+                <div className="space-y-2">
+                  <Label>Principal</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      onValueChange={(v) => {
+                        setPrincipalType(v as 'User' | 'Group');
+                        setPrincipalValue('');
+                      }}
+                      value={principalType}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="User">User</SelectItem>
+                        <SelectItem value="Group">Group</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {principalType === 'User' ? (
+                      <Combobox
+                        className="flex-1"
+                        clearable={false}
+                        onChange={setPrincipalValue}
+                        options={userOptions}
+                        placeholder="Select a user..."
+                        value={principalValue}
+                      />
+                    ) : (
+                      <input
+                        // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
+                        autoFocus
+                        className="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        onChange={(e) => setPrincipalValue(e.target.value)}
+                        placeholder="Enter group name..."
+                        value={principalValue}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="space-y-2">
-              <Label>Resource Type</Label>
-              <Controller
-                control={form.control}
-                name="resourceType"
-                render={({ field }) => (
-                  <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RESOURCE_TYPE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={String(opt.value)}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            {showPatternAndName && (
               <div className="space-y-2">
-                <Label>Pattern Type</Label>
+                <Label>Resource Type</Label>
                 <Controller
                   control={form.control}
-                  name="patternType"
+                  name="resourceType"
                   render={({ field }) => (
-                    <div>
-                      <div className="inline-flex h-10 w-full items-center justify-center rounded-md bg-muted p-1">
-                        {[
-                          { value: ACL_ResourcePatternType.LITERAL, label: 'Literal' },
-                          { value: ACL_ResourcePatternType.PREFIXED, label: 'Prefixed' },
-                          { value: ACL_ResourcePatternType.ANY, label: 'Any' },
-                        ].map((opt) => (
-                          <button
-                            className={`inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                              field.value === opt.value
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                            key={opt.value}
-                            onClick={() => field.onChange(opt.value)}
-                            type="button"
-                          >
+                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RESOURCE_TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={String(opt.value)}>
                             {opt.label}
-                          </button>
+                          </SelectItem>
                         ))}
-                      </div>
-                      {PATTERN_TYPE_HELP[field.value] && (
-                        <p className="mt-1 text-muted-foreground text-sm">{PATTERN_TYPE_HELP[field.value]}</p>
-                      )}
-                    </div>
+                      </SelectContent>
+                    </Select>
                   )}
                 />
               </div>
-            )}
 
-            {showResourceName && (
+              {showPatternAndName && (
+                <div className="space-y-2">
+                  <Label>Pattern Type</Label>
+                  <Controller
+                    control={form.control}
+                    name="patternType"
+                    render={({ field }) => (
+                      <div>
+                        <div className="inline-flex h-10 w-full items-center justify-center rounded-md bg-muted p-1">
+                          {[
+                            { value: ACL_ResourcePatternType.LITERAL, label: 'Literal' },
+                            { value: ACL_ResourcePatternType.PREFIXED, label: 'Prefixed' },
+                            { value: ACL_ResourcePatternType.ANY, label: 'Any' },
+                          ].map((opt) => (
+                            <button
+                              className={`inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                                field.value === opt.value
+                                  ? 'bg-background text-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                              key={opt.value}
+                              onClick={() => field.onChange(opt.value)}
+                              type="button"
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                        {PATTERN_TYPE_HELP[field.value] && (
+                          <p className="mt-1 text-muted-foreground text-sm">{PATTERN_TYPE_HELP[field.value]}</p>
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
+              )}
+
+              {showResourceName && (
+                <div className="space-y-2">
+                  <Label>Resource Name</Label>
+                  <Input placeholder="e.g. my-topic" {...form.register('resourceName')} />
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label>Resource Name</Label>
-                <Input placeholder="e.g. my-topic" {...form.register('resourceName')} />
+                <Label>Operation</Label>
+                <Controller
+                  control={form.control}
+                  name="operation"
+                  render={({ field }) => (
+                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPERATION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={String(opt.value)}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label>Operation</Label>
-              <Controller
-                control={form.control}
-                name="operation"
-                render={({ field }) => (
-                  <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OPERATION_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={String(opt.value)}>
-                          {opt.label}
+              <div className="space-y-2">
+                <Label>Permission</Label>
+                <Controller
+                  control={form.control}
+                  name="permissionType"
+                  render={({ field }) => (
+                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={String(ACL_PermissionType.ALLOW)}>
+                          <span className="text-green-600">Allow</span>
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+                        <SelectItem value={String(ACL_PermissionType.DENY)}>
+                          <span className="text-red-600">Deny</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Host</Label>
+                <p className="text-muted-foreground text-sm">
+                  Use <code>*</code> for all hosts, or an exact IP address. CIDR ranges are not supported by the Kafka
+                  API.
+                </p>
+                <Input placeholder="*" {...form.register('host')} />
+              </div>
+
+              {submitError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+              )}
             </div>
-
-            <div className="space-y-2">
-              <Label>Permission</Label>
-              <Controller
-                control={form.control}
-                name="permissionType"
-                render={({ field }) => (
-                  <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={String(ACL_PermissionType.ALLOW)}>
-                        <span className="text-green-600">Allow</span>
-                      </SelectItem>
-                      <SelectItem value={String(ACL_PermissionType.DENY)}>
-                        <span className="text-red-600">Deny</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Host</Label>
-              <p className="text-muted-foreground text-sm">
-                Use <code>*</code> for all hosts, or an exact IP address. CIDR ranges are not supported by the Kafka
-                API.
-              </p>
-              <Input placeholder="*" {...form.register('host')} />
-            </div>
-
-            {submitError && (
-              <Alert variant="destructive">
-                <AlertDescription>{submitError}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          <DialogFooter className="mt-4">
-            <Button onClick={handleClose} type="button" variant="outline">
-              Cancel
-            </Button>
-            <Button disabled={isPending || !(principal || principalValue)} type="submit">
-              Add ACL
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </DialogBody>
+        <DialogFooter className="mt-4">
+          <Button onClick={handleClose} type="button" variant="outline">
+            Cancel
+          </Button>
+          <Button disabled={isPending || !(principal || principalValue)} type="submit">
+            Add ACL
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

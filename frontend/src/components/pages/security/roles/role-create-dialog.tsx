@@ -18,7 +18,14 @@ import { toast } from 'sonner';
 
 import { useCreateRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
 import { Button } from '../../../redpanda-ui/components/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../../redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../../redpanda-ui/components/dialog';
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
@@ -72,18 +79,20 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
         <DialogHeader>
           <DialogTitle>Create role</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-2 py-2">
-          <Label htmlFor="role-name">Role name</Label>
-          <Input
-            autoFocus
-            id="role-name"
-            onChange={(e) => setRoleName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="analytics-writer"
-            value={roleName}
-          />
-          {submitted && alreadyExists && <FieldError>A role with this name already exists.</FieldError>}
-        </div>
+        <DialogBody>
+          <div className="flex flex-col gap-2 py-2">
+            <Label htmlFor="role-name">Role name</Label>
+            <Input
+              autoFocus
+              id="role-name"
+              onChange={(e) => setRoleName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              placeholder="analytics-writer"
+              value={roleName}
+            />
+            {submitted && alreadyExists && <FieldError>A role with this name already exists.</FieldError>}
+          </div>
+        </DialogBody>
         <DialogFooter>
           <Button onClick={handleClose} variant="outline">
             Cancel

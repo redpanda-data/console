@@ -18,7 +18,7 @@ import { generatePassword } from 'utils/password';
 import { CreateUserConfirmationModal, CreateUserModal } from './user-create';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../redpanda-ui/components/dialog';
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '../../../redpanda-ui/components/dialog';
 
 type CreateUserDialogProps = {
   open: boolean;
@@ -95,14 +95,14 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
   };
 
   return (
-    <>
-      <Dialog onOpenChange={handleClose} open={open}>
-        <DialogContent size="md">
-          {step === 'form' && (
-            <DialogHeader>
-              <DialogTitle>Create user</DialogTitle>
-            </DialogHeader>
-          )}
+    <Dialog onOpenChange={handleClose} open={open}>
+      <DialogContent size="md">
+        {step === 'form' && (
+          <DialogHeader>
+            <DialogTitle>Create user</DialogTitle>
+          </DialogHeader>
+        )}
+        <DialogBody>
           {step === 'form' ? (
             <CreateUserModal onCancel={handleClose} onCreateUser={onCreateUser} state={state} />
           ) : (
@@ -114,8 +114,8 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
               username={username}
             />
           )}
-        </DialogContent>
-      </Dialog>
-    </>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 };
