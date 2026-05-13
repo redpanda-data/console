@@ -19,7 +19,6 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import {
   ACLFilterSchema,
-  AuthenticationConfigurationSchema,
   ConsumerOffsetSyncOptionsSchema,
   CreateShadowLinkRequestSchema,
   FilterType,
@@ -27,7 +26,6 @@ import {
   PatternType,
   SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
   SchemaRegistrySyncOptionsSchema,
-  ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
@@ -52,7 +50,7 @@ import {
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { getBasePath } from '../../../../utils/env';
-import { buildTLSSettings } from '../edit/shadowlink-edit-utils';
+import { buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -91,18 +89,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
           tlsSettings,
         })
       : undefined,
-    authenticationConfiguration: values.useScram
-      ? create(AuthenticationConfigurationSchema, {
-          authentication: {
-            case: 'scramConfiguration',
-            value: create(ScramConfigSchema, {
-              username: values.scramCredentials?.username,
-              password: values.scramCredentials?.password,
-              scramMechanism: values.scramCredentials?.mechanism,
-            }),
-          },
-        })
-      : undefined,
+    authenticationConfiguration: buildAuthenticationConfiguration(values),
     metadataMaxAgeMs: values.advanceClientOptions.metadataMaxAgeMs,
     connectionTimeoutMs: values.advanceClientOptions.connectionTimeoutMs,
     retryBackoffMs: values.advanceClientOptions.retryBackoffMs,

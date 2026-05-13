@@ -23,6 +23,7 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
+  PlainConfigSchema,
   SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
   SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
@@ -41,7 +42,7 @@ import {
 } from 'protogen/redpanda/core/common/v1/tls_pb';
 
 import type { FormValues } from '../create/model';
-import { TLS_MODE } from '../create/model';
+import { AUTH_METHOD, TLS_MODE } from '../create/model';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
 /**
@@ -115,6 +116,53 @@ export const buildTLSSettings = (
   };
 };
 
+export const hasAuthChanged = (values: FormValues, originalValues: FormValues): boolean => {
+  if (values.authMethod !== originalValues.authMethod) {
+    return true;
+  }
+  if (values.authMethod === AUTH_METHOD.SCRAM) {
+    return (
+      values.scramCredentials?.username !== originalValues.scramCredentials?.username ||
+      values.scramCredentials?.password !== originalValues.scramCredentials?.password ||
+      values.scramCredentials?.mechanism !== originalValues.scramCredentials?.mechanism
+    );
+  }
+  if (values.authMethod === AUTH_METHOD.PLAIN) {
+    return (
+      values.plainCredentials?.username !== originalValues.plainCredentials?.username ||
+      values.plainCredentials?.password !== originalValues.plainCredentials?.password
+    );
+  }
+  return false;
+};
+
+export const buildAuthenticationConfiguration = (values: FormValues) => {
+  if (values.authMethod === AUTH_METHOD.SCRAM) {
+    return create(AuthenticationConfigurationSchema, {
+      authentication: {
+        case: 'scramConfiguration',
+        value: create(ScramConfigSchema, {
+          username: values.scramCredentials?.username,
+          password: values.scramCredentials?.password,
+          scramMechanism: values.scramCredentials?.mechanism,
+        }),
+      },
+    });
+  }
+  if (values.authMethod === AUTH_METHOD.PLAIN) {
+    return create(AuthenticationConfigurationSchema, {
+      authentication: {
+        case: 'plainConfiguration',
+        value: create(PlainConfigSchema, {
+          username: values.plainCredentials?.username,
+          password: values.plainCredentials?.password,
+        }),
+      },
+    });
+  }
+  return;
+};
+
 /**
  * Get update values for connection category (source/client options)
  * Compares form values with original values and returns schema + field mask paths
@@ -157,13 +205,10 @@ export const getUpdateValuesForConnection = (
       fieldMaskPaths.push('configurations.client_options.tls_settings');
     }
 
-    // Compare authentication
-    const authChanged =
-      values.useScram !== originalValues.useScram ||
-      values.scramCredentials?.username !== originalValues.scramCredentials?.username ||
-      values.scramCredentials?.password !== originalValues.scramCredentials?.password ||
-      values.scramCredentials?.mechanism !== originalValues.scramCredentials?.mechanism;
-    if (authChanged) {
+    // Compare authentication. Only the active branch's credentials count;
+    // the inactive branch may hold scratch values from a tab the user
+    // briefly opened, and those must not trigger a payload update.
+    if (hasAuthChanged(values, originalValues)) {
       fieldMaskPaths.push('configurations.client_options.authentication_configuration');
     }
 
@@ -205,18 +250,7 @@ export const getUpdateValuesForConnection = (
           tlsSettings,
         })
       : undefined,
-    authenticationConfiguration: values.useScram
-      ? create(AuthenticationConfigurationSchema, {
-          authentication: {
-            case: 'scramConfiguration',
-            value: create(ScramConfigSchema, {
-              username: values.scramCredentials?.username,
-              password: values.scramCredentials?.password,
-              scramMechanism: values.scramCredentials?.mechanism,
-            }),
-          },
-        })
-      : undefined,
+    authenticationConfiguration: buildAuthenticationConfiguration(values),
     metadataMaxAgeMs: values.advanceClientOptions.metadataMaxAgeMs,
     connectionTimeoutMs: values.advanceClientOptions.connectionTimeoutMs,
     retryBackoffMs: values.advanceClientOptions.retryBackoffMs,
