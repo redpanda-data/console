@@ -48,16 +48,12 @@ import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
   getGrpcBasePath,
-  markEmbeddedMode,
   type SetConfigArguments,
   setup,
 } from './config';
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
 import { installUISettingsSideEffects } from './state/ui';
-
-// Module-scope so the flag is set before any route evaluates `isEmbedded()`, incl. after HMR.
-markEmbeddedMode();
 
 // Regex for normalizing paths by removing trailing slashes
 const TRAILING_SLASH_REGEX = /\/+$/;
