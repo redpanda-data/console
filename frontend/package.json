@@ -38,7 +38,9 @@
     "path-to-regexp": "1.9.0",
     "@remix-run/node": "^2.17.4",
     "@remix-run/router": "^1.23.2",
-    "yaml": "^2.8.3"
+    "yaml": "^2.8.3",
+    "postcss": "^8.5.14",
+    "undici": "^6.25.0"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1",
@@ -52,7 +54,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@primer/octicons-react": "^17",
     "@redpanda-data/ui": "^4.2.0",
-    "@tailwindcss/postcss": "^4.0.17",
+    "@tailwindcss/postcss": "^4.3.0",
     "@tanstack/react-form": "1.1.2",
     "@tanstack/react-query": "^5.69.0",
     "array-move": "^4",
@@ -90,7 +92,7 @@
     "stacktrace-js": "^2.0.2",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.17",
-    "uuid": "^11.1.0",
+    "uuid": "^11.1.1",
     "yaml": "^2.8.3",
     "zod": "^3.24.2"
   },
@@ -134,6 +136,8 @@
   "resolutions": {
     "react-error-overlay": "6.0.11",
     "immer": "9.0.7",
-    "yaml": "^2.8.3"
+    "yaml": "^2.8.3",
+    "postcss": "^8.5.14",
+    "undici": "^6.25.0"
   }
 }
