@@ -162,7 +162,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
         </div>
       ) : null}
       {!isComponentListLoading && visibleTemplates.length > 0 ? (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           {TEMPLATE_CATEGORY_ORDER.map((category) => {
             const inCategory = grouped.get(category) ?? [];
             if (inCategory.length === 0) {
@@ -171,14 +171,18 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
             return (
               <section
                 aria-labelledby={`gallery-category-${category}`}
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-2.5"
                 data-testid={`template-gallery-category-${category}`}
                 key={category}
               >
-                <Heading className="font-medium text-base" id={`gallery-category-${category}`} level={3}>
+                <Heading
+                  className="font-medium text-muted-foreground text-xs uppercase tracking-wide"
+                  id={`gallery-category-${category}`}
+                  level={3}
+                >
                   {TEMPLATE_CATEGORY_LABELS[category]}
                 </Heading>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
                   {inCategory.map((template) => (
                     <TemplateTile key={template.id} onSelect={onSelect} template={template} />
                   ))}
@@ -193,13 +197,13 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
 };
 
 const GallerySkeleton = () => (
-  <div className="flex flex-col gap-6">
+  <div className="flex flex-col gap-5">
     {[0, 1].map((row) => (
-      <div className="flex flex-col gap-3" key={row}>
-        <Skeleton className="h-5 w-48" />
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-col gap-2.5" key={row}>
+        <Skeleton className="h-4 w-36" />
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((idx) => (
-            <Skeleton className="h-[112px] w-full rounded-lg" key={idx} />
+            <Skeleton className="h-[96px] w-full rounded-lg" key={idx} />
           ))}
         </div>
       </div>

@@ -22,6 +22,7 @@ import { Link as UILink, Text as UIText } from 'components/redpanda-ui/component
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
+import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -79,9 +80,11 @@ const RpConnectPipelinesCreateContent = () => {
   const [tasks, setTasks] = useState(MIN_TASKS);
   const [editorContent, setEditorContent] = useState(exampleContent);
   const [isCreating, setIsCreating] = useState(false);
-  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableTemplateGallery');
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const isEditorPristine = editorContent.trim() === '';
+
+  console.log({ isTemplateGalleryEnabled });
 
   const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
   const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);
@@ -187,29 +190,35 @@ const RpConnectPipelinesCreateContent = () => {
         </FormField>
       </Flex>
 
-      {isTemplateGalleryEnabled && isEditorPristine ? (
-        <button
-          className="group mt-4 flex w-full items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-          data-testid="template-gallery-cta"
-          onClick={() => setIsTemplateDialogOpen(true)}
-          type="button"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div className="flex flex-1 flex-col">
-            <span className="font-semibold text-foreground">Start from a template</span>
-            <span className="text-muted-foreground text-sm">
-              Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
-              directly.
-            </span>
-          </div>
-          <ArrowRight
-            aria-hidden
-            className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-          />
-        </button>
-      ) : null}
+      <AnimatePresence>
+        {isTemplateGalleryEnabled && isEditorPristine ? (
+          <motion.button
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="group mt-4 flex w-full items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            data-testid="template-gallery-cta"
+            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            onClick={() => setIsTemplateDialogOpen(true)}
+            transition={{ duration: 0.3, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            type="button"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="flex flex-1 flex-col">
+              <span className="font-semibold text-foreground">Start from a template</span>
+              <span className="text-muted-foreground text-sm">
+                Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
+                directly.
+              </span>
+            </div>
+            <ArrowRight
+              aria-hidden
+              className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+            />
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
 
       <div className="mt-4">
         <PipelineEditor

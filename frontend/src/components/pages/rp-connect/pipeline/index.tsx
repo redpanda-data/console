@@ -709,8 +709,10 @@ export default function PipelinePage() {
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableTemplateGallery');
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
+
+  console.log({isTemplateGalleryEnabled})
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,

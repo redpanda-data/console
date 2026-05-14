@@ -10,9 +10,6 @@
  */
 
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
-import { Badge } from 'components/redpanda-ui/components/badge';
-import { Card, CardContent } from 'components/redpanda-ui/components/card';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ArrowRight, Clock, Waypoints } from 'lucide-react';
 
@@ -21,12 +18,12 @@ import { ConnectorLogo } from '../onboarding/connector-logo';
 
 const ComponentIcon = ({ name }: { name: string }) => {
   const inner = componentLogoMap[name as ComponentName] ? (
-    <ConnectorLogo className="h-6 w-6" name={name as ComponentName} />
+    <ConnectorLogo className="h-5 w-5" name={name as ComponentName} />
   ) : (
-    <Waypoints className="h-6 w-6 text-muted-foreground" />
+    <Waypoints className="h-5 w-5 text-muted-foreground" />
   );
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-background">{inner}</div>
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background">{inner}</div>
   );
 };
 
@@ -37,39 +34,28 @@ export type TemplateTileProps = {
 };
 
 export const TemplateTile = ({ template, onSelect, className }: TemplateTileProps) => (
-  <Card
+  <button
     className={cn(
-      'group h-full cursor-pointer transition-all hover:border-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary',
+      'group flex h-full w-full flex-col gap-2.5 rounded-lg border bg-card p-3.5 text-left transition-all hover:border-primary/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2',
       className
     )}
     data-testid={`template-tile-${template.id}`}
     onClick={() => onSelect(template)}
-    onKeyDown={(event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        onSelect(template);
-      }
-    }}
-    role="button"
-    size="full"
-    tabIndex={0}
-    variant="outlined"
+    type="button"
   >
-    <CardContent className="flex flex-col gap-3" padding="none">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-1.5">
         <ComponentIcon name={template.source.component} />
-        <ArrowRight aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <ComponentIcon name={template.sink.component} />
-        <Badge className="ml-auto" size="sm" variant="neutral">
-          <Clock aria-hidden className="mr-1 h-3 w-3" />~{template.setupTimeMinutes} min
-        </Badge>
       </div>
-      <div className="flex flex-col gap-1">
-        <Text className="font-semibold text-base leading-tight">{template.name}</Text>
-        <Text className="line-clamp-2 text-muted-foreground text-sm" variant="small">
-          {template.description}
-        </Text>
-      </div>
-    </CardContent>
-  </Card>
+      <span className="flex shrink-0 items-center gap-1 text-muted-foreground text-xs">
+        <Clock aria-hidden className="h-3 w-3" />~{template.setupTimeMinutes} min
+      </span>
+    </div>
+    <div className="flex flex-col gap-0.5">
+      <span className="font-semibold text-foreground text-sm leading-tight">{template.name}</span>
+      <span className="line-clamp-2 text-muted-foreground text-xs leading-snug">{template.description}</span>
+    </div>
+  </button>
 );

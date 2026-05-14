@@ -13,6 +13,7 @@ import { type Edge, type Node, PanOnScrollMode, ReactFlow, ReactFlowProvider, us
 import { Button } from 'components/redpanda-ui/components/button';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { ArrowRight, MinusIcon, PlusIcon, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { PipelineFlowSkeleton, pipelineEdgeTypes, pipelineNodeTypes } from './pipeline-flow-nodes';
@@ -280,29 +281,37 @@ export const PipelineFlowDiagram = ({
             zoomOnScroll={false}
           />
           {hideZoomControls ? null : <ZoomControls />}
-          {showTemplateFab && onBrowseTemplates ? (
-            <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-10">
-              <button
-                aria-label="Start from a template"
-                className="nodrag nopan group pointer-events-auto flex w-full items-center gap-2.5 rounded-lg border border-primary/30 border-dashed bg-primary/5 px-3 py-2.5 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-                data-testid="pipeline-diagram-browse-templates"
-                onClick={onBrowseTemplates}
-                type="button"
+          <AnimatePresence>
+            {showTemplateFab && onBrowseTemplates ? (
+              <motion.div
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                className="pointer-events-none absolute right-4 bottom-4 left-4 z-10"
+                exit={{ opacity: 0, y: 4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                transition={{ duration: 0.3, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="font-medium text-foreground text-sm">Start from a template</span>
-                  <span className="text-muted-foreground text-xs">Skip the YAML — fill a short form</span>
-                </div>
-                <ArrowRight
-                  aria-hidden
-                  className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                />
-              </button>
-            </div>
-          ) : null}
+                <button
+                  aria-label="Start from a template"
+                  className="nodrag nopan group pointer-events-auto flex w-full items-center gap-2.5 rounded-lg border border-primary/30 border-dashed bg-primary/5 px-3 py-2.5 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+                  data-testid="pipeline-diagram-browse-templates"
+                  onClick={onBrowseTemplates}
+                  type="button"
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col leading-tight">
+                    <span className="font-medium text-foreground text-sm">Start from a template</span>
+                    <span className="text-muted-foreground text-xs">Skip the YAML — fill a short form</span>
+                  </div>
+                  <ArrowRight
+                    aria-hidden
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  />
+                </button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </ReactFlowProvider>
       ) : null}
     </div>
