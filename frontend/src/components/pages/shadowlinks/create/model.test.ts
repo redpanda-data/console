@@ -11,14 +11,14 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { FormSchema, initialValues, TLS_MODE } from './model';
+import { AUTH_METHOD, FormSchema, initialValues, TLS_MODE } from './model';
 
 // Helper to create valid base form values
 const createValidFormValues = () => ({
   ...initialValues,
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
-  useScram: false,
+  authMethod: AUTH_METHOD.NONE,
   useTls: true,
 });
 
@@ -234,6 +234,70 @@ describe('Shadow Link Form Validation', () => {
 
       const result = FormSchema.safeParse(values);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Authentication validation', () => {
+    test('passes when authMethod is none and no credentials provided', () => {
+      const result = FormSchema.safeParse({
+        ...createValidFormValues(),
+        authMethod: AUTH_METHOD.NONE,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    test('passes when SCRAM credentials are complete', () => {
+      const result = FormSchema.safeParse({
+        ...createValidFormValues(),
+        authMethod: AUTH_METHOD.SCRAM,
+        scramCredentials: {
+          username: 'admin',
+          password: 'secret',
+          mechanism: initialValues.scramCredentials?.mechanism ?? 1,
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    test('fails when SCRAM is selected but credentials are empty', () => {
+      const result = FormSchema.safeParse({
+        ...createValidFormValues(),
+        authMethod: AUTH_METHOD.SCRAM,
+        scramCredentials: {
+          username: '   ',
+          password: '',
+          mechanism: initialValues.scramCredentials?.mechanism ?? 1,
+        },
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((issue) => issue.message);
+        expect(messages).toContain('Username is required when SCRAM is enabled');
+        expect(messages).toContain('Password is required when SCRAM is enabled');
+      }
+    });
+
+    test('passes when PLAIN credentials are complete', () => {
+      const result = FormSchema.safeParse({
+        ...createValidFormValues(),
+        authMethod: AUTH_METHOD.PLAIN,
+        plainCredentials: { username: 'admin', password: 'secret' },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    test('fails when PLAIN is selected but credentials are empty', () => {
+      const result = FormSchema.safeParse({
+        ...createValidFormValues(),
+        authMethod: AUTH_METHOD.PLAIN,
+        plainCredentials: { username: '   ', password: '' },
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const messages = result.error.issues.map((issue) => issue.message);
+        expect(messages).toContain('Username is required when PLAIN is enabled');
+        expect(messages).toContain('Password is required when PLAIN is enabled');
+      }
     });
   });
 });

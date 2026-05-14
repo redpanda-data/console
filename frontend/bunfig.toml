@@ -1,4 +1,5 @@
 [install]
+minimumReleaseAge = 259200 # 72h supply-chain publish delay
 save = true
 saveTextLockfile = true
 print = "yarn"
