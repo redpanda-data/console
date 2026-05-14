@@ -19,12 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { ArrowLeft } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
+import { InlineCreateSecret } from './inline-create-secret';
 import type { PipelineTemplate } from './pipeline-template-types';
 import { TemplateFormPanel, type TemplateFormPanelHandle, type TemplateFormSubmitPayload } from './template-form-panel';
 import { TemplateGalleryGrid } from './template-gallery-grid';
@@ -115,20 +115,18 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
     resetToGallery();
   };
 
-  // Existing-secrets query used by both the guided form's secret slots and the
-  // inline secret-create step. Mounted once at the dialog level so the slot
-  // dropdown and the create-step share a single cache.
-  const { data: secretsResponse, refetch: refetchSecrets } = useListSecretsQuery({}, { enabled: open });
+  // Existing-secrets query used by the inline create step to reject duplicate
+  // names locally. The create mutation invalidates the listSecrets cache on
+  // success, so the slot dropdown picks up the new entry automatically.
+  const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const existingSecrets = useMemo(
     () => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean),
     [secretsResponse]
   );
 
-  const handleSecretCreated = (secretNames?: string[]) => {
-    refetchSecrets();
-    const created = secretNames?.[0];
-    if (created && view.kind === 'addSecret') {
-      formHandleRef.current?.setSlotValue(view.slotId, created);
+  const handleSecretCreated = (name: string) => {
+    if (view.kind === 'addSecret') {
+      formHandleRef.current?.setSlotValue(view.slotId, name);
     }
     setView({ kind: 'form' });
   };
@@ -191,13 +189,11 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
         {isAddSecretViewActive ? (
           <DialogBody>
-            <QuickAddSecrets
-              cardVariant="ghost"
-              enableNewSecrets
+            <InlineCreateSecret
               existingSecrets={existingSecrets}
-              onSecretsCreated={handleSecretCreated}
-              requiredSecrets={view.kind === 'addSecret' && view.suggestedName ? [view.suggestedName] : []}
+              onCreated={handleSecretCreated}
               scopes={[Scope.REDPANDA_CONNECT]}
+              suggestedName={view.kind === 'addSecret' ? view.suggestedName : undefined}
             />
           </DialogBody>
         ) : null}

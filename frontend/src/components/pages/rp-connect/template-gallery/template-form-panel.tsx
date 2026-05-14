@@ -10,20 +10,23 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { Form, SimpleFormField } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Heading } from 'components/redpanda-ui/components/typography';
+import { Waypoints } from 'lucide-react';
 import { useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
 import { useListComponentsQuery } from 'react-query/api/connect';
 import { z } from 'zod';
 
-import type { PipelineTemplate, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
+import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
 import { SecretSlotField } from './slot-fields/secret-slot';
 import { SelectSlotField } from './slot-fields/select-slot';
 import { StringSlotField } from './slot-fields/string-slot';
 import { TopicSlotField } from './slot-fields/topic-slot';
 import { stitchTemplateYaml } from './template-deploy';
+import { ConnectorLogo } from '../onboarding/connector-logo';
 import { parseSchema } from '../utils/schema';
 
 const SECTION_LABELS: Record<TemplateSlotSection, string> = {
@@ -33,6 +36,32 @@ const SECTION_LABELS: Record<TemplateSlotSection, string> = {
 };
 
 const SECTION_ORDER: TemplateSlotSection[] = ['source', 'sink', 'options'];
+
+const endpointFor = (section: TemplateSlotSection, template: PipelineTemplate): TemplateEndpoint | null => {
+  if (section === 'source') {
+    return template.source;
+  }
+  if (section === 'sink') {
+    return template.sink;
+  }
+  return null;
+};
+
+const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
+  const Logo = componentLogoMap[endpoint.component as ComponentName];
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono font-normal text-foreground text-xs normal-case tracking-normal">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+        {Logo ? (
+          <ConnectorLogo className="h-4 w-4" name={endpoint.component as ComponentName} />
+        ) : (
+          <Waypoints aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </span>
+      {endpoint.component}
+    </span>
+  );
+};
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
@@ -199,6 +228,7 @@ export const TemplateFormPanel = ({
           if (slots.length === 0) {
             return null;
           }
+          const endpoint = endpointFor(section, template);
           return (
             <section
               aria-labelledby={`section-${section}`}
@@ -206,9 +236,12 @@ export const TemplateFormPanel = ({
               data-testid={`template-section-${section}`}
               key={section}
             >
-              <Heading className="font-medium text-sm uppercase tracking-wide" id={`section-${section}`} level={3}>
-                {SECTION_LABELS[section]}
-              </Heading>
+              <div className="flex flex-wrap items-center gap-2">
+                <Heading className="font-medium text-sm uppercase tracking-wide" id={`section-${section}`} level={3}>
+                  {SECTION_LABELS[section]}
+                </Heading>
+                {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
+              </div>
               {slots.map((slot) => {
                 switch (slot.kind) {
                   case 'string':

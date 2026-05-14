@@ -14,13 +14,13 @@
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardVariant } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertTriangle, Check, Key, Loader2, Plus } from 'lucide-react';
+import { Check, Key, Loader2, Plus } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
@@ -275,8 +275,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
+            <Alert variant="warning">
+              <AlertTitle>Required secrets are missing</AlertTitle>
               <AlertDescription>
                 The tool requires secrets to function properly. Create them below before proceeding.
               </AlertDescription>
