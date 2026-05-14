@@ -11,11 +11,13 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
+import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useCallback, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { CreateUserConfirmationModal, CreateUserModal } from './user-create';
+import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '../../../redpanda-ui/components/dialog';
@@ -38,6 +40,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
 
   const navigate = useNavigate();
   const { mutateAsync: createUserMutate } = useCreateUserMutation();
+  const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
   const { data: usersData } = useListUsersQuery();
   const users = usersData?.users?.map((u) => u.name) ?? [];
 
@@ -67,10 +70,22 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
       setIsSubmitting(false);
       return false;
     }
+
+    await Promise.allSettled(
+      selectedRoles.map((r) =>
+        updateMembership(
+          create(UpdateRoleMembershipRequestSchema, {
+            roleName: r,
+            add: [{ principal: username }],
+          })
+        )
+      )
+    );
+
     setIsSubmitting(false);
     setStep('confirmation');
     return true;
-  }, [username, password, mechanism, createUserMutate]);
+  }, [username, password, mechanism, selectedRoles, createUserMutate, updateMembership]);
 
   const onGoToUserDetails = () => {
     handleClose();

@@ -165,7 +165,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
         </DialogHeader>
 
         <DialogBody>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form id="add-acl-form" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-4 py-2">
               {!principal && (
                 <div className="space-y-2">
@@ -190,9 +190,11 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                       <Combobox
                         className="flex-1"
                         clearable={false}
+                        creatable
+                        createLabel="user"
                         onChange={setPrincipalValue}
                         options={userOptions}
-                        placeholder="Select a user..."
+                        placeholder="Select or type a user..."
                         value={principalValue}
                       />
                     ) : (
@@ -217,7 +219,9 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   render={({ field }) => (
                     <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>
+                          {(value) => RESOURCE_TYPE_OPTIONS.find((opt) => String(opt.value) === value)?.label}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {RESOURCE_TYPE_OPTIONS.map((opt) => (
@@ -283,7 +287,9 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   render={({ field }) => (
                     <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>
+                          {(value) => OPERATION_OPTIONS.find((opt) => String(opt.value) === value)?.label}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {OPERATION_OPTIONS.map((opt) => (
@@ -305,7 +311,17 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   render={({ field }) => (
                     <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>
+                          {(value) => {
+                            if (value === String(ACL_PermissionType.ALLOW)) {
+                              return <span className="text-green-600">Allow</span>;
+                            }
+                            if (value === String(ACL_PermissionType.DENY)) {
+                              return <span className="text-red-600">Deny</span>;
+                            }
+                            return null;
+                          }}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={String(ACL_PermissionType.ALLOW)}>
@@ -341,7 +357,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
           <Button onClick={handleClose} type="button" variant="outline">
             Cancel
           </Button>
-          <Button disabled={isPending || !(principal || principalValue)} type="submit">
+          <Button disabled={isPending || !(principal || principalValue)} form="add-acl-form" type="submit">
             Add ACL
           </Button>
         </DialogFooter>
