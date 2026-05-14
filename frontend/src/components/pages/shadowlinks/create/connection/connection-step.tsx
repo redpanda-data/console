@@ -14,8 +14,8 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { useFormContext } from 'react-hook-form';
 
 import { AdvancedClientOptions } from './advanced-client-options';
+import { AuthenticationSection } from './authentication-section';
 import { BootstrapServers } from './bootstrap-servers';
-import { ScramConfiguration } from './scram-configuration';
 import { Card, CardContent, CardHeader } from '../../../../redpanda-ui/components/card';
 import type { FormValues } from '../model';
 
@@ -45,8 +45,8 @@ export const ConnectionStep = () => {
       </Card>
       {/* Source Cluster Connection and TLS */}
       <BootstrapServers />
-      {/* SCRAM Credentials */}
-      <ScramConfiguration />
+      {/* Authentication (None / SCRAM / PLAIN) */}
+      <AuthenticationSection />
       {/* Advanced Settings */}
       <AdvancedClientOptions />
     </div>

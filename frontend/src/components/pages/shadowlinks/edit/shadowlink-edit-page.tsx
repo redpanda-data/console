@@ -34,8 +34,9 @@ const getTabForField = (fieldName: string): string => {
     // Source tab fields
     name: 'source',
     bootstrapServers: 'source',
-    useScram: 'source',
+    authMethod: 'source',
     scramCredentials: 'source',
+    plainCredentials: 'source',
     advanceClientOptions: 'source',
     useTls: 'source',
     mtls: 'source',
