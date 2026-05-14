@@ -61,12 +61,13 @@ export type PipelineTemplate = {
   setupTimeMinutes: number;
   slots: TemplateSlot[];
   /**
-   * Optional hand-curated YAML. When present it is used directly as the starting point
-   * for slot substitution instead of stitching via `getConnectTemplate`. Use for
-   * templates that need opinionated batching / serialization / error-handling defaults
-   * that the raw schema-to-config output does not provide.
+   * Hand-curated YAML for the pipeline. References slot values with `${slot.X}`
+   * placeholders which are substituted at deploy time (secret slots become
+   * `${secrets.NAME}`; other slots are inlined as their raw values). Every
+   * required slot must appear somewhere in this YAML or it has no effect on
+   * the deployed pipeline.
    */
-  baseYaml?: string;
+  baseYaml: string;
   /**
    * Suggested pipeline display name pre-filled in the form.
    */

@@ -71,7 +71,6 @@ describe('stitchTemplateYaml', () => {
     const yaml = stitchTemplateYaml({
       template,
       values: { dsn: 'POSTGRES_DSN_PROD', topic: 'orders', optionalNote: '' },
-      components: [],
     });
 
     expect(yaml).toContain(`dsn: ${secretRef('POSTGRES_DSN_PROD')}`);
@@ -82,7 +81,6 @@ describe('stitchTemplateYaml', () => {
     const yaml = stitchTemplateYaml({
       template,
       values: { dsn: 'X', topic: 'my-topic', optionalNote: 'hello' },
-      components: [],
     });
 
     expect(yaml).toContain('topic: my-topic');
@@ -94,7 +92,6 @@ describe('stitchTemplateYaml', () => {
     const yaml = stitchTemplateYaml({
       template,
       values: { dsn: 'X', topic: 'my-topic' },
-      components: [],
     });
 
     expect(yaml).toContain('note: ');

@@ -67,4 +67,34 @@ describe('PIPELINE_TEMPLATES registry', () => {
     expect(getTemplateById('postgres-cdc-to-redpanda')?.name).toBe('Postgres CDC to Redpanda');
     expect(getTemplateById('does-not-exist')).toBeUndefined();
   });
+
+  test('every template has a non-empty baseYaml', () => {
+    for (const t of PIPELINE_TEMPLATES) {
+      expect(t.baseYaml.trim().length, `${t.id}.baseYaml`).toBeGreaterThan(0);
+    }
+  });
+
+  test('every required slot is referenced by a slot token in its baseYaml', () => {
+    for (const t of PIPELINE_TEMPLATES) {
+      for (const s of t.slots) {
+        if (!s.required) {
+          continue;
+        }
+        const token = ['$', '{slot.', s.id, '}'].join('');
+        expect(t.baseYaml.includes(token), `${t.id} baseYaml is missing required slot reference for "${s.id}"`).toBe(
+          true
+        );
+      }
+    }
+  });
+
+  test('every slot token in baseYaml maps to a declared slot', () => {
+    const tokenPattern = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
+    for (const t of PIPELINE_TEMPLATES) {
+      const slotIds = new Set(t.slots.map((s) => s.id));
+      for (const match of t.baseYaml.matchAll(tokenPattern)) {
+        expect(slotIds.has(match[1]), `${t.id} references undeclared slot "${match[1]}"`).toBe(true);
+      }
+    }
+  });
 });

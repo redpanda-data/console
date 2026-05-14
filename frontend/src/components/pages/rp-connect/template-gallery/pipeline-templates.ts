@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: YAML/Bloblang use ${...} as their own native templating syntax, not JS template strings.
+
 import type { PipelineTemplate } from './pipeline-template-types';
 
 const dsnSlot = (id: string, dbName: string, suggested: string) => ({
@@ -50,13 +52,14 @@ const consumerGroupSlot = {
 };
 
 /**
- * v1 curated catalog (PRD §8). The product team owns this list. Adding a template
- * here makes it appear in the gallery. Each entry references components whose names
- * must exist in the backend ComponentList — `useGalleryTemplates()` filters out any
- * template referencing an unknown component.
+ * v1 curated catalog (PRD §8). The product team owns this list.
+ *
+ * Every template MUST include a `baseYaml` with `${slot.X}` placeholders for
+ * each required slot — the deploy stitcher only substitutes the placeholders
+ * present in this YAML. There is no schema-scaffolding fallback.
  */
 export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
-  // CDC sources to Redpanda
+  // ─────────── CDC sources to Redpanda ───────────
   {
     id: 'postgres-cdc-to-redpanda',
     name: 'Postgres CDC to Redpanda',
@@ -69,17 +72,75 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
     slots: [
       dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN'),
       {
-        id: 'includedTables',
+        id: 'slotName',
         section: 'source',
         kind: 'string',
-        label: 'Included tables',
-        description: 'Comma-separated list of fully-qualified tables (e.g. public.users,public.orders).',
+        label: 'Logical replication slot',
+        description:
+          'Postgres logical replication slot name. Must be unique per replication consumer — create it on your database first.',
+        placeholder: 'redpanda_connect_slot',
+        default: 'redpanda_connect_slot',
+        required: true,
+      },
+      {
+        id: 'includedTable',
+        section: 'source',
+        kind: 'string',
+        label: 'Source table',
+        description: 'Fully-qualified table to capture (e.g. public.users). Add more in the YAML editor afterwards.',
         placeholder: 'public.users',
         required: true,
       },
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  postgres_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    dsn: \${slot.dsn}
+    schema: public                         # change if your tables aren't in 'public'
+    slot_name: \${slot.slotName}
+    tables:
+      - \${slot.includedTable}
+
+    # ── Snapshot of existing rows before streaming changes ──────────────────
+    stream_snapshot: true                  # capture current rows on first run
+    # snapshot_batch_size: 0               # 0 = let the connector pick a safe size
+    # snapshot_memory_safety_factor: 0
+    # max_parallel_snapshot_tables: 0
+
+    # ── Replication tuning ──────────────────────────────────────────────────
+    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # temporary_slot: false                # set true if you don't need durable slots
+    # pg_standby_timeout: 10s
+    # pg_wal_monitor_interval: 3s
+
+    # ── Transaction markers (most users leave these off) ────────────────────
+    # include_transaction_markers: false
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+
+    # ── Optional knobs ──────────────────────────────────────────────────────
+    # key: \${! json("table") }            # partition by source table
+    # partitioner: murmur2_hash
+    # timeout: 10s
+`,
   },
+
   {
     id: 'mysql-cdc-to-redpanda',
     name: 'MySQL CDC to Redpanda',
@@ -92,17 +153,51 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
     slots: [
       dsnSlot('dsn', 'MySQL', 'MYSQL_DSN'),
       {
-        id: 'includedTables',
+        id: 'includedTable',
         section: 'source',
         kind: 'string',
-        label: 'Included tables',
-        description: 'Comma-separated list of fully-qualified tables (e.g. mydb.users,mydb.orders).',
+        label: 'Source table',
+        description: 'Fully-qualified table to capture (e.g. mydb.users). Add more in the YAML editor afterwards.',
         placeholder: 'mydb.users',
         required: true,
       },
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  mysql_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    dsn: \${slot.dsn}
+    tables:
+      - \${slot.includedTable}
+
+    # ── Snapshot of existing rows before streaming changes ──────────────────
+    stream_snapshot: true                  # capture current rows on first run
+    # snapshot_max_batch_size: 0           # 0 = let the connector pick a safe size
+
+    # ── Binlog tuning ───────────────────────────────────────────────────────
+    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # heartbeat_interval: 5s
+    # flavor: mysql                        # use 'mariadb' for MariaDB clusters
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'mongodb-cdc-to-redpanda',
     name: 'MongoDB CDC to Redpanda',
@@ -132,7 +227,38 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       },
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  mongodb_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    url: \${slot.url}
+    database: \${slot.database}
+    collection: \${slot.collection}
+
+    # ── Change-stream behavior ──────────────────────────────────────────────
+    stream_snapshot: true                  # backfill existing documents first
+    # full_document: updateLookup          # uncomment to include the post-image
+    # checkpoint_limit: 1024
+    # batch_size: 0                        # 0 = driver default
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'dynamodb-cdc-to-redpanda',
     name: 'DynamoDB CDC to Redpanda',
@@ -162,7 +288,40 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY'),
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  aws_dynamodb_stream:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    table: \${slot.tableName}
+    region: \${slot.region}
+    credentials:
+      id: \${slot.awsAccessKey}
+      secret: \${slot.awsSecretKey}
+
+    # ── Stream tuning ───────────────────────────────────────────────────────
+    # batching:
+    #   count: 100
+    #   period: 1s
+    # checkpoint_limit: 1024
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'sqlserver-cdc-to-redpanda',
     name: 'SQL Server CDC to Redpanda',
@@ -175,17 +334,49 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
     slots: [
       dsnSlot('dsn', 'SQL Server', 'SQLSERVER_DSN'),
       {
-        id: 'includedTables',
+        id: 'includedTable',
         section: 'source',
         kind: 'string',
-        label: 'Included tables',
-        description: 'Comma-separated list of schema-qualified tables.',
+        label: 'Source table',
+        description: 'Schema-qualified table to capture (e.g. dbo.users). Add more in the YAML editor afterwards.',
         placeholder: 'dbo.users',
         required: true,
       },
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  sql_server_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    dsn: \${slot.dsn}
+    tables:
+      - \${slot.includedTable}
+
+    # ── Snapshot of existing rows before streaming changes ──────────────────
+    stream_snapshot: true                  # capture current rows on first run
+
+    # ── Polling tuning ──────────────────────────────────────────────────────
+    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # poll_interval: 1s
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'oracle-cdc-to-redpanda',
     name: 'Oracle CDC to Redpanda',
@@ -198,19 +389,51 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
     slots: [
       dsnSlot('dsn', 'Oracle', 'ORACLE_DSN'),
       {
-        id: 'includedTables',
+        id: 'includedTable',
         section: 'source',
         kind: 'string',
-        label: 'Included tables',
-        description: 'Comma-separated list of schema-qualified tables.',
+        label: 'Source table',
+        description: 'Schema-qualified table to capture (e.g. HR.EMPLOYEES). Add more in the YAML editor afterwards.',
         placeholder: 'HR.EMPLOYEES',
         required: true,
       },
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  oracle_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    dsn: \${slot.dsn}
+    tables:
+      - \${slot.includedTable}
+
+    # ── Snapshot of existing rows before streaming changes ──────────────────
+    stream_snapshot: true                  # capture current rows on first run
+
+    # ── LogMiner tuning ─────────────────────────────────────────────────────
+    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # log_mining_batch_size: 0             # 0 = let the connector decide
+    # poll_interval: 1s
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
 
-  // Ingest sources to Redpanda
+  // ─────────── Ingest sources to Redpanda ───────────
   {
     id: 's3-to-redpanda',
     name: 'S3 to Redpanda',
@@ -247,7 +470,44 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY'),
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  aws_s3:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    bucket: \${slot.bucket}
+    prefix: \${slot.prefix}
+    region: \${slot.region}
+    credentials:
+      id: \${slot.awsAccessKey}
+      secret: \${slot.awsSecretKey}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    delete_objects: false                  # set true to remove objects after reading
+    # force_path_style_urls: false         # set true for S3-compatible stores (MinIO etc.)
+    # codec: all-bytes                     # legacy alias; prefer 'scanner' below
+
+    # ── Object scanner — interpret each object's contents ───────────────────
+    scanner:
+      lines: {}                            # one message per line; swap for csv / json / tar etc.
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'http-to-redpanda',
     name: 'HTTP endpoint to Redpanda',
@@ -277,7 +537,44 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       },
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  http_server:
+    # ── Server binding (filled in from the form) ────────────────────────────
+    address: \${slot.address}
+    path: \${slot.path}
+
+    # ── Allowed methods ─────────────────────────────────────────────────────
+    allowed_verbs:
+      - POST
+      # - PUT
+
+    # ── Tuning ──────────────────────────────────────────────────────────────
+    timeout: 5s                            # per-request timeout
+    rate_limit: ""                         # set to a rate_limit resource name to throttle
+    # sync_response:
+    #   status: "200"
+    #   headers:
+    #     Content-Type: application/json
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'sqs-to-redpanda',
     name: 'AWS SQS to Redpanda',
@@ -308,7 +605,40 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY'),
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  aws_sqs:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    url: \${slot.queueUrl}
+    region: \${slot.region}
+    credentials:
+      id: \${slot.awsAccessKey}
+      secret: \${slot.awsSecretKey}
+
+    # ── Polling tuning ──────────────────────────────────────────────────────
+    max_number_of_messages: 10             # max batch per receive (1-10)
+    wait_time_seconds: 20                  # long-poll wait (0 = short poll)
+    # message_timeout: 30s                 # visibility timeout for in-flight messages
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    delete_message: true                   # delete only on successful ack
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'pubsub-to-redpanda',
     name: 'GCP Pub/Sub to Redpanda',
@@ -336,9 +666,42 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON'),
       targetTopicSlot,
     ],
+    baseYaml: `input:
+  gcp_pubsub:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    project: \${slot.project}
+    subscription: \${slot.subscription}
+    credentials_json: \${slot.credentialsJson}
+
+    # ── Streaming tuning ────────────────────────────────────────────────────
+    sync: false                            # false = streaming pull (recommended)
+    max_outstanding_messages: 1000         # in-flight cap per subscription
+    max_outstanding_bytes: 1000000000      # 1 GiB outstanding-byte cap
+    # endpoint: ""                         # for emulator or regional endpoints
+    # create_subscription:
+    #   enabled: false
+    #   topic: ""
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
 
-  // Redpanda to analytics & lakehouse
+  // ─────────── Redpanda to analytics & lakehouse ───────────
   {
     id: 'redpanda-to-snowflake',
     name: 'Redpanda to Snowflake',
@@ -389,7 +752,44 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
         required: true,
       },
     ],
+    baseYaml: `input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics:
+      - \${slot.sourceTopic}
+    consumer_group: \${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+    # commit_period: 5s                    # how often to commit offsets
+
+output:
+  snowflake_streaming:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    account: \${slot.account}
+    user: \${slot.user}
+    private_key: \${slot.privateKey}
+    database: \${slot.database}
+    schema: \${slot.schema}
+    table: \${slot.table}
+
+    # ── Throughput defaults — Snowpipe Streaming likes larger batches ───────
+    batching:
+      count: 1000
+      period: 5s
+    # max_in_flight: 4                     # parallel insert channels
+    # init_statement: ""                   # optional setup SQL run once
+
+    # ── Schema handling ─────────────────────────────────────────────────────
+    # schema_evolution:
+    #   enabled: true                      # auto-add columns from incoming records
+    # mapping: ""                          # bloblang to reshape records before insert
+`,
   },
+
   {
     id: 'redpanda-to-bigquery',
     name: 'Redpanda to BigQuery',
@@ -425,7 +825,44 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       },
       dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON'),
     ],
+    baseYaml: `input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics:
+      - \${slot.sourceTopic}
+    consumer_group: \${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  gcp_bigquery:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    project: \${slot.project}
+    dataset: \${slot.dataset}
+    table: \${slot.table}
+    credentials_json: \${slot.credentialsJson}
+
+    # ── Format & schema ─────────────────────────────────────────────────────
+    format: NEWLINE_DELIMITED_JSON         # NEWLINE_DELIMITED_JSON | CSV | AVRO | PARQUET
+    # write_disposition: WRITE_APPEND      # WRITE_APPEND | WRITE_TRUNCATE | WRITE_EMPTY
+    # create_disposition: CREATE_IF_NEEDED # auto-create the table if missing
+    # auto_detect: false                   # schema auto-detect on load
+    # csv:
+    #   header: ""
+    #   field_delimiter: ","
+
+    # ── Throughput defaults — BigQuery loads do best with medium batches ────
+    batching:
+      count: 500
+      period: 5s
+    # max_in_flight: 4
+`,
   },
+
   {
     id: 'redpanda-to-iceberg',
     name: 'Redpanda to Iceberg',
@@ -469,7 +906,41 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
         required: true,
       },
     ],
+    baseYaml: `input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics:
+      - \${slot.sourceTopic}
+    consumer_group: \${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  iceberg:
+    # ── Catalog (filled in from the form) ───────────────────────────────────
+    catalog_uri: \${slot.catalogUri}
+    warehouse: \${slot.warehouse}
+    namespace: \${slot.namespace}
+    table: \${slot.tableName}
+
+    # ── Write tuning — Iceberg is happiest with sizable batches ─────────────
+    batching:
+      count: 1000
+      period: 10s
+    # write_mode: append                   # append | overwrite
+    # partition_spec: ""                   # e.g. 'days(event_time)'
+
+    # ── Schema handling ─────────────────────────────────────────────────────
+    # schema_evolution:
+    #   enabled: true                      # auto-add columns from incoming records
+    # mapping: ""                          # bloblang to reshape records before write
+`,
   },
+
   {
     id: 'redpanda-to-postgres',
     name: 'Redpanda to Postgres',
@@ -491,9 +962,38 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
         required: true,
       },
     ],
+    baseYaml: `input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics:
+      - \${slot.sourceTopic}
+    consumer_group: \${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  sql_raw:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    driver: postgres
+    dsn: \${slot.dsn}
+
+    # ── Insert query — adjust columns & mapping for your schema ─────────────
+    query: INSERT INTO \${slot.tableName} (payload) VALUES ($1)
+    args_mapping: root = [content().string()]
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 200
+      period: 1s
+    # max_in_flight: 1                     # >1 risks out-of-order writes on conflicts
+`,
   },
 
-  // Migration & replication
+  // ─────────── Migration & replication ───────────
   {
     id: 'kafka-to-redpanda-migration',
     name: 'Kafka to Redpanda migration',
@@ -509,23 +1009,65 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
         section: 'source',
         kind: 'string',
         label: 'Source Kafka brokers',
-        description: 'Comma-separated list of bootstrap brokers.',
+        description: 'Comma-separated bootstrap broker list.',
         placeholder: 'broker1.example.com:9092,broker2.example.com:9092',
         required: true,
       },
       {
-        id: 'sourceTopics',
+        id: 'sourceTopicsRegex',
         section: 'source',
         kind: 'string',
         label: 'Source topic regex',
         description: 'Topics matching this regex will be migrated.',
         placeholder: '.*',
+        default: '.*',
         required: true,
       },
       dsnSlot('sourceUser', 'Source SASL user', 'SOURCE_KAFKA_USER'),
       dsnSlot('sourcePassword', 'Source SASL password', 'SOURCE_KAFKA_PASSWORD'),
     ],
+    baseYaml: `input:
+  redpanda_migrator:
+    # ── Source cluster (filled in from the form) ────────────────────────────
+    seed_brokers:
+      - \${slot.sourceBrokers}
+    topics:
+      - \${slot.sourceTopicsRegex}
+    regexp_topics: true
+    consumer_group: redpanda-migrator
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${slot.sourceUser}
+        password: \${slot.sourcePassword}
+    tls:
+      enabled: true                        # set false only for unencrypted source clusters
+
+    # ── Migration tuning ────────────────────────────────────────────────────
+    start_from_oldest: true                # replicate the full topic history
+    # replication_factor_override: true    # apply destination cluster's RF on create
+    # replication_factor: -1               # -1 = preserve source RF
+    auto_replay_nacks: true
+
+output:
+  redpanda:
+    # ── Destination cluster ─────────────────────────────────────────────────
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topic: \${! @kafka_topic }             # preserve source topic name
+    key: \${! @kafka_key }                 # preserve source partition key
+
+    # ── Throughput defaults — large batches help replication catch up ───────
+    batching:
+      count: 1000
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+`,
   },
+
   {
     id: 'redpanda-to-redpanda-mirrored',
     name: 'Redpanda to Redpanda mirrored',
@@ -543,7 +1085,7 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
         section: 'sink',
         kind: 'string',
         label: 'Destination Redpanda brokers',
-        description: 'Comma-separated list of bootstrap brokers for the destination cluster.',
+        description: 'Comma-separated bootstrap broker list for the destination cluster.',
         placeholder: 'broker1.example.com:9092',
         required: true,
       },
@@ -557,6 +1099,42 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
       dsnSlot('destUser', 'Destination SASL user', 'DEST_KAFKA_USER'),
       dsnSlot('destPassword', 'Destination SASL password', 'DEST_KAFKA_PASSWORD'),
     ],
+    baseYaml: `input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - \${REDPANDA_BROKERS}
+    topics:
+      - \${slot.sourceTopic}
+    consumer_group: \${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # mirror the full topic history
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda_migrator:
+    # ── Destination cluster (filled in from the form) ───────────────────────
+    seed_brokers:
+      - \${slot.destBrokers}
+    topic: \${slot.destTopic}
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: \${slot.destUser}
+        password: \${slot.destPassword}
+    tls:
+      enabled: true                        # set false only for unencrypted destinations
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    # key: \${! @kafka_key }               # preserve source key for partitioning
+`,
   },
 ];
 

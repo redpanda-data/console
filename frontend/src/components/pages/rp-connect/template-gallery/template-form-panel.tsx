@@ -17,7 +17,6 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { Waypoints } from 'lucide-react';
 import { useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
-import { useListComponentsQuery } from 'react-query/api/connect';
 import { z } from 'zod';
 
 import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
@@ -27,7 +26,6 @@ import { StringSlotField } from './slot-fields/string-slot';
 import { TopicSlotField } from './slot-fields/topic-slot';
 import { stitchTemplateYaml } from './template-deploy';
 import { ConnectorLogo } from '../onboarding/connector-logo';
-import { parseSchema } from '../utils/schema';
 
 const SECTION_LABELS: Record<TemplateSlotSection, string> = {
   source: 'Source',
@@ -155,12 +153,6 @@ export const TemplateFormPanel = ({
   onRequestCreateSecret,
   ref,
 }: TemplateFormPanelProps) => {
-  const { data: componentListResponse } = useListComponentsQuery();
-  const components = useMemo(
-    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-    [componentListResponse]
-  );
-
   const schema = useMemo(() => buildSchema(template), [template]);
   const defaultValues = useMemo(() => defaultValuesFor(template), [template]);
 
@@ -172,7 +164,7 @@ export const TemplateFormPanel = ({
 
   const stitchCurrentYaml = (values: FormValues): string => {
     const { [PIPELINE_NAME_FIELD]: _ignored, ...slotValues } = values;
-    return stitchTemplateYaml({ template, values: slotValues as Record<string, string>, components });
+    return stitchTemplateYaml({ template, values: slotValues as Record<string, string> });
   };
 
   const handleRef = useRef<TemplateFormPanelHandle>({
