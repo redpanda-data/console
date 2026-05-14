@@ -266,7 +266,7 @@ const setConfig = ({
     serviceAccountClient,
     roleBindingClient,
     shadowLinkClient,
-    featureFlags, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: featureFlags ?? FEATURE_FLAGS, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
   return config;
