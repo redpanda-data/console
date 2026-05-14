@@ -385,10 +385,13 @@ export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;
 /**
  * @description use in non-functional components if you must
  * @param featureFlag feature flag key to track
- * @returns feature flag value, false if no feature flag with that key exists, false if the feature flags are not loaded.
+ * @returns The runtime value if the host (e.g. Cloud UI) provided one, otherwise
+ *   the default declared in `FEATURE_FLAGS` (`components/constants.ts`). This lets
+ *   `constants.ts` act as the source of truth for defaults — useful in standalone
+ *   dev where `config.featureFlags` is never populated.
  */
 export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
-  return config.featureFlags?.[featureFlag] ?? false;
+  return config.featureFlags?.[featureFlag] ?? FEATURE_FLAGS[featureFlag] ?? false;
 }
 
 export function isServerless() {
