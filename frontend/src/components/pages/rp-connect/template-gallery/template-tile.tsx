@@ -36,7 +36,7 @@ export type TemplateTileProps = {
 export const TemplateTile = ({ template, onSelect, className }: TemplateTileProps) => (
   <button
     className={cn(
-      'group flex h-full w-full flex-col gap-2.5 rounded-lg border bg-card p-3.5 text-left transition-all hover:border-primary/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2',
+      'group flex h-full w-full cursor-pointer flex-col gap-2.5 rounded-lg border border-border bg-card p-3.5 text-left ring-0 ring-primary/30 transition-colors duration-150 hover:border-primary/60 hover:bg-primary/5 hover:ring-1 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2',
       className
     )}
     data-testid={`template-tile-${template.id}`}
