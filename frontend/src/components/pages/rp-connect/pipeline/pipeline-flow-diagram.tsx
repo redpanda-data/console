@@ -292,7 +292,7 @@ export const PipelineFlowDiagram = ({
               >
                 <button
                   aria-label="Start from a template"
-                  className="nodrag nopan group pointer-events-auto flex w-full items-center gap-2.5 rounded-lg border border-primary/30 border-dashed bg-primary/5 px-3 py-2.5 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+                  className="nodrag nopan group pointer-events-auto flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-primary/30 border-dashed bg-primary/5 px-3 py-2.5 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
                   data-testid="pipeline-diagram-browse-templates"
                   onClick={onBrowseTemplates}
                   type="button"

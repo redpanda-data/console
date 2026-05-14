@@ -194,7 +194,7 @@ const RpConnectPipelinesCreateContent = () => {
         {isTemplateGalleryEnabled && isEditorPristine ? (
           <motion.button
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="group mt-4 flex w-full items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            className="group mt-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
             data-testid="template-gallery-cta"
             exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
             initial={{ opacity: 0, y: 12, scale: 0.96 }}
