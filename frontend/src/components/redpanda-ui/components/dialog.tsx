@@ -1,9 +1,10 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
+import { animate } from 'motion/react';
 import React from 'react';
 
-import { Button } from './button';
+import { Button } from '../components/button';
 import { usePortalContainer } from '../lib/use-portal-container';
 import {
   asChildTrigger,
@@ -73,7 +74,8 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
 }
 
 const dialogContentVariants = cva(
-  'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl border bg-background fill-mode-forwards shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in',
+  // Auto-height changes go through useAnimatedAutoHeight; this transition only smooths fixed-size variant swaps.
+  'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl border bg-background fill-mode-forwards shadow-lg transition-[max-height,min-height] duration-200 ease-out data-[state=closed]:animate-out data-[state=open]:animate-in motion-reduce:transition-none',
   {
     variants: {
       size: {
@@ -88,13 +90,83 @@ const dialogContentVariants = cva(
         centered: 'text-center',
         destructive: 'border-destructive/50',
       },
+      // `auto` grows with content; the fixed sizes lock height so multi-view dialogs don't reflow between steps.
+      height: {
+        auto: 'max-h-[85vh]',
+        sm: 'h-[min(85vh,400px)]',
+        md: 'h-[min(85vh,560px)]',
+        lg: 'h-[min(85vh,720px)]',
+        xl: 'h-[min(85vh,880px)]',
+      },
     },
     defaultVariants: {
       size: 'md',
       variant: 'standard',
+      height: 'auto',
     },
   }
 );
+
+// Animates the popup between natural heights when content changes in `auto` mode.
+// Uses a state-backed ref so the effect re-runs when Base UI's portal mounts the popup.
+function useAnimatedAutoHeight(enabled: boolean) {
+  const [popup, setPopup] = React.useState<HTMLDivElement | null>(null);
+
+  React.useLayoutEffect(() => {
+    if (!(enabled && popup)) {
+      return;
+    }
+
+    let lastObserved = popup.offsetHeight;
+    let expectedHeight: number | null = null;
+    let activeAnimation: ReturnType<typeof animate> | null = null;
+
+    const observer = new ResizeObserver(() => {
+      const measured = popup.offsetHeight;
+
+      // Ignore echoes from heights we set ourselves during the animation.
+      if (expectedHeight !== null && Math.abs(measured - expectedHeight) < 1) {
+        return;
+      }
+      if (Math.abs(measured - lastObserved) < 1) {
+        return;
+      }
+
+      const from = lastObserved;
+      const to = measured;
+      lastObserved = to;
+
+      activeAnimation?.stop();
+      // Pin to the old height before the next paint so the animation has a start frame.
+      popup.style.height = `${from}px`;
+      expectedHeight = from;
+
+      activeAnimation = animate(from, to, {
+        duration: 0.25,
+        ease: [0.22, 1, 0.36, 1],
+        onUpdate: (value) => {
+          expectedHeight = value;
+          popup.style.height = `${value}px`;
+        },
+        onComplete: () => {
+          popup.style.height = '';
+          expectedHeight = null;
+          activeAnimation = null;
+        },
+      });
+    });
+
+    observer.observe(popup);
+
+    return () => {
+      activeAnimation?.stop();
+      observer.disconnect();
+      popup.style.height = '';
+    };
+  }, [enabled, popup]);
+
+  return setPopup;
+}
 
 interface DialogContentProps
   extends React.ComponentProps<typeof DialogPrimitive.Popup>,
@@ -111,6 +183,7 @@ function DialogContent({
   showOverlay = true,
   size,
   variant,
+  height,
   testId,
   container,
   onOpenAutoFocus,
@@ -123,13 +196,16 @@ function DialogContent({
     'Use `initialFocus` on Base UI `Dialog.Popup` instead.'
   );
   const portalContainer = usePortalContainer();
+  const isAutoHeight = !height || height === 'auto';
+  const setPopupRef = useAnimatedAutoHeight(isAutoHeight);
   return (
     <DialogPortal container={container ?? portalContainer}>
       {showOverlay ? <DialogOverlay /> : null}
       <DialogPrimitive.Popup
-        className={cn(dialogContentVariants({ size, variant }), className)}
+        className={cn(dialogContentVariants({ size, variant, height }), className)}
         data-slot="dialog-content"
         data-testid={testId}
+        ref={setPopupRef}
         render={renderWithDataState('div')}
         {...props}
       >
@@ -249,8 +325,10 @@ function DialogDescription({
   );
 }
 
-// min-h-0 lets the body shrink below its natural height so overflow-y-auto scrolls.
-const dialogBodyVariants = cva('min-h-0 flex-1 overflow-y-auto p-4', {
+// Padding lives on the inner wrapper so scroll shadows can sit flush against the body edges.
+const dialogBodyContainerVariants = cva('relative min-h-0 flex-1 overflow-y-auto');
+
+const dialogBodyContentVariants = cva('p-4', {
   variants: {
     spacing: {
       none: '',
@@ -264,10 +342,84 @@ const dialogBodyVariants = cva('min-h-0 flex-1 overflow-y-auto p-4', {
   },
 });
 
-interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyVariants> {}
+const SCROLL_EDGE_THRESHOLD = 2;
 
-function DialogBody({ className, spacing, ...props }: DialogBodyProps) {
-  return <div className={cn(dialogBodyVariants({ spacing }), className)} data-slot="dialog-body" {...props} />;
+interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyContentVariants> {
+  /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
+  scrollShadow?: boolean;
+}
+
+function DialogBody({ className, spacing, scrollShadow = true, children, style, ...props }: DialogBodyProps) {
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  const [edges, setEdges] = React.useState({ top: false, bottom: false });
+
+  React.useEffect(() => {
+    if (!scrollShadow) {
+      return;
+    }
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+
+    const update = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      setEdges({
+        top: scrollTop > SCROLL_EDGE_THRESHOLD,
+        bottom: scrollTop + clientHeight < scrollHeight - SCROLL_EDGE_THRESHOLD,
+      });
+    };
+
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    // Observe children too so a collapsing/expanding section re-evaluates the shadows.
+    for (const child of Array.from(el.children)) {
+      if (child instanceof HTMLElement) {
+        ro.observe(child);
+      }
+    }
+
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, [scrollShadow]);
+
+  return (
+    <div
+      className={cn(dialogBodyContainerVariants(), className)}
+      data-slot="dialog-body"
+      ref={ref}
+      style={style}
+      {...props}
+    >
+      {scrollShadow ? (
+        <div
+          aria-hidden
+          className={cn(
+            'pointer-events-none sticky top-0 z-10 h-0 transition-opacity duration-150',
+            edges.top ? 'opacity-100' : 'opacity-0'
+          )}
+        >
+          <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+        </div>
+      ) : null}
+      <div className={cn(dialogBodyContentVariants({ spacing }))}>{children}</div>
+      {scrollShadow ? (
+        <div
+          aria-hidden
+          className={cn(
+            'pointer-events-none sticky bottom-0 z-10 h-0 transition-opacity duration-150',
+            edges.bottom ? 'opacity-100' : 'opacity-0'
+          )}
+        >
+          <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 const dialogFieldVariants = cva('flex flex-col', {

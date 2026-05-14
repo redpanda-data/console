@@ -135,7 +135,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
   return (
     <Dialog onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())} open={open}>
-      <DialogContent size="xl">
+      <DialogContent height="xl" size="xl">
         {view.kind === 'gallery' ? (
           <>
             <DialogHeader>
