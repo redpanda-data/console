@@ -10,6 +10,7 @@ export const FEATURE_FLAGS = {
   enableRemoteMcpInConsole: false,
   enableRpcnTiles: false,
   enableServerlessOnboardingWizard: false,
+  enableTemplateGallery: false,
   enableApiKeyConfigurationAgent: false,
   enableDataplaneObservabilityServerless: false,
   enableDataplaneObservability: false,

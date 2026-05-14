@@ -98,6 +98,7 @@ import { AddTopicStep } from '../onboarding/add-topic-step';
 import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
+import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
 import type { ConnectComponentType } from '../types/schema';
 import type {
   AddTopicFormData,
@@ -595,6 +596,7 @@ function SidebarPanel({
   onAddTopic,
   onAddSasl,
   onOpenCommandMenu,
+  onBrowseTemplates,
 }: {
   mode: string;
   yamlContent: string;
@@ -603,6 +605,7 @@ function SidebarPanel({
   onAddTopic: (section: string, componentName: string) => void;
   onAddSasl: (section: string, componentName: string) => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
+  onBrowseTemplates?: () => void;
 }) {
   return (
     <div className="flex w-[300px] shrink-0 flex-col border-border! border-r">
@@ -614,6 +617,7 @@ function SidebarPanel({
             onAddConnector={mode !== 'view' ? (type) => onAddConnector(type as ConnectComponentType) : undefined}
             onAddSasl={mode !== 'view' ? onAddSasl : undefined}
             onAddTopic={mode !== 'view' ? onAddTopic : undefined}
+            onBrowseTemplates={mode !== 'view' ? onBrowseTemplates : undefined}
           />
         ) : null}
       </div>
@@ -704,6 +708,8 @@ export default function PipelinePage() {
   const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableTemplateGallery');
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
   const form = useForm<PipelineFormValues>({
@@ -876,6 +882,9 @@ export default function PipelinePage() {
           onAddConnector={(type) => setAddConnectorType(type)}
           onAddSasl={handleAddSasl}
           onAddTopic={handleAddTopic}
+          onBrowseTemplates={
+            isTemplateGalleryEnabled && mode === 'create' ? () => setIsTemplateDialogOpen(true) : undefined
+          }
           onOpenCommandMenu={handleCommandMenuOpen}
           yamlContent={yamlContent}
         />
@@ -1035,6 +1044,26 @@ export default function PipelinePage() {
           onCloseAddConnector={() => setAddConnectorType(null)}
           searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
           title={getConnectorDialogTitle(addConnectorType)}
+        />
+      ) : null}
+
+      {isTemplateGalleryEnabled && mode === 'create' ? (
+        <TemplateGalleryDialog
+          onClose={(stashedYaml) => {
+            if (stashedYaml) {
+              handleYamlChange(stashedYaml);
+            }
+            setIsTemplateDialogOpen(false);
+          }}
+          onSubmit={({ pipelineName: suggestedName, yaml }) => {
+            handleYamlChange(yaml);
+            if (!form.getValues('name')) {
+              form.setValue('name', suggestedName, { shouldDirty: true, shouldValidate: true });
+            }
+            setIsTemplateDialogOpen(false);
+            toast.success('Template applied — review the YAML and click Save to deploy.');
+          }}
+          open={isTemplateDialogOpen}
         />
       ) : null}
     </div>

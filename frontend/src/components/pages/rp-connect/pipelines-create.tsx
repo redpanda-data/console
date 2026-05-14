@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'compo
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { AlertCircle, PlusIcon } from 'lucide-react';
+import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
@@ -30,6 +30,7 @@ import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -78,6 +79,9 @@ const RpConnectPipelinesCreateContent = () => {
   const [tasks, setTasks] = useState(MIN_TASKS);
   const [editorContent, setEditorContent] = useState(exampleContent);
   const [isCreating, setIsCreating] = useState(false);
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableTemplateGallery');
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const isEditorPristine = editorContent.trim() === '';
 
   const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
   const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);
@@ -183,6 +187,30 @@ const RpConnectPipelinesCreateContent = () => {
         </FormField>
       </Flex>
 
+      {isTemplateGalleryEnabled && isEditorPristine ? (
+        <button
+          className="group mt-4 flex w-full items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+          data-testid="template-gallery-cta"
+          onClick={() => setIsTemplateDialogOpen(true)}
+          type="button"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="flex flex-1 flex-col">
+            <span className="font-semibold text-foreground">Start from a template</span>
+            <span className="text-muted-foreground text-sm">
+              Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
+              directly.
+            </span>
+          </div>
+          <ArrowRight
+            aria-hidden
+            className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+          />
+        </button>
+      ) : null}
+
       <div className="mt-4">
         <PipelineEditor
           onChange={(x) => {
@@ -202,6 +230,26 @@ const RpConnectPipelinesCreateContent = () => {
           <Button variant="link">Cancel</Button>
         </Link>
       </Flex>
+
+      {isTemplateGalleryEnabled ? (
+        <TemplateGalleryDialog
+          onClose={(stashedYaml) => {
+            if (stashedYaml) {
+              setEditorContent(stashedYaml);
+            }
+            setIsTemplateDialogOpen(false);
+          }}
+          onSubmit={({ pipelineName, yaml }) => {
+            setEditorContent(yaml);
+            if (!fileName) {
+              setFileName(pipelineName);
+            }
+            setIsTemplateDialogOpen(false);
+            toast.success('Template applied — review the YAML and click Create to deploy.');
+          }}
+          open={isTemplateDialogOpen}
+        />
+      ) : null}
     </PageContent>
   );
 };
