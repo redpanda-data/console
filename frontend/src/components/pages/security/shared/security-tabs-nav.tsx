@@ -16,12 +16,14 @@ import { isFeatureFlagEnabled, isServerless } from 'config';
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { Tabs, TabsList, TabsTrigger } from '../../../redpanda-ui/components/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 
 type TabConfig = {
   key: string;
   label: string;
   path: string;
   disabled: boolean;
+  disabledReason?: string;
 };
 
 function buildTabs(
@@ -30,23 +32,37 @@ function buildTabs(
   featureRolesApi: boolean,
   userData: { canManageUsers?: boolean; canListAcls?: boolean; canViewPermissionsList?: boolean } | null | undefined
 ): TabConfig[] {
+  const usersDisabledByApi = !(isAdminApiConfigured && featureCreateUser);
+  const usersDisabledByRbac = userData?.canManageUsers !== undefined && userData?.canManageUsers === false;
+
   const result: TabConfig[] = [
     {
       key: 'users',
       label: 'Users',
       path: '/security/users',
-      disabled:
-        !(isAdminApiConfigured && featureCreateUser) ||
-        (userData?.canManageUsers !== undefined && userData?.canManageUsers === false),
+      disabled: usersDisabledByApi || usersDisabledByRbac,
+      disabledReason: usersDisabledByRbac
+        ? 'You need the MANAGE_REDPANDA_USERS permission to access this tab.'
+        : usersDisabledByApi
+          ? 'User management requires the Redpanda Admin API, which is not available in Kafka mode.'
+          : undefined,
     },
   ];
 
   if (!isServerless()) {
+    const rolesDisabledByFeature = !featureRolesApi;
+    const rolesDisabledByRbac = userData?.canManageUsers === false;
+
     result.push({
       key: 'roles',
       label: 'Roles',
       path: '/security/roles',
-      disabled: !featureRolesApi || userData?.canManageUsers === false,
+      disabled: rolesDisabledByFeature || rolesDisabledByRbac,
+      disabledReason: rolesDisabledByRbac
+        ? 'You need the MANAGE_REDPANDA_USERS permission to access this tab.'
+        : rolesDisabledByFeature
+          ? 'Roles are not supported by your cluster.'
+          : undefined,
     });
   }
 
@@ -56,6 +72,8 @@ function buildTabs(
       label: 'ACLs',
       path: '/security/acls',
       disabled: userData?.canListAcls === false,
+      disabledReason:
+        userData?.canListAcls === false ? 'You need the LIST_ACLS permission to access this tab.' : undefined,
     });
   }
 
@@ -64,6 +82,10 @@ function buildTabs(
     label: 'Permissions',
     path: '/security/permissions-list',
     disabled: userData?.canViewPermissionsList === false,
+    disabledReason:
+      userData?.canViewPermissionsList === false
+        ? 'You need the VIEW_PERMISSIONS_LIST permission to access this tab.'
+        : undefined,
   });
 
   return result;
@@ -103,16 +125,22 @@ export function SecurityTabsNav() {
         <Tabs value={activeTab}>
           <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
             {tabs.map((tab) => (
-              <TabsTrigger
-                className="text-base data-[state=active]:text-foreground"
-                disabled={tab.disabled}
-                key={tab.key}
-                onClick={() => handleTabClick(tab.key)}
-                value={tab.key}
-                variant="underline"
-              >
-                {tab.label}
-              </TabsTrigger>
+              <Tooltip key={tab.key}>
+                <TooltipTrigger asChild disabled={!tab.disabledReason}>
+                  <span>
+                    <TabsTrigger
+                      className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[state=active]:text-foreground"
+                      disabled={tab.disabled}
+                      onClick={() => handleTabClick(tab.key)}
+                      value={tab.key}
+                      variant="underline"
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  </span>
+                </TooltipTrigger>
+                {tab.disabledReason && <TooltipContent>{tab.disabledReason}</TooltipContent>}
+              </Tooltip>
             ))}
           </TabsList>
         </Tabs>
