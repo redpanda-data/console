@@ -37,7 +37,6 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
@@ -121,9 +120,6 @@ import {
 // ---------------------------------------------------------------------------
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
-  if (type === 'resource') {
-    return 'Add a resource';
-  }
   if (type === 'input') {
     return 'Add an input';
   }
@@ -137,9 +133,6 @@ function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null)
 }
 
 function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null): string | undefined {
-  if (type === 'resource') {
-    return 'Search resources...';
-  }
   if (type) {
     return `Search ${type}s...`;
   }
@@ -712,7 +705,7 @@ export default function PipelinePage() {
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
-  console.log({isTemplateGalleryEnabled})
+  console.log({ isTemplateGalleryEnabled });
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
@@ -991,7 +984,7 @@ export default function PipelinePage() {
         }}
         open={userDialog.isOpen}
       >
-        <DialogContent  size="lg">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
             <DialogDescription>

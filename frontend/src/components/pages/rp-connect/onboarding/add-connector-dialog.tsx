@@ -62,7 +62,7 @@ export const AddConnectorDialog = ({
         </DialogHeader>
         <DialogBody>
           <ConnectTiles
-            className="px-0 pt-0"
+            className="px-0 py-0"
             components={components}
             componentTypeFilter={typeFilter}
             gridCols={3}

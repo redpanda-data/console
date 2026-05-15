@@ -389,7 +389,7 @@ function DialogBody({ className, spacing, scrollShadow = true, children, style, 
 
   return (
     <div
-      className={cn(dialogBodyContainerVariants(), className)}
+      className={cn(dialogBodyContainerVariants())}
       data-slot="dialog-body"
       ref={ref}
       style={style}
@@ -406,7 +406,7 @@ function DialogBody({ className, spacing, scrollShadow = true, children, style, 
           <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
         </div>
       ) : null}
-      <div className={cn(dialogBodyContentVariants({ spacing }))}>{children}</div>
+      <div className={cn(dialogBodyContentVariants({ spacing }), className)}>{children}</div>
       {scrollShadow ? (
         <div
           aria-hidden

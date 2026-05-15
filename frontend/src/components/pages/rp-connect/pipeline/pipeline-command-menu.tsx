@@ -421,9 +421,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     () =>
       topicsResponse?.topics
         ? topicsResponse.topics
-            .map((t) => t.name)
-            .filter(Boolean)
-            .filter((name) => !(hideInternal && name.startsWith('__')))
+          .map((t) => t.name)
+          .filter(Boolean)
+          .filter((name) => !(hideInternal && name.startsWith('__')))
         : [],
     [topicsResponse, hideInternal]
   );
@@ -440,9 +440,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     () =>
       usersResponse?.users
         ? usersResponse.users
-            .map((u) => u.name || '')
-            .filter(Boolean)
-            .filter((name) => !(hideInternal && name.startsWith('__')))
+          .map((u) => u.name || '')
+          .filter(Boolean)
+          .filter((name) => !(hideInternal && name.startsWith('__')))
         : [],
     [usersResponse, hideInternal]
   );
@@ -573,13 +573,13 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
             <DialogTitle>Create a topic</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <AddTopicStep  hideTitle ref={topicStepRef} selectionMode="new" />
+            <AddTopicStep hideTitle ref={topicStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
             <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button  disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary" isLoading={isTopicSubmitting}>
+            <Button disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary" isLoading={isTopicSubmitting}>
               Create
             </Button>
           </DialogFooter>
@@ -591,8 +591,8 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
           <DialogHeader>
             <DialogTitle>Create a user</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            <AddUserStep  hideTitle ref={userStepRef} selectionMode="new" />
+          <DialogBody padding="none">
+            <AddUserStep hideTitle ref={userStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
             <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
@@ -614,35 +614,35 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       <>
         {open
           ? createPortal(
-              <div ref={popoverRef} style={anchorStyle}>
-                <Command
-                  className="w-[340px] rounded-md bg-background"
-                  loop
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      e.preventDefault();
-                      onOpenChange(false);
+            <div ref={popoverRef} style={anchorStyle}>
+              <Command
+                className="w-[340px] rounded-md bg-background"
+                loop
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onOpenChange(false);
+                  }
+                  if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const selected = (e.currentTarget as HTMLElement).querySelector(
+                      '[cmdk-item][aria-selected="true"]'
+                    );
+                    if (selected) {
+                      (selected as HTMLElement).click();
                     }
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      const selected = (e.currentTarget as HTMLElement).querySelector(
-                        '[cmdk-item][aria-selected="true"]'
-                      );
-                      if (selected) {
-                        (selected as HTMLElement).click();
-                      }
-                    }
-                  }}
-                  size="sm"
-                  variant="elevated"
-                  vimBindings={false}
-                >
-                  <CommandInput placeholder="Filter..." />
-                  <CommandMenuContent {...contentProps} />
-                </Command>
-              </div>,
-              document.body
-            )
+                  }
+                }}
+                size="sm"
+                variant="elevated"
+                vimBindings={false}
+              >
+                <CommandInput placeholder="Filter..." />
+                <CommandMenuContent {...contentProps} />
+              </Command>
+            </div>,
+            document.body
+          )
           : null}
         {subDialogs}
       </>
