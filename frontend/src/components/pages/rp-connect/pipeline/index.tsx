@@ -127,6 +127,9 @@ function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null)
   if (type === 'input') {
     return 'Add an input';
   }
+  if (type === 'output') {
+    return 'Add an output';
+  }
   if (type) {
     return `Add a ${type}`;
   }
@@ -884,7 +887,7 @@ export default function PipelinePage() {
           onAddSasl={handleAddSasl}
           onAddTopic={handleAddTopic}
           onBrowseTemplates={
-            isTemplateGalleryEnabled && mode === 'create' ? () => setIsTemplateDialogOpen(true) : undefined
+            isTemplateGalleryEnabled && mode !== 'view' ? () => setIsTemplateDialogOpen(true) : undefined
           }
           onOpenCommandMenu={handleCommandMenuOpen}
           yamlContent={yamlContent}
@@ -1045,7 +1048,7 @@ export default function PipelinePage() {
         />
       ) : null}
 
-      {isTemplateGalleryEnabled && mode === 'create' ? (
+      {isTemplateGalleryEnabled && mode !== 'view' ? (
         <TemplateGalleryDialog
           onClose={(stashedYaml) => {
             if (stashedYaml) {

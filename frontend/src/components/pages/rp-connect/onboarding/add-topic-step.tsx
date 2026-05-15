@@ -397,12 +397,12 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
               {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
                 <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
                   <CollapsibleTrigger asChild>
-                    <Button className="w-fit p-0" disabled={isPending} size="sm" variant="ghost">
+                    <Button disabled={isPending} className="p-0!" size="sm" variant="ghost">
                       <ChevronDown className="h-4 w-4" />
                       Show advanced settings
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4 space-y-6">
+                  <CollapsibleContent className="space-y-6">
                     <AdvancedTopicSettings
                       disabled={isPending}
                       form={form}
