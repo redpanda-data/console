@@ -262,7 +262,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
 
   return (
     <>
-      <ListLayout className="min-h-0 gap-3 py-0">
+      <ListLayout className="my-4 min-h-0 gap-3 py-0">
         <ListLayoutFilters
           actions={
             <div className="flex items-center gap-2">

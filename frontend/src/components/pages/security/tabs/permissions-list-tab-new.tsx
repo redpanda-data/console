@@ -480,7 +480,7 @@ export const PermissionsListTabNew: FC = () => {
   return (
     <>
       <SecurityTabsNav />
-      <ListLayout>
+      <ListLayout className="my-4">
         <Text className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp
             short="Unified view of all principal permissions across your cluster."

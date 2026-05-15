@@ -151,7 +151,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
 
   return (
     <>
-      <ListLayout className="min-h-0 gap-3 py-0">
+      <ListLayout className="my-4 min-h-0 gap-3 py-0">
         <ListLayoutFilters
           actions={
             userName ? (

@@ -115,7 +115,7 @@ export const RoleDetailPageNew = () => {
       <AclsCard acls={aclData} isLoading={isAclsLoading} principal={`RedpandaRole:${roleName}`} />
 
       {/* Principals */}
-      <ListLayout className="min-h-0 gap-3 py-0">
+      <ListLayout className="my-4 min-h-0 gap-3 py-0">
         <ListLayoutFilters
           actions={
             <Combobox
