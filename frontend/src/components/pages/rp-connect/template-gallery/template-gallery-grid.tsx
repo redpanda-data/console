@@ -12,6 +12,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -131,19 +132,20 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
             </InputEnd>
           ) : null}
         </Input>
-        <div className="flex flex-wrap gap-1.5">
-          {FILTER_OPTIONS.map((filter) => (
-            <Button
-              data-testid={`template-gallery-filter-${filter}`}
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              size="sm"
-              variant={activeFilter === filter ? 'secondary' : 'secondary-ghost'}
-            >
-              {CATEGORY_FILTER_LABELS[filter]}
-            </Button>
-          ))}
-        </div>
+        <Tabs onValueChange={(value) => setActiveFilter(value as CategoryFilter)} value={activeFilter}>
+          <TabsList className="h-9 w-fit border-b-0 bg-transparent" variant="underline">
+            {FILTER_OPTIONS.map((filter) => (
+              <TabsTrigger
+                data-testid={`template-gallery-filter-${filter}`}
+                key={filter}
+                value={filter}
+                variant="underline"
+              >
+                {CATEGORY_FILTER_LABELS[filter]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {isComponentListLoading ? <GallerySkeleton /> : null}
