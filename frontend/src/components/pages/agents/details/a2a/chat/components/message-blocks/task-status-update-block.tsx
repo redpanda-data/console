@@ -65,6 +65,7 @@ export const TaskStatusUpdateBlock = ({
   const showBadge = validState && taskState !== previousState;
   const hasPreviousState = previousState && previousState !== taskState;
 
+  const isErrorState = validState === 'failed' || validState === 'rejected';
   const hasTokens = (inputTokens && inputTokens > 0) || (outputTokens && outputTokens > 0);
 
   // Metadata component (reused in both cases)
@@ -142,7 +143,7 @@ export const TaskStatusUpdateBlock = ({
   }
 
   return (
-    <Collapsible defaultOpen={false}>
+    <Collapsible defaultOpen={isErrorState}>
       <Artifact className="mb-4">
         <CollapsibleTrigger asChild>
           <ArtifactHeader className="cursor-pointer hover:bg-muted/50">
