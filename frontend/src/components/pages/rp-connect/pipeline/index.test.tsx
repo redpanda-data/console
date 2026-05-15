@@ -80,7 +80,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useRouter: () => ({ history: { back: mockBack } }),
+    useRouter: () => ({ history: { back: mockBack, canGoBack: () => true } }),
     useSearch: () => mockSearch(),
   };
 });

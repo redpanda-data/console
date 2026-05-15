@@ -58,7 +58,42 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   stickyScroll: {
     enabled: false,
   },
+  // EditContext drops textupdate events here, breaking space + suggestions.
+  editContext: false,
 } as const;
+
+// Give each `anyOf` variant a title (its first property name) so monaco-yaml's
+// hover doesn't render `|| || ||` between empty alternatives.
+export function annotateAnyOfTitles(node: unknown): void {
+  if (!node || typeof node !== 'object') {
+    return;
+  }
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      annotateAnyOfTitles(child);
+    }
+    return;
+  }
+  const record = node as Record<string, unknown>;
+  const anyOf = record.anyOf;
+  if (Array.isArray(anyOf)) {
+    for (const variant of anyOf) {
+      if (variant && typeof variant === 'object' && !Array.isArray(variant)) {
+        const v = variant as Record<string, unknown>;
+        if (!v.title && !v.description && !v.markdownDescription) {
+          const properties = v.properties as Record<string, unknown> | undefined;
+          const firstKey = properties ? Object.keys(properties)[0] : undefined;
+          if (firstKey) {
+            v.title = firstKey;
+          }
+        }
+      }
+    }
+  }
+  for (const value of Object.values(record)) {
+    annotateAnyOfTitles(value);
+  }
+}
 
 function buildMonacoYamlOptions(
   schema?: YamlEditorProps['schema'],
@@ -72,10 +107,11 @@ function buildMonacoYamlOptions(
           ...(schema.properties && { properties: schema.properties }),
         }
       : { type: 'object' as const };
+  annotateAnyOfTitles(inlineSchema);
 
   return {
     enableSchemaRequest: false,
-    format: true,
+    format: { enable: true },
     completion: true,
     validate: true,
     schemas: [
