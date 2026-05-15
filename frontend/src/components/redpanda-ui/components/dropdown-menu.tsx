@@ -2,7 +2,7 @@
 
 import { Menu as DropdownMenuPrimitive } from '@base-ui/react/menu';
 import { Check, ChevronRight, Circle } from 'lucide-react';
-import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
+import { motion, type Transition } from 'motion/react';
 import React from 'react';
 
 import { MotionHighlight, MotionHighlightItem } from './motion-highlight';
@@ -179,10 +179,9 @@ function DropdownMenuSubContent({ className, ...props }: DropdownMenuSubContentP
   );
 }
 
-type DropdownMenuContentProps = React.ComponentProps<typeof DropdownMenuPrimitive.Popup> &
-  HTMLMotionProps<'div'> &
+type DropdownMenuContentProps = Omit<React.ComponentProps<typeof DropdownMenuPrimitive.Popup>, 'className' | 'render'> &
+  React.HTMLAttributes<HTMLDivElement> &
   Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
-    transition?: Transition;
     sideOffset?: number;
     align?: 'start' | 'center' | 'end';
     alignOffset?: number;
@@ -204,10 +203,11 @@ function DropdownMenuContent({
   align,
   alignOffset,
   side,
-  transition = { duration: 0.2 },
   container,
+  finalFocus,
   onOpenAutoFocus: _onOpenAutoFocus,
   keepMounted = false,
+  style,
   ...props
 }: DropdownMenuContentProps) {
   const { isOpen, highlightTransition, animateOnHover } = useDropdownMenu();
@@ -221,53 +221,34 @@ function DropdownMenuContent({
       side={side}
       sideOffset={sideOffset}
     >
-      <DropdownMenuPrimitive.Popup data-slot="dropdown-menu-popup" render={renderWithDataState('div')}>
-        <motion.div
-          animate={
-            keepMounted
-              ? undefined
-              : {
-                  opacity: 1,
-                  scale: 1,
-                }
-          }
-          className={cn(
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
-            className
-          )}
-          data-slot="dropdown-menu-content"
-          exit={
-            keepMounted
-              ? undefined
-              : {
-                  opacity: 0,
-                  scale: 0.95,
-                }
-          }
-          initial={
-            keepMounted
-              ? undefined
-              : {
-                  opacity: 0,
-                  scale: 0.95,
-                }
-          }
-          key="dropdown-menu-content"
-          style={{ willChange: 'opacity, transform' }}
-          transition={keepMounted ? undefined : transition}
-          {...props}
-        >
-          <MotionHighlight
-            className="rounded-sm"
-            controlledItems
-            enabled={animateOnHover}
-            hover
-            transition={highlightTransition}
+      <DropdownMenuPrimitive.Popup
+        data-slot="dropdown-menu-popup"
+        finalFocus={finalFocus}
+        render={(popupProps, state) => (
+          <div
+            {...popupProps}
+            {...props}
+            className={cn(
+              popupProps.className,
+              'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in',
+              className
+            )}
+            data-slot="dropdown-menu-content"
+            data-state={state.open ? 'open' : 'closed'}
+            style={{ ...popupProps.style, ...style, willChange: 'opacity, transform' }}
           >
-            {children}
-          </MotionHighlight>
-        </motion.div>
-      </DropdownMenuPrimitive.Popup>
+            <MotionHighlight
+              className="rounded-sm"
+              controlledItems
+              enabled={animateOnHover}
+              hover
+              transition={highlightTransition}
+            >
+              {children}
+            </MotionHighlight>
+          </div>
+        )}
+      />
     </DropdownMenuPrimitive.Positioner>
   );
 
@@ -285,18 +266,14 @@ function DropdownMenuContent({
     );
   }
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <AnimatePresence>
-      {isOpen ? (
-        <DropdownMenuPrimitive.Portal
-          container={container ?? portalContainer}
-          data-slot="dropdown-menu-portal"
-          keepMounted
-        >
-          {popup}
-        </DropdownMenuPrimitive.Portal>
-      ) : null}
-    </AnimatePresence>
+    <DropdownMenuPrimitive.Portal container={container ?? portalContainer} data-slot="dropdown-menu-portal" keepMounted>
+      {popup}
+    </DropdownMenuPrimitive.Portal>
   );
 }
 
