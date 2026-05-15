@@ -239,7 +239,9 @@ vi.mock('../../../../state/app-global', () => ({
   },
 }));
 
-vi.mock('../../../../state/backend-api', () => {
+vi.mock('../../../../state/backend-api', async () => {
+  const { createStore } = await import('zustand/vanilla');
+
   const store = {
     ACLs: { isAuthorizerEnabled: true },
     userData: {
@@ -251,6 +253,13 @@ vi.mock('../../../../state/backend-api', () => {
     enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
     isAdminApiConfigured: false,
   };
+
+  const rolesState = {
+    roleMembers: new Map([['topic reader/qa', [{ name: 'alice', principalType: 'User' }]]]),
+    roles: ['topic reader/qa'],
+    rolesError: null,
+  };
+
   return {
     api: {
       ...store,
@@ -262,10 +271,9 @@ vi.mock('../../../../state/backend-api', () => {
       deleteRole: vi.fn().mockResolvedValue(undefined),
       refreshRoleMembers: refreshRoleMembersMock,
       refreshRoles: refreshRolesMock,
-      roleMembers: new Map([['topic reader/qa', [{ name: 'alice', principalType: 'User' }]]]),
-      roles: ['topic reader/qa'],
-      rolesError: null,
+      ...rolesState,
     },
+    useRolesStore: createStore(() => rolesState),
   };
 });
 
