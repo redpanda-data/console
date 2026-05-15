@@ -568,33 +568,31 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       />
 
       <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
-        <DialogContent showCloseButton={false} size="lg">
-          <DialogCloseButton />
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Create a topic</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <AddTopicStep className="border-1" hideTitle ref={topicStepRef} selectionMode="new" />
+            <AddTopicStep  hideTitle ref={topicStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
             <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button className="min-w-[70px]" disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary">
-              {isTopicSubmitting ? <Spinner /> : 'Create'}
+            <Button  disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary" isLoading={isTopicSubmitting}>
+              Create
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
-        <DialogContent showCloseButton={false} size="lg">
-          <DialogCloseButton />
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Create a user</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <AddUserStep className="border-1" hideTitle ref={userStepRef} selectionMode="new" />
+            <AddUserStep  hideTitle ref={userStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
             <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
@@ -657,8 +655,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   return (
     <>
       <Dialog onOpenChange={handleDialogOpenChange} open={open}>
-        <DialogContent className="overflow-hidden p-0" showCloseButton={false}>
-          <DialogCloseButton size="small" />
+        <DialogContent >
           <DialogHeader className="sr-only">
             <DialogTitle>Command Menu</DialogTitle>
           </DialogHeader>

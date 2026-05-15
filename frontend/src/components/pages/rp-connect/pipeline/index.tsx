@@ -954,8 +954,7 @@ export default function PipelinePage() {
         }}
         open={topicDialog.isOpen}
       >
-        <DialogContent showCloseButton={false} size="lg">
-          <DialogCloseButton />
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
             <DialogDescription>
@@ -989,8 +988,7 @@ export default function PipelinePage() {
         }}
         open={userDialog.isOpen}
       >
-        <DialogContent showCloseButton={false} size="lg">
-          <DialogCloseButton />
+        <DialogContent  size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
             <DialogDescription>
