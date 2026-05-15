@@ -60,7 +60,7 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
@@ -73,7 +73,6 @@ import {
   useGetPipelineQuery,
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
-import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { toast } from 'sonner';
 import {
   useOnboardingUserDataStore,
@@ -523,7 +522,6 @@ function EditorPanel({
   yamlEditorSchema,
   lintHints,
   isLintPending,
-  lintPanelRef,
 }: {
   isServerlessInitializing: boolean;
   slashTipVisible: boolean;
@@ -534,7 +532,6 @@ function EditorPanel({
   yamlEditorSchema: ReturnType<typeof parseYamlEditorSchema>;
   lintHints: Record<string, LintHint>;
   isLintPending: boolean;
-  lintPanelRef: RefObject<ImperativePanelHandle>;
 }) {
   return (
     <ResizablePanelGroup direction="vertical">
@@ -571,7 +568,7 @@ function EditorPanel({
         </div>
       </ResizablePanel>
       <ResizableHandle withHandle />
-      <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
+      <ResizablePanel collapsible defaultSize={30}>
         <div className="h-full overflow-auto p-4">
           <div className="flex items-center gap-2">
             <Heading className="mb-2 text-muted-foreground" level={5}>
@@ -846,8 +843,10 @@ export default function PipelinePage() {
     }
     if (mode === 'view') {
       navigate({ to: '/connect-clusters', search: {} as never });
-    } else {
+    } else if (router.history.canGoBack()) {
       router.history.back();
+    } else {
+      navigate({ to: '/connect-clusters', search: {} as never });
     }
   }, [mode, clearWizardStore, navigate, router]);
 
@@ -898,7 +897,6 @@ export default function PipelinePage() {
               isLintPending={isLintPending}
               isServerlessInitializing={isServerlessInitializing}
               lintHints={lintHints}
-              lintPanelRef={lintPanelRef}
               onDismissSlashTip={() => setSlashTipVisible(false)}
               onEditorMount={setEditorInstance}
               onYamlChange={handleYamlChange}
