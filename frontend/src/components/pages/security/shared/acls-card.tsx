@@ -32,6 +32,7 @@ import {
   OperationTypeNotSet,
 } from './acl-model';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
+import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import {
@@ -249,7 +250,9 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
         <TableCell>
           <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
         </TableCell>
-        <TableCell className="text-muted-foreground">{row.resourceType}</TableCell>
+        <TableCell>
+          <Badge variant="simple">{row.resourceType}</Badge>
+        </TableCell>
         <TableCell className="font-mono">{row.resourceName}</TableCell>
         <TableCell>{row.operation}</TableCell>
         <TableCell className={row.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
@@ -296,7 +299,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
                     onCheckedChange={toggleAll}
                   />
                 </TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Resource Type</TableHead>
                 <TableHead>Resource</TableHead>
                 <TableHead>Operation</TableHead>
                 <TableHead>Permission</TableHead>

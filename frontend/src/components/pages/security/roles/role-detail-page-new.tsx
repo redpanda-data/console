@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { getRouteApi } from '@tanstack/react-router';
+import { useParams } from '@tanstack/react-router';
 import { Trash2, Users2Icon } from 'lucide-react';
 import {
   ListRoleMembersRequestSchema,
@@ -40,10 +40,9 @@ import { Heading } from '../../../redpanda-ui/components/typography';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
-const routeApi = getRouteApi('/security/roles/$roleName/details');
-
 export const RoleDetailPageNew = () => {
-  const { roleName } = routeApi.useParams();
+  const { roleName: rawRoleName } = useParams({ from: '/security/roles/$roleName/details' });
+  const roleName = decodeURIComponent(rawRoleName);
   const [deletingPrincipal, setDeletingPrincipal] = useState<string | null>(null);
 
   useLayoutEffect(() => {

@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import {
   Empty,
   EmptyContent,
@@ -21,7 +22,16 @@ import {
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from 'components/redpanda-ui/components/list-layout';
-import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, ShieldIcon, Trash2Icon } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  KeyRoundIcon,
+  ShieldIcon,
+  Trash2Icon,
+  UserIcon,
+  UsersIcon,
+} from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import {
   ACL_Operation,
@@ -79,7 +89,9 @@ const AclTableRow: FC<{
   editHref?: string;
 }> = ({ resourceType, resourceName, operation, permissionType, host, editHref }) => (
   <TableRow>
-    <TableCell className="text-muted-foreground">{resourceType}</TableCell>
+    <TableCell>
+      <Badge variant="simple">{resourceType}</Badge>
+    </TableCell>
     <TableCell className="font-mono">{resourceName}</TableCell>
     <TableCell>{operation}</TableCell>
     <TableCell className={permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>{permissionType}</TableCell>
@@ -107,10 +119,10 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
   const summaryText = (() => {
     if (group.directAclCount > 0 && group.inheritedAclCount > 0) {
-      return `${pluralizeWithNumber(group.directAclCount, 'direct ACL')}, ${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} inherited from roles`;
+      return `${pluralizeWithNumber(group.directAclCount, 'direct ACL')}, ${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} via roles`;
     }
     if (group.inheritedAclCount > 0) {
-      return `${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} inherited from roles`;
+      return `${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} via roles`;
     }
     if (group.directAclCount > 0) {
       return pluralizeWithNumber(group.directAclCount, 'direct ACL');
@@ -119,6 +131,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
   })();
 
   const hasAcls = group.directAclCount + group.inheritedAclCount > 0;
+  const PrincipalIcon = group.principalType === 'Group' ? UsersIcon : UserIcon;
 
   return (
     <>
@@ -166,147 +179,150 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
         </DialogContent>
       </Dialog>
 
-      <div className="border-b" data-testid={`row-${group.principalName}`}>
-        {/* Principal header row */}
-        <div
-          className="flex cursor-pointer items-center gap-2 px-3 py-3 hover:bg-muted/20"
-          onClick={onToggle}
-          onKeyDown={(e) => e.key === 'Enter' && onToggle()}
-          role="button"
-          tabIndex={0}
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
+      <Collapsible data-testid={`row-${group.principalName}`} onOpenChange={onToggle} open={isExpanded}>
+        <div className="overflow-hidden rounded-lg border">
+          {/* Card header — distinct background makes each principal easy to scan */}
+          <CollapsibleTrigger asChild>
+            <div
+              className="flex cursor-pointer items-center gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/60"
+              role="button"
+              tabIndex={0}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
 
-          <div className="flex flex-1 items-center gap-2 overflow-hidden">
-            <span className="font-medium font-mono text-sm">
-              {group.principalType === 'Group' ? 'Group:' : ''}
-              {group.principalName}
-            </span>
-            {group.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
-            <span className="text-muted-foreground text-sm">{summaryText}</span>
-            {group.denyCount > 0 && <Badge variant="destructive">{group.denyCount} deny</Badge>}
-          </div>
+              <PrincipalIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
 
-          <div
-            className="flex items-center gap-1"
-            data-testid={`actions-${group.principalName}`}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-            role="presentation"
-          >
-            {group.principalType === 'User' && (
-              <Link
-                className="inline-flex items-center justify-center p-1 text-muted-foreground hover:text-foreground"
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="truncate font-mono font-semibold text-sm">{group.principalName}</span>
+                  {group.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
+                  {group.denyCount > 0 && <Badge variant="destructive">{group.denyCount} deny</Badge>}
+                </div>
+                <span className="text-muted-foreground text-xs">{summaryText}</span>
+              </div>
+
+              <div
+                className="flex shrink-0 items-center gap-1"
+                data-testid={`actions-${group.principalName}`}
                 onClick={(e) => e.stopPropagation()}
-                params={{ userName: group.principalName }}
-                to="/security/users/$userName/details"
+                onKeyDown={(e) => e.stopPropagation()}
+                role="presentation"
               >
-                <ExternalLink className="h-4 w-4" />
-              </Link>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button asChild size="icon-sm" variant="ghost">
-                  <button type="button">
-                    <MoreHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
                 {group.principalType === 'User' && (
-                  <>
-                    <DropdownMenuItem
-                      disabled={!canDeleteUser}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete('user-and-acls');
-                      }}
-                      variant="destructive"
-                    >
-                      <Trash2Icon />
-                      Delete (User and ACLs)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={!canDeleteUser}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete('user-only');
-                      }}
-                      variant="destructive"
-                    >
-                      <Trash2Icon />
-                      Delete (User only)
-                    </DropdownMenuItem>
-                  </>
+                  <Link
+                    className="inline-flex items-center justify-center p-1 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                    params={{ userName: group.principalName }}
+                    to="/security/users/$userName/details"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
                 )}
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPendingDelete('acls-only');
-                  }}
-                  variant="destructive"
-                >
-                  <Trash2Icon />
-                  Delete (ACLs only)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
 
-        {/* Expanded content */}
-        {isExpanded && hasAcls && (
-          <div className="border-t bg-background">
-            <Table variant="simple">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Resource</TableHead>
-                  <TableHead>Operation</TableHead>
-                  <TableHead>Permission</TableHead>
-                  <TableHead>Host</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {group.directAcls.map((acl, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
-                  <AclTableRow key={i} {...acl} />
-                ))}
-              </TableBody>
-              {group.roleAclGroups.map((rg) => (
-                <TableBody key={rg.roleName}>
-                  <TableRow>
-                    <TableCell className="bg-muted/40 py-1.5 text-muted-foreground text-xs" colSpan={6}>
-                      <div className="flex items-center gap-1.5">
-                        <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
-                        <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {rg.acls.map((acl, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
-                    <AclTableRow key={i} {...acl} />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button asChild size="icon-sm" variant="ghost">
+                      <button type="button">
+                        <MoreHorizontalIcon className="h-4 w-4" />
+                      </button>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {group.principalType === 'User' && (
+                      <>
+                        <DropdownMenuItem
+                          disabled={!canDeleteUser}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingDelete('user-and-acls');
+                          }}
+                          variant="destructive"
+                        >
+                          <Trash2Icon />
+                          Delete (User and ACLs)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!canDeleteUser}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingDelete('user-only');
+                          }}
+                          variant="destructive"
+                        >
+                          <Trash2Icon />
+                          Delete (User only)
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPendingDelete('acls-only');
+                      }}
+                      variant="destructive"
+                    >
+                      <Trash2Icon />
+                      Delete (ACLs only)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CollapsibleTrigger>
+
+          {/* Expanded ACL table */}
+          <CollapsibleContent>
+            {hasAcls ? (
+              <div className="border-t">
+                <Table variant="simple">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Resource Type</TableHead>
+                      <TableHead>Resource</TableHead>
+                      <TableHead>Operation</TableHead>
+                      <TableHead>Permission</TableHead>
+                      <TableHead>Host</TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.directAcls.map((acl, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
+                      <AclTableRow key={i} {...acl} />
+                    ))}
+                  </TableBody>
+                  {group.roleAclGroups.map((rg) => (
+                    <TableBody key={rg.roleName}>
+                      <TableRow>
+                        <TableCell className="bg-muted/40 py-1.5 text-muted-foreground text-xs" colSpan={6}>
+                          <div className="flex items-center gap-1.5">
+                            <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {rg.acls.map((acl, i) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
+                        <AclTableRow key={i} {...acl} />
+                      ))}
+                    </TableBody>
                   ))}
-                </TableBody>
-              ))}
-            </Table>
-          </div>
-        )}
-
-        {isExpanded && !hasAcls && (
-          <Empty className="rounded-none border-x-0 border-b-0 border-dashed py-6">
-            <EmptyHeader>
-              <EmptyTitle>No ACLs assigned</EmptyTitle>
-            </EmptyHeader>
-          </Empty>
-        )}
-      </div>
+                </Table>
+              </div>
+            ) : (
+              <Empty className="rounded-none border-x-0 border-b-0 border-dashed py-6">
+                <EmptyHeader>
+                  <EmptyTitle>No ACLs assigned</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            )}
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
     </>
   );
 };
@@ -460,7 +476,7 @@ export const PermissionsListTabNew: FC = () => {
       );
     }
     return (
-      <div className="rounded-md border">
+      <div className="flex flex-col gap-3">
         {filteredGroups.map((group) => (
           <PrincipalRow
             canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}

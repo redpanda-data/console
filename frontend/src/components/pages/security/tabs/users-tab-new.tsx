@@ -448,7 +448,9 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
 
 const AclPermissionRow = ({ acl }: { acl: FlatAclEntry }) => (
   <TableRow>
-    <TableCell className="text-muted-foreground">{acl.resourceType}</TableCell>
+    <TableCell>
+      <Badge variant="simple">{acl.resourceType}</Badge>
+    </TableCell>
     <TableCell className="font-mono">{acl.resourceName}</TableCell>
     <TableCell>{acl.operation}</TableCell>
     <TableCell className={acl.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
@@ -480,7 +482,7 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
         <Table size="sm" variant="simple">
           <TableHeader>
             <TableRow>
-              <TableHead>Type</TableHead>
+              <TableHead>Resource Type</TableHead>
               <TableHead>Resource</TableHead>
               <TableHead>Operation</TableHead>
               <TableHead>Permission</TableHead>
