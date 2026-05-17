@@ -36,8 +36,16 @@ const MINIMAL_RULE: Rule = {
   },
 };
 
+test.use({
+  // biome-ignore lint/suspicious/noExplicitAny: fixture typing
+  ...({ featureFlags: { enableNewSecurityPage: false } } as any),
+});
+
 test.describe('ACL creation - Connect RPC error handling', () => {
   test('CreateACL INVALID_ARGUMENT surfaces a field-level error', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__E2E_FEATURE_FLAGS__ = { enableNewSecurityPage: false };
+    });
     await mockConnectError({
       page,
       urlGlob: rpcUrl(ACL_SERVICE, 'CreateACL'),

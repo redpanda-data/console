@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import { SecurityPage } from '../test-variant-console/utils/security-page';
 

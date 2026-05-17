@@ -24,6 +24,11 @@ import {
 } from '../../../src/components/pages/security/shared/acl-model';
 import { AclPage } from '../utils/acl-page';
 
+test.use({
+  // biome-ignore lint/suspicious/noExplicitAny: fixture typing
+  ...({ featureFlags: { enableNewSecurityPage: false } } as any),
+});
+
 const initialRules: Rule[] = [
   {
     id: 0,
