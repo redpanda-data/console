@@ -10,7 +10,6 @@
  * (so that id=2 is already taken). The form groups ACLs by (resourceType, pattern, name),
  * so three separate rule groups = three different (resourceType/name) combinations.
  */
-import { test } from '@playwright/test';
 
 import {
   ModeCustom,
@@ -22,12 +21,10 @@ import {
   ResourceTypeTransactionalId,
   type Rule,
 } from '../../../src/components/pages/security/shared/acl-model';
+import { test } from '../fixtures';
 import { AclPage } from '../utils/acl-page';
 
-test.use({
-  // biome-ignore lint/suspicious/noExplicitAny: fixture typing
-  ...({ featureFlags: { enableNewSecurityPage: false } } as any),
-});
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 const initialRules: Rule[] = [
   {

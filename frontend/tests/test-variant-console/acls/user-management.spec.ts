@@ -1,7 +1,9 @@
 // spec: ACL User Management Tests
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 test.describe('ACL User Management', () => {
   test.beforeEach(async ({ page }) => {

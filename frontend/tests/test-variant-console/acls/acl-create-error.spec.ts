@@ -11,8 +11,6 @@
  * page when the create RPC fails.
  */
 
-import { expect, test } from '@playwright/test';
-
 import {
   ModeCustom,
   OperationTypeAllow,
@@ -21,6 +19,7 @@ import {
   type Rule,
 } from '../../../src/components/pages/security/shared/acl-model';
 import { mockConnectError, mockConnectNetworkFailure, rpcUrl } from '../../shared/connect-mock';
+import { expect, test } from '../fixtures';
 import { AclPage } from '../utils/acl-page';
 
 const ACL_SERVICE = 'redpanda.api.dataplane.v1.ACLService';
@@ -36,16 +35,10 @@ const MINIMAL_RULE: Rule = {
   },
 };
 
-test.use({
-  // biome-ignore lint/suspicious/noExplicitAny: fixture typing
-  ...({ featureFlags: { enableNewSecurityPage: false } } as any),
-});
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 test.describe('ACL creation - Connect RPC error handling', () => {
   test('CreateACL INVALID_ARGUMENT surfaces a field-level error', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.__E2E_FEATURE_FLAGS__ = { enableNewSecurityPage: false };
-    });
     await mockConnectError({
       page,
       urlGlob: rpcUrl(ACL_SERVICE, 'CreateACL'),
