@@ -27,12 +27,11 @@ type TabConfig = {
 };
 
 function buildTabs(
-  isAdminApiConfigured: boolean,
   featureCreateUser: boolean,
   featureRolesApi: boolean,
   userData: { canManageUsers?: boolean; canListAcls?: boolean; canViewPermissionsList?: boolean } | null | undefined
 ): TabConfig[] {
-  const usersDisabledByApi = !(isAdminApiConfigured && featureCreateUser);
+  const usersDisabledByApi = !featureCreateUser;
   const usersDisabledByRbac = userData?.canManageUsers !== undefined && userData?.canManageUsers === false;
 
   const result: TabConfig[] = [
@@ -43,9 +42,7 @@ function buildTabs(
       disabled: usersDisabledByApi || usersDisabledByRbac,
       disabledReason: usersDisabledByRbac
         ? 'You need the MANAGE_REDPANDA_USERS permission to access this tab.'
-        : usersDisabledByApi
-          ? 'User management requires the Redpanda Admin API, which is not available in Kafka mode.'
-          : undefined,
+        : undefined,
     },
   ];
 
@@ -107,9 +104,8 @@ export function SecurityTabsNav() {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
   const redpandaOverview = useApiStoreHook((s) => s.clusterOverview?.redpanda);
-  const isAdminApiConfigured = Boolean(redpandaOverview);
 
-  const tabs = buildTabs(isAdminApiConfigured, featureCreateUser, featureRolesApi, userData);
+  const tabs = buildTabs(featureCreateUser, featureRolesApi, userData);
   const activeTab = deriveActiveTab(location.pathname, tabs);
 
   const handleTabClick = (tabKey: string) => {

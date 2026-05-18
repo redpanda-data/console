@@ -293,29 +293,18 @@ const PermissionsListTabOriginal: FC = () => {
               },
             ]}
             data={usersFiltered}
-            emptyAction={(() => {
-              const { disabled, tooltip } = getCreateUserButtonProps(
-                isAdminApiConfigured,
-                featureCreateUser,
-                userData?.canManageUsers
-              );
-              return (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        disabled={disabled}
-                        onClick={() => appGlobal.historyPush('/security/users/create')}
-                        variant="outline"
-                      >
-                        Create user
-                      </Button>
-                    </TooltipTrigger>
-                    {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            })()}
+            emptyAction={(() => (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => appGlobal.historyPush('/security/users/create')} variant="outline">
+                      Create user
+                    </Button>
+                  </TooltipTrigger>
+                  {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
+                </Tooltip>
+              </TooltipProvider>
+            ))()}
             emptyText="No principals yet"
             pagination
             sorting

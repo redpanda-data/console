@@ -53,7 +53,7 @@ import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/us
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useListRolesQuery } from '../../../../react-query/api/security';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
-import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
+import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
@@ -114,25 +114,6 @@ const mechanismOptions = [
   { label: 'SCRAM-SHA-512', value: 'scram-sha-512' },
 ];
 
-const getCreateUserButtonProps = (
-  isAdminApiConfigured: boolean,
-  featureCreateUser: boolean,
-  canManageUsers: boolean | undefined
-) => {
-  const hasRBAC = canManageUsers !== undefined;
-
-  return {
-    disabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
-    tooltip: [
-      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-      !featureCreateUser && "Your cluster doesn't support this feature.",
-      hasRBAC && canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  };
-};
-
 export const UsersTabNew: FC = () => {
   useLayoutEffect(() => {
     setPageHeader('Security', [
@@ -142,9 +123,6 @@ export const UsersTabNew: FC = () => {
   }, []);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
   const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
-
-  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
-  const userData = useApiStoreHook((s) => s.userData);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
@@ -275,12 +253,6 @@ export const UsersTabNew: FC = () => {
     );
   }
 
-  const { disabled: createDisabled } = getCreateUserButtonProps(
-    isAdminApiConfigured,
-    featureCreateUser,
-    userData?.canManageUsers
-  );
-
   const renderBody = () => {
     if (usersLoading) {
       return [0, 1, 2].map((i) => (
@@ -331,9 +303,7 @@ export const UsersTabNew: FC = () => {
             {!isFiltered && (
               <EmptyContent>
                 <div className="flex items-center gap-3">
-                  <Button disabled={createDisabled} onClick={openCreateDialog}>
-                    Create user
-                  </Button>
+                  <Button onClick={openCreateDialog}>Create user</Button>
                   <Button asChild variant="link">
                     <a
                       href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
@@ -368,7 +338,7 @@ export const UsersTabNew: FC = () => {
           actions={
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button data-testid="create-user-button" disabled={createDisabled} onClick={openCreateDialog}>
+                <Button data-testid="create-user-button" onClick={openCreateDialog}>
                   Create user
                 </Button>
               </TooltipTrigger>

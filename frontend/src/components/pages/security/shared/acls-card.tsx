@@ -21,6 +21,7 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   type AclDetail,
@@ -32,6 +33,8 @@ import {
   OperationTypeNotSet,
 } from './acl-model';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
+import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
@@ -65,14 +68,15 @@ const RESOURCE_TYPE_LABELS: Record<string, string> = {
   schemaRegistry: 'Schema Registry',
 };
 
-const GRANT_ALL_RESOURCES: { type: ACL_ResourceType; label: string; name: string }[] = [
-  { type: ACL_ResourceType.TOPIC, label: 'Topic', name: '*' },
-  { type: ACL_ResourceType.GROUP, label: 'Consumer Group', name: '*' },
-  { type: ACL_ResourceType.CLUSTER, label: 'Cluster', name: 'kafka-cluster' },
-  { type: ACL_ResourceType.TRANSACTIONAL_ID, label: 'Transactional ID', name: '*' },
-  { type: ACL_ResourceType.SUBJECT, label: 'Subject', name: '*' },
-  { type: ACL_ResourceType.REGISTRY, label: 'Schema Registry', name: '*' },
-];
+const GRANT_ALL_RESOURCES: { type: ACL_ResourceType; label: string; name: string; requiresSchemaRegistry: boolean }[] =
+  [
+    { type: ACL_ResourceType.TOPIC, label: 'Topic', name: '*', requiresSchemaRegistry: false },
+    { type: ACL_ResourceType.GROUP, label: 'Consumer Group', name: '*', requiresSchemaRegistry: false },
+    { type: ACL_ResourceType.CLUSTER, label: 'Cluster', name: 'kafka-cluster', requiresSchemaRegistry: false },
+    { type: ACL_ResourceType.TRANSACTIONAL_ID, label: 'Transactional ID', name: '*', requiresSchemaRegistry: false },
+    { type: ACL_ResourceType.SUBJECT, label: 'Subject', name: '*', requiresSchemaRegistry: true },
+    { type: ACL_ResourceType.REGISTRY, label: 'Schema Registry', name: '*', requiresSchemaRegistry: true },
+  ];
 
 type AclRow = {
   id: string;
@@ -100,7 +104,10 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { mutateAsync: deleteAcl, isPending: isDeleting } = useDeleteAclMutation();
   const { mutateAsync: createACL, isPending: isGranting } = useCreateACLMutation();
+  const schemaRegistryACLApi = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
   const list = acls ?? [];
+
+  const grantAllResources = GRANT_ALL_RESOURCES.filter((r) => !r.requiresSchemaRegistry || schemaRegistryACLApi);
 
   let rowCounter = 0;
   const rows: AclRow[] = list.flatMap((detail) =>
@@ -150,7 +157,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
   };
 
   const deleteSelected = async () => {
-    await Promise.all(
+    const results = await Promise.allSettled(
       rows
         .filter((r) => selected.has(r.id))
         .map((r) =>
@@ -169,13 +176,18 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           )
         )
     );
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        toast.error(formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }));
+      }
+    }
     setSelected(new Set());
   };
 
   const confirmGrantAllPermissions = async () => {
     if (!principal) return;
-    await Promise.all(
-      GRANT_ALL_RESOURCES.map((r) =>
+    const results = await Promise.allSettled(
+      grantAllResources.map((r) =>
         createACL(
           create(CreateACLRequestSchema, {
             resourceType: r.type,
@@ -189,6 +201,21 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
         )
       )
     );
+    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    const succeeded = results.length - failed.length;
+    if (failed.length > 0 && succeeded > 0) {
+      for (const f of failed) {
+        toast.warning('Some ACLs were created, but there were errors', {
+          description: formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' }),
+        });
+      }
+    } else if (failed.length > 0) {
+      for (const f of failed) {
+        toast.error(formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' }));
+      }
+    } else {
+      toast.success('ACLs created');
+    }
     setGrantAllOpen(false);
   };
 
@@ -332,7 +359,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {GRANT_ALL_RESOURCES.map((r) => (
+              {grantAllResources.map((r) => (
                 <TableRow key={r.type}>
                   <TableCell className="text-muted-foreground">{r.label}</TableCell>
                   <TableCell className="font-mono">{r.name}</TableCell>
