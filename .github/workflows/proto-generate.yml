@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # OIDC to assume AWS role for Secrets Manager
 
 jobs:
   proto-generate:
@@ -22,6 +23,17 @@ jobs:
       CI: "true"
     steps:
       - uses: actions/checkout@v5
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/buf_token
+          parse-json-secrets: true
 
       - uses: actions/setup-go@v6
         with:
@@ -41,6 +53,4 @@ jobs:
           key: proto-tools-${{ runner.os }}-go${{ hashFiles('backend/go.mod') }}-${{ hashFiles('taskfiles/proto.yaml') }}
 
       - name: Generate protos
-        env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
         run: task proto:generate
