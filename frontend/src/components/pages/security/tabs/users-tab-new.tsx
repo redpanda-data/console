@@ -53,7 +53,7 @@ import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/us
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useListRolesQuery } from '../../../../react-query/api/security';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
-import { rolesApi } from '../../../../state/backend-api';
+import { rolesApi, useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
@@ -74,7 +74,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../../redpanda-ui/co
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { TagsValue } from '../../../redpanda-ui/components/tags';
-import { Tooltip, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 import { Text } from '../../../redpanda-ui/components/typography';
 import { type FlatAclEntry, type RoleAclGroup, useUserPermissions } from '../hooks/use-principal-permissions';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
@@ -123,6 +123,16 @@ export const UsersTabNew: FC = () => {
   }, []);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
   const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const userData = useApiStoreHook((s) => s.userData);
+
+  const canManageUsers = userData?.canManageUsers;
+  const createTooltip = [
+    !featureCreateUser && "Your cluster doesn't support this feature.",
+    !canManageUsers && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
@@ -303,7 +313,16 @@ export const UsersTabNew: FC = () => {
             {!isFiltered && (
               <EmptyContent>
                 <div className="flex items-center gap-3">
-                  <Button onClick={openCreateDialog}>Create user</Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button disabled={Boolean(createTooltip)} onClick={openCreateDialog}>
+                          Create user
+                        </Button>
+                      </TooltipTrigger>
+                      {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
                   <Button asChild variant="link">
                     <a
                       href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
@@ -336,13 +355,16 @@ export const UsersTabNew: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button data-testid="create-user-button" onClick={openCreateDialog}>
-                  Create user
-                </Button>
-              </TooltipTrigger>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button data-testid="create-user-button" disabled={Boolean(createTooltip)} onClick={openCreateDialog}>
+                    Create user
+                  </Button>
+                </TooltipTrigger>
+                {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
+              </Tooltip>
+            </TooltipProvider>
           }
         >
           <ListLayoutSearchInput

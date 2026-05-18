@@ -52,25 +52,6 @@ import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { filterByName } from '../shared/filter-by-name';
 import { UserRoleTags } from '../shared/user-role-tags';
 
-const getCreateUserButtonProps = (
-  isAdminApiConfigured: boolean,
-  featureCreateUser: boolean,
-  canManageUsers: boolean | undefined
-) => {
-  const hasRBAC = canManageUsers !== undefined;
-
-  return {
-    disabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
-    tooltip: [
-      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-      !featureCreateUser && "Your cluster doesn't support this feature.",
-      hasRBAC && canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  };
-};
-
 const PermissionsListActions = ({
   entry,
   canDeleteUser,
@@ -147,14 +128,23 @@ const PermissionsListTabOriginal: FC = () => {
   useSecurityBreadcrumbs([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
-  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
-  const userData = useApiStoreHook((s) => s.userData);
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
 
-  const { principals, isAdminApiConfigured, isUsersError, usersError, isAclsError, aclsError } = usePrincipalList();
+  const { principals, isUsersError, usersError, isAclsError, aclsError } = usePrincipalList();
+
+  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const userData = useApiStoreHook((s) => s.userData);
+
+  const canManageUsers = userData?.canManageUsers;
+  const createTooltip = [
+    !featureCreateUser && "Your cluster doesn't support this feature.",
+    !canManageUsers && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const deleteACLsForPrincipal = async (principalName: string, principalType: 'User' | 'Group' = 'User') => {
     const deleteRequest = create(DeleteACLsRequestSchema, {
@@ -301,7 +291,7 @@ const PermissionsListTabOriginal: FC = () => {
                       Create user
                     </Button>
                   </TooltipTrigger>
-                  {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
+                  {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
                 </Tooltip>
               </TooltipProvider>
             ))()}

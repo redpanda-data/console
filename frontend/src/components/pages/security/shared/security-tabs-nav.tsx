@@ -103,7 +103,6 @@ export function SecurityTabsNav() {
   const userData = useApiStoreHook((s) => s.userData);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
-  const redpandaOverview = useApiStoreHook((s) => s.clusterOverview?.redpanda);
 
   const tabs = buildTabs(featureCreateUser, featureRolesApi, userData);
   const activeTab = deriveActiveTab(location.pathname, tabs);
