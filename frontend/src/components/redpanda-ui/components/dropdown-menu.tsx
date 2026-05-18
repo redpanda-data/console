@@ -179,9 +179,9 @@ function DropdownMenuSubContent({ className, ...props }: DropdownMenuSubContentP
   );
 }
 
-type DropdownMenuContentProps = Omit<React.ComponentProps<typeof DropdownMenuPrimitive.Popup>, 'className' | 'render'> &
-  React.HTMLAttributes<HTMLDivElement> &
-  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
+type DropdownMenuContentProps = React.HTMLAttributes<HTMLDivElement> &
+  Pick<React.ComponentProps<typeof DropdownMenuPrimitive.Popup>, 'finalFocus'> &
+  Pick<PortalContentProps, 'container'> & {
     sideOffset?: number;
     align?: 'start' | 'center' | 'end';
     alignOffset?: number;
@@ -189,8 +189,9 @@ type DropdownMenuContentProps = Omit<React.ComponentProps<typeof DropdownMenuPri
     /**
      * Keep the portal subtree mounted across close cycles. Set this when a
      * descendant `<Dialog>` / `<AlertDialog>` needs to outlive menu close;
-     * trades the close animation for subtree survival. Avoid on long lists —
-     * prefer the sibling-dialog pattern there. See the
+     * closed-state CSS animation classes only get a chance to run in this
+     * mode because the default path unmounts immediately on close. Avoid on
+     * long lists — prefer the sibling-dialog pattern there. See the
      * `dropdown-menu-nested-dialog` demo. @default false
      */
     keepMounted?: boolean;
@@ -205,7 +206,6 @@ function DropdownMenuContent({
   side,
   container,
   finalFocus,
-  onOpenAutoFocus: _onOpenAutoFocus,
   keepMounted = false,
   style,
   ...props
@@ -222,7 +222,6 @@ function DropdownMenuContent({
       sideOffset={sideOffset}
     >
       <DropdownMenuPrimitive.Popup
-        data-slot="dropdown-menu-popup"
         finalFocus={finalFocus}
         render={(popupProps, state) => (
           <div
@@ -252,8 +251,8 @@ function DropdownMenuContent({
     </DropdownMenuPrimitive.Positioner>
   );
 
-  // No `<AnimatePresence>` here on purpose — wrapping it would reintroduce the
-  // unmount-on-close that `keepMounted` exists to avoid.
+  // No `<AnimatePresence>` here on purpose: the rendered popup must remain the
+  // Base UI popup element so focus and pointer interactions stay pinned to it.
   if (keepMounted) {
     return (
       <DropdownMenuPrimitive.Portal
@@ -271,7 +270,7 @@ function DropdownMenuContent({
   }
 
   return (
-    <DropdownMenuPrimitive.Portal container={container ?? portalContainer} data-slot="dropdown-menu-portal" keepMounted>
+    <DropdownMenuPrimitive.Portal container={container ?? portalContainer} data-slot="dropdown-menu-portal">
       {popup}
     </DropdownMenuPrimitive.Portal>
   );

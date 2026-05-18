@@ -11,7 +11,7 @@ function TestDropdownMenu() {
       <DropdownMenuTrigger asChild>
         <Button>Open user menu</Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="top">
+      <DropdownMenuContent align="end" className="custom-menu" data-testid="user-menu" id="user-menu" side="top">
         <DropdownMenuItem>Preferences</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -29,6 +29,9 @@ describe('DropdownMenu', () => {
     const menu = await screen.findByRole('menu');
     expect(menu).toHaveAttribute('data-slot', 'dropdown-menu-content');
     expect(menu).toHaveAttribute('data-state', 'open');
+    expect(menu).toHaveAttribute('data-testid', 'user-menu');
+    expect(menu).toHaveAttribute('id', 'user-menu');
+    expect(menu).toHaveClass('custom-menu');
     const item = screen.getByRole('menuitem', { name: 'Preferences' });
     expect(item).toBeInTheDocument();
 
