@@ -175,6 +175,11 @@ async function startKafkaContainer(network, state, ports, variantName) {
       KAFKA_INTER_BROKER_LISTENER_NAME: 'SASL_PLAINTEXT',
       KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN',
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN',
+      // Enable Kafka Auth BEGIN
+      KAFKA_AUTHORIZER_CLASS_NAME: 'org.apache.kafka.metadata.authorizer.StandardAuthorizer',
+      KAFKA_SUPER_USERS: 'User:e2euser',
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'true',
+      // Enable Kafka Auth END
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1',
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true',
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk',
