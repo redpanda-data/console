@@ -58,8 +58,8 @@ import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -157,10 +157,10 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
           <DialogHeader>
             <DialogTitle>Delete ACLs for {group.principalName}</DialogTitle>
           </DialogHeader>
-          <DialogDescription>
+          <DialogBody>
             All ACLs assigned directly to <strong>{group.principalName}</strong> will be permanently deleted. This
             action cannot be undone.
-          </DialogDescription>
+          </DialogBody>
           <DialogFooter>
             <Button onClick={() => setPendingDelete(null)} variant="outline">
               Cancel
@@ -510,8 +510,7 @@ export const PermissionsListTabNew: FC = () => {
         </Text>
 
         <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
-          <input
-            className="flex h-8 w-full min-w-[140px] max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          <ListLayoutSearchInput
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search principals, resources, roles..."
             value={searchQuery}

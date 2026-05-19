@@ -239,7 +239,7 @@ export const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserMod
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <CopyButton content={state.password} data-testid="copy-password-button" variant="ghost" />
+                  <CopyButton content={state.password} data-testid="copy-password-button" size="icon" variant="ghost" />
                 </TooltipTrigger>
                 <TooltipContent side="top">Copy password</TooltipContent>
               </Tooltip>

@@ -51,11 +51,14 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const RESOURCE_TYPE_OPTIONS = [
+const BASE_resourceTypeOptions = [
   { value: ACL_ResourceType.TOPIC, label: 'Topic' },
   { value: ACL_ResourceType.GROUP, label: 'Consumer Group' },
   { value: ACL_ResourceType.CLUSTER, label: 'Cluster' },
   { value: ACL_ResourceType.TRANSACTIONAL_ID, label: 'Transactional ID' },
+];
+
+const REDPANDA_resourceTypeOptions = [
   { value: ACL_ResourceType.SUBJECT, label: 'Subject' },
   { value: ACL_ResourceType.REGISTRY, label: 'Schema Registry' },
 ];
@@ -115,6 +118,10 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
 
   const resourceType = form.watch('resourceType');
   const patternType = form.watch('patternType');
+
+  const resourceTypeOptions = api.isRedpanda
+    ? [...BASE_resourceTypeOptions, ...REDPANDA_resourceTypeOptions]
+    : BASE_resourceTypeOptions;
 
   const showPatternAndName = resourceType !== ACL_ResourceType.CLUSTER && resourceType !== ACL_ResourceType.REGISTRY;
 
@@ -220,11 +227,11 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                     <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
                       <SelectTrigger>
                         <SelectValue>
-                          {(value) => RESOURCE_TYPE_OPTIONS.find((opt) => String(opt.value) === value)?.label}
+                          {(value) => resourceTypeOptions.find((opt) => String(opt.value) === value)?.label}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {RESOURCE_TYPE_OPTIONS.map((opt) => (
+                        {resourceTypeOptions.map((opt) => (
                           <SelectItem key={opt.value} value={String(opt.value)}>
                             {opt.label}
                           </SelectItem>

@@ -168,7 +168,7 @@ const UserPermissionDetailsContent = ({ userName }: { userName: string }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      <UserRolesCardNew isLoading={isRolesLoading} roles={roles} userName={userName} />
+      {featureRolesApi && <UserRolesCardNew isLoading={isRolesLoading} roles={roles} userName={userName} />}
       <UserAclsCardNew acls={acls} isLoading={isAclsLoading} userName={userName} />
     </div>
   );
