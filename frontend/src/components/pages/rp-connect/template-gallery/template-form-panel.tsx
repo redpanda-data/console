@@ -46,12 +46,13 @@ const endpointFor = (section: TemplateSlotSection, template: PipelineTemplate): 
 };
 
 const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
-  const Logo = componentLogoMap[endpoint.component as ComponentName];
+  const resolvedName = endpoint.logoOverride ?? endpoint.component;
+  const Logo = componentLogoMap[resolvedName as ComponentName];
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono font-normal text-foreground text-xs normal-case tracking-normal">
       <span className="flex h-4 w-4 shrink-0 items-center justify-center">
         {Logo ? (
-          <ConnectorLogo className="h-4 w-4" name={endpoint.component as ComponentName} />
+          <ConnectorLogo className="h-4 w-4" name={resolvedName as ComponentName} />
         ) : (
           <Waypoints aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
         )}

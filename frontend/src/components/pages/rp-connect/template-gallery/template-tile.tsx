@@ -16,9 +16,10 @@ import { ArrowRight, Clock, Waypoints } from 'lucide-react';
 import type { PipelineTemplate } from './pipeline-template-types';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
-const ComponentIcon = ({ name }: { name: string }) => {
-  const inner = componentLogoMap[name as ComponentName] ? (
-    <ConnectorLogo className="h-5 w-5" name={name as ComponentName} />
+const ComponentIcon = ({ name, override }: { name: string; override?: string }) => {
+  const resolvedName = override ?? name;
+  const inner = componentLogoMap[resolvedName as ComponentName] ? (
+    <ConnectorLogo className="h-5 w-5" name={resolvedName as ComponentName} />
   ) : (
     <Waypoints className="h-5 w-5 text-muted-foreground" />
   );
@@ -45,9 +46,9 @@ export const TemplateTile = ({ template, onSelect, className }: TemplateTileProp
   >
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-1.5">
-        <ComponentIcon name={template.source.component} />
+        <ComponentIcon name={template.source.component} override={template.source.logoOverride} />
         <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <ComponentIcon name={template.sink.component} />
+        <ComponentIcon name={template.sink.component} override={template.sink.logoOverride} />
       </div>
       <span className="flex shrink-0 items-center gap-1 text-muted-foreground text-xs">
         <Clock aria-hidden className="h-3 w-3" />~{template.setupTimeMinutes} min

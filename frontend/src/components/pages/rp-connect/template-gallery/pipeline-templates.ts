@@ -947,7 +947,7 @@ output:
     description: 'Write records from a Redpanda topic into a Postgres table.',
     category: 'analytics',
     source: { component: 'redpanda', type: 'input' },
-    sink: { component: 'sql_raw', type: 'output' },
+    sink: { component: 'sql_raw', logoOverride: 'postgres_cdc', type: 'output' },
     setupTimeMinutes: 6,
     defaultPipelineName: 'redpanda-to-postgres',
     slots: [

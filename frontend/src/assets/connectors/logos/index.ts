@@ -21,6 +21,7 @@ export { GoogleCloudLogo } from './google-cloud-logo';
 export { GoogleDriveLogo } from './google-drive-logo';
 export { GoogleProtocolBuffersLogo } from './google-protocol-buffers-logo';
 export { HadoopLogo } from './hadoop-logo';
+export { IcebergLogo } from './iceberg-logo';
 export { InfluxDBLogo } from './influx-db-logo';
 export { JavaScriptLogo } from './java-script-logo';
 export { JqLogo } from './jq-logo';
