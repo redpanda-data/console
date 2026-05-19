@@ -67,37 +67,47 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
         name={slot.id}
         required={slot.required}
       >
-        {(field) => (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-            <div className="flex-1">
-              <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                <SelectTrigger data-testid={`slot-${slot.id}`}>
-                  <SelectValue placeholder="Select an existing secret..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {existingSecrets.length === 0 ? (
-                    <div className="px-3 py-2 text-muted-foreground text-sm">No secrets yet</div>
-                  ) : (
-                    existingSecrets.map((secretId) => (
-                      <SelectItem key={secretId} value={secretId}>
-                        {secretId}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+        {(field) => {
+          // Surface a value the listSecrets query hasn't reported yet (e.g. just
+          // created via the in-dialog step) so the Select can render the
+          // selected option immediately instead of falling back to the placeholder.
+          const selectedValue = (field.value as string | undefined) ?? '';
+          const options =
+            selectedValue && !existingSecrets.includes(selectedValue)
+              ? [selectedValue, ...existingSecrets]
+              : existingSecrets;
+          return (
+            <div className="flex flex-col gap-2 items-start sm:flex-row sm:items-center">
+              <div className="flex-1">
+                <Select onValueChange={field.onChange} value={selectedValue}>
+                  <SelectTrigger data-testid={`slot-${slot.id}`}>
+                    <SelectValue placeholder="Select an existing secret..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {options.length === 0 ? (
+                      <div className="px-3 py-2 text-muted-foreground text-sm">No secrets yet</div>
+                    ) : (
+                      options.map((secretId) => (
+                        <SelectItem key={secretId} value={secretId}>
+                          {secretId}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                data-testid={`slot-${slot.id}-create`}
+                onClick={handleCreateClick}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" /> Create secret
+              </Button>
             </div>
-            <Button
-              data-testid={`slot-${slot.id}-create`}
-              onClick={handleCreateClick}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" /> Create secret
-            </Button>
-          </div>
-        )}
+          );
+        }}
       </SimpleFormField>
       {onRequestCreateSecret ? null : (
         <AddSecretsDialog
