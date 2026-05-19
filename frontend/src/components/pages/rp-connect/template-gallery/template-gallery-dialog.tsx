@@ -132,7 +132,15 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
   };
 
   return (
-    <Dialog onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())} open={open}>
+    <Dialog
+      // Block backdrop clicks once the user is past the gallery step so a stray
+      // click can't wipe their in-progress form values. While they're still
+      // browsing templates there's nothing to lose, so backdrop dismissal stays
+      // enabled there. ESC and the X / Cancel buttons always work.
+      disablePointerDismissal={view.kind !== 'gallery'}
+      onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
+      open={open}
+    >
       <DialogContent height="xl" size="xl">
         {view.kind === 'gallery' ? (
           <>
