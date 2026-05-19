@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
 import {
   Form,
@@ -20,7 +19,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
-import type { MotionProps } from 'motion/react';
+import { AnimatePresence, type MotionProps, motion } from 'motion/react';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
@@ -56,6 +55,11 @@ type AddTopicStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
+  // Renders the form bare — no Card chrome, no min-height, no top margin — so
+  // it can sit inside a host surface (e.g. a dialog body) that already provides
+  // framing. The onboarding wizard keeps the default (false) for its full-page
+  // step layout.
+  inline?: boolean;
 };
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
@@ -67,9 +71,11 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       selectionMode = 'both',
       hideTitle,
       className,
+      inline = false,
       ...motionProps
     },
     ref
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: form-state-machine component with inline vs card render branches, existing-topic detection, advanced-settings toggle, and ToggleGroup switching — extracting further would obscure the rendered tree.
   ) => {
     const queryClient = useQueryClient();
 
@@ -285,6 +291,153 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     const showExistingTopicAlert =
       topicSelectionType === CreatableSelectionOptions.CREATE && Boolean(existingTopicSelected);
 
+    const formBody = (
+      <Form {...form}>
+        <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
+          <div className="flex flex-col gap-2">
+            <FormLabel>Topic name</FormLabel>
+            <FormDescription>
+              Choose an existing topic to read or write data from, or create a new topic.
+            </FormDescription>
+            <div className="flex flex-col items-start gap-2">
+              {selectionMode === 'both' && (
+                <ToggleGroup
+                  disabled={isPending}
+                  onValueChange={(value) => {
+                    // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                    if (!value) {
+                      return;
+                    }
+                    handleTopicSelectionTypeChange(value as CreatableSelectionType);
+                  }}
+                  type="single"
+                  value={topicSelectionType}
+                  variant="outline"
+                >
+                  <ToggleGroupItem id={CreatableSelectionOptions.EXISTING} value={CreatableSelectionOptions.EXISTING}>
+                    Existing
+                  </ToggleGroupItem>
+                  <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
+                    New
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
+
+              <div className="flex gap-2">
+                <FormField
+                  control={form.control}
+                  name="topicName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        {topicSelectionType === CreatableSelectionOptions.EXISTING ? (
+                          <Combobox
+                            {...field}
+                            className="w-[300px]"
+                            disabled={isPending}
+                            onOpen={() => {
+                              queryClient.invalidateQueries({
+                                queryKey: createConnectQueryKey({
+                                  schema: listTopics,
+                                  cardinality: 'infinite',
+                                }),
+                              });
+                              queryClient.invalidateQueries({
+                                queryKey: createConnectQueryKey({
+                                  schema: listACLs,
+                                  cardinality: 'finite',
+                                }),
+                              });
+                            }}
+                            options={topicOptions}
+                            placeholder="Select a topic"
+                          />
+                        ) : (
+                          <Input
+                            {...field}
+                            className="w-[300px]"
+                            disabled={isPending}
+                            placeholder="Enter a topic name"
+                          />
+                        )}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {watchedTopicName !== '' && watchedTopicName.length > 0 && (
+                  <Button disabled={isPending} onClick={handleClearTopicName} size="icon" variant="ghost">
+                    <XIcon size={16} />
+                  </Button>
+                )}
+              </div>
+
+              {showExistingTopicAlert ? (
+                <Alert variant="info">
+                  <AlertDescription>
+                    A topic named <b>{watchedTopicName}</b> already exists. A reference to the existing topic will be
+                    used.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </div>
+          </div>
+
+          {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
+            <div className="flex flex-col">
+              <Button
+                aria-controls="add-topic-advanced-settings"
+                aria-expanded={showAdvancedSettings}
+                className="self-start p-0!"
+                disabled={isPending}
+                onClick={() => setShowAdvancedSettings((prev) => !prev)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <motion.span
+                  animate={{ rotate: showAdvancedSettings ? 180 : 0 }}
+                  className="flex h-4 w-4 items-center justify-center"
+                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </motion.span>
+                Show advanced settings
+              </Button>
+
+              <AnimatePresence initial={false}>
+                {showAdvancedSettings ? (
+                  <motion.div
+                    animate={{ height: 'auto', opacity: 1 }}
+                    aria-hidden={!showAdvancedSettings}
+                    exit={{ height: 0, opacity: 0 }}
+                    id="add-topic-advanced-settings"
+                    initial={{ height: 0, opacity: 0 }}
+                    key="add-topic-advanced-settings"
+                    style={{ overflow: 'hidden' }}
+                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                  >
+                    <div className="space-y-6 pt-4">
+                      <AdvancedTopicSettings
+                        disabled={isPending}
+                        form={form}
+                        isExistingTopic={Boolean(existingTopicSelected)}
+                      />
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </Form>
+    );
+
+    if (inline) {
+      return <div className={className}>{formBody}</div>;
+    }
+
     return (
       <Card size="full" {...motionProps} animated className={className} variant="ghost">
         {!hideTitle && (
@@ -298,122 +451,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
             </CardDescription>
           </CardHeader>
         )}
-        <CardContent className="min-h-[300px]">
-          <Form {...form}>
-            <div className="mt-4 max-w-2xl space-y-6">
-              <div className="flex flex-col gap-2">
-                <FormLabel>Topic name</FormLabel>
-                <FormDescription>
-                  Choose an existing topic to read or write data from, or create a new topic.
-                </FormDescription>
-                <div className="flex flex-col items-start gap-2">
-                  {selectionMode === 'both' && (
-                    <ToggleGroup
-                      disabled={isPending}
-                      onValueChange={(value) => {
-                        // Prevent deselection - ToggleGroup emits empty string when trying to deselect
-                        if (!value) {
-                          return;
-                        }
-                        handleTopicSelectionTypeChange(value as CreatableSelectionType);
-                      }}
-                      type="single"
-                      value={topicSelectionType}
-                      variant="outline"
-                    >
-                      <ToggleGroupItem
-                        id={CreatableSelectionOptions.EXISTING}
-                        value={CreatableSelectionOptions.EXISTING}
-                      >
-                        Existing
-                      </ToggleGroupItem>
-                      <ToggleGroupItem id={CreatableSelectionOptions.CREATE} value={CreatableSelectionOptions.CREATE}>
-                        New
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  )}
-
-                  <div className="flex gap-2">
-                    <FormField
-                      control={form.control}
-                      name="topicName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            {topicSelectionType === CreatableSelectionOptions.EXISTING ? (
-                              <Combobox
-                                {...field}
-                                className="w-[300px]"
-                                disabled={isPending}
-                                onOpen={() => {
-                                  queryClient.invalidateQueries({
-                                    queryKey: createConnectQueryKey({
-                                      schema: listTopics,
-                                      cardinality: 'infinite',
-                                    }),
-                                  });
-                                  queryClient.invalidateQueries({
-                                    queryKey: createConnectQueryKey({
-                                      schema: listACLs,
-                                      cardinality: 'finite',
-                                    }),
-                                  });
-                                }}
-                                options={topicOptions}
-                                placeholder="Select a topic"
-                              />
-                            ) : (
-                              <Input
-                                {...field}
-                                className="w-[300px]"
-                                disabled={isPending}
-                                placeholder="Enter a topic name"
-                              />
-                            )}
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {watchedTopicName !== '' && watchedTopicName.length > 0 && (
-                      <Button disabled={isPending} onClick={handleClearTopicName} size="icon" variant="ghost">
-                        <XIcon size={16} />
-                      </Button>
-                    )}
-                  </div>
-
-                  {showExistingTopicAlert ? (
-                    <Alert variant="info">
-                      <AlertDescription>
-                        A topic named <b>{watchedTopicName}</b> already exists. A reference to the existing topic will
-                        be used.
-                      </AlertDescription>
-                    </Alert>
-                  ) : null}
-                </div>
-              </div>
-
-              {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
-                <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
-                  <CollapsibleTrigger asChild>
-                    <Button disabled={isPending} className="p-0!" size="sm" variant="ghost">
-                      <ChevronDown className="h-4 w-4" />
-                      Show advanced settings
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-6">
-                    <AdvancedTopicSettings
-                      disabled={isPending}
-                      form={form}
-                      isExistingTopic={Boolean(existingTopicSelected)}
-                    />
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-            </div>
-          </Form>
-        </CardContent>
+        <CardContent className="min-h-[300px]">{formBody}</CardContent>
       </Card>
     );
   }

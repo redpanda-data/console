@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   FormControl,
   FormDescription,
@@ -19,7 +20,7 @@ import {
 } from 'components/redpanda-ui/components/form';
 import { TopicSelector } from 'components/ui/topic/topic-selector';
 import { config, isEmbedded } from 'config';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
 import type { Control, FieldValues } from 'react-hook-form';
 
 import type { TopicSlot } from '../pipeline-template-types';
@@ -36,35 +37,50 @@ const buildTopicsHref = () => {
 export type TopicSlotFieldProps = {
   slot: TopicSlot;
   control: Control<FieldValues>;
+  // When supplied, "Create topic" delegates to the parent (e.g. the in-dialog
+  // create-topic step) instead of linking out to the topic-management page.
+  onRequestCreateTopic?: (slotId: string) => void;
 };
 
-export const TopicSlotField = ({ slot, control }: TopicSlotFieldProps) => (
+export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlotFieldProps) => (
   <FormField
     control={control}
     name={slot.id}
     render={({ field }) => (
       <FormItem>
-        <div className="flex items-center justify-between gap-2">
-          <FormLabel className="leading-normal" required={slot.required}>
-            {slot.label}
-          </FormLabel>
-          <a
-            className="inline-flex items-center gap-1 font-medium text-primary text-xs hover:underline"
-            data-testid={`slot-${slot.id}-create`}
-            href={buildTopicsHref()}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Create a new topic
-            <ExternalLink aria-hidden className="h-3 w-3" />
-          </a>
-        </div>
+        <FormLabel className="leading-normal" required={slot.required}>
+          {slot.label}
+        </FormLabel>
         <FormControl>
-          <div data-testid={`slot-${slot.id}`}>
-            <TopicSelector
-              onTopicsChange={(topics) => field.onChange(topics[0] ?? '')}
-              selectedTopics={field.value ? [field.value] : []}
-            />
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+            <div className="flex-1" data-testid={`slot-${slot.id}`}>
+              <TopicSelector
+                onTopicsChange={(topics) => field.onChange(topics[0] ?? '')}
+                selectedTopics={field.value ? [field.value] : []}
+              />
+            </div>
+            {onRequestCreateTopic ? (
+              <Button
+                data-testid={`slot-${slot.id}-create`}
+                onClick={() => onRequestCreateTopic(slot.id)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" /> Create topic
+              </Button>
+            ) : (
+              <a
+                className="inline-flex items-center gap-1 font-medium text-primary text-xs hover:underline"
+                data-testid={`slot-${slot.id}-create`}
+                href={buildTopicsHref()}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Create a new topic
+                <ExternalLink aria-hidden className="h-3 w-3" />
+              </a>
+            )}
           </div>
         </FormControl>
         {slot.description ? <FormDescription className="leading-snug">{slot.description}</FormDescription> : null}

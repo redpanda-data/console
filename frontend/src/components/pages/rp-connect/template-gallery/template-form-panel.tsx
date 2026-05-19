@@ -141,6 +141,9 @@ export type TemplateFormPanelProps = {
   // When set, secret slots delegate "Create secret" to the parent instead of
   // opening a nested dialog.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
+  // When set, topic slots delegate "Create topic" to the parent so a dedicated
+  // step can host AddTopicStep, mirroring the secret flow.
+  onRequestCreateTopic?: (slotId: string) => void;
   // When non-null, the panel will write `value` into the named slot exactly
   // once per `requestId` and call `onSlotValueApplied` to acknowledge.
   applySlotValue?: ApplySlotValueRequest | null;
@@ -148,7 +151,10 @@ export type TemplateFormPanelProps = {
 };
 
 export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFormPanelProps>(
-  ({ template, formId, onSubmit, onRequestCreateSecret, applySlotValue, onSlotValueApplied }, ref) => {
+  (
+    { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
+    ref
+  ) => {
     const schema = useMemo(() => buildSchema(template), [template]);
     const defaultValues = useMemo(() => defaultValuesFor(template), [template]);
 
@@ -241,7 +247,14 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
                     case 'select':
                       return <SelectSlotField control={form.control} key={slot.id} slot={slot} />;
                     case 'topic':
-                      return <TopicSlotField control={form.control} key={slot.id} slot={slot} />;
+                      return (
+                        <TopicSlotField
+                          control={form.control}
+                          key={slot.id}
+                          onRequestCreateTopic={onRequestCreateTopic}
+                          slot={slot}
+                        />
+                      );
                     case 'secret':
                       return (
                         <SecretSlotField

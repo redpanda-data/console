@@ -178,7 +178,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
                 key={category}
               >
                 <Heading
-                  className="font-medium text-muted-foreground text-xs uppercase tracking-wide"
+                  className="font-semibold text-base text-foreground"
                   id={`gallery-category-${category}`}
                   level={3}
                 >
@@ -202,7 +202,7 @@ const GallerySkeleton = () => (
   <div className="flex flex-col gap-5">
     {[0, 1].map((row) => (
       <div className="flex flex-col gap-2.5" key={row}>
-        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-5 w-36" />
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((idx) => (
             <Skeleton className="h-[96px] w-full rounded-lg" key={idx} />

@@ -25,6 +25,7 @@ import { ArrowLeft, KeyRound } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { toast } from 'sonner';
 
 import type { PipelineTemplate } from './pipeline-template-types';
 import {
@@ -34,6 +35,8 @@ import {
   type TemplateFormSubmitPayload,
 } from './template-form-panel';
 import { TemplateGalleryGrid } from './template-gallery-grid';
+import { AddTopicStep } from '../onboarding/add-topic-step';
+import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
@@ -52,12 +55,13 @@ export type TemplateGalleryDialogProps = {
 };
 
 // `selectedTemplate` is tracked outside `view` so `TemplateFormPanel` stays
-// mounted across `form ↔ addSecret` transitions and the user's in-progress
-// form values survive the round-trip.
+// mounted across `form ↔ addSecret ↔ createTopic` transitions and the user's
+// in-progress form values survive the round-trip.
 type DialogView =
   | { kind: 'gallery' }
   | { kind: 'form' }
-  | { kind: 'addSecret'; slotId: string; suggestedName: string | undefined };
+  | { kind: 'addSecret'; slotId: string; suggestedName: string | undefined }
+  | { kind: 'createTopic'; slotId: string };
 
 const StepBackHeader = ({
   title,
@@ -93,7 +97,7 @@ const StepBackHeader = ({
   </DialogHeader>
 );
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state-machine UI with three distinct render branches (gallery / form / addSecret) — extracting further would obscure the rendered tree.
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state-machine UI with four distinct render branches (gallery / form / addSecret / createTopic) — extracting further would obscure the rendered tree.
 export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }: TemplateGalleryDialogProps) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
@@ -102,18 +106,24 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
   // through props instead of an imperative ref because plain function
   // components don't receive `ref` as a prop in React 18.
   const [applySlotValue, setApplySlotValue] = useState<ApplySlotValueRequest | null>(null);
+  const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const formHandleRef = useRef<TemplateFormPanelHandle | null>(null);
+  const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData> | null>(null);
   const formId = useId();
 
   const isFormViewActive = view.kind === 'form';
   const isAddSecretViewActive = view.kind === 'addSecret';
-  const isFormMounted = selectedTemplate !== null && (isFormViewActive || isAddSecretViewActive);
+  const isCreateTopicViewActive = view.kind === 'createTopic';
+  const isFormMounted =
+    selectedTemplate !== null && (isFormViewActive || isAddSecretViewActive || isCreateTopicViewActive);
 
   const resetToGallery = () => {
     setView({ kind: 'gallery' });
     setSelectedTemplate(null);
     setApplySlotValue(null);
+    setIsCreatingTopic(false);
     formHandleRef.current = null;
+    addTopicStepRef.current = null;
   };
 
   const closeWithStash = () => {
@@ -134,6 +144,29 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
       setApplySlotValue({ slotId: view.slotId, value: created, requestId: Date.now() });
     }
     setView({ kind: 'form' });
+  };
+
+  const handleCreateTopicSubmit = async () => {
+    if (view.kind !== 'createTopic' || !addTopicStepRef.current) {
+      return;
+    }
+    setIsCreatingTopic(true);
+    try {
+      const result = await addTopicStepRef.current.triggerSubmit();
+      if (result.success && result.data?.topicName) {
+        setApplySlotValue({ slotId: view.slotId, value: result.data.topicName, requestId: Date.now() });
+        setView({ kind: 'form' });
+        return;
+      }
+      if (!result.success && result.error) {
+        // AddTopicStep surfaces validation errors inside its own form; only
+        // toast the higher-level "create failed" error so the user still sees
+        // field-level errors in context.
+        toast.error(result.message ?? result.error);
+      }
+    } finally {
+      setIsCreatingTopic(false);
+    }
   };
 
   return (
@@ -184,6 +217,16 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
           />
         ) : null}
 
+        {isCreateTopicViewActive ? (
+          <StepBackHeader
+            backLabel="Back to template form"
+            backTestId="template-create-topic-back"
+            description="Create a new Redpanda topic. It will be auto-selected on the form when you return."
+            onBack={() => setView({ kind: 'form' })}
+            title="Create a topic"
+          />
+        ) : null}
+
         {/* Stays mounted across addSecret to preserve form state; hide via inline */}
         {/* style so the flex-1 outer doesn't reserve space (className targets inner). */}
         {isFormMounted && selectedTemplate ? (
@@ -192,6 +235,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
               applySlotValue={applySlotValue}
               formId={formId}
               onRequestCreateSecret={(slotId, suggestedName) => setView({ kind: 'addSecret', slotId, suggestedName })}
+              onRequestCreateTopic={(slotId) => setView({ kind: 'createTopic', slotId })}
               onSlotValueApplied={() => setApplySlotValue(null)}
               onSubmit={onSubmit}
               ref={formHandleRef}
@@ -223,6 +267,25 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
                 requiredSecrets={[]}
                 scopes={[Scope.REDPANDA_CONNECT]}
               />
+            </div>
+          </DialogBody>
+        ) : null}
+
+        {isCreateTopicViewActive ? (
+          <DialogBody>
+            <div className="flex flex-col gap-4">
+              <AddTopicStep hideTitle inline ref={addTopicStepRef} selectionMode="new" />
+              <div className="flex justify-end">
+                <Button
+                  data-testid="template-create-topic-submit"
+                  disabled={isCreatingTopic}
+                  onClick={handleCreateTopicSubmit}
+                  type="button"
+                  variant="primary"
+                >
+                  {isCreatingTopic ? 'Creating...' : 'Create topic'}
+                </Button>
+              </div>
             </div>
           </DialogBody>
         ) : null}
