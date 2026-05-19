@@ -214,12 +214,12 @@ export const TemplateFormPanel = ({
           return (
             <section
               aria-labelledby={`section-${section}`}
-              className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4"
+              className="flex flex-col gap-4 border-divider-default border-l-2 pl-3"
               data-testid={`template-section-${section}`}
               key={section}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Heading className="font-medium text-sm uppercase tracking-wide" id={`section-${section}`} level={3}>
+                <Heading className="font-semibold text-base text-foreground" id={`section-${section}`} level={3}>
                   {SECTION_LABELS[section]}
                 </Heading>
                 {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
