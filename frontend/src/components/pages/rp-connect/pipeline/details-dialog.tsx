@@ -82,8 +82,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleti
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent showCloseButton={false} size="lg">
-        <DialogCloseButton />
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Pipeline details</DialogTitle>
         </DialogHeader>
