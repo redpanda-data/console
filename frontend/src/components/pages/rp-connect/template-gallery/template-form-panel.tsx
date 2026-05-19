@@ -15,7 +15,7 @@ import { Form, SimpleFormField } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { Waypoints } from 'lucide-react';
-import { useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -121,7 +121,15 @@ export type TemplateFormSubmitPayload = {
 export type TemplateFormPanelHandle = {
   getCurrentYaml: () => string;
   isDirty: () => boolean;
-  setSlotValue: (slotId: string, value: string) => void;
+};
+
+// Instruction from the parent to overwrite a slot's value (e.g. after an
+// in-dialog secret creation). Bumping `requestId` re-triggers the apply even
+// when slotId+value are unchanged.
+export type ApplySlotValueRequest = {
+  slotId: string;
+  value: string;
+  requestId: number;
 };
 
 export type TemplateFormPanelProps = {
@@ -133,125 +141,130 @@ export type TemplateFormPanelProps = {
   // When set, secret slots delegate "Create secret" to the parent instead of
   // opening a nested dialog.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
-  ref?: React.Ref<TemplateFormPanelHandle>;
+  // When non-null, the panel will write `value` into the named slot exactly
+  // once per `requestId` and call `onSlotValueApplied` to acknowledge.
+  applySlotValue?: ApplySlotValueRequest | null;
+  onSlotValueApplied?: () => void;
 };
 
-export const TemplateFormPanel = ({
-  template,
-  formId,
-  onSubmit,
-  onRequestCreateSecret,
-  ref,
-}: TemplateFormPanelProps) => {
-  const schema = useMemo(() => buildSchema(template), [template]);
-  const defaultValues = useMemo(() => defaultValuesFor(template), [template]);
+export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFormPanelProps>(
+  ({ template, formId, onSubmit, onRequestCreateSecret, applySlotValue, onSlotValueApplied }, ref) => {
+    const schema = useMemo(() => buildSchema(template), [template]);
+    const defaultValues = useMemo(() => defaultValuesFor(template), [template]);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
-    defaultValues: defaultValues as FormValues,
-    mode: 'onBlur',
-  });
-
-  const stitchCurrentYaml = (values: FormValues): string => {
-    const { [PIPELINE_NAME_FIELD]: _ignored, ...slotValues } = values;
-    return stitchTemplateYaml({ template, values: slotValues as Record<string, string> });
-  };
-
-  const handleRef = useRef<TemplateFormPanelHandle>({
-    getCurrentYaml: () => stitchCurrentYaml(form.getValues()),
-    isDirty: () => form.formState.isDirty,
-    setSlotValue: (slotId, value) => form.setValue(slotId, value, { shouldDirty: true, shouldValidate: true }),
-  });
-  // Refresh closures every render so the handle reads the latest form values.
-  handleRef.current = {
-    getCurrentYaml: () => stitchCurrentYaml(form.getValues()),
-    isDirty: () => form.formState.isDirty,
-    setSlotValue: (slotId, value) => form.setValue(slotId, value, { shouldDirty: true, shouldValidate: true }),
-  };
-  useImperativeHandle(ref, () => handleRef.current, []);
-
-  const sections = groupSlotsBySection(template.slots);
-
-  const submitHandler = form.handleSubmit((values) => {
-    onSubmit({
-      pipelineName: values[PIPELINE_NAME_FIELD] ?? template.defaultPipelineName,
-      yaml: stitchCurrentYaml(values),
-      template,
+    const form = useForm<FormValues>({
+      resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
+      defaultValues: defaultValues as FormValues,
+      mode: 'onBlur',
     });
-  });
 
-  return (
-    <Form {...form}>
-      <form
-        className="flex flex-col gap-5"
-        data-testid={`template-form-${template.id}`}
-        id={formId}
-        onSubmit={submitHandler}
-      >
-        <SimpleFormField
-          control={form.control}
-          description="Display name for the pipeline."
-          label="Pipeline name"
-          name={PIPELINE_NAME_FIELD}
-          required
+    const stitchCurrentYaml = (values: FormValues): string => {
+      const { [PIPELINE_NAME_FIELD]: _ignored, ...slotValues } = values;
+      return stitchTemplateYaml({ template, values: slotValues as Record<string, string> });
+    };
+
+    useImperativeHandle(ref, () => ({
+      getCurrentYaml: () => stitchCurrentYaml(form.getValues()),
+      isDirty: () => form.formState.isDirty,
+    }));
+
+    // Apply an externally-requested slot write (e.g. from the in-dialog secret
+    // creation step). Routed through props + effect rather than an imperative
+    // ref so it doesn't depend on the parent's ref-forwarding plumbing.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: requestId is the intentional change detector; slotId/value are read fresh from applySlotValue and shouldn't refire repeats.
+    useEffect(() => {
+      if (!applySlotValue) {
+        return;
+      }
+      form.setValue(applySlotValue.slotId, applySlotValue.value, { shouldDirty: true, shouldValidate: true });
+      onSlotValueApplied?.();
+    }, [applySlotValue?.requestId, form, onSlotValueApplied]);
+
+    const sections = groupSlotsBySection(template.slots);
+
+    const submitHandler = form.handleSubmit((values) => {
+      onSubmit({
+        pipelineName: values[PIPELINE_NAME_FIELD] ?? template.defaultPipelineName,
+        yaml: stitchCurrentYaml(values),
+        template,
+      });
+    });
+
+    return (
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-5"
+          data-testid={`template-form-${template.id}`}
+          id={formId}
+          onSubmit={submitHandler}
         >
-          {(field) => (
-            <Input
-              data-testid="slot-pipeline-name"
-              onChange={field.onChange}
-              placeholder="my-pipeline"
-              value={field.value ?? ''}
-            />
-          )}
-        </SimpleFormField>
+          <SimpleFormField
+            control={form.control}
+            description="Display name for the pipeline."
+            label="Pipeline name"
+            name={PIPELINE_NAME_FIELD}
+            required
+          >
+            {(field) => (
+              <Input
+                data-testid="slot-pipeline-name"
+                onChange={field.onChange}
+                placeholder="my-pipeline"
+                value={field.value ?? ''}
+              />
+            )}
+          </SimpleFormField>
 
-        {SECTION_ORDER.map((section) => {
-          const slots = sections[section];
-          if (slots.length === 0) {
-            return null;
-          }
-          const endpoint = endpointFor(section, template);
-          return (
-            <section
-              aria-labelledby={`section-${section}`}
-              className="flex flex-col gap-4 border-divider-default border-l-2 pl-3"
-              data-testid={`template-section-${section}`}
-              key={section}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Heading className="font-semibold text-base text-foreground" id={`section-${section}`} level={3}>
-                  {SECTION_LABELS[section]}
-                </Heading>
-                {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
-              </div>
-              {slots.map((slot) => {
-                switch (slot.kind) {
-                  case 'string':
-                    return <StringSlotField control={form.control} key={slot.id} slot={slot} />;
-                  case 'select':
-                    return <SelectSlotField control={form.control} key={slot.id} slot={slot} />;
-                  case 'topic':
-                    return <TopicSlotField control={form.control} key={slot.id} slot={slot} />;
-                  case 'secret':
-                    return (
-                      <SecretSlotField
-                        control={form.control}
-                        key={slot.id}
-                        onRequestCreateSecret={onRequestCreateSecret}
-                        onSecretCreated={(slotId, secretName) =>
-                          form.setValue(slotId, secretName, { shouldDirty: true, shouldValidate: true })
-                        }
-                        slot={slot}
-                      />
-                    );
-                  default:
-                    return null;
-                }
-              })}
-            </section>
-          );
-        })}
-      </form>
-    </Form>
-  );
-};
+          {SECTION_ORDER.map((section) => {
+            const slots = sections[section];
+            if (slots.length === 0) {
+              return null;
+            }
+            const endpoint = endpointFor(section, template);
+            return (
+              <section
+                aria-labelledby={`section-${section}`}
+                className="flex flex-col gap-4 border-divider-default border-l-2 pl-3"
+                data-testid={`template-section-${section}`}
+                key={section}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Heading className="font-semibold text-base text-foreground" id={`section-${section}`} level={3}>
+                    {SECTION_LABELS[section]}
+                  </Heading>
+                  {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
+                </div>
+                {slots.map((slot) => {
+                  switch (slot.kind) {
+                    case 'string':
+                      return <StringSlotField control={form.control} key={slot.id} slot={slot} />;
+                    case 'select':
+                      return <SelectSlotField control={form.control} key={slot.id} slot={slot} />;
+                    case 'topic':
+                      return <TopicSlotField control={form.control} key={slot.id} slot={slot} />;
+                    case 'secret':
+                      return (
+                        <SecretSlotField
+                          control={form.control}
+                          key={slot.id}
+                          onRequestCreateSecret={onRequestCreateSecret}
+                          onSecretCreated={(slotId, secretName) =>
+                            form.setValue(slotId, secretName, { shouldDirty: true, shouldValidate: true })
+                          }
+                          slot={slot}
+                        />
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </section>
+            );
+          })}
+        </form>
+      </Form>
+    );
+  }
+);
+
+TemplateFormPanel.displayName = 'TemplateFormPanel';

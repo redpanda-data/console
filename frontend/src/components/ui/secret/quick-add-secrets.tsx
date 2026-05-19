@@ -47,6 +47,13 @@ type QuickAddSecretsProps = {
   onError?: (errors: string[]) => void;
   onUpdateEditorContent?: (oldName: string, newName: string) => void;
   cardVariant?: CardVariant;
+  // Seeds the editable "Secret name" input in the new-secret form. Useful when
+  // the caller has a strong suggestion (e.g. a template slot's suggested name)
+  // but still wants the user to be able to override it.
+  defaultNewSecretName?: string;
+  // Renders the form(s) bare, without the wrapping Card/CardHeader chrome, so
+  // the component can sit inside a host surface that already provides framing.
+  inline?: boolean;
 };
 
 const SecretFormSchema = z.record(
@@ -80,9 +87,12 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   defaultValues = {},
   onSecretsCreated,
   enableNewSecrets = false,
+  hideHeader = false,
   onError,
   onUpdateEditorContent,
   cardVariant = 'elevated',
+  defaultNewSecretName,
+  inline = false,
 }) => {
   const { mutateAsync: createSecret } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
@@ -132,7 +142,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   const newSecretForm = useForm<NewSecretFormData>({
     resolver: zodResolver(NewSecretFormSchema),
     defaultValues: {
-      name: '',
+      name: defaultNewSecretName ? normalizeSecretName(defaultNewSecretName) : '',
       value: '',
     },
   });
@@ -264,172 +274,178 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
     return null;
   }
 
+  const requiredSecretsForm = (
+    <>
+      <Alert variant="warning">
+        <AlertTitle>Required secrets are missing</AlertTitle>
+        <AlertDescription>
+          The tool requires secrets to function properly. Create them below before proceeding.
+        </AlertDescription>
+      </Alert>
+
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2">
+          <form key={formKey} className="space-y-3" onSubmit={form.handleSubmit(handleCreateSecrets)}>
+            {missingSecrets.map((normalizedSecretName) => {
+              const fieldName = `${normalizedSecretName}.value` as keyof SecretFormData;
+              const error = form.formState.errors[normalizedSecretName]?.value;
+
+              return (
+                <Field key={normalizedSecretName} data-invalid={!!error}>
+                  <FieldLabel className="font-medium font-mono text-sm" htmlFor={`secret-${normalizedSecretName}`}>
+                    {normalizedSecretName}
+                  </FieldLabel>
+                  <Input
+                    id={`secret-${normalizedSecretName}`}
+                    placeholder={`Enter value for ${normalizedSecretName}...`}
+                    type="password"
+                    {...form.register(fieldName)}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? `secret-${normalizedSecretName}-error` : undefined}
+                  />
+                  {!!error && <FieldError id={`secret-${normalizedSecretName}-error`}>{error.message}</FieldError>}
+                </Field>
+              );
+            })}
+
+            <Button className="w-full" disabled={form.formState.isSubmitting} type="submit" variant="primary">
+              {form.formState.isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Text as="span">Creating...</Text>
+                </div>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Create {missingSecrets.length} secret
+                  {missingSecrets.length > 1 ? 's' : ''}
+                </>
+              )}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+
+  const newSecretFormBody = (
+    <>
+      {/* Display newly created secrets */}
+      {newlyCreatedSecrets.length > 0 && (
+        <div className="space-y-2">
+          <Text className="font-medium text-muted-foreground text-sm">Created secrets:</Text>
+          <div className="space-y-2">
+            {newlyCreatedSecrets.map((secretName) => (
+              <Input className="font-mono" disabled key={secretName} readOnly value={secretName}>
+                <InputEnd>
+                  <Check className="h-4 w-4 text-green-600" />
+                </InputEnd>
+              </Input>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Form to add new secrets */}
+      <div className="flex flex-col gap-2">
+        <form className="space-y-3" onSubmit={newSecretForm.handleSubmit(handleCreateNewSecret)}>
+          <Field data-invalid={!!newSecretForm.formState.errors.name}>
+            <FieldLabel className="font-medium text-sm" htmlFor="new-secret-name">
+              Secret name
+            </FieldLabel>
+            <Input
+              id="new-secret-name"
+              placeholder="API_KEY"
+              {...newSecretForm.register('name', {
+                onChange: (e) => {
+                  const normalized = normalizeSecretName(e.target.value);
+                  newSecretForm.setValue('name', normalized);
+                },
+              })}
+              aria-invalid={!!newSecretForm.formState.errors.name}
+              aria-describedby={
+                newSecretForm.formState.errors.name || newSecretForm.formState.isDirty
+                  ? 'new-secret-name-description new-secret-name-error'
+                  : 'new-secret-name-description'
+              }
+            />
+            <FieldDescription id="new-secret-name-description">
+              Secrets are stored in uppercase. Invalid characters will be replaced with underscores.
+            </FieldDescription>
+            {!!newSecretForm.formState.errors.name && (
+              <FieldError id="new-secret-name-error">{newSecretForm.formState.errors.name.message}</FieldError>
+            )}
+          </Field>
+
+          <Field data-invalid={!!newSecretForm.formState.errors.value}>
+            <FieldLabel className="font-medium text-sm" htmlFor="new-secret-value">
+              Secret Value
+            </FieldLabel>
+            <Input
+              id="new-secret-value"
+              placeholder="Enter secret value..."
+              type="password"
+              {...newSecretForm.register('value')}
+              aria-invalid={!!newSecretForm.formState.errors.value}
+              aria-describedby={newSecretForm.formState.errors.value ? 'new-secret-value-error' : undefined}
+            />
+            {!!newSecretForm.formState.errors.value && (
+              <FieldError id="new-secret-value-error">{newSecretForm.formState.errors.value.message}</FieldError>
+            )}
+          </Field>
+
+          <Button className="w-full" disabled={newSecretForm.formState.isSubmitting} type="submit" variant="primary">
+            {newSecretForm.formState.isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <Text as="span">Creating...</Text>
+              </div>
+            ) : (
+              <>
+                {newlyCreatedSecrets.length > 0 ? 'Create Another Secret' : 'Create Secret'}
+                <Plus className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </form>
+      </div>
+    </>
+  );
+
   return (
     <div className="space-y-4">
-      {missingSecrets.length > 0 && (
-        <Card size="full" variant={cardVariant}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
-              Add required secrets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="warning">
-              <AlertTitle>Required secrets are missing</AlertTitle>
-              <AlertDescription>
-                The tool requires secrets to function properly. Create them below before proceeding.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2">
-                <form key={formKey} className="space-y-3" onSubmit={form.handleSubmit(handleCreateSecrets)}>
-                  {missingSecrets.map((normalizedSecretName) => {
-                    const fieldName = `${normalizedSecretName}.value` as keyof SecretFormData;
-                    const error = form.formState.errors[normalizedSecretName]?.value;
-
-                    return (
-                      <Field key={normalizedSecretName} data-invalid={!!error}>
-                        <FieldLabel className="font-medium font-mono text-sm" htmlFor={`secret-${normalizedSecretName}`}>
-                          {normalizedSecretName}
-                        </FieldLabel>
-                        <Input
-                          id={`secret-${normalizedSecretName}`}
-                          placeholder={`Enter value for ${normalizedSecretName}...`}
-                          type="password"
-                          {...form.register(fieldName)}
-                          aria-invalid={!!error}
-                          aria-describedby={error ? `secret-${normalizedSecretName}-error` : undefined}
-                        />
-                        {!!error && (
-                          <FieldError id={`secret-${normalizedSecretName}-error`}>{error.message}</FieldError>
-                        )}
-                      </Field>
-                    );
-                  })}
-
-                  <Button
-                    className="w-full"
-                    disabled={form.formState.isSubmitting}
-                    type="submit"
-                    variant="primary"
-                  >
-                    {form.formState.isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <Text as="span">Creating...</Text>
-                      </div>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4" />
-                        Create {missingSecrets.length} secret
-                        {missingSecrets.length > 1 ? 's' : ''}
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      {enableNewSecrets && (
-        <Card size="full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
-              Add secrets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Display newly created secrets */}
-            {newlyCreatedSecrets.length > 0 && (
-              <div className="space-y-2">
-                <Text className="font-medium text-muted-foreground text-sm">Created secrets:</Text>
-                <div className="space-y-2">
-                  {newlyCreatedSecrets.map((secretName) => (
-                    <Input className="font-mono" disabled key={secretName} readOnly value={secretName}>
-                      <InputEnd>
-                        <Check className="h-4 w-4 text-green-600" />
-                      </InputEnd>
-                    </Input>
-                  ))}
-                </div>
-              </div>
+      {missingSecrets.length > 0 &&
+        (inline ? (
+          <div className="space-y-4">{requiredSecretsForm}</div>
+        ) : (
+          <Card size="full" variant={cardVariant}>
+            {hideHeader ? null : (
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Add required secrets
+                </CardTitle>
+              </CardHeader>
             )}
-
-            {/* Form to add new secrets */}
-            <div className="flex flex-col gap-2">
-              <form className="space-y-3" onSubmit={newSecretForm.handleSubmit(handleCreateNewSecret)}>
-                <Field data-invalid={!!newSecretForm.formState.errors.name}>
-                  <FieldLabel className="font-medium text-sm" htmlFor="new-secret-name">
-                    Secret name
-                  </FieldLabel>
-                  <Input
-                    id="new-secret-name"
-                    placeholder="API_KEY"
-                    {...newSecretForm.register('name', {
-                      onChange: (e) => {
-                        const normalized = normalizeSecretName(e.target.value);
-                        newSecretForm.setValue('name', normalized);
-                      },
-                    })}
-                    aria-invalid={!!newSecretForm.formState.errors.name}
-                    aria-describedby={
-                      newSecretForm.formState.errors.name || newSecretForm.formState.isDirty
-                        ? 'new-secret-name-description new-secret-name-error'
-                        : 'new-secret-name-description'
-                    }
-                  />
-                  <FieldDescription id="new-secret-name-description">
-                    Secrets are stored in uppercase. Invalid characters will be replaced with underscores.
-                  </FieldDescription>
-                  {!!newSecretForm.formState.errors.name && (
-                    <FieldError id="new-secret-name-error">{newSecretForm.formState.errors.name.message}</FieldError>
-                  )}
-                </Field>
-
-                <Field data-invalid={!!newSecretForm.formState.errors.value}>
-                  <FieldLabel className="font-medium text-sm" htmlFor="new-secret-value">
-                    Secret Value
-                  </FieldLabel>
-                  <Input
-                    id="new-secret-value"
-                    placeholder="Enter secret value..."
-                    type="password"
-                    {...newSecretForm.register('value')}
-                    aria-invalid={!!newSecretForm.formState.errors.value}
-                    aria-describedby={newSecretForm.formState.errors.value ? 'new-secret-value-error' : undefined}
-                  />
-                  {!!newSecretForm.formState.errors.value && (
-                    <FieldError id="new-secret-value-error">{newSecretForm.formState.errors.value.message}</FieldError>
-                  )}
-                </Field>
-
-                <Button
-                  className="w-full"
-                  disabled={newSecretForm.formState.isSubmitting}
-                  type="submit"
-                  variant="primary"
-                >
-                  {newSecretForm.formState.isSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <Text as="span">Creating...</Text>
-                    </div>
-                  ) : (
-                    <>
-                      {newlyCreatedSecrets.length > 0 ? 'Create Another Secret' : 'Create Secret'}
-                      <Plus className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            <CardContent className="space-y-4">{requiredSecretsForm}</CardContent>
+          </Card>
+        ))}
+      {enableNewSecrets &&
+        (inline ? (
+          <div className="space-y-4">{newSecretFormBody}</div>
+        ) : (
+          <Card size="full">
+            {hideHeader ? null : (
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Add secrets
+                </CardTitle>
+              </CardHeader>
+            )}
+            <CardContent className="space-y-4">{newSecretFormBody}</CardContent>
+          </Card>
+        ))}
     </div>
   );
 };

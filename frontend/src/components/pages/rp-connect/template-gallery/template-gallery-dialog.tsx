@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -19,14 +20,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { ArrowLeft } from 'lucide-react';
+import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
+import { ArrowLeft, KeyRound } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
-import { InlineCreateSecret } from './inline-create-secret';
 import type { PipelineTemplate } from './pipeline-template-types';
-import { TemplateFormPanel, type TemplateFormPanelHandle, type TemplateFormSubmitPayload } from './template-form-panel';
+import {
+  type ApplySlotValueRequest,
+  TemplateFormPanel,
+  type TemplateFormPanelHandle,
+  type TemplateFormSubmitPayload,
+} from './template-form-panel';
 import { TemplateGalleryGrid } from './template-gallery-grid';
 
 export type TemplateGalleryDialogProps = {
@@ -91,6 +97,11 @@ const StepBackHeader = ({
 export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }: TemplateGalleryDialogProps) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
+  // Slot write requested by the in-dialog secret-creation step. The form panel
+  // consumes it via a useEffect and then calls back to clear it. Routed
+  // through props instead of an imperative ref because plain function
+  // components don't receive `ref` as a prop in React 18.
+  const [applySlotValue, setApplySlotValue] = useState<ApplySlotValueRequest | null>(null);
   const formHandleRef = useRef<TemplateFormPanelHandle | null>(null);
   const formId = useId();
 
@@ -101,6 +112,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
   const resetToGallery = () => {
     setView({ kind: 'gallery' });
     setSelectedTemplate(null);
+    setApplySlotValue(null);
     formHandleRef.current = null;
   };
 
@@ -116,9 +128,10 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
     [secretsResponse]
   );
 
-  const handleSecretCreated = (name: string) => {
-    if (view.kind === 'addSecret') {
-      formHandleRef.current?.setSlotValue(view.slotId, name);
+  const handleSecretsCreated = (names: string[]) => {
+    const created = names[0];
+    if (created && view.kind === 'addSecret') {
+      setApplySlotValue({ slotId: view.slotId, value: created, requestId: Date.now() });
     }
     setView({ kind: 'form' });
   };
@@ -176,8 +189,10 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
         {isFormMounted && selectedTemplate ? (
           <DialogBody style={isFormViewActive ? undefined : { display: 'none' }}>
             <TemplateFormPanel
+              applySlotValue={applySlotValue}
               formId={formId}
               onRequestCreateSecret={(slotId, suggestedName) => setView({ kind: 'addSecret', slotId, suggestedName })}
+              onSlotValueApplied={() => setApplySlotValue(null)}
               onSubmit={onSubmit}
               ref={formHandleRef}
               template={selectedTemplate}
@@ -187,12 +202,28 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
         {isAddSecretViewActive ? (
           <DialogBody>
-            <InlineCreateSecret
-              existingSecrets={existingSecrets}
-              onCreated={handleSecretCreated}
-              scopes={[Scope.REDPANDA_CONNECT]}
-              suggestedName={view.kind === 'addSecret' ? view.suggestedName : undefined}
-            />
+            <div className="flex flex-col gap-4">
+              {view.kind === 'addSecret' && view.suggestedName ? (
+                <Alert icon={<KeyRound />} variant="warning">
+                  <AlertTitle>This template needs a secret</AlertTitle>
+                  <AlertDescription>
+                    <p className="text-pretty">
+                      We've suggested <span className="font-mono font-semibold">{view.suggestedName}</span> — feel free
+                      to adjust the name.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              <QuickAddSecrets
+                defaultNewSecretName={view.kind === 'addSecret' ? view.suggestedName : undefined}
+                enableNewSecrets
+                existingSecrets={existingSecrets}
+                inline
+                onSecretsCreated={handleSecretsCreated}
+                requiredSecrets={[]}
+                scopes={[Scope.REDPANDA_CONNECT]}
+              />
+            </div>
           </DialogBody>
         ) : null}
 

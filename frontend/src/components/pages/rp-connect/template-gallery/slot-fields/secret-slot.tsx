@@ -77,11 +77,17 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
               ? [selectedValue, ...existingSecrets]
               : existingSecrets;
           return (
-            <div className="flex flex-col gap-2 items-start sm:flex-row sm:items-center">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
               <div className="flex-1">
                 <Select onValueChange={field.onChange} value={selectedValue}>
                   <SelectTrigger data-testid={`slot-${slot.id}`}>
-                    <SelectValue placeholder="Select an existing secret..." />
+                    {/* Render-prop child sidesteps Base UI's "label only resolves after the
+                        popup mounts" behavior — without it the trigger shows the placeholder
+                        until the dropdown is first opened, which masks the auto-select after
+                        in-dialog secret creation. */}
+                    <SelectValue placeholder="Select an existing secret...">
+                      {(value) => (typeof value === 'string' && value !== '' ? value : null)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {options.length === 0 ? (
