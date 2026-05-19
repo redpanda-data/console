@@ -24,12 +24,7 @@ import type { Control, FieldValues } from 'react-hook-form';
 
 import type { TopicSlot } from '../pipeline-template-types';
 
-/**
- * In embedded mode the Topics page lives under the host cluster (e.g.
- * `/clusters/<id>/topics`); standalone Console serves it at `/topics`. We
- * include `showInternal=true` so newly created internal topics like
- * `_consumer_offsets` are visible in case the template requires one.
- */
+// Embedded mode: `/clusters/<id>/topics`. Standalone: `/topics`.
 const buildTopicsHref = () => {
   const query = '?showInternal=true';
   if (isEmbedded() && config.clusterId) {

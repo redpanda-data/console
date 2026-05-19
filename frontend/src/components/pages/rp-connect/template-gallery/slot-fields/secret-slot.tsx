@@ -29,14 +29,10 @@ import type { SecretSlot } from '../pipeline-template-types';
 export type SecretSlotFieldProps = {
   slot: SecretSlot;
   control: Control<FieldValues>;
-  /** Called after the user successfully creates a new secret. */
   onSecretCreated?: (slotId: string, secretName: string) => void;
-  /**
-   * When supplied, clicking "Create secret" delegates to the parent rather than
-   * opening the nested `AddSecretsDialog`. The parent should drive an in-dialog
-   * step so the user doesn't see a dialog-within-a-dialog. The slot still owns
-   * the existing-secret select; only the create flow is delegated.
-   */
+  // When supplied, "Create secret" delegates to the parent instead of opening
+  // the nested AddSecretsDialog (avoids dialog-within-a-dialog). The existing-
+  // secret select stays in the slot regardless.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
 };
 

@@ -14,8 +14,7 @@ import { describe, expect, test } from 'vitest';
 import type { PipelineTemplate } from '../pipeline-template-types';
 import { findMissingRequiredSlot, stitchTemplateYaml } from '../template-deploy';
 
-// YAML / Bloblang secret refs share the `${...}` syntax with JS template strings.
-// Build the literal at runtime so the linter rule `noTemplateCurlyInString` is happy.
+// Build `${...}` tokens at runtime so biome's noTemplateCurlyInString doesn't fire.
 const DOLLAR = '$';
 const secretRef = (name: string) => `${DOLLAR}{secrets.${name}}`;
 const slotToken = (id: string) => `${DOLLAR}{slot.${id}}`;

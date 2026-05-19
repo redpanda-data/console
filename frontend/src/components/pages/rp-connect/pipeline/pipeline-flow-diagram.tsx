@@ -64,11 +64,7 @@ type PipelineFlowDiagramProps = {
   onAddTopic?: (section: string, componentName: string) => void;
   /** Callback when user clicks "+ auth" on a redpanda node missing SASL config. */
   onAddSasl?: (section: string, componentName: string) => void;
-  /**
-   * Callback when the user clicks "Start from a template". When provided AND the
-   * pipeline currently has neither an input nor an output, a floating CTA is
-   * rendered below the placeholder Input/Output rows inside the canvas.
-   */
+  // Renders the "Start from a template" CTA in-canvas while the pipeline is empty.
   onBrowseTemplates?: () => void;
   /** Hide the zoom +/- controls and lock zoom to 1. */
   hideZoomControls?: boolean;
@@ -250,9 +246,6 @@ export const PipelineFlowDiagram = ({
     );
   }
 
-  // The pipeline is "empty" when the YAML has not yet declared an input or an output.
-  // The diagram renders placeholder Add-input / Add-output rows in this state, and we
-  // want to surface a floating "Start from a template" CTA right below them.
   const isPipelineEmpty = !(configYaml.includes('input:') || configYaml.includes('output:'));
   const showTemplateFab = Boolean(onBrowseTemplates) && isPipelineEmpty;
 

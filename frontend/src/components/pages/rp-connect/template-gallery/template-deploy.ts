@@ -14,10 +14,7 @@ import { getSecretSyntax } from '../types/constants';
 
 export type SlotValues = Record<string, string>;
 
-/**
- * For each slot, return the literal token to substitute into the YAML.
- * Secret slots become `${secrets.NAME}`; everything else inlines as-is.
- */
+// Secret slots become `${secrets.NAME}`; everything else inlines as-is.
 const substituteToken = (slot: TemplateSlot, raw: string): string => {
   if (slot.kind === 'secret') {
     return getSecretSyntax(raw);
@@ -27,11 +24,6 @@ const substituteToken = (slot: TemplateSlot, raw: string): string => {
 
 const SLOT_TOKEN_PATTERN = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
 
-/**
- * Stitch the template's `baseYaml` with the form's slot values by replacing
- * `${slot.X}` placeholders. The header lets future tooling identify
- * template-derived configs.
- */
 export const stitchTemplateYaml = ({
   template,
   values,
@@ -54,10 +46,7 @@ export const stitchTemplateYaml = ({
   return `${header}${substituted}`;
 };
 
-/**
- * Pre-validates a slot value map against a template. Returns the first missing
- * required slot id, or undefined if every required slot has a non-empty value.
- */
+// Returns the id of the first required slot without a value, or undefined.
 export const findMissingRequiredSlot = (template: PipelineTemplate, values: SlotValues): string | undefined => {
   for (const slot of template.slots) {
     if (slot.required && !values[slot.id]?.trim()) {

@@ -51,13 +51,8 @@ const consumerGroupSlot = {
   required: true,
 };
 
-/**
- * v1 curated catalog (PRD §8). The product team owns this list.
- *
- * Every template MUST include a `baseYaml` with `${slot.X}` placeholders for
- * each required slot — the deploy stitcher only substitutes the placeholders
- * present in this YAML. There is no schema-scaffolding fallback.
- */
+// Curated catalog (PRD §8). Every required slot must be referenced as
+// `${slot.X}` in the template's `baseYaml`; deploy is pure substitution.
 export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
   // ─────────── CDC sources to Redpanda ───────────
   {

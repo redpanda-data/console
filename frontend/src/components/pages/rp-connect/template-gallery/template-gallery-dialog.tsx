@@ -45,14 +45,9 @@ export type TemplateGalleryDialogProps = {
   isSubmitting?: boolean;
 };
 
-/**
- * Dialog view state.
- *
- * `selectedTemplate` is held independently of `view` so the underlying
- * `TemplateFormPanel` stays mounted across `form ↔ addSecret` transitions and
- * its react-hook-form state is preserved when the user returns from the inline
- * secret-creation step.
- */
+// `selectedTemplate` is tracked outside `view` so `TemplateFormPanel` stays
+// mounted across `form ↔ addSecret` transitions and the user's in-progress
+// form values survive the round-trip.
 type DialogView =
   | { kind: 'gallery' }
   | { kind: 'form' }
@@ -115,9 +110,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
     resetToGallery();
   };
 
-  // Existing-secrets query used by the inline create step to reject duplicate
-  // names locally. The create mutation invalidates the listSecrets cache on
-  // success, so the slot dropdown picks up the new entry automatically.
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const existingSecrets = useMemo(
     () => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean),
@@ -133,10 +125,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
   return (
     <Dialog
-      // Block backdrop clicks once the user is past the gallery step so a stray
-      // click can't wipe their in-progress form values. While they're still
-      // browsing templates there's nothing to lose, so backdrop dismissal stays
-      // enabled there. ESC and the X / Cancel buttons always work.
+      // Block backdrop dismissal past the gallery step so a stray click can't
+      // wipe in-progress form values. ESC and the X / Cancel buttons still close.
       disablePointerDismissal={view.kind !== 'gallery'}
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
       open={open}
@@ -181,10 +171,10 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
           />
         ) : null}
 
-        {/* Form body — mounted once and rendered across both form & addSecret views; */}
-        {/* visibility toggled via CSS so react-hook-form state survives back-and-forth. */}
+        {/* Stays mounted across addSecret to preserve form state; hide via inline */}
+        {/* style so the flex-1 outer doesn't reserve space (className targets inner). */}
         {isFormMounted && selectedTemplate ? (
-          <DialogBody className={isFormViewActive ? '' : 'hidden'}>
+          <DialogBody style={isFormViewActive ? undefined : { display: 'none' }}>
             <TemplateFormPanel
               formId={formId}
               onRequestCreateSecret={(slotId, suggestedName) => setView({ kind: 'addSecret', slotId, suggestedName })}

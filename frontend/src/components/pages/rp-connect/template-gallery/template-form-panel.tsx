@@ -116,33 +116,22 @@ export type TemplateFormSubmitPayload = {
   template: PipelineTemplate;
 };
 
-/**
- * Imperative handle exposed via a forwarded ref so the parent dialog can read
- * the current YAML at cancel-time without re-rendering the form.
- */
+// Imperative handle so the parent dialog can read the current YAML on cancel
+// without re-rendering the form.
 export type TemplateFormPanelHandle = {
-  /** Returns the YAML stitched from whatever the user has typed so far. */
   getCurrentYaml: () => string;
-  /** Whether the user has touched any field since the form mounted. */
   isDirty: () => boolean;
-  /** Set a slot's value (used after returning from the in-dialog secret-create step). */
   setSlotValue: (slotId: string, value: string) => void;
 };
 
 export type TemplateFormPanelProps = {
   template: PipelineTemplate;
-  /**
-   * HTML form element id — exposed so the parent dialog's footer submit button
-   * can target the form via the `form` attribute even though it's outside the
-   * form's DOM subtree.
-   */
+  // Exposed so an out-of-tree submit button (e.g. in the dialog footer) can
+  // target the form via the `form` attribute.
   formId: string;
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
-  /**
-   * When provided, secret slots delegate their "Create secret" click to the
-   * parent (so the parent can render an in-dialog step instead of a nested
-   * dialog).
-   */
+  // When set, secret slots delegate "Create secret" to the parent instead of
+  // opening a nested dialog.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
   ref?: React.Ref<TemplateFormPanelHandle>;
 };
@@ -173,7 +162,7 @@ export const TemplateFormPanel = ({
     isDirty: () => form.formState.isDirty,
     setSlotValue: (slotId, value) => form.setValue(slotId, value, { shouldDirty: true, shouldValidate: true }),
   });
-  // Keep the handle's closures referring to the latest form / template every render.
+  // Refresh closures every render so the handle reads the latest form values.
   handleRef.current = {
     getCurrentYaml: () => stitchCurrentYaml(form.getValues()),
     isDirty: () => form.formState.isDirty,

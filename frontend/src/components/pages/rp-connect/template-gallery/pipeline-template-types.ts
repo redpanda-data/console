@@ -49,11 +49,8 @@ export type TemplateSlot = StringSlot | SecretSlot | TopicSlot | SelectSlot;
 export type TemplateEndpoint = {
   component: string;
   type: 'input' | 'output';
-  /**
-   * Optional override for the tile/section icon. Use when the connector's name
-   * is generic (e.g. `sql_raw` targeting Postgres) so the gallery can still
-   * show a recognizable logo. Must match a key in the connector logo map.
-   */
+  // Use when `component` is a generic connector name (e.g. `sql_raw`) so the
+  // gallery can show a more recognizable icon. Must be a key in `componentLogoMap`.
   logoOverride?: string;
 };
 
@@ -66,17 +63,10 @@ export type PipelineTemplate = {
   sink: TemplateEndpoint;
   setupTimeMinutes: number;
   slots: TemplateSlot[];
-  /**
-   * Hand-curated YAML for the pipeline. References slot values with `${slot.X}`
-   * placeholders which are substituted at deploy time (secret slots become
-   * `${secrets.NAME}`; other slots are inlined as their raw values). Every
-   * required slot must appear somewhere in this YAML or it has no effect on
-   * the deployed pipeline.
-   */
+  // Hand-curated YAML with `${slot.X}` placeholders. Every required slot must
+  // appear here or it has no effect on the deployed pipeline.
   baseYaml: string;
-  /**
-   * Suggested pipeline display name pre-filled in the form.
-   */
+  // Suggested pipeline display name pre-filled in the form.
   defaultPipelineName: string;
 };
 
