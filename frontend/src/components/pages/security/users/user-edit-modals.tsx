@@ -85,9 +85,9 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                 <div className="flex items-center gap-2">
                   <Input
                     aria-invalid={!isValidPassword}
-                    data-testid="create-user-password"
                     name="test"
                     onChange={(e) => setPassword(e.target.value)}
+                    testId="create-user-password"
                     type="password"
                     value={password}
                   />
@@ -150,6 +150,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
             Cancel
           </Button>
           <Button
+            data-testid="save-password-button"
             disabled={!isValidPassword || mechanism === undefined || isUpdateUserPending}
             onClick={onSavePassword}
             type="submit"

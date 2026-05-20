@@ -459,7 +459,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
           <Button onClick={handleClose} type="button" variant="outline">
             Cancel
           </Button>
-          <Button disabled={isPending} form="add-acl-form" type="submit">
+          <Button data-testid="add-acl-submit-button" disabled={isPending} form="add-acl-form" type="submit">
             Add ACL
           </Button>
         </DialogFooter>

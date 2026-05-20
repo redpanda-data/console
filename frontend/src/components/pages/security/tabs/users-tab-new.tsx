@@ -556,12 +556,18 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="deleteButton" size="icon-sm" variant="ghost">
+          <Button
+            className="deleteButton"
+            data-testid={`user-actions-button-${user.name}`}
+            size="icon-sm"
+            variant="ghost"
+          >
             <MoreHorizontalIcon className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
+            data-testid={`user-change-password-menu-item-${user.name}`}
             onClick={(e) => {
               e.stopPropagation();
               setIsChangePasswordModalOpen(true);
@@ -571,6 +577,7 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
             Change password
           </DropdownMenuItem>
           <DropdownMenuItem
+            data-testid={`user-delete-menu-item-${user.name}`}
             onClick={(e) => {
               e.stopPropagation();
               setIsDeleteModalOpen(true);

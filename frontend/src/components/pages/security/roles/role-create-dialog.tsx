@@ -97,7 +97,11 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <Button disabled={!trimmed || (submitted && alreadyExists) || isSubmitting} onClick={handleSubmit}>
+          <Button
+            data-testid="create-role-submit"
+            disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
+            onClick={handleSubmit}
+          >
             Create
           </Button>
         </DialogFooter>

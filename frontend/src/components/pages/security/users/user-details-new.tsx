@@ -123,12 +123,16 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
+          <Button
+            data-testid="user-change-password-button"
+            onClick={() => setIsChangePasswordModalOpen(true)}
+            variant="outline"
+          >
             <KeyRoundIcon />
             Change Password
           </Button>
           {Boolean(isServiceAccount) && (
-            <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
+            <Button data-testid="user-delete-button" onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
               <Trash2Icon />
               Delete User
             </Button>
