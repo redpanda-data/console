@@ -1407,6 +1407,12 @@ export type SchemaRegistrySubject = {
   isSoftDeleted: boolean;
 };
 
+// GET /schema-registry/subject-types
+export type SchemaRegistrySubjectType = {
+  name: string;
+  type: SchemaTypeType;
+};
+
 // GET /schema-registry/schemas/types
 export type SchemaRegistrySchemaTypesResponse = {
   isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
