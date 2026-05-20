@@ -37,11 +37,15 @@ type SchemaRegistryConfig struct {
 	Compatibility sr.CompatibilityLevel `json:"compatibility"`
 }
 
-// SchemaRegistrySubject is the subject name along with a bool that
-// indicates whether the subject is active or soft-deleted.
+// SchemaRegistrySubject is the subject name, its soft-delete flag, and the
+// schema type (AVRO/PROTOBUF/JSON) of its latest active version. Type is a
+// pointer specifically so the zero value (sr.TypeAvro == 0) is not stripped
+// by encoding/json's omitempty — without that, every Avro subject would
+// silently drop its type and the UI couldn't filter them.
 type SchemaRegistrySubject struct {
-	Name          string `json:"name"`
-	IsSoftDeleted bool   `json:"isSoftDeleted"`
+	Name          string         `json:"name"`
+	IsSoftDeleted bool           `json:"isSoftDeleted"`
+	Type          *sr.SchemaType `json:"type,omitempty"`
 }
 
 // SchemaRegistryContext represents a schema registry context along with
@@ -204,6 +208,12 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix s
 			Name:          subj,
 			IsSoftDeleted: !exists,
 		})
+	}
+
+	if includeTypes {
+		if err := s.enrichSubjectsWithType(ctx, result); err != nil {
+			return nil, err
+		}
 	}
 
 	// Sort for stable results in UI
