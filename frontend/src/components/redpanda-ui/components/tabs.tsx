@@ -2,14 +2,7 @@
 
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
-import {
-  AnimatePresence,
-  type HTMLMotionProps,
-  MotionConfigContext,
-  motion,
-  type Transition,
-  useReducedMotion,
-} from 'motion/react';
+import { AnimatePresence, motion, type Transition, useReducedMotion } from 'motion/react';
 import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
@@ -250,14 +243,18 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       };
     }, [syncHighlight]);
 
+    const prefersReducedMotion = useReducedMotion();
     const isHorizontal = orientation !== 'vertical';
     // Lock the perpendicular axis: when the active tab moves to a different
     // row (horizontal) or column (vertical), the highlight should snap on that
     // axis instead of animating in 2D, which looks amateur.
     const axisLockedTransition: Transition = React.useMemo(() => {
+      if (prefersReducedMotion) {
+        return { duration: 0 };
+      }
       const snap = { duration: 0 } as const;
       return isHorizontal ? { ...transition, top: snap, height: snap } : { ...transition, left: snap, width: snap };
-    }, [transition, isHorizontal]);
+    }, [transition, isHorizontal, prefersReducedMotion]);
 
     const showHighlight = bounds !== null;
 
@@ -302,7 +299,9 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
 TabsList.displayName = 'TabsList';
 
 const tabsTriggerVariants = cva(
-  'z-[1] inline-flex size-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground',
+  // Base UI sets `aria-disabled` + `data-disabled` (not the native `disabled` attribute) on a disabled tab,
+  // so target those — `disabled:*` selectors would never match here.
+  'z-[1] inline-flex size-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[state=active]:text-foreground',
   {
     variants: {
       variant: {
@@ -351,77 +350,28 @@ function TabsTrigger({ className, value, variant, testId, disabled, render, ...p
   );
 }
 
-type TabsContentProps = React.ComponentProps<typeof TabsPrimitive.Panel> &
-  HTMLMotionProps<'div'> &
-  SharedProps & {
-    transition?: Transition;
-  };
+type TabsContentProps = React.ComponentProps<typeof TabsPrimitive.Panel> & SharedProps;
 
-function TabsContent({
-  className,
-  children,
-  transition = {
-    duration: 0.5,
-    ease: 'easeInOut',
-  },
-  testId,
-  ...props
-}: TabsContentProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const reducedMotionConfig = React.useContext(MotionConfigContext).reducedMotion;
-  const shouldReduceMotion = reducedMotionConfig === 'always' || prefersReducedMotion;
-
+function TabsContent({ className, children, testId, ...props }: TabsContentProps) {
   return (
     <TabsPrimitive.Panel
-      render={
-        <motion.div
-          className={cn('flex-1 space-y-6 outline-none', className)}
-          data-slot="tabs-content"
-          data-testid={testId}
-          {...(shouldReduceMotion
-            ? {
-                initial: false,
-                layout: false,
-              }
-            : {
-                animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-                exit: { opacity: 0, y: 10, filter: 'blur(4px)' },
-                initial: { opacity: 0, y: -10, filter: 'blur(4px)' },
-                layout: true,
-                transition,
-              })}
-        >
-          {children}
-        </motion.div>
-      }
-      {...props}
-    />
-  );
-}
-
-type TabsContentsProps = HTMLMotionProps<'div'> & {
-  children: React.ReactNode;
-  className?: string;
-  transition?: Transition;
-};
-
-function TabsContents({
-  children,
-  className,
-  transition = { type: 'spring', stiffness: 200, damping: 25 },
-  ...props
-}: TabsContentsProps) {
-  return (
-    <motion.div
-      className={cn('overflow-visible', className)}
-      data-slot="tabs-contents"
-      layout
-      style={{ height: 'auto' }}
-      transition={transition}
+      className={cn('flex-1 space-y-6 outline-none', className)}
+      data-slot="tabs-content"
+      data-testid={testId}
       {...props}
     >
       {children}
-    </motion.div>
+    </TabsPrimitive.Panel>
+  );
+}
+
+type TabsContentsProps = React.ComponentProps<'div'>;
+
+function TabsContents({ children, className, ...props }: TabsContentsProps) {
+  return (
+    <div className={cn('overflow-visible', className)} data-slot="tabs-contents" {...props}>
+      {children}
+    </div>
   );
 }
 
