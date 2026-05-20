@@ -20,8 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ConsoleService_ListMessages_FullMethodName   = "/redpanda.api.console.v1alpha1.ConsoleService/ListMessages"
-	ConsoleService_PublishMessage_FullMethodName = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
+	ConsoleService_ListMessages_FullMethodName           = "/redpanda.api.console.v1alpha1.ConsoleService/ListMessages"
+	ConsoleService_PublishMessage_FullMethodName         = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
+	ConsoleService_ListSchemaMessageTypes_FullMethodName = "/redpanda.api.console.v1alpha1.ConsoleService/ListSchemaMessageTypes"
+	ConsoleService_GenerateSchemaSample_FullMethodName   = "/redpanda.api.console.v1alpha1.ConsoleService/GenerateSchemaSample"
 )
 
 // ConsoleServiceClient is the client API for ConsoleService service.
@@ -34,6 +36,12 @@ type ConsoleServiceClient interface {
 	ListMessages(ctx context.Context, in *ListMessagesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListMessagesResponse], error)
 	// PublishMessage publishes message.
 	PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error)
+	// ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
+	// including nested types, so clients can pick by name instead of by numeric index.
+	ListSchemaMessageTypes(ctx context.Context, in *ListSchemaMessageTypesRequest, opts ...grpc.CallOption) (*ListSchemaMessageTypesResponse, error)
+	// GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
+	// schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
+	GenerateSchemaSample(ctx context.Context, in *GenerateSchemaSampleRequest, opts ...grpc.CallOption) (*GenerateSchemaSampleResponse, error)
 }
 
 type consoleServiceClient struct {
@@ -73,6 +81,26 @@ func (c *consoleServiceClient) PublishMessage(ctx context.Context, in *PublishMe
 	return out, nil
 }
 
+func (c *consoleServiceClient) ListSchemaMessageTypes(ctx context.Context, in *ListSchemaMessageTypesRequest, opts ...grpc.CallOption) (*ListSchemaMessageTypesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSchemaMessageTypesResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_ListSchemaMessageTypes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleServiceClient) GenerateSchemaSample(ctx context.Context, in *GenerateSchemaSampleRequest, opts ...grpc.CallOption) (*GenerateSchemaSampleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateSchemaSampleResponse)
+	err := c.cc.Invoke(ctx, ConsoleService_GenerateSchemaSample_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConsoleServiceServer is the server API for ConsoleService service.
 // All implementations must embed UnimplementedConsoleServiceServer
 // for forward compatibility.
@@ -83,6 +111,12 @@ type ConsoleServiceServer interface {
 	ListMessages(*ListMessagesRequest, grpc.ServerStreamingServer[ListMessagesResponse]) error
 	// PublishMessage publishes message.
 	PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error)
+	// ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
+	// including nested types, so clients can pick by name instead of by numeric index.
+	ListSchemaMessageTypes(context.Context, *ListSchemaMessageTypesRequest) (*ListSchemaMessageTypesResponse, error)
+	// GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
+	// schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
+	GenerateSchemaSample(context.Context, *GenerateSchemaSampleRequest) (*GenerateSchemaSampleResponse, error)
 	mustEmbedUnimplementedConsoleServiceServer()
 }
 
@@ -98,6 +132,12 @@ func (UnimplementedConsoleServiceServer) ListMessages(*ListMessagesRequest, grpc
 }
 func (UnimplementedConsoleServiceServer) PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PublishMessage not implemented")
+}
+func (UnimplementedConsoleServiceServer) ListSchemaMessageTypes(context.Context, *ListSchemaMessageTypesRequest) (*ListSchemaMessageTypesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSchemaMessageTypes not implemented")
+}
+func (UnimplementedConsoleServiceServer) GenerateSchemaSample(context.Context, *GenerateSchemaSampleRequest) (*GenerateSchemaSampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateSchemaSample not implemented")
 }
 func (UnimplementedConsoleServiceServer) mustEmbedUnimplementedConsoleServiceServer() {}
 func (UnimplementedConsoleServiceServer) testEmbeddedByValue()                        {}
@@ -149,6 +189,42 @@ func _ConsoleService_PublishMessage_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConsoleService_ListSchemaMessageTypes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSchemaMessageTypesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).ListSchemaMessageTypes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_ListSchemaMessageTypes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).ListSchemaMessageTypes(ctx, req.(*ListSchemaMessageTypesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConsoleService_GenerateSchemaSample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateSchemaSampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).GenerateSchemaSample(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsoleService_GenerateSchemaSample_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).GenerateSchemaSample(ctx, req.(*GenerateSchemaSampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConsoleService_ServiceDesc is the grpc.ServiceDesc for ConsoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -159,6 +235,14 @@ var ConsoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PublishMessage",
 			Handler:    _ConsoleService_PublishMessage_Handler,
+		},
+		{
+			MethodName: "ListSchemaMessageTypes",
+			Handler:    _ConsoleService_ListSchemaMessageTypes_Handler,
+		},
+		{
+			MethodName: "GenerateSchemaSample",
+			Handler:    _ConsoleService_GenerateSchemaSample_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

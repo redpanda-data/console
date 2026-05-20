@@ -7,14 +7,14 @@ import { fileDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_redpanda_api_auth_v1_authorization } from "../../auth/v1/authorization_pb";
 import type { ListMessagesRequestSchema, ListMessagesResponseSchema } from "./list_messages_pb";
 import { file_redpanda_api_console_v1alpha1_list_messages } from "./list_messages_pb";
-import type { PublishMessageRequestSchema, PublishMessageResponseSchema } from "./publish_messages_pb";
+import type { GenerateSchemaSampleRequestSchema, GenerateSchemaSampleResponseSchema, ListSchemaMessageTypesRequestSchema, ListSchemaMessageTypesResponseSchema, PublishMessageRequestSchema, PublishMessageResponseSchema } from "./publish_messages_pb";
 import { file_redpanda_api_console_v1alpha1_publish_messages } from "./publish_messages_pb";
 
 /**
  * Describes the file redpanda/api/console/v1alpha1/console_service.proto.
  */
 export const file_redpanda_api_console_v1alpha1_console_service: GenFile = /*@__PURE__*/
-  fileDesc("CjNyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9jb25zb2xlX3NlcnZpY2UucHJvdG8SHXJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExMqACCg5Db25zb2xlU2VydmljZRKDAQoMTGlzdE1lc3NhZ2VzEjIucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdE1lc3NhZ2VzUmVxdWVzdBozLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RNZXNzYWdlc1Jlc3BvbnNlIgiKph0ECAEQATABEocBCg5QdWJsaXNoTWVzc2FnZRI0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVxdWVzdBo1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2UiCIqmHQQIAhABYgZwcm90bzM", [file_redpanda_api_auth_v1_authorization, file_redpanda_api_console_v1alpha1_list_messages, file_redpanda_api_console_v1alpha1_publish_messages]);
+  fileDesc("CjNyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9jb25zb2xlX3NlcnZpY2UucHJvdG8SHXJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExMt4ECg5Db25zb2xlU2VydmljZRKDAQoMTGlzdE1lc3NhZ2VzEjIucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdE1lc3NhZ2VzUmVxdWVzdBozLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RNZXNzYWdlc1Jlc3BvbnNlIgiKph0ECAEQATABEocBCg5QdWJsaXNoTWVzc2FnZRI0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVxdWVzdBo1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2UiCIqmHQQIAhABEp8BChZMaXN0U2NoZW1hTWVzc2FnZVR5cGVzEjwucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFNjaGVtYU1lc3NhZ2VUeXBlc1JlcXVlc3QaPS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0U2NoZW1hTWVzc2FnZVR5cGVzUmVzcG9uc2UiCIqmHQQIARABEpkBChRHZW5lcmF0ZVNjaGVtYVNhbXBsZRI6LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdlbmVyYXRlU2NoZW1hU2FtcGxlUmVxdWVzdBo7LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdlbmVyYXRlU2NoZW1hU2FtcGxlUmVzcG9uc2UiCIqmHQQIARABYgZwcm90bzM", [file_redpanda_api_auth_v1_authorization, file_redpanda_api_console_v1alpha1_list_messages, file_redpanda_api_console_v1alpha1_publish_messages]);
 
 /**
  * ConsoleService represents the Console API service.
@@ -41,6 +41,28 @@ export const ConsoleService: GenService<{
     methodKind: "unary";
     input: typeof PublishMessageRequestSchema;
     output: typeof PublishMessageResponseSchema;
+  },
+  /**
+   * ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
+   * including nested types, so clients can pick by name instead of by numeric index.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListSchemaMessageTypes
+   */
+  listSchemaMessageTypes: {
+    methodKind: "unary";
+    input: typeof ListSchemaMessageTypesRequestSchema;
+    output: typeof ListSchemaMessageTypesResponseSchema;
+  },
+  /**
+   * GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
+   * schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GenerateSchemaSample
+   */
+  generateSchemaSample: {
+    methodKind: "unary";
+    input: typeof GenerateSchemaSampleRequestSchema;
+    output: typeof GenerateSchemaSampleResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_console_v1alpha1_console_service, 0);

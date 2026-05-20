@@ -10,3 +10,19 @@ import { ConsoleService } from "./console_service_pb";
  * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.PublishMessage
  */
 export const publishMessage = ConsoleService.method.publishMessage;
+
+/**
+ * ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
+ * including nested types, so clients can pick by name instead of by numeric index.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListSchemaMessageTypes
+ */
+export const listSchemaMessageTypes = ConsoleService.method.listSchemaMessageTypes;
+
+/**
+ * GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
+ * schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GenerateSchemaSample
+ */
+export const generateSchemaSample = ConsoleService.method.generateSchemaSample;
