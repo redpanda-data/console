@@ -19,14 +19,18 @@ import (
 // ConsoleServiceGatewayServer implements the gRPC server API for the ConsoleService service.
 type ConsoleServiceGatewayServer struct {
 	v1alpha1.UnimplementedConsoleServiceServer
-	publishMessage connect_gateway.UnaryHandler[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	publishMessage         connect_gateway.UnaryHandler[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	listSchemaMessageTypes connect_gateway.UnaryHandler[v1alpha1.ListSchemaMessageTypesRequest, v1alpha1.ListSchemaMessageTypesResponse]
+	generateSchemaSample   connect_gateway.UnaryHandler[v1alpha1.GenerateSchemaSampleRequest, v1alpha1.GenerateSchemaSampleResponse]
 }
 
 // NewConsoleServiceGatewayServer constructs a Connect-Gateway gRPC server for the ConsoleService
 // service.
 func NewConsoleServiceGatewayServer(svc ConsoleServiceHandler, opts ...connect_gateway.HandlerOption) *ConsoleServiceGatewayServer {
 	return &ConsoleServiceGatewayServer{
-		publishMessage: connect_gateway.NewUnaryHandler(ConsoleServicePublishMessageProcedure, svc.PublishMessage, opts...),
+		publishMessage:         connect_gateway.NewUnaryHandler(ConsoleServicePublishMessageProcedure, svc.PublishMessage, opts...),
+		listSchemaMessageTypes: connect_gateway.NewUnaryHandler(ConsoleServiceListSchemaMessageTypesProcedure, svc.ListSchemaMessageTypes, opts...),
+		generateSchemaSample:   connect_gateway.NewUnaryHandler(ConsoleServiceGenerateSchemaSampleProcedure, svc.GenerateSchemaSample, opts...),
 	}
 }
 
@@ -36,6 +40,14 @@ func (s *ConsoleServiceGatewayServer) ListMessages(*v1alpha1.ListMessagesRequest
 
 func (s *ConsoleServiceGatewayServer) PublishMessage(ctx context.Context, req *v1alpha1.PublishMessageRequest) (*v1alpha1.PublishMessageResponse, error) {
 	return s.publishMessage(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) ListSchemaMessageTypes(ctx context.Context, req *v1alpha1.ListSchemaMessageTypesRequest) (*v1alpha1.ListSchemaMessageTypesResponse, error) {
+	return s.listSchemaMessageTypes(ctx, req)
+}
+
+func (s *ConsoleServiceGatewayServer) GenerateSchemaSample(ctx context.Context, req *v1alpha1.GenerateSchemaSampleRequest) (*v1alpha1.GenerateSchemaSampleResponse, error) {
+	return s.generateSchemaSample(ctx, req)
 }
 
 // RegisterConsoleServiceHandlerGatewayServer registers the Connect handlers for the ConsoleService
