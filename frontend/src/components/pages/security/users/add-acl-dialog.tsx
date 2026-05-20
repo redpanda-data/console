@@ -10,7 +10,9 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { BadRequestSchema } from 'protogen/google/rpc/error_details_pb';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -18,8 +20,8 @@ import {
   ACL_ResourceType,
   CreateACLRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { useCreateACLMutation } from '../../../../react-query/api/acl';
@@ -37,11 +39,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../redpanda-ui/components/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
-import { Label } from '../../../redpanda-ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
+import { InlineCode, Text } from '../../../redpanda-ui/components/typography';
 
 const schema = z.object({
+  principal: z.string().min(1, 'Principal is required'),
   resourceType: z.nativeEnum(ACL_ResourceType),
   patternType: z.nativeEnum(ACL_ResourcePatternType),
   resourceName: z.string(),
@@ -51,6 +63,8 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const FORM_FIELD_NAMES = new Set<string>(Object.keys(schema.shape));
 
 const BASE_resourceTypeOptions = [
   { value: ACL_ResourceType.TOPIC, label: 'Topic' },
@@ -98,16 +112,12 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
   const [principalValue, setPrincipalValue] = useState('');
 
   const { data: usersData } = useListUsersQuery(undefined, { enabled: !principal });
-  const userOptions = useMemo(
-    () => (usersData?.users ?? []).map((u) => ({ value: u.name, label: u.name })),
-    [usersData]
-  );
-
-  const effectivePrincipal = principal ?? `${principalType}:${principalValue}`;
+  const userOptions = (usersData?.users ?? []).map((u) => ({ value: u.name, label: u.name }));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      principal: principal ?? '',
       resourceType: ACL_ResourceType.TOPIC,
       patternType: ACL_ResourcePatternType.LITERAL,
       resourceName: '',
@@ -117,8 +127,8 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
     },
   });
 
-  const resourceType = form.watch('resourceType');
-  const patternType = form.watch('patternType');
+  const resourceType = useWatch({ control: form.control, name: 'resourceType' });
+  const patternType = useWatch({ control: form.control, name: 'patternType' });
 
   const resourceTypeOptions = api.isRedpanda
     ? [...BASE_resourceTypeOptions, ...REDPANDA_resourceTypeOptions]
@@ -137,6 +147,12 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
+    form.clearErrors();
+    // When principal is pre-set via prop its field isn't rendered, so server violations
+    // on it must go to the global alert rather than being silently dropped.
+    const renderableFieldNames = principal
+      ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))
+      : FORM_FIELD_NAMES;
     try {
       // ANY is a query-only pattern type; translate it to LITERAL with wildcard name
       const isAny = values.patternType === ACL_ResourcePatternType.ANY;
@@ -150,7 +166,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                 ? '*'
                 : values.resourceName || '*',
           resourcePatternType: isAny ? ACL_ResourcePatternType.LITERAL : values.patternType,
-          principal: effectivePrincipal,
+          principal: values.principal,
           host: values.host || '*',
           operation: values.operation,
           permissionType: values.permissionType,
@@ -160,7 +176,34 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
       form.reset();
       if (!principal) resetPrincipalSelector();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : String(err));
+      if (err instanceof ConnectError) {
+        const globalMessages: string[] = [];
+        let hasFieldError = false;
+
+        for (const badRequest of err.findDetails(BadRequestSchema)) {
+          for (const violation of badRequest.fieldViolations) {
+            if (violation.field && renderableFieldNames.has(violation.field)) {
+              form.setError(violation.field as keyof FormValues, {
+                type: 'server',
+                message: violation.description,
+              });
+              hasFieldError = true;
+            } else {
+              globalMessages.push(
+                violation.field ? `${violation.field}: ${violation.description}` : violation.description
+              );
+            }
+          }
+        }
+
+        if (globalMessages.length > 0) {
+          setSubmitError(globalMessages.join('\n'));
+        } else if (!hasFieldError) {
+          setSubmitError(err.rawMessage);
+        }
+      } else {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      }
     }
   };
 
@@ -180,84 +223,103 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
         </DialogHeader>
 
         <DialogBody>
-          <form id="add-acl-form" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="space-y-4 py-2">
-              {!principal && (
-                <div className="space-y-2">
-                  <Label>Principal</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      onValueChange={(v) => {
-                        setPrincipalType(v as 'User' | 'Group');
-                        setPrincipalValue('');
-                      }}
-                      value={principalType}
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="User">User</SelectItem>
-                        <SelectItem value="Group">Group</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {principalType === 'User' ? (
-                      <Combobox
-                        className="flex-1"
-                        clearable={false}
-                        creatable
-                        createLabel="user"
-                        onChange={setPrincipalValue}
-                        options={userOptions}
-                        placeholder="Select or type a user..."
-                        value={principalValue}
-                      />
-                    ) : (
-                      <input
-                        // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
-                        autoFocus
-                        className="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        onChange={(e) => setPrincipalValue(e.target.value)}
-                        placeholder="Enter group name..."
-                        value={principalValue}
-                      />
+          <Form {...form}>
+            <form id="add-acl-form" onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="space-y-4 py-2">
+                {!principal && (
+                  <FormField
+                    control={form.control}
+                    name="principal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Principal</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Select
+                              onValueChange={(v) => {
+                                setPrincipalType(v as 'User' | 'Group');
+                                setPrincipalValue('');
+                                field.onChange('');
+                              }}
+                              value={principalType}
+                            >
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="User">User</SelectItem>
+                                <SelectItem value="Group">Group</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {principalType === 'User' ? (
+                              <Combobox
+                                className="flex-1"
+                                clearable={false}
+                                creatable
+                                createLabel="user"
+                                onChange={(v) => {
+                                  setPrincipalValue(v);
+                                  field.onChange(v ? `${principalType}:${v}` : '');
+                                }}
+                                options={userOptions}
+                                placeholder="Select or type a user..."
+                                value={principalValue}
+                              />
+                            ) : (
+                              <Input
+                                // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
+                                autoFocus
+                                className="flex-1"
+                                onChange={(e) => {
+                                  setPrincipalValue(e.target.value);
+                                  field.onChange(e.target.value ? `${principalType}:${e.target.value}` : '');
+                                }}
+                                placeholder="Enter group name..."
+                                value={principalValue}
+                              />
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                </div>
-              )}
+                  />
+                )}
 
-              <div className="space-y-2">
-                <Label>Resource Type</Label>
-                <Controller
+                <FormField
                   control={form.control}
                   name="resourceType"
                   render={({ field }) => (
-                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
-                      <SelectTrigger>
-                        <SelectValue>
-                          {(value) => resourceTypeOptions.find((opt) => String(opt.value) === value)?.label}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {resourceTypeOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={String(opt.value)}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormItem>
+                      <FormLabel>Resource Type</FormLabel>
+                      <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue>
+                              {(value) => resourceTypeOptions.find((opt) => String(opt.value) === value)?.label}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {resourceTypeOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={String(opt.value)}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
-              </div>
 
-              {showPatternAndName && (
-                <div className="space-y-2">
-                  <Label>Pattern Type</Label>
-                  <Controller
+                {showPatternAndName && (
+                  <FormField
                     control={form.control}
                     name="patternType"
                     render={({ field }) => (
-                      <div>
+                      <FormItem>
+                        <FormLabel>Pattern Type</FormLabel>
                         <div className="inline-flex h-10 w-full items-center justify-center rounded-md bg-muted p-1">
                           {[
                             { value: ACL_ResourcePatternType.LITERAL, label: 'Literal' },
@@ -279,100 +341,125 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                           ))}
                         </div>
                         {PATTERN_TYPE_HELP[field.value] && (
-                          <p className="mt-1 text-muted-foreground text-sm">{PATTERN_TYPE_HELP[field.value]}</p>
+                          <Text className="mt-1 text-muted-foreground text-sm">{PATTERN_TYPE_HELP[field.value]}</Text>
                         )}
-                      </div>
+                        <FormMessage />
+                      </FormItem>
                     )}
                   />
-                </div>
-              )}
+                )}
 
-              {showResourceName && (
-                <div className="space-y-2">
-                  <Label>Resource Name</Label>
-                  <Input placeholder="e.g. my-topic" {...form.register('resourceName')} />
-                </div>
-              )}
+                {showResourceName && (
+                  <FormField
+                    control={form.control}
+                    name="resourceName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Resource Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. my-topic" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
-              <div className="space-y-2">
-                <Label>Operation</Label>
-                <Controller
+                <FormField
                   control={form.control}
                   name="operation"
                   render={({ field }) => (
-                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
-                      <SelectTrigger>
-                        <SelectValue>
-                          {(value) => OPERATION_OPTIONS.find((opt) => String(opt.value) === value)?.label}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OPERATION_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={String(opt.value)}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormItem>
+                      <FormLabel>Operation</FormLabel>
+                      <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue>
+                              {(value) => OPERATION_OPTIONS.find((opt) => String(opt.value) === value)?.label}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {OPERATION_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={String(opt.value)}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="space-y-2">
-                <Label>Permission</Label>
-                <Controller
+                <FormField
                   control={form.control}
                   name="permissionType"
                   render={({ field }) => (
-                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
-                      <SelectTrigger>
-                        <SelectValue>
-                          {(value) => {
-                            if (value === String(ACL_PermissionType.ALLOW)) {
-                              return <span className="text-green-600">Allow</span>;
-                            }
-                            if (value === String(ACL_PermissionType.DENY)) {
-                              return <span className="text-red-600">Deny</span>;
-                            }
-                            return null;
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={String(ACL_PermissionType.ALLOW)}>
-                          <span className="text-green-600">Allow</span>
-                        </SelectItem>
-                        <SelectItem value={String(ACL_PermissionType.DENY)}>
-                          <span className="text-red-600">Deny</span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormItem>
+                      <FormLabel>Permission</FormLabel>
+                      <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue>
+                              {(value) => {
+                                if (value === String(ACL_PermissionType.ALLOW)) {
+                                  return <span className="text-green-600">Allow</span>;
+                                }
+                                if (value === String(ACL_PermissionType.DENY)) {
+                                  return <span className="text-red-600">Deny</span>;
+                                }
+                                return null;
+                              }}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={String(ACL_PermissionType.ALLOW)}>
+                            <span className="text-green-600">Allow</span>
+                          </SelectItem>
+                          <SelectItem value={String(ACL_PermissionType.DENY)}>
+                            <span className="text-red-600">Deny</span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="space-y-2">
-                <Label>Host</Label>
-                <p className="text-muted-foreground text-sm">
-                  Use <code>*</code> for all hosts, or an exact IP address. CIDR ranges are not supported by the Kafka
-                  API.
-                </p>
-                <Input placeholder="*" {...form.register('host')} />
-              </div>
+                <FormField
+                  control={form.control}
+                  name="host"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Host</FormLabel>
+                      <FormDescription>
+                        Use <InlineCode>*</InlineCode> for all hosts, or an exact IP address. CIDR ranges are not
+                        supported by the Kafka API.
+                      </FormDescription>
+                      <FormControl>
+                        <Input placeholder="*" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {submitError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{submitError}</AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </form>
+                {submitError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{submitError}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </form>
+          </Form>
         </DialogBody>
         <DialogFooter className="mt-4">
           <Button onClick={handleClose} type="button" variant="outline">
             Cancel
           </Button>
-          <Button disabled={isPending || !(principal || principalValue)} form="add-acl-form" type="submit">
+          <Button disabled={isPending} form="add-acl-form" type="submit">
             Add ACL
           </Button>
         </DialogFooter>
