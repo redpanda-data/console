@@ -35,6 +35,7 @@ import {
   ServiceAccountSelector,
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
+import { isFeatureFlagEnabled } from 'config';
 import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
@@ -705,8 +706,15 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                       <AlertDescription>
                                         <Text variant="small">
                                           You will need to configure{' '}
-                                          <TanStackRouterLink target="_blank" to="/security/acls">
-                                            ACLs
+                                          <TanStackRouterLink
+                                            target="_blank"
+                                            to={
+                                              isFeatureFlagEnabled('enableNewSecurityPage')
+                                                ? '/security/permissions'
+                                                : '/security/permissions-list'
+                                            }
+                                          >
+                                            Permissions
                                           </TanStackRouterLink>{' '}
                                           for custom user permissions if you want the user to be able to read from the
                                           topic.

@@ -1,24 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
-import {
-  Box,
-  Button,
-  Checkbox,
-  CopyButton,
-  Flex,
-  FormField,
-  IconButton,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  PasswordInput,
-  Tooltip,
-  useToast,
-} from '@redpanda-data/ui';
-import { RotateCwIcon } from 'components/icons';
+import { RotateCwIcon } from 'lucide-react';
 import {
   UpdateRoleMembershipRequestSchema,
   type UpdateRoleMembershipResponse,
@@ -33,7 +15,22 @@ import { useUpdateUserMutationWithToast } from '../../../../react-query/api/user
 import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
-import { SingleSelect } from '../../../misc/select';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Checkbox } from '../../../redpanda-ui/components/checkbox';
+import { CopyButton } from '../../../redpanda-ui/components/copy-button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../../redpanda-ui/components/dialog';
+import { Field, FieldDescription, FieldLabel } from '../../../redpanda-ui/components/field';
+import { Input } from '../../../redpanda-ui/components/input';
+import { Label } from '../../../redpanda-ui/components/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 
 type ChangePasswordModalProps = {
   userName: string;
@@ -42,137 +39,126 @@ type ChangePasswordModalProps = {
 };
 
 export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePasswordModalProps) => {
-  const toast = useToast();
   const [password, setPassword] = useState(() => generatePassword(30, false));
-  const [mechanism, setMechanism] = useState<SASLMechanism>();
+  const [mechanism, setMechanism] = useState<SASLMechanism | undefined>(undefined);
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
   const isValidPassword = password && password.length >= 4 && password.length <= 64;
   const { mutateAsync: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutationWithToast();
 
   const onSavePassword = async () => {
-    const updateRequest = create(UpdateUserRequestSchema, {
-      user: {
-        name: userName,
-        mechanism,
-        password,
-      },
-    });
     try {
-      await updateUser(updateRequest);
-      toast({
-        status: 'success',
-        title: `Password for user ${userName} updated`,
-      });
+      await updateUser(
+        create(UpdateUserRequestSchema, {
+          user: { name: userName, mechanism, password },
+        })
+      );
+      showToast({ status: 'success', title: `Password for user ${userName} updated` });
       setIsOpen(false);
     } catch (error) {
       showToast({
+        status: 'error',
         title: formatToastErrorMessageGRPC({
           error: ConnectError.from(error),
           action: 'update',
           entity: 'user',
         }),
-        status: 'error',
       });
     }
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={() => {
-        if (isUpdateUserPending) {
-          setIsOpen(false);
-        }
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open && isUpdateUserPending) setIsOpen(false);
       }}
+      open={isOpen}
     >
-      <ModalOverlay />
-      <ModalContent minW="2xl">
-        <ModalHeader>{`Change ${userName} password`}</ModalHeader>
-        <ModalBody>
-          <Flex flexDirection="column" gap={4}>
-            <FormField
-              data-testid="create-user-password"
-              description="Must be at least 4 characters and should not exceed 64 characters."
-              label="Password"
-              showRequiredIndicator={true}
-            >
-              <Flex direction="column" gap="2">
-                <Flex alignItems="center" gap="2">
-                  <PasswordInput
-                    isInvalid={!isValidPassword}
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Change {userName} password</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel required>Password</FieldLabel>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    aria-invalid={!isValidPassword}
+                    data-testid="create-user-password"
                     name="test"
                     onChange={(e) => setPassword(e.target.value)}
+                    type="password"
                     value={password}
                   />
-
-                  <Tooltip hasArrow label={'Generate new random password'} placement="top">
-                    <IconButton
-                      aria-label="Refresh"
-                      display="inline-flex"
-                      icon={<RotateCwIcon size={16} />}
-                      onClick={() => setPassword(generatePassword(30, generateWithSpecialChars))}
-                      variant="ghost"
-                    />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        aria-label="Refresh"
+                        onClick={() => setPassword(generatePassword(30, generateWithSpecialChars))}
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <RotateCwIcon size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Generate new random password</TooltipContent>
                   </Tooltip>
-                  <Tooltip hasArrow label={'Copy password'} placement="top">
-                    {/* Wrapper needed: CopyButton doesn't forward refs, so Chakra Tooltip can't position itself without a DOM element to measure */}
-                    <Box as="span" display="inline-flex">
-                      <CopyButton content={password} variant="ghost" />
-                    </Box>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CopyButton content={password} size="icon" variant="ghost" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Copy password</TooltipContent>
                   </Tooltip>
-                </Flex>
-                <Checkbox
-                  isChecked={generateWithSpecialChars}
-                  onChange={(e) => {
-                    setGenerateWithSpecialChars(e.target.checked);
-                    setPassword(generatePassword(30, e.target.checked));
-                  }}
-                >
-                  Generate with special characters
-                </Checkbox>
-              </Flex>
-            </FormField>
-            <FormField label="SASL mechanism" showRequiredIndicator>
-              <SingleSelect<SASLMechanism | undefined>
-                onChange={(e) => {
-                  setMechanism(e);
-                }}
-                options={[
-                  {
-                    value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-                    label: 'SCRAM-SHA-256',
-                  },
-                  {
-                    value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
-                    label: 'SCRAM-SHA-512',
-                  },
-                ]}
-                value={mechanism}
-              />
-            </FormField>
-          </Flex>
-        </ModalBody>
-        <ModalFooter display="flex" gap={2}>
-          <Button
-            isDisabled={isUpdateUserPending}
-            onClick={() => {
-              setIsOpen(false);
-            }}
-            variant="ghost"
-          >
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={generateWithSpecialChars}
+                    id="special-chars-edit"
+                    onCheckedChange={(checked) => {
+                      const val = checked === true;
+                      setGenerateWithSpecialChars(val);
+                      setPassword(generatePassword(30, val));
+                    }}
+                  />
+                  <Label className="cursor-pointer" htmlFor="special-chars-edit">
+                    Generate with special characters
+                  </Label>
+                </div>
+              </div>
+              <FieldDescription>Must be at least 4 characters and should not exceed 64 characters.</FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel required>SASL mechanism</FieldLabel>
+              <Select
+                onValueChange={(v) => setMechanism(Number(v) as SASLMechanism)}
+                value={mechanism !== undefined ? String(mechanism) : ''}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select mechanism..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
+                  <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button disabled={isUpdateUserPending} onClick={() => setIsOpen(false)} variant="outline">
             Cancel
           </Button>
           <Button
-            isDisabled={!isValidPassword || mechanism === undefined || isUpdateUserPending}
+            disabled={!isValidPassword || mechanism === undefined || isUpdateUserPending}
             onClick={onSavePassword}
             type="submit"
-            variant="solid"
           >
             Save changes
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -184,7 +170,6 @@ type ChangeRolesModalProps = {
 
 export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesModalProps) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
-  const toast = useToast();
   const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
   const { mutateAsync: updateRoleMembership, isPending: isUpdateMembershipPending } = useUpdateRoleMembershipMutation();
   const { data, isLoading } = useListRolesQuery({ filter: { principal: userName } });
@@ -197,97 +182,70 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
   }, [originalRoles, isLoading, selectedRoles]);
 
   const onSaveRoles = async () => {
-    if (!featureRolesApi) {
-      return;
-    }
-    let formattedSelectedRoles: string[] = [];
-    if (selectedRoles) {
-      formattedSelectedRoles = selectedRoles;
-    }
+    if (!featureRolesApi) return;
+
+    const formattedSelectedRoles = selectedRoles ?? [];
     const addedRoles = formattedSelectedRoles.except(originalRoles);
     const removedRoles = originalRoles.except(formattedSelectedRoles);
-    const promises: Promise<UpdateRoleMembershipResponse>[] = [];
-
-    // Remove user from "removedRoles"
-    for (const r of removedRoles) {
-      const membership = create(UpdateRoleMembershipRequestSchema, {
-        roleName: r,
-        remove: [{ principal: userName }],
-      });
-      promises.push(updateRoleMembership(membership));
-    }
-    // Add to newly selected roles
-    for (const r of addedRoles) {
-      const membership = create(UpdateRoleMembershipRequestSchema, {
-        roleName: r,
-        add: [{ principal: userName }],
-      });
-      promises.push(updateRoleMembership(membership));
-    }
+    const promises: Promise<UpdateRoleMembershipResponse>[] = [
+      ...removedRoles.map((r) =>
+        updateRoleMembership(
+          create(UpdateRoleMembershipRequestSchema, { roleName: r, remove: [{ principal: userName }] })
+        )
+      ),
+      ...addedRoles.map((r) =>
+        updateRoleMembership(create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: userName }] }))
+      ),
+    ];
 
     try {
       await Promise.allSettled(promises);
       // TODO: Until we haven't migrated everything from mobx is better to not remove this
       await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
-
-      toast({
+      showToast({
         status: 'success',
         title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`,
       });
       setIsOpen(false);
     } catch (error) {
       showToast({
+        status: 'error',
         title: formatToastErrorMessageGRPC({
           error: ConnectError.from(error),
           action: 'update',
           entity: 'role',
         }),
-        status: 'error',
       });
     }
   };
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={() => {
-        if (isUpdateMembershipPending) {
-          setIsOpen(false);
-        }
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open && isUpdateMembershipPending) setIsOpen(false);
       }}
+      open={isOpen}
     >
-      <ModalOverlay />
-      <ModalContent minW="2xl">
-        <ModalHeader>{`Change ${userName} roles`}</ModalHeader>
-        <ModalBody>
-          <FormField
-            description="Assign roles to this user. This is optional and can be changed later."
-            isDisabled={!featureRolesApi}
-            label="Assign roles"
-          >
-            <StateRoleSelector roles={selectedRoles || []} setRoles={setSelectedRoles} />
-          </FormField>
-        </ModalBody>
-        <ModalFooter display="flex" gap={2}>
-          <Button
-            isDisabled={isUpdateMembershipPending}
-            onClick={() => {
-              setIsOpen(false);
-            }}
-            variant="secondary-ghost"
-          >
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Change {userName} roles</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Field>
+            <FieldLabel>Assign roles</FieldLabel>
+            <FieldDescription>Assign roles to this user. This is optional and can be changed later.</FieldDescription>
+            <StateRoleSelector roles={selectedRoles ?? []} setRoles={setSelectedRoles} />
+          </Field>
+        </DialogBody>
+        <DialogFooter>
+          <Button disabled={isUpdateMembershipPending} onClick={() => setIsOpen(false)} variant="outline">
             Cancel
           </Button>
-          <Button
-            isDisabled={isUpdateMembershipPending}
-            isLoading={isUpdateMembershipPending}
-            onClick={onSaveRoles}
-            type="submit"
-            variant="solid"
-          >
+          <Button disabled={isUpdateMembershipPending} onClick={onSaveRoles} type="submit">
             Save changes
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

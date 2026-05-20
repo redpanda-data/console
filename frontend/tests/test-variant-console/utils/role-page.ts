@@ -30,7 +30,7 @@ export class RolePage extends AclPage {
     await this.gotoList();
 
     // Validate that the _hostlist item is visible with correct host and principal
-    await this.page.getByTestId('search-field-input').fill(principal);
+    await this.page.getByPlaceholder('Filter by name').fill(principal);
     const listItem = this.page.getByTestId(`role-list-item-${principal}`);
     await expect(listItem).toBeVisible({ timeout: 1000 });
   }
@@ -165,7 +165,7 @@ export class RolePage extends AclPage {
   async validateNotInList(roleName: string) {
     return await test.step(`Validate role "${roleName}" not in list`, async () => {
       await this.gotoList();
-      await this.page.getByTestId('search-field-input').fill(roleName);
+      await this.page.getByPlaceholder('Filter by name').fill(roleName);
       await expect(this.page.getByTestId(`role-list-item-${roleName}`)).not.toBeVisible();
     });
   }

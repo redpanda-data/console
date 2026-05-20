@@ -8,7 +8,9 @@
  * the details page breaks when the list cache is cold (e.g. bookmarks, share links).
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import {
   ModeCustom,

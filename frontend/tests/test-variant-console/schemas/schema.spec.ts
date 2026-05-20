@@ -101,7 +101,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await firstSchemaLink.click();
 
       await expect(page).toHaveURL(/\/schema-registry\/subjects\//);
-      await expect(page.getByText(schemaName || '')).toBeVisible();
+      await expect(page.getByText(schemaName || '').first()).toBeVisible();
     });
   });
 

@@ -67,7 +67,7 @@ import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
-import { uiState } from '../../../state/ui-state';
+import { setPageHeader } from '../../../state/ui-state';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
@@ -180,7 +180,7 @@ const SchemaList: FC = () => {
   }, [derivedContexts, selectedContext, schemaRegistryContextsSupported, schemaMode, schemaCompatibility]);
 
   useEffect(() => {
-    uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
+    setPageHeader('Schema Registry', [{ title: 'Schema Registry', linkTo: '/schema-registry' }]);
     appGlobal.onRefresh = () => refreshData();
   }, [refreshData]);
 

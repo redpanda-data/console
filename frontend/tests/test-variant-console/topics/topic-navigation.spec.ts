@@ -19,8 +19,8 @@ test.describe('Topic Details - Navigation and Tabs', () => {
       // URL changes to topic details
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`));
 
-      // Topic name appears
-      await expect(page.getByText(topicName)).toBeVisible();
+      // Topic name appears (first match — name shows in heading and breadcrumb)
+      await expect(page.getByText(topicName).first()).toBeVisible();
 
       // Topic tabs should be visible
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });

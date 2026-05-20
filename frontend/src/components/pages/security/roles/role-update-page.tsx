@@ -45,7 +45,6 @@ const RoleUpdatePage = () => {
 
   const { applyUpdates } = useUpdateAclMutation();
 
-  // Fetch existing ACL data for the role
   const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`, host);
 
   const updateRoleAclMutation =
@@ -73,7 +72,6 @@ const RoleUpdatePage = () => {
     );
   }
 
-  // If multiple hosts exist and no host is selected, show host selector
   if (data && data.length > 1 && !host) {
     return (
       <div>
@@ -86,18 +84,15 @@ const RoleUpdatePage = () => {
 
   const emptySharedConfig = { principal: `${PrincipalTypeRedpandaRole}${roleName}`, host: host ?? '*' };
 
-  // Ensure all operations are present for each rule
   const rulesWithAllOperations = (acl?.rules ?? []).map((rule) => {
     const allOperations = getOperationsForResourceType(rule.resourceType);
     let mergedOperations = { ...allOperations };
 
-    // If mode is AllowAll or DenyAll, set all operations accordingly
     if (rule.mode === ModeAllowAll) {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeAllow]));
     } else if (rule.mode === ModeDenyAll) {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeDeny]));
     } else {
-      // For custom mode, override with the actual values from the fetched rule
       for (const [op, value] of Object.entries(rule.operations)) {
         if (op in mergedOperations) {
           mergedOperations[op] = value;
@@ -113,6 +108,7 @@ const RoleUpdatePage = () => {
 
   return (
     <div>
+      {/* allow: react-rules [restoring master component, heading upgrade deferred] */}
       <h2 className="pt-4 pb-3 font-semibold text-xl">Update role: {roleName}</h2>
       <CreateACL
         edit={true}
