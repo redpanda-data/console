@@ -133,7 +133,22 @@ const UserCreatePage = () => {
       <h2 className="pt-4 pb-3 font-semibold text-xl">Create user</h2>
       <div>
         {step === 'CREATE_USER' ? (
-          <CreateUserModal onCancel={onCancel} onCreateUser={onCreateUser} state={state} />
+          <>
+            <CreateUserModal state={state} />
+            <div className="mt-8 flex gap-4">
+              <Button
+                disabled={isSubmitting || !isValidUsername || !isValidPassword || users.includes(username)}
+                onClick={onCreateUser}
+                testId="create-user-submit"
+              >
+                {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
+                {isSubmitting ? 'Creating...' : 'Create'}
+              </Button>
+              <Button disabled={isSubmitting} onClick={onCancel} testId="create-user-cancel" variant="link">
+                Cancel
+              </Button>
+            </div>
+          </>
         ) : (
           <CreateUserConfirmationModal
             closeModal={onCancel}
@@ -150,28 +165,28 @@ const UserCreatePage = () => {
 
 export default UserCreatePage;
 
-type CreateUserModalProps = {
-  state: {
-    username: string;
-    setUsername: (v: string) => void;
-    password: string;
-    setPassword: (v: string) => void;
-    mechanism: SaslMechanism;
-    setMechanism: (v: SaslMechanism) => void;
-    generateWithSpecialChars: boolean;
-    setGenerateWithSpecialChars: (v: boolean) => void;
-    isCreating: boolean;
-    isValidUsername: boolean;
-    isValidPassword: boolean;
-    users: string[];
-    selectedRoles: string[];
-    setSelectedRoles: (v: string[]) => void;
-  };
-  onCreateUser: () => Promise<boolean>;
-  onCancel: () => void;
+export type CreateUserModalState = {
+  username: string;
+  setUsername: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  mechanism: SaslMechanism;
+  setMechanism: (v: SaslMechanism) => void;
+  generateWithSpecialChars: boolean;
+  setGenerateWithSpecialChars: (v: boolean) => void;
+  isCreating: boolean;
+  isValidUsername: boolean;
+  isValidPassword: boolean;
+  users: string[];
+  selectedRoles: string[];
+  setSelectedRoles: (v: string[]) => void;
 };
 
-export const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
+type CreateUserModalProps = {
+  state: CreateUserModalState;
+};
+
+export const CreateUserModal = ({ state }: CreateUserModalProps) => {
   const rolesApiEnabled = useSupportedFeaturesStore((s) => s.rolesApi);
   const userAlreadyExists = state.users.includes(state.username);
   const hasError = (!state.isValidUsername || userAlreadyExists) && state.username.length > 0;
@@ -288,20 +303,6 @@ export const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserMod
           <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
         </div>
       )}
-
-      <div className="mt-8 flex gap-4">
-        <Button
-          disabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
-          onClick={onCreateUser}
-          testId="create-user-submit"
-        >
-          {state.isCreating ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
-          {state.isCreating ? 'Creating...' : 'Create'}
-        </Button>
-        <Button disabled={state.isCreating} onClick={onCancel} testId="create-user-cancel" variant="link">
-          Cancel
-        </Button>
-      </div>
     </div>
   );
 };

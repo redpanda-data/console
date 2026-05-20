@@ -11,6 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
+import { Button } from 'components/redpanda-ui/components/button';
+import { LoaderCircleIcon } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useCallback, useState } from 'react';
@@ -20,7 +22,14 @@ import { CreateUserConfirmationModal, CreateUserModal } from './user-create';
 import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '../../../redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../../redpanda-ui/components/dialog';
 
 type CreateUserDialogProps = {
   open: boolean;
@@ -119,7 +128,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
         )}
         <DialogBody>
           {step === 'form' ? (
-            <CreateUserModal onCancel={handleClose} onCreateUser={onCreateUser} state={state} />
+            <CreateUserModal state={state} />
           ) : (
             <CreateUserConfirmationModal
               closeModal={handleClose}
@@ -130,6 +139,21 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
             />
           )}
         </DialogBody>
+        {step === 'form' && (
+          <DialogFooter>
+            <Button onClick={handleClose} type="button" variant="outline">
+              Cancel
+            </Button>
+            <Button
+              disabled={isSubmitting || !state.isValidUsername || !state.isValidPassword || users.includes(username)}
+              onClick={onCreateUser}
+              testId="create-user-submit"
+            >
+              {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
+              {isSubmitting ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
