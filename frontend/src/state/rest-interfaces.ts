@@ -1405,6 +1405,9 @@ export type SchemaRegistrySetCompatibilityModeRequest = {
 export type SchemaRegistrySubject = {
   name: string;
   isSoftDeleted: boolean;
+  // Type of the latest active version (AVRO/PROTOBUF/JSON). Omitted by the
+  // backend when the subject has no fetchable active version.
+  type?: SchemaTypeType;
 };
 
 // GET /schema-registry/schemas/types
