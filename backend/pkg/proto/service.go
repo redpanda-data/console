@@ -225,6 +225,14 @@ func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (prot
 	return messageDescriptor, nil
 }
 
+// MessageTypeInfo describes a Protobuf message type contained in a schema along with the
+// index path that addresses it on the Confluent Protobuf wire format. Returned by the
+// schema-registry-backed ListProtoMessageTypes path in pkg/console.
+type MessageTypeInfo struct {
+	FullyQualifiedName string
+	IndexPath          []int32
+}
+
 // SerializeJSONToConfluentProtobufMessage serialized the JSON message to confluent wrapped payload
 // using the schema ID and message index.
 func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID int, index []int) ([]byte, error) {
