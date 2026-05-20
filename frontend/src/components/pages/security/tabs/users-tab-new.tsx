@@ -325,7 +325,7 @@ export const UsersTabNew: FC = () => {
                   </TooltipProvider>
                   <Button asChild variant="link">
                     <a
-                      href="https://docs.redpanda.com/current/manage/security/authentication/scram/"
+                      href="https://docs.redpanda.com/current/manage/kubernetes/security/authentication/k-authentication/#scram"
                       rel="noopener noreferrer"
                       target="_blank"
                     >

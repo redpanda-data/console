@@ -259,7 +259,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
               <EmptyContent>
                 <Button asChild variant="link">
                   <a
-                    href="https://docs.redpanda.com/current/manage/security/authorization/acls/"
+                    href="https://docs.redpanda.com/current/manage/security/authorization/acl/"
                     rel="noopener noreferrer"
                     target="_blank"
                   >
