@@ -30,6 +30,7 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -189,10 +190,12 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
           <DialogHeader>
             <DialogTitle>Remove role</DialogTitle>
           </DialogHeader>
-          <DialogDescription>
-            Remove role <strong>{pendingRemoveRole}</strong> from user <strong>{userName}</strong>? The user will lose
-            all permissions granted by this role.
-          </DialogDescription>
+          <DialogBody>
+            <DialogDescription>
+              Remove role <strong>{pendingRemoveRole}</strong> from user <strong>{userName}</strong>? The user will lose
+              all permissions granted by this role.
+            </DialogDescription>
+          </DialogBody>
           <DialogFooter>
             <Button onClick={() => setPendingRemoveRole(null)} variant="outline">
               Cancel
