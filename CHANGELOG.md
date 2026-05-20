@@ -2,6 +2,15 @@
 
 ## Master / Unreleased
 
+## v3.7.3 / 2026-05-20
+- [BUGFIX] Fix Avro JSON viewer to preserve `\u00XX` byte escapes so "Copy Value" returns the original bytes instead of UTF-8 encoded glyphs.
+- [BUGFIX] Fix stale ACL check in Redpanda Connect onboarding add-user step.
+- [BUGFIX] Provide default feature flags for non-embedded mode so self-hosted deployments load with sensible defaults.
+- [BUGFIX] Improve back button behavior on Redpanda Connect pipeline pages.
+- [IMPROVEMENT] YAML editor tooltip adjustments and removal of a duplicate Sonner toaster provider.
+- [CHANGE] Remove consumer group search from persistent UI state.
+- [SECURITY] Resolve Snyk security vulnerabilities in backend and frontend dependencies (including `go-git` v5.19.1 and `golang.org/x/net` v0.54.0).
+
 ## v3.7.2 / 2026-04-29
 - [BUGFIX] Hide unavailable "Infinite" retention option for topics with capped configurations and fix topic config UI layout.
 - [BUGFIX] Fix secrets list returning only the first page instead of all entries.
