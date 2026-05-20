@@ -24,6 +24,7 @@ import { z } from 'zod';
 
 import { useCreateACLMutation } from '../../../../react-query/api/acl';
 import { useListUsersQuery } from '../../../../react-query/api/user';
+import { api } from '../../../../state/backend-api';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
@@ -137,11 +138,18 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     try {
+      // ANY is a query-only pattern type; translate it to LITERAL with wildcard name
+      const isAny = values.patternType === ACL_ResourcePatternType.ANY;
       await createACL(
         create(CreateACLRequestSchema, {
           resourceType: values.resourceType,
-          resourceName: values.resourceType === ACL_ResourceType.CLUSTER ? 'kafka-cluster' : values.resourceName || '*',
-          resourcePatternType: values.patternType,
+          resourceName:
+            values.resourceType === ACL_ResourceType.CLUSTER
+              ? 'kafka-cluster'
+              : isAny
+                ? '*'
+                : values.resourceName || '*',
+          resourcePatternType: isAny ? ACL_ResourcePatternType.LITERAL : values.patternType,
           principal: effectivePrincipal,
           host: values.host || '*',
           operation: values.operation,

@@ -21,7 +21,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
-import { ListLayout, ListLayoutContent, ListLayoutFilters } from 'components/redpanda-ui/components/list-layout';
+import {
+  ListLayout,
+  ListLayoutContent,
+  ListLayoutFilters,
+  ListLayoutSearchInput,
+} from 'components/redpanda-ui/components/list-layout';
 import {
   ChevronDown,
   ChevronRight,
