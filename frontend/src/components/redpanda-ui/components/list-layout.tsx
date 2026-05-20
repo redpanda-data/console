@@ -16,7 +16,7 @@ const ListLayout = React.forwardRef<HTMLDivElement, ListLayoutProps>(
   ({ className, orientation = 'vertical', testId, ...props }, ref) => (
     <ListLayoutContext.Provider value={{ orientation }}>
       <div
-        className={cn('flex min-h-screen w-full flex-col gap-4 p-4 sm:gap-6 sm:p-6', className)}
+        className={cn('flex min-h-screen w-full flex-col gap-4 sm:gap-6', className)}
         data-testid={testId}
         ref={ref}
         {...props}

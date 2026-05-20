@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import { SecurityPage } from '../test-variant-console/utils/security-page';
 
@@ -9,7 +11,7 @@ test.describe('Users', () => {
     const securityPage = new SecurityPage(page);
     await securityPage.createUser(username);
 
-    await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+    await expect(page.getByText(`User: ${username}`)).toBeVisible();
 
     await securityPage.deleteUser(username);
   });

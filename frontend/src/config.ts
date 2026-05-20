@@ -192,7 +192,7 @@ export const config: Config = {
   },
   isServerless: false,
   isAdpEnabled: false,
-  featureFlags: FEATURE_FLAGS,
+  featureFlags: { ...FEATURE_FLAGS, ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
 };
 
 const setConfig = ({
@@ -266,7 +266,7 @@ const setConfig = ({
     serviceAccountClient,
     roleBindingClient,
     shadowLinkClient,
-    featureFlags: featureFlags ?? FEATURE_FLAGS, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
   return config;

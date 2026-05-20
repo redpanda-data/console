@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect, useLocation, useNavigate } from '@tanstack/react-router';
 import { ShieldCheckIcon } from 'components/icons';
-import { isServerless } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { useEffect } from 'react';
 
 import PageContent from '../components/misc/page-content';
@@ -21,10 +21,18 @@ import { appGlobal } from '../state/app-global';
 import { api, rolesApi, useApiStoreHook } from '../state/backend-api';
 import { useSupportedFeaturesStore } from '../state/supported-features';
 
+// allow: error-boundary [pure redirect in beforeLoad, no data fetching]
 export const Route = createFileRoute('/security')({
   staticData: {
     title: 'Security',
     icon: ShieldCheckIcon,
+  },
+  beforeLoad: ({ location }) => {
+    if (location.pathname === '/security' || location.pathname === '/security/') {
+      throw redirect({
+        to: isFeatureFlagEnabled('enableNewSecurityPage') ? '/security/users' : '/security/acls',
+      });
+    }
   },
   component: SecurityLayout,
 });
@@ -89,14 +97,13 @@ function deriveActiveTab(pathname: string, tabs: TabConfig[]): string {
   return 'acls';
 }
 
-function SecurityLayout() {
+function OldSecurityLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const acls = useApiStoreHook((s) => s.ACLs);
   const userData = useApiStoreHook((s) => s.userData);
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
-
   const redpandaOverview = useApiStoreHook((s) => s.clusterOverview?.redpanda);
   const isAdminApiConfigured = Boolean(redpandaOverview);
 
@@ -110,9 +117,7 @@ function SecurityLayout() {
       await refreshData();
     };
 
-    refreshData().catch(() => {
-      // Fail silently for now
-    });
+    refreshData().catch(() => {});
   }, []);
 
   const tabs = buildTabs(isAdminApiConfigured, featureCreateUser, featureRolesApi, userData);
@@ -143,7 +148,6 @@ function SecurityLayout() {
     <>
       {warning}
       {noAclAuthorizer}
-
       <PageContent>
         <Tabs value={activeTab}>
           <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
@@ -165,4 +169,47 @@ function SecurityLayout() {
       </PageContent>
     </>
   );
+}
+
+function NewSecurityLayout() {
+  const acls = useApiStoreHook((s) => s.ACLs);
+
+  useEffect(() => {
+    const refreshData = async () => {
+      await Promise.allSettled([api.refreshClusterOverview(), rolesApi.refreshRoles(), api.refreshUserData()]);
+      await rolesApi.refreshRoleMembers();
+    };
+
+    appGlobal.onRefresh = async () => {
+      await refreshData();
+    };
+
+    refreshData().catch(() => {});
+  }, []);
+
+  const warning =
+    acls === null ? (
+      <Alert className="mb-4" variant="warning">
+        <AlertDescription>You do not have the necessary permissions to view ACLs</AlertDescription>
+      </Alert>
+    ) : null;
+
+  const noAclAuthorizer =
+    acls?.isAuthorizerEnabled === false ? (
+      <Alert className="mb-4" variant="warning">
+        <AlertDescription>There's no authorizer configured in your Kafka cluster</AlertDescription>
+      </Alert>
+    ) : null;
+
+  return (
+    <>
+      {warning}
+      {noAclAuthorizer}
+      <Outlet />
+    </>
+  );
+}
+
+function SecurityLayout() {
+  return isFeatureFlagEnabled('enableNewSecurityPage') ? <NewSecurityLayout /> : <OldSecurityLayout />;
 }

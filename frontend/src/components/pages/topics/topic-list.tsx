@@ -45,7 +45,7 @@ import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
-import { uiState } from '../../../state/ui-state';
+import { setPageHeader } from '../../../state/ui-state';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsx-utils';
@@ -59,7 +59,7 @@ const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
 
 const TopicList: FC = () => {
   useEffect(() => {
-    uiState.pageBreadcrumbs = [{ title: 'Topics', linkTo: '' }];
+    setPageHeader('Topics', [{ title: 'Topics', linkTo: '/topics' }]);
   }, []);
 
   const [localSearchValue, setLocalSearchValue] = useQueryState('q', parseAsString.withDefault(''));

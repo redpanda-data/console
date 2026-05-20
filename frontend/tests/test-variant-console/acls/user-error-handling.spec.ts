@@ -7,7 +7,9 @@
  * ConnectError detail extraction would go unnoticed.
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import { mockConnectError, mockConnectNetworkFailure, rpcUrl } from '../../shared/connect-mock';
 

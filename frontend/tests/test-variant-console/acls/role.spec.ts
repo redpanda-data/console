@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import { RolePage } from '../utils/role-page';
 
@@ -26,7 +28,7 @@ function generateRoleName(): string {
  */
 async function isRolesApiAvailable(page: import('@playwright/test').Page): Promise<boolean> {
   try {
-    await page.goto('/security/roles', { waitUntil: 'networkidle' });
+    await page.goto('/security/roles', { waitUntil: 'domcontentloaded' });
     const btn = page.getByTestId('create-role-button');
     await btn.waitFor({ state: 'attached', timeout: 15_000 });
     return !(await btn.isDisabled());
@@ -39,7 +41,7 @@ test.describe('Role CRUD', () => {
   test('create role page has no principal type selector', async ({ page }) => {
     test.skip(!(await isRolesApiAvailable(page)), 'Roles API not available');
 
-    await page.goto('/security/roles/create', { waitUntil: 'networkidle' });
+    await page.goto('/security/roles/create', { waitUntil: 'domcontentloaded' });
 
     // The principal type selector should NOT be present on the create role page
     await expect(page.getByTestId('shared-principal-type-select')).not.toBeVisible();

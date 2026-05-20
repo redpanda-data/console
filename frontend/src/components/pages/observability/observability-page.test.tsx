@@ -54,6 +54,7 @@ vi.mock('config', async (importOriginal) => {
 });
 
 vi.mock('state/ui-state', () => ({
+  setPageHeader: vi.fn(),
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
