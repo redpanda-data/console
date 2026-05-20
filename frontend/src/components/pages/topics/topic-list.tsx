@@ -242,6 +242,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
                   <Link
                     data-testid={`topic-link-${topic.topicName}`}
                     params={{ topicName: encodeURIComponent(topic.topicName) }}
+                    search={{} as never}
                     to="/topics/$topicName"
                   >
                     <TopicName topic={topic} />

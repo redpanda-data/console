@@ -52,6 +52,13 @@ components:
             Tags are key-value pairs that can be assigned to an AI agent resource.
             They help organize AI agents and enable filtering when listing them.
           type: object
+        teams_bridge:
+          $ref: '#/components/schemas/AIAgentTeamsBridge'
+        teams_bridge_endpoint:
+          description: Messaging endpoint URL for the Teams bridge, populated by the bridge controller.
+          nullable: true
+          readOnly: true
+          type: string
         url:
           description: URL to connect to the AI agent endpoint.
           readOnly: true
@@ -164,12 +171,37 @@ components:
             type: string
           description: Optional list of tags to attach to an AI agent.
           type: object
+        teams_bridge:
+          $ref: '#/components/schemas/AIAgentTeamsBridge'
       required:
         - display_name
         - system_prompt
         - provider
         - model
         - service_account
+      type: object
+    AIAgentTeamsBridge:
+      description: |-
+        Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+        Each agent gets its own Azure Bot registration; the bridge validates
+        inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
+      properties:
+        bot_app_id:
+          description: Azure Bot registration Application (client) ID.
+          type: string
+        bot_app_secret_ref:
+          description: |-
+            Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+            Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+            this is a plain identifier — the bridge resolves it directly via the
+            tenant-scoped secret store prefix.
+          type: string
+        bot_tenant_id:
+          description: AAD tenant ID the bot registration lives in.
+          type: string
+        enabled:
+          description: Whether the Teams bridge is active for this agent.
+          type: boolean
       type: object
     AIAgentUpdate:
       properties:
@@ -216,6 +248,8 @@ components:
             A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
+        teams_bridge:
+          $ref: '#/components/schemas/AIAgentTeamsBridge'
       type: object
     AgentCard:
       description: A2A agent card configuration for customizing agent discovery metadata.

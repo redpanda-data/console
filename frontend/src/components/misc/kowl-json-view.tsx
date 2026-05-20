@@ -49,15 +49,26 @@ const READ_ONLY_EDITOR_OPTIONS = {
   scrollBeyondLastLine: false,
 } as const;
 
-export const KowlJsonView = (props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {
+export const KowlJsonView = (props: {
+  srcObj: object | string | null | undefined;
+  style?: CSSProperties;
+  // escapeLatin1 re-escapes code points in 0x80-0xFF as \u00XX so bytes from
+  // Avro's JSON bytes encoding survive copy-paste out of the viewer. Without
+  // this, JSON.stringify emits the code point as a literal glyph and the
+  // clipboard receives the UTF-8 encoding, not the original byte.
+  escapeLatin1?: boolean;
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastSizeRef = useRef({ width: 0, height: 0 });
-  const str = useMemo(
-    () => (typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4)),
-    [props.srcObj]
-  );
+  const str = useMemo(() => {
+    const raw = typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
+    if (!props.escapeLatin1) {
+      return raw;
+    }
+    return raw.replace(/[\u0080-\u00ff]/g, (c) => `\\u00${c.charCodeAt(0).toString(16).padStart(2, '0')}`);
+  }, [props.srcObj, props.escapeLatin1]);
 
   const scheduleLayout = useCallback(() => {
     if (frameRef.current !== null) {

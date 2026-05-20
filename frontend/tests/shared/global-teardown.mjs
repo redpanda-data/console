@@ -77,6 +77,12 @@ export default async function globalTeardown(config = {}) {
       });
     }
 
+    if (state.kafkaId) {
+      console.log('Stopping Kafka container...');
+      await execAsync(`docker stop ${state.kafkaId}`).catch(() => {});
+      await execAsync(`docker rm ${state.kafkaId}`).catch(() => {});
+    }
+
     // Stop source cluster (existing/main redpanda)
     if (state.redpandaId) {
       console.log('Stopping source Redpanda container...');

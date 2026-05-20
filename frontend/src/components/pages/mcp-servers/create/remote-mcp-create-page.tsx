@@ -29,7 +29,7 @@ import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -90,7 +90,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   // Form setup
   const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+    resolver: zodResolver(FormSchema) as Resolver<FormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });

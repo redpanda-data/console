@@ -22,7 +22,6 @@ import {
   Button,
   Checkbox,
   ConfirmModal,
-  DateTimeInput,
   Flex,
   FormField,
   Grid,
@@ -35,6 +34,7 @@ import {
   Text,
 } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
+import { DateTimeInput } from 'components/ui/date-time-input';
 
 import {
   type CreateDebugBundleRequest,

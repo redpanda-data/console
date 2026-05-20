@@ -47,7 +47,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
       });
 
       if (!result.success) {
-        console.error('Validation errors:', JSON.stringify(result.error.errors, null, 2));
+        console.error('Validation errors:', JSON.stringify(result.error.issues, null, 2));
       }
 
       expect(result.success).toBe(true);
@@ -74,7 +74,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        const tableError = result.error.errors.find((err) => err.path[0] === 'postgresTable');
+        const tableError = result.error.issues.find((err) => err.path[0] === 'postgresTable');
         expect(tableError?.message).toContain('must start with a letter');
       }
     });
@@ -87,7 +87,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        const tableError = result.error.errors.find((err) => err.path[0] === 'postgresTable');
+        const tableError = result.error.issues.find((err) => err.path[0] === 'postgresTable');
         expect(tableError?.message).toContain('must start with a letter');
       }
     });
@@ -103,7 +103,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
 
         expect(result.success, `Expected "${tableName}" to be invalid`).toBe(false);
         if (!result.success) {
-          const tableError = result.error.errors.find((err) => err.path[0] === 'postgresTable');
+          const tableError = result.error.issues.find((err) => err.path[0] === 'postgresTable');
           expect(tableError?.message).toContain('must start with a letter');
         }
       }
@@ -117,7 +117,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        const tableError = result.error.errors.find((err) => err.path[0] === 'postgresTable');
+        const tableError = result.error.issues.find((err) => err.path[0] === 'postgresTable');
         expect(tableError?.message).toBeTruthy();
       }
     });
@@ -153,7 +153,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
       const result = KnowledgeBaseCreateFormSchema.safeParse(validBaseData);
 
       if (!result.success) {
-        console.error('Validation errors:', JSON.stringify(result.error.errors, null, 2));
+        console.error('Validation errors:', JSON.stringify(result.error.issues, null, 2));
       }
 
       expect(result.success).toBe(true);
@@ -167,7 +167,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        const usernameError = result.error.errors.find((err) => err.path[0] === 'redpandaUsername');
+        const usernameError = result.error.issues.find((err) => err.path[0] === 'redpandaUsername');
         expect(usernameError?.message).toContain('required');
       }
     });
@@ -180,7 +180,7 @@ describe('KnowledgeBaseCreateFormSchema', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        const passwordError = result.error.errors.find((err) => err.path[0] === 'redpandaPassword');
+        const passwordError = result.error.issues.find((err) => err.path[0] === 'redpandaPassword');
         expect(passwordError?.message).toContain('required');
       }
     });

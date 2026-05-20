@@ -291,7 +291,6 @@ function EditSchemaCompatibility(p: {
           >
             {allOptions.map((option) => (
               <ChoiceboxItem
-                checked={configMode === option.value}
                 className={`max-w-full ${configMode === option.value ? 'bg-accent' : ''}`}
                 key={option.value}
                 value={option.value}

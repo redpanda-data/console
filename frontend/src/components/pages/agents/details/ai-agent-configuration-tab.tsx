@@ -1304,7 +1304,8 @@ export const AIAgentConfigurationTab = () => {
                     ) : (
                       <Select
                         disabled={isLoadingProviders}
-                        onValueChange={(value: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock') => {
+                        onValueChange={(rawValue: string) => {
+                          const value = rawValue as 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
                           const providerModels = MODEL_OPTIONS_BY_PROVIDER[value]?.models || [];
                           const firstModel =
                             providerModels.length > 0 && providerModels[0]

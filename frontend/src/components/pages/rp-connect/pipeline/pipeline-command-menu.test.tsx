@@ -165,7 +165,7 @@ describe('PipelineCommandMenu', () => {
       expect(getHeading('Secrets')).toBeInTheDocument();
     });
 
-    // Click the "Secrets" toggle button
+    // Click the "Secrets" toggle (single-select ToggleGroupItem renders as role="radio")
     await user.click(screen.getByRole('radio', { name: 'Secrets' }));
 
     await waitFor(() => {

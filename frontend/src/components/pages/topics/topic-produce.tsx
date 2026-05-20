@@ -662,7 +662,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
             Produce
           </Button>
-          <Link params={{ topicName: encodeURIComponent(topicName) }} to="/topics/$topicName">
+          <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName">
             Go Back
           </Link>
         </Flex>

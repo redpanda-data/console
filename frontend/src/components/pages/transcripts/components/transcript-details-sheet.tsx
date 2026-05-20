@@ -13,6 +13,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -263,7 +264,7 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
             <DialogTitle>{selectedSpan?.name || 'Span Details'}</DialogTitle>
             <DialogDescription>Span ID: {spanId}</DialogDescription>
           </DialogHeader>
-          <div className="h-[70vh] overflow-auto">
+          <DialogBody className="h-[70vh]">
             {!!selectedSpan && (
               <TranscriptDetailsTabs
                 onValueChange={setSelectedTab}
@@ -272,7 +273,7 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
                 value={selectedTab}
               />
             )}
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

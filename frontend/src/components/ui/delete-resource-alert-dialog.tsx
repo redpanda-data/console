@@ -37,15 +37,63 @@ export type DeleteResourceAlertDialogProps = {
   onDelete: (id: string) => void;
   onOpenChange?: (open: boolean) => void;
   isDeleting?: boolean;
-  // Optional: Additional content to show in the dialog
   children?: ReactNode;
-  // Trigger variant: "dropdown" renders a DropdownMenuItem, "button" renders a Button
   triggerVariant?: 'dropdown' | 'button';
-  // Button-specific props when triggerVariant is "button"
   buttonVariant?: ButtonVariants['variant'];
   buttonIcon?: React.ReactNode;
   buttonText?: string;
+  // Controlled-only mode: parent owns open state and renders the trigger.
+  // Use with `DeleteResourceMenuItem` when the dialog must outlive a closing
+  // dropdown menu.
+  open?: boolean;
 };
+
+const DialogBody: React.FC<{
+  resourceType: string;
+  resourceName: string;
+  confirmationText: string;
+  setConfirmationText: (value: string) => void;
+  children?: ReactNode;
+  isDeleting?: boolean;
+  isDeleteConfirmed: boolean;
+  handleDelete: () => void;
+}> = ({
+  resourceType,
+  resourceName,
+  confirmationText,
+  setConfirmationText,
+  children,
+  isDeleting,
+  isDeleteConfirmed,
+  handleDelete,
+}) => (
+  <AlertDialogContent>
+    <AlertDialogHeader className="text-left">
+      <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
+      <AlertDialogDescription className="space-y-4">
+        <Text>
+          You are about to delete <InlineCode>{resourceName}</InlineCode>
+        </Text>
+        <Text>This action will cause data loss. To confirm, type "delete" into the confirmation box below.</Text>
+        <Input
+          className="mt-4"
+          onChange={(e) => setConfirmationText(e.target.value)}
+          placeholder='Type "delete" to confirm'
+          value={confirmationText}
+        />
+        {children}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel asChild>
+        <Button variant="secondary-ghost">Cancel</Button>
+      </AlertDialogCancel>
+      <AlertDialogAction asChild disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
+        <Button variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+);
 
 export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps> = ({
   resourceId,
@@ -59,10 +107,12 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   buttonVariant = 'destructive-outline',
   buttonIcon,
   buttonText: buttonTextProp,
+  open,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
   const buttonText = buttonTextProp === undefined ? undefined : 'Delete';
+  const isControlled = open !== undefined;
 
   const handleDelete = () => {
     if (isDeleteConfirmed) {
@@ -71,12 +121,29 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     }
   };
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
       setConfirmationText('');
     }
-    onOpenChange?.(open);
+    onOpenChange?.(next);
   };
+
+  if (isControlled) {
+    return (
+      <AlertDialog onOpenChange={handleOpenChange} open={open}>
+        <DialogBody
+          children={children}
+          confirmationText={confirmationText}
+          handleDelete={handleDelete}
+          isDeleteConfirmed={isDeleteConfirmed}
+          isDeleting={isDeleting}
+          resourceName={resourceName}
+          resourceType={resourceType}
+          setConfirmationText={setConfirmationText}
+        />
+      </AlertDialog>
+    );
+  }
 
   const renderTrigger = () => {
     if (triggerVariant === 'button') {
@@ -110,32 +177,45 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   return (
     <AlertDialog onOpenChange={handleOpenChange}>
       <AlertDialogTrigger asChild>{renderTrigger()}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader className="text-left">
-          <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-4">
-            <Text>
-              You are about to delete <InlineCode>{resourceName}</InlineCode>
-            </Text>
-            <Text>This action will cause data loss. To confirm, type "delete" into the confirmation box below.</Text>
-            <Input
-              className="mt-4"
-              onChange={(e) => setConfirmationText(e.target.value)}
-              placeholder='Type "delete" to confirm'
-              value={confirmationText}
-            />
-            {children}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel asChild>
-            <Button variant="secondary-ghost">Cancel</Button>
-          </AlertDialogCancel>
-          <AlertDialogAction asChild disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
-            <Button variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+      <DialogBody
+        children={children}
+        confirmationText={confirmationText}
+        handleDelete={handleDelete}
+        isDeleteConfirmed={isDeleteConfirmed}
+        isDeleting={isDeleting}
+        resourceName={resourceName}
+        resourceType={resourceType}
+        setConfirmationText={setConfirmationText}
+      />
     </AlertDialog>
   );
 };
+
+// `DropdownMenuItem` styled as the "Delete" entry that opens a controlled
+// `DeleteResourceAlertDialog`. Use this inside `DropdownMenuContent` while
+// rendering the dialog itself as a sibling of the dropdown — otherwise the
+// menu's unmount on close tears down the dialog mid-flow.
+export const DeleteResourceMenuItem: React.FC<{
+  isDeleting?: boolean;
+  onSelect: () => void;
+  testId?: string;
+}> = ({ isDeleting, onSelect, testId }) => (
+  <DropdownMenuItem
+    className="text-red-600 focus:text-red-600"
+    data-testid={testId}
+    onSelect={(event) => {
+      event.preventDefault();
+      onSelect();
+    }}
+  >
+    {isDeleting ? (
+      <div className="flex items-center gap-4">
+        <Loader2 className="h-4 w-4 animate-spin" /> Deleting
+      </div>
+    ) : (
+      <div className="flex items-center gap-4">
+        <Trash2 className="h-4 w-4" /> Delete
+      </div>
+    )}
+  </DropdownMenuItem>
+);

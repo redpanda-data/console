@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: this is a complex component */
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -6,6 +5,7 @@ import { Eye, EyeOff, Minus, Plus } from 'lucide-react';
 import React, { createContext, useEffect, useState } from 'react';
 
 import { Button } from './button';
+import { useFieldContext } from './field';
 import { useGroup } from './group';
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -65,17 +65,17 @@ export interface InputProps
   containerClassName?: string;
 }
 
-function useInputState(props: InputProps) {
-  const [value, setValue] = useState<string>(props.value?.toString() || props.defaultValue?.toString() || '');
+function useInputState(value: InputProps['value'], defaultValue: InputProps['defaultValue']) {
+  const [internalValue, setInternalValue] = useState<string>(value?.toString() || defaultValue?.toString() || '');
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (props.value !== undefined) {
-      setValue(props.value.toString());
+    if (value !== undefined) {
+      setInternalValue(value.toString());
     }
-  }, [props.value]);
+  }, [value]);
 
-  return { value, setValue, showPassword, setShowPassword };
+  return { value: internalValue, setValue: setInternalValue, showPassword, setShowPassword };
 }
 
 function useNumberInputHandlers(
@@ -113,10 +113,23 @@ function useNumberInputHandlers(
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
-    { className, type, showStepControls, size, variant, testId, children, containerClassName, readOnly, ...props },
+    {
+      className,
+      type,
+      showStepControls,
+      size,
+      variant,
+      testId,
+      children,
+      containerClassName,
+      readOnly,
+      defaultValue,
+      ...props
+    },
     ref
   ) => {
-    const { value, setValue, showPassword, setShowPassword } = useInputState(props);
+    const { value, setValue, showPassword, setShowPassword } = useInputState(props.value, defaultValue);
+    const fieldCtx = useFieldContext();
     const [startWidth, setStartWidth] = useState<number | undefined>();
     const [endWidth, setEndWidth] = useState<number | undefined>();
 
@@ -158,6 +171,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const inputElement = (
       <input
         {...props}
+        aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
+        aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
         className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
         data-slot="input"
         data-testid={testId}
@@ -170,7 +185,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           paddingRight: endWidth ? endWidth + 16 : undefined,
         }}
         type={inputType}
-        value={isNumberInput ? value : props.value}
+        {...(isNumberInput ? { value } : props.value !== undefined ? { value: props.value } : { defaultValue })}
       />
     );
 

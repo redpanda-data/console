@@ -52,7 +52,7 @@ import {
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { Controller, type Resolver, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
 import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';
@@ -92,7 +92,7 @@ export const AIAgentCreatePage = () => {
 
   // Form setup - always start with fresh values
   const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+    resolver: zodResolver(FormSchema) as Resolver<FormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });

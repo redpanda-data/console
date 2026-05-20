@@ -32,7 +32,7 @@ import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useGetSecretQuery, useUpdateSecretMutation } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
@@ -52,7 +52,7 @@ export const SecretEditPage = () => {
   const { mutateAsync: updateSecret, isPending: isUpdating } = useUpdateSecretMutation();
 
   const form = useForm<SecretUpdateFormValues>({
-    resolver: zodResolver(SecretUpdateFormSchema),
+    resolver: zodResolver(SecretUpdateFormSchema) as Resolver<SecretUpdateFormValues>,
     defaultValues: {
       id: '',
       value: '',
@@ -191,7 +191,6 @@ export const SecretEditPage = () => {
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel required>Scopes</FieldLabel>
               <MultiSelect
-                items={SCOPE_OPTIONS}
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >

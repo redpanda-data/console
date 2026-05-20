@@ -65,6 +65,12 @@ const AclUpdatePage = () => {
     const applyResult = await applyUpdates(acls.rules, acls.sharedConfig, rules);
     handleResponses(applyResult.errors, applyResult.created);
 
+    // Only navigate to the detail page on success. See UX-1218 — without this guard,
+    // an update failure routes the user to the detail page as if the update had landed.
+    if (!(applyResult.created && applyResult.errors.length === 0)) {
+      return;
+    }
+
     navigate({
       to: `/security/acls/${aclName}/details`,
       search: { host },

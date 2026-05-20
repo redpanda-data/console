@@ -28,7 +28,14 @@
     "paths": { "*": ["./src/*"] }
   },
   "include": ["src", "./vitest.setup.ts"],
-  "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts", "src/protogen"],
+  "exclude": [
+    "src/utils/interpreter/**",
+    "node_modules",
+    "src/**/*.test.tsx",
+    "src/**/*.test.ts",
+    "src/protogen",
+    "src/components/redpanda-ui/components/auto-form/**"
+  ],
   "watchOptions": {
     "watchFile": "useFsEvents",
     "fallbackPolling": "dynamicpriority"

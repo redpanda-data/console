@@ -41,17 +41,16 @@ test.describe('Filter Messages by Timestamp', () => {
       const timeValue = `${hours}:${minutes}`;
 
       await test.step('Open date/time picker', async () => {
-        const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
-        await expect(dateTimeDisplay).toBeVisible();
-        await dateTimeDisplay.click();
+        const calendarTrigger = page.getByTestId('start-timestamp-input').getByLabel('Open calendar');
+        await expect(calendarTrigger).toBeVisible();
+        await calendarTrigger.click();
 
         // Wait for the date/time picker popover to open
         await expect(page.locator('input[type="time"]')).toBeVisible();
       });
 
       await test.step('Fill time input and wait for API request', async () => {
-        // The time input is inside the Chakra Popover portal — not a descendant of
-        // start-timestamp-input, so we search the whole page.
+        // The time input lives inside the popover (portaled), so search the page.
         const timeInput = page.locator('input[type="time"]');
         await expect(timeInput).toBeVisible();
 
@@ -94,21 +93,17 @@ test.describe('Filter Messages by Timestamp', () => {
     });
 
     await test.step('Verify date input displays a value', async () => {
-      // Close the popover (Escape triggers onClose via closeOnEsc default)
+      // Close the popover.
       await page.keyboard.press('Escape');
-
-      // Wait for the popover to finish closing (time input disappears)
       await expect(page.locator('input[type="time"]')).not.toBeVisible({ timeout: 3000 });
 
-      // The readonly display input should now show the formatted datetime.
-      // Use input[readonly] to avoid matching the time input (which also has ARIA role "textbox").
-      const dateTimeDisplay = page.getByTestId('start-timestamp-input').locator('input[readonly]');
-      await expect(dateTimeDisplay).toBeVisible();
-      const displayValue = await dateTimeDisplay.inputValue();
+      // The number input shows the unix-millisecond value directly.
+      const dateTimeInput = page.getByTestId('start-timestamp-input').locator('input[type="number"]');
+      await expect(dateTimeInput).toBeVisible();
+      const displayValue = await dateTimeInput.inputValue();
 
-      // Verify the display value is not empty
       expect(displayValue).toBeTruthy();
-      expect(displayValue.length).toBeGreaterThan(0);
+      expect(Number(displayValue)).toBeGreaterThan(0);
     });
 
     await topicPage.deleteTopic(topicName);
@@ -146,14 +141,8 @@ test.describe('Filter Messages by Timestamp', () => {
       const timestampInSeconds = 1_704_067_200; // 2024-01-01 00:00:00 UTC
       const timestampInMilliseconds = timestampInSeconds * 1000; // 1704067200000
 
-      // Click the readonly display input to open the popover (switches to number input mode)
-      const dateTimeDisplay = page.getByTestId('start-timestamp-input').getByRole('textbox');
-      await expect(dateTimeDisplay).toBeVisible();
-      await dateTimeDisplay.click();
-
-      // Wait for the number input to become visible (popover open, number input mode)
       const numberInput = page.getByTestId('start-timestamp-input').locator('input[type="number"]');
-      await expect(numberInput).toBeVisible({ timeout: 3000 });
+      await expect(numberInput).toBeVisible();
 
       // Listen for the API request BEFORE pressing Enter (Enter triggers onChange)
       const apiRequestPromise = page.waitForRequest((request) => {

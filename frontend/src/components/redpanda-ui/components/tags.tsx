@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/a11y/useSemanticElements: part of tags component */
 'use client';
 
 import { XIcon } from 'lucide-react';

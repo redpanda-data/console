@@ -108,6 +108,12 @@ message AIAgent {
   // Not user-configurable: capabilities and authentication (managed by Redpanda).
   AgentCard agent_card = 17;
 
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 18;
+
+  // Messaging endpoint URL for the Teams bridge, populated by the bridge controller.
+  optional string teams_bridge_endpoint = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -294,6 +300,26 @@ message AIAgent {
       repeated string output_modes = 7;
     }
   }
+}
+
+// Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+// Each agent gets its own Azure Bot registration; the bridge validates
+// inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
+message AIAgentTeamsBridge {
+  // Whether the Teams bridge is active for this agent.
+  bool enabled = 1;
+  // Azure Bot registration Application (client) ID.
+  string bot_app_id = 2;
+  // AAD tenant ID the bot registration lives in.
+  string bot_tenant_id = 3;
+  // Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+  // Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+  // this is a plain identifier — the bridge resolves it directly via the
+  // tenant-scoped secret store prefix.
+  string bot_app_secret_ref = 4 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.pattern = "^[A-Za-z_][A-Za-z0-9_]*$"
+  ];
 }
 
 // AIAgentService is the service for AI Agents.
@@ -614,6 +640,9 @@ message AIAgentCreate {
 
   // Optional A2A agent card configuration.
   AIAgent.AgentCard agent_card = 14;
+
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 15;
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -755,6 +784,9 @@ message AIAgentUpdate {
 
   // Optional A2A agent card configuration.
   AIAgent.AgentCard agent_card = 14;
+
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 15;
 }
 
 message UpdateAIAgentRequest {

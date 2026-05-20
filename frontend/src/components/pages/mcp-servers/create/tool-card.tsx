@@ -118,7 +118,18 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                     value={String(field.value)}
                   >
                     <SelectTrigger id={`tool-${toolIndex}-componentType`}>
-                      <SelectValue placeholder="Select component type" />
+                      <SelectValue placeholder="Select component type">
+                        {(value) => {
+                          const numericValue = Number(value);
+                          if (
+                            !Number.isFinite(numericValue) ||
+                            numericValue === MCPServer_Tool_ComponentType.UNSPECIFIED
+                          ) {
+                            return null;
+                          }
+                          return <RedpandaConnectComponentTypeBadge componentType={numericValue} />;
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(MCPServer_Tool_ComponentType)
