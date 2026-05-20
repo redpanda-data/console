@@ -336,7 +336,7 @@ export const PermissionsListTabNew: FC = () => {
   useLayoutEffect(() => {
     setPageHeader('Security', [
       { title: 'Security', linkTo: '/security/users' },
-      { title: 'Permissions', linkTo: '/security/permissions-list' },
+      { title: 'Permissions', linkTo: '/security/permissions' },
     ]);
   }, []);
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);

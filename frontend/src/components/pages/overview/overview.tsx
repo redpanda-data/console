@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { isFeatureFlagEnabled } from 'config';
+
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import type { BrokerWithConfigAndStorage } from '../../../state/rest-interfaces';
@@ -384,7 +386,12 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} to="/security/permissions-list">
+              <Link
+                key={0}
+                to={
+                  isFeatureFlagEnabled('enableNewSecurityPage') ? '/security/permissions' : '/security/permissions-list'
+                }
+              >
                 {aclCount}
               </Link>,
             ],

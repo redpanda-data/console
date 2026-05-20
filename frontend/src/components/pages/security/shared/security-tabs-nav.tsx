@@ -75,9 +75,9 @@ function buildTabs(
   }
 
   result.push({
-    key: 'permissions-list',
+    key: 'permissions',
     label: 'Permissions',
-    path: '/security/permissions-list',
+    path: '/security/permissions',
     disabled: userData?.canViewPermissionsList === false,
     disabledReason:
       userData?.canViewPermissionsList === false
