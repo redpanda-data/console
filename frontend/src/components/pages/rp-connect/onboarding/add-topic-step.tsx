@@ -406,17 +406,41 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 Show advanced settings
               </Button>
 
-              <AnimatePresence initial={false}>
+              {/* Coordinate with DialogContent's useAnimatedAutoHeight so the
+                  popup and the panel animate in parallel in both directions:
+                  - Enter: snap the panel to its natural height instantly
+                    (height transition duration 0), so the popup observes one
+                    big jump and runs a single height tween. The popup's
+                    overflow:hidden produces a wipe-reveal while the panel
+                    cross-fades in over 220ms.
+                  - Exit: popLayout pops the panel out of layout on the same
+                    frame, so the popup observes the new natural height
+                    instantly and shrinks. The panel animates height + opacity
+                    using the same 250ms / [0.22, 1, 0.36, 1] curve that
+                    useAnimatedAutoHeight uses, so the two reads as a single
+                    coordinated collapse. */}
+              <AnimatePresence initial={false} mode="popLayout">
                 {showAdvancedSettings ? (
                   <motion.div
-                    animate={{ height: 'auto', opacity: 1 }}
+                    animate={{
+                      height: 'auto',
+                      opacity: 1,
+                      transition: {
+                        height: { duration: 0 },
+                        opacity: { duration: 0.22, ease: [0.4, 0, 0.2, 1] },
+                      },
+                    }}
                     aria-hidden={!showAdvancedSettings}
-                    exit={{ height: 0, opacity: 0 }}
+                    exit={{
+                      height: 0,
+                      opacity: 0,
+                      transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
+                    }}
                     id="add-topic-advanced-settings"
                     initial={{ height: 0, opacity: 0 }}
                     key="add-topic-advanced-settings"
+                    layout
                     style={{ overflow: 'hidden' }}
-                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
                   >
                     <div className="space-y-6 pt-4">
                       <AdvancedTopicSettings

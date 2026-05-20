@@ -31,7 +31,6 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading, InlineCode } from 'components/redpanda-ui/components/typography';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -421,9 +420,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     () =>
       topicsResponse?.topics
         ? topicsResponse.topics
-          .map((t) => t.name)
-          .filter(Boolean)
-          .filter((name) => !(hideInternal && name.startsWith('__')))
+            .map((t) => t.name)
+            .filter(Boolean)
+            .filter((name) => !(hideInternal && name.startsWith('__')))
         : [],
     [topicsResponse, hideInternal]
   );
@@ -440,9 +439,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     () =>
       usersResponse?.users
         ? usersResponse.users
-          .map((u) => u.name || '')
-          .filter(Boolean)
-          .filter((name) => !(hideInternal && name.startsWith('__')))
+            .map((u) => u.name || '')
+            .filter(Boolean)
+            .filter((name) => !(hideInternal && name.startsWith('__')))
         : [],
     [usersResponse, hideInternal]
   );
@@ -573,13 +572,18 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
             <DialogTitle>Create a topic</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <AddTopicStep hideTitle ref={topicStepRef} selectionMode="new" />
+            <AddTopicStep hideTitle inline ref={topicStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
             <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary" isLoading={isTopicSubmitting}>
+            <Button
+              disabled={isTopicSubmitting}
+              isLoading={isTopicSubmitting}
+              onClick={handleCreateTopic}
+              variant="primary"
+            >
               Create
             </Button>
           </DialogFooter>
@@ -614,35 +618,35 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       <>
         {open
           ? createPortal(
-            <div ref={popoverRef} style={anchorStyle}>
-              <Command
-                className="w-[340px] rounded-md bg-background"
-                loop
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    onOpenChange(false);
-                  }
-                  if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const selected = (e.currentTarget as HTMLElement).querySelector(
-                      '[cmdk-item][aria-selected="true"]'
-                    );
-                    if (selected) {
-                      (selected as HTMLElement).click();
+              <div ref={popoverRef} style={anchorStyle}>
+                <Command
+                  className="w-[340px] rounded-md bg-background"
+                  loop
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      onOpenChange(false);
                     }
-                  }
-                }}
-                size="sm"
-                variant="elevated"
-                vimBindings={false}
-              >
-                <CommandInput placeholder="Filter..." />
-                <CommandMenuContent {...contentProps} />
-              </Command>
-            </div>,
-            document.body
-          )
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      const selected = (e.currentTarget as HTMLElement).querySelector(
+                        '[cmdk-item][aria-selected="true"]'
+                      );
+                      if (selected) {
+                        (selected as HTMLElement).click();
+                      }
+                    }
+                  }}
+                  size="sm"
+                  variant="elevated"
+                  vimBindings={false}
+                >
+                  <CommandInput placeholder="Filter..." />
+                  <CommandMenuContent {...contentProps} />
+                </Command>
+              </div>,
+              document.body
+            )
           : null}
         {subDialogs}
       </>
@@ -655,7 +659,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   return (
     <>
       <Dialog onOpenChange={handleDialogOpenChange} open={open}>
-        <DialogContent >
+        <DialogContent>
           <DialogHeader className="sr-only">
             <DialogTitle>Command Menu</DialogTitle>
           </DialogHeader>

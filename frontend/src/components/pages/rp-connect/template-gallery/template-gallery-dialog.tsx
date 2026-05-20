@@ -22,6 +22,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { ArrowLeft, KeyRound } from 'lucide-react';
+import { LayoutGroup, motion } from 'motion/react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -273,20 +274,32 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
         {isCreateTopicViewActive ? (
           <DialogBody>
-            <div className="flex flex-col gap-4">
-              <AddTopicStep hideTitle inline ref={addTopicStepRef} selectionMode="new" />
-              <div className="flex justify-end">
-                <Button
-                  data-testid="template-create-topic-submit"
-                  disabled={isCreatingTopic}
-                  onClick={handleCreateTopicSubmit}
-                  type="button"
-                  variant="primary"
+            {/* LayoutGroup so the popLayout AnimatePresence inside AddTopicStep
+                forces a re-measure on the sibling button motion.div below.
+                Without it, the button's `layout` prop only sees positions at
+                React render time — popLayout shifts surrounding flow via
+                motion's effects after commit, so the button would otherwise
+                jump on collapse. */}
+            <LayoutGroup>
+              <div className="flex flex-col gap-4">
+                <AddTopicStep hideTitle inline ref={addTopicStepRef} selectionMode="new" />
+                <motion.div
+                  className="flex justify-end"
+                  layout="position"
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {isCreatingTopic ? 'Creating...' : 'Create topic'}
-                </Button>
+                  <Button
+                    data-testid="template-create-topic-submit"
+                    disabled={isCreatingTopic}
+                    onClick={handleCreateTopicSubmit}
+                    type="button"
+                    variant="primary"
+                  >
+                    {isCreatingTopic ? 'Creating...' : 'Create topic'}
+                  </Button>
+                </motion.div>
               </div>
-            </div>
+            </LayoutGroup>
           </DialogBody>
         ) : null}
 
