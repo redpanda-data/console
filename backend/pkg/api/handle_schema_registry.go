@@ -464,6 +464,77 @@ func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetAllSchemas() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	parseBool := func(r *http.Request, name string) (bool, error) {
+		raw := rest.GetQueryParam(r, name)
+		if raw == "" {
+			return false, nil
+		}
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			return false, fmt.Errorf("invalid %q query param: %w", name, err)
+		}
+		return v, nil
+	}
+	parseInt := func(r *http.Request, name string) (int, error) {
+		raw := rest.GetQueryParam(r, name)
+		if raw == "" {
+			return 0, nil
+		}
+		v, err := strconv.Atoi(raw)
+		if err != nil {
+			return 0, fmt.Errorf("invalid %q query param: %w", name, err)
+		}
+		if v < 0 {
+			return 0, fmt.Errorf("invalid %q query param: must be non-negative", name)
+		}
+		return v, nil
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		opts := console.GetAllSchemasOptions{
+			SubjectPrefix: rest.GetQueryParam(r, "subjectPrefix"),
+		}
+		var err error
+		if opts.LatestOnly, err = parseBool(r, "latestOnly"); err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{Err: err, Status: http.StatusBadRequest, Message: err.Error()})
+			return
+		}
+		if opts.Deleted, err = parseBool(r, "deleted"); err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{Err: err, Status: http.StatusBadRequest, Message: err.Error()})
+			return
+		}
+		if opts.DeletedOnly, err = parseBool(r, "deletedOnly"); err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{Err: err, Status: http.StatusBadRequest, Message: err.Error()})
+			return
+		}
+		if opts.Offset, err = parseInt(r, "offset"); err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{Err: err, Status: http.StatusBadRequest, Message: err.Error()})
+			return
+		}
+		if opts.Limit, err = parseInt(r, "limit"); err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{Err: err, Status: http.StatusBadRequest, Message: err.Error()})
+			return
+		}
+
+		res, err := api.ConsoleSvc.GetAllSchemas(r.Context(), opts)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve schemas from the schema registry: %v", err.Error()),
+				IsSilent: false,
+			})
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
 func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 	if !api.Cfg.SchemaRegistry.Enabled {
 		return api.handleSchemaRegistryNotConfigured()

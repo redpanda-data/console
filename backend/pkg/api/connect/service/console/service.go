@@ -215,3 +215,30 @@ func (api *Service) PublishMessage(
 		},
 	), nil
 }
+
+// GenerateSchemaSample renders a zero-valued JSON skeleton for any Schema
+// Registry-backed schema (Avro / Protobuf / JSON Schema). The backend
+// dispatches on the registered schema type so the frontend can call a single
+// RPC regardless of which encoding the user picked.
+func (api *Service) GenerateSchemaSample(
+	ctx context.Context,
+	req *connect.Request[v1alpha.GenerateSchemaSampleRequest],
+) (*connect.Response[v1alpha.GenerateSchemaSampleResponse], error) {
+	indexPath := make([]int, 0, len(req.Msg.GetIndexPath()))
+	for _, v := range req.Msg.GetIndexPath() {
+		indexPath = append(indexPath, int(v))
+	}
+
+	sample, err := api.consoleSvc.GenerateSchemaSampleJSON(ctx, int(req.Msg.GetSchemaId()), indexPath)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("failed to generate schema sample JSON: %w", err),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
+		)
+	}
+
+	return connect.NewResponse(&v1alpha.GenerateSchemaSampleResponse{
+		SampleJson: string(sample),
+	}), nil
+}

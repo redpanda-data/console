@@ -41,6 +41,7 @@ type Servicer interface {
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
 	ProducePlainRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
 	ProduceRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
+	GenerateSchemaSampleJSON(ctx context.Context, schemaID int, indexPath []int) ([]byte, error)
 	Start(ctx context.Context) error
 	Stop()
 	GetTopicConfigs(ctx context.Context, topicName string, configNames []string) (*TopicConfig, *rest.Error)
@@ -98,6 +99,7 @@ type SchemaRegistryServicer interface {
 	PutSchemaRegistryConfig(ctx context.Context, subject string, compatibility sr.SetCompatibility) (*SchemaRegistryConfig, error)
 	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error
 	GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix string) ([]SchemaRegistrySubject, error)
+	GetAllSchemas(ctx context.Context, opts GetAllSchemasOptions) ([]SchemaRegistrySchema, error)
 	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
 	GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName string, version int) ([]SchemaReference, error)
 	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)

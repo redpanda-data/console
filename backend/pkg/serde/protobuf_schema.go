@@ -91,7 +91,10 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 	// the right proto type that shall be used for decoding the binary data. The index
 	// path points us to the right type inside the main proto file.
 	rootDescriptors := compiledProtoFiles.FindFileByPath(rootFilename).Messages()
-	messageDescriptor := messageDescriptorFromIndexPath(rootDescriptors, indexPath)
+	messageDescriptor, err := messageDescriptorFromIndexPath(rootDescriptors, indexPath)
+	if err != nil {
+		return &RecordPayload{}, fmt.Errorf("failed to resolve protobuf descriptor: %w", err)
+	}
 
 	protoMessage := dynamicpb.NewMessage(messageDescriptor)
 	err = proto.Unmarshal(binaryPayload, protoMessage)
@@ -196,7 +199,10 @@ func (d ProtobufSchemaSerde) jsonToProtobufWire(ctx context.Context, jsonInput [
 		return nil, fmt.Errorf("failed getting proto files: %w", err)
 	}
 	rootDescriptors := compiledProtoFiles.FindFileByPath(rootFilename).Messages()
-	messageDescriptor := messageDescriptorFromIndexPath(rootDescriptors, indexPath)
+	messageDescriptor, err := messageDescriptorFromIndexPath(rootDescriptors, indexPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve protobuf descriptor: %w", err)
+	}
 	message := dynamicpb.NewMessage(messageDescriptor)
 
 	o := protojson.UnmarshalOptions{
@@ -235,14 +241,20 @@ func indexPathFromDescriptor(descriptor protoreflect.MessageDescriptor) []int {
 }
 
 // messageDescriptorFromIndexPath recursively navigates through the descriptors
-// to find the message descriptor specified by the given index path.
-func messageDescriptorFromIndexPath(descriptors protoreflect.MessageDescriptors, indexPath []int) protoreflect.MessageDescriptor {
-	// Base case: return the descriptor if we've reached the last index.
-	if len(indexPath) == 1 {
-		return descriptors.Get(indexPath[0])
+// to find the message descriptor specified by the given index path. Returns an
+// error when an index is negative or out of range so the caller can reject the
+// request instead of panicking inside protoreflect.MessageDescriptors.Get.
+func messageDescriptorFromIndexPath(descriptors protoreflect.MessageDescriptors, indexPath []int) (protoreflect.MessageDescriptor, error) {
+	if len(indexPath) == 0 {
+		return nil, errors.New("empty protobuf index path")
 	}
-
-	// Recursive case: continue to the next level of descriptors.
-	nextDescriptor := descriptors.Get(indexPath[0])
-	return messageDescriptorFromIndexPath(nextDescriptor.Messages(), indexPath[1:])
+	idx := indexPath[0]
+	if idx < 0 || idx >= descriptors.Len() {
+		return nil, fmt.Errorf("protobuf message index %d out of range (have %d siblings)", idx, descriptors.Len())
+	}
+	descriptor := descriptors.Get(idx)
+	if len(indexPath) == 1 {
+		return descriptor, nil
+	}
+	return messageDescriptorFromIndexPath(descriptor.Messages(), indexPath[1:])
 }
