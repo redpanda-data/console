@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
 import {
   Alert,
   Box,
@@ -55,6 +56,7 @@ import {
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import { uiState } from '../../../state/ui-state';
+import { formatToastErrorMessageGRPC } from '../../../utils/toast.utils';
 import { Label } from '../../../utils/tsx-utils';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
 import KowlEditor from '../../misc/kowl-editor';
@@ -168,6 +170,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     control,
     register,
     setValue,
+    getValues,
     handleSubmit,
     setError,
     formState: { isSubmitting, errors },
@@ -294,10 +297,20 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       if (encoding === undefined) {
         return;
       }
+      // Race guard: don't clobber user edits made while the refresh was in flight.
+      // The form's defaults are encoding=TEXT and undefined schema/version, so any deviation
+      // means the user has touched the form and we should skip the pre-fill.
+      const current = getValues(target);
+      if (current.encoding !== PayloadEncoding.TEXT || current.schemaName || current.schemaVersion) {
+        return;
+      }
       setValue(`${target}.encoding`, encoding);
       setValue(`${target}.schemaName`, subjectName);
       if (detail.latestActiveVersion) {
         setValue(`${target}.schemaVersion`, detail.latestActiveVersion);
+        if (encoding === PayloadEncoding.PROTOBUF) {
+          applyDefaultMessageType(target, subjectName, detail.latestActiveVersion);
+        }
       }
       setAutoDetected((prev) => ({ ...prev, [target]: subjectName }));
     };
@@ -426,14 +439,51 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     const req = create(GenerateSchemaSampleRequestSchema);
     req.schemaId = schemaId;
     req.indexPath = indexPath ?? [];
-    const res = await client.generateSchemaSample(req).catch(() => undefined);
-    if (res?.sampleJson) {
-      setValue(`${target}.data`, res.sampleJson, { shouldDirty: true });
+    try {
+      const res = await client.generateSchemaSample(req);
+      if (res?.sampleJson) {
+        setValue(`${target}.data`, res.sampleJson, { shouldDirty: true });
+      }
+    } catch (err) {
+      toast({
+        status: 'error',
+        description: formatToastErrorMessageGRPC({
+          error: err as ConnectError,
+          action: 'generate schema sample',
+          entity: 'schema',
+        }),
+      });
     }
   };
 
   // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    // Validate schema-encoded payloads have a fully-resolved (subject, version) pair before we
+    // build the request. Without this guard the form silently submits with encoding=PROTOBUF
+    // and no schema_id, which the backend then rejects with a confusing error.
+    const validateSchemaSelection = (target: 'key' | 'value'): boolean => {
+      const opts = data[target];
+      if (!encodingNeedsSchema(opts.encoding)) {
+        return true;
+      }
+      if (!opts.schemaName) {
+        setError(`${target}.schemaName`, { type: 'manual', message: 'Select a schema' });
+        return false;
+      }
+      if (!opts.schemaVersion) {
+        setError(`${target}.schemaVersion`, { type: 'manual', message: 'Select a schema version' });
+        return false;
+      }
+      if (!resolveSchemaId(opts.schemaName, opts.schemaVersion)) {
+        setError(`${target}.schemaName`, { type: 'manual', message: 'Schema is still loading — try again' });
+        return false;
+      }
+      return true;
+    };
+    if (!(validateSchemaSelection('key') && validateSchemaSelection('value'))) {
+      return;
+    }
+
     const req = create(PublishMessageRequestSchema);
     req.topic = topicName;
     req.partitionId = data.partition;
@@ -650,6 +700,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                             api
                               .refreshSchemaDetails(newVal)
                               .then(() => {
+                                // Stale-response guard: if the user has already switched to a
+                                // different subject while this request was in flight, drop the
+                                // result so we don't overwrite their new selection.
+                                if (getValues('key.schemaName') !== newVal) {
+                                  return;
+                                }
                                 const detail = api.schemaDetails.get(newVal);
                                 if (detail?.latestActiveVersion) {
                                   setValue('key.schemaVersion', detail.latestActiveVersion);
@@ -824,6 +880,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                             if (newVal) {
                               // Fetch schema details to get available versions
                               api.refreshSchemaDetails(newVal).then(() => {
+                                // Stale-response guard: drop if user switched subject in-flight.
+                                if (getValues('value.schemaName') !== newVal) {
+                                  return;
+                                }
                                 const detail = api.schemaDetails.get(newVal);
                                 if (detail?.latestActiveVersion) {
                                   setValue('value.schemaVersion', detail.latestActiveVersion);
