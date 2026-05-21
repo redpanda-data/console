@@ -327,6 +327,23 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const keyEncoding = useWatch({ control, name: 'key.encoding' });
   const valueEncoding = useWatch({ control, name: 'value.encoding' });
 
+  // A subject's compatible schema set is encoding-specific, so changing encoding invalidates any
+  // pre-selected subject/version. Called from the encoding picker's onChange.
+  const clearSchemaSelection = (target: 'key' | 'value') => {
+    setValue(`${target}.schemaName`, undefined);
+    setValue(`${target}.schemaVersion`, undefined);
+    setValue(`${target}.protobufIndexPath`, undefined);
+  };
+
+  // Default the Protobuf message-type picker to the first available type for the given (subject,
+  // version), or clear it. Called from the subject/version picker onChange handlers.
+  const applyDefaultMessageType = (target: 'key' | 'value', subjectName: string, version: number) => {
+    const detail = api.schemaDetails.get(subjectName);
+    const matching = detail?.schemas.find((s) => s.version === version && !s.isSoftDeleted);
+    const firstType = matching?.messageTypes?.[0];
+    setValue(`${target}.protobufIndexPath`, firstType ? firstType.indexPath : undefined);
+  };
+
   // UX-1292 follow-up: filter the Schema dropdown to subjects that match the
   // selected encoding. Subject→type comes from the dedicated subject-types
   // endpoint (one round trip via Schema Registry's GET /schemas?latestOnly).
@@ -601,7 +618,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                   name="key.encoding"
                   render={({ field: { onChange, value } }) => (
                     <SingleSelect<PayloadEncoding | 'base64'>
-                      onChange={onChange}
+                      onChange={(newEnc) => {
+                        onChange(newEnc);
+                        clearSchemaSelection('key');
+                      }}
                       options={filteredEncodingOptions}
                       value={value}
                     />
@@ -633,6 +653,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                                 const detail = api.schemaDetails.get(newVal);
                                 if (detail?.latestActiveVersion) {
                                   setValue('key.schemaVersion', detail.latestActiveVersion);
+                                  applyDefaultMessageType('key', newVal, detail.latestActiveVersion);
                                 }
                               })
                               .catch(() => {
@@ -661,7 +682,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                       const schemaDetail = keySchemaDetail;
                       return (
                         <SingleSelect<number | undefined>
-                          onChange={onChange}
+                          onChange={(newVer) => {
+                            onChange(newVer);
+                            if (keySchemaName && newVer !== undefined) {
+                              applyDefaultMessageType('key', keySchemaName, newVer);
+                            }
+                          }}
                           options={
                             schemaDetail?.versions
                               .slice()
@@ -768,7 +794,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                     name="value.encoding"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<PayloadEncoding | 'base64'>
-                        onChange={onChange}
+                        onChange={(newEnc) => {
+                          onChange(newEnc);
+                          clearSchemaSelection('value');
+                        }}
                         options={filteredEncodingOptions}
                         value={value}
                       />
@@ -798,6 +827,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                                 const detail = api.schemaDetails.get(newVal);
                                 if (detail?.latestActiveVersion) {
                                   setValue('value.schemaVersion', detail.latestActiveVersion);
+                                  applyDefaultMessageType('value', newVal, detail.latestActiveVersion);
                                 }
                               });
                             }
@@ -823,7 +853,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                         const schemaDetail = valueSchemaDetail;
                         return (
                           <SingleSelect<number | undefined>
-                            onChange={onChange}
+                            onChange={(newVer) => {
+                              onChange(newVer);
+                              if (valueSchemaName && newVer !== undefined) {
+                                applyDefaultMessageType('value', valueSchemaName, newVer);
+                              }
+                            }}
                             options={
                               schemaDetail?.versions
                                 .slice()
