@@ -1407,6 +1407,23 @@ export type SchemaRegistrySubject = {
   isSoftDeleted: boolean;
 };
 
+// GET /schema-registry/schemas
+// Mirrors backend console.SchemaRegistrySchema — one entry per (subject, version)
+// returned by the schema registry's GET /schemas endpoint.
+export type SchemaRegistrySchema = {
+  subject: string;
+  version: number;
+  id: number;
+  type: SchemaTypeType;
+  schema?: string;
+  references?: SchemaReference[];
+  metadata?: {
+    tags?: Record<string, string[]>;
+    properties?: Record<string, string>;
+    sensitive?: string[];
+  };
+};
+
 // GET /schema-registry/schemas/types
 export type SchemaRegistrySchemaTypesResponse = {
   isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
@@ -1438,6 +1455,12 @@ export type SchemaRegistryVersionedSchema = {
   schema: string;
   references: SchemaReference[];
   metadata?: SchemaMetadata;
+  messageTypes?: SchemaMessageType[];
+};
+
+export type SchemaMessageType = {
+  fullyQualifiedName: string;
+  indexPath: number[];
 };
 
 export type SchemaReference = {
