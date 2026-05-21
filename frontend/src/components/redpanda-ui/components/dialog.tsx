@@ -3,7 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import React from 'react';
 
-import { Button } from '../components/button';
+import { Button } from './button';
 import { useAnimatedAutoHeight } from '../lib/use-animated-auto-height';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { useScrollShadow } from '../lib/use-scroll-shadow';
@@ -293,38 +293,44 @@ interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<type
 }
 
 function DialogBody({ className, padding, spacing, scrollShadow = true, children, style, ...props }: DialogBodyProps) {
-  const { ref, edges } = useScrollShadow<HTMLDivElement>(scrollShadow);
+  const { containerRef, topRef, bottomRef, edges } = useScrollShadow<HTMLDivElement>(scrollShadow);
 
   return (
     <div
       className={cn(dialogBodyContainerVariants(), className)}
       data-slot="dialog-body"
-      ref={ref}
+      ref={containerRef}
       style={style}
       {...props}
     >
       {scrollShadow ? (
-        <div
-          aria-hidden
-          className={cn(
-            'pointer-events-none sticky top-0 z-10 h-0 transition-opacity duration-150',
-            edges.top ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
-        </div>
+        <>
+          <div aria-hidden className="h-px shrink-0" ref={topRef} />
+          <div
+            aria-hidden
+            className={cn(
+              'pointer-events-none sticky top-0 z-10 h-0 transition-opacity duration-150',
+              edges.top ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+          </div>
+        </>
       ) : null}
       <div className={cn(dialogBodyContentVariants({ padding, spacing }))}>{children}</div>
       {scrollShadow ? (
-        <div
-          aria-hidden
-          className={cn(
-            'pointer-events-none sticky bottom-0 z-10 h-0 transition-opacity duration-150',
-            edges.bottom ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
-        </div>
+        <>
+          <div
+            aria-hidden
+            className={cn(
+              'pointer-events-none sticky bottom-0 z-10 h-0 transition-opacity duration-150',
+              edges.bottom ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+          </div>
+          <div aria-hidden className="h-px shrink-0" ref={bottomRef} />
+        </>
       ) : null}
     </div>
   );
