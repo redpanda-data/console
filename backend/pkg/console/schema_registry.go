@@ -214,6 +214,47 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix s
 	return result, nil
 }
 
+// SchemaRegistrySubjectType is a subject paired with the schema type
+// (AVRO/PROTOBUF/JSON) of its latest version. Returned by
+// GetSchemaRegistrySubjectTypes, which the produce UI uses to filter the
+// subject dropdown by the selected encoding.
+type SchemaRegistrySubjectType struct {
+	Name string        `json:"name"`
+	Type sr.SchemaType `json:"type"`
+}
+
+// GetSchemaRegistrySubjectTypes returns, in one round trip, the schema type
+// of the latest version of every subject. Uses the registry's GET /schemas
+// endpoint with latestOnly=true so the UI can filter subjects by encoding
+// without firing N follow-up requests.
+func (s *Service) GetSchemaRegistrySubjectTypes(ctx context.Context, subjectPrefix string) ([]SchemaRegistrySubjectType, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	params := []sr.Param{sr.LatestOnly}
+	if subjectPrefix != "" {
+		params = append(params, sr.SubjectPrefix(subjectPrefix))
+	}
+	schemas, err := srClient.AllSchemas(sr.WithParams(ctx, params...))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]SchemaRegistrySubjectType, 0, len(schemas))
+	for _, schema := range schemas {
+		result = append(result, SchemaRegistrySubjectType{
+			Name: schema.Subject,
+			Type: schema.Type,
+		})
+	}
+	slices.SortFunc(result, func(a, b SchemaRegistrySubjectType) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return result, nil
+}
+
 // SchemaRegistrySubjectDetails represents a schema registry subject along
 // with other information such as the registered versions that belong to it,
 // or the full schema information that's part of the subject.

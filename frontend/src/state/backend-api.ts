@@ -1337,6 +1337,17 @@ const _apiCreator = (set: any, get: any) => ({
     );
   },
 
+  refreshSchemaSubjectTypes(force?: boolean) {
+    cachedApiRequest<SchemaRegistrySubjectType[]>(
+      `${appConfig.restBasePath}/schema-registry/subject-types`,
+      force
+    ).then((subjectTypes) => {
+      if (Array.isArray(subjectTypes)) {
+        set({ schemaSubjectTypes: subjectTypes });
+      }
+    }, addError);
+  },
+
   refreshSchemaTypes(force?: boolean) {
     cachedApiRequest<SchemaRegistrySchemaTypesResponse>(
       `${appConfig.restBasePath}/schema-registry/schemas/types`,
