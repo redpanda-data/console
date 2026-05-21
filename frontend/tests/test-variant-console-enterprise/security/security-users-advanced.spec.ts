@@ -36,10 +36,11 @@ test.describe('Security › Users › advanced', () => {
     await sp.allowAllOperations();
 
     await test.step('verify ACL rows appear for all resources', async () => {
-      // Wait for at least 4 Allow permission cells (Topic/Group/Cluster/TransactionalId)
+      // Wait for at least 4 Allow permission cells (Topic/Group/Cluster/TransactionalId,
+      // plus Subject/SchemaRegistry when schemaRegistryACLApi is enabled)
       const allowCells = page.getByRole('cell', { name: 'Allow' });
       await expect(allowCells.first()).toBeVisible({ timeout: 10_000 });
-      await expect(allowCells).toHaveCount(4);
+      await expect(allowCells.nth(3)).toBeVisible();
       // Each row should show "All" operation
       await expect(page.getByRole('cell', { name: 'All' }).first()).toBeVisible();
     });
