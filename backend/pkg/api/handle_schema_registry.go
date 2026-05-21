@@ -450,7 +450,8 @@ func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		subjectPrefix := rest.GetQueryParam(r, "subjectPrefix")
-		res, err := api.ConsoleSvc.GetSchemaRegistrySubjects(r.Context(), subjectPrefix)
+		includeTypes := rest.GetQueryParam(r, "includeTypes") == "true"
+		res, err := api.ConsoleSvc.GetSchemaRegistrySubjects(r.Context(), subjectPrefix, includeTypes)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,

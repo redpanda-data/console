@@ -1326,15 +1326,15 @@ const _apiCreator = (set: any, get: any) => ({
   },
 
   refreshSchemaSubjects(force?: boolean) {
-    cachedApiRequest<SchemaRegistrySubject[]>(`${appConfig.restBasePath}/schema-registry/subjects`, force).then(
-      (subjects) => {
-        // could also be a "not configured" response
-        if (Array.isArray(subjects)) {
-          set({ schemaSubjects: subjects });
-        }
-      },
-      addError
-    );
+    cachedApiRequest<SchemaRegistrySubject[]>(
+      `${appConfig.restBasePath}/schema-registry/subjects?includeTypes=true`,
+      force
+    ).then((subjects) => {
+      // could also be a "not configured" response
+      if (Array.isArray(subjects)) {
+        set({ schemaSubjects: subjects });
+      }
+    }, addError);
   },
 
   refreshSchemaTypes(force?: boolean) {

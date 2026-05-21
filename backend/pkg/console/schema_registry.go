@@ -157,7 +157,12 @@ func (s *Service) DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject
 // GetSchemaRegistrySubjects returns a list of all register subjects. The list includes
 // soft-deleted subjects. If subjectPrefix is non-empty, only subjects matching
 // the prefix are returned (supports context-aware filtering, e.g. ":.prod:").
-func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix string) ([]SchemaRegistrySubject, error) {
+//
+// When includeTypes is true, each result is enriched with the schema type
+// (AVRO/PROTOBUF/JSON) of its latest active version. The enrichment costs one
+// Schema-Registry request per subject (capped concurrency), so callers that
+// only need names should leave it false.
+func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix string, includeTypes bool) ([]SchemaRegistrySubject, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
 		return nil, err
@@ -222,6 +227,36 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix s
 	})
 
 	return result, nil
+}
+
+// enrichSubjectsWithType populates the Type field for each subject by fetching
+// the schema-registry "latest" version (-1) concurrently with a small worker
+// cap. Per-subject lookup errors are tolerated (Type stays nil), but context
+// cancellation propagates so a cancelled request fails fast.
+func (s *Service) enrichSubjectsWithType(ctx context.Context, subjects []SchemaRegistrySubject) error {
+	if s.cachedSchemaClient == nil || len(subjects) == 0 {
+		return nil
+	}
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(8)
+	for i := range subjects {
+		grp.Go(func() error {
+			if err := grpCtx.Err(); err != nil {
+				return err
+			}
+			sch, err := s.cachedSchemaClient.SchemaByVersion(grpCtx, subjects[i].Name, -1)
+			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					return err
+				}
+				return nil //nolint:nilerr // best-effort enrichment: skip the type for this subject
+			}
+			t := sch.Type
+			subjects[i].Type = &t
+			return nil
+		})
+	}
+	return grp.Wait()
 }
 
 // SchemaRegistrySubjectDetails represents a schema registry subject along
