@@ -1407,10 +1407,21 @@ export type SchemaRegistrySubject = {
   isSoftDeleted: boolean;
 };
 
-// GET /schema-registry/subject-types
-export type SchemaRegistrySubjectType = {
-  name: string;
+// GET /schema-registry/schemas
+// Mirrors backend console.SchemaRegistrySchema — one entry per (subject, version)
+// returned by the schema registry's GET /schemas endpoint.
+export type SchemaRegistrySchema = {
+  subject: string;
+  version: number;
+  id: number;
   type: SchemaTypeType;
+  schema?: string;
+  references?: SchemaReference[];
+  metadata?: {
+    tags?: Record<string, string[]>;
+    properties?: Record<string, string>;
+    sensitive?: string[];
+  };
 };
 
 // GET /schema-registry/schemas/types

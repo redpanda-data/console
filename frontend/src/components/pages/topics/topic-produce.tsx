@@ -1,4 +1,10 @@
 import { create } from '@bufbuild/protobuf';
+import { config as appConfig } from '../../../config';
+import {
+  GenerateSchemaSampleRequestSchema,
+  ListSchemaMessageTypesRequestSchema,
+  type ProtoMessageType,
+} from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import {
   Alert,
   Box,
@@ -21,29 +27,14 @@ import { TrashIcon } from 'components/icons';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
-import { config as appConfig, setMonacoTheme } from '../../../config';
+import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
   CompressionTypeSchema,
   KafkaRecordHeaderSchema,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import {
-  GenerateSchemaSampleRequestSchema,
-  ListSchemaMessageTypesRequestSchema,
-  type ProtoMessageType,
-  PublishMessagePayloadOptionsSchema,
-  PublishMessageRequestSchema,
-} from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import { appGlobal } from '../../../state/app-global';
-import { api, useApiStoreHook } from '../../../state/backend-api';
 import { SchemaType, type SchemaTypeType } from '../../../state/rest-interfaces';
-import { uiState } from '../../../state/ui-state';
-import { Label } from '../../../utils/tsx-utils';
-import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
-import KowlEditor from '../../misc/kowl-editor';
-import { SingleSelect } from '../../misc/select';
-import { PageComponent, type PageInitHelper } from '../page';
 
 // Maps Schema Registry's schema type (AVRO/PROTOBUF/JSON) onto the payload
 // encoding the Console PublishMessage RPC expects. JSON-Schema rather than
@@ -58,8 +49,20 @@ const schemaTypeToEncoding = (t: SchemaTypeType): PayloadEncoding | undefined =>
   if (t === SchemaType.JSON) {
     return PayloadEncoding.JSON_SCHEMA;
   }
-  return;
+  return undefined;
 };
+import {
+  PublishMessagePayloadOptionsSchema,
+  PublishMessageRequestSchema,
+} from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import { appGlobal } from '../../../state/app-global';
+import { api, useApiStoreHook } from '../../../state/backend-api';
+import { uiState } from '../../../state/ui-state';
+import { Label } from '../../../utils/tsx-utils';
+import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import KowlEditor from '../../misc/kowl-editor';
+import { SingleSelect } from '../../misc/select';
+import { PageComponent, type PageInitHelper } from '../page';
 
 type EncodingOption = {
   value: PayloadEncoding | 'base64';
@@ -147,22 +150,6 @@ type PayloadOptions = {
 };
 
 const indexPathKey = (path: number[] | undefined): string => JSON.stringify(path ?? []);
-
-// Maps a Console PayloadEncoding to the schema-registry SchemaType (or undefined
-// when the encoding isn't schema-backed). Declared at module scope so callers
-// inside useEffect can list real deps without React Hook lint complaints.
-function encodingToSchemaType(enc?: PayloadEncoding | 'base64'): SchemaTypeType | undefined {
-  if (enc === PayloadEncoding.AVRO) {
-    return SchemaType.AVRO;
-  }
-  if (enc === PayloadEncoding.PROTOBUF) {
-    return SchemaType.PROTOBUF;
-  }
-  if (enc === PayloadEncoding.JSON_SCHEMA) {
-    return SchemaType.JSON;
-  }
-  return;
-}
 
 type Inputs = {
   partition: number;
@@ -273,6 +260,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     if (!api.schemaSubjects) {
       api.refreshSchemaSubjects();
     }
+    if (!api.schemas) {
+      api.refreshSchemas(undefined, { latestOnly: true });
+    }
   }, []);
 
   // UX-1292: auto-detect Avro/Protobuf/JSON-Schema on first mount by checking
@@ -323,15 +313,15 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   // loading. Direct `api.schemaSubjects` access doesn't track in a render and
   // would otherwise stay empty when nothing else triggers a re-render.
   const schemaSubjectsReactive = useApiStoreHook((s) => s.schemaSubjects);
-  const schemaSubjectTypesReactive = useApiStoreHook((s) => s.schemaSubjectTypes);
+  const schemasReactive = useApiStoreHook((s) => s.schemas);
   const availableValues = schemaSubjectsReactive?.filter((x) => !x.isSoftDeleted) ?? [];
   const subjectTypeMap = useMemo(() => {
     const m = new Map<string, SchemaTypeType>();
-    for (const entry of schemaSubjectTypesReactive ?? []) {
-      m.set(entry.name, entry.type);
+    for (const entry of schemasReactive ?? []) {
+      m.set(entry.subject, entry.type);
     }
     return m;
-  }, [schemaSubjectTypesReactive]);
+  }, [schemasReactive]);
 
   const keySchemaName = useWatch({ control, name: 'key.schemaName' });
   const valueSchemaName = useWatch({ control, name: 'value.schemaName' });
@@ -343,6 +333,19 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   // UX-1292 follow-up: filter the Schema dropdown to subjects that match the
   // selected encoding. Subject→type comes from the dedicated subject-types
   // endpoint (one round trip via Schema Registry's GET /schemas?latestOnly).
+  const encodingToSchemaType = (enc?: PayloadEncoding | 'base64'): SchemaTypeType | undefined => {
+    if (enc === PayloadEncoding.AVRO) {
+      return SchemaType.AVRO;
+    }
+    if (enc === PayloadEncoding.PROTOBUF) {
+      return SchemaType.PROTOBUF;
+    }
+    if (enc === PayloadEncoding.JSON_SCHEMA) {
+      return SchemaType.JSON;
+    }
+    return undefined;
+  };
+
   const filterSubjectsByEncoding = (enc?: PayloadEncoding | 'base64') => {
     const wanted = encodingToSchemaType(enc);
     if (!wanted) {
@@ -360,43 +363,13 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const keyAvailableValues = filterSubjectsByEncoding(keyEncoding);
   const valueAvailableValues = filterSubjectsByEncoding(valueEncoding);
 
-  // Reset stale schema selection when the encoding changes to one that no
-  // longer matches the currently-picked subject's type — otherwise submit
-  // would resolve a schemaId from a mismatched encoding and the produce call
-  // would fail with a confusing serde error.
-  useEffect(() => {
-    if (!(keyEncoding && keySchemaName)) {
-      return;
-    }
-    const t = subjectTypeMap.get(keySchemaName);
-    const wanted = encodingToSchemaType(keyEncoding);
-    if (t && wanted && t !== wanted) {
-      setValue('key.schemaName', undefined);
-      setValue('key.schemaVersion', undefined);
-      setValue('key.protobufIndexPath', undefined);
-    }
-  }, [keyEncoding, keySchemaName, subjectTypeMap, setValue]);
-
-  useEffect(() => {
-    if (!(valueEncoding && valueSchemaName)) {
-      return;
-    }
-    const t = subjectTypeMap.get(valueSchemaName);
-    const wanted = encodingToSchemaType(valueEncoding);
-    if (t && wanted && t !== wanted) {
-      setValue('value.schemaName', undefined);
-      setValue('value.schemaVersion', undefined);
-      setValue('value.protobufIndexPath', undefined);
-    }
-  }, [valueEncoding, valueSchemaName, subjectTypeMap, setValue]);
-
   const resolveSchemaId = (subjectName?: string, version?: number): number | undefined => {
     if (!(subjectName && version)) {
-      return;
+      return undefined;
     }
     const detail = api.schemaDetails.get(subjectName);
     if (!detail) {
-      return;
+      return undefined;
     }
     const match = detail.schemas.find((s) => s.version === version && !s.isSoftDeleted);
     return match?.id;
@@ -410,11 +383,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const [keyMessageTypes, setKeyMessageTypes] = useState<ProtoMessageType[]>([]);
   const [valueMessageTypes, setValueMessageTypes] = useState<ProtoMessageType[]>([]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch only when schemaId/encoding changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch only when schemaId changes
   useEffect(() => {
-    // Only Protobuf schemas have an index path; calling this for Avro/JSON
-    // would hit the backend and 400.
-    if (!keySchemaId || keyEncoding !== PayloadEncoding.PROTOBUF) {
+    if (!keySchemaId) {
       setKeyMessageTypes([]);
       return;
     }
@@ -446,11 +417,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     return () => {
       cancelled = true;
     };
-  }, [keySchemaId, keyEncoding]);
+  }, [keySchemaId]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch only when schemaId/encoding changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch only when schemaId changes
   useEffect(() => {
-    if (!valueSchemaId || valueEncoding !== PayloadEncoding.PROTOBUF) {
+    if (!valueSchemaId) {
       setValueMessageTypes([]);
       return;
     }
@@ -482,13 +453,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     return () => {
       cancelled = true;
     };
-  }, [valueSchemaId, valueEncoding]);
+  }, [valueSchemaId]);
 
-  const generateSample = async (
-    target: 'key' | 'value',
-    schemaId: number | undefined,
-    indexPath: number[] | undefined
-  ) => {
+  const generateSample = async (target: 'key' | 'value', schemaId: number | undefined, indexPath: number[] | undefined) => {
     if (!schemaId) {
       return;
     }
@@ -558,7 +525,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       req.key.encoding = data.key.encoding;
 
       // Determine schemaId from schemaVersion if schema is selected and encoding is Avro, Protobuf, or JSON Schema
-      if (encodingNeedsSchema(data.key.encoding) && data.key.schemaName && data.key.schemaVersion) {
+      if (
+        encodingNeedsSchema(data.key.encoding) &&
+        data.key.schemaName &&
+        data.key.schemaVersion
+      ) {
         const schemaDetail = api.schemaDetails.get(data.key.schemaName);
         if (schemaDetail) {
           const selectedSchema = schemaDetail.schemas.find(
@@ -589,7 +560,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       req.value.encoding = data.value.encoding;
 
       // Determine schemaId from schemaVersion if schema is selected and encoding is Avro, Protobuf, or JSON Schema
-      if (encodingNeedsSchema(data.value.encoding) && data.value.schemaName && data.value.schemaVersion) {
+      if (
+        encodingNeedsSchema(data.value.encoding) &&
+        data.value.schemaName &&
+        data.value.schemaVersion
+      ) {
         const schemaDetail = api.schemaDetails.get(data.value.schemaName);
         if (schemaDetail) {
           const selectedSchema = schemaDetail.schemas.find(
@@ -705,7 +680,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                   )}
                 />
               </Label>
-              {Boolean(autoDetected.key) && (
+              {autoDetected.key && (
                 <Text color="gray.600" fontSize="xs" mt={1}>
                   Auto-detected from <span className="codeBox">{autoDetected.key}</span>
                 </Text>
@@ -872,7 +847,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                     )}
                   />
                 </Label>
-                {Boolean(autoDetected.value) && (
+                {autoDetected.value && (
                   <Text color="gray.600" fontSize="xs" mt={1}>
                     Auto-detected from <span className="codeBox">{autoDetected.value}</span>
                   </Text>
@@ -1001,7 +976,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
               </Label>
             )}
             {Boolean(errors?.value?.data) && <Text color="red.500">{errors?.value?.data?.message}</Text>}
-            <input {...register('value.data')} data-testid="valueData" />
           </Flex>
         </Flex>
 

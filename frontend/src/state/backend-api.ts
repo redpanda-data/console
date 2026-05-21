@@ -95,6 +95,7 @@ import {
   type SchemaRegistryModeResponse,
   type SchemaRegistrySchemaTypesResponse,
   type SchemaRegistrySetCompatibilityModeRequest,
+  type SchemaRegistrySchema,
   type SchemaRegistrySubject,
   type SchemaRegistrySubjectDetails,
   type SchemaRegistryValidateSchemaResponse,
@@ -353,6 +354,44 @@ class CacheEntry {
   }
 }
 
+// GetAllSchemasParams mirrors the query params accepted by the backend's
+// GET /schema-registry/schemas handler (console.GetAllSchemasOptions).
+export type GetAllSchemasParams = {
+  subjectPrefix?: string;
+  latestOnly?: boolean;
+  deleted?: boolean;
+  deletedOnly?: boolean;
+  offset?: number;
+  limit?: number;
+};
+
+function buildSchemasQuery(opts?: GetAllSchemasParams): string {
+  if (!opts) {
+    return '';
+  }
+  const params = new URLSearchParams();
+  if (opts.subjectPrefix) {
+    params.set('subjectPrefix', opts.subjectPrefix);
+  }
+  if (opts.latestOnly) {
+    params.set('latestOnly', 'true');
+  }
+  if (opts.deleted) {
+    params.set('deleted', 'true');
+  }
+  if (opts.deletedOnly) {
+    params.set('deletedOnly', 'true');
+  }
+  if (opts.offset !== undefined && opts.offset > 0) {
+    params.set('offset', String(opts.offset));
+  }
+  if (opts.limit !== undefined && opts.limit > 0) {
+    params.set('limit', String(opts.limit));
+  }
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
 function cachedApiRequest<T>(url: string, force = false): Promise<T> {
   const entry = cache.get(url);
 
@@ -431,6 +470,7 @@ const _apiCreator = (set: any, get: any) => ({
   schemaMode: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
   schemaCompatibility: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
   schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
+  schemas: undefined as SchemaRegistrySchema[] | undefined,
   schemaTypes: undefined as string[] | undefined,
   schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
   schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
@@ -1337,13 +1377,11 @@ const _apiCreator = (set: any, get: any) => ({
     );
   },
 
-  refreshSchemaSubjectTypes(force?: boolean) {
-    cachedApiRequest<SchemaRegistrySubjectType[]>(
-      `${appConfig.restBasePath}/schema-registry/subject-types`,
-      force
-    ).then((subjectTypes) => {
-      if (Array.isArray(subjectTypes)) {
-        set({ schemaSubjectTypes: subjectTypes });
+  refreshSchemas(force?: boolean, opts?: GetAllSchemasParams) {
+    const url = `${appConfig.restBasePath}/schema-registry/schemas${buildSchemasQuery(opts)}`;
+    cachedApiRequest<SchemaRegistrySchema[]>(url, force).then((schemas) => {
+      if (Array.isArray(schemas)) {
+        set({ schemas });
       }
     }, addError);
   },

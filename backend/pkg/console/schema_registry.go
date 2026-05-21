@@ -214,43 +214,97 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix s
 	return result, nil
 }
 
-// SchemaRegistrySubjectType is a subject paired with the schema type
-// (AVRO/PROTOBUF/JSON) of its latest version. Returned by
-// GetSchemaRegistrySubjectTypes, which the produce UI uses to filter the
-// subject dropdown by the selected encoding.
-type SchemaRegistrySubjectType struct {
-	Name string        `json:"name"`
-	Type sr.SchemaType `json:"type"`
+// SchemaRegistrySchema is a single (subject, version) entry returned by the
+// registry's GET /schemas endpoint. The shape mirrors sr.SubjectSchema so the
+// payload is suitable for a future dataplane API surface.
+type SchemaRegistrySchema struct {
+	Subject    string          `json:"subject"`
+	Version    int             `json:"version"`
+	ID         int             `json:"id"`
+	Type       sr.SchemaType   `json:"type"`
+	Schema     string          `json:"schema,omitempty"`
+	References []Reference     `json:"references,omitempty"`
+	Metadata   *SchemaMetadata `json:"metadata,omitempty"`
 }
 
-// GetSchemaRegistrySubjectTypes returns, in one round trip, the schema type
-// of the latest version of every subject. Uses the registry's GET /schemas
-// endpoint with latestOnly=true so the UI can filter subjects by encoding
-// without firing N follow-up requests.
-func (s *Service) GetSchemaRegistrySubjectTypes(ctx context.Context, subjectPrefix string) ([]SchemaRegistrySubjectType, error) {
+// GetAllSchemasOptions controls the query parameters forwarded to the schema
+// registry's GET /schemas endpoint.
+type GetAllSchemasOptions struct {
+	SubjectPrefix string
+	LatestOnly    bool
+	Deleted       bool // include soft-deleted entries
+	DeletedOnly   bool
+	Offset        int
+	Limit         int
+}
+
+// GetAllSchemas lists schemas from the registry's GET /schemas endpoint and
+// returns the full (subject, version, id, type, schema, references, metadata)
+// for each entry. Callers control filtering and pagination via opts.
+func (s *Service) GetAllSchemas(ctx context.Context, opts GetAllSchemasOptions) ([]SchemaRegistrySchema, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	params := []sr.Param{sr.LatestOnly}
-	if subjectPrefix != "" {
-		params = append(params, sr.SubjectPrefix(subjectPrefix))
+	params := make([]sr.Param, 0, 6)
+	if opts.SubjectPrefix != "" {
+		params = append(params, sr.SubjectPrefix(opts.SubjectPrefix))
 	}
+	if opts.LatestOnly {
+		params = append(params, sr.LatestOnly)
+	}
+	if opts.Deleted {
+		params = append(params, sr.ShowDeleted)
+	}
+	if opts.DeletedOnly {
+		params = append(params, sr.DeletedOnly)
+	}
+	if opts.Offset > 0 {
+		params = append(params, sr.Offset(opts.Offset))
+	}
+	if opts.Limit > 0 {
+		params = append(params, sr.Limit(opts.Limit))
+	}
+
 	schemas, err := srClient.AllSchemas(sr.WithParams(ctx, params...))
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]SchemaRegistrySubjectType, 0, len(schemas))
+	result := make([]SchemaRegistrySchema, 0, len(schemas))
 	for _, schema := range schemas {
-		result = append(result, SchemaRegistrySubjectType{
-			Name: schema.Subject,
-			Type: schema.Type,
+		references := make([]Reference, len(schema.References))
+		for i, ref := range schema.References {
+			references[i] = Reference{
+				Name:    ref.Name,
+				Subject: ref.Subject,
+				Version: ref.Version,
+			}
+		}
+		var metadata *SchemaMetadata
+		if schema.SchemaMetadata != nil {
+			metadata = &SchemaMetadata{
+				Tags:       schema.SchemaMetadata.Tags,
+				Properties: schema.SchemaMetadata.Properties,
+				Sensitive:  schema.SchemaMetadata.Sensitive,
+			}
+		}
+		result = append(result, SchemaRegistrySchema{
+			Subject:    schema.Subject,
+			Version:    schema.Version,
+			ID:         schema.ID,
+			Type:       schema.Type,
+			Schema:     schema.Schema.Schema,
+			References: references,
+			Metadata:   metadata,
 		})
 	}
-	slices.SortFunc(result, func(a, b SchemaRegistrySubjectType) int {
-		return strings.Compare(a.Name, b.Name)
+	slices.SortFunc(result, func(a, b SchemaRegistrySchema) int {
+		if c := strings.Compare(a.Subject, b.Subject); c != 0 {
+			return c
+		}
+		return a.Version - b.Version
 	})
 	return result, nil
 }
