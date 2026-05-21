@@ -46,6 +46,12 @@ func walkMessageTypes(msgs protoreflect.MessageDescriptors, prefix []int32, out 
 	for i := 0; i < msgs.Len(); i++ {
 		md := msgs.Get(i)
 		path := append(append([]int32(nil), prefix...), int32(i))
+		// Synthetic map-entry descriptors (e.g. Foo.LabelsEntry for a map<string,string> field)
+		// are not user-selectable message types — skip them but keep walking so real siblings
+		// keep their indices.
+		if md.IsMapEntry() {
+			continue
+		}
 		*out = append(*out, proto.MessageTypeInfo{
 			FullyQualifiedName: string(md.FullName()),
 			IndexPath:          path,

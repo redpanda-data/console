@@ -228,8 +228,8 @@ func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (prot
 // MessageTypeInfo pairs a Protobuf message's fully-qualified name with its Confluent wire-format
 // index path.
 type MessageTypeInfo struct {
-	FullyQualifiedName string
-	IndexPath          []int32
+	FullyQualifiedName string  `json:"fullyQualifiedName"`
+	IndexPath          []int32 `json:"indexPath"`
 }
 
 // SerializeJSONToConfluentProtobufMessage serialized the JSON message to confluent wrapped payload

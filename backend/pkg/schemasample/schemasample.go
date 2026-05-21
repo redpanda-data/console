@@ -245,18 +245,11 @@ func avroSamplePrimitiveOrRef(name, enclosingNS string, registry map[string]any,
 	case avroTypeBytes, avroTypeString:
 		return ""
 	}
-	// Named reference — guard against cycles.
+	// Named reference — let avroSampleRecord own the visited-flag bookkeeping. Marking the flag
+	// here as well caused the first reference to a non-recursive record to render as nil.
 	ref, ok := avroLookup(name, enclosingNS, registry)
 	if !ok {
 		return ""
-	}
-	if rm, ok := ref.(map[string]any); ok {
-		full := avroFullName(stringField(rm, "name"), stringField(rm, "namespace"), enclosingNS)
-		if visited[full] {
-			return nil
-		}
-		visited[full] = true
-		defer delete(visited, full)
 	}
 	return avroSample(ref, enclosingNS, registry, visited)
 }

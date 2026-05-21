@@ -520,6 +520,12 @@ func (api *API) handleGetAllSchemas() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{Err: err, Status: http.StatusBadRequest, Message: err.Error()})
 			return
 		}
+		// Defense in depth: cap unbounded fetches. A registry with thousands of schemas would
+		// otherwise stream MBs of schema text per request.
+		const maxSchemasLimit = 1000
+		if opts.Limit == 0 || opts.Limit > maxSchemasLimit {
+			opts.Limit = maxSchemasLimit
+		}
 
 		res, err := api.ConsoleSvc.GetAllSchemas(r.Context(), opts)
 		if err != nil {

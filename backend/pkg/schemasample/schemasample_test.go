@@ -157,6 +157,38 @@ func TestAvro_RecursiveRef(t *testing.T) {
 	assert.Nil(t, v["next"])
 }
 
+func TestAvro_NonRecursiveRecordReference(t *testing.T) {
+	// A field whose type is a named record (not the enclosing one). The renderer must expand
+	// the referenced record's fields rather than short-circuiting to nil — regression test for
+	// a bug where avroSamplePrimitiveOrRef and avroSampleRecord both marked the visited flag,
+	// causing the first record reference to render as null.
+	schema := `{
+		"type": "record",
+		"name": "Order",
+		"fields": [
+			{
+				"name": "billing_address",
+				"type": {
+					"type": "record",
+					"name": "Address",
+					"fields": [
+						{"name": "city", "type": "string"},
+						{"name": "zip", "type": "string"}
+					]
+				}
+			},
+			{"name": "shipping_address", "type": "Address"}
+		]
+	}`
+	out, err := schemasample.Avro(schema)
+	require.NoError(t, err)
+	v, ok := unmarshal(t, out).(map[string]any)
+	require.True(t, ok)
+	expected := map[string]any{"city": "", "zip": ""}
+	assert.Equal(t, expected, v["billing_address"])
+	assert.Equal(t, expected, v["shipping_address"], "non-recursive record reference must expand, not short-circuit to nil")
+}
+
 func TestAvro_NestedNamespaces(t *testing.T) {
 	// A record refers to a named type declared in the same namespace by short
 	// name. The renderer must resolve via enclosingNS.
