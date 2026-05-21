@@ -55,7 +55,7 @@ import { installUISettingsSideEffects } from './state/ui';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
-  baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
+  baseUrl: getGrpcBasePath(),
   interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   jsonOptions: {
     registry: protobufRegistry,
