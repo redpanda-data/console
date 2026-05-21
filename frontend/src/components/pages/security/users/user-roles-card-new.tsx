@@ -159,10 +159,10 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
               <Combobox
                 className="w-56"
                 clearable={false}
+                inputTestId="assign-role-combobox"
                 onChange={assignRole}
                 options={availableRoleOptions}
                 placeholder="Assign a role..."
-                testId="assign-role-combobox"
                 value=""
               />
             ) : undefined

@@ -302,7 +302,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
                 </Button>
               )}
               {principal && (
-                <Button onClick={() => setGrantAllOpen(true)} variant="outline">
+                <Button onClick={() => setGrantAllOpen(true)} testId="allow-all-operations-button" variant="outline">
                   Allow all operations
                 </Button>
               )}
@@ -374,7 +374,12 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
             <Button onClick={() => setGrantAllOpen(false)} type="button" variant="outline">
               Cancel
             </Button>
-            <Button disabled={isGranting} onClick={confirmGrantAllPermissions} type="button">
+            <Button
+              disabled={isGranting}
+              onClick={confirmGrantAllPermissions}
+              testId="confirm-allow-all-button"
+              type="button"
+            >
               Confirm
             </Button>
           </DialogFooter>

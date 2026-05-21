@@ -171,4 +171,57 @@ export class SecurityPageNew {
   async removePrincipalFromRole(principalName: string) {
     await this.page.getByTestId(`remove-user-${principalName}-button`).click();
   }
+
+  // --- Users: advanced ---
+
+  async createUserWithRole(name: string, roleName: string) {
+    return test.step(`Create user "${name}" with role "${roleName}"`, async () => {
+      await this.gotoUsers();
+      await this.page.getByTestId('create-user-button').click();
+      await this.page.getByTestId('create-user-name').waitFor({ state: 'visible' });
+      await this.page.getByLabel('Username').fill(name);
+
+      // Open the role multi-select and pick the role
+      await this.page.getByText('Select roles...').click();
+      await this.page.getByPlaceholder('Search...').fill(roleName);
+      await this.page.getByRole('option', { name: roleName }).click();
+      // Close the popover by pressing Escape
+      await this.page.keyboard.press('Escape');
+
+      await this.page.getByTestId('create-user-submit').click();
+      await this.page.getByTestId('done-button').waitFor({ state: 'visible' });
+    });
+  }
+
+  // Clicks "Allow all operations" on the current user details page and confirms.
+  async allowAllOperations() {
+    return test.step('Allow all operations', async () => {
+      await this.page.getByTestId('allow-all-operations-button').click();
+      await this.page.getByRole('dialog', { name: 'Allow all operations' }).waitFor({ state: 'visible' });
+      await this.page.getByTestId('confirm-allow-all-button').click();
+      await this.page.getByRole('dialog').waitFor({ state: 'hidden' });
+    });
+  }
+
+  // Assigns a role to the user from the user details page.
+  async assignRoleFromDetails(roleName: string) {
+    return test.step(`Assign role "${roleName}" from user details`, async () => {
+      const combobox = this.page.getByTestId('assign-role-combobox');
+      await combobox.click();
+      await combobox.fill(roleName);
+      await this.page.getByRole('option', { name: roleName }).click();
+      // Wait for the role row to appear
+      await this.page.getByTestId(`role-name-${roleName}`).waitFor({ state: 'visible' });
+    });
+  }
+
+  // Removes a role from the user on the user details page.
+  async removeRoleFromDetails(roleName: string) {
+    return test.step(`Remove role "${roleName}" from user details`, async () => {
+      await this.page.getByTestId(`remove-role-${roleName}`).click();
+      await this.page.getByTestId('confirm-remove-role-button').waitFor({ state: 'visible' });
+      await this.page.getByTestId('confirm-remove-role-button').click();
+      await this.page.getByTestId(`role-name-${roleName}`).waitFor({ state: 'hidden' });
+    });
+  }
 }
