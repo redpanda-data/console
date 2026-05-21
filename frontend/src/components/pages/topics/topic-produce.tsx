@@ -1,10 +1,4 @@
 import { create } from '@bufbuild/protobuf';
-import { config as appConfig } from '../../../config';
-import {
-  GenerateSchemaSampleRequestSchema,
-  ListSchemaMessageTypesRequestSchema,
-  type ProtoMessageType,
-} from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import {
   Alert,
   Box,
@@ -27,13 +21,15 @@ import { TrashIcon } from 'components/icons';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
-import { setMonacoTheme } from '../../../config';
+import { config as appConfig, setMonacoTheme } from '../../../config';
 import {
   CompressionType,
   CompressionTypeSchema,
   KafkaRecordHeaderSchema,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { GenerateSchemaSampleRequestSchema } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { SchemaMessageType } from '../../../state/rest-interfaces';
 import { SchemaType, type SchemaTypeType } from '../../../state/rest-interfaces';
 
 // Maps Schema Registry's schema type (AVRO/PROTOBUF/JSON) onto the payload
@@ -49,8 +45,9 @@ const schemaTypeToEncoding = (t: SchemaTypeType): PayloadEncoding | undefined =>
   if (t === SchemaType.JSON) {
     return PayloadEncoding.JSON_SCHEMA;
   }
-  return undefined;
+  return;
 };
+
 import {
   PublishMessagePayloadOptionsSchema,
   PublishMessageRequestSchema,
@@ -343,7 +340,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     if (enc === PayloadEncoding.JSON_SCHEMA) {
       return SchemaType.JSON;
     }
-    return undefined;
+    return;
   };
 
   const filterSubjectsByEncoding = (enc?: PayloadEncoding | 'base64') => {
@@ -365,11 +362,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   const resolveSchemaId = (subjectName?: string, version?: number): number | undefined => {
     if (!(subjectName && version)) {
-      return undefined;
+      return;
     }
     const detail = api.schemaDetails.get(subjectName);
     if (!detail) {
-      return undefined;
+      return;
     }
     const match = detail.schemas.find((s) => s.version === version && !s.isSoftDeleted);
     return match?.id;
@@ -380,82 +377,47 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     ? resolveSchemaId(valueSchemaName, valueSchemaVersion)
     : undefined;
 
-  const [keyMessageTypes, setKeyMessageTypes] = useState<ProtoMessageType[]>([]);
-  const [valueMessageTypes, setValueMessageTypes] = useState<ProtoMessageType[]>([]);
+  const keySchemaDetail = useApiStoreHook((s) => (keySchemaName ? s.schemaDetails.get(keySchemaName) : undefined));
+  const valueSchemaDetail = useApiStoreHook((s) =>
+    valueSchemaName ? s.schemaDetails.get(valueSchemaName) : undefined
+  );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch only when schemaId changes
+  const keyMessageTypes = useMemo<SchemaMessageType[]>(() => {
+    if (!keySchemaId) return [];
+    return keySchemaDetail?.schemas.find((s) => s.id === keySchemaId)?.messageTypes ?? [];
+  }, [keySchemaId, keySchemaDetail]);
+
+  const valueMessageTypes = useMemo<SchemaMessageType[]>(() => {
+    if (!valueSchemaId) return [];
+    return valueSchemaDetail?.schemas.find((s) => s.id === valueSchemaId)?.messageTypes ?? [];
+  }, [valueSchemaId, valueSchemaDetail]);
+
+  // Reset to first message type when the current selection isn't in the new list.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only react to messageTypes changes
   useEffect(() => {
-    if (!keySchemaId) {
-      setKeyMessageTypes([]);
-      return;
+    if (keyMessageTypes.length === 0) return;
+    const current = keyPayloadOptions.protobufIndexPath ?? [];
+    const stillValid = keyMessageTypes.some((t) => indexPathKey(t.indexPath) === indexPathKey(current));
+    if (!stillValid) {
+      setValue('key.protobufIndexPath', keyMessageTypes[0].indexPath);
     }
-    const client = appConfig.consoleClient;
-    if (!client) {
-      return;
-    }
-    const req = create(ListSchemaMessageTypesRequestSchema);
-    req.schemaId = keySchemaId;
-    let cancelled = false;
-    client
-      .listSchemaMessageTypes(req)
-      .then((res) => {
-        if (cancelled) {
-          return;
-        }
-        setKeyMessageTypes(res.messageTypes);
-        const current = keyPayloadOptions.protobufIndexPath ?? [];
-        const stillValid = res.messageTypes.some((t) => indexPathKey(t.indexPath) === indexPathKey(current));
-        if (!stillValid && res.messageTypes.length > 0) {
-          setValue('key.protobufIndexPath', res.messageTypes[0].indexPath);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setKeyMessageTypes([]);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [keySchemaId]);
+  }, [keyMessageTypes]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch only when schemaId changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only react to messageTypes changes
   useEffect(() => {
-    if (!valueSchemaId) {
-      setValueMessageTypes([]);
-      return;
+    if (valueMessageTypes.length === 0) return;
+    const current = valuePayloadOptions.protobufIndexPath ?? [];
+    const stillValid = valueMessageTypes.some((t) => indexPathKey(t.indexPath) === indexPathKey(current));
+    if (!stillValid) {
+      setValue('value.protobufIndexPath', valueMessageTypes[0].indexPath);
     }
-    const client = appConfig.consoleClient;
-    if (!client) {
-      return;
-    }
-    const req = create(ListSchemaMessageTypesRequestSchema);
-    req.schemaId = valueSchemaId;
-    let cancelled = false;
-    client
-      .listSchemaMessageTypes(req)
-      .then((res) => {
-        if (cancelled) {
-          return;
-        }
-        setValueMessageTypes(res.messageTypes);
-        const current = valuePayloadOptions.protobufIndexPath ?? [];
-        const stillValid = res.messageTypes.some((t) => indexPathKey(t.indexPath) === indexPathKey(current));
-        if (!stillValid && res.messageTypes.length > 0) {
-          setValue('value.protobufIndexPath', res.messageTypes[0].indexPath);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setValueMessageTypes([]);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [valueSchemaId]);
+  }, [valueMessageTypes]);
 
-  const generateSample = async (target: 'key' | 'value', schemaId: number | undefined, indexPath: number[] | undefined) => {
+  const generateSample = async (
+    target: 'key' | 'value',
+    schemaId: number | undefined,
+    indexPath: number[] | undefined
+  ) => {
     if (!schemaId) {
       return;
     }
@@ -473,11 +435,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       setValue(`${target}.data`, res.sampleJson, { shouldDirty: true });
     }
   };
-
-  const keySchemaDetail = useApiStoreHook((s) => (keySchemaName ? s.schemaDetails.get(keySchemaName) : undefined));
-  const valueSchemaDetail = useApiStoreHook((s) =>
-    valueSchemaName ? s.schemaDetails.get(valueSchemaName) : undefined
-  );
 
   // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -525,11 +482,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       req.key.encoding = data.key.encoding;
 
       // Determine schemaId from schemaVersion if schema is selected and encoding is Avro, Protobuf, or JSON Schema
-      if (
-        encodingNeedsSchema(data.key.encoding) &&
-        data.key.schemaName &&
-        data.key.schemaVersion
-      ) {
+      if (encodingNeedsSchema(data.key.encoding) && data.key.schemaName && data.key.schemaVersion) {
         const schemaDetail = api.schemaDetails.get(data.key.schemaName);
         if (schemaDetail) {
           const selectedSchema = schemaDetail.schemas.find(
@@ -560,11 +513,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       req.value.encoding = data.value.encoding;
 
       // Determine schemaId from schemaVersion if schema is selected and encoding is Avro, Protobuf, or JSON Schema
-      if (
-        encodingNeedsSchema(data.value.encoding) &&
-        data.value.schemaName &&
-        data.value.schemaVersion
-      ) {
+      if (encodingNeedsSchema(data.value.encoding) && data.value.schemaName && data.value.schemaVersion) {
         const schemaDetail = api.schemaDetails.get(data.value.schemaName);
         if (schemaDetail) {
           const selectedSchema = schemaDetail.schemas.find(

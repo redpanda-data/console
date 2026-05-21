@@ -35,23 +35,6 @@ message PublishMessageResponse {
   int64 offset = 3;
 }
 
-// ProtoMessageType describes a Protobuf message type contained in a registered schema.
-message ProtoMessageType {
-  string fully_qualified_name = 1; // Fully-qualified message name, e.g. "acme.orders.v1.Order".
-  repeated int32 index_path = 2; // Message-index path used by the Confluent Protobuf wire format. [0] for the first top-level message.
-}
-
-// ListSchemaMessageTypesRequest asks for every Protobuf message contained in a schema,
-// including nested types, so the UI can present a typed picker instead of a raw numeric index.
-message ListSchemaMessageTypesRequest {
-  int32 schema_id = 1 [(buf.validate.field).int32.gt = 0];
-}
-
-// ListSchemaMessageTypesResponse returns all Protobuf message types resolvable inside a schema.
-message ListSchemaMessageTypesResponse {
-  repeated ProtoMessageType message_types = 1;
-}
-
 // GenerateSchemaSampleRequest asks for a zero-valued JSON skeleton for the schema identified
 // by schema_id. The backend dispatches based on the schema's registered type (AVRO/PROTOBUF/JSON).
 // index_path is only consulted for Protobuf and is the Confluent message-indexes path.

@@ -19,11 +19,10 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/proto"
 )
 
-// ListProtoMessageTypes returns the Protobuf message types contained in the schema identified by
-// schemaID, including nested message types, each paired with the index path used by the Confluent
-// Protobuf wire format. It resolves the schema through the schema-registry-backed cache, so it works
-// even when the optional static Protobuf service is not configured.
-func (s *Service) ListProtoMessageTypes(ctx context.Context, schemaID int) ([]proto.MessageTypeInfo, error) {
+// protoMessageTypesByID walks the descriptor tree of the schema, returning each message paired with
+// its Confluent wire-format index path. Goes through cachedSchemaClient so it works without the
+// optional static Protobuf service.
+func (s *Service) protoMessageTypesByID(ctx context.Context, schemaID int) ([]proto.MessageTypeInfo, error) {
 	if s.cachedSchemaClient == nil {
 		return nil, errors.New("schema registry is not configured")
 	}

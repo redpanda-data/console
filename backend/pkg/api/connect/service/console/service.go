@@ -216,34 +216,6 @@ func (api *Service) PublishMessage(
 	), nil
 }
 
-// ListSchemaMessageTypes returns every Protobuf message type in the given schema, including nested
-// types, so the produce UI can render a typed picker instead of asking the user for a raw index.
-func (api *Service) ListSchemaMessageTypes(
-	ctx context.Context,
-	req *connect.Request[v1alpha.ListSchemaMessageTypesRequest],
-) (*connect.Response[v1alpha.ListSchemaMessageTypesResponse], error) {
-	types, err := api.consoleSvc.ListProtoMessageTypes(ctx, int(req.Msg.GetSchemaId()))
-	if err != nil {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("failed to list protobuf message types: %w", err),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-		)
-	}
-
-	out := make([]*v1alpha.ProtoMessageType, 0, len(types))
-	for _, t := range types {
-		out = append(out, &v1alpha.ProtoMessageType{
-			FullyQualifiedName: t.FullyQualifiedName,
-			IndexPath:          t.IndexPath,
-		})
-	}
-
-	return connect.NewResponse(&v1alpha.ListSchemaMessageTypesResponse{
-		MessageTypes: out,
-	}), nil
-}
-
 // GenerateSchemaSample renders a zero-valued JSON skeleton for any Schema
 // Registry-backed schema (Avro / Protobuf / JSON Schema). The backend
 // dispatches on the registered schema type so the frontend can call a single

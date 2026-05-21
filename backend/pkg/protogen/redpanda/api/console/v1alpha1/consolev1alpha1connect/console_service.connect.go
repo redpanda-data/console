@@ -41,9 +41,6 @@ const (
 	// ConsoleServicePublishMessageProcedure is the fully-qualified name of the ConsoleService's
 	// PublishMessage RPC.
 	ConsoleServicePublishMessageProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/PublishMessage"
-	// ConsoleServiceListSchemaMessageTypesProcedure is the fully-qualified name of the ConsoleService's
-	// ListSchemaMessageTypes RPC.
-	ConsoleServiceListSchemaMessageTypesProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/ListSchemaMessageTypes"
 	// ConsoleServiceGenerateSchemaSampleProcedure is the fully-qualified name of the ConsoleService's
 	// GenerateSchemaSample RPC.
 	ConsoleServiceGenerateSchemaSampleProcedure = "/redpanda.api.console.v1alpha1.ConsoleService/GenerateSchemaSample"
@@ -51,11 +48,10 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	consoleServiceServiceDescriptor                      = v1alpha1.File_redpanda_api_console_v1alpha1_console_service_proto.Services().ByName("ConsoleService")
-	consoleServiceListMessagesMethodDescriptor           = consoleServiceServiceDescriptor.Methods().ByName("ListMessages")
-	consoleServicePublishMessageMethodDescriptor         = consoleServiceServiceDescriptor.Methods().ByName("PublishMessage")
-	consoleServiceListSchemaMessageTypesMethodDescriptor = consoleServiceServiceDescriptor.Methods().ByName("ListSchemaMessageTypes")
-	consoleServiceGenerateSchemaSampleMethodDescriptor   = consoleServiceServiceDescriptor.Methods().ByName("GenerateSchemaSample")
+	consoleServiceServiceDescriptor                    = v1alpha1.File_redpanda_api_console_v1alpha1_console_service_proto.Services().ByName("ConsoleService")
+	consoleServiceListMessagesMethodDescriptor         = consoleServiceServiceDescriptor.Methods().ByName("ListMessages")
+	consoleServicePublishMessageMethodDescriptor       = consoleServiceServiceDescriptor.Methods().ByName("PublishMessage")
+	consoleServiceGenerateSchemaSampleMethodDescriptor = consoleServiceServiceDescriptor.Methods().ByName("GenerateSchemaSample")
 )
 
 // ConsoleServiceClient is a client for the redpanda.api.console.v1alpha1.ConsoleService service.
@@ -64,9 +60,6 @@ type ConsoleServiceClient interface {
 	ListMessages(context.Context, *connect.Request[v1alpha1.ListMessagesRequest]) (*connect.ServerStreamForClient[v1alpha1.ListMessagesResponse], error)
 	// PublishMessage publishes message.
 	PublishMessage(context.Context, *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error)
-	// ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
-	// including nested types, so clients can pick by name instead of by numeric index.
-	ListSchemaMessageTypes(context.Context, *connect.Request[v1alpha1.ListSchemaMessageTypesRequest]) (*connect.Response[v1alpha1.ListSchemaMessageTypesResponse], error)
 	// GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
 	// schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
 	GenerateSchemaSample(context.Context, *connect.Request[v1alpha1.GenerateSchemaSampleRequest]) (*connect.Response[v1alpha1.GenerateSchemaSampleResponse], error)
@@ -94,12 +87,6 @@ func NewConsoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(consoleServicePublishMessageMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		listSchemaMessageTypes: connect.NewClient[v1alpha1.ListSchemaMessageTypesRequest, v1alpha1.ListSchemaMessageTypesResponse](
-			httpClient,
-			baseURL+ConsoleServiceListSchemaMessageTypesProcedure,
-			connect.WithSchema(consoleServiceListSchemaMessageTypesMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 		generateSchemaSample: connect.NewClient[v1alpha1.GenerateSchemaSampleRequest, v1alpha1.GenerateSchemaSampleResponse](
 			httpClient,
 			baseURL+ConsoleServiceGenerateSchemaSampleProcedure,
@@ -111,10 +98,9 @@ func NewConsoleServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // consoleServiceClient implements ConsoleServiceClient.
 type consoleServiceClient struct {
-	listMessages           *connect.Client[v1alpha1.ListMessagesRequest, v1alpha1.ListMessagesResponse]
-	publishMessage         *connect.Client[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
-	listSchemaMessageTypes *connect.Client[v1alpha1.ListSchemaMessageTypesRequest, v1alpha1.ListSchemaMessageTypesResponse]
-	generateSchemaSample   *connect.Client[v1alpha1.GenerateSchemaSampleRequest, v1alpha1.GenerateSchemaSampleResponse]
+	listMessages         *connect.Client[v1alpha1.ListMessagesRequest, v1alpha1.ListMessagesResponse]
+	publishMessage       *connect.Client[v1alpha1.PublishMessageRequest, v1alpha1.PublishMessageResponse]
+	generateSchemaSample *connect.Client[v1alpha1.GenerateSchemaSampleRequest, v1alpha1.GenerateSchemaSampleResponse]
 }
 
 // ListMessages calls redpanda.api.console.v1alpha1.ConsoleService.ListMessages.
@@ -125,11 +111,6 @@ func (c *consoleServiceClient) ListMessages(ctx context.Context, req *connect.Re
 // PublishMessage calls redpanda.api.console.v1alpha1.ConsoleService.PublishMessage.
 func (c *consoleServiceClient) PublishMessage(ctx context.Context, req *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error) {
 	return c.publishMessage.CallUnary(ctx, req)
-}
-
-// ListSchemaMessageTypes calls redpanda.api.console.v1alpha1.ConsoleService.ListSchemaMessageTypes.
-func (c *consoleServiceClient) ListSchemaMessageTypes(ctx context.Context, req *connect.Request[v1alpha1.ListSchemaMessageTypesRequest]) (*connect.Response[v1alpha1.ListSchemaMessageTypesResponse], error) {
-	return c.listSchemaMessageTypes.CallUnary(ctx, req)
 }
 
 // GenerateSchemaSample calls redpanda.api.console.v1alpha1.ConsoleService.GenerateSchemaSample.
@@ -144,9 +125,6 @@ type ConsoleServiceHandler interface {
 	ListMessages(context.Context, *connect.Request[v1alpha1.ListMessagesRequest], *connect.ServerStream[v1alpha1.ListMessagesResponse]) error
 	// PublishMessage publishes message.
 	PublishMessage(context.Context, *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error)
-	// ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
-	// including nested types, so clients can pick by name instead of by numeric index.
-	ListSchemaMessageTypes(context.Context, *connect.Request[v1alpha1.ListSchemaMessageTypesRequest]) (*connect.Response[v1alpha1.ListSchemaMessageTypesResponse], error)
 	// GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
 	// schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
 	GenerateSchemaSample(context.Context, *connect.Request[v1alpha1.GenerateSchemaSampleRequest]) (*connect.Response[v1alpha1.GenerateSchemaSampleResponse], error)
@@ -170,12 +148,6 @@ func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect.Handler
 		connect.WithSchema(consoleServicePublishMessageMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	consoleServiceListSchemaMessageTypesHandler := connect.NewUnaryHandler(
-		ConsoleServiceListSchemaMessageTypesProcedure,
-		svc.ListSchemaMessageTypes,
-		connect.WithSchema(consoleServiceListSchemaMessageTypesMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	consoleServiceGenerateSchemaSampleHandler := connect.NewUnaryHandler(
 		ConsoleServiceGenerateSchemaSampleProcedure,
 		svc.GenerateSchemaSample,
@@ -188,8 +160,6 @@ func NewConsoleServiceHandler(svc ConsoleServiceHandler, opts ...connect.Handler
 			consoleServiceListMessagesHandler.ServeHTTP(w, r)
 		case ConsoleServicePublishMessageProcedure:
 			consoleServicePublishMessageHandler.ServeHTTP(w, r)
-		case ConsoleServiceListSchemaMessageTypesProcedure:
-			consoleServiceListSchemaMessageTypesHandler.ServeHTTP(w, r)
 		case ConsoleServiceGenerateSchemaSampleProcedure:
 			consoleServiceGenerateSchemaSampleHandler.ServeHTTP(w, r)
 		default:
@@ -207,10 +177,6 @@ func (UnimplementedConsoleServiceHandler) ListMessages(context.Context, *connect
 
 func (UnimplementedConsoleServiceHandler) PublishMessage(context.Context, *connect.Request[v1alpha1.PublishMessageRequest]) (*connect.Response[v1alpha1.PublishMessageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.PublishMessage is not implemented"))
-}
-
-func (UnimplementedConsoleServiceHandler) ListSchemaMessageTypes(context.Context, *connect.Request[v1alpha1.ListSchemaMessageTypesRequest]) (*connect.Response[v1alpha1.ListSchemaMessageTypesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.ConsoleService.ListSchemaMessageTypes is not implemented"))
 }
 
 func (UnimplementedConsoleServiceHandler) GenerateSchemaSample(context.Context, *connect.Request[v1alpha1.GenerateSchemaSampleRequest]) (*connect.Response[v1alpha1.GenerateSchemaSampleResponse], error) {

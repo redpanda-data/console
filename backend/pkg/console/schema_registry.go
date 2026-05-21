@@ -25,6 +25,8 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/redpanda-data/console/backend/pkg/proto"
 )
 
 // SchemaRegistryMode returns the schema registry mode.
@@ -439,6 +441,8 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		return nil, err
 	}
 
+	s.populateProtoMessageTypes(ctx, subjectName, schemas)
+
 	var schemaType sr.SchemaType
 	if len(schemas) > 0 {
 		schemaType = schemas[len(schemas)-1].Type
@@ -453,6 +457,32 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		LatestActiveVersion: latestActiveVersion,
 		Schemas:             schemas,
 	}, nil
+}
+
+// populateProtoMessageTypes resolves message types for every Protobuf version in schemas. Failures
+// are non-fatal: a parse error leaves MessageTypes nil rather than failing the parent call.
+func (s *Service) populateProtoMessageTypes(ctx context.Context, subjectName string, schemas []SchemaRegistryVersionedSchema) {
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(10)
+	for i := range schemas {
+		if schemas[i].Type != sr.TypeProtobuf {
+			continue
+		}
+		i := i
+		grp.Go(func() error {
+			types, err := s.protoMessageTypesByID(grpCtx, schemas[i].ID)
+			if err != nil {
+				s.logger.WarnContext(grpCtx, "failed to resolve protobuf message types",
+					slog.String("subject", subjectName),
+					slog.Int("schemaId", schemas[i].ID),
+					slog.Any("err", err))
+				return nil
+			}
+			schemas[i].MessageTypes = types
+			return nil
+		})
+	}
+	_ = grp.Wait()
 }
 
 // SchemaRegistrySubjectDetailsVersion represents a schema version and if it's
@@ -581,13 +611,14 @@ func (s *Service) getSubjectMode(ctx context.Context, srClient *rpsr.Client, sub
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID            int             `json:"id"`
-	Version       int             `json:"version"`
-	IsSoftDeleted bool            `json:"isSoftDeleted"`
-	Type          sr.SchemaType   `json:"type"`
-	Schema        string          `json:"schema"`
-	References    []Reference     `json:"references"`
-	Metadata      *SchemaMetadata `json:"metadata,omitempty"`
+	ID            int                     `json:"id"`
+	Version       int                     `json:"version"`
+	IsSoftDeleted bool                    `json:"isSoftDeleted"`
+	Type          sr.SchemaType           `json:"type"`
+	Schema        string                  `json:"schema"`
+	References    []Reference             `json:"references"`
+	Metadata      *SchemaMetadata         `json:"metadata,omitempty"`
+	MessageTypes  []proto.MessageTypeInfo `json:"messageTypes,omitempty"` // Protobuf only.
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.

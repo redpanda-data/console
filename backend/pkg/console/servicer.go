@@ -10,7 +10,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sr"
 
-	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
@@ -42,7 +41,6 @@ type Servicer interface {
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
 	ProducePlainRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
 	ProduceRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
-	ListProtoMessageTypes(ctx context.Context, schemaID int) ([]proto.MessageTypeInfo, error)
 	GenerateSchemaSampleJSON(ctx context.Context, schemaID int, indexPath []int) ([]byte, error)
 	Start(ctx context.Context) error
 	Stop()

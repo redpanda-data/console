@@ -24,15 +24,6 @@ service ConsoleService {
     };
   }
 
-  // ListSchemaMessageTypes returns the Protobuf message types defined in a registered schema,
-  // including nested types, so clients can pick by name instead of by numeric index.
-  rpc ListSchemaMessageTypes(ListSchemaMessageTypesRequest) returns (ListSchemaMessageTypesResponse) {
-    option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
-      api: API_KAFKA
-    };
-  }
-
   // GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
   // schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
   rpc GenerateSchemaSample(GenerateSchemaSampleRequest) returns (GenerateSchemaSampleResponse) {

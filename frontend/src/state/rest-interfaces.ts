@@ -1455,6 +1455,12 @@ export type SchemaRegistryVersionedSchema = {
   schema: string;
   references: SchemaReference[];
   metadata?: SchemaMetadata;
+  messageTypes?: SchemaMessageType[];
+};
+
+export type SchemaMessageType = {
+  fullyQualifiedName: string;
+  indexPath: number[];
 };
 
 export type SchemaReference = {
