@@ -136,14 +136,14 @@ const UserCreatePage = () => {
           <>
             <CreateUserModal state={state} />
             <div className="mt-8 flex gap-4">
-              <Button
-                disabled={isSubmitting || !isValidUsername || !isValidPassword || users.includes(username)}
+              <CreateUserButton
+                isSubmitting={isSubmitting}
+                isValidPassword={isValidPassword}
+                isValidUsername={isValidUsername}
                 onClick={onCreateUser}
-                testId="create-user-submit"
-              >
-                {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
-                {isSubmitting ? 'Creating...' : 'Create'}
-              </Button>
+                userExists={users.includes(username)}
+                usernameEmpty={!username}
+              />
               <Button disabled={isSubmitting} onClick={onCancel} testId="create-user-cancel" variant="link">
                 Cancel
               </Button>
@@ -164,6 +164,52 @@ const UserCreatePage = () => {
 };
 
 export default UserCreatePage;
+
+type CreateUserButtonProps = {
+  isSubmitting: boolean;
+  isValidUsername: boolean;
+  isValidPassword: boolean;
+  userExists: boolean;
+  usernameEmpty: boolean;
+  onClick: () => void;
+};
+
+export const CreateUserButton = ({
+  isSubmitting,
+  isValidUsername,
+  isValidPassword,
+  userExists,
+  usernameEmpty,
+  onClick,
+}: CreateUserButtonProps) => {
+  const disabledReason = (() => {
+    if (isSubmitting) return null;
+    if (usernameEmpty) return 'Enter a username to continue';
+    if (userExists) return 'This username already exists';
+    if (!isValidUsername) return 'Fix the username to continue';
+    if (!isValidPassword) return `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`;
+    return null;
+  })();
+  const isDisabled = isSubmitting || !isValidUsername || !isValidPassword || userExists;
+
+  const button = (
+    <Button disabled={isDisabled} onClick={onClick} testId="create-user-submit">
+      {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
+      {isSubmitting ? 'Creating...' : 'Create'}
+    </Button>
+  );
+
+  if (!disabledReason) return button;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-not-allowed">{button}</span>
+      </TooltipTrigger>
+      <TooltipContent>{disabledReason}</TooltipContent>
+    </Tooltip>
+  );
+};
 
 export type CreateUserModalState = {
   username: string;
@@ -226,7 +272,7 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
           {hasError && errorText !== undefined && <FieldError>{errorText}</FieldError>}
         </Field>
 
-        <Field>
+        <Field data-invalid={(!state.isValidPassword && state.password.length > 0) || undefined}>
           <FieldLabel required>Password</FieldLabel>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
@@ -278,6 +324,11 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
           <FieldDescription>
             Must be at least {PASSWORD_MIN_LENGTH} characters and should not exceed {PASSWORD_MAX_LENGTH} characters.
           </FieldDescription>
+          {!state.isValidPassword && state.password.length > 0 && (
+            <FieldError>
+              Must be at least {PASSWORD_MIN_LENGTH} characters and should not exceed {PASSWORD_MAX_LENGTH} characters.
+            </FieldError>
+          )}
         </Field>
 
         <Field>

@@ -5,16 +5,17 @@ import {
   UpdateRoleMembershipRequestSchema,
   type UpdateRoleMembershipResponse,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
-import { SASLMechanism, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { StateRoleSelector } from './user-create';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
-import { useUpdateUserMutationWithToast } from '../../../../react-query/api/user';
+import { getSASLMechanism, useUpdateUserMutationWithToast } from '../../../../react-query/api/user';
 import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
+import { SASL_MECHANISMS, type SaslMechanism } from '../../../../utils/user';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import { CopyButton } from '../../../redpanda-ui/components/copy-button';
@@ -40,7 +41,7 @@ type ChangePasswordModalProps = {
 
 export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePasswordModalProps) => {
   const [password, setPassword] = useState(() => generatePassword(30, false));
-  const [mechanism, setMechanism] = useState<SASLMechanism | undefined>(undefined);
+  const [mechanism, setMechanism] = useState<SaslMechanism | undefined>(undefined);
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
   const isValidPassword = password && password.length >= 4 && password.length <= 64;
   const { mutateAsync: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutationWithToast();
@@ -49,7 +50,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
     try {
       await updateUser(
         create(UpdateUserRequestSchema, {
-          user: { name: userName, mechanism, password },
+          user: { name: userName, mechanism: mechanism ? getSASLMechanism(mechanism) : undefined, password },
         })
       );
       showToast({ status: 'success', title: `Password for user ${userName} updated` });
@@ -130,16 +131,16 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
             </Field>
             <Field>
               <FieldLabel required>SASL mechanism</FieldLabel>
-              <Select
-                onValueChange={(v) => setMechanism(Number(v) as SASLMechanism)}
-                value={mechanism !== undefined ? String(mechanism) : ''}
-              >
+              <Select onValueChange={(v) => setMechanism(v as SaslMechanism)} value={mechanism ?? ''}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select mechanism..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}>SCRAM-SHA-256</SelectItem>
-                  <SelectItem value={String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512)}>SCRAM-SHA-512</SelectItem>
+                  {SASL_MECHANISMS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
