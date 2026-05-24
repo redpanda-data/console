@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -45,7 +46,7 @@ func (s *Service) protoMessageTypesByID(ctx context.Context, schemaID int) ([]pr
 func walkMessageTypes(msgs protoreflect.MessageDescriptors, prefix []int32, out *[]proto.MessageTypeInfo) {
 	for i := 0; i < msgs.Len(); i++ {
 		md := msgs.Get(i)
-		path := append(append([]int32(nil), prefix...), int32(i))
+		path := append(slices.Clone(prefix), int32(i))
 		// Synthetic map-entry descriptors (e.g. Foo.LabelsEntry for a map<string,string> field)
 		// are not user-selectable message types — skip them but keep walking so real siblings
 		// keep their indices.

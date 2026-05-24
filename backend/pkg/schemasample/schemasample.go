@@ -25,8 +25,7 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// Avro/JSON-Schema literal type names. Extracted as constants so goconst doesn't
-// flag the repeated occurrences and to make typos compile-time errors.
+// Avro/JSON-Schema literal type names.
 const (
 	avroTypeNull    = "null"
 	avroTypeBool    = "boolean"

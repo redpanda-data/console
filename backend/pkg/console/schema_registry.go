@@ -468,7 +468,6 @@ func (s *Service) populateProtoMessageTypes(ctx context.Context, subjectName str
 		if schemas[i].Type != sr.TypeProtobuf {
 			continue
 		}
-		i := i
 		grp.Go(func() error {
 			types, err := s.protoMessageTypesByID(grpCtx, schemas[i].ID)
 			if err != nil {
