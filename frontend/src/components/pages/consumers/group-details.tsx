@@ -330,18 +330,18 @@ const GroupByTopics = (groupProps: {
       const assignedMember = allAssignments.find(
         (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
       );
-
+      const isUnconsumed = partLag.groupOffset === null;
       return {
         topicName: topicLag.topic,
         partitionId: partLag.partitionId,
         groupOffset: partLag.groupOffset,
-        highWaterMark: partLag.highWaterMark,
-        lag: partLag.lag,
-
+        highWaterMark: partLag.highWaterMark as number | null,
+        lag: isUnconsumed ? null : (partLag.lag as number | null),
         assignedMember: assignedMember?.member,
         id: assignedMember?.member.id,
         clientId: assignedMember?.member.clientId,
         host: assignedMember?.member.clientHost,
+        isUnconsumed,
       };
     })
   );
@@ -356,11 +356,15 @@ const GroupByTopics = (groupProps: {
     const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
     const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
-    const partitions = groupProps.onlyShowPartitionsWithLag ? g.partitions.filter((e) => e.lag !== 0) : g.partitions;
+    const partitions = groupProps.onlyShowPartitionsWithLag
+      ? g.partitions.filter((e) => e.lag !== 0 || e.isUnconsumed)
+      : g.partitions;
 
     if (partitions.length === 0) {
       return null;
     }
+
+    const consumedPartitions = g.partitions.filter((p) => !p.isUnconsumed);
 
     return {
       heading: (
@@ -375,7 +379,7 @@ const GroupByTopics = (groupProps: {
               <IconButton
                 disabledReason={cannotEditGroupReason(groupProps.group, featurePatchGroup)}
                 onClick={(e) => {
-                  groupProps.onEditOffsets(g.partitions);
+                  groupProps.onEditOffsets(consumedPartitions);
                   e.stopPropagation();
                 }}
               >
@@ -384,7 +388,7 @@ const GroupByTopics = (groupProps: {
               <IconButton
                 disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group, featureDeleteGroupOffsets)}
                 onClick={(e) => {
-                  groupProps.onDeleteOffsets(g.partitions, 'topic');
+                  groupProps.onDeleteOffsets(consumedPartitions, 'topic');
                   e.stopPropagation();
                 }}
               >
@@ -409,13 +413,14 @@ const GroupByTopics = (groupProps: {
         <DataTable<{
           topicName: string;
           partitionId: number;
-          groupOffset: number;
-          highWaterMark: number;
-          lag: number;
+          groupOffset: number | null;
+          highWaterMark: number | null;
+          lag: number | null;
           assignedMember: GroupMemberDescription | undefined;
           id: string | undefined;
           clientId: string | undefined;
           host: string | undefined;
+          isUnconsumed: boolean;
         }>
           columns={[
             {
@@ -458,19 +463,22 @@ const GroupByTopics = (groupProps: {
               size: 120,
               header: 'Log End Offset',
               accessorKey: 'highWaterMark',
-              cell: ({ row: { original } }) => numberToThousandsString(original.highWaterMark),
+              cell: ({ row: { original } }) =>
+                original.highWaterMark !== null ? numberToThousandsString(original.highWaterMark) : '—',
             },
             {
               size: 120,
               header: 'Group Offset',
               accessorKey: 'groupOffset',
-              cell: ({ row: { original } }) => numberToThousandsString(original.groupOffset),
+              cell: ({ row: { original } }) =>
+                original.groupOffset !== null ? numberToThousandsString(original.groupOffset) : '—',
             },
             {
               size: 80,
               header: 'Lag',
               accessorKey: 'lag',
-              cell: ({ row: { original } }) => ShortNum({ value: original.lag, tooltip: true }),
+              cell: ({ row: { original } }) =>
+                original.lag !== null ? ShortNum({ value: original.lag, tooltip: true }) : '—',
             },
             {
               size: 1,
@@ -479,13 +487,23 @@ const GroupByTopics = (groupProps: {
               cell: ({ row: { original } }) => (
                 <Flex gap={1} pr={2}>
                   <IconButton
-                    disabledReason={cannotEditGroupReason(groupProps.group, featurePatchGroup)}
+                    data-testid={`partition-edit-${original.partitionId}`}
+                    disabledReason={
+                      original.isUnconsumed
+                        ? 'No committed offset'
+                        : cannotEditGroupReason(groupProps.group, featurePatchGroup)
+                    }
                     onClick={() => groupProps.onEditOffsets([original])}
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
-                    disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group, featureDeleteGroupOffsets)}
+                    data-testid={`partition-delete-${original.partitionId}`}
+                    disabledReason={
+                      original.isUnconsumed
+                        ? 'No committed offset'
+                        : cannotDeleteGroupOffsetsReason(groupProps.group, featureDeleteGroupOffsets)
+                    }
                     onClick={() => groupProps.onDeleteOffsets([original], 'partition')}
                   >
                     <TrashIcon />

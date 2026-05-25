@@ -184,6 +184,7 @@ func TestGetConsumerGroupOffsets_NonExistentTopicInMetadata(t *testing.T) {
 	req.NoError(err, "Should not error when one topic is deleted")
 
 	// Expected result: only the existing topic, with 1 partition and offset at position 1
+	groupOffset := int64(1)
 	expected := map[string][]GroupTopicOffsets{
 		groupID: {
 			{
@@ -194,7 +195,7 @@ func TestGetConsumerGroupOffsets_NonExistentTopicInMetadata(t *testing.T) {
 				PartitionOffsets: []PartitionOffsets{
 					{
 						PartitionID:   0,
-						GroupOffset:   1,
+						GroupOffset:   &groupOffset,
 						HighWaterMark: 1,
 						Lag:           0,
 					},

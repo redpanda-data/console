@@ -366,7 +366,7 @@ export type GroupTopicOffsets = {
 // PartitionOffset describes the kafka lag for a partition for a single consumer group
 export type GroupPartitionOffset = {
   partitionId: number;
-  groupOffset: number;
+  groupOffset: number | null; // null when no committed offset exists for this partition
 
   error: string | undefined; // Error will be set when the high water mark could not be fetched
   highWaterMark: number;
