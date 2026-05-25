@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/duration.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// SQLService provides catalog/table introspection and SQL execution
+// against Redpanda SQL over the Postgres wire protocol.
+service SQLService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "SQL"
+    description: "Interact with Redpanda SQL by browsing catalogs, tables and executing queries."
+  };
+
+  // ListCatalogs lists all catalogs visible to the caller.
+  rpc ListCatalogs(ListCatalogsRequest) returns (ListCatalogsResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/catalogs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List catalogs"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListCatalogsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
+
+  // ListTables lists tables in a catalog.
+  rpc ListTables(ListTablesRequest) returns (ListTablesResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/catalogs/{catalog}/tables"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List tables"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTablesResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
+
+  // DescribeTable returns metadata and column shape for a single table.
+  rpc DescribeTable(DescribeTableRequest) returns (DescribeTableResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/catalogs/{catalog}/tables/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Describe table"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.DescribeTableResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Catalog or table not found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
+
+  // ExecuteQuery runs a single SQL statement. Rows returned are capped
+  // server-side; `truncated` indicates the cap fired.
+  rpc ExecuteQuery(ExecuteQueryRequest) returns (ExecuteQueryResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha3/sql/queries"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Execute query"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
+}
+
+// Catalog backing-storage type. Sourced from `system.catalogs.type`.
+enum CatalogType {
+  reserved 2;
+  reserved "CATALOG_TYPE_ICEBERG";
+  CATALOG_TYPE_UNSPECIFIED = 0;
+  CATALOG_TYPE_REDPANDA = 1;
+}
+
+message Catalog {
+  string name = 1;
+  string namespace_name = 2;
+  CatalogType type = 3;
+}
+
+// Table mirrors a row from `SHOW TABLES FROM <catalog>`. Backing-specific
+// fields (connection_name, topic_name, *_policy) are only populated for
+// Kafka-backed tables.
+message Table {
+  reserved 1;
+  reserved "database_name";
+  string namespace_name = 2;
+  string name = 3;
+  optional string connection_name = 4;
+  optional string topic_name = 5;
+  optional string subject_name = 6;
+  optional string lookup_policy = 7;
+  optional string error_handling_policy = 8;
+  optional string struct_mapping_policy = 9;
+  optional string output_schema_full_message_name = 10;
+}
+
+// Column descriptor as reported by the Postgres driver.
+message Column {
+  string name = 1;
+  // Postgres type name (e.g. "INT8", "TEXT", "TIMESTAMPTZ").
+  string type = 2;
+}
+
+// Value is a single cell. `null_value` distinguishes SQL NULL from an
+// empty string; `value` is unset when `null_value` is true.
+message Value {
+  optional string value = 1;
+  bool null_value = 2;
+}
+
+message Row {
+  repeated Value values = 1;
+}
+
+message ListCatalogsRequest {
+  int32 page_size = 1 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+  string page_token = 2;
+}
+
+message ListCatalogsResponse {
+  repeated Catalog catalogs = 1;
+  string next_page_token = 2;
+}
+
+message ListTablesRequest {
+  string catalog = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255
+  ];
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+  string page_token = 3;
+  // Optional SQL LIKE pattern matched against table name (e.g.
+  // 'orders_%'). When unset, all tables in the catalog are returned.
+  optional string filter = 4 [
+    (buf.validate.field).string.max_len = 255,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Optional SQL LIKE pattern matched against table name (e.g. 'orders_%')."}
+  ];
+}
+
+message ListTablesResponse {
+  repeated Table tables = 1;
+  string next_page_token = 2;
+}
+
+message DescribeTableRequest {
+  string catalog = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255
+  ];
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255
+  ];
+}
+
+message DescribeTableResponse {
+  Table table = 1;
+  repeated Column columns = 2;
+}
+
+message ExecuteQueryRequest {
+  string statement = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 262144
+  ];
+  // Override the server row cap for this query. When unset, the server
+  // default applies.
+  optional int32 row_limit = 2 [(buf.validate.field).int32 = {
+    gte: 1
+    lte: 10000
+  }];
+  // Per-query timeout. When unset, the server default applies.
+  optional google.protobuf.Duration timeout = 3 [(buf.validate.field).duration = {
+    gte: {seconds: 1}
+    lte: {seconds: 300}
+  }];
+}
+
+message ExecuteQueryResponse {
+  repeated Column columns = 1;
+  repeated Row rows = 2;
+  // True if the server row cap fired before the result set was
+  // exhausted.
+  bool truncated = 3;
+}
