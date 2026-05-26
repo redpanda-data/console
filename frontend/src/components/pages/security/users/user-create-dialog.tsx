@@ -12,13 +12,12 @@
 import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
-import { LoaderCircleIcon } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useCallback, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
-import { CreateUserConfirmationModal, CreateUserModal } from './user-create';
+import { CreateUserButton, CreateUserConfirmationModal, CreateUserModal } from './user-create';
 import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
@@ -144,14 +143,14 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
             <Button onClick={handleClose} type="button" variant="outline">
               Cancel
             </Button>
-            <Button
-              disabled={isSubmitting || !state.isValidUsername || !state.isValidPassword || users.includes(username)}
+            <CreateUserButton
+              isSubmitting={isSubmitting}
+              isValidPassword={state.isValidPassword}
+              isValidUsername={state.isValidUsername}
               onClick={onCreateUser}
-              testId="create-user-submit"
-            >
-              {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
-              {isSubmitting ? 'Creating...' : 'Create'}
-            </Button>
+              userExists={users.includes(username)}
+              usernameEmpty={!username}
+            />
           </DialogFooter>
         )}
       </DialogContent>

@@ -23,4 +23,13 @@ service ConsoleService {
       api: API_KAFKA
     };
   }
+
+  // GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
+  // schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
+  rpc GenerateSchemaSample(GenerateSchemaSampleRequest) returns (GenerateSchemaSampleResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
 }

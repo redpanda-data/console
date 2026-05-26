@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/console/v1alpha1/publish_messages.proto.
  */
 export const file_redpanda_api_console_v1alpha1_publish_messages: GenFile = /*@__PURE__*/
-  fileDesc("CjRyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9wdWJsaXNoX21lc3NhZ2VzLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSKmAwoVUHVibGlzaE1lc3NhZ2VSZXF1ZXN0Ei0KBXRvcGljGAEgASgJQh66SBtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSJgoMcGFydGl0aW9uX2lkGAIgASgFQhC6SA0aCyj///////////8BEkMKC2NvbXByZXNzaW9uGAMgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ29tcHJlc3Npb25UeXBlEhgKEHVzZV90cmFuc2FjdGlvbnMYBCABKAgSQQoHaGVhZGVycxgFIAMoCzIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkthZmthUmVjb3JkSGVhZGVyEkgKA2tleRgGIAEoCzI7LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUGF5bG9hZE9wdGlvbnMSSgoFdmFsdWUYByABKAsyOy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5QdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zIrIBChxQdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zEkAKCGVuY29kaW5nGAEgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUGF5bG9hZEVuY29kaW5nEgwKBGRhdGEYAiABKAwSFgoJc2NoZW1hX2lkGAkgASgFSACIAQESEgoFaW5kZXgYCiABKAVIAYgBAUIMCgpfc2NoZW1hX2lkQggKBl9pbmRleCJNChZQdWJsaXNoTWVzc2FnZVJlc3BvbnNlEg0KBXRvcGljGAEgASgJEhQKDHBhcnRpdGlvbl9pZBgCIAEoBRIOCgZvZmZzZXQYAyABKANiBnByb3RvMw", [file_buf_validate_validate, file_redpanda_api_console_v1alpha1_common]);
+  fileDesc("CjRyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9wdWJsaXNoX21lc3NhZ2VzLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSKmAwoVUHVibGlzaE1lc3NhZ2VSZXF1ZXN0Ei0KBXRvcGljGAEgASgJQh66SBtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSJgoMcGFydGl0aW9uX2lkGAIgASgFQhC6SA0aCyj///////////8BEkMKC2NvbXByZXNzaW9uGAMgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ29tcHJlc3Npb25UeXBlEhgKEHVzZV90cmFuc2FjdGlvbnMYBCABKAgSQQoHaGVhZGVycxgFIAMoCzIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkthZmthUmVjb3JkSGVhZGVyEkgKA2tleRgGIAEoCzI7LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUGF5bG9hZE9wdGlvbnMSSgoFdmFsdWUYByABKAsyOy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5QdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zIsYBChxQdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zEkAKCGVuY29kaW5nGAEgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUGF5bG9hZEVuY29kaW5nEgwKBGRhdGEYAiABKAwSFgoJc2NoZW1hX2lkGAkgASgFSACIAQESEgoFaW5kZXgYCiABKAVIAYgBARISCgppbmRleF9wYXRoGAsgAygFQgwKCl9zY2hlbWFfaWRCCAoGX2luZGV4Ik0KFlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2USDQoFdG9waWMYASABKAkSFAoMcGFydGl0aW9uX2lkGAIgASgFEg4KBm9mZnNldBgDIAEoAyJNChtHZW5lcmF0ZVNjaGVtYVNhbXBsZVJlcXVlc3QSGgoJc2NoZW1hX2lkGAEgASgFQge6SAQaAiAAEhIKCmluZGV4X3BhdGgYAiADKAUiMwocR2VuZXJhdGVTY2hlbWFTYW1wbGVSZXNwb25zZRITCgtzYW1wbGVfanNvbhgBIAEoCWIGcHJvdG8z", [file_buf_validate_validate, file_redpanda_api_console_v1alpha1_common]);
 
 /**
  * PublishMessageRequest is the request for PublishMessage call.
@@ -100,11 +100,18 @@ export type PublishMessagePayloadOptions = Message<"redpanda.api.console.v1alpha
   schemaId?: number;
 
   /**
-   * Optional index. Useful for Protobuf messages.
+   * Deprecated single-index. Prefer index_path for Protobuf messages so nested types are addressable.
    *
    * @generated from field: optional int32 index = 10;
    */
   index?: number;
+
+  /**
+   * Optional message-index path for Protobuf. Each element selects the Nth nested MessageDescriptor; e.g. [0] = first top-level, [1, 0] = first nested message of the second top-level. Empty = first top-level.
+   *
+   * @generated from field: repeated int32 index_path = 11;
+   */
+  indexPath: number[];
 };
 
 /**
@@ -142,4 +149,49 @@ export type PublishMessageResponse = Message<"redpanda.api.console.v1alpha1.Publ
  */
 export const PublishMessageResponseSchema: GenMessage<PublishMessageResponse> = /*@__PURE__*/
   messageDesc(file_redpanda_api_console_v1alpha1_publish_messages, 2);
+
+/**
+ * GenerateSchemaSampleRequest asks for a zero-valued JSON skeleton for the schema identified
+ * by schema_id. The backend dispatches based on the schema's registered type (AVRO/PROTOBUF/JSON).
+ * index_path is only consulted for Protobuf and is the Confluent message-indexes path.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GenerateSchemaSampleRequest
+ */
+export type GenerateSchemaSampleRequest = Message<"redpanda.api.console.v1alpha1.GenerateSchemaSampleRequest"> & {
+  /**
+   * @generated from field: int32 schema_id = 1;
+   */
+  schemaId: number;
+
+  /**
+   * @generated from field: repeated int32 index_path = 2;
+   */
+  indexPath: number[];
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GenerateSchemaSampleRequest.
+ * Use `create(GenerateSchemaSampleRequestSchema)` to create a new message.
+ */
+export const GenerateSchemaSampleRequestSchema: GenMessage<GenerateSchemaSampleRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_publish_messages, 3);
+
+/**
+ * GenerateSchemaSampleResponse returns the JSON skeleton.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.GenerateSchemaSampleResponse
+ */
+export type GenerateSchemaSampleResponse = Message<"redpanda.api.console.v1alpha1.GenerateSchemaSampleResponse"> & {
+  /**
+   * @generated from field: string sample_json = 1;
+   */
+  sampleJson: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.GenerateSchemaSampleResponse.
+ * Use `create(GenerateSchemaSampleResponseSchema)` to create a new message.
+ */
+export const GenerateSchemaSampleResponseSchema: GenMessage<GenerateSchemaSampleResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_publish_messages, 4);
 

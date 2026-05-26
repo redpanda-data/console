@@ -10,3 +10,11 @@ import { ConsoleService } from "./console_service_pb";
  * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.PublishMessage
  */
 export const publishMessage = ConsoleService.method.publishMessage;
+
+/**
+ * GenerateSchemaSample renders a JSON skeleton for any Schema Registry-backed
+ * schema (Avro / Protobuf / JSON Schema). Dispatches by schema type server-side.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.GenerateSchemaSample
+ */
+export const generateSchemaSample = ConsoleService.method.generateSchemaSample;
