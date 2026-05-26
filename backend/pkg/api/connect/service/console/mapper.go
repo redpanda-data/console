@@ -54,6 +54,13 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 		encoding = serde.PayloadEncodingProtobufBSR
 	}
 
+	// When the client picks Protobuf together with a schema ID, route through the schema-registry
+	// path (ProtobufSchemaSerde) instead of the static-config ProtobufSerde — the latter requires
+	// a configured proto.Service and panics when only schema-registry-backed schemas are in use.
+	if encoding == serde.PayloadEncodingProtobuf && po.GetSchemaId() > 0 {
+		encoding = serde.PayloadEncodingProtobufSchema
+	}
+
 	input := &serde.RecordPayloadInput{
 		Payload:  po.GetData(),
 		Encoding: encoding,
@@ -63,7 +70,13 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 		input.Options = []serde.SerdeOpt{serde.WithSchemaID(uint32(po.GetSchemaId()))}
 	}
 
-	if po.GetIndex() > 0 {
+	if path := po.GetIndexPath(); len(path) > 0 {
+		ints := make([]int, len(path))
+		for i, v := range path {
+			ints[i] = int(v)
+		}
+		input.Options = append(input.Options, serde.WithIndex(ints...))
+	} else if po.GetIndex() > 0 {
 		input.Options = append(input.Options, serde.WithIndex(int(po.GetIndex())))
 	}
 

@@ -635,6 +635,7 @@ func (api *API) routes() *chi.Mux {
 				r.Delete("/schema-registry/config/{subject}", api.handleDeleteSchemaRegistrySubjectConfig())
 				r.Get("/schema-registry/contexts", api.handleGetSchemaRegistryContexts())
 				r.Get("/schema-registry/subjects", api.handleGetSchemaSubjects())
+				r.Get("/schema-registry/schemas", api.handleGetAllSchemas())
 				r.Get("/schema-registry/schemas/types", api.handleGetSchemaRegistrySchemaTypes())
 				r.Get("/schema-registry/schemas/ids/{id}/versions", api.handleGetSchemaUsagesByID())
 				r.Delete("/schema-registry/subjects/{subject}", api.handleDeleteSubject())

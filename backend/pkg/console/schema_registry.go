@@ -25,6 +25,8 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/redpanda-data/console/backend/pkg/proto"
 )
 
 // SchemaRegistryMode returns the schema registry mode.
@@ -214,6 +216,101 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context, subjectPrefix s
 	return result, nil
 }
 
+// SchemaRegistrySchema is a single (subject, version) entry returned by the
+// registry's GET /schemas endpoint. The shape mirrors sr.SubjectSchema so the
+// payload is suitable for a future dataplane API surface.
+type SchemaRegistrySchema struct {
+	Subject    string          `json:"subject"`
+	Version    int             `json:"version"`
+	ID         int             `json:"id"`
+	Type       sr.SchemaType   `json:"type"`
+	Schema     string          `json:"schema,omitempty"`
+	References []Reference     `json:"references,omitempty"`
+	Metadata   *SchemaMetadata `json:"metadata,omitempty"`
+}
+
+// GetAllSchemasOptions controls the query parameters forwarded to the schema
+// registry's GET /schemas endpoint.
+type GetAllSchemasOptions struct {
+	SubjectPrefix string
+	LatestOnly    bool
+	Deleted       bool // include soft-deleted entries
+	DeletedOnly   bool
+	Offset        int
+	Limit         int
+}
+
+// GetAllSchemas lists schemas from the registry's GET /schemas endpoint and
+// returns the full (subject, version, id, type, schema, references, metadata)
+// for each entry. Callers control filtering and pagination via opts.
+func (s *Service) GetAllSchemas(ctx context.Context, opts GetAllSchemasOptions) ([]SchemaRegistrySchema, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	params := make([]sr.Param, 0, 6)
+	if opts.SubjectPrefix != "" {
+		params = append(params, sr.SubjectPrefix(opts.SubjectPrefix))
+	}
+	if opts.LatestOnly {
+		params = append(params, sr.LatestOnly)
+	}
+	if opts.Deleted {
+		params = append(params, sr.ShowDeleted)
+	}
+	if opts.DeletedOnly {
+		params = append(params, sr.DeletedOnly)
+	}
+	if opts.Offset > 0 {
+		params = append(params, sr.Offset(opts.Offset))
+	}
+	if opts.Limit > 0 {
+		params = append(params, sr.Limit(opts.Limit))
+	}
+
+	schemas, err := srClient.AllSchemas(sr.WithParams(ctx, params...))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]SchemaRegistrySchema, 0, len(schemas))
+	for _, schema := range schemas {
+		references := make([]Reference, len(schema.References))
+		for i, ref := range schema.References {
+			references[i] = Reference{
+				Name:    ref.Name,
+				Subject: ref.Subject,
+				Version: ref.Version,
+			}
+		}
+		var metadata *SchemaMetadata
+		if schema.SchemaMetadata != nil {
+			metadata = &SchemaMetadata{
+				Tags:       schema.SchemaMetadata.Tags,
+				Properties: schema.SchemaMetadata.Properties,
+				Sensitive:  schema.SchemaMetadata.Sensitive,
+			}
+		}
+		result = append(result, SchemaRegistrySchema{
+			Subject:    schema.Subject,
+			Version:    schema.Version,
+			ID:         schema.ID,
+			Type:       schema.Type,
+			Schema:     schema.Schema.Schema,
+			References: references,
+			Metadata:   metadata,
+		})
+	}
+	slices.SortFunc(result, func(a, b SchemaRegistrySchema) int {
+		if c := strings.Compare(a.Subject, b.Subject); c != 0 {
+			return c
+		}
+		return a.Version - b.Version
+	})
+	return result, nil
+}
+
 // SchemaRegistrySubjectDetails represents a schema registry subject along
 // with other information such as the registered versions that belong to it,
 // or the full schema information that's part of the subject.
@@ -344,6 +441,8 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		return nil, err
 	}
 
+	s.populateProtoMessageTypes(ctx, subjectName, schemas)
+
 	var schemaType sr.SchemaType
 	if len(schemas) > 0 {
 		schemaType = schemas[len(schemas)-1].Type
@@ -358,6 +457,31 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		LatestActiveVersion: latestActiveVersion,
 		Schemas:             schemas,
 	}, nil
+}
+
+// populateProtoMessageTypes resolves message types for every Protobuf version in schemas. Failures
+// are non-fatal: a parse error leaves MessageTypes nil rather than failing the parent call.
+func (s *Service) populateProtoMessageTypes(ctx context.Context, subjectName string, schemas []SchemaRegistryVersionedSchema) {
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(10)
+	for i := range schemas {
+		if schemas[i].Type != sr.TypeProtobuf {
+			continue
+		}
+		grp.Go(func() error {
+			types, err := s.protoMessageTypesByID(grpCtx, schemas[i].ID)
+			if err != nil {
+				s.logger.WarnContext(grpCtx, "failed to resolve protobuf message types",
+					slog.String("subject", subjectName),
+					slog.Int("schemaId", schemas[i].ID),
+					slog.Any("err", err))
+				return nil
+			}
+			schemas[i].MessageTypes = types
+			return nil
+		})
+	}
+	_ = grp.Wait()
 }
 
 // SchemaRegistrySubjectDetailsVersion represents a schema version and if it's
@@ -486,13 +610,14 @@ func (s *Service) getSubjectMode(ctx context.Context, srClient *rpsr.Client, sub
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID            int             `json:"id"`
-	Version       int             `json:"version"`
-	IsSoftDeleted bool            `json:"isSoftDeleted"`
-	Type          sr.SchemaType   `json:"type"`
-	Schema        string          `json:"schema"`
-	References    []Reference     `json:"references"`
-	Metadata      *SchemaMetadata `json:"metadata,omitempty"`
+	ID            int                     `json:"id"`
+	Version       int                     `json:"version"`
+	IsSoftDeleted bool                    `json:"isSoftDeleted"`
+	Type          sr.SchemaType           `json:"type"`
+	Schema        string                  `json:"schema"`
+	References    []Reference             `json:"references"`
+	Metadata      *SchemaMetadata         `json:"metadata,omitempty"`
+	MessageTypes  []proto.MessageTypeInfo `json:"messageTypes,omitempty"` // Protobuf only.
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
