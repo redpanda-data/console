@@ -10,11 +10,29 @@
  */
 
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { Card } from 'components/redpanda-ui/components/card';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { ArrowRight, Clock, Waypoints } from 'lucide-react';
+import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypoints } from 'lucide-react';
 
 import type { PipelineTemplate } from './pipeline-template-types';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+
+// Bucket the per-template `setupTimeMinutes` estimate into a coarse effort tier.
+// The underlying number is a rough author estimate (form-fill + external prep
+// like credentials / database setup), so showing precise minutes overstates the
+// accuracy. The tier label + matching signal icon conveys the at-a-glance
+// signal without pretending to be exact.
+type SetupTier = { label: string; Icon: LucideIcon };
+
+const setupTierFor = (minutes: number): SetupTier => {
+  if (minutes <= 5) {
+    return { label: 'Quick', Icon: SignalLow };
+  }
+  if (minutes <= 10) {
+    return { label: 'Standard', Icon: SignalMedium };
+  }
+  return { label: 'Advanced', Icon: SignalHigh };
+};
 
 const ComponentIcon = ({ name, override }: { name: string; override?: string }) => {
   const resolvedName = override ?? name;
@@ -34,29 +52,42 @@ export type TemplateTileProps = {
   className?: string;
 };
 
-export const TemplateTile = ({ template, onSelect, className }: TemplateTileProps) => (
-  <button
-    className={cn(
-      'group flex h-full w-full cursor-pointer flex-col gap-2.5 rounded-lg border border-border bg-card p-3.5 text-left ring-0 ring-primary/30 transition-colors duration-150 hover:border-primary/60 hover:bg-primary/5 hover:ring-1 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2',
-      className
-    )}
-    data-testid={`template-tile-${template.id}`}
-    onClick={() => onSelect(template)}
-    type="button"
-  >
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-1.5">
-        <ComponentIcon name={template.source.component} override={template.source.logoOverride} />
-        <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <ComponentIcon name={template.sink.component} override={template.sink.logoOverride} />
-      </div>
-      <span className="flex shrink-0 items-center gap-1 text-muted-foreground text-xs">
-        <Clock aria-hidden className="h-3 w-3" />~{template.setupTimeMinutes} min
-      </span>
-    </div>
-    <div className="flex flex-col gap-0.5">
-      <span className="font-semibold text-foreground text-sm leading-tight">{template.name}</span>
-      <span className="line-clamp-2 text-muted-foreground text-xs leading-snug">{template.description}</span>
-    </div>
-  </button>
-);
+export const TemplateTile = ({ template, onSelect, className }: TemplateTileProps) => {
+  const { label: tierLabel, Icon: TierIcon } = setupTierFor(template.setupTimeMinutes);
+  return (
+    <button
+      className={cn(
+        'group h-full w-full rounded-md text-left focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2',
+        className
+      )}
+      data-testid={`template-tile-${template.id}`}
+      onClick={() => onSelect(template)}
+      type="button"
+    >
+      <Card
+        className="flex h-full cursor-pointer flex-col gap-2.5 rounded-md border-2 border-solid p-4 shadow-none transition-all hover:shadow-elevated"
+        size="full"
+        variant="standard"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <ComponentIcon name={template.source.component} override={template.source.logoOverride} />
+            <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <ComponentIcon name={template.sink.component} override={template.sink.logoOverride} />
+          </div>
+          <span
+            className="flex shrink-0 items-center gap-0.5 text-muted-foreground text-xs leading-none"
+            data-testid={`template-tile-tier-${template.id}`}
+          >
+            <TierIcon aria-hidden className="h-3.5 w-3.5" />
+            {tierLabel}
+          </span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold text-foreground text-sm leading-tight">{template.name}</span>
+          <span className="line-clamp-2 text-muted-foreground text-xs leading-snug">{template.description}</span>
+        </div>
+      </Card>
+    </button>
+  );
+};

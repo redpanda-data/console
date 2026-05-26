@@ -22,6 +22,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { isSystemTag } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
@@ -68,6 +69,7 @@ import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { TabKafkaConnect } from '../../connect/overview';
+import { ConnectorLogo } from '../onboarding/connector-logo';
 import { parseConfigComponents } from '../utils/yaml';
 
 type TagPair = { key: string; value: string };
@@ -316,6 +318,18 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
+// Renders a connector-name badge with its service logo when one is registered
+// in `componentLogoMap`. Names without a mapping (custom processors, niche
+// connectors) just show the text — the badge layout stays identical.
+const ComponentBadge = ({ name }: { name: string }) => (
+  <Badge variant="neutral-inverted">
+    {componentLogoMap[name as ComponentName] ? (
+      <ConnectorLogo className="size-3.5 shrink-0" name={name as ComponentName} />
+    ) : null}
+    {name}
+  </Badge>
+);
+
 const createColumns = ({
   navigate,
   deleteMutation,
@@ -363,9 +377,7 @@ const createColumns = ({
           )}
         >
           {inputs.map((input) => (
-            <Badge key={input} variant="neutral-inverted">
-              {input}
-            </Badge>
+            <ComponentBadge key={input} name={input} />
           ))}
         </BadgeGroup>
       );
@@ -393,9 +405,7 @@ const createColumns = ({
           )}
         >
           {processors.map((p) => (
-            <Badge key={p} variant="neutral-inverted">
-              {p}
-            </Badge>
+            <ComponentBadge key={p} name={p} />
           ))}
         </BadgeGroup>
       );
@@ -423,9 +433,7 @@ const createColumns = ({
           )}
         >
           {outputs.map((o) => (
-            <Badge key={o} variant="neutral-inverted">
-              {o}
-            </Badge>
+            <ComponentBadge key={o} name={o} />
           ))}
         </BadgeGroup>
       );
@@ -675,7 +683,12 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      <DataTablePagination table={table} />
+      {/* DataTablePagination's footer leads with "X of N row(s) selected." This table
+          doesn't expose row selection, so suppress that text while keeping its space
+          so the pagination controls stay right-aligned. */}
+      <div className="[&>div>div:first-child]:invisible">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   );
 };

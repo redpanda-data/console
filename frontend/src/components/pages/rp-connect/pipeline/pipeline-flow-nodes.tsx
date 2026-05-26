@@ -10,6 +10,7 @@
  */
 
 import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
@@ -20,6 +21,8 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode } from 'components/ui/base-node';
 import { BookOpenIcon, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
+
+import { ConnectorLogo } from '../onboarding/connector-logo';
 
 const invisibleHandle = '!w-0 !h-0 !border-0 !bg-transparent !min-w-0 !min-h-0';
 
@@ -124,6 +127,36 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   </button>
 );
 
+// Renders either a clickable "+ X" button (edit mode, when an `onAdd` callback is
+// wired) or a static "No X" status pill (view mode). The pill keeps the missing-
+// config signal on screen without looking clickable.
+type MissingConfigChipProps = {
+  addLabel: string;
+  missingLabel: string;
+  onAdd?: () => void;
+};
+
+const MissingConfigChip = ({ addLabel, missingLabel, onAdd }: MissingConfigChipProps) => {
+  if (onAdd) {
+    return (
+      <Button
+        className="nodrag nopan"
+        icon={<PlusIcon className="size-3" />}
+        onClick={onAdd}
+        size="xs"
+        variant="secondary"
+      >
+        {addLabel}
+      </Button>
+    );
+  }
+  return (
+    <Badge size="sm" variant="neutral-inverted">
+      {missingLabel}
+    </Badge>
+  );
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: leaf node renders topics, setup hints, doc links, and placeholder add button
 const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   const hasTopics = data.topics && data.topics.length > 0;
@@ -134,12 +167,15 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   return (
     <BaseNode
       className={cn(
-        'group min-w-[120px] max-w-[220px] px-3 py-1 font-medium transition-colors',
+        'group min-w-[120px] max-w-[280px] px-3 py-1 font-medium transition-colors',
         isPlaceholder ? 'border-dashed! text-muted-foreground' : 'border-transparent! bg-secondary/5 text-foreground'
       )}
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
       <div className="flex items-center gap-1.5">
+        {!isPlaceholder && componentLogoMap[data.label as ComponentName] ? (
+          <ConnectorLogo className="size-4 shrink-0" name={data.label as ComponentName} />
+        ) : null}
         <Text
           as="span"
           className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}
@@ -163,9 +199,11 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
           </Button>
         ) : null}
       </div>
-      <div className={cn((data.labelText || hasTopics || showSetupHints) && 'mt-2', 'flex flex-wrap gap-1.5')}>
+      <div
+        className={cn((data.labelText || hasTopics || showSetupHints) && 'mt-2', 'flex flex-col items-start gap-1.5')}
+      >
         {data.labelText ? (
-          <Badge className="max-w-1/2" size="sm" variant="info-inverted">
+          <Badge className="max-w-full" size="sm" variant="info-inverted">
             <span className="truncate" title={data.labelText}>
               {data.labelText}
             </span>
@@ -174,7 +212,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
         {hasTopics ? (
           <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
             {data.topics?.map((t) => (
-              <Badge className="max-w-1/2" key={t} size="sm" variant="info-outline">
+              <Badge className="max-w-full" key={t} size="sm" variant="info-outline">
                 <span className="truncate" title={t}>
                   topic: {t}
                 </span>
@@ -185,26 +223,18 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
         {showSetupHints ? (
           <>
             {data.missingTopic ? (
-              <Button
-                className="nodrag nopan"
-                icon={<PlusIcon className="size-3" />}
-                onClick={() => data.onAddTopic?.(data.section ?? '', data.label)}
-                size="xs"
-                variant="secondary"
-              >
-                Topic
-              </Button>
+              <MissingConfigChip
+                addLabel="Topic"
+                missingLabel="No topic"
+                onAdd={data.onAddTopic ? () => data.onAddTopic?.(data.section ?? '', data.label) : undefined}
+              />
             ) : null}
             {data.missingSasl ? (
-              <Button
-                className="nodrag nopan"
-                icon={<PlusIcon className="size-3" />}
-                onClick={() => data.onAddSasl?.(data.section ?? '', data.label)}
-                size="xs"
-                variant="secondary"
-              >
-                User
-              </Button>
+              <MissingConfigChip
+                addLabel="User"
+                missingLabel="No user"
+                onAdd={data.onAddSasl ? () => data.onAddSasl?.(data.section ?? '', data.label) : undefined}
+              />
             ) : null}
           </>
         ) : null}
