@@ -194,7 +194,7 @@ func TestGetConsumerGroupOffsets_NonExistentTopicInMetadata(t *testing.T) {
 				PartitionOffsets: []PartitionOffsets{
 					{
 						PartitionID:   0,
-						GroupOffset:   1,
+						GroupOffset:   new(int64(1)),
 						HighWaterMark: 1,
 						Lag:           0,
 					},

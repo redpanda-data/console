@@ -35,7 +35,7 @@ type PartitionOffsets struct {
 	// Error will be set when the high water mark could not be fetched
 	Error         string `json:"error,omitempty"`
 	PartitionID   int32  `json:"partitionId"`
-	GroupOffset   int64  `json:"groupOffset"`
+	GroupOffset   *int64 `json:"groupOffset"` // nil when no committed offset exists for this partition
 	HighWaterMark int64  `json:"highWaterMark"`
 	Lag           int64  `json:"lag"`
 }
@@ -183,6 +183,10 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 
 				groupOffset, hasGroupOffset := partitionOffsets[pID]
 				if !hasGroupOffset {
+					t.PartitionOffsets = append(t.PartitionOffsets, PartitionOffsets{
+						PartitionID:   pID,
+						HighWaterMark: watermark.HighWaterMark,
+					})
 					continue
 				}
 				t.PartitionsWithOffset++
@@ -193,7 +197,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 				t.SummedLag += lag
 				t.PartitionOffsets = append(t.PartitionOffsets, PartitionOffsets{
 					PartitionID:   pID,
-					GroupOffset:   groupOffset,
+					GroupOffset:   &groupOffset,
 					HighWaterMark: watermark.HighWaterMark,
 					Lag:           lag,
 				})

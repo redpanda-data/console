@@ -665,10 +665,11 @@ export function IconButton(p: {
   onClick?: React.MouseEventHandler<HTMLElement>;
   children?: React.ReactNode;
   disabledReason?: string;
+  'data-testid'?: string;
 }) {
   if (!p.disabledReason) {
     return (
-      <button className="iconButton" onClick={p.onClick} type="button">
+      <button className="iconButton" data-testid={p['data-testid']} onClick={p.onClick} type="button">
         {p.children}
       </button>
     );
@@ -676,7 +677,9 @@ export function IconButton(p: {
 
   return (
     <Tooltip hasArrow label={p.disabledReason} placement="top">
-      <span className="iconButton disabled">{p.children}</span>
+      <span className="iconButton disabled" data-testid={p['data-testid']}>
+        {p.children}
+      </span>
     </Tooltip>
   );
 }

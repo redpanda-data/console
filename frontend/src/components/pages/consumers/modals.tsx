@@ -537,7 +537,7 @@ export class EditOffsetsModal extends Component<{
           const getOffset = (topicName: string, partitionId: number): number | undefined =>
             other.topicOffsets
               .first((t) => t.topic === topicName)
-              ?.partitionOffsets.first((p) => p.partitionId === partitionId)?.groupOffset;
+              ?.partitionOffsets.first((p) => p.partitionId === partitionId)?.groupOffset ?? undefined;
 
           const currentOffsets = this.props.offsets;
           const alreadyExists = (topicName: string, partitionId: number): boolean =>
@@ -553,11 +553,13 @@ export class EditOffsetsModal extends Component<{
           // Extend our offsets with any offsets that our group currently doesn't have
           if (this.state.otherGroupCopyMode === 'all') {
             const otherFlat = other.topicOffsets.flatMap((x) =>
-              x.partitionOffsets.flatMap((p) => ({
-                topicName: x.topic,
-                partitionId: p.partitionId,
-                offset: p.groupOffset,
-              }))
+              x.partitionOffsets
+                .filter((p) => p.groupOffset !== null)
+                .flatMap((p) => ({
+                  topicName: x.topic,
+                  partitionId: p.partitionId,
+                  offset: p.groupOffset as number,
+                }))
             );
 
             for (const o of otherFlat) {
