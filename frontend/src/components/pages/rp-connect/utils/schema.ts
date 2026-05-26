@@ -3,6 +3,7 @@ import {
   type ComponentList,
   type ComponentSpec,
   ComponentStatus,
+  type FieldSpec,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { toast } from 'sonner';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
@@ -71,6 +72,43 @@ const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, Conne
  * Converts proto ComponentSpec to strongly-typed ConnectComponentSpec by overriding the type field.
  * Returns empty array and shows toast notification on error.
  */
+/**
+ * Find a component spec by name, regardless of which type bucket it lives in.
+ * Returns undefined if no component with that name exists in the list.
+ */
+export function findComponentByName(componentList: ComponentList, name: string): ComponentSpec | undefined {
+  for (const { listKey } of Object.values(COMPONENT_TYPE_MAPPINGS)) {
+    const list = componentList[listKey] as ComponentSpec[] | undefined;
+    if (!list) {
+      continue;
+    }
+    const found = list.find((c) => c.name === name);
+    if (found) {
+      return found;
+    }
+  }
+  return;
+}
+
+/**
+ * Walks a dotted field path (e.g. `dsn` or `tls.cert_file`) through a FieldSpec
+ * children tree. The `root` is typically `componentSpec.config`. Returns the
+ * matching FieldSpec or undefined if any segment of the path is missing.
+ */
+export function resolveFieldByPath(root: FieldSpec | undefined, path: string): FieldSpec | undefined {
+  if (!(root && path)) {
+    return;
+  }
+  let current: FieldSpec | undefined = root;
+  for (const segment of path.split('.')) {
+    current = current?.children?.find((c) => c.name === segment);
+    if (!current) {
+      return;
+    }
+  }
+  return current;
+}
+
 export function parseSchema(componentList: ComponentList): ConnectComponentSpec[] {
   try {
     return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>

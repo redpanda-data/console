@@ -15,8 +15,9 @@ import { Form, SimpleFormField } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { Waypoints } from 'lucide-react';
-import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
+import { useListComponentsQuery } from 'react-query/api/connect';
 import { z } from 'zod';
 
 import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
@@ -25,6 +26,7 @@ import { SelectSlotField } from './slot-fields/select-slot';
 import { StringSlotField } from './slot-fields/string-slot';
 import { TopicSlotField } from './slot-fields/topic-slot';
 import { stitchTemplateYaml } from './template-deploy';
+import { applySchemaToSlots } from './template-schema';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
 const SECTION_LABELS: Record<TemplateSlotSection, string> = {
@@ -64,11 +66,11 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
-const buildSchema = (template: PipelineTemplate) => {
+const buildSchema = (slots: TemplateSlot[]) => {
   const shape: Record<string, z.ZodTypeAny> = {
     [PIPELINE_NAME_FIELD]: z.string().min(1, 'Pipeline name is required'),
   };
-  for (const slot of template.slots) {
+  for (const slot of slots) {
     if (slot.required) {
       shape[slot.id] = z.string().min(1, `${slot.label} is required`);
     } else {
@@ -78,11 +80,11 @@ const buildSchema = (template: PipelineTemplate) => {
   return z.object(shape);
 };
 
-const defaultValuesFor = (template: PipelineTemplate): Record<string, string> => {
+const defaultValuesFor = (template: PipelineTemplate, slots: TemplateSlot[]): Record<string, string> => {
   const defaults: Record<string, string> = {
     [PIPELINE_NAME_FIELD]: template.defaultPipelineName,
   };
-  for (const slot of template.slots) {
+  for (const slot of slots) {
     if (slot.kind === 'string' && slot.default) {
       defaults[slot.id] = slot.default;
     } else if (slot.kind === 'topic' && slot.default) {
@@ -155,14 +157,34 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
     ref
   ) => {
-    const schema = useMemo(() => buildSchema(template), [template]);
-    const defaultValues = useMemo(() => defaultValuesFor(template), [template]);
+    const { data: componentListResponse } = useListComponentsQuery();
+    const effectiveSlots = useMemo(
+      () => applySchemaToSlots(template, componentListResponse?.components),
+      [template, componentListResponse]
+    );
+
+    const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
+    const defaultValues = useMemo(() => defaultValuesFor(template, effectiveSlots), [template, effectiveSlots]);
 
     const form = useForm<FormValues>({
       resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
       defaultValues: defaultValues as FormValues,
       mode: 'onBlur',
     });
+
+    // Schema-driven defaults can arrive after mount. Reapply them once per
+    // template, only while the form is still pristine — never clobber user
+    // input.
+    const lastAppliedTemplateId = useRef<string | null>(null);
+    useEffect(() => {
+      if (!componentListResponse || lastAppliedTemplateId.current === template.id) {
+        return;
+      }
+      lastAppliedTemplateId.current = template.id;
+      if (!form.formState.isDirty) {
+        form.reset(defaultValues as FormValues);
+      }
+    }, [componentListResponse, defaultValues, form, template.id]);
 
     const stitchCurrentYaml = (values: FormValues): string => {
       const { [PIPELINE_NAME_FIELD]: _ignored, ...slotValues } = values;
@@ -186,7 +208,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
       onSlotValueApplied?.();
     }, [applySlotValue?.requestId, form, onSlotValueApplied]);
 
-    const sections = groupSlotsBySection(template.slots);
+    const sections = groupSlotsBySection(effectiveSlots);
 
     const submitHandler = form.handleSubmit((values) => {
       onSubmit({

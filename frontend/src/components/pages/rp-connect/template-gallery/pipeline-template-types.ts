@@ -19,6 +19,11 @@ type SlotBase = {
   description?: string;
   section: TemplateSlotSection;
   required?: boolean;
+  // Dotted path into the section's component schema (e.g. `dsn`, `tls.cert_file`).
+  // When set, the form fills any unset `description` / `required` / `default`
+  // from the live `FieldSpec` returned by `useListComponentsQuery()`. Slot-level
+  // values always win — schema only fills blanks.
+  schemaField?: string;
 };
 
 export type StringSlot = SlotBase & {

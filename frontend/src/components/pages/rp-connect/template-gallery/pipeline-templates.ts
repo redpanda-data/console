@@ -13,7 +13,7 @@
 
 import type { PipelineTemplate } from './pipeline-template-types';
 
-const dsnSlot = (id: string, dbName: string, suggested: string) => ({
+const dsnSlot = (id: string, dbName: string, suggested: string, schemaField?: string) => ({
   id,
   section: 'source' as const,
   kind: 'secret' as const,
@@ -21,6 +21,7 @@ const dsnSlot = (id: string, dbName: string, suggested: string) => ({
   description: `Stored as a Cloud secret. Referenced in YAML as \${secrets.${suggested}}.`,
   suggestedName: suggested,
   required: true,
+  schemaField,
 });
 
 const targetTopicSlot = {
@@ -30,6 +31,7 @@ const targetTopicSlot = {
   label: 'Target Redpanda topic',
   description: 'Records will be written to this topic.',
   required: true,
+  schemaField: 'topic',
 };
 
 const sourceTopicSlot = {
@@ -39,6 +41,7 @@ const sourceTopicSlot = {
   label: 'Source Redpanda topic',
   description: 'Records will be read from this topic.',
   required: true,
+  schemaField: 'topics',
 };
 
 const consumerGroupSlot = {
@@ -49,6 +52,7 @@ const consumerGroupSlot = {
   description: 'Identifier used to track read offsets for the source topic.',
   placeholder: 'redpanda-template-consumer',
   required: true,
+  schemaField: 'consumer_group',
 };
 
 // Curated catalog (PRD §8). Every required slot must be referenced as
@@ -65,26 +69,27 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
     setupTimeMinutes: 8,
     defaultPipelineName: 'postgres-cdc-pipeline',
     slots: [
-      dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN'),
+      dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN', 'dsn'),
       {
         id: 'slotName',
         section: 'source',
         kind: 'string',
         label: 'Logical replication slot',
-        description:
-          'Postgres logical replication slot name. Must be unique per replication consumer — create it on your database first.',
-        placeholder: 'redpanda_connect_slot',
-        default: 'redpanda_connect_slot',
-        required: true,
+        // Schema-wise the field looks required (no `optional` flag set in the proto),
+        // but the connector auto-generates a name when the key is absent. Force-mark
+        // optional so the form lets users leave it blank, and let stitchTemplateYaml
+        // drop the line entirely so the connector sees no `slot_name` key.
+        required: false,
+        placeholder: 'Auto-generated if blank',
+        schemaField: 'slot_name',
       },
       {
         id: 'includedTable',
         section: 'source',
         kind: 'string',
         label: 'Source table',
-        description: 'Fully-qualified table to capture (e.g. public.users). Add more in the YAML editor afterwards.',
         placeholder: 'public.users',
-        required: true,
+        schemaField: 'tables',
       },
       targetTopicSlot,
     ],
@@ -146,7 +151,7 @@ output:
     setupTimeMinutes: 8,
     defaultPipelineName: 'mysql-cdc-pipeline',
     slots: [
-      dsnSlot('dsn', 'MySQL', 'MYSQL_DSN'),
+      dsnSlot('dsn', 'MySQL', 'MYSQL_DSN', 'dsn'),
       {
         id: 'includedTable',
         section: 'source',
@@ -155,6 +160,7 @@ output:
         description: 'Fully-qualified table to capture (e.g. mydb.users). Add more in the YAML editor afterwards.',
         placeholder: 'mydb.users',
         required: true,
+        schemaField: 'tables',
       },
       targetTopicSlot,
     ],
@@ -203,7 +209,7 @@ output:
     setupTimeMinutes: 8,
     defaultPipelineName: 'mongodb-cdc-pipeline',
     slots: [
-      dsnSlot('url', 'MongoDB', 'MONGODB_URL'),
+      dsnSlot('url', 'MongoDB', 'MONGODB_URL', 'url'),
       {
         id: 'database',
         section: 'source',
@@ -211,6 +217,7 @@ output:
         label: 'Database',
         description: 'Source MongoDB database name.',
         required: true,
+        schemaField: 'database',
       },
       {
         id: 'collection',
@@ -219,6 +226,7 @@ output:
         label: 'Collection',
         description: 'Source MongoDB collection name.',
         required: true,
+        schemaField: 'collections',
       },
       targetTopicSlot,
     ],
@@ -271,6 +279,7 @@ output:
         label: 'AWS region',
         placeholder: 'us-east-1',
         required: true,
+        schemaField: 'region',
       },
       {
         id: 'tableName',
@@ -278,9 +287,10 @@ output:
         kind: 'string',
         label: 'DynamoDB table',
         required: true,
+        schemaField: 'table',
       },
-      dsnSlot('awsAccessKey', 'AWS access key', 'AWS_ACCESS_KEY_ID'),
-      dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY'),
+      dsnSlot('awsAccessKey', 'AWS access key', 'AWS_ACCESS_KEY_ID', 'credentials.id'),
+      dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY', 'credentials.secret'),
       targetTopicSlot,
     ],
     baseYaml: `input:
@@ -327,7 +337,7 @@ output:
     setupTimeMinutes: 10,
     defaultPipelineName: 'sqlserver-cdc-pipeline',
     slots: [
-      dsnSlot('dsn', 'SQL Server', 'SQLSERVER_DSN'),
+      dsnSlot('dsn', 'SQL Server', 'SQLSERVER_DSN', 'dsn'),
       {
         id: 'includedTable',
         section: 'source',
@@ -336,6 +346,7 @@ output:
         description: 'Schema-qualified table to capture (e.g. dbo.users). Add more in the YAML editor afterwards.',
         placeholder: 'dbo.users',
         required: true,
+        schemaField: 'tables',
       },
       targetTopicSlot,
     ],
@@ -382,7 +393,7 @@ output:
     setupTimeMinutes: 12,
     defaultPipelineName: 'oracle-cdc-pipeline',
     slots: [
-      dsnSlot('dsn', 'Oracle', 'ORACLE_DSN'),
+      dsnSlot('dsn', 'Oracle', 'ORACLE_DSN', 'dsn'),
       {
         id: 'includedTable',
         section: 'source',
@@ -391,6 +402,7 @@ output:
         description: 'Schema-qualified table to capture (e.g. HR.EMPLOYEES). Add more in the YAML editor afterwards.',
         placeholder: 'HR.EMPLOYEES',
         required: true,
+        schemaField: 'tables',
       },
       targetTopicSlot,
     ],
@@ -445,6 +457,7 @@ output:
         kind: 'string',
         label: 'S3 bucket name',
         required: true,
+        schemaField: 'bucket',
       },
       {
         id: 'prefix',
@@ -452,6 +465,12 @@ output:
         kind: 'string',
         label: 'Key prefix',
         description: 'Optional prefix to scope reads. Leave blank for the whole bucket.',
+        // Connector treats absent prefix as "walk the whole bucket". Force optional
+        // so the form doesn't block on schema-inferred required; stitcher drops the
+        // line when blank.
+        required: false,
+        placeholder: 'Leave blank for whole bucket',
+        schemaField: 'prefix',
       },
       {
         id: 'region',
@@ -460,9 +479,10 @@ output:
         label: 'AWS region',
         placeholder: 'us-east-1',
         required: true,
+        schemaField: 'region',
       },
-      dsnSlot('awsAccessKey', 'AWS access key', 'AWS_ACCESS_KEY_ID'),
-      dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY'),
+      dsnSlot('awsAccessKey', 'AWS access key', 'AWS_ACCESS_KEY_ID', 'credentials.id'),
+      dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY', 'credentials.secret'),
       targetTopicSlot,
     ],
     baseYaml: `input:
@@ -521,6 +541,7 @@ output:
         description: 'TCP address the HTTP server should bind to.',
         default: '0.0.0.0:4195',
         required: true,
+        schemaField: 'address',
       },
       {
         id: 'path',
@@ -529,6 +550,7 @@ output:
         label: 'Request path',
         default: '/post',
         required: true,
+        schemaField: 'path',
       },
       targetTopicSlot,
     ],
@@ -587,6 +609,7 @@ output:
         label: 'SQS queue URL',
         placeholder: 'https://sqs.us-east-1.amazonaws.com/123456789012/my-queue',
         required: true,
+        schemaField: 'url',
       },
       {
         id: 'region',
@@ -595,9 +618,10 @@ output:
         label: 'AWS region',
         placeholder: 'us-east-1',
         required: true,
+        schemaField: 'region',
       },
-      dsnSlot('awsAccessKey', 'AWS access key', 'AWS_ACCESS_KEY_ID'),
-      dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY'),
+      dsnSlot('awsAccessKey', 'AWS access key', 'AWS_ACCESS_KEY_ID', 'credentials.id'),
+      dsnSlot('awsSecretKey', 'AWS secret key', 'AWS_SECRET_ACCESS_KEY', 'credentials.secret'),
       targetTopicSlot,
     ],
     baseYaml: `input:
@@ -650,6 +674,7 @@ output:
         kind: 'string',
         label: 'GCP project ID',
         required: true,
+        schemaField: 'project',
       },
       {
         id: 'subscription',
@@ -657,8 +682,9 @@ output:
         kind: 'string',
         label: 'Pub/Sub subscription',
         required: true,
+        schemaField: 'subscription',
       },
-      dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON'),
+      dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON', 'credentials_json'),
       targetTopicSlot,
     ],
     baseYaml: `input:
@@ -716,6 +742,7 @@ output:
         label: 'Snowflake account',
         placeholder: 'xy12345.us-east-1',
         required: true,
+        schemaField: 'account',
       },
       {
         id: 'user',
@@ -723,14 +750,16 @@ output:
         kind: 'string',
         label: 'Snowflake user',
         required: true,
+        schemaField: 'user',
       },
-      dsnSlot('privateKey', 'Snowflake RSA private key', 'SNOWFLAKE_PRIVATE_KEY'),
+      dsnSlot('privateKey', 'Snowflake RSA private key', 'SNOWFLAKE_PRIVATE_KEY', 'private_key'),
       {
         id: 'database',
         section: 'sink',
         kind: 'string',
         label: 'Database',
         required: true,
+        schemaField: 'database',
       },
       {
         id: 'schema',
@@ -738,6 +767,7 @@ output:
         kind: 'string',
         label: 'Schema',
         required: true,
+        schemaField: 'schema',
       },
       {
         id: 'table',
@@ -745,6 +775,7 @@ output:
         kind: 'string',
         label: 'Table',
         required: true,
+        schemaField: 'table',
       },
     ],
     baseYaml: `input:
@@ -802,7 +833,13 @@ output:
         section: 'sink',
         kind: 'string',
         label: 'GCP project ID',
-        required: true,
+        // Connector falls back to the project encoded in the service-account
+        // credentials or the GOOGLE_CLOUD_PROJECT env var. Most templated runs
+        // have the project in the credentials JSON, so we let users leave it
+        // blank rather than block on schema-inferred required.
+        required: false,
+        placeholder: 'Inferred from credentials if blank',
+        schemaField: 'project',
       },
       {
         id: 'dataset',
@@ -810,6 +847,7 @@ output:
         kind: 'string',
         label: 'BigQuery dataset',
         required: true,
+        schemaField: 'dataset',
       },
       {
         id: 'table',
@@ -817,8 +855,9 @@ output:
         kind: 'string',
         label: 'BigQuery table',
         required: true,
+        schemaField: 'table',
       },
-      dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON'),
+      dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON', 'credentials_json'),
     ],
     baseYaml: `input:
   redpanda:
@@ -877,6 +916,7 @@ output:
         label: 'Iceberg catalog URI',
         placeholder: 'https://glue.us-east-1.amazonaws.com',
         required: true,
+        schemaField: 'catalog_uri',
       },
       {
         id: 'warehouse',
@@ -885,6 +925,7 @@ output:
         label: 'Warehouse location',
         placeholder: 's3://my-bucket/warehouse',
         required: true,
+        schemaField: 'warehouse',
       },
       {
         id: 'namespace',
@@ -892,6 +933,7 @@ output:
         kind: 'string',
         label: 'Namespace',
         required: true,
+        schemaField: 'namespace',
       },
       {
         id: 'tableName',
@@ -899,6 +941,7 @@ output:
         kind: 'string',
         label: 'Table name',
         required: true,
+        schemaField: 'table',
       },
     ],
     baseYaml: `input:
@@ -948,7 +991,7 @@ output:
     slots: [
       sourceTopicSlot,
       consumerGroupSlot,
-      dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN'),
+      dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN', 'dsn'),
       {
         id: 'tableName',
         section: 'sink',
@@ -1007,6 +1050,7 @@ output:
         description: 'Comma-separated bootstrap broker list.',
         placeholder: 'broker1.example.com:9092,broker2.example.com:9092',
         required: true,
+        schemaField: 'seed_brokers',
       },
       {
         id: 'sourceTopicsRegex',
@@ -1017,7 +1061,11 @@ output:
         placeholder: '.*',
         default: '.*',
         required: true,
+        schemaField: 'topics',
       },
+      // SASL fields live under sasl[].{username,password}; the dotted-path resolver
+      // can't express array indexing, so we don't bind these to the schema. The
+      // hand-curated DSN slot copy stands on its own.
       dsnSlot('sourceUser', 'Source SASL user', 'SOURCE_KAFKA_USER'),
       dsnSlot('sourcePassword', 'Source SASL password', 'SOURCE_KAFKA_PASSWORD'),
     ],
@@ -1083,6 +1131,7 @@ output:
         description: 'Comma-separated bootstrap broker list for the destination cluster.',
         placeholder: 'broker1.example.com:9092',
         required: true,
+        schemaField: 'seed_brokers',
       },
       {
         id: 'destTopic',
@@ -1090,7 +1139,9 @@ output:
         kind: 'string',
         label: 'Destination topic name',
         required: true,
+        schemaField: 'topic',
       },
+      // SASL fields live under sasl[].{username,password} — see note above.
       dsnSlot('destUser', 'Destination SASL user', 'DEST_KAFKA_USER'),
       dsnSlot('destPassword', 'Destination SASL password', 'DEST_KAFKA_PASSWORD'),
     ],

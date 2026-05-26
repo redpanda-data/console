@@ -86,15 +86,38 @@ describe('stitchTemplateYaml', () => {
     expect(yaml).toContain('note: hello');
   });
 
-  test('replaces unfilled slot tokens with empty string', () => {
+  test('drops the YAML line entirely when an optional slot is blank', () => {
     const template = buildTemplate();
     const yaml = stitchTemplateYaml({
       template,
       values: { dsn: 'X', topic: 'my-topic' },
     });
 
-    expect(yaml).toContain('note: ');
+    // The `note:` line referenced `${slot.optionalNote}`, which resolved to ''.
+    // We drop the line so the connector falls back to its own default rather
+    // than receiving an empty value it may reject.
+    expect(yaml).not.toMatch(/^\s*note:/m);
     expect(yaml).not.toContain('slot.optionalNote');
+  });
+
+  test('keeps the YAML line when an optional slot is filled', () => {
+    const template = buildTemplate();
+    const yaml = stitchTemplateYaml({
+      template,
+      values: { dsn: 'X', topic: 'my-topic', optionalNote: 'hello' },
+    });
+
+    expect(yaml).toContain('note: hello');
+  });
+
+  test('treats whitespace-only slot values as blank and drops the line', () => {
+    const template = buildTemplate();
+    const yaml = stitchTemplateYaml({
+      template,
+      values: { dsn: 'X', topic: 'my-topic', optionalNote: '   ' },
+    });
+
+    expect(yaml).not.toMatch(/^\s*note:/m);
   });
 });
 

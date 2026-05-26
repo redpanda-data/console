@@ -14,7 +14,7 @@ const buttonVariants = cva(
       variant: {
         primary: 'bg-secondary text-inverse shadow-xs hover:bg-secondary/80',
         destructive:
-          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40',
+          'bg-surface-error text-white shadow-xs hover:bg-surface-error-hover focus-visible:ring-destructive/20 dark:bg-surface-error/80 dark:focus-visible:ring-destructive/40',
         outline:
           '!border-outline-primary border text-primary-inverse shadow-xs hover:border-outline-primary-hover hover:bg-primary-alpha-subtle active:border-outline-primary-pressed active:bg-primary-alpha-subtle-default disabled:border-outline-inverse-disabled disabled:text-disabled',
         secondary: 'bg-primary text-inverse shadow-xs hover:bg-primary/90',

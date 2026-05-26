@@ -366,22 +366,18 @@
   --color-success: var(--color-green-600);
   --color-success-foreground: var(--color-green-50);
   --color-success-subtle: var(--color-green-alpha-100);
-  /* Warning steps out of the orange family: orange-900 is the darkest shade
-     available and still doesn't have enough contrast against the bright
-     orange-600 base, so we fall back to grey-900. Info stays tonal because
-     blue-900 is dark enough against blue-600. */
-  --color-warning: var(--color-orange-600);
-  --color-warning-foreground: var(--color-orange-50);
+  --color-warning: var(--color-orange-800);
+  --color-warning-foreground: var(--color-grey-white);
   --color-warning-subtle: var(--color-orange-alpha-100);
-  --color-info: var(--color-blue-600);
-  --color-info-foreground: var(--color-blue-900);
+  --color-info: var(--color-blue-800);
+  --color-info-foreground: var(--color-grey-white);
   --color-info-subtle: var(--color-blue-alpha-100);
   --color-neutral: var(--color-grey-600);
   --color-neutral-foreground: var(--color-grey-50);
 
-  /* Informative (alias for info - same bright sky-blue base) */
-  --color-informative: var(--color-blue-600);
-  --color-informative-foreground: var(--color-blue-900);
+  /* Informative (alias for info) */
+  --color-informative: var(--color-blue-800);
+  --color-informative-foreground: var(--color-grey-white);
 
   /* Border, Input, Ring */
   --color-border: var(--color-grey-200);
@@ -482,9 +478,9 @@
   --color-surface-error-disabled: var(--color-grey-400);
 
   /* Surface Warning (4 states) */
-  --color-surface-warning: var(--color-orange-600);
-  --color-surface-warning-hover: var(--color-orange-700);
-  --color-surface-warning-pressed: var(--color-orange-800);
+  --color-surface-warning: var(--color-orange-800);
+  --color-surface-warning-hover: var(--color-orange-900);
+  --color-surface-warning-pressed: var(--color-orange-900);
   --color-surface-warning-disabled: var(--color-grey-400);
 
   /* Surface Success (4 states) */
@@ -496,9 +492,9 @@
   --color-surface-success-subtle-hover: var(--color-green-200);
 
   /* Surface Informative (4 states) */
-  --color-surface-informative: var(--color-blue-600);
-  --color-surface-informative-hover: var(--color-blue-700);
-  --color-surface-informative-pressed: var(--color-blue-800);
+  --color-surface-informative: var(--color-blue-800);
+  --color-surface-informative-hover: var(--color-blue-900);
+  --color-surface-informative-pressed: var(--color-blue-900);
   --color-surface-informative-disabled: var(--color-grey-400);
   --color-surface-informative-subtle: var(--color-blue-100);
   --color-surface-informative-subtle-hover: var(--color-blue-200);
@@ -792,17 +788,16 @@
   --color-brand-subtle: var(--color-primary-brand-alpha-200);
 
   /* Destructive */
-  --color-destructive: var(--color-red-500);
+  --color-destructive: var(--color-red-200);
   --color-destructive-foreground: var(--color-red-50);
   --color-destructive-subtle: var(--color-red-alpha-200);
+  --color-error: var(--color-red-200);
 
   /* Status Colors */
-  --color-success: var(--color-green-500);
+  --color-success: var(--color-green-300);
   --color-success-foreground: var(--color-green-50);
   --color-success-subtle: var(--color-green-alpha-200);
-  /* Warning drops out of the orange family (see light mode note); Info stays
-     tonal since blue-900 is dark enough against blue-500. */
-  --color-warning: var(--color-orange-500);
+  --color-warning: var(--color-orange-200);
   --color-warning-foreground: var(--color-grey-900);
   --color-warning-subtle: var(--color-orange-50);
   --color-info: var(--color-blue-500);

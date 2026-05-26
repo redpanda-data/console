@@ -24,6 +24,21 @@ const substituteToken = (slot: TemplateSlot, raw: string): string => {
 
 const SLOT_TOKEN_PATTERN = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
 
+// Lines whose only purpose is to set a value from a `${slot.X}` token get
+// dropped entirely when the slot is blank. This keeps optional fields out of
+// the emitted YAML — the connector then falls back to its own server-side
+// default (e.g. postgres_cdc auto-generates `slot_name` when the key is
+// absent, but rejects an empty string). The form's required-slot validation
+// already gates submission, so a blank slot value at this point means the
+// slot was deliberately optional.
+const referencedSlotIdsIn = (line: string): string[] => {
+  const ids: string[] = [];
+  for (const match of line.matchAll(SLOT_TOKEN_PATTERN)) {
+    ids.push(match[1]);
+  }
+  return ids;
+};
+
 export const stitchTemplateYaml = ({
   template,
   values,
@@ -33,17 +48,26 @@ export const stitchTemplateYaml = ({
 }): string => {
   const slotMap = new Map(template.slots.map((s) => [s.id, s]));
 
-  const substituted = template.baseYaml.replaceAll(SLOT_TOKEN_PATTERN, (_match, slotId: string) => {
-    const slot = slotMap.get(slotId);
-    const raw = values[slotId] ?? '';
-    if (!slot) {
-      return raw;
+  const kept: string[] = [];
+  for (const line of template.baseYaml.split('\n')) {
+    const refs = referencedSlotIdsIn(line);
+    if (refs.length > 0 && refs.some((id) => !values[id]?.trim())) {
+      continue;
     }
-    return substituteToken(slot, raw);
-  });
+    kept.push(
+      line.replaceAll(SLOT_TOKEN_PATTERN, (_match, slotId: string) => {
+        const slot = slotMap.get(slotId);
+        const raw = values[slotId] ?? '';
+        if (!slot) {
+          return raw;
+        }
+        return substituteToken(slot, raw);
+      })
+    );
+  }
 
   const header = `# Generated from template: ${template.id}\n# ${template.description}\n`;
-  return `${header}${substituted}`;
+  return `${header}${kept.join('\n')}`;
 };
 
 // Returns the id of the first required slot without a value, or undefined.

@@ -39,8 +39,12 @@ const badgeVariants = cva(
         'success-outline': 'border-outline-success bg-transparent text-success [a&]:hover:bg-background-success-subtle',
 
         // === WARNING (Yellow/Orange - semantic tokens) ===
-        warning: 'border-transparent bg-surface-warning text-inverse [a&]:hover:bg-surface-warning-hover',
-        'warning-inverted': 'border-transparent bg-background-warning-subtle text-warning [a&]:hover:bg-warning-subtle',
+        // dark:text-inverse-primary on the inverted variant — the orange palette
+        // can't pair tonally above ~3.6:1 on orange-900, so white text is the
+        // only AA-passing option in dark mode.
+        warning: 'border-transparent bg-surface-warning text-warning-foreground [a&]:hover:bg-surface-warning-hover',
+        'warning-inverted':
+          'border-transparent bg-background-warning-subtle text-warning dark:text-inverse-primary [a&]:hover:bg-warning-subtle',
         'warning-outline': 'border-outline-warning bg-transparent text-warning [a&]:hover:bg-background-warning-subtle',
 
         // === DISABLED (Muted - semantic tokens) ===
@@ -115,12 +119,15 @@ function Badge({
       return children;
     }
 
-    // Normal badge mode - can have icon + children
+    // Only wrap string children — non-string children (e.g. label + remove button)
+    // need the badge's inline-flex layout to position them.
+    const wrappedChildren = typeof children === 'string' ? <span className="truncate">{children}</span> : children;
+
     if (icon && children) {
       return (
         <>
           {icon}
-          <span className="truncate">{children}</span>
+          {wrappedChildren}
         </>
       );
     }
@@ -130,7 +137,7 @@ function Badge({
     }
 
     if (children) {
-      return <span className="truncate">{children}</span>;
+      return wrappedChildren;
     }
 
     return null;

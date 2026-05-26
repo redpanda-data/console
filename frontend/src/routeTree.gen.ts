@@ -51,7 +51,6 @@ import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topic
 import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index';
 import { Route as SecurityUsersIndexRouteImport } from './routes/security/users/index';
 import { Route as SecurityRolesIndexRouteImport } from './routes/security/roles/index';
-import { Route as SecurityPermissionsIndexRouteImport } from './routes/security/permissions/index';
 import { Route as SecurityPermissionsListIndexRouteImport } from './routes/security/permissions-list/index';
 import { Route as SecurityAclsIndexRouteImport } from './routes/security/acls/index';
 import { Route as RpConnectPipelineIdIndexRouteImport } from './routes/rp-connect/$pipelineId/index';
@@ -298,12 +297,6 @@ const SecurityRolesIndexRoute = SecurityRolesIndexRouteImport.update({
   path: '/roles/',
   getParentRoute: () => SecurityRoute,
 } as any);
-const SecurityPermissionsIndexRoute =
-  SecurityPermissionsIndexRouteImport.update({
-    id: '/permissions/',
-    path: '/permissions/',
-    getParentRoute: () => SecurityRoute,
-  } as any);
 const SecurityPermissionsListIndexRoute =
   SecurityPermissionsListIndexRouteImport.update({
     id: '/permissions-list/',
@@ -556,7 +549,6 @@ export interface FileRoutesByFullPath {
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
   '/security/acls/': typeof SecurityAclsIndexRoute;
   '/security/permissions-list/': typeof SecurityPermissionsListIndexRoute;
-  '/security/permissions/': typeof SecurityPermissionsIndexRoute;
   '/security/roles/': typeof SecurityRolesIndexRoute;
   '/security/users/': typeof SecurityUsersIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
@@ -634,7 +626,6 @@ export interface FileRoutesByTo {
   '/rp-connect/$pipelineId': typeof RpConnectPipelineIdIndexRoute;
   '/security/acls': typeof SecurityAclsIndexRoute;
   '/security/permissions-list': typeof SecurityPermissionsListIndexRoute;
-  '/security/permissions': typeof SecurityPermissionsIndexRoute;
   '/security/roles': typeof SecurityRolesIndexRoute;
   '/security/users': typeof SecurityUsersIndexRoute;
   '/shadowlinks/$name': typeof ShadowlinksNameIndexRoute;
@@ -714,7 +705,6 @@ export interface FileRoutesById {
   '/rp-connect/$pipelineId/': typeof RpConnectPipelineIdIndexRoute;
   '/security/acls/': typeof SecurityAclsIndexRoute;
   '/security/permissions-list/': typeof SecurityPermissionsListIndexRoute;
-  '/security/permissions/': typeof SecurityPermissionsIndexRoute;
   '/security/roles/': typeof SecurityRolesIndexRoute;
   '/security/users/': typeof SecurityUsersIndexRoute;
   '/shadowlinks/$name/': typeof ShadowlinksNameIndexRoute;
@@ -795,7 +785,6 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/'
     | '/security/acls/'
     | '/security/permissions-list/'
-    | '/security/permissions/'
     | '/security/roles/'
     | '/security/users/'
     | '/shadowlinks/$name/'
@@ -873,7 +862,6 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId'
     | '/security/acls'
     | '/security/permissions-list'
-    | '/security/permissions'
     | '/security/roles'
     | '/security/users'
     | '/shadowlinks/$name'
@@ -952,7 +940,6 @@ export interface FileRouteTypes {
     | '/rp-connect/$pipelineId/'
     | '/security/acls/'
     | '/security/permissions-list/'
-    | '/security/permissions/'
     | '/security/roles/'
     | '/security/users/'
     | '/shadowlinks/$name/'
@@ -1336,13 +1323,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRolesIndexRouteImport;
       parentRoute: typeof SecurityRoute;
     };
-    '/security/permissions/': {
-      id: '/security/permissions/';
-      path: '/permissions';
-      fullPath: '/security/permissions/';
-      preLoaderRoute: typeof SecurityPermissionsIndexRouteImport;
-      parentRoute: typeof SecurityRoute;
-    };
     '/security/permissions-list/': {
       id: '/security/permissions-list/';
       path: '/permissions-list';
@@ -1591,7 +1571,6 @@ interface SecurityRouteChildren {
   SecurityUsersCreateRoute: typeof SecurityUsersCreateRoute;
   SecurityAclsIndexRoute: typeof SecurityAclsIndexRoute;
   SecurityPermissionsListIndexRoute: typeof SecurityPermissionsListIndexRoute;
-  SecurityPermissionsIndexRoute: typeof SecurityPermissionsIndexRoute;
   SecurityRolesIndexRoute: typeof SecurityRolesIndexRoute;
   SecurityUsersIndexRoute: typeof SecurityUsersIndexRoute;
   SecurityAclsAclNameDetailsRoute: typeof SecurityAclsAclNameDetailsRoute;
@@ -1609,7 +1588,6 @@ const SecurityRouteChildren: SecurityRouteChildren = {
   SecurityUsersCreateRoute: SecurityUsersCreateRoute,
   SecurityAclsIndexRoute: SecurityAclsIndexRoute,
   SecurityPermissionsListIndexRoute: SecurityPermissionsListIndexRoute,
-  SecurityPermissionsIndexRoute: SecurityPermissionsIndexRoute,
   SecurityRolesIndexRoute: SecurityRolesIndexRoute,
   SecurityUsersIndexRoute: SecurityUsersIndexRoute,
   SecurityAclsAclNameDetailsRoute: SecurityAclsAclNameDetailsRoute,
