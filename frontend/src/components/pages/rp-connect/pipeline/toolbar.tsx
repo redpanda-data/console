@@ -35,6 +35,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import type { StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import { Info } from 'lucide-react';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -344,7 +345,15 @@ export const Toolbar = memo(
                     {pipelineName ?? pipelineId}
                   </Heading>
                 )}
-                {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
+                {!isLoading && (
+                  <Button
+                    aria-label="View pipeline details"
+                    icon={<Info />}
+                    onClick={handleGearClick}
+                    size="icon"
+                    variant="ghost"
+                  />
+                )}
               </div>
               <Text className="text-muted-foreground md:max-w-1/2">
                 Monitor the pipeline, or edit the pipeline configuration to change functionality or improve performance.

@@ -18,7 +18,8 @@ import { isSystemTag } from 'components/constants';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent } from 'components/redpanda-ui/components/card';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import {
   Dialog,
@@ -34,9 +35,10 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
+import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
@@ -477,6 +479,54 @@ function EditorSkeleton() {
   );
 }
 
+// Compact label/value cell for the at-a-glance Configuration card on the
+// pipeline view page. Copy button only appears on hover so non-copyable cells
+// look identical at rest.
+const ConfigField = ({ label, value, copyable = false }: { label: string; value: string; copyable?: boolean }) => (
+  <div className="group/field flex min-w-0 flex-col gap-1">
+    <Text className="text-muted-foreground" variant="label">
+      {label}
+    </Text>
+    <div className="flex min-w-0 items-center gap-1">
+      <Text className="truncate" title={value}>
+        {value}
+      </Text>
+      {copyable && value ? (
+        <CopyButton
+          className="shrink-0 opacity-0 transition-opacity group-hover/field:opacity-100"
+          content={value}
+          size="sm"
+          variant="ghost"
+        />
+      ) : null}
+    </div>
+  </div>
+);
+
+// Pipeline metadata surfaced inline on the page so users don't have to open
+// the details dialog for at-a-glance info. The dialog still owns the deep
+// view (description, secrets, topics, tags, delete).
+const ConfigurationCard = ({ pipeline }: { pipeline: Pipeline }) => {
+  const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
+  return (
+    <Card size="full" variant="outlined">
+      <CardHeader>
+        <CardTitle>Configuration</CardTitle>
+      </CardHeader>
+      <CardContent className="mt-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ConfigField copyable label="ID" value={pipeline.id} />
+          <ConfigField label="Compute units" value={`${tasks}`} />
+          {pipeline.url ? <ConfigField copyable label="URL" value={pipeline.url} /> : null}
+          {pipeline.serviceAccount ? (
+            <ConfigField copyable label="Service account" value={pipeline.serviceAccount.clientId} />
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
@@ -485,6 +535,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   }
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4">
+      <ConfigurationCard pipeline={pipeline} />
       {isEmbedded() &&
         (isServerless()
           ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
@@ -699,6 +750,7 @@ export default function PipelinePage() {
   >(null);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
@@ -907,12 +959,32 @@ export default function PipelinePage() {
       <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />
 
       <DetailsDialog
-        isDeleting={isDeleting}
-        onDelete={handleDelete}
         onOpenChange={setIsViewConfigDialogOpen}
+        onRequestDelete={
+          pipeline
+            ? () => {
+                // Close the details dialog before opening the confirmation so
+                // we never stack two dialogs on screen at the same time.
+                setIsViewConfigDialogOpen(false);
+                setIsDeleteAlertOpen(true);
+              }
+            : undefined
+        }
         open={isViewConfigDialogOpen}
         pipeline={pipeline}
       />
+
+      {pipeline ? (
+        <DeleteResourceAlertDialog
+          isDeleting={isDeleting}
+          onDelete={handleDelete}
+          onOpenChange={setIsDeleteAlertOpen}
+          open={isDeleteAlertOpen}
+          resourceId={pipeline.id}
+          resourceName={pipeline.displayName || 'this pipeline'}
+          resourceType="Pipeline"
+        />
+      ) : null}
 
       <PipelineCommandMenu
         editorInstance={editorInstance}

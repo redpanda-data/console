@@ -341,19 +341,27 @@ const createColumns = ({
     accessorKey: 'name',
     header: 'Pipeline Name',
     filterFn: createFilterFn('text'),
-    cell: ({ row }) => (
-      <div className="max-w-[200px] overflow-hidden">
-        <Link
-          as={TanStackRouterLink}
-          className="block truncate text-base text-primary"
-          params={{ pipelineId: encodeURIComponent(row.original.id) }}
-          title={row.getValue('name')}
-          to="/rp-connect/$pipelineId"
-        >
-          {row.getValue('name')}
-        </Link>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const description = row.original.description?.trim();
+      return (
+        <div className="flex max-w-[200px] flex-col gap-0.5 overflow-hidden">
+          <Link
+            as={TanStackRouterLink}
+            className="block truncate text-base text-primary"
+            params={{ pipelineId: encodeURIComponent(row.original.id) }}
+            title={row.getValue('name')}
+            to="/rp-connect/$pipelineId"
+          >
+            {row.getValue('name')}
+          </Link>
+          {description ? (
+            <span className="truncate text-muted-foreground text-xs" title={description}>
+              {description}
+            </span>
+          ) : null}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'inputs',
