@@ -357,7 +357,7 @@ const GroupByTopics = (groupProps: {
     const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
     const partitions = groupProps.onlyShowPartitionsWithLag
-      ? g.partitions.filter((e) => e.lag !== 0 || e.isUnconsumed)
+      ? g.partitions.filter((e) => e.isUnconsumed || (e.lag !== null && e.lag !== 0))
       : g.partitions;
 
     if (partitions.length === 0) {
@@ -377,7 +377,7 @@ const GroupByTopics = (groupProps: {
 
             <Flex gap={2}>
               <IconButton
-                disabledReason={cannotEditGroupReason(groupProps.group, featurePatchGroup)}
+                disabledReason={cannotEditGroupReason(groupProps.group, featurePatchGroup, consumedPartitions)}
                 onClick={(e) => {
                   groupProps.onEditOffsets(consumedPartitions);
                   e.stopPropagation();
@@ -386,7 +386,11 @@ const GroupByTopics = (groupProps: {
                 <EditIcon />
               </IconButton>
               <IconButton
-                disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group, featureDeleteGroupOffsets)}
+                disabledReason={cannotDeleteGroupOffsetsReason(
+                  groupProps.group,
+                  featureDeleteGroupOffsets,
+                  consumedPartitions
+                )}
                 onClick={(e) => {
                   groupProps.onDeleteOffsets(consumedPartitions, 'topic');
                   e.stopPropagation();
@@ -488,22 +492,22 @@ const GroupByTopics = (groupProps: {
                 <Flex gap={1} pr={2}>
                   <IconButton
                     data-testid={`partition-edit-${original.partitionId}`}
-                    disabledReason={
-                      original.isUnconsumed
-                        ? 'No committed offset'
-                        : cannotEditGroupReason(groupProps.group, featurePatchGroup)
-                    }
+                    disabledReason={cannotEditGroupReason(
+                      groupProps.group,
+                      featurePatchGroup,
+                      original.isUnconsumed ? [] : undefined
+                    )}
                     onClick={() => groupProps.onEditOffsets([original])}
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
                     data-testid={`partition-delete-${original.partitionId}`}
-                    disabledReason={
-                      original.isUnconsumed
-                        ? 'No committed offset'
-                        : cannotDeleteGroupOffsetsReason(groupProps.group, featureDeleteGroupOffsets)
-                    }
+                    disabledReason={cannotDeleteGroupOffsetsReason(
+                      groupProps.group,
+                      featureDeleteGroupOffsets,
+                      original.isUnconsumed ? [] : undefined
+                    )}
                     onClick={() => groupProps.onDeleteOffsets([original], 'partition')}
                   >
                     <TrashIcon />
@@ -630,7 +634,14 @@ const ProtocolType = (p: { group: GroupDescription }) => {
   return <Statistic title="Protocol" value={protocol} />;
 };
 
-function cannotEditGroupReason(group: GroupDescription, featurePatchGroup: boolean): string | undefined {
+function cannotEditGroupReason(
+  group: GroupDescription,
+  featurePatchGroup: boolean,
+  consumedPartitions?: readonly unknown[]
+): string | undefined {
+  if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
+    return 'No committed offsets';
+  }
   if (group.noEditPerms) {
     return "You don't have 'editConsumerGroup' permissions for this group";
   }
@@ -656,8 +667,12 @@ function cannotDeleteGroupReason(group: GroupDescription, featureDeleteGroup: bo
 
 function cannotDeleteGroupOffsetsReason(
   group: GroupDescription,
-  featureDeleteGroupOffsets: boolean
+  featureDeleteGroupOffsets: boolean,
+  consumedPartitions?: readonly unknown[]
 ): string | undefined {
+  if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
+    return 'No committed offsets';
+  }
   if (group.noEditPerms) {
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
