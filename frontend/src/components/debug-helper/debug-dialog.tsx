@@ -690,21 +690,16 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         </DialogBody>
 
         <DialogFooter direction="row" justify="between">
-          <div className="flex items-center gap-3">
+          <span className="flex items-center gap-2">
             <Text className="text-muted-foreground" variant="small">
-              Dev-only · {IsDev ? 'enabled' : 'disabled'}
+              toggle
             </Text>
-            <span className="flex items-center gap-2">
-              <Text className="text-muted-foreground" variant="small">
-                toggle
-              </Text>
-              <KbdGroup>
-                <Kbd size="xs">⌃/⌘</Kbd>
-                <Kbd size="xs">⇧</Kbd>
-                <Kbd size="xs">D</Kbd>
-              </KbdGroup>
-            </span>
-          </div>
+            <KbdGroup>
+              <Kbd size="xs">⌃/⌘</Kbd>
+              <Kbd size="xs">⇧</Kbd>
+              <Kbd size="xs">D</Kbd>
+            </KbdGroup>
+          </span>
           <Button onClick={close} size="sm" variant="secondary-ghost">
             Close
           </Button>

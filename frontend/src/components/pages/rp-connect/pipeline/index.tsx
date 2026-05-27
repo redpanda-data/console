@@ -1064,7 +1064,7 @@ export default function PipelinePage() {
               creating a new user.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody>
+          <DialogBody padding="none">
             {connectorTopics && connectorTopics.length > 1 && (
               <Alert variant="warning">
                 <AlertTitle>Multiple topics configured</AlertTitle>
@@ -1075,7 +1075,6 @@ export default function PipelinePage() {
               </Alert>
             )}
             <AddUserStep
-              className="border"
               hideTitle
               ref={userStepRef}
               showConsumerGroupFields={userDialog.target?.section === 'input'}
