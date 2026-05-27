@@ -9,24 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import { useRouter, useRouterState } from '@tanstack/react-router';
+import { useRouterState } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
-import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import {
-  AlertCircle,
   Bug,
   Check,
   ChevronDown,
@@ -36,10 +36,10 @@ import {
   Cog,
   Eye,
   Flag,
-  Navigation,
   RotateCw,
   Trash2,
   Wrench,
+  Zap,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -63,24 +63,6 @@ const TAG_VARIANT: Record<ConnectConfigFixture['tags'][number], React.ComponentP
   'edge-case': 'accent-inverted',
   invalid: 'destructive-inverted',
 };
-
-type DebugRoute = {
-  label: string;
-  to: string;
-  description?: string;
-};
-
-const QUICK_ROUTES: DebugRoute[] = [
-  { label: 'Connect — pipelines list', to: '/rp-connect', description: 'Top-level Connect page' },
-  { label: 'Connect — create pipeline', to: '/rp-connect/create' },
-  { label: 'Connect — onboarding wizard', to: '/rp-connect/wizard' },
-  { label: 'Connect — secrets list', to: '/rp-connect/secrets' },
-  { label: 'Connect — create secret', to: '/rp-connect/secrets/create' },
-  { label: 'Topics list', to: '/topics' },
-  { label: 'Schema registry', to: '/schema-registry' },
-  { label: 'Consumer groups', to: '/groups' },
-  { label: 'Overview', to: '/overview' },
-];
 
 function copyToClipboard(text: string, successMsg = 'Copied to clipboard') {
   navigator.clipboard
@@ -135,7 +117,8 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
   );
 }
 
-function ConnectConfigsTab({ filter }: { filter: string }) {
+function ConnectConfigsTab() {
+  const [filter, setFilter] = useState('');
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) {
@@ -153,6 +136,11 @@ function ConnectConfigsTab({ filter }: { filter: string }) {
         Pre-built Connect pipeline YAMLs for stress-testing the editor and validation. Click <strong>Copy YAML</strong>,
         then paste into the editor on the create or edit page.
       </Text>
+      <Input
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Filter by name, tag, or description…"
+        value={filter}
+      />
       {filtered.length === 0 ? (
         <Text className="py-6 text-center text-muted-foreground" variant="bodySmall">
           No fixtures match “{filter}”.
@@ -168,153 +156,132 @@ function ConnectConfigsTab({ filter }: { filter: string }) {
   );
 }
 
-function NavigationTab({ onNavigate }: { onNavigate: () => void }) {
-  const router = useRouter();
-  return (
-    <div className="flex flex-col gap-2.5">
-      <Text className="text-muted-foreground" variant="bodySmall">
-        Jump to common app routes. Closes the dialog on click.
-      </Text>
-      <div className="grid grid-cols-2 gap-1.5">
-        {QUICK_ROUTES.map((route) => (
-          <Button
-            key={route.to}
-            onClick={() => {
-              router.history.push(route.to);
-              onNavigate();
-            }}
-            size="sm"
-            variant="secondary"
-          >
-            <span className="flex flex-col items-start gap-0.5">
-              <span className="text-xs">{route.label}</span>
-              <span className="text-muted-foreground text-[10px]">{route.to}</span>
-            </span>
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ToastsTab() {
-  return (
-    <div className="flex flex-col gap-2.5">
-      <Text className="text-muted-foreground" variant="bodySmall">
-        Trigger each toast variant to verify rendering, stacking, and rich colors.
-      </Text>
-      <div className="flex flex-wrap gap-1.5">
-        <Button onClick={() => toast.success('Looking good — operation succeeded.')} size="sm" variant="primary">
-          Success
-        </Button>
-        <Button onClick={() => toast.info('Heads up — informational toast.')} size="sm" variant="secondary">
-          Info
-        </Button>
-        <Button onClick={() => toast.warning('Be careful — this might be slow.')} size="sm" variant="secondary">
-          Warning
-        </Button>
-        <Button onClick={() => toast.error('Something broke. Check the console.')} size="sm" variant="destructive">
-          Error
-        </Button>
-        <Button
-          onClick={() =>
-            toast.message('Action required', {
-              description: 'A toast with a description and an action button.',
-              action: { label: 'Undo', onClick: () => toast('Undone') },
-            })
-          }
-          size="sm"
-          variant="secondary"
-        >
-          With action
-        </Button>
-        <Button
-          onClick={() => {
-            const id = toast.loading('Processing… (5s)');
-            setTimeout(() => toast.success('Done', { id }), 5000);
-          }}
-          size="sm"
-          variant="secondary"
-        >
-          Loading → success
-        </Button>
-        <Button
-          onClick={() => {
-            for (let i = 0; i < 6; i++) {
-              toast(`Stacked toast #${i + 1}`);
-            }
-          }}
-          size="sm"
-          variant="secondary-ghost"
-        >
-          Stack 6
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function ErrorThrower(): never {
   throw new Error('DebugDialog: synthetic render error to test ErrorBoundary');
 }
 
-function BoundariesTab({ onClose }: { onClose: () => void }) {
+function SimulateTab({ onClose }: { onClose: () => void }) {
   const [renderThrow, setRenderThrow] = useState(false);
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-4">
       <Text className="text-muted-foreground" variant="bodySmall">
-        Force errors to verify ErrorBoundary, error toasts, and unhandled-rejection paths.
+        Trigger app-level side effects to verify toasts, error boundaries, and console output.
       </Text>
-      <div className="flex flex-wrap gap-1.5">
-        <Button
-          icon={<AlertCircle />}
-          onClick={() => {
-            onClose();
-            // Defer so the dialog can finish unmounting before the boundary trips.
-            setTimeout(() => setRenderThrow(true), 50);
-          }}
-          size="sm"
-          variant="destructive"
-        >
-          Throw in render (ErrorBoundary)
-        </Button>
-        <Button
-          onClick={() => {
-            // biome-ignore lint/suspicious/noConsole: intentional debug helper
-            console.error('DebugDialog: synthetic console.error');
-            throw new Error('DebugDialog: uncaught synthetic error from event handler');
-          }}
-          size="sm"
-          variant="destructive"
-        >
-          Throw in event handler
-        </Button>
-        <Button
-          onClick={() => {
-            // Unhandled rejection.
-            void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'));
-          }}
-          size="sm"
-          variant="destructive"
-        >
-          Unhandled promise rejection
-        </Button>
-        <Button
-          onClick={() => {
-            // biome-ignore lint/suspicious/noConsole: intentional debug helper
-            console.warn('DebugDialog: synthetic console.warn');
-            // biome-ignore lint/suspicious/noConsole: intentional debug helper
-            console.error('DebugDialog: synthetic console.error');
-            // biome-ignore lint/suspicious/noConsole: intentional debug helper
-            console.info('DebugDialog: synthetic console.info');
-            toast.success('Wrote 3 messages to the console');
-          }}
-          size="sm"
-          variant="secondary"
-        >
-          Console noise
-        </Button>
-      </div>
+
+      <section className="flex flex-col gap-2">
+        <Text className="font-medium" variant="bodyStrongSmall">
+          Toasts
+        </Text>
+        <Text className="text-muted-foreground" variant="bodySmall">
+          Fire each toast variant to verify rendering, stacking, and rich colors.
+        </Text>
+        <div className="flex flex-wrap gap-1.5">
+          <Button onClick={() => toast.success('Looking good — operation succeeded.')} size="sm" variant="primary">
+            Success
+          </Button>
+          <Button onClick={() => toast.info('Heads up — informational toast.')} size="sm" variant="secondary">
+            Info
+          </Button>
+          <Button onClick={() => toast.warning('Be careful — this might be slow.')} size="sm" variant="secondary">
+            Warning
+          </Button>
+          <Button onClick={() => toast.error('Something broke. Check the console.')} size="sm" variant="destructive">
+            Error
+          </Button>
+          <Button
+            onClick={() =>
+              toast.message('Action required', {
+                description: 'A toast with a description and an action button.',
+                action: { label: 'Undo', onClick: () => toast('Undone') },
+              })
+            }
+            size="sm"
+            variant="secondary"
+          >
+            With action
+          </Button>
+          <Button
+            onClick={() => {
+              const id = toast.loading('Processing… (5s)');
+              setTimeout(() => toast.success('Done', { id }), 5000);
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            Loading → success
+          </Button>
+          <Button
+            onClick={() => {
+              for (let i = 0; i < 6; i++) {
+                toast(`Stacked toast #${i + 1}`);
+              }
+            }}
+            size="sm"
+            variant="secondary-ghost"
+          >
+            Stack 6
+          </Button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <Text className="font-medium" variant="bodyStrongSmall">
+          Errors & console
+        </Text>
+        <Text className="text-muted-foreground" variant="bodySmall">
+          Force errors to verify ErrorBoundary, error toasts, and unhandled-rejection paths.
+        </Text>
+        <div className="flex flex-wrap gap-1.5">
+          <Button
+            onClick={() => {
+              onClose();
+              // Defer so the dialog can finish unmounting before the boundary trips.
+              setTimeout(() => setRenderThrow(true), 50);
+            }}
+            size="sm"
+            variant="destructive"
+          >
+            Throw in render (ErrorBoundary)
+          </Button>
+          <Button
+            onClick={() => {
+              // biome-ignore lint/suspicious/noConsole: intentional debug helper
+              console.error('DebugDialog: synthetic console.error');
+              throw new Error('DebugDialog: uncaught synthetic error from event handler');
+            }}
+            size="sm"
+            variant="destructive"
+          >
+            Throw in event handler
+          </Button>
+          <Button
+            onClick={() => {
+              // Unhandled rejection.
+              void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'));
+            }}
+            size="sm"
+            variant="destructive"
+          >
+            Unhandled promise rejection
+          </Button>
+          <Button
+            onClick={() => {
+              // biome-ignore lint/suspicious/noConsole: intentional debug helper
+              console.warn('DebugDialog: synthetic console.warn');
+              // biome-ignore lint/suspicious/noConsole: intentional debug helper
+              console.error('DebugDialog: synthetic console.error');
+              // biome-ignore lint/suspicious/noConsole: intentional debug helper
+              console.info('DebugDialog: synthetic console.info');
+              toast.success('Wrote 3 messages to the console');
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            Console noise
+          </Button>
+        </div>
+      </section>
+
       {renderThrow && <ErrorThrower />}
     </div>
   );
@@ -560,7 +527,8 @@ function EnvironmentTab() {
   );
 }
 
-function FeatureFlagsTab({ filter }: { filter: string }) {
+function FeatureFlagsTab() {
+  const [filter, setFilter] = useState('');
   // Tick to force re-render after mutating overrides.
   const [, setTick] = useState(0);
   const bump = useCallback(() => setTick((n) => n + 1), []);
@@ -586,6 +554,7 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
         and re-applies on reload. Most components only read flags during render, so a reload is recommended after
         toggling.
       </Text>
+      <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by flag name…" value={filter} />
       <div className="flex flex-wrap items-center gap-1.5">
         <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="xs" variant="primary">
           Reload to apply
@@ -658,97 +627,69 @@ function FeatureFlagsTab({ filter }: { filter: string }) {
   );
 }
 
-type Tab = 'configs' | 'navigation' | 'toasts' | 'boundaries' | 'storage' | 'env' | 'flags';
+type Tab = 'configs' | 'simulate' | 'storage' | 'env' | 'flags';
 
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [tab, setTab] = useState<Tab>('configs');
-  const [filter, setFilter] = useState('');
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="flex h-[85vh] max-h-[85vh] w-full max-w-[900px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]">
-        <div className="shrink-0 border-b px-5 py-3 pr-12">
-          <DialogHeader align="left" className="space-y-0">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Bug className="h-4 w-4" />
-              Debug helpers
-            </DialogTitle>
-            <DialogDescription>
-              <span className="text-muted-foreground text-xs">
-                Connect-app debugging tools — configs, navigation, error simulators.
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+      <DialogContent height="xl" size="xl">
+        <DialogHeader align="left" spacing="tight">
+          <DialogTitle className="flex items-center gap-2">
+            <Bug className="h-4 w-4" />
+            Debug helpers
+          </DialogTitle>
+          <DialogDescription>
+            Connect-app debugging tools — configs, simulators, storage, flags.
+          </DialogDescription>
+        </DialogHeader>
 
-        <Tabs
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
-          onValueChange={(v) => setTab(v as Tab)}
-          value={tab}
-        >
-          <div className="shrink-0 overflow-x-auto px-5 pt-3">
-            <TabsList>
-              <TabsTrigger value="configs">
-                <Wrench className="mr-1 h-3 w-3" /> Configs
-              </TabsTrigger>
-              <TabsTrigger value="navigation">
-                <Navigation className="mr-1 h-3 w-3" /> Routes
-              </TabsTrigger>
-              <TabsTrigger value="toasts">
-                <Bug className="mr-1 h-3 w-3" /> Toasts
-              </TabsTrigger>
-              <TabsTrigger value="boundaries">
-                <AlertCircle className="mr-1 h-3 w-3" /> Errors
-              </TabsTrigger>
-              <TabsTrigger value="storage">
-                <Trash2 className="mr-1 h-3 w-3" /> Storage
-              </TabsTrigger>
-              <TabsTrigger value="flags">
-                <Flag className="mr-1 h-3 w-3" /> Flags
-              </TabsTrigger>
-              <TabsTrigger value="env">
-                <Cog className="mr-1 h-3 w-3" /> Env
-              </TabsTrigger>
-            </TabsList>
-            {(tab === 'configs' || tab === 'flags') && (
-              <div className="mt-2.5">
-                <Input
-                  onChange={(e) => setFilter(e.target.value)}
-                  placeholder={tab === 'configs' ? 'Filter by name, tag, or description…' : 'Filter by flag name…'}
-                  value={filter}
-                />
-              </div>
-            )}
-          </div>
+        <DialogBody padding="none" scrollShadow={false}>
+          <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
+            <div className="sticky top-0 z-10 bg-background">
+              <TabsList variant="underline">
+                <TabsTrigger value="configs" variant="underline">
+                  <Wrench className="mr-1 h-3 w-3" /> Configs
+                </TabsTrigger>
+                <TabsTrigger value="simulate" variant="underline">
+                  <Zap className="mr-1 h-3 w-3" /> Simulate
+                </TabsTrigger>
+                <TabsTrigger value="storage" variant="underline">
+                  <Trash2 className="mr-1 h-3 w-3" /> Storage
+                </TabsTrigger>
+                <TabsTrigger value="flags" variant="underline">
+                  <Flag className="mr-1 h-3 w-3" /> Flags
+                </TabsTrigger>
+                <TabsTrigger value="env" variant="underline">
+                  <Cog className="mr-1 h-3 w-3" /> Env
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <ScrollArea className="min-h-0 min-w-0 flex-1 overflow-x-hidden px-5 py-3">
-            <TabsContent value="configs">
-              <ConnectConfigsTab filter={filter} />
-            </TabsContent>
-            <TabsContent value="navigation">
-              <NavigationTab onNavigate={close} />
-            </TabsContent>
-            <TabsContent value="toasts">
-              <ToastsTab />
-            </TabsContent>
-            <TabsContent value="boundaries">
-              <BoundariesTab onClose={close} />
-            </TabsContent>
-            <TabsContent value="storage">
-              <StorageTab />
-            </TabsContent>
-            <TabsContent value="flags">
-              <FeatureFlagsTab filter={filter} />
-            </TabsContent>
-            <TabsContent value="env">
-              <EnvironmentTab />
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+            <div className="px-4 py-4">
+              <TabsContent value="configs">
+                <ConnectConfigsTab />
+              </TabsContent>
+              <TabsContent value="simulate">
+                <SimulateTab onClose={close} />
+              </TabsContent>
+              <TabsContent value="storage">
+                <StorageTab />
+              </TabsContent>
+              <TabsContent value="flags">
+                <FeatureFlagsTab />
+              </TabsContent>
+              <TabsContent value="env">
+                <EnvironmentTab />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </DialogBody>
 
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t bg-muted/30 px-5 py-1.5">
+        <DialogFooter direction="row" justify="between">
           <div className="flex items-center gap-3">
             <Text className="text-muted-foreground" variant="small">
               Dev-only · {IsDev ? 'enabled' : 'disabled'}
@@ -767,7 +708,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <Button onClick={close} size="sm" variant="secondary-ghost">
             Close
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

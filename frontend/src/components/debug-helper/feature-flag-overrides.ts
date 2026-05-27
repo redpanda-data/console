@@ -11,6 +11,7 @@
 
 import { FEATURE_FLAGS } from '../../components/constants';
 import { config } from '../../config';
+import { IsDev } from '../../utils/env';
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;
 
@@ -50,34 +51,18 @@ export function setOverride(key: FeatureFlagKey, value: boolean | null): void {
     current[key] = value;
   }
   writeOverrides(current);
-  applyOverrides();
+  // Make sure the accessor is installed; reads after this will see the new value.
+  installFeatureFlagAccessor();
 }
 
 export function clearOverrides(): void {
   writeOverrides({});
-  applyOverrides();
-}
-
-/**
- * Mutate `config.featureFlags` so `isFeatureFlagEnabled()` reflects the
- * overrides stored in localStorage. Most components only read flags during
- * render, so a reload is still recommended after a toggle.
- */
-export function applyOverrides(): void {
-  const overrides = getOverrides();
-  const base: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
-  for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
-    const v = overrides[k];
-    if (typeof v === 'boolean') {
-      base[k] = v;
-    }
-  }
-  config.featureFlags = base;
+  installFeatureFlagAccessor();
 }
 
 export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
   const overrides = getOverrides();
-  const result = { ...FEATURE_FLAGS } as Record<FeatureFlagKey, boolean>;
+  const result = { ...baseFlags } as Record<FeatureFlagKey, boolean>;
   for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
     const v = overrides[k];
     if (typeof v === 'boolean') {
@@ -89,4 +74,65 @@ export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
 
 export function getAllFlagKeys(): FeatureFlagKey[] {
   return Object.keys(FEATURE_FLAGS) as FeatureFlagKey[];
+}
+
+// Backing store for the base (non-overridden) flags. Updated whenever something
+// assigns to `config.featureFlags` (e.g. `setup()` in config.ts).
+let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
+
+let accessorInstalled = false;
+
+/**
+ * Replace `config.featureFlags` with a getter/setter so reads always reflect
+ * current localStorage overrides, regardless of when `setup()` last assigned
+ * to it. Without this, the override would be wiped each time `setConfig()`
+ * runs (App mount, federated host reconfig, etc.).
+ */
+function installFeatureFlagAccessor(): void {
+  if (accessorInstalled) {
+    return;
+  }
+  // Seed the base from whatever config.ts initialized (may include E2E flags).
+  baseFlags = { ...(config.featureFlags ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
+
+  Object.defineProperty(config, 'featureFlags', {
+    configurable: true,
+    enumerable: true,
+    get(): Record<FeatureFlagKey, boolean> {
+      const overrides = getOverrides();
+      if (Object.keys(overrides).length === 0) {
+        return baseFlags;
+      }
+      const merged = { ...baseFlags };
+      for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
+        const v = overrides[k];
+        if (typeof v === 'boolean') {
+          merged[k] = v;
+        }
+      }
+      return merged;
+    },
+    set(next: Record<FeatureFlagKey, boolean> | undefined): void {
+      baseFlags = { ...(next ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
+    },
+  });
+  accessorInstalled = true;
+}
+
+/**
+ * Public entry point retained for backwards compatibility with the existing
+ * call site in app.tsx. The heavy lifting is now done by the accessor.
+ */
+export function applyOverrides(): void {
+  installFeatureFlagAccessor();
+}
+
+// Install at module load — before any React render — so the very first read of
+// `config.featureFlags[key]` already overlays overrides.
+if (IsDev && typeof window !== 'undefined') {
+  try {
+    installFeatureFlagAccessor();
+  } catch {
+    // localStorage / defineProperty unavailable; ignore.
+  }
 }

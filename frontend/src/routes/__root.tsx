@@ -52,8 +52,13 @@ function RootLayout() {
           <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
         </ErrorBoundary>
       </NuqsAdapter>
-      <DebugHelper />
-      {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
+
+      {process.env.NODE_ENV === 'development' && (
+        <>
+          <TanStackRouterDevtools position="bottom-right" />
+          <DebugHelper />
+        </>
+      )}
     </>
   );
 }
