@@ -10,7 +10,7 @@
  */
 
 import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
@@ -20,7 +20,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode } from 'components/ui/base-node';
-import { BookOpenIcon, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
+import { BookOpenIcon, Box, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
@@ -106,12 +106,16 @@ const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
 
 const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   <button
-    className={cn('nodrag nopan flex h-7 max-w-[220px] items-center text-sm', data.collapsible && 'cursor-pointer')}
+    className={cn(
+      'nodrag nopan flex h-7 max-w-[220px] items-center gap-1.5 text-sm',
+      data.collapsible && 'cursor-pointer'
+    )}
     disabled={!data.collapsible}
     onClick={data.collapsible ? data.onToggle : undefined}
     type="button"
   >
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
+    <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
     <Text as="span" className="min-w-0 truncate" title={data.label} variant="bodyStrongMedium">
       {data.label}
     </Text>
@@ -173,8 +177,8 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
       <div className="flex items-center gap-1.5">
-        {!isPlaceholder && componentLogoMap[data.label as ComponentName] ? (
-          <ConnectorLogo className="size-4 shrink-0" name={data.label as ComponentName} />
+        {!isPlaceholder ? (
+          <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
         ) : null}
         <Text
           as="span"

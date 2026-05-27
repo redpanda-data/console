@@ -1,16 +1,21 @@
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { cn } from 'components/redpanda-ui/lib/utils';
 
+type LogoComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
 export const ConnectorLogo = ({
   name,
   className,
   style,
+  fallback,
 }: {
   name: ComponentName;
   className?: string;
   style?: React.CSSProperties;
+  /** Icon to render when `name` has no mapping in `componentLogoMap`. */
+  fallback?: LogoComponent;
 }) => {
-  const Component = componentLogoMap[name];
+  const Component = (componentLogoMap[name] as LogoComponent | undefined) ?? fallback;
   if (!Component) {
     return null;
   }
