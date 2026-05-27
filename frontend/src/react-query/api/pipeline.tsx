@@ -166,12 +166,21 @@ export const useUpdatePipelineMutation = () => {
 
   return useMutation(updatePipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: PipelineService.method.listPipelines,
+            cardinality: 'infinite',
+          }),
         }),
-      });
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: PipelineService.method.getPipeline,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        }),
+      ]);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
