@@ -60,9 +60,9 @@ export const AddSecretsDialog = ({
             </Alert>
           )}
           <QuickAddSecrets
-            cardVariant="outlined"
             enableNewSecrets
             existingSecrets={existingSecrets}
+            inline
             onError={handleError}
             onSecretsCreated={handleSecretsCreated}
             onUpdateEditorContent={onUpdateEditorContent}

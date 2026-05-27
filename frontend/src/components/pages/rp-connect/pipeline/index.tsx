@@ -1030,8 +1030,8 @@ export default function PipelinePage() {
               one.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody>
-            <AddTopicStep className="border" hideTitle ref={topicStepRef} />
+          <DialogBody padding="none">
+            <AddTopicStep hideTitle ref={topicStepRef} />
           </DialogBody>
           <DialogFooter>
             <Button onClick={topicDialog.close} variant="secondary-ghost">

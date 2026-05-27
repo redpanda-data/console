@@ -596,6 +596,38 @@ const ROW_GAP = 8;
 const SECTION_GAP = 16;
 const ROOT_X = 8;
 
+// Per-row addition when a leaf renders an extra chip / badge below its label
+// (label badge, topic list, missing-topic chip, missing-sasl chip). Must stay
+// in sync with TreeLeafNode's `gap-1.5` (6px) + chip/badge height (~24px).
+const LEAF_EXTRA_ROW_H = 28;
+// `mt-2` between the label row and the first extra row.
+const LEAF_EXTRA_TOP_GAP = 8;
+
+function countLeafExtraRows(node: PipelineFlowNode): number {
+  let n = 0;
+  if (node.labelText) {
+    n++;
+  }
+  if (node.topics && node.topics.length > 0) {
+    n++;
+  }
+  if (node.missingTopic) {
+    n++;
+  }
+  if (node.missingSasl) {
+    n++;
+  }
+  return n;
+}
+
+function leafHeight(node: PipelineFlowNode): number {
+  const extras = countLeafExtraRows(node);
+  if (extras === 0) {
+    return NODE_H_LEAF;
+  }
+  return NODE_H_LEAF + LEAF_EXTRA_TOP_GAP + extras * LEAF_EXTRA_ROW_H;
+}
+
 const NODE_TYPE_MAP: Record<FlowNodeKind, string> = {
   section: 'treeSection',
   group: 'treeGroup',
@@ -707,7 +739,7 @@ function layoutDfs(params: DfsParams, state: LayoutState): void {
   }
 
   if (!hiddenByParent) {
-    const nodeH = node.kind === 'leaf' ? NODE_H_LEAF : NODE_H_DEFAULT;
+    const nodeH = node.kind === 'leaf' ? leafHeight(node) : NODE_H_DEFAULT;
     state.y += nodeH + ROW_GAP;
   }
 
