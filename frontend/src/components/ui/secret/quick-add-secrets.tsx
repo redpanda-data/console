@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardVariant } from 'component
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Check, Key, Loader2, Plus } from 'lucide-react';
+import { Check, Key, Loader2, Plus, X } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
@@ -97,6 +97,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   const { mutateAsync: createSecret } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<string[]>([]);
+  // When required secrets exist, the ad-hoc "create another" form starts
+  // collapsed so the dialog focuses on the missing-secrets task. Without
+  // required secrets (e.g. template gallery), it stays expanded.
+  const [showAddAnotherForm, setShowAddAnotherForm] = useState(requiredSecrets.length === 0);
 
   /**
    * Normalizes secret name to uppercase and validates characters
@@ -379,7 +383,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
           <Field data-invalid={!!newSecretForm.formState.errors.value}>
             <FieldLabel className="font-medium text-sm" htmlFor="new-secret-value">
-              Secret Value
+              Secret value
             </FieldLabel>
             <Input
               id="new-secret-value"
@@ -412,9 +416,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
     </>
   );
 
+  const hasRequiredSection = missingSecrets.length > 0;
   return (
     <div className="space-y-4">
-      {missingSecrets.length > 0 &&
+      {hasRequiredSection &&
         (inline ? (
           <div className="space-y-4">{requiredSecretsForm}</div>
         ) : (
@@ -432,7 +437,38 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         ))}
       {enableNewSecrets &&
         (inline ? (
-          <div className="space-y-4">{newSecretFormBody}</div>
+          showAddAnotherForm ? (
+            <div className={hasRequiredSection ? 'space-y-3 border-t pt-4' : 'space-y-4'}>
+              {hasRequiredSection && (
+                <div className="flex items-center justify-between gap-2">
+                  <Text className="font-medium" variant="bodyStrongMedium">
+                    Add a custom secret
+                  </Text>
+                  <Button
+                    aria-label="Hide custom secret form"
+                    icon={<X />}
+                    onClick={() => setShowAddAnotherForm(false)}
+                    size="icon-xs"
+                    type="button"
+                    variant="secondary-ghost"
+                  />
+                </div>
+              )}
+              {newSecretFormBody}
+            </div>
+          ) : (
+            <div className={hasRequiredSection ? 'border-t pt-4' : ''}>
+              <Button
+                className="w-full"
+                onClick={() => setShowAddAnotherForm(true)}
+                type="button"
+                variant="secondary-ghost"
+              >
+                <Plus className="h-4 w-4" />
+                Add a custom secret
+              </Button>
+            </div>
+          )
         ) : (
           <Card size="full">
             {hideHeader ? null : (
