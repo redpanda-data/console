@@ -246,7 +246,13 @@ export const PipelineFlowDiagram = ({
     );
   }
 
-  const isPipelineEmpty = !(configYaml.includes('input:') || configYaml.includes('output:'));
+  // Pipeline is "empty" only when there are no user-defined nodes — sections
+  // (INPUT/OUTPUT/PROCESSORS/RESOURCES labels) and `none` placeholders don't
+  // count. A non-placeholder leaf or a group means the user has authored
+  // something (an input, output, processor, resource, buffer, cache, etc.).
+  const isPipelineEmpty = !nodes.some(
+    (n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none')
+  );
   const showTemplateFab = Boolean(onBrowseTemplates) && isPipelineEmpty;
 
   return (
