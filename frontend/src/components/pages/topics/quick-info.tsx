@@ -119,27 +119,28 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
           </>
         )}
 
-        {cleanupPolicy === 'delete' && (
+        {cleanupPolicy === 'delete' && retentionMs && retentionBytes && (
           <>
-            <Text as="dt" fontWeight="bold">
-              Retention:
-            </Text>
-            {retentionMs && retentionBytes ? (
-              <Text as="dd">
-                ~
-                {retentionMs.value === '-1' && retentionBytes.value === '-1' ? (
-                  'Unlimited'
-                ) : (
-                  <>
-                    {formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')} or{' '}
-                    {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
-                    {Number.isFinite(Number(retentionBytes.value)) &&
-                      Number(retentionBytes.value) !== -1 &&
-                      ' / partition'}
-                  </>
-                )}
+            <Flex gap={2}>
+              <Text as="dt" fontWeight="bold">
+                Retention Time:
               </Text>
-            ) : null}
+              <Text as="dd">~{formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')}</Text>
+            </Flex>
+            <Box>
+              <Divider orientation="vertical" />
+            </Box>
+            <Flex gap={2}>
+              <Text as="dt" fontWeight="bold">
+                Retention Size:
+              </Text>
+              <Text as="dd">
+                ~{formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
+                {Number.isFinite(Number(retentionBytes.value)) &&
+                  Number(retentionBytes.value) !== -1 &&
+                  ' / partition'}
+              </Text>
+            </Flex>
           </>
         )}
       </Flex>
