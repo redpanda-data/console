@@ -125,7 +125,10 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
               <Text as="dt" fontWeight="bold">
                 Retention Time:
               </Text>
-              <Text as="dd">~{formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')}</Text>
+              <Text as="dd">
+                {retentionMs.value !== '-1' && '~'}
+                {formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')}
+              </Text>
             </Flex>
             <Box>
               <Divider orientation="vertical" />
@@ -135,7 +138,8 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
                 Retention Size:
               </Text>
               <Text as="dd">
-                ~{formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
+                {retentionBytes.value !== '-1' && '~'}
+                {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
                 {Number.isFinite(Number(retentionBytes.value)) &&
                   Number(retentionBytes.value) !== -1 &&
                   ' / partition'}
