@@ -48,11 +48,24 @@ describe('computeTranslateExtent', () => {
       position: { x: 0, y: 0 },
       data: {},
       width: 100,
-      measured: { width: 280, height: 36 },
+      measured: { width: 320, height: 36 },
     };
-    // measured width 280 → right edge 280, +40 padding = 320
+    // measured width 320 → right edge 320 (overflows 300 container), +40 padding = 360
     const extent = computeTranslateExtent([node], 300, 600);
 
-    expect(extent[1][0]).toBe(320);
+    expect(extent[1][0]).toBe(360);
+  });
+
+  it('locks extent to container when content fits both axes', () => {
+    // Content at (0,0) → (100, 36) fits inside 300x600 container.
+    // Without locking, the +40 padding would let the viewport pan by up to 40px
+    // even though there's nothing to scroll to.
+    const nodes = [makeNode(0, 0, 100, 36)];
+    const extent = computeTranslateExtent(nodes, 300, 600);
+
+    expect(extent).toEqual([
+      [0, 0],
+      [300, 600],
+    ]);
   });
 });

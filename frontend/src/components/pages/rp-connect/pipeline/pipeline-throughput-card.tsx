@@ -12,7 +12,6 @@
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
   type ChartConfig,
   ChartContainer,
@@ -28,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import { RefreshCcw } from 'lucide-react';
 import type { FC } from 'react';
@@ -200,32 +199,28 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const hasData = chartData.length > 0;
 
   return (
-    <Card size="full" variant="outlined">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Throughput</CardTitle>
-          <div className="flex items-center gap-1">
-            <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-              <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
-            </Button>
-            <Select onValueChange={(v) => setSelectedTimeRange(v as TimeRange)} value={selectedTimeRange}>
-              <SelectTrigger size="sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {TIME_RANGES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <Heading level={3}>Throughput</Heading>
+        <div className="flex items-center gap-1">
+          <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
+            <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+          </Button>
+          <Select onValueChange={(v) => setSelectedTimeRange(v as TimeRange)} value={selectedTimeRange}>
+            <SelectTrigger size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {TIME_RANGES.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </CardHeader>
-      <CardContent className="mt-4">
-        <ThroughputContent chartData={chartData} hasData={hasData} id={id} isError={isError} isLoading={isLoading} />
-      </CardContent>
-    </Card>
+      </div>
+      <ThroughputContent chartData={chartData} hasData={hasData} id={id} isError={isError} isLoading={isLoading} />
+    </section>
   );
 };

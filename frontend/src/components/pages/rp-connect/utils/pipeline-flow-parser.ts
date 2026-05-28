@@ -595,6 +595,11 @@ const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
 const SECTION_GAP = 16;
 const ROOT_X = 8;
+// Top offset that keeps the first node clear of the wrapper's top fade-mask
+// (~16px tall). At rest, the first label / leaf is fully opaque; when content
+// overflows and the user scrolls up, the empty world space above is what
+// fades, not the first element.
+const ROOT_Y = 16;
 
 // Per-row addition when a leaf renders an extra chip / badge below its label
 // (label badge, topic list, missing-topic chip, missing-sasl chip). Must stay
@@ -668,7 +673,7 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
   return {
     id: node.id,
     type: NODE_TYPE_MAP[node.kind],
-    position: { x: ROOT_X + depth * INDENT_X, y: nodeY },
+    position: { x: ROOT_X + depth * INDENT_X, y: ROOT_Y + nodeY },
     style: {
       opacity: isHidden ? 0 : 1,
       pointerEvents: isHidden ? 'none' : undefined,

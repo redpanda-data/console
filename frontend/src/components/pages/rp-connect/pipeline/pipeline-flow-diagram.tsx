@@ -114,9 +114,18 @@ export function computeTranslateExtent(
     }
   }
 
+  // Lock the extent on each axis where content already fits — otherwise the
+  // EXTENT_PADDING buffer would let the viewport pan by up to that many pixels
+  // even with no scrollable content, which surfaces as "stray scroll".
+  const xFits = maxX <= containerWidth;
+  const yFits = maxY <= containerHeight;
+  const lowX = xFits ? 0 : minX - EXTENT_PADDING;
+  const lowY = yFits ? 0 : minY - EXTENT_PADDING;
+  const highX = xFits ? containerWidth : maxX + EXTENT_PADDING;
+  const highY = yFits ? containerHeight : maxY + EXTENT_PADDING;
   return [
-    [minX - EXTENT_PADDING, minY - EXTENT_PADDING],
-    [Math.max(maxX + EXTENT_PADDING, containerWidth), Math.max(maxY + EXTENT_PADDING, containerHeight)],
+    [lowX, lowY],
+    [highX, highY],
   ];
 }
 
@@ -227,14 +236,21 @@ export const PipelineFlowDiagram = ({
     return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges, maxDepth: layout.maxDepth ?? 0 };
   }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
-  const { translateExtent, panOnScrollMode } = useMemo(() => {
+  const { translateExtent, panOnScrollMode, contentOverflows } = useMemo(() => {
     if (!containerSize) {
-      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical };
+      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical, contentOverflows: false };
     }
     const extent = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
+    // Only enable scroll-pan when the rendered diagram actually overflows the
+    // container. computeTranslateExtent adds EXTENT_PADDING around content, so
+    // subtract it to compare raw content bounds vs container size.
+    const rawMaxX = extent[1][0] - EXTENT_PADDING;
+    const rawMaxY = extent[1][1] - EXTENT_PADDING;
+    const overflows = rawMaxX > containerSize.width || rawMaxY > containerSize.height;
     return {
       translateExtent: extent,
       panOnScrollMode: maxDepth > MAX_NESTING_DEPTH ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
+      contentOverflows: overflows,
     };
   }, [rfNodes, containerSize, maxDepth]);
 
@@ -256,7 +272,10 @@ export const PipelineFlowDiagram = ({
   const showTemplateFab = Boolean(onBrowseTemplates) && isPipelineEmpty;
 
   return (
-    <div className="relative h-full w-full p-4" ref={containerRef}>
+    <div
+      className="relative h-full w-full overflow-hidden [mask-image:linear-gradient(to_bottom,transparent_0,black_16px,black_calc(100%-16px),transparent_100%)] [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none]"
+      ref={containerRef}
+    >
       {containerSize ? (
         <ReactFlowProvider>
           <ReactFlow
@@ -272,7 +291,7 @@ export const PipelineFlowDiagram = ({
             nodesFocusable={false}
             nodeTypes={pipelineNodeTypes}
             panOnDrag={false}
-            panOnScroll
+            panOnScroll={contentOverflows}
             panOnScrollMode={panOnScrollMode}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}

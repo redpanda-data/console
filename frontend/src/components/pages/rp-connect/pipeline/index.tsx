@@ -482,13 +482,27 @@ function EditorSkeleton() {
 // Compact label/value cell for the at-a-glance Configuration card on the
 // pipeline view page. Copy button only appears on hover so non-copyable cells
 // look identical at rest.
-const ConfigField = ({ label, value, copyable = false }: { label: string; value: string; copyable?: boolean }) => (
+const ConfigField = ({
+  label,
+  value,
+  copyable = false,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  copyable?: boolean;
+  multiline?: boolean;
+}) => (
   <div className="group/field flex min-w-0 flex-col gap-1">
     <Text className="text-muted-foreground" variant="label">
       {label}
     </Text>
-    <div className="flex min-w-0 items-center gap-1">
-      <Text className="truncate" title={value}>
+    <div className={cn('flex min-w-0 gap-1', multiline ? 'items-start' : 'items-center')}>
+      <Text
+        as={multiline ? 'p' : 'div'}
+        className={cn(multiline ? 'whitespace-pre-wrap break-words' : 'truncate')}
+        title={multiline ? undefined : value}
+      >
         {value}
       </Text>
       {copyable && value ? (
@@ -506,24 +520,25 @@ const ConfigField = ({ label, value, copyable = false }: { label: string; value:
 // Pipeline metadata surfaced inline on the page so users don't have to open
 // the details dialog for at-a-glance info. The dialog still owns the deep
 // view (description, secrets, topics, tags, delete).
-const ConfigurationCard = ({ pipeline }: { pipeline: Pipeline }) => {
+const ConfigurationSection = ({ pipeline }: { pipeline: Pipeline }) => {
   const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
   return (
-    <Card size="full" variant="outlined">
-      <CardHeader>
-        <CardTitle>Configuration</CardTitle>
-      </CardHeader>
-      <CardContent className="mt-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ConfigField copyable label="ID" value={pipeline.id} />
-          <ConfigField label="Compute units" value={`${tasks}`} />
-          {pipeline.url ? <ConfigField copyable label="URL" value={pipeline.url} /> : null}
-          {pipeline.serviceAccount ? (
-            <ConfigField copyable label="Service account" value={pipeline.serviceAccount.clientId} />
-          ) : null}
-        </div>
-      </CardContent>
-    </Card>
+    <section className="flex flex-col gap-3">
+      <Heading level={3}>Configuration</Heading>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {pipeline.description ? (
+          <div className="col-span-full">
+            <ConfigField label="Description" multiline value={pipeline.description} />
+          </div>
+        ) : null}
+        <ConfigField copyable label="ID" value={pipeline.id} />
+        <ConfigField label="Compute units" value={`${tasks}`} />
+        {pipeline.url ? <ConfigField copyable label="URL" value={pipeline.url} /> : null}
+        {pipeline.serviceAccount ? (
+          <ConfigField copyable label="Service account" value={pipeline.serviceAccount.clientId} />
+        ) : null}
+      </div>
+    </section>
   );
 };
 
@@ -533,28 +548,33 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
     );
   }
+  const showThroughput =
+    isEmbedded() &&
+    (isServerless()
+      ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+      : isFeatureFlagEnabled('enableDataplaneObservability'));
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <ConfigurationCard pipeline={pipeline} />
-      {isEmbedded() &&
-        (isServerless()
-          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
-          : isFeatureFlagEnabled('enableDataplaneObservability')) && (
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <ConfigurationSection pipeline={pipeline} />
+      {showThroughput ? (
+        <>
+          <Separator className="my-8" variant="subtle" />
           <PipelineThroughputCard pipelineId={pipeline.id} />
+        </>
+      ) : null}
+      <Separator className="my-8" variant="subtle" />
+      <section className="flex min-h-0 flex-col gap-4">
+        <Heading level={3}>Logs</Heading>
+        {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+          <LogExplorer
+            enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+            pipeline={pipeline}
+            serverless={isServerless()}
+          />
+        ) : (
+          <LogsTab pipeline={pipeline} />
         )}
-      <Card size="full" variant="outlined">
-        <CardContent className="pt-6">
-          {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-            <LogExplorer
-              enableLiveView={pipeline.state === Pipeline_State.RUNNING}
-              pipeline={pipeline}
-              serverless={isServerless()}
-            />
-          ) : (
-            <LogsTab pipeline={pipeline} />
-          )}
-        </CardContent>
-      </Card>
+      </section>
     </div>
   );
 }
@@ -652,8 +672,8 @@ function SidebarPanel({
   onBrowseTemplates?: () => void;
 }) {
   return (
-    <div className="flex w-[300px] shrink-0 flex-col border-border! border-r">
-      <div className="min-h-0 flex-1">
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
+      <div className="min-h-0 flex-1 overflow-hidden">
         {isPipelineDiagramsEnabled ? (
           <PipelineFlowDiagram
             configYaml={yamlContent}

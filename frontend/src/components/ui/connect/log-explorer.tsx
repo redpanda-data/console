@@ -265,9 +265,17 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
           row: {
             original: { timestamp },
           },
-        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-        minSize: 200,
-        size: 200,
+        }) => {
+          const d = new Date(timestamp);
+          return (
+            <div className="flex flex-col leading-tight">
+              <span className="text-[11px] text-muted-foreground">{d.toLocaleDateString()}</span>
+              <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
+            </div>
+          );
+        },
+        minSize: 140,
+        size: 140,
       },
       {
         id: 'level',
@@ -414,7 +422,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
           </div>
         )}
         <div className="overflow-auto">
-        <Table className="table-fixed">
+        <Table className="table-fixed" variant="simple">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -528,9 +536,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
         </div>
       </div>
 
-      {/* Pagination (client-side only) */}
+      {/* Pagination (client-side only). DataTablePagination leads with
+          "X of N row(s) selected." — the log table doesn't expose row
+          selection, so suppress that text but keep its space so the
+          pagination controls stay right-aligned. */}
       {filteredRowCount > 0 && (
-        <DataTablePagination table={table} />
+        <div className="[&>div>div:first-child]:invisible">
+          <DataTablePagination table={table} />
+        </div>
       )}
 
       {/* Detail sheet */}
