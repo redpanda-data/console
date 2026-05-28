@@ -376,7 +376,7 @@ export const ConnectTiles = memo(
 
               <div className="relative">
                 <div
-                  className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
+                  className={cn('max-h-[50vh] min-h-100 overflow-y-auto py-4', tileWrapperClassName)}
                   onScroll={checkScrollable}
                   ref={scrollContainerRef}
                 >

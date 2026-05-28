@@ -22,7 +22,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { isSystemTag } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
@@ -49,7 +49,7 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { AlertCircle, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, Box, MoreHorizontal } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -318,14 +318,12 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-// Renders a connector-name badge with its service logo when one is registered
-// in `componentLogoMap`. Names without a mapping (custom processors, niche
-// connectors) just show the text — the badge layout stays identical.
+// Renders a connector-name badge with its service logo; falls back to a
+// generic Box icon when no specific logo is registered so badge layout is
+// consistent across all components.
 const ComponentBadge = ({ name }: { name: string }) => (
   <Badge variant="neutral-inverted">
-    {componentLogoMap[name as ComponentName] ? (
-      <ConnectorLogo className="size-3.5 shrink-0" name={name as ComponentName} />
-    ) : null}
+    <ConnectorLogo className="size-3.5" fallback={Box} name={name as ComponentName} />
     {name}
   </Badge>
 );
