@@ -140,9 +140,7 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
               <Text as="dd">
                 {retentionBytes.value !== '-1' && '~'}
                 {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
-                {Number.isFinite(Number(retentionBytes.value)) &&
-                  Number(retentionBytes.value) !== -1 &&
-                  ' / partition'}
+                {Number.isFinite(Number(retentionBytes.value)) && Number(retentionBytes.value) !== -1 && ' / partition'}
               </Text>
             </Flex>
           </>
