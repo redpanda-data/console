@@ -126,6 +126,8 @@ const RpConnectPipelinesCreateContent = () => {
 
   return (
     <PageContent>
+      {/* Top framing border matching the other Connect pages. */}
+      <div className="-mt-8 border-divider-default border-b" />
       <div className="my-2">
         <UIText>
           For help creating your pipeline, see our{' '}

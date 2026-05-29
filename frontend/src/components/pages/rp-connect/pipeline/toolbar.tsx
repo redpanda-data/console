@@ -19,7 +19,6 @@ import {
   EditIcon,
   PlayIcon,
   RotateCwIcon,
-  SettingsIcon,
   StopCircleIcon,
 } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -29,13 +28,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { EditableText } from 'components/redpanda-ui/components/editable-text';
-import { Group } from 'components/redpanda-ui/components/group';
-import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import type { StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
-import { Info } from 'lucide-react';
+import {
+  StatusBadge,
+  type StatusBadgeSize,
+  type StatusBadgeVariant,
+} from 'components/redpanda-ui/components/status-badge';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { BookOpen, Info } from 'lucide-react';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -60,22 +60,18 @@ type ButtonConfig = {
   text: string;
   action?: () => void;
   dropdown?: DropdownOption[];
+  // Vary emphasis by state: Start is primary (encourage), Stop is neutral.
+  variant?: 'primary' | 'secondary' | 'outline';
 };
 
 type ToolbarProps = {
   pipelineId?: string;
-  pipelineName?: string;
-  pipelineState?: Pipeline_State;
   mode: 'view' | 'edit' | 'create';
-  onEditConfig?: () => void;
   onViewConfig?: () => void;
-  onNameChange?: (name: string) => void;
   onSave?: () => void;
   onCancel?: () => void;
   isSaving?: boolean;
   isLoading?: boolean;
-  nameError?: string;
-  defaultEditing?: boolean;
 };
 
 type ButtonConfigFactoryParams = {
@@ -104,11 +100,30 @@ export function pipelineStateToVariant(state?: Pipeline_State): { variant: Statu
   }
 }
 
+const PIPELINE_STATE_LABEL: Partial<Record<Pipeline_State, string>> = {
+  [PipelineState.RUNNING]: 'Running',
+  [PipelineState.STARTING]: 'Starting',
+  [PipelineState.STOPPING]: 'Stopping',
+  [PipelineState.STOPPED]: 'Stopped',
+  [PipelineState.ERROR]: 'Error',
+  [PipelineState.COMPLETED]: 'Completed',
+};
+
+export function PipelineStatusBadge({ state, size }: { state?: Pipeline_State; size?: StatusBadgeSize }) {
+  const { variant, pulsing } = pipelineStateToVariant(state);
+  return (
+    <StatusBadge pulsing={pulsing} size={size} variant={variant}>
+      {(state !== undefined && PIPELINE_STATE_LABEL[state]) || 'Unknown'}
+    </StatusBadge>
+  );
+}
+
 function createStoppedConfig({ handleStart, isStartPending }: ButtonConfigFactoryParams): ButtonConfig {
   return {
     text: isStartPending ? 'Starting' : 'Start',
     action: handleStart,
     icon: <PlayIcon />,
+    variant: 'primary',
   };
 }
 
@@ -117,6 +132,7 @@ function createRunningConfig({ handleStop, isStopPending }: ButtonConfigFactoryP
     icon: isStopPending ? <Spinner /> : <StopCircleIcon />,
     text: isStopPending ? 'Stopping' : 'Stop',
     action: handleStop,
+    variant: 'outline',
   };
 }
 
@@ -155,6 +171,7 @@ function createCompletedConfig({ handleStart }: ButtonConfigFactoryParams): Butt
     icon: <RotateCwIcon />,
     text: 'Restart',
     action: handleStart,
+    variant: 'secondary',
   };
 }
 
@@ -220,33 +237,62 @@ function PipelineActionButton({
       disabled={isStartPending || isStopPending}
       icon={buttonConfig.icon}
       onClick={buttonConfig.action}
-      variant="outline"
+      variant={buttonConfig.variant ?? 'outline'}
     >
       {buttonConfig.text}
     </Button>
   );
 }
 
-export const Toolbar = memo(
-  ({
-    pipelineId,
-    pipelineName,
-    pipelineState,
-    mode,
-    onEditConfig,
-    onViewConfig,
-    onNameChange,
-    onSave,
-    onCancel,
-    isSaving,
-    isLoading,
-    nameError,
-    defaultEditing,
-  }: ToolbarProps) => {
-    const navigate = useNavigate();
+// Start/stop control for a pipeline. Lives outside the toolbar so it can be
+// placed in the page body (e.g. the summary card) rather than next to Edit.
+export function PipelineRunControl({
+  pipelineId,
+  pipelineState,
+}: {
+  pipelineId?: string;
+  pipelineState?: Pipeline_State;
+}) {
+  const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
+  const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
 
-    const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
-    const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
+  const handleStart = useCallback(() => {
+    if (!pipelineId) {
+      return;
+    }
+    startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
+      onSuccess: () => toast.success('Pipeline started'),
+      onError: (err) =>
+        toast.error(
+          formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' })
+        ),
+    });
+  }, [pipelineId, startMutation]);
+
+  const handleStop = useCallback(() => {
+    if (!pipelineId) {
+      return;
+    }
+    stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
+      onSuccess: () => toast.success('Pipeline stopped'),
+      onError: (err) =>
+        toast.error(formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'stop', entity: 'pipeline' })),
+    });
+  }, [pipelineId, stopMutation]);
+
+  const buttonConfig = useMemo(
+    () => getPipelineButtonConfig(pipelineState, { handleStart, handleStop, isStartPending, isStopPending }),
+    [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
+  );
+
+  return (
+    <PipelineActionButton buttonConfig={buttonConfig} isStartPending={isStartPending} isStopPending={isStopPending} />
+  );
+}
+
+export const Toolbar = memo(
+  ({ pipelineId, mode, onViewConfig, onSave, onCancel, isSaving, isLoading }: ToolbarProps) => {
+    const navigate = useNavigate();
 
     const handleBack = useCallback(() => {
       if (onCancel) {
@@ -256,167 +302,63 @@ export const Toolbar = memo(
       }
     }, [onCancel, navigate]);
 
-    const handleStart = useCallback(() => {
-      if (!pipelineId) {
-        return;
-      }
-      const startRequest = create(StartPipelineRequestSchema, {
-        request: { id: pipelineId },
-      });
-
-      startMutation(startRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline started');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'start',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    }, [pipelineId, startMutation]);
-
-    const handleStop = useCallback(() => {
-      if (!pipelineId) {
-        return;
-      }
-      const stopRequest = create(StopPipelineRequestSchema, {
-        request: { id: pipelineId },
-      });
-
-      stopMutation(stopRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline stopped');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'stop',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    }, [pipelineId, stopMutation]);
-
     const handleEditNavigate = useCallback(() => {
       if (pipelineId) {
         navigate({ to: `/rp-connect/${pipelineId}/edit` });
       }
     }, [pipelineId, navigate]);
 
-    const handleGearClick = useCallback(() => {
-      if (mode === 'view') {
-        onViewConfig?.();
-      } else {
-        onEditConfig?.();
-      }
-    }, [mode, onViewConfig, onEditConfig]);
-
-    const buttonConfig = useMemo(
-      () =>
-        getPipelineButtonConfig(pipelineState, {
-          handleStart,
-          handleStop,
-          isStartPending,
-          isStopPending,
-        }),
-      [pipelineState, handleStart, handleStop, isStartPending, isStopPending]
-    );
-
     if (mode === 'view') {
       return (
-        <div className="mt-5 flex items-start justify-between">
-          <div className="flex w-full gap-2">
-            <Button className="mt-1" onClick={handleBack} size="icon" variant="ghost">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <Button className="shrink-0" onClick={handleBack} size="icon" variant="ghost">
               <ArrowLeftIcon className="h-5 w-5" />
             </Button>
-            <div className="flex w-full flex-col gap-1">
-              <div className="flex min-w-0 items-center gap-2">
-                {isLoading ? (
-                  <Skeleton className="h-9 w-48" />
-                ) : (
-                  <Heading className="max-w-[280px] truncate" level={1}>
-                    {pipelineName ?? pipelineId}
-                  </Heading>
-                )}
-                {!isLoading && (
-                  <Button
-                    aria-label="View pipeline details"
-                    icon={<Info />}
-                    onClick={handleGearClick}
-                    size="icon"
-                    variant="ghost"
-                  />
-                )}
-              </div>
-              <Text className="text-muted-foreground md:max-w-1/2">
-                Monitor the pipeline, or edit the pipeline configuration to change functionality or improve performance.
-              </Text>
-              <span className="mt-3">
-                <Button icon={<EditIcon />} onClick={handleEditNavigate}>
-                  Edit pipeline
-                </Button>
-              </span>
-            </div>
+            <Heading level={1}>Pipeline view</Heading>
+            {!isLoading && (
+              <Button
+                aria-label="View pipeline details"
+                icon={<Info />}
+                onClick={onViewConfig}
+                size="icon"
+                variant="ghost"
+              />
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <PipelineActionButton
-              buttonConfig={buttonConfig}
-              isStartPending={isStartPending}
-              isStopPending={isStopPending}
-            />
+          <div className="flex shrink-0 items-center gap-2">
+            <Button icon={<EditIcon />} onClick={handleEditNavigate}>
+              Edit pipeline
+            </Button>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="mt-5 flex items-center justify-between gap-8">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Button onClick={handleBack} size="icon" variant="ghost">
-              <ArrowLeftIcon className="h-5 w-5" />
-            </Button>
-            {isLoading ? (
-              <Skeleton className="h-9 w-48" />
-            ) : (
-              <EditableText
-                as="heading"
-                autoFocus={defaultEditing}
-                className="w-[280px]"
-                error={!!nameError}
-                errorMessage={nameError}
-                headingLevel={1}
-                onChange={onNameChange}
-                placeholder="Pipeline name"
-                value={pipelineName ?? ''}
-              />
-            )}
-            {!isLoading && <Button icon={<SettingsIcon />} onClick={handleGearClick} size="icon" variant="ghost" />}
-          </div>
-          <Text className="mt-4 ml-9 md:max-w-1/2">
-            Redpanda Connect builds data pipelines for real-time analytics and actionable business insights. Every
-            pipeline requires an input and an output in a config file. Select components, including processors, and
-            customize the configuration in the editor.{' '}
-            <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
-              Learn more
-            </Link>
-          </Text>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button className="shrink-0" onClick={handleBack} size="icon" variant="ghost">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Button>
+          {/* Name, description and compute units all live in the settings section below. */}
+          <Heading level={1}>{mode === 'create' ? 'New pipeline' : 'Editing pipeline'}</Heading>
         </div>
-
-        <div>
-          <Group className="items-center gap-2">
-            <Button disabled={isSaving} onClick={onSave}>
-              Save
-              {Boolean(isSaving) && <Spinner />}
-            </Button>
-          </Group>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            as="a"
+            href="https://docs.redpanda.com/redpanda-connect/home/"
+            icon={<BookOpen />}
+            rel="noopener noreferrer"
+            target="_blank"
+            variant="ghost"
+          >
+            Docs
+          </Button>
+          <Button disabled={isSaving} onClick={onSave}>
+            Save
+            {Boolean(isSaving) && <Spinner />}
+          </Button>
         </div>
       </div>
     );

@@ -30,12 +30,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpand
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { Progress } from 'components/redpanda-ui/components/progress';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -204,9 +204,11 @@ interface LogExplorerProps {
   serverless?: boolean;
   /** Whether to enable the live view. Defaults to false. */
   enableLiveView?: boolean;
+  /** Optional heading rendered inline in the header row, aligned with the controls and table. */
+  title?: ReactNode;
 }
 
-export function LogExplorer({ pipeline, serverless, enableLiveView = false }: LogExplorerProps) {
+export function LogExplorer({ pipeline, serverless, enableLiveView = false, title }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
 
   // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
@@ -362,7 +364,12 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
   return (
     <div className="flex min-h-0 flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {title ? (
+            <Heading className="font-semibold text-base text-foreground" level={3}>
+              {title}
+            </Heading>
+          ) : null}
           {!liveViewEnabled && (
             <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
           )}

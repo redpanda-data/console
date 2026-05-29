@@ -238,7 +238,7 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
         {mode !== 'view' && (
           <DialogFooter>
             <Button onClick={onSaveClick} variant="primary">
-              Save
+              Save settings
             </Button>
           </DialogFooter>
         )}

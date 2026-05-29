@@ -13,7 +13,7 @@ import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
+import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
@@ -43,7 +43,7 @@ import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
-import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
+import { KeyRound, LayoutGrid, Plus, Settings, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -89,7 +89,7 @@ import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
-import { Toolbar } from './toolbar';
+import { PipelineRunControl, PipelineStatusBadge, Toolbar } from './toolbar';
 import { useSlashCommand } from './use-slash-command';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -257,6 +257,7 @@ function usePipelineSave({
   pipelineId,
   pipeline,
   isPipelineDiagramsEnabled,
+  onBeforeSaveNavigate,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   yamlContent: string;
@@ -264,6 +265,9 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
+  // Called right before a successful save navigates away, so the unsaved-changes
+  // guard doesn't block the post-save navigation.
+  onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
   const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
@@ -304,6 +308,7 @@ function usePipelineSave({
           toast.success('Pipeline created');
           warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
           const newPipelineId = response.response?.pipeline?.id;
+          onBeforeSaveNavigate?.();
           navigate({ to: newPipelineId ? `/rp-connect/${newPipelineId}` : '/connect-clusters' });
         },
         onError: (err) => onError(err, 'create'),
@@ -331,12 +336,24 @@ function usePipelineSave({
           setErrorLintHints({});
           toast.success('Pipeline updated');
           warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
+          onBeforeSaveNavigate?.();
           navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => onError(err, 'update'),
       });
     }
-  }, [form, yamlContent, mode, pipelineId, createMutation, updateMutation, navigate, clearWizardStore, pipeline]);
+  }, [
+    form,
+    yamlContent,
+    mode,
+    pipelineId,
+    createMutation,
+    updateMutation,
+    navigate,
+    clearWizardStore,
+    pipeline,
+    onBeforeSaveNavigate,
+  ]);
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -494,25 +511,90 @@ const ConfigField = ({
   </div>
 );
 
-const ConfigurationSection = ({ pipeline }: { pipeline: Pipeline }) => {
+// Pipeline identity + metadata shown as a summary card above the main panel in
+// view mode. The full set (including empty fields) lives in the details dialog.
+const PipelineSummary = ({ pipeline }: { pipeline: Pipeline }) => {
   const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
+  const description = pipeline.description?.trim();
   return (
-    <section className="flex flex-col gap-3">
-      <Heading level={3}>Configuration</Heading>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {pipeline.description ? (
-          <div className="col-span-full">
-            <ConfigField label="Description" multiline value={pipeline.description} />
-          </div>
-        ) : null}
+    <div className="flex flex-col gap-5 rounded-lg border bg-muted/20 px-6 py-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <Text className="text-muted-foreground" variant="label">
+            Name
+          </Text>
+          <Heading className="truncate" level={2} title={pipeline.displayName || pipeline.id}>
+            {pipeline.displayName || pipeline.id}
+          </Heading>
+        </div>
+        <PipelineStatusBadge state={pipeline.state} />
+      </div>
+      <Separator variant="subtle" />
+      <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
         <ConfigField copyable label="ID" value={pipeline.id} />
         <ConfigField label="Compute units" value={`${tasks}`} />
-        {pipeline.url ? <ConfigField copyable label="URL" value={pipeline.url} /> : null}
         {pipeline.serviceAccount ? (
           <ConfigField copyable label="Service account" value={pipeline.serviceAccount.clientId} />
         ) : null}
+        {pipeline.url ? <ConfigField copyable label="URL" value={pipeline.url} /> : null}
       </div>
-    </section>
+      {description ? (
+        <div className="flex min-w-0 flex-col gap-1">
+          <Text className="text-muted-foreground" variant="label">
+            Description
+          </Text>
+          <Text className="line-clamp-3 whitespace-pre-wrap break-words text-sm" title={description}>
+            {description}
+          </Text>
+        </div>
+      ) : null}
+      <Separator variant="subtle" />
+      {/* Run control lives at the card footer, away from the header's Edit button. */}
+      <div className="flex items-center justify-end">
+        <PipelineRunControl pipelineId={pipeline.id} pipelineState={pipeline.state} />
+      </div>
+    </div>
+  );
+};
+
+// Read-only view of the editable pipeline settings (name, compute units,
+// description), shown above the editor. All of these are edited in the dialog.
+const EditSummary = ({ form, onEdit }: { form: UseFormReturn<PipelineFormValues>; onEdit: () => void }) => {
+  const name = useWatch({ control: form.control, name: 'name' });
+  const description = useWatch({ control: form.control, name: 'description' })?.trim();
+  const computeUnits = useWatch({ control: form.control, name: 'computeUnits' });
+  return (
+    <div className="flex flex-col gap-5 rounded-lg border bg-muted/20 px-6 py-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <Text className="text-muted-foreground" variant="label">
+            Name
+          </Text>
+          <Heading className="truncate" level={2} title={name}>
+            {name || 'Untitled pipeline'}
+          </Heading>
+        </div>
+        <Button className="shrink-0" icon={<Settings />} onClick={onEdit} size="sm" variant="outline">
+          Edit settings
+        </Button>
+      </div>
+      <Separator variant="subtle" />
+      <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-3">
+        <ConfigField label="Compute units" value={`${computeUnits}`} />
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
+        <Text className="text-muted-foreground" variant="label">
+          Description
+        </Text>
+        {description ? (
+          <Text className="line-clamp-3 whitespace-pre-wrap break-words text-sm" title={description}>
+            {description}
+          </Text>
+        ) : (
+          <Text className="text-muted-foreground text-sm italic">No description</Text>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -529,24 +611,26 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       : isFeatureFlagEnabled('enableDataplaneObservability'));
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
-      <ConfigurationSection pipeline={pipeline} />
       {showThroughput ? (
         <>
-          <Separator className="my-8" variant="subtle" />
           <PipelineThroughputCard pipelineId={pipeline.id} />
+          <Separator className="my-8" variant="subtle" />
         </>
       ) : null}
-      <Separator className="my-8" variant="subtle" />
       <section className="flex min-h-0 flex-col gap-4">
-        <Heading level={3}>Logs</Heading>
         {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+          // Title is rendered inline in the explorer's control row so it lines up with the table.
           <LogExplorer
             enableLiveView={pipeline.state === Pipeline_State.RUNNING}
             pipeline={pipeline}
             serverless={isServerless()}
+            title="Logs"
           />
         ) : (
-          <LogsTab pipeline={pipeline} />
+          <>
+            <Heading level={3}>Logs</Heading>
+            <LogsTab pipeline={pipeline} />
+          </>
         )}
       </section>
     </div>
@@ -778,12 +862,39 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
-  const formName = useWatch({ control: form.control, name: 'name' });
-  const pipelineName = mode === 'view' ? pipeline?.displayName : formName;
+  // Lets a successful save navigate away without tripping the unsaved-changes guard.
+  const allowNavigationRef = useRef(false);
+  const markNavigationAllowed = useCallback(() => {
+    allowNavigationRef.current = true;
+  }, []);
+  // Baseline YAML to diff against for the unsaved-changes guard: the server config
+  // in edit mode, or the first resolved template in create mode.
+  const initialYamlRef = useRef<string | null>(null);
 
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
-    usePipelineSave({ form, yamlContent, mode, pipelineId, pipeline, isPipelineDiagramsEnabled });
+    usePipelineSave({
+      form,
+      yamlContent,
+      mode,
+      pipelineId,
+      pipeline,
+      isPipelineDiagramsEnabled,
+      onBeforeSaveNavigate: markNavigationAllowed,
+    });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
+
+  // Guard against losing unsaved edits when navigating away from the editor (edit or create).
+  const yamlDirty = initialYamlRef.current !== null && yamlContent !== initialYamlRef.current;
+  const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
+  const blocker = useBlocker({
+    shouldBlockFn: () => hasUnsavedChanges && !allowNavigationRef.current,
+    enableBeforeUnload: () => hasUnsavedChanges,
+    withResolver: true,
+  });
+  // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).
+  useEffect(() => {
+    allowNavigationRef.current = false;
+  }, [mode]);
 
   const handleYamlChange = useCallback(
     (value: string) => {
@@ -839,6 +950,7 @@ export default function PipelinePage() {
   if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
     setHydratedPipelineId(pipeline.id);
     setYamlContent(pipeline.configYaml);
+    initialYamlRef.current = pipeline.configYaml;
   }
 
   useEffect(() => {
@@ -854,28 +966,42 @@ export default function PipelinePage() {
     }
   }, [pipeline, mode, form]);
 
+  const handleInitialYamlResolved = useCallback((yaml: string) => {
+    setYamlContent(yaml);
+    if (initialYamlRef.current === null) {
+      initialYamlRef.current = yaml;
+    }
+  }, []);
+
   const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
     enabled: mode === 'create',
     isServerlessMode,
     components,
     isPipelineDiagramsEnabled,
-    onResolved: setYamlContent,
+    onResolved: handleInitialYamlResolved,
   });
 
   const handleCancel = useCallback(() => {
     if (mode === 'create') {
       clearWizardStore();
     }
+    // Edit: go to the pipeline's view page. Routed through `navigate` (not
+    // history.back) so the unsaved-changes blocker reliably intercepts it.
+    if (mode === 'edit' && pipelineId) {
+      navigate({ to: `/rp-connect/${pipelineId}` });
+      return;
+    }
     if (mode === 'view') {
       navigate({ to: '/connect-clusters', search: {} as never });
-    } else if (router.history.canGoBack()) {
+      return;
+    }
+    // Create: return to wherever the user came from.
+    if (router.history.canGoBack()) {
       router.history.back();
     } else {
       navigate({ to: '/connect-clusters', search: {} as never });
     }
-  }, [mode, clearWizardStore, navigate, router]);
-
-  const handleNameChange = useCallback((name: string) => form.setValue('name', name, { shouldValidate: true }), [form]);
+  }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
   return (
     <div
@@ -884,21 +1010,20 @@ export default function PipelinePage() {
         mode === 'view' ? 'h-full min-h-[calc(100dvh-10rem)]' : 'h-[calc(100dvh-10rem)]'
       )}
     >
+      {/* Top framing border that lines up with the content edge, matching the
+          listings page header. Negative margin cancels the layout's pt-8. */}
+      <div className="-mt-8 border-divider-default border-b" />
       <Toolbar
-        defaultEditing={mode === 'create'}
         isLoading={isPipelineLoading}
         isSaving={isSaving}
         mode={mode}
-        nameError={form.formState.errors.name?.message}
         onCancel={handleCancel}
-        onEditConfig={() => setIsConfigDialogOpen(true)}
-        onNameChange={handleNameChange}
         onSave={handleSave}
         onViewConfig={() => setIsViewConfigDialogOpen(true)}
         pipelineId={pipelineId}
-        pipelineName={pipelineName}
-        pipelineState={pipeline?.state}
       />
+      {mode === 'view' && pipeline ? <PipelineSummary pipeline={pipeline} /> : null}
+      {mode !== 'view' ? <EditSummary form={form} onEdit={() => setIsConfigDialogOpen(true)} /> : null}
       <div className="flex min-h-0 flex-1 rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
@@ -959,6 +1084,25 @@ export default function PipelinePage() {
           resourceType="Pipeline"
         />
       ) : null}
+
+      <Dialog onOpenChange={(open) => (open ? undefined : blocker.reset?.())} open={blocker.status === 'blocked'}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes to this pipeline. If you leave now, your changes will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => blocker.reset?.()} variant="ghost">
+              Keep editing
+            </Button>
+            <Button onClick={() => blocker.proceed?.()} variant="destructive">
+              Leave without saving
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <PipelineCommandMenu
         editorInstance={editorInstance}

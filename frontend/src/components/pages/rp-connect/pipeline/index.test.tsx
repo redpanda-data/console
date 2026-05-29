@@ -82,6 +82,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
     useNavigate: () => mockNavigate,
     useRouter: () => ({ history: { back: mockBack, canGoBack: () => true } }),
     useSearch: () => mockSearch(),
+    useBlocker: () => ({ status: 'idle', proceed: undefined, reset: undefined }),
   };
 });
 
@@ -265,6 +266,16 @@ function createTransport(overrides?: {
   });
 }
 
+// The pipeline name now lives in the settings dialog (opened via "Edit settings")
+// rather than an inline field in the header.
+const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  await user.click(screen.getByRole('button', { name: /edit settings/i }));
+  const nameInput = await screen.findByPlaceholderText('Enter pipeline name');
+  await user.clear(nameInput);
+  await user.type(nameInput, name);
+  await user.click(screen.getByRole('button', { name: /save settings/i }));
+};
+
 describe('PipelinePage', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
@@ -370,12 +381,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // EditableText with defaultEditing starts in edit mode — use placeholder to find the input
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    // Tab to commit the EditableText value (fires onChange -> handleNameChange -> form.setValue)
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML via the textarea mock
     const yamlEditor = screen.getByTestId('yaml-editor');
@@ -406,11 +412,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // Fill in name (min 3 chars for validation)
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML and click Save
     const yamlEditor = screen.getByTestId('yaml-editor');
@@ -441,11 +443,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock, lintMock }) });
 
-    // Fill in name
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML (triggers lint query which returns response warning)
     const yamlEditor = screen.getByTestId('yaml-editor');
@@ -483,11 +481,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock, lintMock }) });
 
-    // Fill in name
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML
     const yamlEditor = screen.getByTestId('yaml-editor');
@@ -532,15 +526,15 @@ describe('PipelinePage', () => {
     });
   });
 
-  it('displays the pipeline display name (not the ID) in view mode', async () => {
+  it('displays the pipeline display name in the summary in view mode', async () => {
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The toolbar title (level-1 heading) should show the displayName from the pipeline
-    // response, not the pipeline ID. The ID is shown separately in the Configuration section.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 1, name: 'test-pipeline' })).not.toBeInTheDocument();
+    // The page title (level-1 heading) is static; the displayName is shown
+    // prominently as the summary card heading, with the ID as a labeled field below.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Pipeline view' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Test Pipeline' })).toBeInTheDocument();
   });
 
   it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
@@ -667,9 +661,9 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // In edit mode, defaultEditing is false so EditableText renders as a button showing the name
+      // In edit mode the name is pre-filled from the server and shown in the settings summary heading.
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Test Pipeline' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 2, name: 'Test Pipeline' })).toBeInTheDocument();
       });
 
       // The yaml editor textarea should be populated with the pipeline's configYaml
