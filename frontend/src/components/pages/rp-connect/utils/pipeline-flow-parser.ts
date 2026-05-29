@@ -16,10 +16,6 @@ import { parse as parseYaml } from 'yaml';
 import { firstKey, parseMultiInputs, parseMultiOutputs } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 type ParsedYamlConfig = {
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
@@ -56,10 +52,6 @@ type BranchContext = {
   idPrefix: string;
   depth: number;
 };
-
-// ============================================================================
-// Tree Parser
-// ============================================================================
 
 type GroupSpec = {
   groupId: string;
@@ -490,10 +482,6 @@ function parseOutputNodes(
   ];
 }
 
-// ============================================================================
-// Section Builders
-// ============================================================================
-
 function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
   const sectionId = 'section-input';
   nodes.push({ id: sectionId, kind: 'section', label: 'input', section: 'input' });
@@ -532,10 +520,6 @@ function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig)
     nodes.push({ id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: sectionId });
   }
 }
-
-// ============================================================================
-// Public API
-// ============================================================================
 
 export type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
 
@@ -584,10 +568,6 @@ export function parsePipelineFlowTree(
   }
 }
 
-// ============================================================================
-// Tree Layout Algorithm
-// ============================================================================
-
 const INDENT_X = 40;
 export const MAX_NESTING_DEPTH = 5;
 const NODE_H_DEFAULT = 28;
@@ -595,14 +575,10 @@ const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
 const SECTION_GAP = 16;
 const ROOT_X = 8;
-// Small top offset so the first label/leaf isn't flush against the panel edge.
 const ROOT_Y = 4;
 
-// Per-row addition when a leaf renders an extra chip / badge below its label
-// (label badge, topic list, missing-topic chip, missing-sasl chip). Must stay
-// in sync with TreeLeafNode's `gap-1.5` (6px) + chip/badge height (~24px).
+// Must stay in sync with TreeLeafNode's `gap-1.5` (6px) + chip/badge height (~24px).
 const LEAF_EXTRA_ROW_H = 28;
-// `mt-2` between the label row and the first extra row.
 const LEAF_EXTRA_TOP_GAP = 8;
 
 function countLeafExtraRows(node: PipelineFlowNode): number {

@@ -131,9 +131,8 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   </button>
 );
 
-// Renders either a clickable "+ X" button (edit mode, when an `onAdd` callback is
-// wired) or a static "No X" status pill (view mode). The pill keeps the missing-
-// config signal on screen without looking clickable.
+// Clickable "+ X" button when `onAdd` is wired, else a static "No X" pill —
+// keeps the missing-config signal visible in view mode without looking clickable.
 type MissingConfigChipProps = {
   addLabel: string;
   missingLabel: string;

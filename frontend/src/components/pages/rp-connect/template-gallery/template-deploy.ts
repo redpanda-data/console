@@ -70,7 +70,6 @@ export const stitchTemplateYaml = ({
   return `${header}${kept.join('\n')}`;
 };
 
-// Returns the id of the first required slot without a value, or undefined.
 export const findMissingRequiredSlot = (template: PipelineTemplate, values: SlotValues): string | undefined => {
   for (const slot of template.slots) {
     if (slot.required && !values[slot.id]?.trim()) {

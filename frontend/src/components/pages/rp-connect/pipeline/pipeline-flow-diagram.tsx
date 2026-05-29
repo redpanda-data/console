@@ -66,33 +66,18 @@ function ZoomControls() {
 
 type PipelineFlowDiagramProps = {
   configYaml: string;
-  /** Callback when user clicks + on a placeholder node. Receives the section type ('input' | 'output'). */
   onAddConnector?: (type: string) => void;
-  /** Callback when user clicks "+ topic" on a redpanda node missing topic config. */
   onAddTopic?: (section: string, componentName: string) => void;
-  /** Callback when user clicks "+ auth" on a redpanda node missing SASL config. */
   onAddSasl?: (section: string, componentName: string) => void;
-  // Renders the "Start from a template" CTA in-canvas while the pipeline is empty.
   onBrowseTemplates?: () => void;
-  /** Hide the zoom +/- controls and lock zoom to 1. */
   hideZoomControls?: boolean;
-  /** Custom parser — defaults to `parsePipelineFlowTree`. */
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
-  /** Custom layout — defaults to `computeTreeLayout`. */
   computeLayout?: (
     nodes: PipelineFlowNode[],
     collapsedIds: ReadonlySet<string>
   ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number; maxDepth?: number };
 };
 
-/**
- * Compute translate extent from layout node positions.
- *
- * The bottom-right bound is clamped to at least the container dimensions.
- * Without this, d3-zoom centers content that is shorter than the viewport,
- * which manifests as a large top margin in edit/create mode where the node
- * tree is typically shorter than the panel.
- */
 export function computeTranslateExtent(
   rfNodes: Node[],
   containerWidth: number,
@@ -122,9 +107,8 @@ export function computeTranslateExtent(
     }
   }
 
-  // Lock the extent on each axis where content already fits — otherwise the
-  // EXTENT_PADDING buffer would let the viewport pan by up to that many pixels
-  // even with no scrollable content, which surfaces as "stray scroll".
+  // Lock each axis where content fits — the EXTENT_PADDING buffer would
+  // otherwise let the viewport pan by ~40px with nothing to scroll to.
   const xFits = maxX <= containerWidth;
   const yFits = maxY <= containerHeight;
   const lowX = xFits ? 0 : minX - EXTENT_PADDING;
@@ -250,9 +234,6 @@ export const PipelineFlowDiagram = ({
       return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical, contentOverflows: false };
     }
     const extent = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
-    // Only enable scroll-pan when the rendered diagram actually overflows the
-    // container. computeTranslateExtent adds EXTENT_PADDING around content, so
-    // subtract it to compare raw content bounds vs container size.
     const rawMaxX = extent[1][0] - EXTENT_PADDING;
     const rawMaxY = extent[1][1] - EXTENT_PADDING;
     const overflows = rawMaxX > containerSize.width || rawMaxY > containerSize.height;
@@ -263,10 +244,8 @@ export const PipelineFlowDiagram = ({
     };
   }, [rfNodes, containerSize, maxDepth]);
 
-  // Pin the viewport to the top-left whenever the layout changes. React Flow
-  // sometimes settles content with vertical offset (especially when the
-  // container is much taller than the diagram) and `defaultViewport` alone
-  // isn't enough to override it.
+  // React Flow occasionally settles with a vertical offset when the container
+  // is much taller than the diagram; defaultViewport alone doesn't override it.
   useLayoutEffect(() => {
     const rf = rfInstanceRef.current;
     if (rf && rfNodes.length > 0) {
@@ -274,11 +253,9 @@ export const PipelineFlowDiagram = ({
     }
   }, [rfNodes, translateExtent]);
 
-  // Scroll chaining: when the diagram is at its top/bottom pan boundary and
-  // the user scrolls further in that direction, stop the wheel event in the
-  // capture phase so React Flow can't preventDefault — letting the page
-  // scroll naturally past the visualizer. In the middle of the pan range,
-  // events fall through and React Flow handles them as usual.
+  // Scroll-chaining: at the diagram's top/bottom pan boundary, swallow the
+  // wheel event in capture so React Flow can't preventDefault and the page
+  // scrolls through. Mid-range events fall through to React Flow's pan.
   useEffect(() => {
     const el = containerRef.current;
     if (!el || !contentOverflows || !translateExtent || !containerSize) {
@@ -296,7 +273,6 @@ export const PipelineFlowDiagram = ({
       const atTop = vp.y >= maxVpY - 0.5;
       const atBottom = vp.y <= minVpY + 0.5;
       if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
-        // Boundary + scrolling outward — let the page own this wheel event.
         event.stopPropagation();
       }
     };
@@ -312,10 +288,7 @@ export const PipelineFlowDiagram = ({
     );
   }
 
-  // Pipeline is "empty" only when there are no user-defined nodes — sections
-  // (INPUT/OUTPUT/PROCESSORS/RESOURCES labels) and `none` placeholders don't
-  // count. A non-placeholder leaf or a group means the user has authored
-  // something (an input, output, processor, resource, buffer, cache, etc.).
+  // Section labels and `none` placeholders don't count as user content.
   const isPipelineEmpty = !nodes.some(
     (n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none')
   );
@@ -342,20 +315,11 @@ export const PipelineFlowDiagram = ({
             nodeTypes={pipelineNodeTypes}
             onInit={(instance) => {
               rfInstanceRef.current = instance;
-              // Force the viewport flush to the top-left. Without this, React
-              // Flow occasionally settles with the content vertically centred
-              // (or otherwise offset) when the container is taller than the
-              // diagram, leaving a visibly large gap above the first node.
               instance.setViewport({ x: 0, y: 0, zoom: 1 });
             }}
             panOnDrag={false}
             panOnScroll={contentOverflows}
             panOnScrollMode={panOnScrollMode}
-            // When the diagram doesn't overflow, let wheel events bubble to
-            // the page so the user can scroll past the visualizer instead of
-            // having ReactFlow swallow them. When it does overflow, the
-            // capture-phase wheel handler above also relinquishes events at
-            // the pan boundary so scroll chains to the page there too.
             preventScrolling={contentOverflows}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}

@@ -55,10 +55,9 @@ const consumerGroupSlot = {
   schemaField: 'consumer_group',
 };
 
-// Curated catalog (PRD §8). Every required slot must be referenced as
-// `${slot.X}` in the template's `baseYaml`; deploy is pure substitution.
+// Every required slot must be referenced as `${slot.X}` in `baseYaml` —
+// deploy is pure substitution, so a slot without a placeholder has no effect.
 export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
-  // ─────────── CDC sources to Redpanda ───────────
   {
     id: 'postgres-cdc-to-redpanda',
     name: 'Postgres CDC to Redpanda',
@@ -440,7 +439,6 @@ output:
 `,
   },
 
-  // ─────────── Ingest sources to Redpanda ───────────
   {
     id: 's3-to-redpanda',
     name: 'S3 to Redpanda',
@@ -722,7 +720,6 @@ output:
 `,
   },
 
-  // ─────────── Redpanda to analytics & lakehouse ───────────
   {
     id: 'redpanda-to-snowflake',
     name: 'Redpanda to Snowflake',
@@ -1031,7 +1028,6 @@ output:
 `,
   },
 
-  // ─────────── Migration & replication ───────────
   {
     id: 'kafka-to-redpanda-migration',
     name: 'Kafka to Redpanda migration',

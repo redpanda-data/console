@@ -97,9 +97,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   const { mutateAsync: createSecret } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<string[]>([]);
-  // When required secrets exist, the ad-hoc "create another" form starts
-  // collapsed so the dialog focuses on the missing-secrets task. Without
-  // required secrets (e.g. template gallery), it stays expanded.
+  // Custom-secret form starts collapsed when required secrets exist so the
+  // dialog focuses on the missing-secrets task.
   const [showAddAnotherForm, setShowAddAnotherForm] = useState(requiredSecrets.length === 0);
 
   /**

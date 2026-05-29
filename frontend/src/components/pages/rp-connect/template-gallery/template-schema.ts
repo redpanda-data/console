@@ -15,12 +15,8 @@ import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
 import type { RawFieldSpec } from '../types/schema';
 import { checkRequired, findComponentByName, resolveFieldByPath } from '../utils/schema';
 
-/**
- * Returns the template's slots with any unset `description`, `required`, and
- * `default` filled in from the live component schema. Slot-level values always
- * win; the schema only ever fills blanks. Slots without `schemaField` — or
- * paths that don't resolve — pass through untouched.
- */
+// Slot-level values win; schema only fills unset `description` / `required` /
+// `default`. Slots without `schemaField` (or with unresolvable paths) pass through.
 export function applySchemaToSlots(template: PipelineTemplate, componentList?: ComponentList): TemplateSlot[] {
   if (!componentList) {
     return template.slots;

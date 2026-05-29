@@ -256,7 +256,6 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
           </Button>
           <Button
             onClick={() => {
-              // Unhandled rejection.
               void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'));
             }}
             size="sm"
@@ -299,7 +298,6 @@ function dumpStorage(storage: Storage): Record<string, string> {
 }
 
 function tryFormatValue(raw: string): string {
-  // Many entries are JSON-encoded strings — show them pretty-printed when parseable.
   try {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
@@ -442,7 +440,6 @@ function StorageSection({
 function StorageTab() {
   const [confirmingClear, setConfirmingClear] = useState<null | 'local' | 'session'>(null);
   const [filter, setFilter] = useState('');
-  // Force re-render after mutations (clear).
   const [, setTick] = useState(0);
   const bump = useCallback(() => setTick((n) => n + 1), []);
 
@@ -529,7 +526,6 @@ function EnvironmentTab() {
 
 function FeatureFlagsTab() {
   const [filter, setFilter] = useState('');
-  // Tick to force re-render after mutating overrides.
   const [, setTick] = useState(0);
   const bump = useCallback(() => setTick((n) => n + 1), []);
 
@@ -709,10 +705,6 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   );
 }
 
-/**
- * Mounts the DebugDialog and registers the global hotkey (Ctrl/Cmd+Shift+D).
- * In production this renders nothing.
- */
 export function DebugHelper() {
   const [open, setOpen] = useState(false);
 

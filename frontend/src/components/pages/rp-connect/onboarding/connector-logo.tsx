@@ -12,17 +12,14 @@ export const ConnectorLogo = ({
   name: ComponentName;
   className?: string;
   style?: React.CSSProperties;
-  /** Icon to render when `name` has no mapping in `componentLogoMap`. */
   fallback?: LogoComponent;
 }) => {
   const Component = (componentLogoMap[name] as LogoComponent | undefined) ?? fallback;
   if (!Component) {
     return null;
   }
-  // Wrap in a sized container so taller-than-wide logos (e.g. MongoDB's leaf,
-  // viewBox 256×549) can't blow out the row height. The inner SVG fills the
-  // wrapper and `preserveAspectRatio="xMidYMid meet"` (SVG default) letterboxes
-  // the content to keep each logo's natural aspect ratio.
+  // Sized wrapper + inner SVG that fills it. Lets `preserveAspectRatio` (SVG
+  // default) letterbox taller-than-wide logos so they can't blow out row height.
   return (
     <span className={cn('inline-flex shrink-0 items-center justify-center', className)} style={style}>
       <Component className="block h-full max-h-full w-full max-w-full" />

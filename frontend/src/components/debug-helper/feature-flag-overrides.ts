@@ -51,7 +51,6 @@ export function setOverride(key: FeatureFlagKey, value: boolean | null): void {
     current[key] = value;
   }
   writeOverrides(current);
-  // Make sure the accessor is installed; reads after this will see the new value.
   installFeatureFlagAccessor();
 }
 
@@ -76,23 +75,16 @@ export function getAllFlagKeys(): FeatureFlagKey[] {
   return Object.keys(FEATURE_FLAGS) as FeatureFlagKey[];
 }
 
-// Backing store for the base (non-overridden) flags. Updated whenever something
-// assigns to `config.featureFlags` (e.g. `setup()` in config.ts).
 let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
-
 let accessorInstalled = false;
 
-/**
- * Replace `config.featureFlags` with a getter/setter so reads always reflect
- * current localStorage overrides, regardless of when `setup()` last assigned
- * to it. Without this, the override would be wiped each time `setConfig()`
- * runs (App mount, federated host reconfig, etc.).
- */
+// Replaces `config.featureFlags` with a getter/setter so reads always overlay
+// localStorage overrides. Survives `setConfig()` reassigning the property
+// (otherwise overrides get wiped on each App mount / federated host reconfig).
 function installFeatureFlagAccessor(): void {
   if (accessorInstalled) {
     return;
   }
-  // Seed the base from whatever config.ts initialized (may include E2E flags).
   baseFlags = { ...(config.featureFlags ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
 
   Object.defineProperty(config, 'featureFlags', {
@@ -119,20 +111,16 @@ function installFeatureFlagAccessor(): void {
   accessorInstalled = true;
 }
 
-/**
- * Public entry point retained for backwards compatibility with the existing
- * call site in app.tsx. The heavy lifting is now done by the accessor.
- */
 export function applyOverrides(): void {
   installFeatureFlagAccessor();
 }
 
-// Install at module load — before any React render — so the very first read of
-// `config.featureFlags[key]` already overlays overrides.
+// Install at module load so the first `config.featureFlags[key]` read already
+// overlays overrides — well before any React render.
 if (IsDev && typeof window !== 'undefined') {
   try {
     installFeatureFlagAccessor();
   } catch {
-    // localStorage / defineProperty unavailable; ignore.
+    // localStorage / defineProperty unavailable.
   }
 }

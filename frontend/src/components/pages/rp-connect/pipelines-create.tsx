@@ -52,7 +52,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     p.addBreadcrumb('Create Pipeline', '');
 
     this.refreshData(true);
-    // get secrets
     rpcnSecretManagerApi.refreshSecrets(true);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
@@ -83,8 +82,6 @@ const RpConnectPipelinesCreateContent = () => {
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const isEditorPristine = editorContent.trim() === '';
-
-  console.log({ isTemplateGalleryEnabled });
 
   const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
   const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);

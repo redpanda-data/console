@@ -117,9 +117,6 @@ import {
   tryPatchRedpandaYaml,
 } from '../utils/yaml';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
@@ -141,9 +138,6 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return;
 }
 
-// ---------------------------------------------------------------------------
-// Schema + types
-// ---------------------------------------------------------------------------
 
 const pipelineFormSchema = z.object({
   name: z
@@ -168,9 +162,6 @@ const pipelineFormSchema = z.object({
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
-// ---------------------------------------------------------------------------
-// Pure helpers
-// ---------------------------------------------------------------------------
 
 function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
   const userTags: Record<string, string> = {};
@@ -240,9 +231,6 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Hooks
-// ---------------------------------------------------------------------------
 
 function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
@@ -461,9 +449,6 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
   };
 }
 
-// ---------------------------------------------------------------------------
-// Render components
-// ---------------------------------------------------------------------------
 
 function EditorSkeleton() {
   return (
@@ -479,9 +464,6 @@ function EditorSkeleton() {
   );
 }
 
-// Compact label/value cell for the at-a-glance Configuration card on the
-// pipeline view page. Copy button only appears on hover so non-copyable cells
-// look identical at rest.
 const ConfigField = ({
   label,
   value,
@@ -517,9 +499,6 @@ const ConfigField = ({
   </div>
 );
 
-// Pipeline metadata surfaced inline on the page so users don't have to open
-// the details dialog for at-a-glance info. The dialog still owns the deep
-// view (description, secrets, topics, tags, delete).
 const ConfigurationSection = ({ pipeline }: { pipeline: Pipeline }) => {
   const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
   return (
@@ -750,9 +729,6 @@ function SidebarPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main page component
-// ---------------------------------------------------------------------------
 
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
@@ -777,8 +753,6 @@ export default function PipelinePage() {
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
   const lintPanelRef = useRef<ImperativePanelHandle>(null);
 
-  console.log({ isTemplateGalleryEnabled });
-
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
     mode: 'onSubmit',
@@ -796,7 +770,6 @@ export default function PipelinePage() {
     [slashCommand]
   );
 
-  // --- Data queries ---
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -816,13 +789,11 @@ export default function PipelinePage() {
   const formName = useWatch({ control: form.control, name: 'name' });
   const pipelineName = mode === 'view' ? pipeline?.displayName : formName;
 
-  // --- Extracted hooks ---
 
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
     usePipelineSave({ form, yamlContent, mode, pipelineId, pipeline, isPipelineDiagramsEnabled });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
-  // --- YAML change handlers ---
 
   const handleYamlChange = useCallback(
     (value: string) => {
@@ -874,8 +845,6 @@ export default function PipelinePage() {
     [components, yamlContent, handleConnectorYamlChange]
   );
 
-  // --- Hydration (edit & view modes) ---
-
   const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
   if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
     setHydratedPipelineId(pipeline.id);
@@ -903,7 +872,6 @@ export default function PipelinePage() {
     onResolved: setYamlContent,
   });
 
-  // --- Navigation ---
 
   const handleCancel = useCallback(() => {
     if (mode === 'create') {
@@ -920,7 +888,6 @@ export default function PipelinePage() {
 
   const handleNameChange = useCallback((name: string) => form.setValue('name', name, { shouldValidate: true }), [form]);
 
-  // --- Render ---
 
   return (
     <div

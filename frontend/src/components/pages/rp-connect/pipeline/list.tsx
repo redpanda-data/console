@@ -318,9 +318,6 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-// Renders a connector-name badge with its service logo; falls back to a
-// generic Box icon when no specific logo is registered so badge layout is
-// consistent across all components.
 const ComponentBadge = ({ name }: { name: string }) => (
   <Badge variant="neutral-inverted">
     <ConnectorLogo className="size-3.5" fallback={Box} name={name as ComponentName} />

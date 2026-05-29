@@ -361,7 +361,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
-      {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {!liveViewEnabled && (
@@ -413,9 +412,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
         </div>
       </div>
 
-      {/* Table */}
       <div className="relative min-h-0">
-        {/* Progress bar overlaying top of table */}
         {isSearching && hasProgress && (
           <div className="absolute inset-x-0 top-0 z-10">
             <Progress className="h-1 w-full rounded-none" testId="log-progress-bar" value={null} />
@@ -536,17 +533,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
         </div>
       </div>
 
-      {/* Pagination (client-side only). DataTablePagination leads with
-          "X of N row(s) selected." — the log table doesn't expose row
-          selection, so suppress that text but keep its space so the
-          pagination controls stay right-aligned. */}
+      {/* Hide DataTablePagination's "X of N row(s) selected." — this table
+          doesn't expose row selection — while keeping its layout slot. */}
       {filteredRowCount > 0 && (
         <div className="[&>div>div:first-child]:invisible">
           <DataTablePagination table={table} />
         </div>
       )}
 
-      {/* Detail sheet */}
       <LogDetailSheet message={selectedMessage} onClose={() => setSelectedMessage(null)} />
     </div>
   );
