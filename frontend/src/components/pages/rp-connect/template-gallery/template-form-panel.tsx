@@ -241,11 +241,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
                 key={section}
               >
                 <div className="flex flex-wrap items-center gap-2.5 border-divider-default border-b pb-2.5">
-                  <Heading
-                    className="font-bold text-foreground text-sm uppercase tracking-wider"
-                    id={`section-${section}`}
-                    level={5}
-                  >
+                  <Heading className="font-bold uppercase tracking-wider" id={`section-${section}`} level={5}>
                     {SECTION_LABELS[section]}
                   </Heading>
                   {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}

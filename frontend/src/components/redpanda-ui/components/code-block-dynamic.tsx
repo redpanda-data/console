@@ -29,7 +29,7 @@ import { buttonVariants } from './button';
 import { useShiki } from '../lib/use-shiki';
 import { cn, type SharedProps } from '../lib/utils';
 
-export function useEffectEvent<F extends (...params: never[]) => unknown>(callback: F): F {
+export function useStableCallback<F extends (...params: never[]) => unknown>(callback: F): F {
   const ref = useRef(callback);
   ref.current = callback;
 
@@ -40,7 +40,7 @@ export function useCopyButton(onCopy: () => void | Promise<void>): [checked: boo
   const [checked, setChecked] = useState(false);
   const timeoutRef = useRef<number | null>(null);
 
-  const onClick: MouseEventHandler = useEffectEvent(() => {
+  const onClick: MouseEventHandler = useStableCallback(() => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
     }
@@ -293,8 +293,6 @@ export function DynamicCodeBlock({
 
   return (
     <>
-      {/* React 19 stylesheet hoisting props (href, precedence) — not yet typed in @types/react@18. */}
-      {/* @ts-expect-error remove once React types are upgraded to 19 */}
       <style href="shiki-dual-theme" precedence="medium">
         {shikiDualThemeStyles}
       </style>

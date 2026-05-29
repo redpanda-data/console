@@ -366,9 +366,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           {title ? (
-            <Heading className="font-semibold text-base text-foreground" level={3}>
-              {title}
-            </Heading>
+            <Heading level={4}>{title}</Heading>
           ) : null}
           {!liveViewEnabled && (
             <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />

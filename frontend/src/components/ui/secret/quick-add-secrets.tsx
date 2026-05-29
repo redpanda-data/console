@@ -19,8 +19,9 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Check, Key, Loader2, Plus, X } from 'lucide-react';
+import { Check, Key, Plus, X } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
@@ -265,7 +266,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
   const requiredSecretsForm = (
     <>
-      <Alert variant="warning">
+      <Alert variant="destructive">
         <AlertTitle>Required secrets are missing</AlertTitle>
         <AlertDescription>
           The tool requires secrets to function properly. Create them below before proceeding.
@@ -299,7 +300,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         <Button className="w-full" disabled={form.formState.isSubmitting} type="submit" variant="primary">
           {form.formState.isSubmitting ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Spinner />
               <Text as="span">Creating...</Text>
             </div>
           ) : (
@@ -318,20 +319,16 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
     <>
       {/* Display newly created secrets */}
       {newlyCreatedSecrets.length > 0 && (
-        <div className="space-y-2">
-          <Text className="font-medium text-muted-foreground text-sm">Created secrets</Text>
-          <div className="flex flex-col gap-1.5">
+        <Alert icon={<Check />} variant="success">
+          <AlertTitle>Created secrets</AlertTitle>
+          <AlertDescription>
             {newlyCreatedSecrets.map((secretName) => (
-              <div
-                className="flex items-center gap-2 rounded-md border border-green-600/30 bg-green-600/5 px-3 py-2"
-                key={secretName}
-              >
-                <Check className="h-4 w-4 shrink-0 text-green-600" />
-                <Text className="font-mono text-sm">{secretName}</Text>
-              </div>
+              <Text className="font-mono" key={secretName} variant="bodyMedium">
+                {secretName}
+              </Text>
             ))}
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Form to add new secrets */}
@@ -385,7 +382,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           <Button className="w-full" disabled={newSecretForm.formState.isSubmitting} type="submit" variant="primary">
             {newSecretForm.formState.isSubmitting ? (
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner />
                 <Text as="span">Creating...</Text>
               </div>
             ) : (
@@ -423,9 +420,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             <div className={hasRequiredSection ? 'space-y-3 border-t pt-4' : 'space-y-4'}>
               {hasRequiredSection && (
                 <div className="flex items-center justify-between gap-2">
-                  <Text className="font-medium" variant="bodyStrongMedium">
-                    Add a custom secret
-                  </Text>
+                  <Text variant="bodyStrongMedium">Add a custom secret</Text>
                   <Button
                     aria-label="Hide custom secret form"
                     icon={<X />}

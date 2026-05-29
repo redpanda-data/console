@@ -155,7 +155,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           data-testid="template-gallery-empty"
         >
           <Search aria-hidden className="h-6 w-6 text-muted-foreground" />
-          <Text className="font-medium">No templates match your search</Text>
+          <Text variant="bodyStrongMedium">No templates match your search</Text>
           {hasFiltersActive ? (
             <Button onClick={clearFilters} size="sm" variant="outline">
               Clear filters
@@ -177,11 +177,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
                 data-testid={`template-gallery-category-${category}`}
                 key={category}
               >
-                <Heading
-                  className="font-semibold text-base text-foreground"
-                  id={`gallery-category-${category}`}
-                  level={3}
-                >
+                <Heading id={`gallery-category-${category}`} level={4}>
                   {TEMPLATE_CATEGORY_LABELS[category]}
                 </Heading>
                 <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
