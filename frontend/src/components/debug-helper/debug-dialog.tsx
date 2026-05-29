@@ -18,7 +18,6 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -38,6 +37,7 @@ import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/co
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import {
+  AppWindow,
   Bug,
   Check,
   ChevronDown,
@@ -46,7 +46,9 @@ import {
   ClipboardCopy,
   Cog,
   Eye,
+  FileCode,
   Flag,
+  Info,
   RotateCw,
   Trash2,
   Wrench,
@@ -75,11 +77,72 @@ const TAG_VARIANT: Record<ConnectConfigFixture['tags'][number], React.ComponentP
   invalid: 'destructive-inverted',
 };
 
+type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
+
 function copyToClipboard(text: string, successMsg = 'Copied to clipboard') {
   navigator.clipboard
     .writeText(text)
     .then(() => toast.success(successMsg))
     .catch(() => toast.error('Failed to copy to clipboard'));
+}
+
+function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string): void {
+  // biome-ignore lint/suspicious/noConsole: intentional debug helper for the Simulate tab
+  console[level](message);
+}
+
+function formatBytes(bytes: number): string {
+  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function readStorageEntries(storage: Storage): { key: string; value: string }[] {
+  const entries: { key: string; value: string }[] = [];
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    if (key != null) {
+      entries.push({ key, value: storage.getItem(key) ?? '' });
+    }
+  }
+  return entries;
+}
+
+function useForceUpdate(): () => void {
+  const [, setTick] = useState(0);
+  return useCallback(() => setTick((n) => n + 1), []);
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <Text className="px-3 py-6 text-center text-muted-foreground" variant="bodySmall">
+      {children}
+    </Text>
+  );
+}
+
+function DebugSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-md border bg-card">
+      <div className="border-b bg-muted/30 px-3 py-2">
+        <Text className="font-medium" variant="bodyStrongSmall">
+          {title}
+        </Text>
+        {description ? (
+          <Text className="text-muted-foreground" variant="bodySmall">
+            {description}
+          </Text>
+        ) : null}
+      </div>
+      <div className="p-3">{children}</div>
+    </div>
+  );
 }
 
 function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
@@ -149,9 +212,7 @@ function ConnectConfigsTab() {
         value={filter}
       />
       {filtered.length === 0 ? (
-        <Text className="py-6 text-center text-muted-foreground" variant="bodySmall">
-          No fixtures match “{filter}”.
-        </Text>
+        <EmptyState>No fixtures match “{filter}”.</EmptyState>
       ) : (
         <div className="flex flex-col gap-1.5">
           {filtered.map((fixture) => (
@@ -167,6 +228,39 @@ function ErrorThrower(): never {
   throw new Error('DebugDialog: synthetic render error to test ErrorBoundary');
 }
 
+const TOAST_ACTIONS: { label: string; variant: ButtonVariant; run: () => void }[] = [
+  { label: 'Success', variant: 'primary', run: () => toast.success('Looking good — operation succeeded.') },
+  { label: 'Info', variant: 'outline', run: () => toast.info('Heads up — informational toast.') },
+  { label: 'Warning', variant: 'outline', run: () => toast.warning('Be careful — this might be slow.') },
+  { label: 'Error', variant: 'destructive', run: () => toast.error('Something broke. Check the console.') },
+  {
+    label: 'With action',
+    variant: 'outline',
+    run: () =>
+      toast.message('Action required', {
+        description: 'A toast with a description and an action button.',
+        action: { label: 'Undo', onClick: () => toast('Undone') },
+      }),
+  },
+  {
+    label: 'Loading → success',
+    variant: 'outline',
+    run: () => {
+      const id = toast.loading('Processing… (5s)');
+      setTimeout(() => toast.success('Done', { id }), 5000);
+    },
+  },
+  {
+    label: 'Stack 6',
+    variant: 'outline',
+    run: () => {
+      for (let i = 0; i < 6; i++) {
+        toast(`Stacked toast #${i + 1}`);
+      }
+    },
+  },
+];
+
 function SimulateTab({ onClose }: { onClose: () => void }) {
   const [renderThrow, setRenderThrow] = useState(false);
   return (
@@ -175,74 +269,28 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
         Trigger app-level side effects to verify toasts, error boundaries, and console output.
       </Text>
 
-      <section className="flex flex-col gap-2">
-        <Text className="font-medium" variant="bodyStrongSmall">
-          Toasts
-        </Text>
-        <Text className="text-muted-foreground" variant="bodySmall">
-          Fire each toast variant to verify rendering, stacking, and rich colors.
-        </Text>
+      <DebugSection
+        description="Fire each toast variant to verify rendering, stacking, and rich colors."
+        title="Toasts"
+      >
         <div className="flex flex-wrap gap-1.5">
-          <Button onClick={() => toast.success('Looking good — operation succeeded.')} size="sm" variant="primary">
-            Success
-          </Button>
-          <Button onClick={() => toast.info('Heads up — informational toast.')} size="sm" variant="secondary">
-            Info
-          </Button>
-          <Button onClick={() => toast.warning('Be careful — this might be slow.')} size="sm" variant="secondary">
-            Warning
-          </Button>
-          <Button onClick={() => toast.error('Something broke. Check the console.')} size="sm" variant="destructive">
-            Error
-          </Button>
-          <Button
-            onClick={() =>
-              toast.message('Action required', {
-                description: 'A toast with a description and an action button.',
-                action: { label: 'Undo', onClick: () => toast('Undone') },
-              })
-            }
-            size="sm"
-            variant="secondary"
-          >
-            With action
-          </Button>
-          <Button
-            onClick={() => {
-              const id = toast.loading('Processing… (5s)');
-              setTimeout(() => toast.success('Done', { id }), 5000);
-            }}
-            size="sm"
-            variant="secondary"
-          >
-            Loading → success
-          </Button>
-          <Button
-            onClick={() => {
-              for (let i = 0; i < 6; i++) {
-                toast(`Stacked toast #${i + 1}`);
-              }
-            }}
-            size="sm"
-            variant="secondary-ghost"
-          >
-            Stack 6
-          </Button>
+          {TOAST_ACTIONS.map(({ label, variant, run }) => (
+            <Button key={label} onClick={run} size="sm" variant={variant}>
+              {label}
+            </Button>
+          ))}
         </div>
-      </section>
+      </DebugSection>
 
-      <section className="flex flex-col gap-2">
-        <Text className="font-medium" variant="bodyStrongSmall">
-          Errors & console
-        </Text>
-        <Text className="text-muted-foreground" variant="bodySmall">
-          Force errors to verify ErrorBoundary, error toasts, and unhandled-rejection paths.
-        </Text>
+      <DebugSection
+        description="Force errors to verify ErrorBoundary, error toasts, and unhandled-rejection paths."
+        title="Errors & console"
+      >
         <div className="flex flex-wrap gap-1.5">
           <Button
             onClick={() => {
               onClose();
-              // Defer so the dialog can finish unmounting before the boundary trips.
+              // Defer the throw so the dialog finishes unmounting before the boundary trips.
               setTimeout(() => setRenderThrow(true), 50);
             }}
             size="sm"
@@ -252,8 +300,7 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
           </Button>
           <Button
             onClick={() => {
-              // biome-ignore lint/suspicious/noConsole: intentional debug helper
-              console.error('DebugDialog: synthetic console.error');
+              emitConsole('error', 'DebugDialog: synthetic console.error');
               throw new Error('DebugDialog: uncaught synthetic error from event handler');
             }}
             size="sm"
@@ -262,9 +309,7 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
             Throw in event handler
           </Button>
           <Button
-            onClick={() => {
-              void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'));
-            }}
+            onClick={() => void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'))}
             size="sm"
             variant="destructive"
           >
@@ -272,21 +317,18 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
           </Button>
           <Button
             onClick={() => {
-              // biome-ignore lint/suspicious/noConsole: intentional debug helper
-              console.warn('DebugDialog: synthetic console.warn');
-              // biome-ignore lint/suspicious/noConsole: intentional debug helper
-              console.error('DebugDialog: synthetic console.error');
-              // biome-ignore lint/suspicious/noConsole: intentional debug helper
-              console.info('DebugDialog: synthetic console.info');
+              emitConsole('warn', 'DebugDialog: synthetic console.warn');
+              emitConsole('error', 'DebugDialog: synthetic console.error');
+              emitConsole('info', 'DebugDialog: synthetic console.info');
               toast.success('Wrote 3 messages to the console');
             }}
             size="sm"
-            variant="secondary"
+            variant="outline"
           >
             Console noise
           </Button>
         </div>
-      </section>
+      </DebugSection>
 
       {renderThrow && <ErrorThrower />}
     </div>
@@ -294,14 +336,7 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
 }
 
 function dumpStorage(storage: Storage): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (let i = 0; i < storage.length; i++) {
-    const k = storage.key(i);
-    if (k != null) {
-      out[k] = storage.getItem(k) ?? '';
-    }
-  }
-  return out;
+  return Object.fromEntries(readStorageEntries(storage).map(({ key, value }) => [key, value]));
 }
 
 function tryFormatValue(raw: string): string {
@@ -333,7 +368,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
               {storageKey}
             </code>
             <Badge className="shrink-0" size="sm" variant="simple-outline">
-              {sizeBytes < 1024 ? `${sizeBytes} B` : `${(sizeBytes / 1024).toFixed(1)} KB`}
+              {formatBytes(sizeBytes)}
             </Badge>
           </div>
           {!expanded && (
@@ -387,19 +422,12 @@ function StorageSection({
   filter: string;
 }) {
   const entries = useMemo(() => {
-    const out: { key: string; value: string }[] = [];
-    for (let i = 0; i < storage.length; i++) {
-      const k = storage.key(i);
-      if (k != null) {
-        out.push({ key: k, value: storage.getItem(k) ?? '' });
-      }
-    }
-    out.sort((a, b) => a.key.localeCompare(b.key));
+    const all = readStorageEntries(storage).sort((a, b) => a.key.localeCompare(b.key));
     const q = filter.trim().toLowerCase();
     if (!q) {
-      return out;
+      return all;
     }
-    return out.filter((e) => e.key.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
+    return all.filter((e) => e.key.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
   }, [storage, filter]);
 
   return (
@@ -434,9 +462,7 @@ function StorageSection({
         </div>
       </div>
       {entries.length === 0 ? (
-        <Text className="px-3 py-3 text-center text-muted-foreground" variant="bodySmall">
-          {storage.length === 0 ? 'Empty' : `No matches for “${filter}”`}
-        </Text>
+        <EmptyState>{storage.length === 0 ? 'Empty' : `No matches for “${filter}”`}</EmptyState>
       ) : (
         <div className="max-h-80 overflow-auto">
           {entries.map((entry) => (
@@ -451,8 +477,7 @@ function StorageSection({
 function StorageTab() {
   const [confirmingClear, setConfirmingClear] = useState<null | 'local' | 'session'>(null);
   const [filter, setFilter] = useState('');
-  const [, setTick] = useState(0);
-  const bump = useCallback(() => setTick((n) => n + 1), []);
+  const forceUpdate = useForceUpdate();
 
   const clearStorage = (kind: 'local' | 'session') => {
     const storage = kind === 'local' ? window.localStorage : window.sessionStorage;
@@ -460,7 +485,7 @@ function StorageTab() {
     storage.clear();
     toast.success(`Cleared ${before} ${kind}Storage entries — reload to apply state`);
     setConfirmingClear(null);
-    bump();
+    forceUpdate();
   };
 
   return (
@@ -537,8 +562,7 @@ function EnvironmentTab() {
 
 function FeatureFlagsTab() {
   const [filter, setFilter] = useState('');
-  const [, setTick] = useState(0);
-  const bump = useCallback(() => setTick((n) => n + 1), []);
+  const forceUpdate = useForceUpdate();
 
   const overrides = getFlagOverrides();
   const effective = getEffectiveFlags();
@@ -572,7 +596,7 @@ function FeatureFlagsTab() {
           onClick={() => {
             clearFlagOverrides();
             toast.success('Cleared all feature-flag overrides');
-            bump();
+            forceUpdate();
           }}
           size="xs"
           variant="destructive-ghost"
@@ -582,9 +606,7 @@ function FeatureFlagsTab() {
       </div>
       <div className="overflow-hidden rounded-md border">
         {filtered.length === 0 ? (
-          <Text className="px-3 py-3 text-center text-muted-foreground" variant="bodySmall">
-            No flags match “{filter}”.
-          </Text>
+          <EmptyState>No flags match “{filter}”.</EmptyState>
         ) : (
           filtered.map((key) => {
             const isOverridden = key in overrides;
@@ -596,7 +618,7 @@ function FeatureFlagsTab() {
                   checked={effectiveValue}
                   onCheckedChange={(checked) => {
                     setFlagOverride(key, checked);
-                    bump();
+                    forceUpdate();
                   }}
                 />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -617,7 +639,7 @@ function FeatureFlagsTab() {
                   <Button
                     onClick={() => {
                       setFlagOverride(key, null);
-                      bump();
+                      forceUpdate();
                     }}
                     size="xs"
                     variant="secondary-ghost"
@@ -634,10 +656,115 @@ function FeatureFlagsTab() {
   );
 }
 
-type Tab = 'configs' | 'simulate' | 'storage' | 'env' | 'flags';
+type SubTab = { value: string; label: string; icon: React.ReactNode; content: React.ReactNode };
+
+// Second-level underline tabs, flush against the top-level bar. The inner content gets its own padding.
+function SubTabs({ tabs }: { tabs: SubTab[] }) {
+  const [active, setActive] = useState(tabs[0]?.value ?? '');
+
+  if (tabs.length <= 1) {
+    return <div className="px-4 py-4">{tabs[0]?.content}</div>;
+  }
+
+  return (
+    <Tabs className="gap-0" onValueChange={setActive} value={active}>
+      <div className="sticky top-10 z-10 bg-muted/40 backdrop-blur-sm">
+        <TabsList className="bg-transparent" variant="underline">
+          {tabs.map(({ value, label, icon }) => (
+            <TabsTrigger key={value} value={value} variant="underline">
+              {icon}
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
+      <div className="px-4 py-4">
+        {tabs.map(({ value, content }) => (
+          <TabsContent key={value} value={value}>
+            {content}
+          </TabsContent>
+        ))}
+      </div>
+    </Tabs>
+  );
+}
+
+function OverviewTab() {
+  return (
+    <div className="flex flex-col gap-4">
+      <Text className="text-muted-foreground" variant="bodySmall">
+        A development-only toolbox for exercising Console's UI and inspecting local state. It ships in dev builds only
+        and is never bundled into production.
+      </Text>
+
+      <DebugSection title="What's inside">
+        <ul className="flex flex-col gap-1.5">
+          <li className="text-muted-foreground text-sm">
+            <strong className="text-foreground">General</strong> — simulate toasts and errors, inspect or clear browser
+            storage, and snapshot the build and runtime environment.
+          </li>
+          <li className="text-muted-foreground text-sm">
+            <strong className="text-foreground">Flags</strong> — override feature flags locally; changes persist to
+            localStorage and re-apply on reload.
+          </li>
+          <li className="text-muted-foreground text-sm">
+            <strong className="text-foreground">Connect</strong> — copy pre-built pipeline YAMLs to stress-test the
+            editor and validation.
+          </li>
+        </ul>
+      </DebugSection>
+
+      <DebugSection title="Tips">
+        <span className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-sm">
+          Toggle this dialog anytime with
+          <KbdGroup>
+            <Kbd size="xs">⌃/⌘</Kbd>
+            <Kbd size="xs">⇧</Kbd>
+            <Kbd size="xs">D</Kbd>
+          </KbdGroup>
+        </span>
+      </DebugSection>
+    </div>
+  );
+}
+
+function GeneralTab({ onClose }: { onClose: () => void }) {
+  return (
+    <SubTabs
+      tabs={[
+        { value: 'overview', label: 'Overview', icon: <Info className="mr-1 h-3 w-3" />, content: <OverviewTab /> },
+        {
+          value: 'simulate',
+          label: 'Simulate',
+          icon: <Zap className="mr-1 h-3 w-3" />,
+          content: <SimulateTab onClose={onClose} />,
+        },
+        { value: 'storage', label: 'Storage', icon: <Trash2 className="mr-1 h-3 w-3" />, content: <StorageTab /> },
+        { value: 'env', label: 'Env', icon: <Cog className="mr-1 h-3 w-3" />, content: <EnvironmentTab /> },
+      ]}
+    />
+  );
+}
+
+function ConnectTab() {
+  return (
+    <SubTabs
+      tabs={[
+        {
+          value: 'configs',
+          label: 'Configs',
+          icon: <FileCode className="mr-1 h-3 w-3" />,
+          content: <ConnectConfigsTab />,
+        },
+      ]}
+    />
+  );
+}
+
+type Tab = 'general' | 'flags' | 'connect';
 
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [tab, setTab] = useState<Tab>('configs');
+  const [tab, setTab] = useState<Tab>('general');
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -649,48 +776,35 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <Bug className="h-4 w-4" />
             Debug helpers
           </DialogTitle>
-          <DialogDescription>Connect-app debugging tools — configs, simulators, storage, flags.</DialogDescription>
         </DialogHeader>
 
         <DialogBody padding="none" scrollShadow={false}>
-          <Tabs onValueChange={(v) => setTab(v as Tab)} value={tab}>
-            <div className="sticky top-0 z-10 bg-background">
+          <Tabs className="gap-0" onValueChange={(v) => setTab(v as Tab)} value={tab}>
+            <div className="sticky top-0 z-20 bg-background">
               <TabsList variant="underline">
-                <TabsTrigger value="configs" variant="underline">
-                  <Wrench className="mr-1 h-3 w-3" /> Configs
-                </TabsTrigger>
-                <TabsTrigger value="simulate" variant="underline">
-                  <Zap className="mr-1 h-3 w-3" /> Simulate
-                </TabsTrigger>
-                <TabsTrigger value="storage" variant="underline">
-                  <Trash2 className="mr-1 h-3 w-3" /> Storage
+                <TabsTrigger value="general" variant="underline">
+                  <Wrench className="mr-1 h-3 w-3" /> General
                 </TabsTrigger>
                 <TabsTrigger value="flags" variant="underline">
                   <Flag className="mr-1 h-3 w-3" /> Flags
                 </TabsTrigger>
-                <TabsTrigger value="env" variant="underline">
-                  <Cog className="mr-1 h-3 w-3" /> Env
+                <TabsTrigger value="connect" variant="underline">
+                  <AppWindow className="mr-1 h-3 w-3" /> Connect
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <div className="px-4 py-4">
-              <TabsContent value="configs">
-                <ConnectConfigsTab />
-              </TabsContent>
-              <TabsContent value="simulate">
-                <SimulateTab onClose={close} />
-              </TabsContent>
-              <TabsContent value="storage">
-                <StorageTab />
-              </TabsContent>
-              <TabsContent value="flags">
+            <TabsContent value="general">
+              <GeneralTab onClose={close} />
+            </TabsContent>
+            <TabsContent value="flags">
+              <div className="px-4 py-4">
                 <FeatureFlagsTab />
-              </TabsContent>
-              <TabsContent value="env">
-                <EnvironmentTab />
-              </TabsContent>
-            </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="connect">
+              <ConnectTab />
+            </TabsContent>
           </Tabs>
         </DialogBody>
 
