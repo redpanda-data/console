@@ -595,11 +595,8 @@ const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
 const SECTION_GAP = 16;
 const ROOT_X = 8;
-// Top offset that keeps the first node clear of the wrapper's top fade-mask
-// (~16px tall). At rest, the first label / leaf is fully opaque; when content
-// overflows and the user scrolls up, the empty world space above is what
-// fades, not the first element.
-const ROOT_Y = 16;
+// Small top offset so the first label/leaf isn't flush against the panel edge.
+const ROOT_Y = 4;
 
 // Per-row addition when a leaf renders an extra chip / badge below its label
 // (label badge, topic list, missing-topic chip, missing-sasl chip). Must stay

@@ -9,7 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { type Edge, type Node, PanOnScrollMode, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import {
+  type Edge,
+  type Node,
+  PanOnScrollMode,
+  ReactFlow,
+  type ReactFlowInstance,
+  ReactFlowProvider,
+  useReactFlow,
+} from '@xyflow/react';
 import { Button } from 'components/redpanda-ui/components/button';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { ArrowRight, MinusIcon, PlusIcon, Sparkles } from 'lucide-react';
@@ -142,6 +150,7 @@ export const PipelineFlowDiagram = ({
   const instanceId = useId();
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<Node, Edge> | null>(null);
   const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null);
 
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
@@ -254,6 +263,47 @@ export const PipelineFlowDiagram = ({
     };
   }, [rfNodes, containerSize, maxDepth]);
 
+  // Pin the viewport to the top-left whenever the layout changes. React Flow
+  // sometimes settles content with vertical offset (especially when the
+  // container is much taller than the diagram) and `defaultViewport` alone
+  // isn't enough to override it.
+  useLayoutEffect(() => {
+    const rf = rfInstanceRef.current;
+    if (rf && rfNodes.length > 0) {
+      rf.setViewport({ x: 0, y: 0, zoom: 1 });
+    }
+  }, [rfNodes, translateExtent]);
+
+  // Scroll chaining: when the diagram is at its top/bottom pan boundary and
+  // the user scrolls further in that direction, stop the wheel event in the
+  // capture phase so React Flow can't preventDefault — letting the page
+  // scroll naturally past the visualizer. In the middle of the pan range,
+  // events fall through and React Flow handles them as usual.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !contentOverflows || !translateExtent || !containerSize) {
+      return;
+    }
+    const [[, minBoundY], [, maxBoundY]] = translateExtent;
+    const maxVpY = -minBoundY;
+    const minVpY = containerSize.height - maxBoundY;
+    const handleWheel = (event: WheelEvent) => {
+      const rf = rfInstanceRef.current;
+      if (!rf) {
+        return;
+      }
+      const vp = rf.getViewport();
+      const atTop = vp.y >= maxVpY - 0.5;
+      const atBottom = vp.y <= minVpY + 0.5;
+      if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
+        // Boundary + scrolling outward — let the page own this wheel event.
+        event.stopPropagation();
+      }
+    };
+    el.addEventListener('wheel', handleWheel, { capture: true, passive: true });
+    return () => el.removeEventListener('wheel', handleWheel, { capture: true } as EventListenerOptions);
+  }, [contentOverflows, translateExtent, containerSize]);
+
   if (rfNodes.length === 0) {
     return (
       <div className="relative h-full w-full" ref={containerRef}>
@@ -273,7 +323,7 @@ export const PipelineFlowDiagram = ({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden [mask-image:linear-gradient(to_bottom,transparent_0,black_16px,black_calc(100%-16px),transparent_100%)] [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none]"
+      className="relative h-full w-full overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none]"
       ref={containerRef}
     >
       {containerSize ? (
@@ -290,9 +340,23 @@ export const PipelineFlowDiagram = ({
             nodesDraggable={false}
             nodesFocusable={false}
             nodeTypes={pipelineNodeTypes}
+            onInit={(instance) => {
+              rfInstanceRef.current = instance;
+              // Force the viewport flush to the top-left. Without this, React
+              // Flow occasionally settles with the content vertically centred
+              // (or otherwise offset) when the container is taller than the
+              // diagram, leaving a visibly large gap above the first node.
+              instance.setViewport({ x: 0, y: 0, zoom: 1 });
+            }}
             panOnDrag={false}
             panOnScroll={contentOverflows}
             panOnScrollMode={panOnScrollMode}
+            // When the diagram doesn't overflow, let wheel events bubble to
+            // the page so the user can scroll past the visualizer instead of
+            // having ReactFlow swallow them. When it does overflow, the
+            // capture-phase wheel handler above also relinquishes events at
+            // the pan boundary so scroll chains to the page there too.
+            preventScrolling={contentOverflows}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}
             zoomOnPinch={false}
