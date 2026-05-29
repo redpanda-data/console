@@ -22,8 +22,8 @@ export function applySchemaToSlots(template: PipelineTemplate, componentList?: C
     return template.slots;
   }
 
-  const sourceComp = findComponentByName(componentList, template.source.component);
-  const sinkComp = findComponentByName(componentList, template.sink.component);
+  const sourceComp = findComponentByName(componentList, template.source.component, template.source.type);
+  const sinkComp = findComponentByName(componentList, template.sink.component, template.sink.type);
 
   const componentForSection = (section: TemplateSlot['section']) => {
     if (section === 'source') {

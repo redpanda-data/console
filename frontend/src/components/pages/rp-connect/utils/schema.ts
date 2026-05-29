@@ -72,12 +72,19 @@ const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, Conne
  * Converts proto ComponentSpec to strongly-typed ConnectComponentSpec by overriding the type field.
  * Returns empty array and shows toast notification on error.
  */
-/**
- * Find a component spec by name, regardless of which type bucket it lives in.
- * Returns undefined if no component with that name exists in the list.
- */
-export function findComponentByName(componentList: ComponentList, name: string): ComponentSpec | undefined {
-  for (const { listKey } of Object.values(COMPONENT_TYPE_MAPPINGS)) {
+// When `type` is provided, only that type's list is searched — required to
+// disambiguate names that exist across types (e.g. `redpanda` is registered as
+// cache, input, and output). When omitted, the first match across all type
+// buckets wins.
+export function findComponentByName(
+  componentList: ComponentList,
+  name: string,
+  type?: Exclude<ConnectComponentType, 'custom'>
+): ComponentSpec | undefined {
+  const mappings = type
+    ? [COMPONENT_TYPE_MAPPINGS[type]]
+    : Object.values(COMPONENT_TYPE_MAPPINGS);
+  for (const { listKey } of mappings) {
     const list = componentList[listKey] as ComponentSpec[] | undefined;
     if (!list) {
       continue;

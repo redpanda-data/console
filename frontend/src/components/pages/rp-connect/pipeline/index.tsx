@@ -53,6 +53,7 @@ import {
   UpdatePipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
+  type ComponentList,
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
   type Pipeline,
   Pipeline_ServiceAccountSchema,
@@ -1017,8 +1018,8 @@ export default function PipelinePage() {
               one.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody padding="none">
-            <AddTopicStep hideTitle ref={topicStepRef} />
+          <DialogBody>
+            <AddTopicStep hideTitle inline ref={topicStepRef} />
           </DialogBody>
           <DialogFooter>
             <Button onClick={topicDialog.close} variant="secondary-ghost">
@@ -1051,7 +1052,7 @@ export default function PipelinePage() {
               creating a new user.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody padding="none">
+          <DialogBody>
             {connectorTopics && connectorTopics.length > 1 && (
               <Alert variant="warning">
                 <AlertTitle>Multiple topics configured</AlertTitle>
@@ -1063,6 +1064,7 @@ export default function PipelinePage() {
             )}
             <AddUserStep
               hideTitle
+              inline
               ref={userStepRef}
               showConsumerGroupFields={userDialog.target?.section === 'input'}
               topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
@@ -1083,21 +1085,19 @@ export default function PipelinePage() {
         </DialogContent>
       </Dialog>
 
-      {componentListResponse?.components ? (
-        <AddConnectorDialog
-          components={componentListResponse.components}
-          connectorType={
-            addConnectorType === 'resource'
-              ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
-              : (addConnectorType ?? undefined)
-          }
-          isOpen={addConnectorType !== null}
-          onAddConnector={handleConnectorSelected}
-          onCloseAddConnector={() => setAddConnectorType(null)}
-          searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
-          title={getConnectorDialogTitle(addConnectorType)}
-        />
-      ) : null}
+      <AddConnectorDialog
+        components={componentListResponse?.components ?? ({} as ComponentList)}
+        connectorType={
+          addConnectorType === 'resource'
+            ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
+            : (addConnectorType ?? undefined)
+        }
+        isOpen={addConnectorType !== null}
+        onAddConnector={handleConnectorSelected}
+        onCloseAddConnector={() => setAddConnectorType(null)}
+        searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
+        title={getConnectorDialogTitle(addConnectorType)}
+      />
 
       {isTemplateGalleryEnabled && mode !== 'view' ? (
         <TemplateGalleryDialog

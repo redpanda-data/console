@@ -19,7 +19,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
-import { AnimatePresence, type MotionProps, motion } from 'motion/react';
+import { type MotionProps, motion } from 'motion/react';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
@@ -406,52 +406,19 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                 Show advanced settings
               </Button>
 
-              {/* Coordinate with DialogContent's useAnimatedAutoHeight so the
-                  popup and the panel animate in parallel in both directions:
-                  - Enter: snap the panel to its natural height instantly
-                    (height transition duration 0), so the popup observes one
-                    big jump and runs a single height tween. The popup's
-                    overflow:hidden produces a wipe-reveal while the panel
-                    cross-fades in over 220ms.
-                  - Exit: popLayout pops the panel out of layout on the same
-                    frame, so the popup observes the new natural height
-                    instantly and shrinks. The panel animates height + opacity
-                    using the same 250ms / [0.22, 1, 0.36, 1] curve that
-                    useAnimatedAutoHeight uses, so the two reads as a single
-                    coordinated collapse. */}
-              <AnimatePresence initial={false} mode="popLayout">
-                {showAdvancedSettings ? (
-                  <motion.div
-                    animate={{
-                      height: 'auto',
-                      opacity: 1,
-                      transition: {
-                        height: { duration: 0 },
-                        opacity: { duration: 0.22, ease: [0.4, 0, 0.2, 1] },
-                      },
-                    }}
-                    aria-hidden={!showAdvancedSettings}
-                    exit={{
-                      height: 0,
-                      opacity: 0,
-                      transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
-                    }}
-                    id="add-topic-advanced-settings"
-                    initial={{ height: 0, opacity: 0 }}
-                    key="add-topic-advanced-settings"
-                    layout
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="space-y-6 pt-4">
-                      <AdvancedTopicSettings
-                        disabled={isPending}
-                        form={form}
-                        isExistingTopic={Boolean(existingTopicSelected)}
-                      />
-                    </div>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+              {/* The panel snaps in/out instantly so DialogContent's
+                  useAnimatedAutoHeight observes one clean before→after height
+                  delta and runs the visible transition. Animating both at once
+                  causes the panel's tween to fight the dialog's resize. */}
+              {showAdvancedSettings ? (
+                <div className="space-y-6 pt-4" id="add-topic-advanced-settings">
+                  <AdvancedTopicSettings
+                    disabled={isPending}
+                    form={form}
+                    isExistingTopic={Boolean(existingTopicSelected)}
+                  />
+                </div>
+              ) : null}
             </div>
           )}
         </div>

@@ -221,7 +221,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     return (
       <Form {...form}>
         <form
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-12 pb-4"
           data-testid={`template-form-${template.id}`}
           id={formId}
           onSubmit={submitHandler}
@@ -252,12 +252,16 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
             return (
               <section
                 aria-labelledby={`section-${section}`}
-                className="flex flex-col gap-4 border-divider-default border-l-2 pl-3"
+                className="flex flex-col gap-4"
                 data-testid={`template-section-${section}`}
                 key={section}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Heading className="font-semibold text-base text-foreground" id={`section-${section}`} level={3}>
+                <div className="flex flex-wrap items-center gap-2.5 border-divider-default border-b pb-2.5">
+                  <Heading
+                    className="font-bold text-foreground text-sm uppercase tracking-wider"
+                    id={`section-${section}`}
+                    level={5}
+                  >
                     {SECTION_LABELS[section]}
                   </Heading>
                   {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}

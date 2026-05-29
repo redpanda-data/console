@@ -13,9 +13,15 @@
 
 import type { PipelineTemplate } from './pipeline-template-types';
 
-const dsnSlot = (id: string, dbName: string, suggested: string, schemaField?: string) => ({
+const dsnSlot = (
+  id: string,
+  dbName: string,
+  suggested: string,
+  schemaField?: string,
+  section: 'source' | 'sink' = 'source'
+) => ({
   id,
-  section: 'source' as const,
+  section,
   kind: 'secret' as const,
   label: `${dbName} connection DSN`,
   description: `Stored as a Cloud secret. Referenced in YAML as \${secrets.${suggested}}.`,
@@ -749,7 +755,7 @@ output:
         required: true,
         schemaField: 'user',
       },
-      dsnSlot('privateKey', 'Snowflake RSA private key', 'SNOWFLAKE_PRIVATE_KEY', 'private_key'),
+      dsnSlot('privateKey', 'Snowflake RSA private key', 'SNOWFLAKE_PRIVATE_KEY', 'private_key', 'sink'),
       {
         id: 'database',
         section: 'sink',
@@ -854,7 +860,7 @@ output:
         required: true,
         schemaField: 'table',
       },
-      dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON', 'credentials_json'),
+      dsnSlot('credentialsJson', 'GCP service-account JSON', 'GCP_SERVICE_ACCOUNT_JSON', 'credentials_json', 'sink'),
     ],
     baseYaml: `input:
   redpanda:
@@ -988,7 +994,7 @@ output:
     slots: [
       sourceTopicSlot,
       consumerGroupSlot,
-      dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN', 'dsn'),
+      dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN', 'dsn', 'sink'),
       {
         id: 'tableName',
         section: 'sink',

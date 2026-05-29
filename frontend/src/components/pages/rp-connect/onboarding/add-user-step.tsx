@@ -85,6 +85,11 @@ type AddUserStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
+  // Renders the form bare — no Card chrome, no min-height, no top margin — so
+  // it can sit inside a host surface (e.g. a dialog body) that already provides
+  // framing. The onboarding wizard keeps the default (false) for its full-page
+  // step layout.
+  inline?: boolean;
 };
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
@@ -103,6 +108,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       selectionMode = 'both',
       hideTitle,
       className,
+      inline = false,
       ...motionProps
     },
     ref
@@ -384,21 +390,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       isPending: isPending || isServiceAccountPending,
     }));
 
-    return (
-      <Card size="full" {...motionProps} animated className={className} variant="ghost">
-        {!hideTitle && (
-          <CardHeader className="max-w-2xl">
-            <CardTitle>
-              <Heading level={2}>Configure a user with permissions</Heading>
-            </CardTitle>
-            <CardDescription className="mt-4">
-              Select or create a SASL-SCRAM user that can interact with this topic.
-            </CardDescription>
-          </CardHeader>
-        )}
-        <CardContent className="min-h-[300px]">
-          <Form {...form}>
-            <div className="mt-4 max-w-2xl space-y-8">
+    const formBody = (
+      <Form {...form}>
+        <div className={inline ? 'flex flex-col gap-8' : 'mt-4 max-w-2xl space-y-8'}>
               <div className="flex flex-col gap-2">
                 <FormLabel>Authentication Method</FormLabel>
                 <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
@@ -868,9 +862,27 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                   </Alert>
                 </div>
               )}
-            </div>
-          </Form>
-        </CardContent>
+        </div>
+      </Form>
+    );
+
+    if (inline) {
+      return <div className={className}>{formBody}</div>;
+    }
+
+    return (
+      <Card size="full" {...motionProps} animated className={className} variant="ghost">
+        {!hideTitle && (
+          <CardHeader className="max-w-2xl">
+            <CardTitle>
+              <Heading level={2}>Configure a user with permissions</Heading>
+            </CardTitle>
+            <CardDescription className="mt-4">
+              Select or create a SASL-SCRAM user that can interact with this topic.
+            </CardDescription>
+          </CardHeader>
+        )}
+        <CardContent className="min-h-[300px]">{formBody}</CardContent>
       </Card>
     );
   }

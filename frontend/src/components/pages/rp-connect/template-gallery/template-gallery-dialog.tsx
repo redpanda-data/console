@@ -24,7 +24,7 @@ import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { ArrowLeft, KeyRound } from 'lucide-react';
 import { LayoutGroup, motion } from 'motion/react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 
@@ -132,6 +132,21 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
     onClose(stashed);
     resetToGallery();
   };
+
+  // Ensure the next open lands on the gallery even when the parent closes the
+  // dialog directly (e.g. after `onSubmit`) without routing through `onClose` /
+  // `onOpenChange`. Without this, the previous view/state would still be set
+  // when the dialog reopens.
+  useEffect(() => {
+    if (!open) {
+      setView({ kind: 'gallery' });
+      setSelectedTemplate(null);
+      setApplySlotValue(null);
+      setIsCreatingTopic(false);
+      formHandleRef.current = null;
+      addTopicStepRef.current = null;
+    }
+  }, [open]);
 
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const existingSecrets = useMemo(

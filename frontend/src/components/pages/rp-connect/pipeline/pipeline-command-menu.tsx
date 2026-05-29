@@ -595,8 +595,8 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
           <DialogHeader>
             <DialogTitle>Create a user</DialogTitle>
           </DialogHeader>
-          <DialogBody padding="none">
-            <AddUserStep hideTitle ref={userStepRef} selectionMode="new" />
+          <DialogBody>
+            <AddUserStep hideTitle inline ref={userStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
             <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">

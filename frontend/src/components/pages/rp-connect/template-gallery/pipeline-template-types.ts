@@ -78,7 +78,7 @@ export type PipelineTemplate = {
 export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategory, string> = {
   cdc: 'CDC sources to Redpanda',
   ingest: 'Ingest sources to Redpanda',
-  analytics: 'Redpanda to analytics & lakehouse',
+  analytics: 'Analytics & lakehouse from Redpanda',
   migration: 'Migration & replication',
 };
 
