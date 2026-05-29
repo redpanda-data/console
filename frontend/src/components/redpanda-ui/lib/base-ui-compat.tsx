@@ -299,8 +299,8 @@ export function resetDevWarnings(): void {
 
 /**
  * Fires a dev-only deprecation warning the first time a Radix-compat prop is
- * passed. Pair with a JSDoc `@deprecated` tag on the prop type so both the
- * IDE and the runtime surface the guidance. Message format matches the
+ * passed. Pair with a JSDoc deprecation annotation on the prop type so both
+ * the IDE and the runtime surface the guidance. Message format matches the
  * compat docs: says what the prop was, what to use instead, and when the
  * shim will go away.
  *
