@@ -92,7 +92,8 @@ export class ShadowlinkPage {
       const usernameInput = this.page.getByLabel(/username/i);
       await usernameInput.fill(params.username);
 
-      const passwordInput = this.page.getByLabel(/password/i);
+      // Use testid: the "Show password" toggle's aria-label also matches /password/i.
+      const passwordInput = this.page.getByTestId('scram-password-input');
       await passwordInput.fill(params.password);
 
       if (params.mechanism) {

@@ -168,6 +168,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       layout = 'password';
     }
 
+    let inputValueProps: { defaultValue?: InputProps['defaultValue']; value?: InputProps['value'] };
+    if (isNumberInput) {
+      inputValueProps = { value };
+    } else if (props.value !== undefined) {
+      inputValueProps = { value: props.value };
+    } else {
+      inputValueProps = { defaultValue };
+    }
+
     const inputElement = (
       <input
         {...props}
@@ -175,7 +184,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
         className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
         data-slot="input"
-        data-testid={testId}
+        {...(testId !== undefined && { 'data-testid': testId })}
         onChange={isNumberInput ? handleInputChange : props.onChange}
         readOnly={readOnly}
         ref={ref}
@@ -185,7 +194,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           paddingRight: endWidth ? endWidth + 16 : undefined,
         }}
         type={inputType}
-        {...(isNumberInput ? { value } : props.value !== undefined ? { value: props.value } : { defaultValue })}
+        {...inputValueProps}
       />
     );
 
@@ -211,6 +220,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {isPasswordInput ? (
             <InputEnd className="pointer-events-auto">
               <Button
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
                 disabled={props.disabled || readOnly}
                 onClick={() => setShowPassword(!showPassword)}
                 size={passwordToggleSize}
@@ -224,6 +235,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {shouldShowControls ? (
             <div className="flex flex-row gap-1">
               <Button
+                aria-label="Increment value"
                 className={stepControlVariants({ size })}
                 disabled={props.disabled || readOnly}
                 onClick={increment}
@@ -233,6 +245,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <Plus />
               </Button>
               <Button
+                aria-label="Decrement value"
                 className={stepControlVariants({ size })}
                 disabled={props.disabled || readOnly}
                 onClick={decrement}

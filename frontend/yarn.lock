@@ -501,21 +501,21 @@
   resolved "https://registry.npmjs.org/@balena/dockerignore/-/dockerignore-1.0.2.tgz"
   integrity sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==
 
-"@base-ui/react@^1.4.0":
-  version "1.4.1"
-  resolved "https://registry.npmjs.org/@base-ui/react/-/react-1.4.1.tgz"
-  integrity sha512-Ab5/LIhcmL8BQcsBUYiOfkSDRdLpvgUBzMK30cu684JPcLclYlztharvCZyNNgzJtbAiREzI9q0pI5erHCMgCw==
+"@base-ui/react@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.npmjs.org/@base-ui/react/-/react-1.5.0.tgz"
+  integrity sha512-z1gSAlced1yY+iM+mHDEtIkD8UI3Ebs52MuBPxvV6f5hRutk+xvCH/wuB7hDqDzK9JG5FoMz5nhrqtSs1wjt1A==
   dependencies:
     "@babel/runtime" "^7.29.2"
-    "@base-ui/utils" "0.2.8"
+    "@base-ui/utils" "0.2.9"
     "@floating-ui/react-dom" "^2.1.8"
     "@floating-ui/utils" "^0.2.11"
     use-sync-external-store "^1.6.0"
 
-"@base-ui/utils@0.2.8":
-  version "0.2.8"
-  resolved "https://registry.npmjs.org/@base-ui/utils/-/utils-0.2.8.tgz"
-  integrity sha512-jvOi+c+ftGlGotNcKnzPVg2IhCaDTB6/6R3JeqdjdXktuAJi3wKH9T7+svuaKh1mmfVU11UWzUZVH74JDfi/wQ==
+"@base-ui/utils@0.2.9":
+  version "0.2.9"
+  resolved "https://registry.npmjs.org/@base-ui/utils/-/utils-0.2.9.tgz"
+  integrity sha512-x/PDDCYzoqPpjrdyb3VcyylTI2IjUXEtYDGi5foh7KsnmNJIIaVwA2GLgDH1dps1GgXiJbA60hM+AyuTfQzIvw==
   dependencies:
     "@babel/runtime" "^7.29.2"
     "@floating-ui/utils" "^0.2.11"
@@ -4434,10 +4434,10 @@
   resolved "https://registry.npmjs.org/@tanstack/history/-/history-1.154.14.tgz"
   integrity sha512-xyIfof8eHBuub1CkBnbKNKQXeRZC4dClhmzePHVOEel4G7lk/dW+TQ16da7CFdeNLv6u6Owf5VoBQxoo6DFTSA==
 
-"@tanstack/history@1.161.6":
-  version "1.161.6"
-  resolved "https://registry.npmjs.org/@tanstack/history/-/history-1.161.6.tgz"
-  integrity sha512-NaOGLRrddszbQj9upGat6HG/4TKvXLvu+osAIgfxPYA+eIvYKv8GKDJOrY2D3/U9MRnKfMWD7bU4jeD4xmqyIg==
+"@tanstack/history@1.162.0":
+  version "1.162.0"
+  resolved "https://registry.npmjs.org/@tanstack/history/-/history-1.162.0.tgz"
+  integrity sha512-79pf/RkhteYZTRgcR4F9kbk84P2N8rugQJswxfIqovlbRiT3yI7eBE+5QorIrZaOKktsgzRlXh1l/du/xpl4iA==
 
 "@tanstack/pacer@^0.15.3":
   version "0.15.4"
@@ -4479,14 +4479,14 @@
   dependencies:
     "@tanstack/query-devtools" "5.90.1"
 
-"@tanstack/react-router@>=1.43.2", "@tanstack/react-router@^1", "@tanstack/react-router@^1.158.0", "@tanstack/react-router@^1.168.10":
-  version "1.168.23"
-  resolved "https://registry.npmjs.org/@tanstack/react-router/-/react-router-1.168.23.tgz"
-  integrity sha512-+GblieDnutG6oipJJPNtRJjrWF8QTZEG/l0532+BngFkVK48oHNOcvIkSoAFYftK1egAwM7KBxXsb0Ou+X6/MQ==
+"@tanstack/react-router@>=1.43.2", "@tanstack/react-router@^1", "@tanstack/react-router@^1.158.0", "@tanstack/react-router@^1.170.7":
+  version "1.170.8"
+  resolved "https://registry.npmjs.org/@tanstack/react-router/-/react-router-1.170.8.tgz"
+  integrity sha512-Qw2ju6jjnIsMpuW+VrnHZWHuugqs592PWsnI56sG28qNhg14CgRLahOcNajfuJR9P4MxKGP94WVzmFKSYUz/ig==
   dependencies:
-    "@tanstack/history" "1.161.6"
+    "@tanstack/history" "1.162.0"
     "@tanstack/react-store" "^0.9.3"
-    "@tanstack/router-core" "1.168.15"
+    "@tanstack/router-core" "1.171.6"
     isbot "^5.1.22"
 
 "@tanstack/react-router-devtools@^1.158.0":
@@ -4539,15 +4539,15 @@
     tiny-invariant "^1.3.3"
     tiny-warning "^1.0.3"
 
-"@tanstack/router-core@1.168.15":
-  version "1.168.15"
-  resolved "https://registry.npmjs.org/@tanstack/router-core/-/router-core-1.168.15.tgz"
-  integrity sha512-Wr0424NDtD8fT/uALobMZ9DdcfsTyXtW5IPR++7zvW8/7RaIOeaqXpVDId8ywaGtqPWLWOfaUg2zUtYtukoXYA==
+"@tanstack/router-core@1.171.6":
+  version "1.171.6"
+  resolved "https://registry.npmjs.org/@tanstack/router-core/-/router-core-1.171.6.tgz"
+  integrity sha512-Ol6DQ+j6rf/rPVELIzo8LHwOQV2KL+zry3b+39kL/GKrt7YId52WJRAFMzuseY4XceSW+PU7sG/Cc1QkwJr0hg==
   dependencies:
-    "@tanstack/history" "1.161.6"
+    "@tanstack/history" "1.162.0"
     cookie-es "^3.0.0"
-    seroval "^1.5.0"
-    seroval-plugins "^1.5.0"
+    seroval "^1.5.4"
+    seroval-plugins "^1.5.4"
 
 "@tanstack/router-devtools-core@1.158.0":
   version "1.158.0"
@@ -5637,6 +5637,11 @@
     "@vitest/pretty-format" "4.1.4"
     convert-source-map "^2.0.0"
     tinyrainbow "^3.1.0"
+
+"@vscode/l10n@^0.0.18":
+  version "0.0.18"
+  resolved "https://registry.npmjs.org/@vscode/l10n/-/l10n-0.0.18.tgz"
+  integrity sha512-KYSIHVmslkaCDyw013pphY+d7x1qV8IZupYfeIfzNA+nsaWHbn5uPuQRvdRFsa9zFzGeudPuoGoZ1Op4jrJXIQ==
 
 "@vue/compiler-core@3.5.27":
   version "3.5.27"
@@ -7912,7 +7917,7 @@ domhandler@^5.0.2, domhandler@^5.0.3:
   dependencies:
     domelementtype "^2.3.0"
 
-dompurify@3.2.7, dompurify@^3.2.5, dompurify@^3.3.1:
+dompurify@3.1.7, dompurify@^3.2.5, dompurify@^3.3.1:
   version "3.4.0"
   resolved "https://registry.npmjs.org/dompurify/-/dompurify-3.4.0.tgz"
   integrity sha512-nolgK9JcaUXMSmW+j1yaSvaEaoXYHwWyGJlkoCTghc97KgGDDSnpoU/PlEnw63Ah+TGKFOyY+X5LnxaWbCSfXg==
@@ -8800,13 +8805,13 @@ framer-motion@^10.16.4:
   dependencies:
     tslib "^2.4.0"
 
-framer-motion@^12.38.0:
-  version "12.38.0"
-  resolved "https://registry.npmjs.org/framer-motion/-/framer-motion-12.38.0.tgz"
-  integrity sha512-rFYkY/pigbcswl1XQSb7q424kSTQ8q6eAC+YUsSKooHQYuLdzdHjrt6uxUC+PRAO++q5IS7+TamgIw1AphxR+g==
+framer-motion@^12.40.0:
+  version "12.40.0"
+  resolved "https://registry.npmjs.org/framer-motion/-/framer-motion-12.40.0.tgz"
+  integrity sha512-uaBd3qC1v3KQqBEjwTUd183K6PbS+j0yR9w9VmEOLWA/tnUcSn8Xa3uck7t4dgpDoUss8xQTcj8W2L07lrnLFg==
   dependencies:
-    motion-dom "^12.38.0"
-    motion-utils "^12.36.0"
+    motion-dom "^12.40.0"
+    motion-utils "^12.39.0"
     tslib "^2.4.0"
 
 framesync@5.3.0:
@@ -10434,10 +10439,10 @@ lru-cache@^11.0.0:
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.4.tgz"
   integrity sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg==
 
-lucide-react@^1.14.0:
-  version "1.14.0"
-  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-1.14.0.tgz"
-  integrity sha512-+1mdWcfSJVUsaTIjN9zoezmUhfXo5l0vP7ekBMPo3jcS/aIkxHnXqAPsByszMZx/Y8oQBRJxJx5xg+RH3urzxA==
+lucide-react@^1.16.0:
+  version "1.16.0"
+  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-1.16.0.tgz"
+  integrity sha512-dYwyPzb4MEKpGUmNYk3WKWPnMrHs3FKM+q94kAnJrcDIqqn1hq2xY8scaS2ovsOCM5D51ey2gaRG3PBb1vgoYQ==
 
 luxon@^3.2.1:
   version "3.7.2"
@@ -11642,12 +11647,12 @@ moment@^2.30.1:
   resolved "https://registry.npmjs.org/moment/-/moment-2.30.1.tgz"
   integrity sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==
 
-"monaco-editor@>= 0.25.0 < 1", "monaco-editor@>= 0.31.0", monaco-editor@>=0.30.0, monaco-editor@>=0.36, monaco-editor@^0.55.0:
-  version "0.55.1"
-  resolved "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.55.1.tgz"
-  integrity sha512-jz4x+TJNFHwHtwuV9vA9rMujcZRb0CEilTEwG2rRSpe/A7Jdkuj8xPKttCgOh+v/lkHy7HsZ64oj+q3xoAFl9A==
+"monaco-editor@>= 0.25.0 < 1", "monaco-editor@>= 0.31.0", monaco-editor@>=0.30.0, monaco-editor@>=0.36, monaco-editor@^0.54.0:
+  version "0.54.0"
+  resolved "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.54.0.tgz"
+  integrity sha512-hx45SEUoLatgWxHKCmlLJH81xBo0uXP4sRkESUpmDQevfi+e7K1VuiSprK6UpQ8u4zOcKNiH0pMvHvlMWA/4cw==
   dependencies:
-    dompurify "3.2.7"
+    dompurify "3.1.7"
     marked "14.0.0"
 
 monaco-editor-webpack-plugin@^7.1.1:
@@ -11667,9 +11672,9 @@ monaco-languageserver-types@^0.4.0:
     vscode-uri "^3.0.0"
 
 monaco-marker-data-provider@^1.0.0:
-  version "1.2.4"
-  resolved "https://registry.npmjs.org/monaco-marker-data-provider/-/monaco-marker-data-provider-1.2.4.tgz"
-  integrity sha512-4DsPgsAqpTyUDs3humXRBPUJoihTv+L6v9aupQWD80X2YXaCXUd11mWYeSCYHuPgdUmjFaNWCEOjQ6ewf/QA1Q==
+  version "1.2.5"
+  resolved "https://registry.npmjs.org/monaco-marker-data-provider/-/monaco-marker-data-provider-1.2.5.tgz"
+  integrity sha512-5ZdcYukhPwgYMCvlZ9H5uWs5jc23BQ8fFF5AhSIdrz5mvYLsqGZ58ZLxTv8rCX6+AxdJ8+vxg1HVSk+F2bLosg==
   dependencies:
     monaco-types "^0.1.0"
 
@@ -11683,11 +11688,12 @@ monaco-worker-manager@^2.0.0:
   resolved "https://registry.npmjs.org/monaco-worker-manager/-/monaco-worker-manager-2.0.1.tgz"
   integrity sha512-kdPL0yvg5qjhKPNVjJoym331PY/5JC11aPJXtCZNwWRvBr6jhkIamvYAyiY5P1AWFmNOy0aRDRoMdZfa71h8kg==
 
-monaco-yaml@^5.4.0:
-  version "5.4.0"
-  resolved "https://registry.npmjs.org/monaco-yaml/-/monaco-yaml-5.4.0.tgz"
-  integrity sha512-tuBVDy1KAPrgO905GHTItu8AaA5bIzF5S4X0JVRAE/D66FpRhkDUk7tKi5bwKMVTTugtpMLsXN4ewh4CgE/FtQ==
+monaco-yaml@^5.5.0:
+  version "5.5.0"
+  resolved "https://registry.npmjs.org/monaco-yaml/-/monaco-yaml-5.5.0.tgz"
+  integrity sha512-FEJezTYwzL3VFCWnA98mPp0AmPERoiQNN54ycllF0LorUeTXPN2YzJzu9jfzwVn2CxX1qajEornAr4CrZffuMQ==
   dependencies:
+    "@vscode/l10n" "^0.0.18"
     jsonc-parser "^3.0.0"
     monaco-languageserver-types "^0.4.0"
     monaco-marker-data-provider "^1.0.0"
@@ -11700,25 +11706,25 @@ monaco-yaml@^5.4.0:
     vscode-uri "^3.0.0"
     yaml "^2.0.0"
 
-motion@^12.38.0:
-  version "12.38.0"
-  resolved "https://registry.npmjs.org/motion/-/motion-12.38.0.tgz"
-  integrity sha512-uYfXzeHlgThchzwz5Te47dlv5JOUC7OB4rjJ/7XTUgtBZD8CchMN8qEJ4ZVsUmTyYA44zjV0fBwsiktRuFnn+w==
+motion@^12.40.0:
+  version "12.40.0"
+  resolved "https://registry.npmjs.org/motion/-/motion-12.40.0.tgz"
+  integrity sha512-yjrHUrBFW6kQvjJwRsoiPSAhC5tRwRqNGJWmiJ4CrGnbKp0V88AdzkhBmDoqIsIPfarOe0Uddd37Xq43/gIocA==
   dependencies:
-    framer-motion "^12.38.0"
+    framer-motion "^12.40.0"
     tslib "^2.4.0"
 
-motion-dom@^12.38.0:
-  version "12.38.0"
-  resolved "https://registry.npmjs.org/motion-dom/-/motion-dom-12.38.0.tgz"
-  integrity sha512-pdkHLD8QYRp8VfiNLb8xIBJis1byQ9gPT3Jnh2jqfFtAsWUA3dEepDlsWe/xMpO8McV+VdpKVcp+E+TGJEtOoA==
+motion-dom@^12.40.0:
+  version "12.40.0"
+  resolved "https://registry.npmjs.org/motion-dom/-/motion-dom-12.40.0.tgz"
+  integrity sha512-HxU3ZaBwNPVQUBQf1xxgq+7JrPNZvjLVxgbpEZL7RrWJnsxOf0/OM+yrHG9ogLQ31Do/r57Oz2gQWPK+6q62mg==
   dependencies:
-    motion-utils "^12.36.0"
+    motion-utils "^12.39.0"
 
-motion-utils@^12.36.0:
-  version "12.36.0"
-  resolved "https://registry.npmjs.org/motion-utils/-/motion-utils-12.36.0.tgz"
-  integrity sha512-eHWisygbiwVvf6PZ1vhaHCLamvkSbPIeAYxWUuL3a2PD/TROgE7FvfHWTIH4vMl798QLfMw15nRqIaRDXTlYRg==
+motion-utils@^12.39.0:
+  version "12.39.0"
+  resolved "https://registry.npmjs.org/motion-utils/-/motion-utils-12.39.0.tgz"
+  integrity sha512-8nadJAJjTtqRkmRF36FoJTrywK9nnFmnPwnSMyxaOCU7GDjN9RTMJIxx9De8ErM+vpPhMccr/6fo5WciyQLnMQ==
 
 mri@^1.1.0:
   version "1.2.0"
@@ -13895,20 +13901,20 @@ seroval@^1.0, seroval@^1.4.2:
   resolved "https://registry.npmjs.org/seroval/-/seroval-1.4.2.tgz"
   integrity sha512-N3HEHRCZYn3cQbsC4B5ldj9j+tHdf4JZoYPlcI4rRYu0Xy4qN8MQf1Z08EibzB0WpgRG5BGK08FTrmM66eSzKQ==
 
-seroval@^1.0, seroval@^1.5.0:
-  version "1.5.2"
-  resolved "https://registry.npmjs.org/seroval/-/seroval-1.5.2.tgz"
-  integrity sha512-xcRN39BdsnO9Tf+VzsE7b3JyTJASItIV1FVFewJKCFcW4s4haIKS3e6vj8PGB9qBwC7tnuOywQMdv5N4qkzi7Q==
+seroval@^1.0, seroval@^1.5.4:
+  version "1.5.4"
+  resolved "https://registry.npmjs.org/seroval/-/seroval-1.5.4.tgz"
+  integrity sha512-46uFvgrXTVxZcUorgSSRZ4y+ieqLLQRMlG4bnCZKW3qI6BZm7Rg4ntMW4p1mILEEBZWrFlcpp0AyIIlM6jD9iw==
 
 seroval-plugins@^1.4.2:
   version "1.4.2"
   resolved "https://registry.npmjs.org/seroval-plugins/-/seroval-plugins-1.4.2.tgz"
   integrity sha512-X7p4MEDTi+60o2sXZ4bnDBhgsUYDSkQEvzYZuJyFqWg9jcoPsHts5nrg5O956py2wyt28lUrBxk0M0/wU8URpA==
 
-seroval-plugins@^1.5.0:
-  version "1.5.2"
-  resolved "https://registry.npmjs.org/seroval-plugins/-/seroval-plugins-1.5.2.tgz"
-  integrity sha512-qpY0Cl+fKYFn4GOf3cMiq6l72CpuVaawb6ILjubOQ+diJ54LfOWaSSPsaswN8DRPIPW4Yq+tE1k5aKd7ILyaFg==
+seroval-plugins@^1.5.4:
+  version "1.5.4"
+  resolved "https://registry.npmjs.org/seroval-plugins/-/seroval-plugins-1.5.4.tgz"
+  integrity sha512-S0xQPhUTefAhNvNWFg0c1J8qJArHt5KdtJ/cFAofo06KD1MVSeFWyl4iiu+ApDIuw0WhjpOfCdgConOfAnLgkw==
 
 serve-index@^1.9.1:
   version "1.9.1"
