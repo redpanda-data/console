@@ -48,7 +48,6 @@ import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
 import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
-import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routeTree } from './routeTree.gen';
@@ -107,9 +106,6 @@ const App = () => {
 
   useEffect(() => {
     const setupTeardown = setup(EMPTY_SETUP_ARGS);
-    // Apply local debug feature-flag overrides AFTER setup() (which clobbers
-    // config.featureFlags). Dev-only mechanism — see debug-helper/feature-flag-overrides.ts.
-    applyDebugFeatureFlagOverrides();
     const uiSettingsTeardown = installUISettingsSideEffects();
     return () => {
       uiSettingsTeardown();

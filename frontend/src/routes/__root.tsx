@@ -19,7 +19,6 @@ import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
-import { DebugHelper } from '../components/debug-helper/debug-dialog';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
 import { SidebarLayout } from '../components/layout/sidebar';
@@ -52,13 +51,7 @@ function RootLayout() {
           <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
         </ErrorBoundary>
       </NuqsAdapter>
-
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          <TanStackRouterDevtools position="bottom-right" />
-          <DebugHelper />
-        </>
-      )}
+      {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
     </>
   );
 }
