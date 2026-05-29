@@ -9,6 +9,15 @@ import React from 'react';
 import type { GroupContextValue, GroupPosition } from './group';
 import { cn, type SharedProps } from '../lib/utils';
 
+type Orientation = 'horizontal' | 'vertical';
+
+type HighlightBounds = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
 const toggleVariants = cva(
   "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm outline-none transition-[color,box-shadow] hover:bg-muted hover:text-muted-foreground focus:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=on]:bg-primary-alpha-strong data-[state=on]:text-action-primary dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
@@ -34,12 +43,35 @@ const toggleVariants = cva(
   }
 );
 
+function getPositionClasses(attached: boolean, position: GroupPosition | undefined, orientation: Orientation): string {
+  if (!(attached && position)) {
+    return 'rounded-md';
+  }
+  if (orientation === 'vertical') {
+    if (position === 'first') {
+      return 'rounded-t-md rounded-b-none';
+    }
+    if (position === 'last') {
+      return 'rounded-b-md rounded-t-none';
+    }
+    return 'rounded-none';
+  }
+  if (position === 'first') {
+    return 'rounded-r-none rounded-l-md';
+  }
+  if (position === 'last') {
+    return 'rounded-r-md rounded-l-none';
+  }
+  return 'rounded-none';
+}
+
+type RegisterItem = (value: string, el: HTMLButtonElement | null) => void;
+
 type ToggleGroupContextProps = VariantProps<typeof toggleVariants> &
   GroupContextValue & {
     type?: 'single' | 'multiple';
-    transition?: Transition;
-    activeClassName?: string;
-    globalId: string;
+    orientation: Orientation;
+    registerItem: RegisterItem;
   };
 
 const ToggleGroupContext = React.createContext<ToggleGroupContextProps | undefined>(undefined);
@@ -52,8 +84,8 @@ const useToggleGroup = (): ToggleGroupContextProps => {
   return context;
 };
 
-// Maps Radix's `type: 'single' | 'multiple'` to Base UI's `multiple: boolean`,
-// and normalizes `value` to string for single / string[] for multiple.
+// Translates Radix's `type: 'single' | 'multiple'` and string-or-array value
+// shape onto Base UI's `multiple` boolean + array value shape.
 type ToggleGroupBaseProps = Omit<
   React.ComponentProps<typeof ToggleGroupPrimitive>,
   'value' | 'defaultValue' | 'onValueChange' | 'multiple'
@@ -101,86 +133,169 @@ function ToggleGroup({
   value,
   defaultValue,
   onValueChange,
+  orientation = 'horizontal',
   ...props
 }: ToggleGroupProps) {
-  const globalId = React.useId();
   const isMultiple = type === 'multiple';
+  const isHorizontal = orientation !== 'vertical';
 
-  const arrayValue = toValueArray(value);
-  const arrayDefaultValue = toValueArray(defaultValue);
+  const [internalActive, setInternalActive] = React.useState<string | undefined>(
+    typeof defaultValue === 'string' ? defaultValue : undefined
+  );
+  const activeValue = isMultiple ? undefined : ((value as string | undefined) ?? internalActive);
 
-  const handleValueChange = React.useMemo(() => {
-    if (!onValueChange) {
-      return;
-    }
-    return (groupValue: unknown[]) => {
+  const handleValueChange = React.useCallback(
+    (groupValue: unknown[]) => {
       if (isMultiple) {
-        (onValueChange as (next: string[]) => void)(groupValue as string[]);
-      } else {
-        (onValueChange as (next: string) => void)((groupValue[0] as string | undefined) ?? '');
+        (onValueChange as ((v: string[]) => void) | undefined)?.(groupValue as string[]);
+        return;
       }
-    };
-  }, [isMultiple, onValueChange]);
+      const next = (groupValue[0] as string | undefined) ?? '';
+      setInternalActive(next || undefined);
+      (onValueChange as ((v: string) => void) | undefined)?.(next);
+    },
+    [isMultiple, onValueChange]
+  );
 
   const childrenArray = React.Children.toArray(children).filter((child) => React.isValidElement(child));
   const childCount = childrenArray.length;
 
-  const content = childrenArray.map((child, index) => {
-    const getPosition = (): GroupPosition | undefined => {
-      if (!attached || childCount === 1) {
+  const groupRef = React.useRef<HTMLDivElement>(null);
+  const itemsRef = React.useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  const registerItem = React.useCallback<RegisterItem>((itemValue, el) => {
+    const map = itemsRef.current;
+    if (el) {
+      map.set(itemValue, el);
+    } else {
+      map.delete(itemValue);
+    }
+  }, []);
+
+  const [bounds, setBounds] = React.useState<HighlightBounds | null>(null);
+
+  // childCount is a dep so we re-measure when items are inserted/removed:
+  // reflow can shift the active item without resizing it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: childCount is intentional
+  React.useLayoutEffect(() => {
+    if (isMultiple || !activeValue) {
+      setBounds(null);
+      return;
+    }
+
+    const measure = () => {
+      const el = itemsRef.current.get(activeValue);
+      if (!el) {
+        setBounds(null);
         return;
       }
-      if (index === 0) {
-        return 'first';
-      }
-      if (index === childCount - 1) {
-        return 'last';
-      }
-      return 'middle';
+      setBounds((prev) => {
+        const next = { top: el.offsetTop, left: el.offsetLeft, width: el.offsetWidth, height: el.offsetHeight };
+        if (
+          prev &&
+          prev.top === next.top &&
+          prev.left === next.left &&
+          prev.width === next.width &&
+          prev.height === next.height
+        ) {
+          return prev;
+        }
+        return next;
+      });
     };
 
-    const position = getPosition();
-    const element = child as React.ReactElement;
-    const key = element.key || `toggle-group-item-${index}`;
+    measure();
 
-    return (
-      <ToggleGroupContext.Provider
-        key={key}
-        value={{
-          variant,
-          size,
-          type,
-          transition,
-          activeClassName,
-          globalId,
-          attached,
-          position,
-        }}
-      >
-        {child}
-      </ToggleGroupContext.Provider>
-    );
-  });
+    const ro = new ResizeObserver(measure);
+    if (groupRef.current) {
+      ro.observe(groupRef.current);
+    }
+    const activeEl = itemsRef.current.get(activeValue);
+    if (activeEl) {
+      ro.observe(activeEl);
+    }
+    return () => ro.disconnect();
+  }, [activeValue, isMultiple, childCount]);
+
+  // Lock the perpendicular axis so layout shifts in surrounding content
+  // don't drag the highlight off-axis.
+  const axisLockedTransition: Transition = React.useMemo(() => {
+    const snap = { duration: 0 } as const;
+    return isHorizontal ? { ...transition, top: snap, height: snap } : { ...transition, left: snap, width: snap };
+  }, [transition, isHorizontal]);
+
+  const getPosition = (index: number): GroupPosition | undefined => {
+    if (!attached || childCount === 1) {
+      return;
+    }
+    if (index === 0) {
+      return 'first';
+    }
+    if (index === childCount - 1) {
+      return 'last';
+    }
+    return 'middle';
+  };
+
+  const activeIndex = activeValue
+    ? childrenArray.findIndex(
+        (child) => React.isValidElement(child) && (child.props as { value?: unknown }).value === activeValue
+      )
+    : -1;
+  const highlightPositionClasses = getPositionClasses(
+    attached,
+    activeIndex >= 0 ? getPosition(activeIndex) : undefined,
+    orientation
+  );
 
   return (
     <ToggleGroupPrimitive
       className={cn(
         'relative flex items-center justify-center',
+        !isHorizontal && 'flex-col',
+        !isHorizontal && attached && 'items-stretch',
         variant === 'outline' && '!border-outline-inverse rounded-md border p-0.5',
         !attached && 'gap-1',
         className
       )}
+      data-attached={attached || undefined}
       data-slot="toggle-group"
       data-testid={testId}
-      defaultValue={arrayDefaultValue}
+      data-variant={variant}
+      defaultValue={toValueArray(defaultValue)}
       multiple={isMultiple}
       onValueChange={handleValueChange}
+      orientation={orientation}
+      ref={groupRef}
       // Restore Radix's "1 of N" radio-group semantics for single-select; Base UI's Toggle is a plain button.
       role={isMultiple ? undefined : 'radiogroup'}
-      value={arrayValue}
+      value={toValueArray(value)}
       {...props}
     >
-      {content}
+      <AnimatePresence initial={false}>
+        {!isMultiple && bounds ? (
+          <motion.div
+            animate={{ top: bounds.top, left: bounds.left, width: bounds.width, height: bounds.height, opacity: 1 }}
+            aria-hidden
+            className={cn('pointer-events-none absolute z-0 bg-accent', highlightPositionClasses, activeClassName)}
+            data-slot="toggle-group-highlight"
+            exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            initial={false}
+            transition={axisLockedTransition}
+          />
+        ) : null}
+      </AnimatePresence>
+      {childrenArray.map((child, index) => {
+        const element = child as React.ReactElement;
+        return (
+          <ToggleGroupContext.Provider
+            key={element.key || `toggle-group-item-${index}`}
+            value={{ variant, size, type, attached, position: getPosition(index), orientation, registerItem }}
+          >
+            {child}
+          </ToggleGroupContext.Provider>
+        );
+      })}
     </ToggleGroupPrimitive>
   );
 }
@@ -195,50 +310,40 @@ type ToggleGroupItemProps = Omit<React.ComponentProps<typeof TogglePrimitive>, '
   };
 
 const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps>(
-  ({ className, children, variant, size, buttonProps, spanProps, testId, disabled, ...props }, ref) => {
+  ({ className, children, variant, size, buttonProps, spanProps, testId, disabled, value, ...props }, ref) => {
     const {
-      activeClassName,
-      transition,
       type,
       variant: contextVariant,
       size: contextSize,
-      globalId,
       attached,
       position,
+      orientation,
+      registerItem,
     } = useToggleGroup();
-    const itemRef = React.useRef<HTMLButtonElement>(null);
-    React.useImperativeHandle(ref, () => itemRef.current || document.createElement('button'));
-    const [isActive, setIsActive] = React.useState(false);
 
-    React.useEffect(() => {
-      const node = itemRef.current;
-      if (!node) {
-        return;
-      }
-      const observer = new MutationObserver(() => {
-        setIsActive(node.getAttribute('data-state') === 'on');
-      });
-      observer.observe(node, {
-        attributes: true,
-        attributeFilter: ['data-state'],
-      });
-      setIsActive(node.getAttribute('data-state') === 'on');
-      return () => observer.disconnect();
-    }, []);
-
-    let positionClasses = 'rounded-md';
-    if (attached && position === 'first') {
-      positionClasses = 'rounded-r-none rounded-l-md';
-    } else if (attached && position === 'last') {
-      positionClasses = 'rounded-r-md rounded-l-none';
-    } else if (attached && position === 'middle') {
-      positionClasses = 'rounded-none';
-    }
-
+    const positionClasses = getPositionClasses(Boolean(attached), position, orientation);
+    const isVerticalAttached = orientation === 'vertical' && Boolean(attached);
     const isSingle = type === 'single';
+
+    // Combined ref: registers the DOM node with the parent group (keyed by
+    // value) so the group can measure highlight bounds, and forwards to the
+    // consumer's ref.
+    const setRef = React.useCallback(
+      (el: HTMLButtonElement | null) => {
+        registerItem(value, el);
+        if (typeof ref === 'function') {
+          ref(el);
+        } else if (ref) {
+          (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+        }
+      },
+      [registerItem, value, ref]
+    );
+
     return (
       <TogglePrimitive
         disabled={disabled}
+        value={value}
         {...props}
         // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Toggle attrs for the consumer element
         render={(rootProps: Record<string, any>, state: { pressed?: boolean; disabled?: boolean }) => (
@@ -250,43 +355,26 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
             data-testid={testId}
             disabled={disabled ?? state?.disabled}
             initial={{ scale: 1 }}
-            ref={itemRef}
+            ref={setRef}
             role={isSingle ? 'radio' : undefined}
             whileTap={{ scale: 0.9 }}
             {...buttonProps}
-            className={cn('relative', buttonProps?.className)}
+            className={cn('relative', isVerticalAttached && 'w-full', buttonProps?.className)}
           >
             <span
               {...spanProps}
               className={cn(
                 'relative z-[1]',
-                toggleVariants({
-                  variant: variant || contextVariant,
-                  size: size || contextSize,
-                  type,
-                }),
+                toggleVariants({ variant: variant || contextVariant, size: size || contextSize, type }),
                 positionClasses,
+                isVerticalAttached && 'w-full',
                 className,
                 spanProps?.className
               )}
-              data-state={isActive ? 'on' : 'off'}
+              data-state={state?.pressed ? 'on' : 'off'}
             >
               {children}
             </span>
-
-            <AnimatePresence initial={false}>
-              {isActive && type === 'single' && (
-                <motion.span
-                  animate={{ opacity: 1 }}
-                  className={cn('absolute inset-0 z-0 bg-accent', positionClasses, activeClassName)}
-                  data-slot="active-toggle-group-item"
-                  exit={{ opacity: 0 }}
-                  initial={{ opacity: 0 }}
-                  layoutId={`active-toggle-group-item-${globalId}`}
-                  transition={transition}
-                />
-              )}
-            </AnimatePresence>
           </motion.button>
         )}
       />

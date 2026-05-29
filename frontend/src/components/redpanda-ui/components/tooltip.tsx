@@ -123,7 +123,7 @@ function TooltipContent({
           <TooltipPrimitive.Positioner
             align={align}
             alignOffset={alignOffset}
-            className="z-50"
+            className="z-50 data-anchor-hidden:pointer-events-none data-anchor-hidden:opacity-0"
             side={side}
             sideOffset={sideOffset}
           >
