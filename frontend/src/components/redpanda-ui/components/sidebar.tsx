@@ -48,12 +48,21 @@ type SidebarProviderProps = React.ComponentProps<'div'> & {
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Height offset for fixed banners at the top (e.g., '40px', '80px').
+   * Pushes the desktop sidebar container down and shortens its height by the
+   * given amount, and offsets `SidebarInset` by the same value so its content
+   * starts below the banner. The mobile `Sheet` is intentionally not offset —
+   * it slides over the banner.
+   */
+  bannerHeight?: string;
 };
 
 function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  bannerHeight,
   className,
   style,
   children,
@@ -124,12 +133,18 @@ function SidebarProvider({
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
-          className={cn('group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar', className)}
+          className={cn(
+            'group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar',
+            bannerHeight &&
+              '[&_[data-slot=sidebar-container]]:top-(--banner-height) [&_[data-slot=sidebar-container]]:h-[calc(100svh-var(--banner-height))] [&_[data-slot=sidebar-inset]]:mt-(--banner-height)',
+            className
+          )}
           data-slot="sidebar-wrapper"
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH,
               '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+              ...(bannerHeight && { '--banner-height': bannerHeight }),
               ...style,
             } as React.CSSProperties
           }
@@ -221,7 +236,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground md:block"
+      className="group peer text-sidebar-foreground max-md:hidden"
       data-collapsible={state === 'collapsed' ? collapsible : ''}
       data-side={side}
       data-slot="sidebar"
@@ -242,7 +257,7 @@ function Sidebar({
       />
       <div
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-400 ease-[cubic-bezier(0.75,0,0.25,1)] md:flex',
+          'fixed inset-y-0 z-10 flex h-svh w-(--sidebar-width) transition-[left,right,width] duration-400 ease-[cubic-bezier(0.75,0,0.25,1)] max-md:hidden',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
@@ -292,7 +307,7 @@ function SidebarTrigger({ className, onClick, ...props }: SidebarTriggerProps) {
         toggleSidebar();
       }}
       size="icon"
-      variant="ghost"
+      variant="secondary-ghost"
       {...props}
     >
       <PanelLeftIcon />
@@ -638,20 +653,34 @@ const SidebarMenuAction = React.forwardRef<HTMLButtonElement, SidebarMenuActionP
 
 SidebarMenuAction.displayName = 'SidebarMenuAction';
 
-type SidebarMenuBadgeProps = React.ComponentProps<'div'>;
+const sidebarMenuBadgeVariants = cva(
+  [
+    'pointer-events-none absolute right-1 flex select-none items-center justify-center rounded-md font-medium tabular-nums',
+    'peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[active=true]/menu-button:text-sidebar-accent-foreground',
+    'peer-data-[size=sm]/menu-button:top-1',
+    'peer-data-[size=default]/menu-button:top-1.5',
+    'peer-data-[size=lg]/menu-button:top-2.5',
+    'group-data-[collapsible=icon]:hidden',
+  ],
+  {
+    variants: {
+      variant: {
+        default: 'h-5 min-w-5 px-1 text-sidebar-foreground text-xs',
+        secondary: 'h-4 bg-secondary px-1.5 text-[10px] text-inverse',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
 
-function SidebarMenuBadge({ className, ...props }: SidebarMenuBadgeProps) {
+type SidebarMenuBadgeProps = React.ComponentProps<'div'> & VariantProps<typeof sidebarMenuBadgeVariants>;
+
+function SidebarMenuBadge({ className, variant, ...props }: SidebarMenuBadgeProps) {
   return (
     <div
-      className={cn(
-        'pointer-events-none absolute right-1 flex h-5 min-w-5 select-none items-center justify-center rounded-md px-1 font-medium text-sidebar-foreground text-xs tabular-nums',
-        'peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[active=true]/menu-button:text-sidebar-accent-foreground',
-        'peer-data-[size=sm]/menu-button:top-1',
-        'peer-data-[size=default]/menu-button:top-1.5',
-        'peer-data-[size=lg]/menu-button:top-2.5',
-        'group-data-[collapsible=icon]:hidden',
-        className
-      )}
+      className={cn(sidebarMenuBadgeVariants({ variant }), className)}
       data-sidebar="menu-badge"
       data-slot="sidebar-menu-badge"
       {...props}
@@ -664,25 +693,27 @@ type SidebarMenuSkeletonProps = React.ComponentProps<'div'> & {
 };
 
 function SidebarMenuSkeleton({ className, showIcon = false, ...props }: SidebarMenuSkeletonProps) {
-  // Random width between 50 to 90%.
-  const width = React.useMemo(() => `${Math.floor(Math.random() * 40) + 50}%`, []);
-
   return (
     <div
-      className={cn('flex h-8 items-center gap-2 rounded-md px-2', className)}
+      className={cn(
+        'flex h-10 items-center gap-2 rounded-md px-2',
+        'group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2',
+        className
+      )}
       data-sidebar="menu-skeleton"
       data-slot="sidebar-menu-skeleton"
       {...props}
     >
-      {showIcon ? <Skeleton className="size-4 rounded-md" data-sidebar="menu-skeleton-icon" /> : null}
       <Skeleton
-        className="h-4 max-w-(--skeleton-width) flex-1"
+        className={cn(
+          'size-4 shrink-0 rounded-md bg-slate-600',
+          showIcon ? 'block' : 'hidden group-data-[collapsible=icon]:block'
+        )}
+        data-sidebar="menu-skeleton-icon"
+      />
+      <Skeleton
+        className="h-10 w-full flex-1 bg-slate-600 group-data-[collapsible=icon]:hidden"
         data-sidebar="menu-skeleton-text"
-        style={
-          {
-            '--skeleton-width': width,
-          } as React.CSSProperties
-        }
       />
     </div>
   );

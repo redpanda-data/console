@@ -51,7 +51,7 @@ const buttonVariants = cva(
           'disabled:bg-background-disabled disabled:text-disabled',
         ],
         destructive: [
-          'bg-destructive text-inverse shadow-xs',
+          'bg-surface-error text-inverse shadow-xs',
           'hover:bg-surface-error-hover',
           'active:bg-surface-error-pressed',
           'focus-visible:ring-destructive',
