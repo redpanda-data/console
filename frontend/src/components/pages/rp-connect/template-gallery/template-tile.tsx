@@ -11,7 +11,6 @@
 
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { Card } from 'components/redpanda-ui/components/card';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypoints } from 'lucide-react';
 
 import type { PipelineTemplate } from './pipeline-template-types';
@@ -46,17 +45,13 @@ const ComponentIcon = ({ name, override }: { name: string; override?: string }) 
 export type TemplateTileProps = {
   template: PipelineTemplate;
   onSelect: (template: PipelineTemplate) => void;
-  className?: string;
 };
 
-export const TemplateTile = ({ template, onSelect, className }: TemplateTileProps) => {
+export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
   const { label: tierLabel, Icon: TierIcon } = setupTierFor(template.setupTimeMinutes);
   return (
     <button
-      className={cn(
-        'group h-full w-full rounded-md text-left focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2',
-        className
-      )}
+      className="group h-full w-full rounded-md text-left focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
       data-testid={`template-tile-${template.id}`}
       onClick={() => onSelect(template)}
       type="button"

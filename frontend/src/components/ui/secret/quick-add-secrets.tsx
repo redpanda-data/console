@@ -43,7 +43,6 @@ type QuickAddSecretsProps = {
   defaultValues?: Record<string, string>;
   onSecretsCreated?: (secretNames: string[]) => void;
   enableNewSecrets?: boolean;
-  hideHeader?: boolean;
   onError?: (errors: string[]) => void;
   onUpdateEditorContent?: (oldName: string, newName: string) => void;
   cardVariant?: CardVariant;
@@ -84,7 +83,6 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   defaultValues = {},
   onSecretsCreated,
   enableNewSecrets = false,
-  hideHeader = false,
   onError,
   onUpdateEditorContent,
   cardVariant = 'elevated',
@@ -430,14 +428,12 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           <div className="space-y-4">{requiredSecretsForm}</div>
         ) : (
           <Card size="full" variant={cardVariant}>
-            {hideHeader ? null : (
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Add required secrets
-                </CardTitle>
-              </CardHeader>
-            )}
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Add required secrets
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">{requiredSecretsForm}</CardContent>
           </Card>
         ))}
@@ -477,14 +473,12 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           )
         ) : (
           <Card size="full">
-            {hideHeader ? null : (
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Add secrets
-                </CardTitle>
-              </CardHeader>
-            )}
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Add secrets
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">{newSecretFormBody}</CardContent>
           </Card>
         ))}

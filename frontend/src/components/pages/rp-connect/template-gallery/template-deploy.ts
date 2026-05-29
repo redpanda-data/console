@@ -66,12 +66,3 @@ export const stitchTemplateYaml = ({
   const header = `# Generated from template: ${template.id}\n# ${template.description}\n`;
   return `${header}${kept.join('\n')}`;
 };
-
-export const findMissingRequiredSlot = (template: PipelineTemplate, values: SlotValues): string | undefined => {
-  for (const slot of template.slots) {
-    if (slot.required && isBlank(values[slot.id])) {
-      return slot.id;
-    }
-  }
-  return;
-};

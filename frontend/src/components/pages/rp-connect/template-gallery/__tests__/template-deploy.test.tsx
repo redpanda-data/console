@@ -12,7 +12,7 @@
 import { describe, expect, test } from 'vitest';
 
 import type { PipelineTemplate } from '../pipeline-template-types';
-import { findMissingRequiredSlot, stitchTemplateYaml } from '../template-deploy';
+import { stitchTemplateYaml } from '../template-deploy';
 
 // Build `${...}` tokens at runtime so biome's noTemplateCurlyInString doesn't fire.
 const DOLLAR = '$';
@@ -118,23 +118,5 @@ describe('stitchTemplateYaml', () => {
     });
 
     expect(yaml).not.toMatch(/^\s*note:/m);
-  });
-});
-
-describe('findMissingRequiredSlot', () => {
-  test('returns the id of the first unfilled required slot', () => {
-    const template = buildTemplate();
-    expect(findMissingRequiredSlot(template, { dsn: '', topic: '', optionalNote: '' })).toBe('dsn');
-    expect(findMissingRequiredSlot(template, { dsn: 'X', topic: '', optionalNote: '' })).toBe('topic');
-  });
-
-  test('returns undefined when every required slot has a value', () => {
-    const template = buildTemplate();
-    expect(findMissingRequiredSlot(template, { dsn: 'X', topic: 'Y', optionalNote: '' })).toBeUndefined();
-  });
-
-  test('treats whitespace-only values as missing', () => {
-    const template = buildTemplate();
-    expect(findMissingRequiredSlot(template, { dsn: '   ', topic: 'Y' })).toBe('dsn');
   });
 });

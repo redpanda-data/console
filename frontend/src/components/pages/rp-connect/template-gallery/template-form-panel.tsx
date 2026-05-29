@@ -107,7 +107,6 @@ type FormValues = Record<string, string>;
 export type TemplateFormSubmitPayload = {
   pipelineName: string;
   yaml: string;
-  template: PipelineTemplate;
 };
 
 // Lets the parent dialog read the current YAML on cancel without re-rendering.
@@ -200,7 +199,6 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
       onSubmit({
         pipelineName: values[PIPELINE_NAME_FIELD] ?? template.defaultPipelineName,
         yaml: stitchCurrentYaml(values),
-        template,
       });
     });
 

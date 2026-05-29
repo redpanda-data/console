@@ -46,7 +46,6 @@ export type TemplateGalleryDialogProps = {
   onClose: (stashedYaml: string | null) => void;
   // Parent owns the deploy mutation.
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
-  isSubmitting?: boolean;
 };
 
 // `selectedTemplate` is tracked outside `view` so `TemplateFormPanel` stays
@@ -93,7 +92,7 @@ const StepBackHeader = ({
 );
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state-machine UI with four distinct render branches (gallery / form / addSecret / createTopic) — extracting further would obscure the rendered tree.
-export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }: TemplateGalleryDialogProps) => {
+export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalleryDialogProps) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
   // Slot write requested by an in-dialog step; the form panel consumes it via
@@ -309,8 +308,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
             <Button onClick={closeWithStash} type="button" variant="ghost">
               Cancel
             </Button>
-            <Button data-testid="template-submit" disabled={isSubmitting} form={formId} type="submit" variant="primary">
-              {isSubmitting ? 'Creating...' : 'Apply template'}
+            <Button data-testid="template-submit" form={formId} type="submit" variant="primary">
+              Apply template
             </Button>
           </DialogFooter>
         ) : null}
