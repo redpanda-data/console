@@ -2,6 +2,18 @@
 
 ## Master / Unreleased
 
+## v3.7.4 / 2026-05-29
+- [IMPROVEMENT] Rewrite the Security page (users, roles, ACLs) with consistent UI, improved data fetching, ACL popover previews, and confirmation prompts before destructive actions.
+- [IMPROVEMENT] Split topic retention configuration into separate Retention Time and Retention Size controls.
+- [IMPROVEMENT] Add schema-aware Produce Record support so records can be produced using registered schemas.
+- [IMPROVEMENT] Show unconsumed partitions in consumer groups.
+- [IMPROVEMENT] Support custom AWS MSK DNS names.
+- [BUGFIX] Fix password-related error handling in security forms.
+- [BUGFIX] Fix loading of consumers in topic detail pages.
+- [BUGFIX] Fix ACL handling when Pattern Type is set to "Any".
+- [CHANGE] Register the Permissions page behind a feature flag.
+- [SECURITY] Bump `golang.org/x/crypto` to v0.52.0 to address Snyk findings.
+
 ## v3.7.3 / 2026-05-20
 - [BUGFIX] Fix Avro JSON viewer to preserve `\u00XX` byte escapes so "Copy Value" returns the original bytes instead of UTF-8 encoded glyphs.
 - [BUGFIX] Fix stale ACL check in Redpanda Connect onboarding add-user step.
