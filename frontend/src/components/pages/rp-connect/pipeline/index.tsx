@@ -565,18 +565,13 @@ const EditSummary = ({ form, onEdit }: { form: UseFormReturn<PipelineFormValues>
   const computeUnits = useWatch({ control: form.control, name: 'computeUnits' });
   return (
     <div className="flex flex-col gap-5 rounded-lg border bg-muted/20 px-6 py-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Text className="text-muted-foreground" variant="label">
-            Name
-          </Text>
-          <Heading className="truncate" level={2} title={name}>
-            {name || 'Untitled pipeline'}
-          </Heading>
-        </div>
-        <Button className="shrink-0" icon={<Settings />} onClick={onEdit} size="sm" variant="outline">
-          Edit settings
-        </Button>
+      <div className="flex min-w-0 flex-col gap-1">
+        <Text className="text-muted-foreground" variant="label">
+          Name
+        </Text>
+        <Heading className="truncate" level={2} title={name}>
+          {name || 'Untitled pipeline'}
+        </Heading>
       </div>
       <Separator variant="subtle" />
       <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-3">
@@ -593,6 +588,13 @@ const EditSummary = ({ form, onEdit }: { form: UseFormReturn<PipelineFormValues>
         ) : (
           <Text className="text-muted-foreground text-sm italic">No description</Text>
         )}
+      </div>
+      <Separator variant="subtle" />
+      {/* Edit action at the card footer, away from the header's Save button. */}
+      <div className="flex items-center justify-end">
+        <Button icon={<Settings />} onClick={onEdit} size="sm" variant="outline">
+          Edit settings
+        </Button>
       </div>
     </div>
   );
