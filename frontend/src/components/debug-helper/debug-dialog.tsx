@@ -12,6 +12,8 @@
 import { useRouterState } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import {
   Dialog,
   DialogBody,
@@ -22,8 +24,17 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemHeader,
+  ItemTitle,
+} from 'components/redpanda-ui/components/item';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Switch } from 'components/redpanda-ui/components/switch';
+import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import {
@@ -76,13 +87,11 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
   const lineCount = useMemo(() => fixture.yaml.split('\n').length, [fixture.yaml]);
 
   return (
-    <div className="rounded-md border bg-card px-3 py-2.5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Text className="font-medium" variant="bodyStrongSmall">
-              {fixture.name}
-            </Text>
+    <Item className="flex-col items-stretch" size="sm" variant="outline">
+      <ItemHeader>
+        <ItemContent>
+          <ItemTitle className="flex-wrap">
+            {fixture.name}
             {fixture.tags.map((tag) => (
               <Badge key={tag} size="sm" variant={TAG_VARIANT[tag]}>
                 {tag}
@@ -91,12 +100,10 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
             <Badge size="sm" variant="simple-outline">
               {lineCount} lines
             </Badge>
-          </div>
-          <Text className="text-muted-foreground" variant="bodySmall">
-            {fixture.description}
-          </Text>
-        </div>
-        <div className="flex shrink-0 gap-1.5">
+          </ItemTitle>
+          <ItemDescription>{fixture.description}</ItemDescription>
+        </ItemContent>
+        <ItemActions>
           <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="secondary-ghost">
             {previewing ? 'Hide' : 'Preview'}
           </Button>
@@ -108,14 +115,12 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
           >
             Copy YAML
           </Button>
-        </div>
-      </div>
+        </ItemActions>
+      </ItemHeader>
       {previewing && (
-        <pre className="mt-2.5 max-h-64 overflow-auto rounded border bg-muted p-2.5 font-mono text-xs">
-          {fixture.yaml}
-        </pre>
+        <SimpleCodeBlock className="my-0" code={fixture.yaml} language="yaml" maxHeight="sm" size="sm" width="full" />
       )}
-    </div>
+    </Item>
   );
 }
 
@@ -314,16 +319,14 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
   const sizeBytes = new Blob([value]).size;
 
   return (
-    <div className="border-b last:border-0">
+    <Collapsible className="border-b last:border-0" onOpenChange={setExpanded} open={expanded}>
       <div className="flex items-start gap-2 px-3 py-1.5">
-        <button
+        <CollapsibleTrigger
           aria-label={expanded ? 'Collapse value' : 'Expand value'}
           className="mt-0.5 shrink-0 rounded p-0.5 hover:bg-muted"
-          onClick={() => setExpanded((v) => !v)}
-          type="button"
         >
           {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        </button>
+        </CollapsibleTrigger>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
             <code className="min-w-0 flex-1 truncate font-medium font-mono text-xs" title={storageKey}>
@@ -338,11 +341,17 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
               {formatted.split('\n')[0]}
             </div>
           )}
-          {expanded && (
-            <pre className="mt-1 max-h-64 max-w-full overflow-auto whitespace-pre-wrap break-all rounded border bg-muted/40 p-2 font-mono text-xs">
-              {formatted}
-            </pre>
-          )}
+          <CollapsibleContent>
+            <SimpleCodeBlock
+              allowCopy={false}
+              className="mt-1 mb-0"
+              code={formatted}
+              language="json"
+              maxHeight="sm"
+              size="sm"
+              width="full"
+            />
+          </CollapsibleContent>
         </div>
         <div className="flex shrink-0 gap-1">
           <Button
@@ -358,7 +367,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
           )}
         </div>
       </div>
-    </div>
+    </Collapsible>
   );
 }
 
@@ -499,20 +508,20 @@ function EnvironmentTab() {
       <Text className="text-muted-foreground" variant="bodySmall">
         Snapshot of build, route, and runtime env. Useful when filing bugs.
       </Text>
-      <div className="overflow-hidden rounded-md border bg-muted/40">
-        <table className="w-full text-xs">
-          <tbody>
-            {Object.entries(info).map(([k, v]) => (
-              <tr className="border-b last:border-0" key={k}>
-                <td className="px-3 py-1.5 align-top font-medium">{k}</td>
-                <td className="break-all px-3 py-1.5 font-mono text-[11px]">
-                  <InlineCode>{String(v)}</InlineCode>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table size="sm">
+        <TableBody>
+          {Object.entries(info).map(([k, v]) => (
+            <TableRow key={k}>
+              <TableCell className="px-3 py-1.5 align-top" weight="medium">
+                {k}
+              </TableCell>
+              <TableCell className="whitespace-normal break-all px-3 py-1.5">
+                <InlineCode>{String(v)}</InlineCode>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
       <Button
         className="self-start"
         icon={<Clipboard />}
