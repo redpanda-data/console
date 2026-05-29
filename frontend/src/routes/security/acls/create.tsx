@@ -9,21 +9,28 @@
  * by the Apache License, Version 2.0
  */
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
 import AclCreatePage from '../../../components/pages/security/acls/acl-create-page';
+import { isFeatureFlagEnabled } from '../../../config';
 
 const searchSchema = z.object({
   principalType: fallback(z.string().optional(), undefined),
   principalName: fallback(z.string().optional(), undefined),
 });
 
+// allow: error-boundary [legacy route, component handles its own error states]
 export const Route = createFileRoute('/security/acls/create')({
   staticData: {
     title: 'Create ACL',
   },
   validateSearch: zodValidator(searchSchema),
+  beforeLoad: () => {
+    if (isFeatureFlagEnabled('enableNewSecurityPage')) {
+      throw redirect({ to: '/security/users', replace: true });
+    }
+  },
   component: AclCreatePage,
 });

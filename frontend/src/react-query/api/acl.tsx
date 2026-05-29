@@ -4,6 +4,7 @@ import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  ACL_Operation,
   ACLService,
   type CreateACLRequest,
   DeleteACLsRequestSchema,
@@ -25,6 +26,46 @@ import {
   type Rule,
   type SharedConfig,
 } from '../../components/pages/security/shared/acl-model';
+
+/**
+ * TODO: Remove once Console v3 is released.
+ */
+export const getACLOperation = (operation: ACL_Operation) => {
+  switch (operation) {
+    case ACL_Operation.UNSPECIFIED:
+      return 'Unknown';
+    case ACL_Operation.ANY:
+      return 'Any';
+    case ACL_Operation.ALL:
+      return 'All';
+    case ACL_Operation.READ:
+      return 'Read';
+    case ACL_Operation.WRITE:
+      return 'Write';
+    case ACL_Operation.CREATE:
+      return 'Create';
+    case ACL_Operation.DELETE:
+      return 'Delete';
+    case ACL_Operation.ALTER:
+      return 'Alter';
+    case ACL_Operation.DESCRIBE:
+      return 'Describe';
+    case ACL_Operation.CLUSTER_ACTION:
+      return 'ClusterAction';
+    case ACL_Operation.DESCRIBE_CONFIGS:
+      return 'DescribeConfigs';
+    case ACL_Operation.ALTER_CONFIGS:
+      return 'AlterConfigs';
+    case ACL_Operation.IDEMPOTENT_WRITE:
+      return 'IdempotentWrite';
+    case ACL_Operation.CREATE_TOKENS:
+      return 'CreateTokens';
+    case ACL_Operation.DESCRIBE_TOKENS:
+      return 'DescribeTokens';
+    default:
+      return 'Unknown';
+  }
+};
 
 export const useListACLsQuery = (
   input?: MessageInit<ListACLsRequest>,
@@ -52,12 +93,20 @@ export const useCreateACLMutation = () => {
 
   return useMutation(createACL, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: ACLService.method.listACLs,
-          cardinality: 'finite',
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: ACLService.method.listACLs,
+            cardinality: 'infinite',
+          }),
         }),
-      });
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: ACLService.method.listACLs,
+            cardinality: 'finite',
+          }),
+        }),
+      ]);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({

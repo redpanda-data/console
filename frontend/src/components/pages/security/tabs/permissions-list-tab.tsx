@@ -24,7 +24,9 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { PermissionsListTabNew } from './permissions-list-tab-new';
 import ErrorResult from '../../../../components/misc/error-result';
+import { isFeatureFlagEnabled } from '../../../../config';
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useDeleteUserMutation, useInvalidateUsersCache } from '../../../../react-query/api/user';
 import { appGlobal } from '../../../../state/app-global';
@@ -49,25 +51,6 @@ import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { filterByName } from '../shared/filter-by-name';
 import { UserRoleTags } from '../shared/user-role-tags';
-
-const getCreateUserButtonProps = (
-  isAdminApiConfigured: boolean,
-  featureCreateUser: boolean,
-  canManageUsers: boolean | undefined
-) => {
-  const hasRBAC = canManageUsers !== undefined;
-
-  return {
-    disabled: !(isAdminApiConfigured && featureCreateUser) || (hasRBAC && canManageUsers === false),
-    tooltip: [
-      !isAdminApiConfigured && 'The Redpanda Admin API is not configured.',
-      !featureCreateUser && "Your cluster doesn't support this feature.",
-      hasRBAC && canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  };
-};
 
 const PermissionsListActions = ({
   entry,
@@ -95,8 +78,10 @@ const PermissionsListActions = ({
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon-sm" variant="destructive-ghost">
-            <TrashIcon className="h-4 w-4" />
+          <Button asChild size="icon-sm" variant="destructive-ghost">
+            <button type="button">
+              <TrashIcon className="h-4 w-4" />
+            </button>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -139,18 +124,27 @@ const PermissionsListActions = ({
   );
 };
 
-export const PermissionsListTab: FC = () => {
+const PermissionsListTabOriginal: FC = () => {
   useSecurityBreadcrumbs([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
-  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
-  const userData = useApiStoreHook((s) => s.userData);
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
 
-  const { principals, isAdminApiConfigured, isUsersError, usersError, isAclsError, aclsError } = usePrincipalList();
+  const { principals, isUsersError, usersError, isAclsError, aclsError } = usePrincipalList();
+
+  const featureCreateUser = useSupportedFeaturesStore((s) => s.createUser);
+  const userData = useApiStoreHook((s) => s.userData);
+
+  const canManageUsers = userData?.canManageUsers;
+  const createTooltip = [
+    !featureCreateUser && "Your cluster doesn't support this feature.",
+    !canManageUsers && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const deleteACLsForPrincipal = async (principalName: string, principalType: 'User' | 'Group' = 'User') => {
     const deleteRequest = create(DeleteACLsRequestSchema, {
@@ -289,29 +283,18 @@ export const PermissionsListTab: FC = () => {
               },
             ]}
             data={usersFiltered}
-            emptyAction={(() => {
-              const { disabled, tooltip } = getCreateUserButtonProps(
-                isAdminApiConfigured,
-                featureCreateUser,
-                userData?.canManageUsers
-              );
-              return (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        disabled={disabled}
-                        onClick={() => appGlobal.historyPush('/security/users/create')}
-                        variant="outline"
-                      >
-                        Create user
-                      </Button>
-                    </TooltipTrigger>
-                    {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            })()}
+            emptyAction={(() => (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => appGlobal.historyPush('/security/users/create')} variant="outline">
+                      Create user
+                    </Button>
+                  </TooltipTrigger>
+                  {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
+                </Tooltip>
+              </TooltipProvider>
+            ))()}
             emptyText="No principals yet"
             pagination
             sorting
@@ -321,3 +304,6 @@ export const PermissionsListTab: FC = () => {
     </div>
   );
 };
+
+export const PermissionsListTab: FC = () =>
+  isFeatureFlagEnabled('enableNewSecurityPage') ? <PermissionsListTabNew /> : <PermissionsListTabOriginal />;

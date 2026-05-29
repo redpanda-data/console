@@ -321,7 +321,7 @@ describe('ShadowLinkEditPage', () => {
 
     // Wait for the form to load
     await waitFor(() => {
-      expect(screen.getByText('Edit shadow link')).toBeInTheDocument();
+      expect(screen.getByTestId('shadowLink-edit-page-description')).toBeInTheDocument();
     });
 
     // Wait for the source tab content to be visible

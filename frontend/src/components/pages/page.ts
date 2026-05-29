@@ -19,7 +19,7 @@ import {
   useRpcnSecretManagerStore,
   useTransformsStore,
 } from '../../state/backend-api';
-import { type BreadcrumbOptions, uiState } from '../../state/ui-state';
+import { type BreadcrumbEntry, type BreadcrumbOptions, setPageHeader } from '../../state/ui-state';
 
 //
 // Page Types
@@ -30,11 +30,17 @@ export type NoRouteParams = {};
 export type PageProps<TRouteParams = NoRouteParams> = TRouteParams & { matchedPath: string };
 
 export class PageInitHelper {
+  private pageTitle = '';
+  private pageBreadcrumbs: BreadcrumbEntry[] = [];
+
   set title(title: string) {
-    uiState.pageTitle = title;
+    this.pageTitle = title;
   }
   addBreadcrumb(title: string, to: string, heading?: string, options?: BreadcrumbOptions) {
-    uiState.pageBreadcrumbs.push({ title, linkTo: to, heading, options });
+    this.pageBreadcrumbs.push({ title, linkTo: to, heading, options });
+  }
+  _flush() {
+    setPageHeader(this.pageTitle, this.pageBreadcrumbs);
   }
 }
 export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {
@@ -43,9 +49,9 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
   constructor(props: Readonly<PageProps<TRouteParams>>) {
     super(props);
 
-    uiState.pageBreadcrumbs = [];
-
-    this.initPage(new PageInitHelper());
+    const helper = new PageInitHelper();
+    this.initPage(helper);
+    helper._flush();
   }
 
   componentDidMount() {

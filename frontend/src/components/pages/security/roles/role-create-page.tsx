@@ -15,12 +15,13 @@ import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import { useLayoutEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
+import { setPageHeader } from '../../../../state/ui-state';
 import CreateACL from '../acls/create-acl';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import {
   convertRulesToCreateACLRequests,
   handleResponses,
@@ -32,7 +33,12 @@ import {
 const RoleCreatePage = () => {
   const navigate = useNavigate();
 
-  useSecurityBreadcrumbs([{ title: 'Roles', linkTo: '/security/roles' }]);
+  useLayoutEffect(() => {
+    setPageHeader('Roles', [
+      { title: 'Security', linkTo: '/security/users' },
+      { title: 'Roles', linkTo: '/security/roles' },
+    ]);
+  }, []);
 
   const { createAcls } = useCreateAcls();
   const { mutateAsync: createRole } = useCreateRoleMutation();

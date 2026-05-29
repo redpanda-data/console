@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { test } from '@playwright/test';
+import { test } from './fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import { RolePage } from '../test-variant-console/utils/role-page';
 

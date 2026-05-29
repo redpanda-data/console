@@ -14,12 +14,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { InfoIcon, LoaderCircleIcon, RotateCwIcon } from 'lucide-react';
 import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useCallback, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { setPageHeader } from '../../../../state/ui-state';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -37,7 +38,7 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
+import { Text } from '../../../redpanda-ui/components/typography';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({
@@ -67,7 +68,12 @@ const UserCreatePage = () => {
   const isValidUsername = validateUsername(username);
   const isValidPassword = validatePassword(password);
 
-  useSecurityBreadcrumbs([{ title: 'Users', linkTo: '/security/users' }]);
+  useLayoutEffect(() => {
+    setPageHeader('Users', [
+      { title: 'Security', linkTo: '/security' },
+      { title: 'Users', linkTo: '/security/users' },
+    ]);
+  }, []);
 
   const onCreateUser = useCallback(async (): Promise<boolean> => {
     setIsSubmitting(true);
@@ -103,11 +109,7 @@ const UserCreatePage = () => {
 
   const navigate = useNavigate();
   const onCancel = () => navigate({ to: '/security/users' });
-  const onCreateAcls = () =>
-    navigate({
-      to: '/security/acls/create',
-      search: { principalType: 'User', principalName: username },
-    });
+  const onGoToUserDetails = () => navigate({ to: `/security/users/${username}/details` });
 
   const state = {
     username,
@@ -131,12 +133,27 @@ const UserCreatePage = () => {
       <h2 className="pt-4 pb-3 font-semibold text-xl">Create user</h2>
       <div>
         {step === 'CREATE_USER' ? (
-          <CreateUserModal onCancel={onCancel} onCreateUser={onCreateUser} state={state} />
+          <>
+            <CreateUserModal state={state} />
+            <div className="mt-8 flex gap-4">
+              <CreateUserButton
+                isSubmitting={isSubmitting}
+                isValidPassword={isValidPassword}
+                isValidUsername={isValidUsername}
+                onClick={onCreateUser}
+                userExists={users.includes(username)}
+                usernameEmpty={!username}
+              />
+              <Button disabled={isSubmitting} onClick={onCancel} testId="create-user-cancel" variant="link">
+                Cancel
+              </Button>
+            </div>
+          </>
         ) : (
           <CreateUserConfirmationModal
             closeModal={onCancel}
             mechanism={mechanism}
-            onCreateAcls={onCreateAcls}
+            onGoToUserDetails={onGoToUserDetails}
             password={password}
             username={username}
           />
@@ -148,29 +165,75 @@ const UserCreatePage = () => {
 
 export default UserCreatePage;
 
-type CreateUserModalProps = {
-  state: {
-    username: string;
-    setUsername: (v: string) => void;
-    password: string;
-    setPassword: (v: string) => void;
-    mechanism: SaslMechanism;
-    setMechanism: (v: SaslMechanism) => void;
-    generateWithSpecialChars: boolean;
-    setGenerateWithSpecialChars: (v: boolean) => void;
-    isCreating: boolean;
-    isValidUsername: boolean;
-    isValidPassword: boolean;
-    selectedRoles: string[];
-    setSelectedRoles: (v: string[]) => void;
-    users: string[];
-  };
-  onCreateUser: () => Promise<boolean>;
-  onCancel: () => void;
+type CreateUserButtonProps = {
+  isSubmitting: boolean;
+  isValidUsername: boolean;
+  isValidPassword: boolean;
+  userExists: boolean;
+  usernameEmpty: boolean;
+  onClick: () => void;
 };
 
-const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps) => {
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+export const CreateUserButton = ({
+  isSubmitting,
+  isValidUsername,
+  isValidPassword,
+  userExists,
+  usernameEmpty,
+  onClick,
+}: CreateUserButtonProps) => {
+  const disabledReason = (() => {
+    if (isSubmitting) return null;
+    if (usernameEmpty) return 'Enter a username to continue';
+    if (userExists) return 'This username already exists';
+    if (!isValidUsername) return 'Fix the username to continue';
+    if (!isValidPassword) return `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`;
+    return null;
+  })();
+  const isDisabled = isSubmitting || !isValidUsername || !isValidPassword || userExists;
+
+  const button = (
+    <Button disabled={isDisabled} onClick={onClick} testId="create-user-submit">
+      {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
+      {isSubmitting ? 'Creating...' : 'Create'}
+    </Button>
+  );
+
+  if (!disabledReason) return button;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-not-allowed">{button}</span>
+      </TooltipTrigger>
+      <TooltipContent>{disabledReason}</TooltipContent>
+    </Tooltip>
+  );
+};
+
+export type CreateUserModalState = {
+  username: string;
+  setUsername: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  mechanism: SaslMechanism;
+  setMechanism: (v: SaslMechanism) => void;
+  generateWithSpecialChars: boolean;
+  setGenerateWithSpecialChars: (v: boolean) => void;
+  isCreating: boolean;
+  isValidUsername: boolean;
+  isValidPassword: boolean;
+  users: string[];
+  selectedRoles: string[];
+  setSelectedRoles: (v: string[]) => void;
+};
+
+type CreateUserModalProps = {
+  state: CreateUserModalState;
+};
+
+export const CreateUserModal = ({ state }: CreateUserModalProps) => {
+  const rolesApiEnabled = useSupportedFeaturesStore((s) => s.rolesApi);
   const userAlreadyExists = state.users.includes(state.username);
   const hasError = (!state.isValidUsername || userAlreadyExists) && state.username.length > 0;
 
@@ -194,6 +257,8 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
           </FieldLabel>
           <Input
             autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
             id="create-user-name"
             onChange={(e) => state.setUsername(e.target.value)}
             placeholder="Username"
@@ -207,7 +272,7 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
           {hasError && errorText !== undefined && <FieldError>{errorText}</FieldError>}
         </Field>
 
-        <Field>
+        <Field data-invalid={(!state.isValidPassword && state.password.length > 0) || undefined}>
           <FieldLabel required>Password</FieldLabel>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
@@ -235,7 +300,7 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <CopyButton content={state.password} data-testid="copy-password-button" variant="ghost" />
+                  <CopyButton content={state.password} data-testid="copy-password-button" size="icon" variant="ghost" />
                 </TooltipTrigger>
                 <TooltipContent side="top">Copy password</TooltipContent>
               </Tooltip>
@@ -259,6 +324,11 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
           <FieldDescription>
             Must be at least {PASSWORD_MIN_LENGTH} characters and should not exceed {PASSWORD_MAX_LENGTH} characters.
           </FieldDescription>
+          {!state.isValidPassword && state.password.length > 0 && (
+            <FieldError>
+              Must be at least {PASSWORD_MIN_LENGTH} characters and should not exceed {PASSWORD_MAX_LENGTH} characters.
+            </FieldError>
+          )}
         </Field>
 
         <Field>
@@ -276,29 +346,14 @@ const CreateUserModal = ({ state, onCreateUser, onCancel }: CreateUserModalProps
             </SelectContent>
           </Select>
         </Field>
-
-        {!!featureRolesApi && (
-          <Field>
-            <FieldLabel>Assign roles</FieldLabel>
-            <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
-            <FieldDescription>Assign roles to this user. This is optional and can be changed later.</FieldDescription>
-          </Field>
-        )}
       </div>
 
-      <div className="mt-8 flex gap-4">
-        <Button
-          disabled={state.isCreating || !state.isValidUsername || !state.isValidPassword || userAlreadyExists}
-          onClick={onCreateUser}
-          testId="create-user-submit"
-        >
-          {state.isCreating ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
-          {state.isCreating ? 'Creating...' : 'Create'}
-        </Button>
-        <Button disabled={state.isCreating} onClick={onCancel} testId="create-user-cancel" variant="link">
-          Cancel
-        </Button>
-      </div>
+      {rolesApiEnabled && (
+        <div className="mt-6">
+          <Text className="mb-2 font-medium text-sm">Assign roles</Text>
+          <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
+        </div>
+      )}
     </div>
   );
 };
@@ -308,22 +363,22 @@ type CreateUserConfirmationModalProps = {
   password: string;
   mechanism: SaslMechanism;
   closeModal: () => void;
-  onCreateAcls: () => void;
+  onGoToUserDetails: () => void;
 };
 
-const CreateUserConfirmationModal = ({
+export const CreateUserConfirmationModal = ({
   username,
   password,
   mechanism,
   closeModal,
-  onCreateAcls,
+  onGoToUserDetails,
 }: CreateUserConfirmationModalProps) => (
   <>
     <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
       User created
     </h1>
 
-    <Alert className="my-4" icon={<InfoIcon />} variant="info">
+    <Alert className="my-2" icon={<InfoIcon />} variant="info">
       <AlertDescription>
         You will not be able to view this password again. Make sure that it is copied and saved.
       </AlertDescription>
@@ -334,7 +389,7 @@ const CreateUserConfirmationModal = ({
         Username
       </div>
       <div className="flex items-center gap-2">
-        <span className="overflow-hidden break-all">{username}</span>
+        <Input containerClassName="flex-1" readOnly type="text" value={username} />
         <Tooltip>
           <TooltipTrigger asChild>
             <CopyButton content={username} variant="ghost" />
@@ -347,7 +402,7 @@ const CreateUserConfirmationModal = ({
         Password
       </div>
       <div className="flex items-center gap-2">
-        <Input disabled readOnly testId="test_field" type="password" value={password} />
+        <Input readOnly testId="test_field" type="password" value={password} />
         <Tooltip>
           <TooltipTrigger asChild>
             <CopyButton content={password} variant="ghost" />
@@ -364,13 +419,19 @@ const CreateUserConfirmationModal = ({
       </div>
     </div>
 
-    <div className="mt-8 flex gap-4">
-      <Button onClick={closeModal} testId="done-button">
-        Done
-      </Button>
-      <Button onClick={onCreateAcls} testId="create-acls-button" variant="link">
-        Create ACLs
-      </Button>
+    <div className="mt-3 border-t pt-6">
+      <h2 className="mb-2 font-semibold text-base">Assign new user permissions</h2>
+      <p className="my-3 text-muted-foreground text-sm">
+        To grant access to clusters, assign a role to the user or create ACLs.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button onClick={onGoToUserDetails} testId="go-to-user-details-button" variant="outline">
+          Add permissions
+        </Button>
+        <Button onClick={closeModal} testId="done-button" variant="link">
+          Done
+        </Button>
+      </div>
     </div>
   </>
 );

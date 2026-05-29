@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { FC } from 'react';
+import { type FC, useEffect } from 'react';
 
 import type { Topic, TopicConsumer } from '../../../state/rest-interfaces';
 
@@ -19,7 +19,7 @@ import { DataTable } from '@redpanda-data/ui';
 
 import usePaginationParams from '../../../hooks/use-pagination-params';
 import { appGlobal } from '../../../state/app-global';
-import { useApiStoreHook } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import { uiState } from '../../../state/ui-state';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
@@ -28,6 +28,10 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 type TopicConsumersProps = { topic: Topic };
 
 export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
+  useEffect(() => {
+    api.refreshTopicConsumers(topic.topicName);
+  }, [topic.topicName]);
+
   const rawConsumers = useApiStoreHook((s) => s.topicConsumers.get(topic.topicName));
   const isLoading = rawConsumers === undefined;
 

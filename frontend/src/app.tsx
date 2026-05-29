@@ -75,6 +75,12 @@ const router = createRouter({
   defaultNotFoundComponent: NotFoundPage,
 });
 
+declare global {
+  interface Window {
+    __E2E_FEATURE_FLAGS__?: Record<string, boolean>;
+  }
+}
+
 // Register router for type safety
 declare module '@tanstack/react-router' {
   // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
@@ -109,7 +115,7 @@ const App = () => {
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
-    <CustomFeatureFlagProvider initialFlags={{}}>
+    <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
       <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
         <TransportProvider transport={dataplaneTransport}>
