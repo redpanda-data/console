@@ -226,9 +226,7 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>
-            {mode === 'create' ? 'Pipeline settings' : mode === 'view' ? 'Pipeline settings' : 'Edit pipeline settings'}
-          </DialogTitle>
+          <DialogTitle>{mode === 'edit' ? 'Edit pipeline settings' : 'Pipeline settings'}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <Form {...form}>

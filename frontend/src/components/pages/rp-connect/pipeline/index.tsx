@@ -14,7 +14,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
-import { isSystemTag } from 'components/constants';
+import { getUserTagEntries, isSystemTag } from 'components/constants';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
@@ -477,9 +477,7 @@ function EditorSkeleton() {
   );
 }
 
-// One row in the summary's definition list: an aligned label column and a value
-// column that fills the remaining width. Caller renders <InfoRow>s into a
-// `grid grid-cols-[max-content_minmax(0,1fr)]` <dl>.
+// One row in the summary's definition-list grid: aligned label column + value column.
 const InfoRow = ({ label, children }: { label: string; children: ReactNode }) => (
   <>
     <dt className="font-medium text-muted-foreground text-sm">{label}</dt>
@@ -520,9 +518,7 @@ const TagBadges = ({ tags }: { tags: { key: string; value: string }[] }) =>
 const PipelineSummary = ({ pipeline }: { pipeline: Pipeline }) => {
   const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
   const description = pipeline.description?.trim();
-  const tags = Object.entries(pipeline.tags)
-    .filter(([k]) => !isSystemTag(k))
-    .map(([key, value]) => ({ key, value }));
+  const tags = getUserTagEntries(pipeline.tags);
   return (
     <div className="flex flex-col gap-4 rounded-lg border px-5 py-4">
       <div className="flex items-center justify-between gap-4">
@@ -969,9 +965,7 @@ export default function PipelinePage() {
         name: pipeline.displayName,
         description: pipeline.description || '',
         computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
-        tags: Object.entries(pipeline.tags)
-          .filter(([k]) => !isSystemTag(k))
-          .map(([key, value]) => ({ key, value })),
+        tags: getUserTagEntries(pipeline.tags),
       });
     }
   }, [pipeline, mode, form]);

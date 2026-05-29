@@ -81,7 +81,7 @@ type ButtonConfigFactoryParams = {
   isStopPending: boolean;
 };
 
-export function pipelineStateToVariant(state?: Pipeline_State): { variant: StatusBadgeVariant; pulsing: boolean } {
+function pipelineStateToVariant(state?: Pipeline_State): { variant: StatusBadgeVariant; pulsing: boolean } {
   switch (state) {
     case PipelineState.RUNNING:
       return { variant: 'success', pulsing: true };

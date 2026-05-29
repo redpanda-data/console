@@ -16,7 +16,7 @@ import type { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle, CardVariant } from 'components/redpanda-ui/components/card';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -40,12 +40,10 @@ type QuickAddSecretsProps = {
   requiredSecrets: string[];
   existingSecrets: string[];
   scopes: Scope[];
-  defaultValues?: Record<string, string>;
   onSecretsCreated?: (secretNames: string[]) => void;
   enableNewSecrets?: boolean;
   onError?: (errors: string[]) => void;
   onUpdateEditorContent?: (oldName: string, newName: string) => void;
-  cardVariant?: CardVariant;
   // Seeds the editable "Secret name" input; the user can still override it.
   defaultNewSecretName?: string;
   // Renders the form(s) bare (no Card chrome) for use inside a host surface.
@@ -80,12 +78,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   requiredSecrets,
   existingSecrets,
   scopes,
-  defaultValues = {},
   onSecretsCreated,
   enableNewSecrets = false,
   onError,
   onUpdateEditorContent,
-  cardVariant = 'elevated',
   defaultNewSecretName,
   inline = false,
 }) => {
@@ -129,12 +125,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
   const form = useForm<SecretFormData>({
     resolver: zodResolver(SecretFormSchema),
-    defaultValues: Object.fromEntries(
-      missingSecrets.map((normalizedName) => {
-        const originalName = missingSecretsMap.get(normalizedName) || normalizedName;
-        return [normalizedName, { value: defaultValues[originalName] || defaultValues[normalizedName] || '' }];
-      })
-    ),
+    defaultValues: Object.fromEntries(missingSecrets.map((normalizedName) => [normalizedName, { value: '' }])),
   });
 
   const newSecretForm = useForm<NewSecretFormData>({
@@ -416,7 +407,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         (inline ? (
           <div className="space-y-4">{requiredSecretsForm}</div>
         ) : (
-          <Card size="full" variant={cardVariant}>
+          <Card size="full" variant="elevated">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-4 w-4" />

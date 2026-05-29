@@ -23,7 +23,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
-import { isSystemTag } from 'components/constants';
+import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -88,9 +88,7 @@ type Pipeline = {
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   const { inputs, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
-  const tags = Object.entries(apiPipeline.tags)
-    .filter(([k]) => !isSystemTag(k))
-    .map(([key, value]) => ({ key, value }));
+  const tags = getUserTagEntries(apiPipeline.tags);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
