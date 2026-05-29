@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      statuses: write
 
     steps:
       - name: Checkout repository
@@ -54,11 +55,13 @@ jobs:
             --allowedTools "Bash(git tag:*),Bash(git log:*),Bash(git status:*),Bash(git branch:*),Bash(head:*),Bash(pwd),Read,Edit"
 
       - name: Check for changes, commit, and create PR
+        id: changelog_pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet CHANGELOG.md; then
             echo "No changelog changes detected, skipping PR creation."
+            echo "created=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -68,6 +71,8 @@ jobs:
           git add CHANGELOG.md
           git commit -m "docs: update CHANGELOG.md for ${{ steps.tag.outputs.name }}"
           git push origin "changelog/${{ steps.tag.outputs.name }}"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "created=true" >> "$GITHUB_OUTPUT"
 
           gh pr create \
             --title "docs: update CHANGELOG.md for ${{ steps.tag.outputs.name }}" \
@@ -85,3 +90,23 @@ jobs:
           )" \
             --base master \
             --head "changelog/${{ steps.tag.outputs.name }}"
+
+      # The branch above is pushed with GITHUB_TOKEN, so GitHub does not trigger
+      # the push workflows (enterprise-ci-skip.yml / repository-dispatch.yml) that
+      # would normally post the required 'Enterprise CI' status. A changelog PR
+      # only touches CHANGELOG.md, so post the skip status directly here to keep
+      # the PR mergeable — mirrors enterprise-ci-skip.yml.
+      - name: Post Enterprise CI skip status
+        if: ${{ steps.changelog_pr.outputs.created == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ steps.changelog_pr.outputs.sha }}',
+              state: 'success',
+              description: 'Skipped — changelog-only change',
+              context: 'Enterprise CI'
+            });
