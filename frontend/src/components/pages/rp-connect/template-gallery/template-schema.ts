@@ -51,15 +51,9 @@ export function applySchemaToSlots(template: PipelineTemplate, componentList?: C
       required: slot.required ?? checkRequired(field as unknown as RawFieldSpec),
     };
 
-    // Default only applies to kinds that expose one.
-    if (
-      (merged.kind === 'string' || merged.kind === 'topic' || merged.kind === 'select') &&
-      !merged.default &&
-      field.defaultValue
-    ) {
+    if (merged.kind !== 'secret' && !merged.default && field.defaultValue) {
       return { ...merged, default: field.defaultValue };
     }
-
     return merged;
   });
 }

@@ -14,6 +14,8 @@ import { getSecretSyntax } from '../types/constants';
 
 export type SlotValues = Record<string, string>;
 
+const isBlank = (v: string | undefined): boolean => !v?.trim();
+
 // Secret slots become `${secrets.NAME}`; everything else inlines as-is.
 const substituteToken = (slot: TemplateSlot, raw: string): string => {
   if (slot.kind === 'secret') {
@@ -51,7 +53,7 @@ export const stitchTemplateYaml = ({
   const kept: string[] = [];
   for (const line of template.baseYaml.split('\n')) {
     const refs = referencedSlotIdsIn(line);
-    if (refs.length > 0 && refs.some((id) => !values[id]?.trim())) {
+    if (refs.length > 0 && refs.some((id) => isBlank(values[id]))) {
       continue;
     }
     kept.push(
@@ -72,7 +74,7 @@ export const stitchTemplateYaml = ({
 
 export const findMissingRequiredSlot = (template: PipelineTemplate, values: SlotValues): string | undefined => {
   for (const slot of template.slots) {
-    if (slot.required && !values[slot.id]?.trim()) {
+    if (slot.required && isBlank(values[slot.id])) {
       return slot.id;
     }
   }

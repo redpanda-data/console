@@ -510,7 +510,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                           )}
                         />
 
-                        {watchedUsername !== '' && watchedUsername.length > 0 && (
+                        {watchedUsername && (
                           <Button disabled={isPending} onClick={handleClearUsername} size="icon" variant="ghost">
                             <XIcon size={16} />
                           </Button>
@@ -762,7 +762,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                             )}
                           />
 
-                          {watchedConsumerGroup !== '' && watchedConsumerGroup && watchedConsumerGroup.length > 0 && (
+                          {watchedConsumerGroup && (
                             <Button disabled={isPending} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
                               <XIcon size={16} />
                             </Button>

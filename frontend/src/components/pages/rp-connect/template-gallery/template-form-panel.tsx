@@ -85,15 +85,7 @@ const defaultValuesFor = (template: PipelineTemplate, slots: TemplateSlot[]): Re
     [PIPELINE_NAME_FIELD]: template.defaultPipelineName,
   };
   for (const slot of slots) {
-    if (slot.kind === 'string' && slot.default) {
-      defaults[slot.id] = slot.default;
-    } else if (slot.kind === 'topic' && slot.default) {
-      defaults[slot.id] = slot.default;
-    } else if (slot.kind === 'select' && slot.default) {
-      defaults[slot.id] = slot.default;
-    } else {
-      defaults[slot.id] = '';
-    }
+    defaults[slot.id] = slot.kind === 'secret' ? '' : (slot.default ?? '');
   }
   return defaults;
 };

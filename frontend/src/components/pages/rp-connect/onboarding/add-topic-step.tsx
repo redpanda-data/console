@@ -366,7 +366,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
                   )}
                 />
 
-                {watchedTopicName !== '' && watchedTopicName.length > 0 && (
+                {watchedTopicName && (
                   <Button disabled={isPending} onClick={handleClearTopicName} size="icon" variant="ghost">
                     <XIcon size={16} />
                   </Button>
