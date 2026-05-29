@@ -26,13 +26,6 @@ const substituteToken = (slot: TemplateSlot, raw: string): string => {
 
 const SLOT_TOKEN_PATTERN = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
 
-// Lines whose only purpose is to set a value from a `${slot.X}` token get
-// dropped entirely when the slot is blank. This keeps optional fields out of
-// the emitted YAML — the connector then falls back to its own server-side
-// default (e.g. postgres_cdc auto-generates `slot_name` when the key is
-// absent, but rejects an empty string). The form's required-slot validation
-// already gates submission, so a blank slot value at this point means the
-// slot was deliberately optional.
 const referencedSlotIdsIn = (line: string): string[] => {
   const ids: string[] = [];
   for (const match of line.matchAll(SLOT_TOKEN_PATTERN)) {
@@ -53,6 +46,8 @@ export const stitchTemplateYaml = ({
   const kept: string[] = [];
   for (const line of template.baseYaml.split('\n')) {
     const refs = referencedSlotIdsIn(line);
+    // Drop lines whose slot is blank so optional fields fall back to the
+    // connector's own default rather than an empty value it may reject.
     if (refs.length > 0 && refs.some((id) => isBlank(values[id]))) {
       continue;
     }

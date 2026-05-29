@@ -47,12 +47,9 @@ type QuickAddSecretsProps = {
   onError?: (errors: string[]) => void;
   onUpdateEditorContent?: (oldName: string, newName: string) => void;
   cardVariant?: CardVariant;
-  // Seeds the editable "Secret name" input in the new-secret form. Useful when
-  // the caller has a strong suggestion (e.g. a template slot's suggested name)
-  // but still wants the user to be able to override it.
+  // Seeds the editable "Secret name" input; the user can still override it.
   defaultNewSecretName?: string;
-  // Renders the form(s) bare, without the wrapping Card/CardHeader chrome, so
-  // the component can sit inside a host surface that already provides framing.
+  // Renders the form(s) bare (no Card chrome) for use inside a host surface.
   inline?: boolean;
 };
 

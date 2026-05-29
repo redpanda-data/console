@@ -938,8 +938,7 @@ export default function PipelinePage() {
         onRequestDelete={
           pipeline
             ? () => {
-                // Close the details dialog before opening the confirmation so
-                // we never stack two dialogs on screen at the same time.
+                // Close the details dialog first so the two don't stack.
                 setIsViewConfigDialogOpen(false);
                 setIsDeleteAlertOpen(true);
               }

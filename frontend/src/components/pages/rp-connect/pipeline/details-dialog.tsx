@@ -32,11 +32,8 @@ type DetailsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipeline?: Pipeline;
-  /**
-   * Called when the user clicks Delete in the Danger Zone. The parent is
-   * expected to close this dialog and open the delete confirmation — keeps
-   * the two dialogs from stacking on top of each other.
-   */
+  // Delete clicked in the Danger Zone. The parent should close this dialog and
+  // open the delete confirmation so the two don't stack.
   onRequestDelete?: () => void;
 };
 
@@ -46,8 +43,7 @@ const SectionHeading = ({ className, children }: { className?: string; children:
   <h3 className={cn('font-semibold text-base text-foreground', className)}>{children}</h3>
 );
 
-// Copy button that only appears when the parent row is hovered. Keeps
-// non-copyable rows visually identical to copyable ones at rest.
+// Copy button that only appears on row hover.
 const HoverCopyButton = ({ value }: { value: string }) => (
   <CopyButton
     className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100"
@@ -92,9 +88,8 @@ const renderValue = (value: string | undefined, children: React.ReactNode | unde
   );
 };
 
-// Side-by-side row: fixed-width label on the left, value (or children) on the
-// right. Long string values can wrap (with `wrap`); short identifiers
-// truncate. Copy button appears on hover.
+// Fixed-width label on the left, value (or children) on the right. Values wrap
+// with `wrap`, else truncate; copy button appears on hover.
 const DetailRow = ({ label, value, children, copyable = false, wrap = false }: DetailRowProps) => {
   const showCopy = copyable && Boolean(value?.length);
   return (
@@ -120,8 +115,7 @@ const ComputeUnitsLabel = () => (
   </Tooltip>
 );
 
-// Reference rows render badges when populated; otherwise show a muted dash so
-// the row layout stays consistent across pipelines.
+// Badges when populated; otherwise a muted dash to keep the row layout stable.
 const ReferenceList = ({ items }: { items: string[] }) => {
   if (items.length === 0) {
     return <Text className="text-muted-foreground">{EMPTY_PLACEHOLDER}</Text>;

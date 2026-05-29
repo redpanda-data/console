@@ -41,17 +41,11 @@ import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
-  /**
-   * Called when the dialog is closed via the X button, ESC, or backdrop click.
-   * If the user got far enough into the guided form to enter a value, the
-   * dialog will hand back the current stitched YAML via `stashedYaml`. Use this
-   * to drop the partial config into the host editor so the user can continue
-   * editing manually.
-   */
+  // Closed via X, ESC, or backdrop. If the user entered any form values,
+  // `stashedYaml` carries the partial config so the host editor can keep it.
   onClose: (stashedYaml: string | null) => void;
-  /** Called when the user submits the form. Parent owns the deploy mutation. */
+  // Parent owns the deploy mutation.
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
-  /** Render the form's "Create pipeline" button in a busy state. */
   isSubmitting?: boolean;
 };
 
@@ -102,10 +96,9 @@ const StepBackHeader = ({
 export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }: TemplateGalleryDialogProps) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
-  // Slot write requested by the in-dialog secret-creation step. The form panel
-  // consumes it via a useEffect and then calls back to clear it. Routed
-  // through props instead of an imperative ref because plain function
-  // components don't receive `ref` as a prop in React 18.
+  // Slot write requested by an in-dialog step; the form panel consumes it via
+  // an effect and clears it. Props rather than a ref since React 18 function
+  // components don't receive `ref`.
   const [applySlotValue, setApplySlotValue] = useState<ApplySlotValueRequest | null>(null);
   const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const formHandleRef = useRef<TemplateFormPanelHandle | null>(null);
@@ -133,10 +126,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
     resetToGallery();
   };
 
-  // Ensure the next open lands on the gallery even when the parent closes the
-  // dialog directly (e.g. after `onSubmit`) without routing through `onClose` /
-  // `onOpenChange`. Without this, the previous view/state would still be set
-  // when the dialog reopens.
+  // Reset to the gallery when the parent closes the dialog directly (e.g. after
+  // `onSubmit`) without routing through `onClose`, so it reopens clean.
   useEffect(() => {
     if (!open) {
       setView({ kind: 'gallery' });
@@ -175,9 +166,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
         return;
       }
       if (!result.success && result.error) {
-        // AddTopicStep surfaces validation errors inside its own form; only
-        // toast the higher-level "create failed" error so the user still sees
-        // field-level errors in context.
+        // AddTopicStep shows field-level validation in its own form; only toast
+        // the higher-level failure.
         toast.error(result.message ?? result.error);
       }
     } finally {
@@ -187,8 +177,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
   return (
     <Dialog
-      // Block backdrop dismissal past the gallery step so a stray click can't
-      // wipe in-progress form values. ESC and the X / Cancel buttons still close.
+      // Block backdrop dismissal past the gallery so a stray click can't wipe
+      // in-progress form values. ESC and X / Cancel still close.
       disablePointerDismissal={view.kind !== 'gallery'}
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
       open={open}
@@ -243,8 +233,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
           />
         ) : null}
 
-        {/* Stays mounted across addSecret to preserve form state; hide via inline */}
-        {/* style so the flex-1 outer doesn't reserve space (className targets inner). */}
+        {/* Stays mounted across addSecret/createTopic to preserve form state; */}
+        {/* hidden via inline style (className targets the inner element). */}
         {isFormMounted && selectedTemplate ? (
           <DialogBody style={isFormViewActive ? undefined : { display: 'none' }}>
             <TemplateFormPanel
@@ -289,12 +279,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit, isSubmitting }:
 
         {isCreateTopicViewActive ? (
           <DialogBody>
-            {/* LayoutGroup so the popLayout AnimatePresence inside AddTopicStep
-                forces a re-measure on the sibling button motion.div below.
-                Without it, the button's `layout` prop only sees positions at
-                React render time — popLayout shifts surrounding flow via
-                motion's effects after commit, so the button would otherwise
-                jump on collapse. */}
+            {/* LayoutGroup keeps the button below in sync with the popLayout
+                AnimatePresence inside AddTopicStep — otherwise it jumps on collapse. */}
             <LayoutGroup>
               <div className="flex flex-col gap-4">
                 <AddTopicStep hideTitle inline ref={addTopicStepRef} selectionMode="new" />

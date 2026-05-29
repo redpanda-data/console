@@ -17,11 +17,8 @@ import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypo
 import type { PipelineTemplate } from './pipeline-template-types';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
-// Bucket the per-template `setupTimeMinutes` estimate into a coarse effort tier.
-// The underlying number is a rough author estimate (form-fill + external prep
-// like credentials / database setup), so showing precise minutes overstates the
-// accuracy. The tier label + matching signal icon conveys the at-a-glance
-// signal without pretending to be exact.
+// Bucket the rough `setupTimeMinutes` estimate into a coarse effort tier, since
+// showing precise minutes would overstate its accuracy.
 type SetupTier = { label: string; Icon: LucideIcon };
 
 const setupTierFor = (minutes: number): SetupTier => {

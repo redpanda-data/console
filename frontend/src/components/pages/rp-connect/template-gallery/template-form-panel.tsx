@@ -110,16 +110,14 @@ export type TemplateFormSubmitPayload = {
   template: PipelineTemplate;
 };
 
-// Imperative handle so the parent dialog can read the current YAML on cancel
-// without re-rendering the form.
+// Lets the parent dialog read the current YAML on cancel without re-rendering.
 export type TemplateFormPanelHandle = {
   getCurrentYaml: () => string;
   isDirty: () => boolean;
 };
 
-// Instruction from the parent to overwrite a slot's value (e.g. after an
-// in-dialog secret creation). Bumping `requestId` re-triggers the apply even
-// when slotId+value are unchanged.
+// Parent request to overwrite a slot value. Bumping `requestId` re-triggers the
+// apply even when slotId/value are unchanged.
 export type ApplySlotValueRequest = {
   slotId: string;
   value: string;
@@ -135,11 +133,10 @@ export type TemplateFormPanelProps = {
   // When set, secret slots delegate "Create secret" to the parent instead of
   // opening a nested dialog.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
-  // When set, topic slots delegate "Create topic" to the parent so a dedicated
-  // step can host AddTopicStep, mirroring the secret flow.
+  // When set, topic slots delegate "Create topic" to the parent.
   onRequestCreateTopic?: (slotId: string) => void;
-  // When non-null, the panel will write `value` into the named slot exactly
-  // once per `requestId` and call `onSlotValueApplied` to acknowledge.
+  // Writes `value` into the named slot once per `requestId`, then acknowledges
+  // via `onSlotValueApplied`.
   applySlotValue?: ApplySlotValueRequest | null;
   onSlotValueApplied?: () => void;
 };
@@ -165,8 +162,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     });
 
     // Schema-driven defaults can arrive after mount. Reapply them once per
-    // template, only while the form is still pristine — never clobber user
-    // input.
+    // template, but only while pristine so we never clobber user input.
     const lastAppliedTemplateId = useRef<string | null>(null);
     useEffect(() => {
       if (!componentListResponse || lastAppliedTemplateId.current === template.id) {
@@ -188,9 +184,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
       isDirty: () => form.formState.isDirty,
     }));
 
-    // Apply an externally-requested slot write (e.g. from the in-dialog secret
-    // creation step). Routed through props + effect rather than an imperative
-    // ref so it doesn't depend on the parent's ref-forwarding plumbing.
+    // Apply an externally-requested slot write (e.g. from the in-dialog secret step).
     // biome-ignore lint/correctness/useExhaustiveDependencies: requestId is the intentional change detector; slotId/value are read fresh from applySlotValue and shouldn't refire repeats.
     useEffect(() => {
       if (!applySlotValue) {

@@ -85,10 +85,8 @@ type AddUserStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
-  // Renders the form bare — no Card chrome, no min-height, no top margin — so
-  // it can sit inside a host surface (e.g. a dialog body) that already provides
-  // framing. The onboarding wizard keeps the default (false) for its full-page
-  // step layout.
+  // Renders the form bare (no Card chrome/min-height/margin) so it can sit
+  // inside a host surface like a dialog body. Defaults to false for the wizard.
   inline?: boolean;
 };
 

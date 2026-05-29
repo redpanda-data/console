@@ -258,9 +258,8 @@ export const PipelineFlowDiagram = ({
     }
   }, [rfNodes, translateExtent]);
 
-  // Scroll-chaining: at the diagram's top/bottom pan boundary, swallow the
-  // wheel event in capture so React Flow can't preventDefault and the page
-  // scrolls through. Mid-range events fall through to React Flow's pan.
+  // At the diagram's top/bottom pan boundary, swallow the wheel event in capture
+  // so the page scrolls instead. Mid-range events fall through to React Flow's pan.
   useEffect(() => {
     const el = containerRef.current;
     if (!(el && contentOverflows && translateExtent && containerSize)) {

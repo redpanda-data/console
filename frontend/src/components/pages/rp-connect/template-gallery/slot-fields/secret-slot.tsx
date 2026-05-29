@@ -68,9 +68,8 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
         required={slot.required}
       >
         {(field) => {
-          // Surface a value the listSecrets query hasn't reported yet (e.g. just
-          // created via the in-dialog step) so the Select can render the
-          // selected option immediately instead of falling back to the placeholder.
+          // Include a just-created value the listSecrets query hasn't reported
+          // yet, so the Select shows it instead of the placeholder.
           const selectedValue = (field.value as string | undefined) ?? '';
           const options =
             selectedValue && !existingSecrets.includes(selectedValue)
@@ -81,10 +80,8 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
               <div className="flex-1">
                 <Select onValueChange={field.onChange} value={selectedValue}>
                   <SelectTrigger data-testid={`slot-${slot.id}`}>
-                    {/* Render-prop child sidesteps Base UI's "label only resolves after the
-                        popup mounts" behavior — without it the trigger shows the placeholder
-                        until the dropdown is first opened, which masks the auto-select after
-                        in-dialog secret creation. */}
+                    {/* Render-prop child sidesteps Base UI resolving the label only after the
+                        popup first mounts, which would hide the auto-selected secret. */}
                     <SelectValue placeholder="Select an existing secret...">
                       {(value) => (typeof value === 'string' && value !== '' ? value : null)}
                     </SelectValue>
