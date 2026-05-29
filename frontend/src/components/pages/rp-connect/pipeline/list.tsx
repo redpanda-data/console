@@ -334,24 +334,25 @@ const createColumns = ({
 }: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
   {
     accessorKey: 'name',
-    header: 'Pipeline Name',
+    header: 'Pipeline',
     filterFn: createFilterFn('text'),
     cell: ({ row }) => {
-      const description = row.original.description?.trim();
+      const id = row.original.id;
+      const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[200px] flex-col gap-0.5 overflow-hidden">
           <Link
             as={TanStackRouterLink}
             className="block truncate text-base text-primary"
-            params={{ pipelineId: encodeURIComponent(row.original.id) }}
-            title={row.getValue('name')}
+            params={{ pipelineId: encodeURIComponent(id) }}
+            title={name}
             to="/rp-connect/$pipelineId"
           >
-            {row.getValue('name')}
+            {name}
           </Link>
-          {description ? (
-            <span className="truncate text-muted-foreground text-xs" title={description}>
-              {description}
+          {id !== name ? (
+            <span className="truncate font-mono text-muted-foreground text-xs" title={id}>
+              {id}
             </span>
           ) : null}
         </div>

@@ -391,6 +391,15 @@ export const PipelineEditor = (p: {
     };
   }, [secretAutocomplete, contextualVarsAutocomplete]);
 
+  // Monaco reads `defaultValue` only at mount, so external updates (applying a
+  // template, restoring stashed YAML) must be pushed in imperatively. The guard
+  // skips normal typing, where `p.yaml` already equals the editor's content.
+  useEffect(() => {
+    if (editorInstance && editorInstance.getValue() !== p.yaml) {
+      editorInstance.setValue(p.yaml);
+    }
+  }, [editorInstance, p.yaml]);
+
   return (
     <Tabs
       tabs={[
@@ -406,9 +415,9 @@ export const PipelineEditor = (p: {
                   defaultValue={p.yaml}
                   language="yaml"
                   onChange={(e) => {
-                    if (e) {
-                      p.onChange?.(e);
-                    }
+                    // Propagate empty content too — clearing the editor must
+                    // flip `isEditorPristine` so the template CTA can re-appear.
+                    p.onChange?.(e ?? '');
                   }}
                   onMount={async (editorRef, monacoInst) => {
                     setEditorInstance(editorRef);

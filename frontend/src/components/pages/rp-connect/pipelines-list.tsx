@@ -214,7 +214,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 size: 100,
               },
               {
-                header: 'Pipeline Name',
+                header: 'Pipeline',
                 cell: ({ row: { original } }) => (
                   <Link
                     params={{ pipelineId: encodeURIComponentPercents(original.id) }}

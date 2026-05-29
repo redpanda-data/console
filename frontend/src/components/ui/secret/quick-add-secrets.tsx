@@ -18,7 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/comp
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardVariant } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
-import { Input, InputEnd } from 'components/redpanda-ui/components/input';
+import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Key, Loader2, Plus, X } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
@@ -281,58 +281,45 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         </AlertDescription>
       </Alert>
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-2">
-          <form key={formKey} className="space-y-5" onSubmit={form.handleSubmit(handleCreateSecrets)}>
-            {missingSecrets.map((normalizedSecretName) => {
-              const fieldName = `${normalizedSecretName}.value` as keyof SecretFormData;
-              const error = form.formState.errors[normalizedSecretName]?.value;
-              const nameId = `secret-name-${normalizedSecretName}`;
-              const valueId = `secret-value-${normalizedSecretName}`;
+      <form key={formKey} className="space-y-4" onSubmit={form.handleSubmit(handleCreateSecrets)}>
+        {missingSecrets.map((normalizedSecretName) => {
+          const fieldName = `${normalizedSecretName}.value` as keyof SecretFormData;
+          const error = form.formState.errors[normalizedSecretName]?.value;
+          const valueId = `secret-value-${normalizedSecretName}`;
 
-              return (
-                <div className="flex flex-col gap-2" key={normalizedSecretName}>
-                  <Field>
-                    <FieldLabel className="font-medium text-muted-foreground text-xs" htmlFor={nameId}>
-                      Secret name
-                    </FieldLabel>
-                    <Input className="font-mono" disabled id={nameId} readOnly value={normalizedSecretName} />
-                  </Field>
-                  <Field data-invalid={!!error}>
-                    <FieldLabel className="font-medium text-muted-foreground text-xs" htmlFor={valueId}>
-                      Secret value
-                    </FieldLabel>
-                    <Input
-                      id={valueId}
-                      placeholder="Enter the secret value"
-                      type="password"
-                      {...form.register(fieldName)}
-                      aria-describedby={error ? `${valueId}-error` : undefined}
-                      aria-invalid={!!error}
-                    />
-                    {!!error && <FieldError id={`${valueId}-error`}>{error.message}</FieldError>}
-                  </Field>
-                </div>
-              );
-            })}
+          return (
+            <Field data-invalid={!!error} key={normalizedSecretName}>
+              <FieldLabel className="font-medium font-mono text-sm" htmlFor={valueId}>
+                {normalizedSecretName}
+              </FieldLabel>
+              <Input
+                id={valueId}
+                placeholder="Enter value"
+                type="password"
+                {...form.register(fieldName)}
+                aria-describedby={error ? `${valueId}-error` : undefined}
+                aria-invalid={!!error}
+              />
+              {!!error && <FieldError id={`${valueId}-error`}>{error.message}</FieldError>}
+            </Field>
+          );
+        })}
 
-            <Button className="w-full" disabled={form.formState.isSubmitting} type="submit" variant="primary">
-              {form.formState.isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <Text as="span">Creating...</Text>
-                </div>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  Create {missingSecrets.length} secret
-                  {missingSecrets.length > 1 ? 's' : ''}
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
-      </div>
+        <Button className="w-full" disabled={form.formState.isSubmitting} type="submit" variant="primary">
+          {form.formState.isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <Text as="span">Creating...</Text>
+            </div>
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              Create {missingSecrets.length} secret
+              {missingSecrets.length > 1 ? 's' : ''}
+            </>
+          )}
+        </Button>
+      </form>
     </>
   );
 
@@ -341,14 +328,16 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       {/* Display newly created secrets */}
       {newlyCreatedSecrets.length > 0 && (
         <div className="space-y-2">
-          <Text className="font-medium text-muted-foreground text-sm">Created secrets:</Text>
-          <div className="space-y-2">
+          <Text className="font-medium text-muted-foreground text-sm">Created secrets</Text>
+          <div className="flex flex-col gap-1.5">
             {newlyCreatedSecrets.map((secretName) => (
-              <Input className="font-mono" disabled key={secretName} readOnly value={secretName}>
-                <InputEnd>
-                  <Check className="h-4 w-4 text-green-600" />
-                </InputEnd>
-              </Input>
+              <div
+                className="flex items-center gap-2 rounded-md border border-green-600/30 bg-green-600/5 px-3 py-2"
+                key={secretName}
+              >
+                <Check className="h-4 w-4 shrink-0 text-green-600" />
+                <Text className="font-mono text-sm">{secretName}</Text>
+              </div>
             ))}
           </div>
         </div>
