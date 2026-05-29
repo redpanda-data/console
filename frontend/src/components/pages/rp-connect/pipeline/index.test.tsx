@@ -534,7 +534,7 @@ describe('PipelinePage', () => {
     // The page title (level-1 heading) is static; the displayName is shown
     // prominently as the summary card heading, with the ID as a labeled field below.
     expect(await screen.findByRole('heading', { level: 1, name: 'Pipeline view' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { level: 2, name: 'Test Pipeline' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 3, name: 'Test Pipeline' })).toBeInTheDocument();
   });
 
   it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
@@ -663,7 +663,7 @@ describe('PipelinePage', () => {
 
       // In edit mode the name is pre-filled from the server and shown in the settings summary heading.
       await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 2, name: 'Test Pipeline' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 3, name: 'Test Pipeline' })).toBeInTheDocument();
       });
 
       // The yaml editor textarea should be populated with the pipeline's configYaml

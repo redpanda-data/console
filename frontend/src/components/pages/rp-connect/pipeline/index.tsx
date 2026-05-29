@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
@@ -34,7 +35,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
@@ -61,7 +62,7 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
@@ -476,81 +477,92 @@ function EditorSkeleton() {
   );
 }
 
-const ConfigField = ({
-  label,
-  value,
-  copyable = false,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  copyable?: boolean;
-  multiline?: boolean;
-}) => (
-  <div className="group/field flex min-w-0 flex-col gap-1">
-    <Text className="text-muted-foreground" variant="label">
-      {label}
-    </Text>
-    <div className={cn('flex min-w-0 gap-1', multiline ? 'items-start' : 'items-center')}>
-      <Text
-        as={multiline ? 'p' : 'div'}
-        className={cn(multiline ? 'whitespace-pre-wrap break-words' : 'truncate')}
-        title={multiline ? undefined : value}
-      >
-        {value}
-      </Text>
-      {copyable && value ? (
-        <CopyButton
-          className="shrink-0 opacity-0 transition-opacity group-hover/field:opacity-100"
-          content={value}
-          size="sm"
-          variant="ghost"
-        />
-      ) : null}
-    </div>
-  </div>
+// One row in the summary's definition list: an aligned label column and a value
+// column that fills the remaining width. Caller renders <InfoRow>s into a
+// `grid grid-cols-[max-content_minmax(0,1fr)]` <dl>.
+const InfoRow = ({ label, children }: { label: string; children: ReactNode }) => (
+  <>
+    <dt className="font-medium text-muted-foreground text-sm">{label}</dt>
+    <dd className="min-w-0 text-foreground text-sm">{children}</dd>
+  </>
 );
+
+// Value that reveals a copy button on hover. Used for ID / URL / service account.
+const CopyableValue = ({ value, mono }: { value: string; mono?: boolean }) => (
+  <span className="group/copy flex min-w-0 items-center gap-1">
+    <span className={cn('min-w-0 truncate', mono && 'font-mono')} title={value}>
+      {value}
+    </span>
+    <CopyButton
+      className="shrink-0 opacity-0 transition-opacity group-hover/copy:opacity-100"
+      content={value}
+      size="sm"
+      variant="ghost"
+    />
+  </span>
+);
+
+const TagBadges = ({ tags }: { tags: { key: string; value: string }[] }) =>
+  tags.length > 0 ? (
+    <div className="flex flex-wrap gap-1.5">
+      {tags.map((t) => (
+        <Badge key={t.key} variant="simple-outline">
+          {t.value ? `${t.key}: ${t.value}` : t.key}
+        </Badge>
+      ))}
+    </div>
+  ) : (
+    <span className="text-muted-foreground italic">None</span>
+  );
 
 // Pipeline identity + metadata shown as a summary card above the main panel in
 // view mode. The full set (including empty fields) lives in the details dialog.
 const PipelineSummary = ({ pipeline }: { pipeline: Pipeline }) => {
   const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
   const description = pipeline.description?.trim();
+  const tags = Object.entries(pipeline.tags)
+    .filter(([k]) => !isSystemTag(k))
+    .map(([key, value]) => ({ key, value }));
   return (
-    <div className="flex flex-col gap-5 rounded-lg border bg-muted/20 px-6 py-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Text className="text-muted-foreground" variant="label">
-            Name
-          </Text>
-          <Heading className="truncate" level={2} title={pipeline.displayName || pipeline.id}>
-            {pipeline.displayName || pipeline.id}
-          </Heading>
-        </div>
-        <PipelineStatusBadge state={pipeline.state} />
+    <div className="flex flex-col gap-4 rounded-lg border px-5 py-4">
+      <div className="flex items-center justify-between gap-4">
+        <Heading className="min-w-0 truncate" level={3} title={pipeline.displayName || pipeline.id}>
+          {pipeline.displayName || pipeline.id}
+        </Heading>
+        <PipelineStatusBadge size="sm" state={pipeline.state} />
       </div>
       <Separator variant="subtle" />
-      <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-        <ConfigField copyable label="ID" value={pipeline.id} />
-        <ConfigField label="Compute units" value={`${tasks}`} />
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-start gap-x-10 gap-y-3">
+        <InfoRow label="ID">
+          <CopyableValue mono value={pipeline.id} />
+        </InfoRow>
+        <InfoRow label="Compute units">{tasks}</InfoRow>
         {pipeline.serviceAccount ? (
-          <ConfigField copyable label="Service account" value={pipeline.serviceAccount.clientId} />
+          <InfoRow label="Service account">
+            <CopyableValue mono value={pipeline.serviceAccount.clientId} />
+          </InfoRow>
         ) : null}
-        {pipeline.url ? <ConfigField copyable label="URL" value={pipeline.url} /> : null}
-      </div>
-      {description ? (
-        <div className="flex min-w-0 flex-col gap-1">
-          <Text className="text-muted-foreground" variant="label">
-            Description
-          </Text>
-          <Text className="line-clamp-3 whitespace-pre-wrap break-words text-sm" title={description}>
-            {description}
-          </Text>
-        </div>
-      ) : null}
+        {pipeline.url ? (
+          <InfoRow label="URL">
+            <CopyableValue value={pipeline.url} />
+          </InfoRow>
+        ) : null}
+        {tags.length > 0 ? (
+          <InfoRow label="Tags">
+            <TagBadges tags={tags} />
+          </InfoRow>
+        ) : null}
+        {description ? (
+          <InfoRow label="Description">
+            <p className="line-clamp-2 whitespace-pre-wrap break-words" title={description}>
+              {description}
+            </p>
+          </InfoRow>
+        ) : null}
+      </dl>
       <Separator variant="subtle" />
-      {/* Run control lives at the card footer, away from the header's Edit button. */}
-      <div className="flex items-center justify-end">
+      {/* Run control at the footer-right (distinct intent from the edit-settings action). */}
+      <div className="flex justify-end">
         <PipelineRunControl pipelineId={pipeline.id} pipelineState={pipeline.state} />
       </div>
     </div>
@@ -563,35 +575,31 @@ const EditSummary = ({ form, onEdit }: { form: UseFormReturn<PipelineFormValues>
   const name = useWatch({ control: form.control, name: 'name' });
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const computeUnits = useWatch({ control: form.control, name: 'computeUnits' });
+  const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
   return (
-    <div className="flex flex-col gap-5 rounded-lg border bg-muted/20 px-6 py-5">
-      <div className="flex min-w-0 flex-col gap-1">
-        <Text className="text-muted-foreground" variant="label">
-          Name
-        </Text>
-        <Heading className="truncate" level={2} title={name}>
-          {name || 'Untitled pipeline'}
-        </Heading>
-      </div>
+    <div className="flex flex-col gap-4 rounded-lg border px-5 py-4">
+      <Heading className="min-w-0 truncate" level={3} title={name}>
+        {name || 'Untitled pipeline'}
+      </Heading>
       <Separator variant="subtle" />
-      <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-3">
-        <ConfigField label="Compute units" value={`${computeUnits}`} />
-      </div>
-      <div className="flex min-w-0 flex-col gap-1">
-        <Text className="text-muted-foreground" variant="label">
-          Description
-        </Text>
-        {description ? (
-          <Text className="line-clamp-3 whitespace-pre-wrap break-words text-sm" title={description}>
-            {description}
-          </Text>
-        ) : (
-          <Text className="text-muted-foreground text-sm italic">No description</Text>
-        )}
-      </div>
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-start gap-x-10 gap-y-3">
+        <InfoRow label="Compute units">{computeUnits}</InfoRow>
+        <InfoRow label="Tags">
+          <TagBadges tags={tags} />
+        </InfoRow>
+        <InfoRow label="Description">
+          {description ? (
+            <p className="line-clamp-2 whitespace-pre-wrap break-words" title={description}>
+              {description}
+            </p>
+          ) : (
+            <span className="text-muted-foreground italic">None</span>
+          )}
+        </InfoRow>
+      </dl>
       <Separator variant="subtle" />
-      {/* Edit action at the card footer, away from the header's Save button. */}
-      <div className="flex items-center justify-end">
+      {/* Edit action at the footer-left, away from the header's Save button. */}
+      <div className="flex justify-start">
         <Button icon={<Settings />} onClick={onEdit} size="sm" variant="outline">
           Edit settings
         </Button>
@@ -1006,12 +1014,7 @@ export default function PipelinePage() {
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
   return (
-    <div
-      className={cn(
-        'flex max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4',
-        mode === 'view' ? 'h-full min-h-[calc(100dvh-10rem)]' : 'h-[calc(100dvh-10rem)]'
-      )}
-    >
+    <div className="flex min-h-[calc(100dvh-10rem)] max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4">
       {/* Top framing border that lines up with the content edge, matching the
           listings page header. Negative margin cancels the layout's pt-8. */}
       <div className="-mt-8 border-divider-default border-b" />
@@ -1026,7 +1029,9 @@ export default function PipelinePage() {
       />
       {mode === 'view' && pipeline ? <PipelineSummary pipeline={pipeline} /> : null}
       {mode !== 'view' ? <EditSummary form={form} onEdit={() => setIsConfigDialogOpen(true)} /> : null}
-      <div className="flex min-h-0 flex-1 rounded-lg border border-border!">
+      {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
+          flow panels aren't squished when the summary card is tall. */}
+      <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
           mode={mode}
