@@ -155,11 +155,13 @@ export const PipelineFlowDiagram = ({
   // initialises with the correct translateExtent (avoids centering flash).
   useLayoutEffect(() => {
     const el = containerRef.current;
-    if (el) {
-      setContainerSize({
-        width: el.clientWidth,
-        height: el.clientHeight,
-      });
+    if (!el) {
+      return;
+    }
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    if (w > 0 && h > 0) {
+      setContainerSize({ width: w, height: h });
     }
   }, []);
 
@@ -172,6 +174,9 @@ export const PipelineFlowDiagram = ({
     const ro = new ResizeObserver(([entry]) => {
       const w = Math.round(entry.contentRect.width);
       const h = Math.round(entry.contentRect.height);
+      if (w === 0 || h === 0) {
+        return;
+      }
       setContainerSize((prev) => {
         if (prev && prev.width === w && prev.height === h) {
           return prev;

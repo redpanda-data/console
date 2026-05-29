@@ -288,26 +288,36 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
       <div className="space-y-4">
         <div className="flex flex-col gap-2">
-          <form key={formKey} className="space-y-3" onSubmit={form.handleSubmit(handleCreateSecrets)}>
+          <form key={formKey} className="space-y-5" onSubmit={form.handleSubmit(handleCreateSecrets)}>
             {missingSecrets.map((normalizedSecretName) => {
               const fieldName = `${normalizedSecretName}.value` as keyof SecretFormData;
               const error = form.formState.errors[normalizedSecretName]?.value;
+              const nameId = `secret-name-${normalizedSecretName}`;
+              const valueId = `secret-value-${normalizedSecretName}`;
 
               return (
-                <Field key={normalizedSecretName} data-invalid={!!error}>
-                  <FieldLabel className="font-medium font-mono text-sm" htmlFor={`secret-${normalizedSecretName}`}>
-                    {normalizedSecretName}
-                  </FieldLabel>
-                  <Input
-                    id={`secret-${normalizedSecretName}`}
-                    placeholder={`Enter value for ${normalizedSecretName}...`}
-                    type="password"
-                    {...form.register(fieldName)}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? `secret-${normalizedSecretName}-error` : undefined}
-                  />
-                  {!!error && <FieldError id={`secret-${normalizedSecretName}-error`}>{error.message}</FieldError>}
-                </Field>
+                <div className="flex flex-col gap-2" key={normalizedSecretName}>
+                  <Field>
+                    <FieldLabel className="font-medium text-muted-foreground text-xs" htmlFor={nameId}>
+                      Secret name
+                    </FieldLabel>
+                    <Input className="font-mono" disabled id={nameId} readOnly value={normalizedSecretName} />
+                  </Field>
+                  <Field data-invalid={!!error}>
+                    <FieldLabel className="font-medium text-muted-foreground text-xs" htmlFor={valueId}>
+                      Secret value
+                    </FieldLabel>
+                    <Input
+                      id={valueId}
+                      placeholder="Enter the secret value"
+                      type="password"
+                      {...form.register(fieldName)}
+                      aria-describedby={error ? `${valueId}-error` : undefined}
+                      aria-invalid={!!error}
+                    />
+                    {!!error && <FieldError id={`${valueId}-error`}>{error.message}</FieldError>}
+                  </Field>
+                </div>
               );
             })}
 
