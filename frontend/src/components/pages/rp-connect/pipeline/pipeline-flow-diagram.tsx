@@ -263,7 +263,7 @@ export const PipelineFlowDiagram = ({
   // scrolls through. Mid-range events fall through to React Flow's pan.
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || !contentOverflows || !translateExtent || !containerSize) {
+    if (!(el && contentOverflows && translateExtent && containerSize)) {
       return;
     }
     const [[, minBoundY], [, maxBoundY]] = translateExtent;
@@ -294,9 +294,7 @@ export const PipelineFlowDiagram = ({
   }
 
   // Section labels and `none` placeholders don't count as user content.
-  const isPipelineEmpty = !nodes.some(
-    (n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none')
-  );
+  const isPipelineEmpty = !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
   const showTemplateFab = Boolean(onBrowseTemplates) && isPipelineEmpty;
 
   return (

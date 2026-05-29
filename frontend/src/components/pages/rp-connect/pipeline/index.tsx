@@ -18,7 +18,6 @@ import { isSystemTag } from 'components/constants';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import {
@@ -118,7 +117,6 @@ import {
   tryPatchRedpandaYaml,
 } from '../utils/yaml';
 
-
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
     return 'Add an input';
@@ -138,7 +136,6 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   }
   return;
 }
-
 
 const pipelineFormSchema = z.object({
   name: z
@@ -162,7 +159,6 @@ const pipelineFormSchema = z.object({
 });
 
 type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
-
 
 function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
   const userTags: Record<string, string> = {};
@@ -231,7 +227,6 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
     return;
   }
 }
-
 
 function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
@@ -449,7 +444,6 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
     ),
   };
 }
-
 
 function EditorSkeleton() {
   return (
@@ -730,7 +724,6 @@ function SidebarPanel({
   );
 }
 
-
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
@@ -751,7 +744,7 @@ export default function PipelinePage() {
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
@@ -769,7 +762,6 @@ export default function PipelinePage() {
     },
     [slashCommand]
   );
-
 
   const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -789,11 +781,9 @@ export default function PipelinePage() {
   const formName = useWatch({ control: form.control, name: 'name' });
   const pipelineName = mode === 'view' ? pipeline?.displayName : formName;
 
-
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
     usePipelineSave({ form, yamlContent, mode, pipelineId, pipeline, isPipelineDiagramsEnabled });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
-
 
   const handleYamlChange = useCallback(
     (value: string) => {
@@ -872,7 +862,6 @@ export default function PipelinePage() {
     onResolved: setYamlContent,
   });
 
-
   const handleCancel = useCallback(() => {
     if (mode === 'create') {
       clearWizardStore();
@@ -887,7 +876,6 @@ export default function PipelinePage() {
   }, [mode, clearWizardStore, navigate, router]);
 
   const handleNameChange = useCallback((name: string) => form.setValue('name', name, { shouldValidate: true }), [form]);
-
 
   return (
     <div

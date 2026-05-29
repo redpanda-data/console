@@ -79,7 +79,7 @@ const RpConnectPipelinesCreateContent = () => {
   const [tasks, setTasks] = useState(MIN_TASKS);
   const [editorContent, setEditorContent] = useState(exampleContent);
   const [isCreating, setIsCreating] = useState(false);
-  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableConnectTemplateGallery');
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const isEditorPristine = editorContent.trim() === '';
 

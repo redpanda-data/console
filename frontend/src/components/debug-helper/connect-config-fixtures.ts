@@ -734,7 +734,8 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   {
     id: 'edge-secrets-heavy',
     name: 'Edge — many secret references',
-    description: 'Stress-test the ${secrets.X} parser/detector with brokers, SASL, TLS, headers, and S3 creds all interpolated.',
+    description:
+      'Stress-test the ${secrets.X} parser/detector with brokers, SASL, TLS, headers, and S3 creds all interpolated.',
     yaml: secretsHeavy,
     tags: ['edge-case'],
   },

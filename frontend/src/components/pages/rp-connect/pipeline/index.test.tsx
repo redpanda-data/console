@@ -537,9 +537,10 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The toolbar should show the displayName from the pipeline response, not the pipeline ID
-    expect(await screen.findByText('Test Pipeline')).toBeInTheDocument();
-    expect(screen.queryByText('test-pipeline')).not.toBeInTheDocument();
+    // The toolbar title (level-1 heading) should show the displayName from the pipeline
+    // response, not the pipeline ID. The ID is shown separately in the Configuration section.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: 'test-pipeline' })).not.toBeInTheDocument();
   });
 
   it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {

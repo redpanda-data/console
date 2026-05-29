@@ -81,9 +81,7 @@ export function findComponentByName(
   name: string,
   type?: Exclude<ConnectComponentType, 'custom'>
 ): ComponentSpec | undefined {
-  const mappings = type
-    ? [COMPONENT_TYPE_MAPPINGS[type]]
-    : Object.values(COMPONENT_TYPE_MAPPINGS);
+  const mappings = type ? [COMPONENT_TYPE_MAPPINGS[type]] : Object.values(COMPONENT_TYPE_MAPPINGS);
   for (const { listKey } of mappings) {
     const list = componentList[listKey] as ComponentSpec[] | undefined;
     if (!list) {

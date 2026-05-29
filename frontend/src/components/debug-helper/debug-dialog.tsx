@@ -111,7 +111,9 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
         </div>
       </div>
       {previewing && (
-        <pre className="mt-2.5 max-h-64 overflow-auto rounded border bg-muted p-2.5 font-mono text-xs">{fixture.yaml}</pre>
+        <pre className="mt-2.5 max-h-64 overflow-auto rounded border bg-muted p-2.5 font-mono text-xs">
+          {fixture.yaml}
+        </pre>
       )}
     </div>
   );
@@ -638,9 +640,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <Bug className="h-4 w-4" />
             Debug helpers
           </DialogTitle>
-          <DialogDescription>
-            Connect-app debugging tools — configs, simulators, storage, flags.
-          </DialogDescription>
+          <DialogDescription>Connect-app debugging tools — configs, simulators, storage, flags.</DialogDescription>
         </DialogHeader>
 
         <DialogBody padding="none" scrollShadow={false}>

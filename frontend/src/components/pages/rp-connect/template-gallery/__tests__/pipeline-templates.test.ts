@@ -98,4 +98,3 @@ describe('PIPELINE_TEMPLATES registry', () => {
     }
   });
 });
-

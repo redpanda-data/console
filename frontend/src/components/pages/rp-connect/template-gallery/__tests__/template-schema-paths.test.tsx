@@ -12,7 +12,7 @@
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, test } from 'vitest';
 
-import schemaJson from '../../../../../assets/rp-connect-schema-full.json';
+import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import { findComponentByName, resolveFieldByPath } from '../../utils/schema';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 
@@ -50,19 +50,22 @@ describe('PIPELINE_TEMPLATES schemaField paths resolve against the schema snapsh
       })
   );
 
-  test.each(slotsWithSchemaField)(
-    '$templateId · $slotId → $component.$schemaField',
-    ({ templateId, slotId, schemaField, component, type }) => {
-      if (KNOWN_MISSING_COMPONENTS.has(component)) {
-        return;
-      }
-      const comp = findComponentByName(componentList, component, type);
-      expect(comp, `template "${templateId}": ${type} "${component}" not in schema snapshot`).toBeDefined();
-      const field = resolveFieldByPath(comp?.config, schemaField);
-      expect(
-        field,
-        `template "${templateId}", slot "${slotId}": schemaField "${schemaField}" doesn't resolve on ${type} "${component}"`
-      ).toBeDefined();
+  test.each(slotsWithSchemaField)('$templateId · $slotId → $component.$schemaField', ({
+    templateId,
+    slotId,
+    schemaField,
+    component,
+    type,
+  }) => {
+    if (KNOWN_MISSING_COMPONENTS.has(component)) {
+      return;
     }
-  );
+    const comp = findComponentByName(componentList, component, type);
+    expect(comp, `template "${templateId}": ${type} "${component}" not in schema snapshot`).toBeDefined();
+    const field = resolveFieldByPath(comp?.config, schemaField);
+    expect(
+      field,
+      `template "${templateId}", slot "${slotId}": schemaField "${schemaField}" doesn't resolve on ${type} "${component}"`
+    ).toBeDefined();
+  });
 });

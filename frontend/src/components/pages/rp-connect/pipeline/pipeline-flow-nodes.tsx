@@ -176,9 +176,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
       <div className="flex items-center gap-1.5">
-        {!isPlaceholder ? (
-          <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
-        ) : null}
+        {isPlaceholder ? null : <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />}
         <Text
           as="span"
           className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}

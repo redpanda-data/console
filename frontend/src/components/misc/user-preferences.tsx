@@ -70,7 +70,7 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
               ))}
             </TabsList>
             {tabEntries.map(([key, { component: TabComponent }]) => (
-              <TabsContent key={key} value={key} className="p-4">
+              <TabsContent className="p-4" key={key} value={key}>
                 <TabComponent />
               </TabsContent>
             ))}
