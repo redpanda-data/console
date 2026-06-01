@@ -5,12 +5,40 @@ ignore:
   SNYK-JS-UUID-16133035:
     - '*':
         reason: >-
-          Not reachable in browser UI: frontend source has no direct uuid runtime
-          imports and does not call uuid v3/v5/v6 with caller-provided output
-          buffers/offsets. Remaining paths are @a2a-js/sdk, Mermaid via
+          Not reachable in browser UI: frontend source has no direct uuid
+          runtime imports and does not call uuid v3/v5/v6 with caller-provided
+          output buffers/offsets. Remaining paths are @a2a-js/sdk, Mermaid via
           streamdown, @hookform/devtools via @redpanda-data/ui, SockJS
           dev-server tooling, and Docker test tooling; none expose the
-          vulnerable external-buffer API to user input. Revisit before expiry
-          or if direct uuid buffer APIs are introduced.
+          vulnerable external-buffer API to user input. Revisit before expiry or
+          if direct uuid buffer APIs are introduced.
         expires: 2026-08-11T09:58:05.000Z
         created: 2026-05-13T09:58:12.566Z
+  SNYK-JS-AI-16734889:
+    - '*':
+        reason: >-
+          No upstream fix. Vulnerable validateDownloadUrl()/download-blob.ts
+          SSRF path is server-side file-download feature; Console frontend is a
+          browser-rendered Module Federation remote that only imports ai types +
+          streamText against trusted Redpanda backends, never the download API.
+          Not reachable.
+        expires: 2026-08-30T16:27:56.000Z
+        created: 2026-06-01T16:27:56.999Z
+  SNYK-JS-AISDKPROVIDERUTILS-16734888:
+    - '*':
+        reason: >-
+          No upstream fix. Same validateDownloadUrl() SSRF download path as
+          SNYK-JS-AI-16734889; download/blob feature not imported in this
+          browser MF remote. Not reachable.
+        expires: 2026-08-30T16:27:56.000Z
+        created: 2026-06-01T16:27:58.517Z
+  SNYK-JS-AISDKPROVIDERUTILS-16735288:
+    - '*':
+        reason: >-
+          No upstream fix. Unbounded response.text() buffering in
+          response-handler.ts requires an attacker-controlled LLM provider
+          endpoint; this browser MF remote calls only trusted Redpanda backend
+          endpoints via streamText. Not reachable.
+        expires: 2026-08-30T16:27:56.000Z
+        created: 2026-06-01T16:27:59.860Z
+patch: {}
