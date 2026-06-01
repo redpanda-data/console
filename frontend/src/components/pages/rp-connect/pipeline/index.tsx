@@ -966,10 +966,10 @@ export default function PipelinePage() {
         onRequestDelete={
           pipeline
             ? () => {
-              // Close the details dialog first so the two don't stack.
-              setIsViewConfigDialogOpen(false);
-              setIsDeleteAlertOpen(true);
-            }
+                // Close the details dialog first so the two don't stack.
+                setIsViewConfigDialogOpen(false);
+                setIsDeleteAlertOpen(true);
+              }
             : undefined
         }
         open={isViewConfigDialogOpen}
