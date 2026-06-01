@@ -17,7 +17,6 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -293,11 +292,8 @@ export function PipelineRunControl({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Stop pipeline?</DialogTitle>
-
           </DialogHeader>
-          <DialogBody>
-            Stopping the pipeline halts all data processing until you start it again.
-          </DialogBody>
+          <DialogBody>Stopping the pipeline halts all data processing until you start it again.</DialogBody>
           <DialogFooter>
             <Button onClick={() => setIsStopConfirmOpen(false)} variant="ghost">
               Cancel
