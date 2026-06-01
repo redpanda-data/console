@@ -24,7 +24,7 @@ import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { useWatch } from 'react-hook-form';
+import { Controller, useFormState, useWatch } from 'react-hook-form';
 
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
@@ -144,6 +144,28 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
+// Inline-editable pipeline name, styled as the page title. Bound to the same
+// form field as the settings dialog, so editing either keeps both in sync.
+const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
+  <Controller
+    control={form.control}
+    name="name"
+    render={({ field, fieldState }) => (
+      <input
+        {...field}
+        aria-invalid={fieldState.invalid}
+        aria-label="Pipeline name"
+        className={cn(
+          'min-w-0 max-w-md flex-1 truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
+          'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
+          fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
+        )}
+        placeholder={placeholder}
+      />
+    )}
+  />
+);
+
 // View-mode header: pipeline name as the page title, with details/docs/edit
 // actions. Status and the run control live in a separate ops bar below.
 export function PipelineViewHeader({
@@ -243,12 +265,11 @@ export function PipelineEditHeader({
   onEditSettings: () => void;
   isSaving?: boolean;
 }) {
-  const name = useWatch({ control: form.control, name: 'name' });
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
-
-  const displayName = name || (mode === 'create' ? 'New pipeline' : 'Untitled pipeline');
+  const { errors } = useFormState({ control: form.control });
+  const nameError = typeof errors.name?.message === 'string' ? errors.name.message : undefined;
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -257,23 +278,31 @@ export function PipelineEditHeader({
 
   return (
     <header className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <BackButton onClick={onBack} />
-          <Heading className={cn('min-w-0 truncate', !name && 'text-muted-foreground')} level={1} title={displayName}>
-            {displayName}
-          </Heading>
-          <Badge variant="simple-outline">{mode === 'create' ? 'New' : 'Editing'}</Badge>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <BackButton onClick={onBack} />
+            <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
+            <Badge variant="simple-outline">{mode === 'create' ? 'New' : 'Editing'}</Badge>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              as="a"
+              href={DOCS_URL}
+              icon={<BookOpen />}
+              rel="noopener noreferrer"
+              target="_blank"
+              variant="ghost"
+            >
+              Docs
+            </Button>
+            <Button disabled={isSaving} onClick={onSave}>
+              Save
+              {isSaving ? <Spinner /> : null}
+            </Button>
+          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button as="a" href={DOCS_URL} icon={<BookOpen />} rel="noopener noreferrer" target="_blank" variant="ghost">
-            Docs
-          </Button>
-          <Button disabled={isSaving} onClick={onSave}>
-            Save
-            {isSaving ? <Spinner /> : null}
-          </Button>
-        </div>
+        {nameError ? <p className="pl-11 text-destructive text-sm">{nameError}</p> : null}
       </div>
       <Separator variant="subtle" />
       <div className="flex flex-col items-start gap-2">

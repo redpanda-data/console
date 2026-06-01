@@ -287,6 +287,11 @@ function usePipelineSave({
   const handleSave = useCallback(async () => {
     const isValid = await form.trigger();
     if (!isValid) {
+      // The editable settings (name especially) live in the header/dialog, so a
+      // silent no-op is confusing — surface why the save was blocked.
+      const fieldErrors = form.formState.errors;
+      const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
+      toast.error(typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.');
       return;
     }
 

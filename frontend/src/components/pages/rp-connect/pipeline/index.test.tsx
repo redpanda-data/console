@@ -429,6 +429,43 @@ describe('PipelinePage', () => {
     });
   });
 
+  it('lets the name be edited inline from the header title and submits it', async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn().mockReturnValue(
+      create(ConsoleCreatePipelineResponseSchema, {
+        response: create(CreatePipelineResponseSchema, {
+          pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
+        }),
+      })
+    );
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    // Set the name directly in the inline title — no need to open the settings dialog.
+    fireEvent.change(screen.getByRole('textbox', { name: 'Pipeline name' }), { target: { value: 'inline-named' } });
+
+    fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(createPipelineMock).toHaveBeenCalled();
+    });
+    expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('inline-named');
+  });
+
+  it('blocks saving a new pipeline with an invalid name and shows the error inline', async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn();
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    // Click Save with no name entered — validation should block it.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText(/at least 3 characters/i)).toBeInTheDocument();
+    expect(createPipelineMock).not.toHaveBeenCalled();
+  });
+
   it('shows both save errors and real-time lint warnings when a save fails', async () => {
     const user = userEvent.setup();
 
@@ -664,9 +701,9 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // In edit mode the name is pre-filled from the server and shown as the page title.
+      // In edit mode the name is pre-filled from the server into the inline-editable title.
       await waitFor(() => {
-        expect(screen.getByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: 'Pipeline name' })).toHaveValue('Test Pipeline');
       });
 
       // The yaml editor textarea should be populated with the pipeline's configYaml
