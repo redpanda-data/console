@@ -26,6 +26,7 @@ enum API {
   API_AI_AGENT = 8;
   API_AI_GATEWAY = 9;
   API_PROMETHEUS = 10;
+  API_REDPANDA_SQL = 11;
 }
 
 // AuthorizationRole defines the primitive pre-defined roles a user can have.
