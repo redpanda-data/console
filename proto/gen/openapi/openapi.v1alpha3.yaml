@@ -375,6 +375,29 @@ components:
       required:
         - region
       type: object
+    Catalog:
+      properties:
+        name:
+          type: string
+        namespace_name:
+          type: string
+        type:
+          $ref: '#/components/schemas/CatalogType'
+      type: object
+    CatalogType:
+      description: Catalog backing-storage type. Sourced from `system.catalogs.type`.
+      enum:
+        - CATALOG_TYPE_REDPANDA
+      type: string
+    Column:
+      description: Column descriptor as reported by the Postgres driver.
+      properties:
+        name:
+          type: string
+        type:
+          description: Postgres type name (e.g. "INT8", "TEXT", "TIMESTAMPTZ").
+          type: string
+      type: object
     ComponentType:
       description: Component type for this tool.
       enum:
@@ -426,6 +449,15 @@ components:
     DeleteKnowledgeBaseResponse:
       type: object
     DeleteMCPServerResponse:
+      type: object
+    DescribeTableResponse:
+      properties:
+        columns:
+          items:
+            $ref: '#/components/schemas/Column'
+          type: array
+        table:
+          $ref: '#/components/schemas/Table'
       type: object
     Event:
       description: |-
@@ -482,6 +514,38 @@ components:
             $ref: '#/components/schemas/InstantResult'
           title: Instant query results, each with a single data point at the requested time
           type: array
+      type: object
+    ExecuteQueryRequest:
+      properties:
+        row_limit:
+          description: |-
+            Override the server row cap for this query. When unset, the server
+            default applies.
+          format: int32
+          nullable: true
+          type: integer
+        statement:
+          type: string
+        timeout:
+          description: Per-query timeout. When unset, the server default applies.
+          nullable: true
+          type: string
+      type: object
+    ExecuteQueryResponse:
+      properties:
+        columns:
+          items:
+            $ref: '#/components/schemas/Column'
+          type: array
+        rows:
+          items:
+            $ref: '#/components/schemas/Row'
+          type: array
+        truncated:
+          description: |-
+            True if the server row cap fired before the result set was
+            exhausted.
+          type: boolean
       type: object
     ExecuteRangeQueryParams:
       description: Parameters for executing a range query.
@@ -1222,6 +1286,15 @@ components:
         next_page_token:
           type: string
       type: object
+    ListCatalogsResponse:
+      properties:
+        catalogs:
+          items:
+            $ref: '#/components/schemas/Catalog'
+          type: array
+        next_page_token:
+          type: string
+      type: object
     ListKnowledgeBasesRequest.Filter:
       properties:
         name_contains:
@@ -1283,6 +1356,15 @@ components:
           items:
             $ref: '#/components/schemas/QueryMetadata'
           title: A description for each available predefined query
+          type: array
+      type: object
+    ListTablesResponse:
+      properties:
+        next_page_token:
+          type: string
+        tables:
+          items:
+            $ref: '#/components/schemas/Table'
           type: array
       type: object
     ListTracesRequest.Filter:
@@ -1551,6 +1633,13 @@ components:
       required:
         - memory_shares
         - cpu_shares
+      type: object
+    Row:
+      properties:
+        values:
+          items:
+            $ref: '#/components/schemas/v1alpha3.Value'
+          type: array
       type: object
     SASLMechanism:
       description: SASL mechanism to use for authentication.
@@ -1854,6 +1943,38 @@ components:
           type: string
       required:
         - system_prompt
+      type: object
+    Table:
+      description: |-
+        Table mirrors a row from `SHOW TABLES FROM <catalog>`. Backing-specific
+        fields (connection_name, topic_name, *_policy) are only populated for
+        Kafka-backed tables.
+      properties:
+        connection_name:
+          nullable: true
+          type: string
+        error_handling_policy:
+          nullable: true
+          type: string
+        lookup_policy:
+          nullable: true
+          type: string
+        name:
+          type: string
+        namespace_name:
+          type: string
+        output_schema_full_message_name:
+          nullable: true
+          type: string
+        struct_mapping_policy:
+          nullable: true
+          type: string
+        subject_name:
+          nullable: true
+          type: string
+        topic_name:
+          nullable: true
+          type: string
       type: object
     TimeSeries:
       description: A sequence of data points for a label combination.
@@ -2234,6 +2355,17 @@ components:
         - id
         - display_name
         - tools
+      type: object
+    v1alpha3.Value:
+      description: |-
+        Value is a single cell. `null_value` distinguishes SQL NULL from an
+        empty string; `value` is unset when `null_value` is true.
+      properties:
+        null_value:
+          type: boolean
+        value:
+          nullable: true
+          type: string
       type: object
   securitySchemes:
     auth0:
@@ -3000,6 +3132,138 @@ paths:
       summary: Lint a MCP tools configuration
       tags:
         - Remote MCP
+  /v1alpha3/sql/catalogs:
+    get:
+      operationId: SQLService_ListCatalogs
+      parameters:
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListCatalogsResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List catalogs
+      tags:
+        - SQL
+  /v1alpha3/sql/catalogs/{catalog}/tables:
+    get:
+      operationId: SQLService_ListTables
+      parameters:
+        - in: path
+          name: catalog
+          required: true
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - in: query
+          name: page_token
+          schema:
+            type: string
+        - description: Optional SQL LIKE pattern matched against table name (e.g. 'orders_%').
+          in: query
+          name: filter
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTablesResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List tables
+      tags:
+        - SQL
+  /v1alpha3/sql/catalogs/{catalog}/tables/{name}:
+    get:
+      operationId: SQLService_DescribeTable
+      parameters:
+        - in: path
+          name: catalog
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescribeTableResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Catalog or table not found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Describe table
+      tags:
+        - SQL
+  /v1alpha3/sql/queries:
+    post:
+      operationId: SQLService_ExecuteQuery
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteQueryRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteQueryResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Execute query
+      tags:
+        - SQL
   /v1alpha3/traces:
     get:
       description: Returns a paginated list of trace summaries for the specified time range.
@@ -3274,6 +3538,8 @@ tags:
     name: Remote MCP
   - description: Observability operations for Redpanda.
     name: Observability
+  - description: Interact with Redpanda SQL by browsing catalogs, tables and executing queries.
+    name: SQL
   - description: Query and retrieve OpenTelemetry traces from Redpanda.
     name: Tracing
   - description: Access and retrieve AI agent conversation transcripts, including turn-by-turn interaction history, tool calls, and usage metrics.
