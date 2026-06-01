@@ -574,7 +574,10 @@ const NODE_H_DEFAULT = 28;
 const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
 const SECTION_GAP = 16;
-const ROOT_X = 8;
+// Left gutter for the whole tree. The section spine (an edge anchored to the
+// left-0 handles of nodes in this column) sits at ROOT_X, so this also keeps the
+// vertical line off the visualizer's left edge.
+const ROOT_X = 12;
 const ROOT_Y = 4;
 
 // Must stay in sync with TreeLeafNode's `gap-1.5` (6px) + chip/badge height (~24px).

@@ -15,7 +15,6 @@ import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading } from 'components/redpanda-ui/components/typography';
@@ -225,7 +224,6 @@ export function PipelineViewHeader({
           </Button>
         </div>
       </div>
-      <Separator variant="subtle" />
       <div className="flex flex-col gap-2">
         <MetaStrip items={items} />
         {tags.length > 0 ? (
@@ -304,7 +302,6 @@ export function PipelineEditHeader({
         </div>
         {nameError ? <p className="pl-11 text-destructive text-sm">{nameError}</p> : null}
       </div>
-      <Separator variant="subtle" />
       <div className="flex flex-col items-start gap-2">
         <MetaStrip items={items} />
         {tags.length > 0 ? (

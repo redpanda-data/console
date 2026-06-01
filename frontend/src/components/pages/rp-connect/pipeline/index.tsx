@@ -886,8 +886,7 @@ export default function PipelinePage() {
 
   return (
     <div className="flex min-h-[calc(100dvh-10rem)] max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4">
-      {/* Top framing border that lines up with the content edge, matching the
-          listings page header. Negative margin cancels the layout's pt-8. */}
+      {/* Page top divider. Negative margin cancels the layout's pt-8. */}
       <div className="-mt-8 border-divider-default border-b" />
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
@@ -915,9 +914,10 @@ export default function PipelinePage() {
           url={pipeline?.url}
         />
       ) : null}
-      {/* Status paired with its run control, kept out of the header. */}
+      {/* Status paired with its run control, kept out of the header. Borderless
+          to avoid stacking yet another box in the top area. */}
       {mode === 'view' && pipeline ? (
-        <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-2.5">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Status</span>
             <PipelineStatusBadge state={pipeline.state} />
