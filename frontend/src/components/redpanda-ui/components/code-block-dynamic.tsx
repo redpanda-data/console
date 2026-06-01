@@ -1,10 +1,25 @@
 'use client';
 'use no memo'; // useShiki + useMemo loading skeleton must stay stable across renders.
 
-import type { Components } from 'hast-util-to-jsx-runtime';
+import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript';
+import bash from '@shikijs/langs/bash';
+import go from '@shikijs/langs/go';
+import java from '@shikijs/langs/java';
+import javascript from '@shikijs/langs/javascript';
+import json from '@shikijs/langs/json';
+import python from '@shikijs/langs/python';
+import sql from '@shikijs/langs/sql';
+import tsx from '@shikijs/langs/tsx';
+import typescript from '@shikijs/langs/typescript';
+import yaml from '@shikijs/langs/yaml';
+import githubDark from '@shikijs/themes/github-dark';
+import githubLight from '@shikijs/themes/github-light';
+import { type Components, toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import { Check, Copy } from 'lucide-react';
 import {
   type ComponentProps,
+  type ElementType,
+  Fragment,
   forwardRef,
   type HTMLAttributes,
   type MouseEventHandler,
@@ -15,6 +30,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { jsx, jsxs } from 'react/jsx-runtime';
 import type {
   Awaitable,
   BundledLanguage,
@@ -24,6 +40,7 @@ import type {
   CodeToHastOptionsCommon,
   RegexEngine,
 } from 'shiki';
+import { createHighlighterCoreSync, type HighlighterCore } from 'shiki/core';
 
 import { buttonVariants } from './button';
 import { useShiki } from '../lib/use-shiki';
@@ -233,34 +250,41 @@ function CopyButton({
   );
 }
 
-function pre(props: ComponentProps<'pre'> & SharedProps) {
+function pre(props: ComponentProps<'pre'> & SharedProps & { keepBackground?: boolean }) {
+  const { keepBackground, ...rest } = props;
   return (
-    <CodeBlock {...props} className={cn('my-0', props.className)} testId={props.testId}>
-      <Pre>{props.children}</Pre>
+    <CodeBlock {...rest} className={cn('my-0', rest.className)} keepBackground={keepBackground} testId={rest.testId}>
+      <Pre>{rest.children}</Pre>
     </CodeBlock>
   );
 }
 
 // Shiki dual-theme CSS: maps CSS variables to color property.
 // Embedded here so the component works without fumadocs CSS imports.
-const shikiDualThemeStyles = `
+export const shikiDualThemeStyles = `
 .shiki code span { color: var(--shiki-light); }
 .dark .shiki code span { color: var(--shiki-dark); }
 `;
+
+// ElementType tag avoids React 18 type errors on the React 19 style-hoisting props.
+const StyleResource = 'style' as ElementType;
 
 export function DynamicCodeBlock({
   lang,
   code,
   options,
   testId,
+  keepBackground,
 }: {
   lang: string;
   code: string;
   options?: Omit<HighlightOptionsCommon, 'lang'> & HighlightOptionsThemes;
   testId?: string;
+  /** Keep the shiki theme's own background instead of the registry's `bg-card`. Required for dark themes. */
+  keepBackground?: boolean;
 }) {
   const components: HighlightOptionsCommon['components'] = {
-    pre: (props: ComponentProps<'pre'>) => pre({ ...props, testId }),
+    pre: (props: ComponentProps<'pre'>) => pre({ ...props, testId, keepBackground }),
     ...options?.components,
   };
 
@@ -293,10 +317,81 @@ export function DynamicCodeBlock({
 
   return (
     <>
-      <style href="shiki-dual-theme" precedence="medium">
+      <StyleResource href="shiki-dual-theme" precedence="medium">
         {shikiDualThemeStyles}
-      </style>
+      </StyleResource>
       {highlighted}
+    </>
+  );
+}
+
+// Grammars are bundled statically — that's what lets the highlighter run
+// synchronously (no WASM, no dynamic import), so SyncCodeBlock renders fully
+// highlighted on first paint with no flash. These imports are side-effect-free,
+// so DynamicCodeBlock-only consumers tree-shake them away. Keep the list to the
+// languages the app actually uses.
+const SYNC_LANGS = [bash, go, java, javascript, json, python, sql, tsx, typescript, yaml];
+
+let syncHighlighter: HighlighterCore | null = null;
+function getSyncHighlighter(): HighlighterCore {
+  if (!syncHighlighter) {
+    syncHighlighter = createHighlighterCoreSync({
+      engine: createJavaScriptRegexEngine(),
+      themes: [githubLight, githubDark],
+      langs: SYNC_LANGS,
+    });
+  }
+  return syncHighlighter;
+}
+
+export type SyncCodeBlockProps = {
+  code: string;
+  lang: string;
+  /** Both slots default to github-dark so the block reads as a dark terminal in either color mode. */
+  themes?: { light: string; dark: string };
+} & Pick<CodeBlockProps, 'keepBackground' | 'title' | 'icon' | 'allowCopy' | 'testId' | 'className'>;
+
+/**
+ * Synchronous variant of {@link DynamicCodeBlock}. Highlights with a pre-bundled
+ * Shiki core highlighter (JS engine + statically imported grammars), so the
+ * output is produced during render — no async tokenization, no loading
+ * skeleton, no highlight flash.
+ *
+ * Trade-off: the supported languages are fixed at build time ({@link SYNC_LANGS})
+ * and ship in the bundle of any module that imports SyncCodeBlock. Use it for a
+ * small, known set of languages (terminals, config snippets); use
+ * `DynamicCodeBlock` for arbitrary/à-la-carte languages.
+ */
+export function SyncCodeBlock({
+  code,
+  lang,
+  themes = { dark: 'github-dark', light: 'github-dark' },
+  keepBackground,
+  ...rest
+}: SyncCodeBlockProps): ReactNode {
+  const highlighter = getSyncHighlighter();
+  const resolvedLang = highlighter.getLoadedLanguages().includes(lang) ? lang : 'text';
+
+  const hast = highlighter.codeToHast(code, { lang: resolvedLang, themes, defaultColor: false });
+
+  const rendered = toJsxRuntime(hast, {
+    Fragment,
+    jsx,
+    jsxs,
+    components: {
+      // Shiki's pre props (.shiki class + --shiki-*-bg vars) go on the figure so keepBackground resolves.
+      pre: ({ children, className, ...preProps }: ComponentProps<'pre'>) => (
+        <CodeBlock {...preProps} {...rest} className={cn(className, rest.className)} keepBackground={keepBackground}>
+          <Pre>{children}</Pre>
+        </CodeBlock>
+      ),
+    },
+  });
+
+  return (
+    <>
+      <style>{shikiDualThemeStyles}</style>
+      {rendered}
     </>
   );
 }
