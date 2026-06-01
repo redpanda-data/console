@@ -274,6 +274,9 @@ const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>
   await user.clear(nameInput);
   await user.type(nameInput, name);
   await user.click(screen.getByRole('button', { name: /save settings/i }));
+  // Wait for the settings dialog to fully close so its "Save settings" button
+  // can't collide with the header's "Save" in later queries.
+  await waitFor(() => expect(screen.queryByPlaceholderText('Enter pipeline name')).not.toBeInTheDocument());
 };
 
 describe('PipelinePage', () => {
@@ -388,7 +391,7 @@ describe('PipelinePage', () => {
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  generate:\n    mapping: root = "hello"' } });
 
     // Click Save
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -418,7 +421,7 @@ describe('PipelinePage', () => {
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  stdin: {}' } });
 
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -455,7 +458,7 @@ describe('PipelinePage', () => {
     });
 
     // Click Save to trigger the error
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     // After error, both the error hint from extractLintHintsFromError AND the response hint should be visible
@@ -488,7 +491,7 @@ describe('PipelinePage', () => {
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  bad: {}' } });
 
     // Click Save to trigger the error
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     // Error hint should appear
