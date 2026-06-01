@@ -966,10 +966,10 @@ export default function PipelinePage() {
         onRequestDelete={
           pipeline
             ? () => {
-                // Close the details dialog first so the two don't stack.
-                setIsViewConfigDialogOpen(false);
-                setIsDeleteAlertOpen(true);
-              }
+              // Close the details dialog first so the two don't stack.
+              setIsViewConfigDialogOpen(false);
+              setIsDeleteAlertOpen(true);
+            }
             : undefined
         }
         open={isViewConfigDialogOpen}
@@ -992,10 +992,10 @@ export default function PipelinePage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Discard unsaved changes?</DialogTitle>
-            <DialogDescription>
-              You have unsaved changes to this pipeline. If you leave now, your changes will be lost.
-            </DialogDescription>
           </DialogHeader>
+          <DialogBody>
+            You have unsaved changes to this pipeline. If you leave now, your changes will be lost.
+          </DialogBody>
           <DialogFooter>
             <Button onClick={() => blocker.reset?.()} variant="ghost">
               Keep editing

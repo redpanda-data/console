@@ -15,6 +15,7 @@ import { AlertIcon, ChevronDownIcon, PlayIcon, RotateCwIcon, StopCircleIcon } fr
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -292,10 +293,11 @@ export function PipelineRunControl({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Stop pipeline?</DialogTitle>
-            <DialogDescription>
-              Stopping the pipeline halts all data processing until you start it again.
-            </DialogDescription>
+
           </DialogHeader>
+          <DialogBody>
+            Stopping the pipeline halts all data processing until you start it again.
+          </DialogBody>
           <DialogFooter>
             <Button onClick={() => setIsStopConfirmOpen(false)} variant="ghost">
               Cancel
