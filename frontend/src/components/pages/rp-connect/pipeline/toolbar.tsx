@@ -11,16 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
-import { useNavigate } from '@tanstack/react-router';
-import {
-  AlertIcon,
-  ArrowLeftIcon,
-  ChevronDownIcon,
-  EditIcon,
-  PlayIcon,
-  RotateCwIcon,
-  StopCircleIcon,
-} from 'components/icons';
+import { AlertIcon, ChevronDownIcon, PlayIcon, RotateCwIcon, StopCircleIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -34,8 +25,6 @@ import {
   type StatusBadgeSize,
   type StatusBadgeVariant,
 } from 'components/redpanda-ui/components/status-badge';
-import { Heading } from 'components/redpanda-ui/components/typography';
-import { BookOpen, Info } from 'lucide-react';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -43,7 +32,7 @@ import {
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ReactNode } from 'react';
-import { memo, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -62,16 +51,6 @@ type ButtonConfig = {
   dropdown?: DropdownOption[];
   // Vary emphasis by state: Start is primary (encourage), Stop is neutral.
   variant?: 'primary' | 'secondary' | 'outline';
-};
-
-type ToolbarProps = {
-  pipelineId?: string;
-  mode: 'view' | 'edit' | 'create';
-  onViewConfig?: () => void;
-  onSave?: () => void;
-  onCancel?: () => void;
-  isSaving?: boolean;
-  isLoading?: boolean;
 };
 
 type ButtonConfigFactoryParams = {
@@ -244,8 +223,7 @@ function PipelineActionButton({
   );
 }
 
-// Start/stop control for a pipeline. Lives outside the toolbar so it can be
-// placed in the page body (e.g. the summary card) rather than next to Edit.
+// Start/stop control for a pipeline, rendered in the view-mode ops bar.
 export function PipelineRunControl({
   pipelineId,
   pipelineState,
@@ -289,80 +267,3 @@ export function PipelineRunControl({
     <PipelineActionButton buttonConfig={buttonConfig} isStartPending={isStartPending} isStopPending={isStopPending} />
   );
 }
-
-export const Toolbar = memo(
-  ({ pipelineId, mode, onViewConfig, onSave, onCancel, isSaving, isLoading }: ToolbarProps) => {
-    const navigate = useNavigate();
-
-    const handleBack = useCallback(() => {
-      if (onCancel) {
-        onCancel();
-      } else {
-        navigate({ to: '/connect-clusters', search: {} as never });
-      }
-    }, [onCancel, navigate]);
-
-    const handleEditNavigate = useCallback(() => {
-      if (pipelineId) {
-        navigate({ to: `/rp-connect/${pipelineId}/edit` });
-      }
-    }, [pipelineId, navigate]);
-
-    if (mode === 'view') {
-      return (
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <Button className="shrink-0" onClick={handleBack} size="icon" variant="ghost">
-              <ArrowLeftIcon className="h-5 w-5" />
-            </Button>
-            <Heading level={1}>Pipeline view</Heading>
-            {!isLoading && (
-              <Button
-                aria-label="View pipeline details"
-                icon={<Info />}
-                onClick={onViewConfig}
-                size="icon"
-                variant="ghost"
-              />
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button icon={<EditIcon />} onClick={handleEditNavigate}>
-              Edit pipeline
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <Button className="shrink-0" onClick={handleBack} size="icon" variant="ghost">
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          {/* Name, description and compute units all live in the settings section below. */}
-          <Heading level={1}>{mode === 'create' ? 'New pipeline' : 'Editing pipeline'}</Heading>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            as="a"
-            href="https://docs.redpanda.com/redpanda-connect/home/"
-            icon={<BookOpen />}
-            rel="noopener noreferrer"
-            target="_blank"
-            variant="ghost"
-          >
-            Docs
-          </Button>
-          <Button disabled={isSaving} onClick={onSave}>
-            Save
-            {Boolean(isSaving) && <Spinner />}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-);
-
-Toolbar.displayName = 'Toolbar';

@@ -15,11 +15,10 @@ import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { getUserTagEntries, isSystemTag } from 'components/constants';
+import { ArrowLeftIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
-import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import {
   Dialog,
@@ -36,7 +35,6 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
@@ -44,7 +42,7 @@ import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
-import { KeyRound, LayoutGrid, Plus, Settings, User, Zap } from 'lucide-react';
+import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -62,8 +60,8 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
   useLintPipelineConfigQuery,
@@ -89,8 +87,9 @@ import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
+import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
-import { PipelineRunControl, PipelineStatusBadge, Toolbar } from './toolbar';
+import { PipelineRunControl, PipelineStatusBadge } from './toolbar';
 import { useSlashCommand } from './use-slash-command';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -159,7 +158,7 @@ const pipelineFormSchema = z.object({
     }, 'Duplicate tag keys are not allowed'),
 });
 
-type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
+export type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
 function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
   const userTags: Record<string, string> = {};
@@ -477,133 +476,6 @@ function EditorSkeleton() {
   );
 }
 
-// One row in the summary's definition-list grid: aligned label column + value column.
-const InfoRow = ({ label, children }: { label: string; children: ReactNode }) => (
-  <>
-    <dt className="font-medium text-muted-foreground text-sm">{label}</dt>
-    <dd className="min-w-0 text-foreground text-sm">{children}</dd>
-  </>
-);
-
-// Value that reveals a copy button on hover. Used for ID / URL / service account.
-const CopyableValue = ({ value, mono }: { value: string; mono?: boolean }) => (
-  <span className="group/copy flex min-w-0 items-center gap-1">
-    <span className={cn('min-w-0 truncate', mono && 'font-mono')} title={value}>
-      {value}
-    </span>
-    <CopyButton
-      className="shrink-0 opacity-0 transition-opacity group-hover/copy:opacity-100"
-      content={value}
-      size="sm"
-      variant="ghost"
-    />
-  </span>
-);
-
-const TagBadges = ({ tags }: { tags: { key: string; value: string }[] }) =>
-  tags.length > 0 ? (
-    <div className="flex flex-wrap gap-1.5">
-      {tags.map((t) => (
-        <Badge key={t.key} variant="simple-outline">
-          {t.value ? `${t.key}: ${t.value}` : t.key}
-        </Badge>
-      ))}
-    </div>
-  ) : (
-    <span className="text-muted-foreground italic">None</span>
-  );
-
-// Pipeline identity + metadata shown as a summary card above the main panel in
-// view mode. The full set (including empty fields) lives in the details dialog.
-const PipelineSummary = ({ pipeline }: { pipeline: Pipeline }) => {
-  const tasks = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
-  const description = pipeline.description?.trim();
-  const tags = getUserTagEntries(pipeline.tags);
-  return (
-    <div className="flex flex-col gap-4 rounded-lg border px-5 py-4">
-      <div className="flex items-center justify-between gap-4">
-        <Heading className="min-w-0 truncate" level={3} title={pipeline.displayName || pipeline.id}>
-          {pipeline.displayName || pipeline.id}
-        </Heading>
-        <PipelineStatusBadge size="sm" state={pipeline.state} />
-      </div>
-      <Separator variant="subtle" />
-      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-start gap-x-10 gap-y-3">
-        <InfoRow label="ID">
-          <CopyableValue mono value={pipeline.id} />
-        </InfoRow>
-        <InfoRow label="Compute units">{tasks}</InfoRow>
-        {pipeline.serviceAccount ? (
-          <InfoRow label="Service account">
-            <CopyableValue mono value={pipeline.serviceAccount.clientId} />
-          </InfoRow>
-        ) : null}
-        {pipeline.url ? (
-          <InfoRow label="URL">
-            <CopyableValue value={pipeline.url} />
-          </InfoRow>
-        ) : null}
-        {tags.length > 0 ? (
-          <InfoRow label="Tags">
-            <TagBadges tags={tags} />
-          </InfoRow>
-        ) : null}
-        {description ? (
-          <InfoRow label="Description">
-            <p className="line-clamp-2 whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </InfoRow>
-        ) : null}
-      </dl>
-      <Separator variant="subtle" />
-      {/* Run control at the footer-right (distinct intent from the edit-settings action). */}
-      <div className="flex justify-end">
-        <PipelineRunControl pipelineId={pipeline.id} pipelineState={pipeline.state} />
-      </div>
-    </div>
-  );
-};
-
-// Read-only view of the editable pipeline settings (name, compute units,
-// description), shown above the editor. All of these are edited in the dialog.
-const EditSummary = ({ form, onEdit }: { form: UseFormReturn<PipelineFormValues>; onEdit: () => void }) => {
-  const name = useWatch({ control: form.control, name: 'name' });
-  const description = useWatch({ control: form.control, name: 'description' })?.trim();
-  const computeUnits = useWatch({ control: form.control, name: 'computeUnits' });
-  const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
-  return (
-    <div className="flex flex-col gap-4 rounded-lg border px-5 py-4">
-      <Heading className="min-w-0 truncate" level={3} title={name}>
-        {name || 'Untitled pipeline'}
-      </Heading>
-      <Separator variant="subtle" />
-      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-start gap-x-10 gap-y-3">
-        <InfoRow label="Compute units">{computeUnits}</InfoRow>
-        <InfoRow label="Tags">
-          <TagBadges tags={tags} />
-        </InfoRow>
-        <InfoRow label="Description">
-          {description ? (
-            <p className="line-clamp-2 whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          ) : (
-            <span className="text-muted-foreground italic">None</span>
-          )}
-        </InfoRow>
-      </dl>
-      <Separator variant="subtle" />
-      {/* Edit action at the footer-left, away from the header's Save button. */}
-      <div className="flex justify-start">
-        <Button icon={<Settings />} onClick={onEdit} size="sm" variant="outline">
-          Edit settings
-        </Button>
-      </div>
-    </div>
-  );
-};
-
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
@@ -853,7 +725,7 @@ export default function PipelinePage() {
     [slashCommand]
   );
 
-  const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
+  const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
     { enabled: mode !== 'create' && !!pipelineId }
   );
@@ -1012,17 +884,42 @@ export default function PipelinePage() {
       {/* Top framing border that lines up with the content edge, matching the
           listings page header. Negative margin cancels the layout's pt-8. */}
       <div className="-mt-8 border-divider-default border-b" />
-      <Toolbar
-        isLoading={isPipelineLoading}
-        isSaving={isSaving}
-        mode={mode}
-        onCancel={handleCancel}
-        onSave={handleSave}
-        onViewConfig={() => setIsViewConfigDialogOpen(true)}
-        pipelineId={pipelineId}
-      />
-      {mode === 'view' && pipeline ? <PipelineSummary pipeline={pipeline} /> : null}
-      {mode !== 'view' ? <EditSummary form={form} onEdit={() => setIsConfigDialogOpen(true)} /> : null}
+      {mode === 'view' && pipeline ? (
+        <PipelineViewHeader
+          onBack={handleCancel}
+          onViewDetails={() => setIsViewConfigDialogOpen(true)}
+          pipeline={pipeline}
+        />
+      ) : null}
+      {mode === 'view' && !pipeline ? (
+        <div className="flex items-center gap-2">
+          <Button className="shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Button>
+          <Skeleton variant="text" width="md" />
+        </div>
+      ) : null}
+      {mode !== 'view' ? (
+        <PipelineEditHeader
+          form={form}
+          isSaving={isSaving}
+          mode={mode as 'create' | 'edit'}
+          onBack={handleCancel}
+          onEditSettings={() => setIsConfigDialogOpen(true)}
+          onSave={handleSave}
+          url={pipeline?.url}
+        />
+      ) : null}
+      {/* Status paired with its run control, kept out of the header. */}
+      {mode === 'view' && pipeline ? (
+        <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-2.5">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Status</span>
+            <PipelineStatusBadge state={pipeline.state} />
+          </div>
+          <PipelineRunControl pipelineId={pipeline.id} pipelineState={pipeline.state} />
+        </div>
+      ) : null}
       {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
           flow panels aren't squished when the summary card is tall. */}
       <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
