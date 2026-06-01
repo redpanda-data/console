@@ -15,7 +15,7 @@ import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { CollectionIcon } from 'components/icons';
 import { z } from 'zod';
 
-import TopicList from '../../components/pages/topics/topic-list';
+import TopicList from '../../components/pages/topics/topic-list-new';
 
 const searchSchema = z.object({
   pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
