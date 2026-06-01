@@ -212,6 +212,7 @@ function createTransport(overrides?: {
   getPipelineMock?: ReturnType<typeof vi.fn>;
   createPipelineMock?: ReturnType<typeof vi.fn>;
   lintMock?: ReturnType<typeof vi.fn>;
+  stopPipelineMock?: ReturnType<typeof vi.fn>;
 }) {
   return createRouterTransport(({ rpc }) => {
     // Console-layer RPCs (used by react-query/api/pipeline hooks)
@@ -247,7 +248,10 @@ function createTransport(overrides?: {
     rpc(updatePipeline, vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})));
     rpc(deletePipeline, vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {})));
     rpc(startPipeline, vi.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {})));
-    rpc(stopPipeline, vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {})));
+    rpc(
+      stopPipeline,
+      overrides?.stopPipelineMock ?? vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}))
+    );
     rpc(
       consoleGetPipelineServiceConfigSchema,
       vi.fn().mockReturnValue(create(ConsoleGetPipelineServiceConfigSchemaResponseSchema, {}))
@@ -587,6 +591,27 @@ describe('PipelinePage', () => {
     await waitFor(() => {
       const diagram = screen.getByTestId('flow-diagram');
       expect(diagram.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
+    });
+  });
+
+  it('confirms before stopping a running pipeline', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+
+    render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
+
+    // The running pipeline shows a Stop control in the ops bar.
+    await user.click(await screen.findByRole('button', { name: /^stop$/i }));
+
+    // It must not stop immediately — a confirmation dialog appears first.
+    expect(stopPipelineMock).not.toHaveBeenCalled();
+    expect(await screen.findByText('Stop pipeline?')).toBeInTheDocument();
+
+    // Confirming actually issues the stop.
+    await user.click(screen.getByRole('button', { name: /stop pipeline/i }));
+    await waitFor(() => {
+      expect(stopPipelineMock).toHaveBeenCalled();
     });
   });
 

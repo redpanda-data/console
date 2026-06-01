@@ -14,6 +14,14 @@ import { ConnectError } from '@connectrpc/connect';
 import { AlertIcon, ChevronDownIcon, PlayIcon, RotateCwIcon, StopCircleIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -32,7 +40,7 @@ import {
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ReactNode } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -233,6 +241,7 @@ export function PipelineRunControl({
 }) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
+  const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
   const handleStart = useCallback(() => {
     if (!pipelineId) {
@@ -247,14 +256,27 @@ export function PipelineRunControl({
     });
   }, [pipelineId, startMutation]);
 
+  // Stopping halts processing, so gate it behind a confirmation rather than
+  // firing the mutation straight from the button.
   const handleStop = useCallback(() => {
+    if (pipelineId) {
+      setIsStopConfirmOpen(true);
+    }
+  }, [pipelineId]);
+
+  const performStop = useCallback(() => {
     if (!pipelineId) {
       return;
     }
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
-      onSuccess: () => toast.success('Pipeline stopped'),
-      onError: (err) =>
-        toast.error(formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'stop', entity: 'pipeline' })),
+      onSuccess: () => {
+        toast.success('Pipeline stopped');
+        setIsStopConfirmOpen(false);
+      },
+      onError: (err) => {
+        toast.error(formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'stop', entity: 'pipeline' }));
+        setIsStopConfirmOpen(false);
+      },
     });
   }, [pipelineId, stopMutation]);
 
@@ -264,6 +286,31 @@ export function PipelineRunControl({
   );
 
   return (
-    <PipelineActionButton buttonConfig={buttonConfig} isStartPending={isStartPending} isStopPending={isStopPending} />
+    <>
+      <PipelineActionButton buttonConfig={buttonConfig} isStartPending={isStartPending} isStopPending={isStopPending} />
+      <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stop pipeline?</DialogTitle>
+            <DialogDescription>
+              Stopping the pipeline halts all data processing until you start it again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setIsStopConfirmOpen(false)} variant="ghost">
+              Cancel
+            </Button>
+            <Button
+              disabled={isStopPending}
+              icon={isStopPending ? <Spinner /> : <StopCircleIcon />}
+              onClick={performStop}
+              variant="destructive"
+            >
+              Stop pipeline
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
