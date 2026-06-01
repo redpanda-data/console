@@ -652,7 +652,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
         <DialogFooter>
           {isSuccess ? (
             <>
-              <Button onClick={handleClose} variant="outline">
+              <Button data-testid="create-topic-success__close-button" onClick={handleClose} variant="outline">
                 Close
               </Button>
               <Button asChild data-testid="create-topic-success__go-to-topic-button">

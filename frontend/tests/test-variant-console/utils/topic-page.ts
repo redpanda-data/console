@@ -264,6 +264,7 @@ export class TopicPage {
     return await test.step('Delete topic', async () => {
       await this.goToTopicsList();
       await this.verifyTopicInList(topicName); // Verify topic exists
+      await this.page.getByTestId(`topic-actions-trigger-${topicName}`).click();
       await this.page.getByTestId(`delete-topic-button-${topicName}`).click();
       await this.page.getByTestId('delete-topic-confirm-button').click();
       await expect(this.page.getByText('Topic Deleted')).toBeVisible();

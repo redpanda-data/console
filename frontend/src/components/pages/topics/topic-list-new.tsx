@@ -40,7 +40,7 @@ import {
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { DatabaseIcon } from 'lucide-react';
+import { DatabaseIcon, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
@@ -211,7 +211,12 @@ const TopicList: FC = () => {
       cell: ({ row: { original: topic } }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="deleteButton" size="icon-sm" variant="ghost">
+            <Button
+              className="deleteButton"
+              data-testid={`topic-actions-trigger-${topic.topicName}`}
+              size="icon-sm"
+              variant="ghost"
+            >
               <MoreHorizontalIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -276,7 +281,7 @@ const TopicList: FC = () => {
           {row.getVisibleCells().map((cell) => {
             const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
             return (
-              <TableCell align={meta?.align} key={cell.id}>
+              <TableCell align={meta?.align} key={cell.id} testId="data-table-cell">
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </TableCell>
             );
@@ -303,9 +308,7 @@ const TopicList: FC = () => {
             </EmptyHeader>
             {!isFiltered && (
               <EmptyContent>
-                <Button data-testid="create-topic-button" onClick={() => setIsCreateTopicModalOpen(true)}>
-                  Create topic
-                </Button>
+                <Button onClick={() => setIsCreateTopicModalOpen(true)}>Create topic</Button>
               </EmptyContent>
             )}
           </Empty>
@@ -349,16 +352,38 @@ const TopicList: FC = () => {
             </Button>
           }
         >
-          <ListLayoutSearchInput
-            onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
-            placeholder="Filter by name (regexp)..."
-            value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
-          />
+          <div className="relative">
+            {!(table.getColumn('topicName')?.getFilterValue() as string) && (
+              <span
+                className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground"
+                data-testid="search-field-search-icon"
+              >
+                <Search className="h-4 w-4" />
+              </span>
+            )}
+            <ListLayoutSearchInput
+              className={(table.getColumn('topicName')?.getFilterValue() as string) ? 'pr-8' : 'pl-8'}
+              data-testid="search-field-input"
+              onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
+              placeholder="Filter by name (regexp)..."
+              value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
+            />
+            {(table.getColumn('topicName')?.getFilterValue() as string) && (
+              <button
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                data-testid="search-field-reset-icon"
+                onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <Checkbox
               checked={showInternalTopics}
-              data-testid="show-internal-topics-checkbox"
               onCheckedChange={(checked) => setShowInternalTopics(checked === true)}
+              testId="show-internal-topics-checkbox"
             />
             Show internal topics
           </label>
@@ -533,7 +558,7 @@ function ConfirmDeletionModal({
     api
       .deleteTopic(topicToDelete.topicName)
       .then(() => {
-        toast.success('Topic deleted', {
+        toast.success('Topic Deleted', {
           description: `Topic "${topicToDelete.topicName}" has been deleted.`,
         });
         onFinish();
