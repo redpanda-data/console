@@ -156,7 +156,7 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
         aria-invalid={fieldState.invalid}
         aria-label="Pipeline name"
         className={cn(
-          'min-w-[12rem] max-w-full field-sizing-content truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
+          'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
           'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
           fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
         )}
