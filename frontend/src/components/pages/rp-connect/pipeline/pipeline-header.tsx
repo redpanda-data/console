@@ -25,6 +25,7 @@ import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useFormState, useWatch } from 'react-hook-form';
 
+import { PipelineStatusToggle } from './pipeline-status-toggle';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
@@ -138,7 +139,7 @@ const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
 );
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
-  <Button className="shrink-0" onClick={onClick} size="icon" variant="ghost">
+  <Button className="-ml-3.5 shrink-0" onClick={onClick} size="icon" variant="ghost">
     <ArrowLeftIcon className="h-5 w-5" />
   </Button>
 );
@@ -155,7 +156,7 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
         aria-invalid={fieldState.invalid}
         aria-label="Pipeline name"
         className={cn(
-          'min-w-0 max-w-md flex-1 truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
+          'min-w-[12rem] max-w-full field-sizing-content truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
           'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
           fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
         )}
@@ -209,6 +210,7 @@ export function PipelineViewHeader({
           </Heading>
           <Button
             aria-label="View pipeline details"
+            className="[&_svg]:size-4"
             icon={<Info />}
             onClick={onViewDetails}
             size="icon"
@@ -219,9 +221,15 @@ export function PipelineViewHeader({
           <Button as="a" href={DOCS_URL} icon={<BookOpen />} rel="noopener noreferrer" target="_blank" variant="ghost">
             Docs
           </Button>
-          <Button icon={<EditIcon />} onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}>
+          <Button
+            icon={<EditIcon />}
+            onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
+            variant="secondary-outline"
+          >
             Edit pipeline
           </Button>
+          <div aria-hidden className="mx-1 h-6 w-px bg-border" />
+          <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
       <div className="flex flex-col gap-2">
@@ -281,7 +289,7 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
-            <Badge variant="simple-outline">{mode === 'create' ? 'New' : 'Editing'}</Badge>
+            {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button

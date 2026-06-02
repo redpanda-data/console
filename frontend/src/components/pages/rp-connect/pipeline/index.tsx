@@ -89,7 +89,6 @@ import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
-import { PipelineRunControl, PipelineStatusBadge } from './toolbar';
 import { useSlashCommand } from './use-slash-command';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -897,7 +896,7 @@ export default function PipelinePage() {
       ) : null}
       {mode === 'view' && !pipeline ? (
         <div className="flex items-center gap-2">
-          <Button className="shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+          <Button className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
           <Skeleton variant="text" width="md" />
@@ -913,17 +912,6 @@ export default function PipelinePage() {
           onSave={handleSave}
           url={pipeline?.url}
         />
-      ) : null}
-      {/* Status paired with its run control, kept out of the header. Borderless
-          to avoid stacking yet another box in the top area. */}
-      {mode === 'view' && pipeline ? (
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Status</span>
-            <PipelineStatusBadge state={pipeline.state} />
-          </div>
-          <PipelineRunControl pipelineId={pipeline.id} pipelineState={pipeline.state} />
-        </div>
       ) : null}
       {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
           flow panels aren't squished when the summary card is tall. */}
@@ -1000,7 +988,7 @@ export default function PipelinePage() {
             <Button onClick={() => blocker.reset?.()} variant="ghost">
               Keep editing
             </Button>
-            <Button onClick={() => blocker.proceed?.()} variant="destructive">
+            <Button onClick={() => blocker.proceed?.()} variant="primary">
               Leave without saving
             </Button>
           </DialogFooter>
