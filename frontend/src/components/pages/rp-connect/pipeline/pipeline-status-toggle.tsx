@@ -144,6 +144,7 @@ export function PipelineStatusToggle({
           className={cn(tone === 'success' && 'data-[state=checked]:bg-success')}
           disabled={isDisabled}
           onCheckedChange={handleCheckedChange}
+          testId="pipeline-run-toggle"
         />
         {isTransitioning ? <Spinner className="!size-3.5" /> : null}
         <span>{label}</span>
