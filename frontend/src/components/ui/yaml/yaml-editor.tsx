@@ -16,6 +16,8 @@ import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useEffect, useMemo, useRef } from 'react';
 
+import { normalizePastedWhitespace } from './whitespace';
+
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
   transparentBackground?: boolean;
@@ -173,6 +175,20 @@ export const YamlEditor = (props: YamlEditorProps) => {
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       onMount={(editorInstance) => {
+        // Invisible space separators (esp. U+00A0) pasted from docs/chat aren't
+        // valid YAML indentation and silently break parsing. Replace just the
+        // pasted range so config behaves as written.
+        editorInstance.onDidPaste((e) => {
+          const model = editorInstance.getModel();
+          if (!model) {
+            return;
+          }
+          const pasted = model.getValueInRange(e.range);
+          const normalized = normalizePastedWhitespace(pasted);
+          if (normalized !== pasted) {
+            editorInstance.executeEdits('normalize-pasted-whitespace', [{ range: e.range, text: normalized }]);
+          }
+        });
         onEditorMount?.(editorInstance);
       }}
       options={options}
