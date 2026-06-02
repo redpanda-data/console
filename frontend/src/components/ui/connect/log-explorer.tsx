@@ -74,6 +74,17 @@ function getLogPayload(msg: TopicMessage): LogPayload | null {
   return null;
 }
 
+// Component paths (e.g. root.pipeline.processors.1.branch.catch) are long and
+// repetitive; keep the meaningful head + tail so the column stays compact. The
+// full path is shown on hover and in the detail panel.
+function abbreviateComponentPath(path: string): string {
+  const parts = path.split('.');
+  if (parts.length <= 3) {
+    return path;
+  }
+  return `${parts[0]}…${parts.slice(-2).join('.')}`;
+}
+
 type LogLevelVariant = 'destructive-inverted' | 'warning-inverted' | 'info-inverted' | 'neutral-inverted';
 
 function logLevelBadgeVariant(level: string | undefined): LogLevelVariant {
@@ -260,7 +271,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const messageTableColumns = useMemo<ColumnDef<TopicMessage>[]>(
     () => [
       {
-        header: 'Timestamp',
+        header: 'Time',
         accessorKey: 'timestamp',
         enableSorting: !liveViewEnabled,
         cell: ({
@@ -269,15 +280,17 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           },
         }) => {
           const d = new Date(timestamp);
+          // Time is the scannable field; the date is kept (muted, above) since
+          // logs can span time, with the full date/time on hover.
           return (
-            <div className="flex flex-col leading-tight">
-              <span className="text-[11px] text-muted-foreground">{d.toLocaleDateString()}</span>
+            <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
+              <span className="text-[11px] text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
               <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
             </div>
           );
         },
-        minSize: 140,
-        size: 140,
+        minSize: 120,
+        size: 132,
       },
       {
         id: 'level',
@@ -297,12 +310,20 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
         enableSorting: !liveViewEnabled,
         cell: ({ row: { original } }) => {
           const path = getLogPayload(original)?.path;
-          return path ? (
-            <Text as="span" className="text-muted-foreground" variant="bodySmall">{path}</Text>
-          ) : null;
+          if (!path) {
+            return null;
+          }
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block truncate text-muted-foreground text-sm">{abbreviateComponentPath(path)}</span>
+              </TooltipTrigger>
+              <TooltipContent>{path}</TooltipContent>
+            </Tooltip>
+          );
         },
-        minSize: 140,
-        size: 160,
+        minSize: 150,
+        size: 180,
       },
       {
         id: 'message',
@@ -418,11 +439,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
       </div>
 
       <div className="relative min-h-0">
-        {isSearching && hasProgress && (
-          <div className="absolute inset-x-0 top-0 z-10">
-            <Progress className="h-1 w-full rounded-none" testId="log-progress-bar" value={null} />
-          </div>
-        )}
         <div className="overflow-auto">
         <Table className="table-fixed" variant="simple">
           <TableHeader>
@@ -430,7 +446,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                    className={`px-3 ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
@@ -524,6 +540,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
+                      className="px-3 py-2"
                       key={cell.id}
                       style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
                     >
