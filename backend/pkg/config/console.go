@@ -22,12 +22,14 @@ const DefaultMaxDeserializationPayloadSize = 20_480 // 20 KB
 type Console struct {
 	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
 	API                ConsoleAPI                `yaml:"api"`
+	OperationTimeouts  OperationTimeouts         `yaml:"operationTimeouts"`
 }
 
 // SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
 	c.TopicDocumentation.SetDefaults()
 	c.API.SetDefaults()
+	c.OperationTimeouts.SetDefaults()
 }
 
 // RegisterFlags for sensitive Console configurations.
@@ -43,6 +45,10 @@ func (c *Console) Validate() error {
 
 	if err := c.API.Validate(); err != nil {
 		return fmt.Errorf("failed to validate API config: %w", err)
+	}
+
+	if err := c.OperationTimeouts.Validate(); err != nil {
+		return fmt.Errorf("failed to validate timeouts config: %w", err)
 	}
 
 	return nil
