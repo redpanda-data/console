@@ -601,8 +601,9 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
 
-    // The running pipeline shows a Stop control in the ops bar.
-    await user.click(await screen.findByRole('button', { name: /^stop$/i }));
+    // The running pipeline shows a run toggle in the header; switching it off
+    // initiates a stop.
+    await user.click(await screen.findByTestId('pipeline-run-toggle'));
 
     // It must not stop immediately — a confirmation dialog appears first.
     expect(stopPipelineMock).not.toHaveBeenCalled();

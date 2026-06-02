@@ -203,9 +203,6 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
       <div className="flex items-center justify-between gap-2">
         <Heading level={3}>Throughput</Heading>
         <div className="flex items-center gap-1">
-          <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-            <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
-          </Button>
           <Select onValueChange={(v) => setSelectedTimeRange(v as TimeRange)} value={selectedTimeRange}>
             <SelectTrigger size="sm">
               <SelectValue />
@@ -218,6 +215,9 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               ))}
             </SelectContent>
           </Select>
+          <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
+            <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+          </Button>
         </div>
       </div>
       <ThroughputContent chartData={chartData} hasData={hasData} id={id} isError={isError} isLoading={isLoading} />
