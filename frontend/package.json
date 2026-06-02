@@ -69,9 +69,7 @@
     "@tootallnate/once": "^3.0.1",
     "sirv": "^3.0.2",
     "fast-uri": "^3.1.2",
-    "ip-address": "^10.1.1",
-    "mermaid": "^11.15.0",
-    "postcss": "^8.5.10"
+    "ip-address": "^10.1.1"
   },
   "dependencies": {
     "@a2a-js/sdk": "^0.3.13",
@@ -249,8 +247,6 @@
     "sirv": "^3.0.2",
     "**/webpack-bundle-analyzer/sirv": "^3.0.2",
     "fast-uri": "^3.1.2",
-    "ip-address": "^10.1.1",
-    "mermaid": "^11.15.0",
-    "postcss": "^8.5.10"
+    "ip-address": "^10.1.1"
   }
 }
