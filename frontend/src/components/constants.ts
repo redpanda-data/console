@@ -19,6 +19,7 @@ export const FEATURE_FLAGS = {
   enableConnectSlashMenu: false,
   enableNewSecurityPage: true,
   enableTeamsBridge: false,
+  enableNewTopicPage: true,
 };
 
 // Cloud-managed tag keys for service account integration

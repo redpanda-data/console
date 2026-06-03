@@ -46,6 +46,7 @@ export type DeleteResourceAlertDialogProps = {
   // Use with `DeleteResourceMenuItem` when the dialog must outlive a closing
   // dropdown menu.
   open?: boolean;
+  confirmButtonTestId?: string;
 };
 
 const DialogBody: React.FC<{
@@ -57,6 +58,7 @@ const DialogBody: React.FC<{
   isDeleting?: boolean;
   isDeleteConfirmed: boolean;
   handleDelete: () => void;
+  confirmButtonTestId?: string;
 }> = ({
   resourceType,
   resourceName,
@@ -66,6 +68,7 @@ const DialogBody: React.FC<{
   isDeleting,
   isDeleteConfirmed,
   handleDelete,
+  confirmButtonTestId,
 }) => (
   <AlertDialogContent>
     <AlertDialogHeader className="text-left">
@@ -89,7 +92,7 @@ const DialogBody: React.FC<{
         <Button variant="secondary-ghost">Cancel</Button>
       </AlertDialogCancel>
       <AlertDialogAction asChild disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
-        <Button variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
+        <Button data-testid={confirmButtonTestId} variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
       </AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
@@ -108,6 +111,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   buttonIcon,
   buttonText: buttonTextProp,
   open,
+  confirmButtonTestId,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
@@ -133,6 +137,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
       <AlertDialog onOpenChange={handleOpenChange} open={open}>
         <DialogBody
           children={children}
+          confirmButtonTestId={confirmButtonTestId}
           confirmationText={confirmationText}
           handleDelete={handleDelete}
           isDeleteConfirmed={isDeleteConfirmed}
@@ -179,6 +184,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
       <AlertDialogTrigger asChild>{renderTrigger()}</AlertDialogTrigger>
       <DialogBody
         children={children}
+        confirmButtonTestId={confirmButtonTestId}
         confirmationText={confirmationText}
         handleDelete={handleDelete}
         isDeleteConfirmed={isDeleteConfirmed}
