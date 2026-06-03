@@ -15,7 +15,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { getUserTagEntries, isSystemTag } from 'components/constants';
-import { ArrowLeftIcon } from 'components/icons';
+import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -34,6 +34,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
@@ -481,6 +482,34 @@ function EditorSkeleton() {
   );
 }
 
+// Read-only YAML lane for the view page. Reuses the editor for consistent
+// highlighting, but suppresses every "editable" cue (caret, text mouse cursor,
+// active-line highlight) so it reads as a viewer. An Edit button jumps to the
+// edit page.
+function YamlViewPanel({
+  configYaml,
+  schema,
+  onEdit,
+}: {
+  configYaml: string;
+  schema: ReturnType<typeof parseYamlEditorSchema>;
+  onEdit: () => void;
+}) {
+  return (
+    <div className="relative h-full overflow-hidden p-2 [&_.cursors-layer]:opacity-0">
+      <Button className="absolute top-3 right-3 z-10" icon={<EditIcon />} onClick={onEdit} size="sm" variant="outline">
+        Edit
+      </Button>
+      <YamlEditor
+        options={{ readOnly: true, domReadOnly: true, renderLineHighlight: 'none', mouseStyle: 'default' }}
+        schema={schema}
+        transparentBackground
+        value={configYaml}
+      />
+    </div>
+  );
+}
+
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
@@ -721,6 +750,7 @@ function PipelinePageContent() {
     hydrateFromServer,
     resolveInitialYaml,
     setAllowNavigation,
+    setActiveViewLane,
     setCommandMenuFilter,
     setAddConnectorType,
     setSlashTipVisible,
@@ -734,6 +764,7 @@ function PipelinePageContent() {
   const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const hydratedPipelineId = usePipelineEditorStore((s) => s.hydratedPipelineId);
+  const activeViewLane = usePipelineEditorStore((s) => s.activeViewLane);
   const commandMenuFilter = usePipelineEditorStore((s) => s.commandMenuFilter);
   const addConnectorType = usePipelineEditorStore((s) => s.addConnectorType);
   const slashTipVisible = usePipelineEditorStore((s) => s.slashTipVisible);
@@ -933,6 +964,21 @@ function PipelinePageContent() {
           url={pipeline?.url}
         />
       ) : null}
+      {/* Lane navigation (view mode): Monitor (throughput/logs) vs Configuration
+          (read-only YAML), both alongside the visualizer. A future full Visual
+          lane slots in here. */}
+      {mode === 'view' && pipeline ? (
+        <Tabs value={activeViewLane}>
+          <TabsList className="w-fit" variant="underline">
+            <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
+              Monitor
+            </TabsTrigger>
+            <TabsTrigger onClick={() => setActiveViewLane('configuration')} value="configuration" variant="underline">
+              Configuration
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : null}
       {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
           flow panels aren't squished when the summary card is tall. */}
       <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
@@ -949,9 +995,15 @@ function PipelinePageContent() {
           yamlContent={yamlContent}
         />
         <div className="min-w-0 flex-1">
-          {mode === 'view' ? (
-            <ViewModePanel pipeline={pipeline} />
-          ) : (
+          {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
+          {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
+            <YamlViewPanel
+              configYaml={pipeline.configYaml}
+              onEdit={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
+              schema={yamlEditorSchema}
+            />
+          ) : null}
+          {mode === 'view' ? null : (
             <EditorPanel
               isLintPending={isLintPending}
               isServerlessInitializing={isServerlessInitializing}

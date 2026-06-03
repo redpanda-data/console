@@ -18,6 +18,8 @@ import type { ConnectComponentType } from '../types/schema';
 
 type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | null;
 type AddConnectorType = ConnectComponentType | 'resource' | null;
+// View-page lanes. A future 'visual' lane (full react-flow editor) slots in here.
+export type ViewLane = 'monitor' | 'configuration';
 
 type PipelineEditorState = {
   // Canonical editor content + the baseline used for the unsaved-changes guard.
@@ -30,6 +32,8 @@ type PipelineEditorState = {
   hydratedPipelineId: string | null;
   // Lets a successful save navigate away without tripping the guard.
   allowNavigation: boolean;
+  // Which view-page lane (tab) is active.
+  activeViewLane: ViewLane;
   // Transient UI.
   commandMenuFilter: CommandMenuFilter;
   addConnectorType: AddConnectorType;
@@ -48,6 +52,7 @@ type PipelineEditorActions = {
   // Resolve the create-mode starting YAML; only seeds the baseline once.
   resolveInitialYaml: (yaml: string) => void;
   setAllowNavigation: (allowNavigation: boolean) => void;
+  setActiveViewLane: (activeViewLane: ViewLane) => void;
   setCommandMenuFilter: (commandMenuFilter: CommandMenuFilter) => void;
   setAddConnectorType: (addConnectorType: AddConnectorType) => void;
   setSlashTipVisible: (slashTipVisible: boolean) => void;
@@ -65,6 +70,7 @@ const createInitialState = (overrides?: Partial<PipelineEditorState>): PipelineE
   editorInstance: null,
   hydratedPipelineId: null,
   allowNavigation: false,
+  activeViewLane: 'monitor',
   commandMenuFilter: null,
   addConnectorType: null,
   slashTipVisible: false,
@@ -84,6 +90,7 @@ export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStat
       set({ hydratedPipelineId: pipelineId, yamlContent: configYaml, initialYaml: configYaml }),
     resolveInitialYaml: (yaml) => set((state) => ({ yamlContent: yaml, initialYaml: state.initialYaml ?? yaml })),
     setAllowNavigation: (allowNavigation) => set({ allowNavigation }),
+    setActiveViewLane: (activeViewLane) => set({ activeViewLane }),
     setCommandMenuFilter: (commandMenuFilter) => set({ commandMenuFilter }),
     setAddConnectorType: (addConnectorType) => set({ addConnectorType }),
     setSlashTipVisible: (slashTipVisible) => set({ slashTipVisible }),
