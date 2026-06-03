@@ -138,14 +138,16 @@ export function PipelineStatusToggle({
         <Switch
           aria-label={checked ? 'Stop pipeline' : 'Start pipeline'}
           checked={checked}
-          id={`pipeline-run-toggle-${pipelineId}`} // for testing
           className={cn(tone === 'success' && 'data-[state=checked]:bg-success')}
           disabled={isDisabled}
+          id={`pipeline-run-toggle-${pipelineId}`}
           onCheckedChange={handleCheckedChange}
           testId="pipeline-run-toggle"
         />
         {isTransitioning ? <Spinner className="size-3.5!" /> : null}
-        <Label className="cursor-pointer" htmlFor={`pipeline-run-toggle-${pipelineId}`}>{label}</Label>
+        <Label className="cursor-pointer" htmlFor={`pipeline-run-toggle-${pipelineId}`}>
+          {label}
+        </Label>
       </div>
 
       <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>
