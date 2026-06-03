@@ -142,7 +142,7 @@ export function PipelineStatusToggle({
           onCheckedChange={handleCheckedChange}
           testId="pipeline-run-toggle"
         />
-        {isTransitioning ? <Spinner className="!size-3.5" /> : null}
+        {isTransitioning ? <Spinner className="size-3.5!" /> : null}
         <span>{label}</span>
       </div>
 
