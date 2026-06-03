@@ -60,7 +60,6 @@ const SecretFormSchema = z.record(
 
 type SecretFormData = z.infer<typeof SecretFormSchema>;
 
-// Schema for adding a new secret (when enableNewSecrets is true)
 const NewSecretFormSchema = z.object({
   name: z
     .string()

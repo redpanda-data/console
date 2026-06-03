@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
+import { cva } from 'class-variance-authority';
 import { StopCircleIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -47,11 +48,19 @@ type Tone = 'success' | 'error' | 'muted';
 
 // Pill chrome per state: running is a filled green pill, error is red text,
 // everything else (stopped/completed/transitioning) reads as plain muted text.
-const TONE_CLASSES: Record<Tone, string> = {
-  success: 'border-outline-success bg-background-success-subtle text-success',
-  error: 'border-transparent text-destructive',
-  muted: 'border-transparent text-muted-foreground',
-};
+const statusPill = cva(
+  'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-sm transition-colors',
+  {
+    variants: {
+      tone: {
+        success: 'border-outline-success bg-background-success-subtle text-success',
+        error: 'border-transparent text-destructive',
+        muted: 'border-transparent text-muted-foreground',
+      },
+    },
+    defaultVariants: { tone: 'muted' },
+  }
+);
 
 function getTone(state?: Pipeline_State): Tone {
   if (state === PipelineState.RUNNING || state === PipelineState.STARTING) {
@@ -132,12 +141,7 @@ export function PipelineStatusToggle({
 
   return (
     <>
-      <div
-        className={cn(
-          'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-sm transition-colors',
-          TONE_CLASSES[tone]
-        )}
-      >
+      <div className={statusPill({ tone })}>
         <Switch
           aria-label={checked ? 'Stop pipeline' : 'Start pipeline'}
           checked={checked}

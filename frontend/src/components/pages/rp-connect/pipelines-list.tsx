@@ -242,15 +242,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 header: 'State',
                 cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
               },
-              // {
-              //     header: 'Throughput',
-              //     cell: ({ row: { original } }) => {
-              //         return <>
-              //             <PipelineThroughput pipeline={original} />
-              //         </>
-              //     },
-              //     size: 100,
-              // },
               {
                 header: '',
                 id: 'actions',
@@ -285,7 +276,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                           });
                       });
                     }}
-                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
                     variant="icon"
                   >
                     <TrashIcon />

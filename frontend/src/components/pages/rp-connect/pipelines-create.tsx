@@ -410,7 +410,6 @@ export const PipelineEditor = (p: {
           title: 'Configuration',
           content: () => (
             <div>
-              {/* yaml editor */}
               <div className="flex min-h-[400px] gap-7">
                 <PipelinesYamlEditor
                   defaultPath="config.yaml"
@@ -504,12 +503,10 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
   if (value === undefined) {
     return false;
   }
-  // Attempt to parse the input string as JSON
   let json: object;
   try {
     json = JSON.parse(value);
   } catch (_e) {
-    // If parsing fails, it's not a valid JSON and hence not a Kafka Connect config
     return false;
   }
 

@@ -198,7 +198,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
     const [isServiceAccountPending, setIsServiceAccountPending] = useState(false);
 
-    // Notify parent when validity changes
     useEffect(() => {
       const isValid =
         authMethod === AuthenticationMethod.SERVICE_ACCOUNT
@@ -269,7 +268,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     const handleSubmit = useCallback(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with dual auth methods requires conditional logic
       async (userData: AddUserFormData): Promise<UserStepSubmissionResult> => {
-        // Service account flow
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
           if (!serviceAccountSelectorRef.current) {
             toast.error('Service account selector not initialized');
@@ -302,7 +300,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           }
         }
 
-        // Existing SASL flow
         const result = await createUserWithSecrets({
           userData,
           topicName,

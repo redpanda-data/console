@@ -53,8 +53,6 @@ const DEFAULT_PAGE_SIZE = 10;
  */
 const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
 
-// --- Log payload helpers ---
-
 type LogPayload = {
   message?: string;
   level?: string;
@@ -99,7 +97,6 @@ function LogLevelBadge({ level }: { level: string | undefined }) {
   );
 }
 
-// --- Sheet detail view ---
 
 function LogDetailSheet({
   message,
@@ -196,7 +193,6 @@ function LogDetailSheet({
   );
 }
 
-// --- Main component ---
 
 interface LogExplorerProps {
   pipeline: Pipeline;
@@ -233,7 +229,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
     serverless,
   });
 
-  // --- Filter columns (dynamic options from loaded messages) ---
 
   const filterColumns = useMemo<FilterColumnConfig[]>(() => {
     const levelSet = new Set<string>();
@@ -255,7 +250,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
     ];
   }, [messages]);
 
-  // --- Table columns ---
 
   const messageTableColumns = useMemo<ColumnDef<TopicMessage>[]>(
     () => [

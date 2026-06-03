@@ -24,7 +24,6 @@ import type {
   RawFieldSpec,
 } from '../types/schema';
 
-// Helper to convert proto ComponentStatus enum to string
 export function componentStatusToString(status: ComponentStatus): string {
   switch (status) {
     case ComponentStatus.STABLE:
@@ -197,7 +196,6 @@ export const schemaToConfig = (
     return { config, spec: componentSpec };
   }
 
-  // Structure the config according to Redpanda Connect YAML schema
   switch (componentSpec.type) {
     case 'input':
     case 'output':
@@ -260,7 +258,6 @@ function populateWizardFields(
   const topicData = onboardingWizardStore.getTopicData();
   const userData = onboardingWizardStore.getUserData();
 
-  // Populate topic fields
   if (isTopicField(spec.name) && topicData?.topicName) {
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
   }
@@ -309,7 +306,6 @@ function populateContextualVariables(
     return;
   }
 
-  // Schema Registry URL within schema_registry object
   if (isSchemaRegistryUrlField(spec.name, parentName)) {
     return getContextualVariableSyntax('REDPANDA_SCHEMA_REGISTRY_URL');
   }
@@ -367,7 +363,6 @@ function shouldShowField(params: {
     return !!userData?.username;
   }
 
-  // Hide advanced fields unless requested
   if (spec.advanced && !showAdvancedFields) {
     return false;
   }
@@ -657,7 +652,6 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     }
   }
 
-  // Generate value based on field kind
   let generatedValue: unknown;
   switch (spec.kind) {
     case 'scalar':

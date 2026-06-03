@@ -117,7 +117,6 @@ export const useListPipelinesQuery = (
       if (!nextPageToken) {
         return;
       }
-      // Return a new request object with the updated pageToken
       return create(ListPipelinesRequestSchemaDataPlane, {
         ...listPipelinesRequestDataPlane,
         pageToken: nextPageToken,
@@ -126,7 +125,6 @@ export const useListPipelinesQuery = (
     pageParamKey: 'request',
   });
 
-  // Flatten pipelines from all pages
   const pipelines = useMemo(() => {
     const allPipelines = listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []);
     return allPipelines ?? [];

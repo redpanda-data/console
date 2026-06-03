@@ -17,7 +17,7 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { Heading, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { InfoIcon, List } from 'lucide-react';
@@ -40,17 +40,9 @@ type DetailsDialogProps = {
 const EMPTY_PLACEHOLDER = '—';
 
 const SectionHeading = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <h3 className={cn('font-semibold text-base text-foreground', className)}>{children}</h3>
-);
-
-// Copy button that only appears on row hover.
-const HoverCopyButton = ({ value }: { value: string }) => (
-  <CopyButton
-    className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100"
-    content={value}
-    size="sm"
-    variant="ghost"
-  />
+  <Heading className={className} level={3}>
+    {children}
+  </Heading>
 );
 
 type DetailRowProps = {
@@ -97,7 +89,14 @@ const DetailRow = ({ label, value, children, copyable = false, wrap = false }: D
       {renderLabel(label)}
       <div className="flex min-w-0 flex-1 items-start gap-1">
         <div className="min-w-0 flex-1">{renderValue(value, children, wrap)}</div>
-        {showCopy ? <HoverCopyButton value={value as string} /> : null}
+        {showCopy ? (
+          <CopyButton
+            className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100"
+            content={value as string}
+            size="sm"
+            variant="ghost"
+          />
+        ) : null}
       </div>
     </div>
   );

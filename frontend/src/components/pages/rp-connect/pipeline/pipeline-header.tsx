@@ -13,12 +13,12 @@ import { useNavigate } from '@tanstack/react-router';
 import { getUserTagEntries } from 'components/constants';
 import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Heading, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -129,14 +129,27 @@ const CopyableMeta = ({
   </span>
 );
 
+const tagLabel = (t: TagEntry) => (t.value ? `${t.key}: ${t.value}` : t.key);
+
 const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
-  <div className="flex flex-wrap gap-1.5">
+  <BadgeGroup
+    className="flex-wrap"
+    maxVisible={4}
+    renderOverflowContent={(overflow) => (
+      <List>
+        {tags.slice(-overflow.length).map((t) => (
+          <ListItem key={t.key}>{tagLabel(t)}</ListItem>
+        ))}
+      </List>
+    )}
+    variant="simple-outline"
+  >
     {tags.map((t) => (
       <Badge key={t.key} variant="simple-outline">
-        {t.value ? `${t.key}: ${t.value}` : t.key}
+        {tagLabel(t)}
       </Badge>
     ))}
-  </div>
+  </BadgeGroup>
 );
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
@@ -211,8 +224,7 @@ export function PipelineViewHeader({
           </Heading>
           <Button
             aria-label="View pipeline details"
-            className="[&_svg]:size-4"
-            icon={<Info />}
+            icon={<Info className="size-4!" />}
             onClick={onViewDetails}
             size="icon"
             variant="ghost"
@@ -229,7 +241,7 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <Separator className="mx-1 h-6" orientation="vertical" />
+          <div aria-hidden className="mx-1 h-6 w-px bg-border" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
