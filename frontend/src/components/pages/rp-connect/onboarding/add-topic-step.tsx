@@ -147,7 +147,6 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       name: 'topicName',
     });
 
-    // Notify parent when validity changes
     useEffect(() => {
       onValidityChange?.(form.formState.isValid);
     }, [form.formState.isValid, onValidityChange]);

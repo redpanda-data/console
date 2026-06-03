@@ -33,6 +33,8 @@ import { useCreateTopicMutation } from 'react-query/api/topic';
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backend-api';
 import {
+  getRetentionSizeFinalValue,
+  getRetentionTimeFinalValue,
   type RetentionSizeUnit,
   type RetentionTimeUnit,
   sizeFactors,
@@ -774,44 +776,6 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
       </div>
     </div>
   );
-}
-
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-function getRetentionTimeFinalValue(value: number | undefined, unit: RetentionTimeUnit) {
-  if (unit === 'default') {
-    return;
-  }
-
-  if (value === undefined) {
-    throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
-  }
-
-  if (unit === 'ms') return value;
-  if (unit === 'seconds') return value * 1000;
-  if (unit === 'minutes') return value * 1000 * 60;
-  if (unit === 'hours') return value * 1000 * 60 * 60;
-  if (unit === 'days') return value * 1000 * 60 * 60 * 24;
-  if (unit === 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
-  if (unit === 'years') return value * 1000 * 60 * 60 * 24 * 365;
-  if (unit === 'infinite') return -1;
-}
-
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-function getRetentionSizeFinalValue(value: number | undefined, unit: RetentionSizeUnit) {
-  if (unit === 'default') {
-    return;
-  }
-
-  if (value === undefined) {
-    throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
-  }
-
-  if (unit === 'Bit') return value;
-  if (unit === 'KiB') return value * 1024;
-  if (unit === 'MiB') return value * 1024 * 1024;
-  if (unit === 'GiB') return value * 1024 * 1024 * 1024;
-  if (unit === 'TiB') return value * 1024 * 1024 * 1024 * 1024;
-  if (unit === 'infinite') return -1;
 }
 
 function createInitialState(tryGetBrokerConfig: (name: string) => string | undefined): CreateTopicModalState {

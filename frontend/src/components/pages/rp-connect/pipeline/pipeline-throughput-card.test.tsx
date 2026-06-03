@@ -179,14 +179,7 @@ describe('PipelineThroughputCard', () => {
       expect(screen.getByText('Throughput metrics not available')).toBeInTheDocument();
     });
 
-    // The refresh button contains only a RefreshCcw icon (lucide-refresh-ccw svg).
-    // Find all buttons and locate the one with the refresh icon.
-    const allButtons = screen.getAllByRole('button');
-    const refreshButton = allButtons.find((btn) => btn.querySelector('.lucide-refresh-ccw'));
-    if (!refreshButton) {
-      throw new Error('Refresh button not found');
-    }
-    await user.click(refreshButton);
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
 
     // After clicking, the component should still render without errors
     expect(screen.getByText('Throughput')).toBeInTheDocument();

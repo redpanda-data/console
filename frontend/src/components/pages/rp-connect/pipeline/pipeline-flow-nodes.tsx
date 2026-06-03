@@ -175,69 +175,73 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
       )}
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
-      <div className="flex items-center gap-1.5">
-        {isPlaceholder ? null : <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />}
-        <Text
-          as="span"
-          className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}
-          title={isPlaceholder ? undefined : data.label}
-          variant="bodyStrongMedium"
-        >
-          {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
-        </Text>
-        {docsUrl ? (
-          <Button
-            aria-label={`${data.label} documentation`}
-            as="a"
-            className="nodrag nopan shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-            href={docsUrl}
-            rel="noopener noreferrer"
-            size="icon-xs"
-            target="_blank"
-            variant="ghost"
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5">
+          {isPlaceholder ? null : (
+            <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
+          )}
+          <Text
+            as="span"
+            className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}
+            title={isPlaceholder ? undefined : data.label}
+            variant="bodyStrongMedium"
           >
-            <BookOpenIcon />
-          </Button>
-        ) : null}
-      </div>
-      <div
-        className={cn((data.labelText || hasTopics || showSetupHints) && 'mt-2', 'flex flex-col items-start gap-1.5')}
-      >
-        {data.labelText ? (
-          <Badge className="max-w-full" size="sm" variant="info-inverted">
-            <span className="truncate" title={data.labelText}>
-              {data.labelText}
-            </span>
-          </Badge>
-        ) : null}
-        {hasTopics ? (
-          <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
-            {data.topics?.map((t) => (
-              <Badge className="max-w-full" key={t} size="sm" variant="info-outline">
-                <span className="truncate" title={t}>
-                  topic: {t}
+            {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
+          </Text>
+          {docsUrl ? (
+            <Button
+              aria-label={`${data.label} documentation`}
+              as="a"
+              className="nodrag nopan shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              href={docsUrl}
+              rel="noopener noreferrer"
+              size="icon-xs"
+              target="_blank"
+              variant="ghost"
+            >
+              <BookOpenIcon />
+            </Button>
+          ) : null}
+        </div>
+        {data.labelText || hasTopics || showSetupHints ? (
+          <div className="flex flex-col items-start gap-1.5">
+            {data.labelText ? (
+              <Badge className="max-w-full" size="sm" variant="info-inverted">
+                <span className="truncate" title={data.labelText}>
+                  {data.labelText}
                 </span>
               </Badge>
-            ))}
-          </BadgeGroup>
-        ) : null}
-        {showSetupHints ? (
-          <>
-            {data.missingTopic ? (
-              <MissingConfigChip
-                addLabel="Topic"
-                missingLabel="No topic"
-                onAdd={data.onAddTopic ? () => data.onAddTopic?.(data.section ?? '', data.label) : undefined}
-              />
             ) : null}
-            {data.missingSasl ? (
-              <MissingConfigChip
-                addLabel="User"
-                missingLabel="No user"
-                onAdd={data.onAddSasl ? () => data.onAddSasl?.(data.section ?? '', data.label) : undefined}
-              />
+            {hasTopics ? (
+              <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
+                {data.topics?.map((t) => (
+                  <Badge className="max-w-full" key={t} size="sm" variant="info-outline">
+                    <span className="truncate" title={t}>
+                      topic: {t}
+                    </span>
+                  </Badge>
+                ))}
+              </BadgeGroup>
             ) : null}
-          </>
+            {showSetupHints ? (
+              <>
+                {data.missingTopic ? (
+                  <MissingConfigChip
+                    addLabel="Topic"
+                    missingLabel="No topic"
+                    onAdd={data.onAddTopic ? () => data.onAddTopic?.(data.section ?? '', data.label) : undefined}
+                  />
+                ) : null}
+                {data.missingSasl ? (
+                  <MissingConfigChip
+                    addLabel="User"
+                    missingLabel="No user"
+                    onAdd={data.onAddSasl ? () => data.onAddSasl?.(data.section ?? '', data.label) : undefined}
+                  />
+                ) : null}
+              </>
+            ) : null}
+          </div>
         ) : null}
       </div>
       {showAddButton ? (

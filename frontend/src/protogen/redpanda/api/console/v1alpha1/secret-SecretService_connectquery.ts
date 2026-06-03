@@ -33,3 +33,8 @@ export const deleteSecret = SecretService.method.deleteSecret;
  * @generated from rpc redpanda.api.console.v1alpha1.SecretService.ListSecretScopes
  */
 export const listSecretScopes = SecretService.method.listSecretScopes;
+
+/**
+ * @generated from rpc redpanda.api.console.v1alpha1.SecretService.ListResources
+ */
+export const listResources = SecretService.method.listResources;

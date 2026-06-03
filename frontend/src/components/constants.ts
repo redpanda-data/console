@@ -19,6 +19,7 @@ export const FEATURE_FLAGS = {
   enableConnectSlashMenu: false,
   enableNewSecurityPage: true,
   enableTeamsBridge: false,
+  enableNewTopicPage: true,
 };
 
 // Cloud-managed tag keys for service account integration
@@ -29,7 +30,6 @@ export const CLOUD_MANAGED_TAG_KEYS = {
   SECRET_ID: 'rp_cloud_secret_id',
 } as const;
 
-// Helper function to check if a tag key is cloud-managed
 export const isCloudManagedTagKey = (key: string): boolean =>
   Object.values(CLOUD_MANAGED_TAG_KEYS).includes(
     key as (typeof CLOUD_MANAGED_TAG_KEYS)[keyof typeof CLOUD_MANAGED_TAG_KEYS]

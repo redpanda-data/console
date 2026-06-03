@@ -13,17 +13,18 @@ import { useNavigate } from '@tanstack/react-router';
 import { getUserTagEntries } from 'components/constants';
 import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Heading, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Controller, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useWatch } from 'react-hook-form';
 
 import { PipelineStatusToggle } from './pipeline-status-toggle';
 import { cpuToTasks } from '../tasks';
@@ -34,7 +35,6 @@ const DOCS_URL = 'https://docs.redpanda.com/redpanda-connect/home/';
 
 type TagEntry = { key: string; value: string };
 
-// Dot-separated strip of short scalar facts. Null nodes are dropped.
 type MetaEntry = { key: string; node: ReactNode };
 
 const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
@@ -58,7 +58,6 @@ const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
   );
 };
 
-// Labelled line below the strip for wider fields (tags, description).
 const DetailLine = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex gap-2 text-sm">
     <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
@@ -66,7 +65,6 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
-// "<n> compute units" with an inline definition tooltip for newcomers.
 const ComputeUnitsMeta = ({ units }: { units: number }) => (
   <span className="flex items-center gap-1.5">
     <span className="font-medium text-foreground">{units}</span>
@@ -80,7 +78,6 @@ const ComputeUnitsMeta = ({ units }: { units: number }) => (
   </span>
 );
 
-// Count fact like "2 topics" — emphasised number, muted noun (pre-pluralised).
 const CountMeta = ({ count, noun }: { count: number; noun: string }) => (
   <span className="flex items-center gap-1.5">
     <span className="font-medium text-foreground">{count}</span>
@@ -88,7 +85,6 @@ const CountMeta = ({ count, noun }: { count: number; noun: string }) => (
   </span>
 );
 
-// Labelled value that reveals a copy button on hover; optionally an external link.
 const CopyableMeta = ({
   label,
   value,
@@ -128,14 +124,27 @@ const CopyableMeta = ({
   </span>
 );
 
+const tagLabel = (t: TagEntry) => (t.value ? `${t.key}: ${t.value}` : t.key);
+
 const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
-  <div className="flex flex-wrap gap-1.5">
+  <BadgeGroup
+    className="flex-wrap"
+    maxVisible={4}
+    renderOverflowContent={(overflow) => (
+      <List>
+        {tags.slice(-overflow.length).map((t) => (
+          <ListItem key={t.key}>{tagLabel(t)}</ListItem>
+        ))}
+      </List>
+    )}
+    variant="simple-outline"
+  >
     {tags.map((t) => (
       <Badge key={t.key} variant="simple-outline">
-        {t.value ? `${t.key}: ${t.value}` : t.key}
+        {tagLabel(t)}
       </Badge>
     ))}
-  </div>
+  </BadgeGroup>
 );
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
@@ -151,23 +160,24 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
     control={form.control}
     name="name"
     render={({ field, fieldState }) => (
-      <input
-        {...field}
-        aria-invalid={fieldState.invalid}
-        aria-label="Pipeline name"
-        className={cn(
-          'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
-          'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
-          fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
-        )}
-        placeholder={placeholder}
-      />
+      <div className="flex min-w-0 flex-col">
+        <input
+          {...field}
+          aria-invalid={fieldState.invalid}
+          aria-label="Pipeline name"
+          className={cn(
+            'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
+            'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
+            fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
+          )}
+          placeholder={placeholder}
+        />
+        {fieldState.error ? <p className="mt-1 text-destructive text-sm">{fieldState.error.message}</p> : null}
+      </div>
     )}
   />
 );
 
-// View-mode header: pipeline name as the page title, with details/docs/edit
-// actions. Status and the run control live in a separate ops bar below.
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -210,8 +220,7 @@ export function PipelineViewHeader({
           </Heading>
           <Button
             aria-label="View pipeline details"
-            className="[&_svg]:size-4"
-            icon={<Info />}
+            icon={<Info className="size-4!" />}
             onClick={onViewDetails}
             size="icon"
             variant="ghost"
@@ -241,7 +250,7 @@ export function PipelineViewHeader({
         ) : null}
         {description ? (
           <DetailLine label="Description">
-            <p className="line-clamp-2 whitespace-pre-wrap break-words" title={description}>
+            <p className="line-clamp-2 max-w-[66%] whitespace-pre-wrap break-words" title={description}>
               {description}
             </p>
           </DetailLine>
@@ -251,9 +260,7 @@ export function PipelineViewHeader({
   );
 }
 
-// Edit / create header: name as the title with a mode chip; Docs + Save on the
-// right. The settings the dialog controls are shown below, with "Edit settings"
-// anchored to that block (away from Save).
+// "Edit settings" is anchored to the settings block below, away from Save.
 export function PipelineEditHeader({
   form,
   mode,
@@ -274,8 +281,6 @@ export function PipelineEditHeader({
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
-  const { errors } = useFormState({ control: form.control });
-  const nameError = typeof errors.name?.message === 'string' ? errors.name.message : undefined;
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -308,7 +313,6 @@ export function PipelineEditHeader({
             </Button>
           </div>
         </div>
-        {nameError ? <p className="pl-11 text-destructive text-sm">{nameError}</p> : null}
       </div>
       <div className="flex flex-col items-start gap-2">
         <MetaStrip items={items} />
@@ -319,7 +323,7 @@ export function PipelineEditHeader({
         ) : null}
         {description ? (
           <DetailLine label="Description">
-            <p className="whitespace-pre-wrap break-words" title={description}>
+            <p className="max-w-[66%] whitespace-pre-wrap break-words" title={description}>
               {description}
             </p>
           </DetailLine>

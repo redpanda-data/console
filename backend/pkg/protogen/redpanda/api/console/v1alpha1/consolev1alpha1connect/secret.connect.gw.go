@@ -23,6 +23,7 @@ type SecretServiceGatewayServer struct {
 	updateSecret     connect_gateway.UnaryHandler[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
 	deleteSecret     connect_gateway.UnaryHandler[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse]
 	listSecretScopes connect_gateway.UnaryHandler[v1alpha1.ListSecretScopesRequest, v1alpha1.ListSecretScopesResponse]
+	listResources    connect_gateway.UnaryHandler[v1alpha1.ListResourcesRequest, v1alpha1.ListResourcesResponse]
 }
 
 // NewSecretServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecretService
@@ -35,6 +36,7 @@ func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gat
 		updateSecret:     connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
 		deleteSecret:     connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
 		listSecretScopes: connect_gateway.NewUnaryHandler(SecretServiceListSecretScopesProcedure, svc.ListSecretScopes, opts...),
+		listResources:    connect_gateway.NewUnaryHandler(SecretServiceListResourcesProcedure, svc.ListResources, opts...),
 	}
 }
 
@@ -60,6 +62,10 @@ func (s *SecretServiceGatewayServer) DeleteSecret(ctx context.Context, req *v1al
 
 func (s *SecretServiceGatewayServer) ListSecretScopes(ctx context.Context, req *v1alpha1.ListSecretScopesRequest) (*v1alpha1.ListSecretScopesResponse, error) {
 	return s.listSecretScopes(ctx, req)
+}
+
+func (s *SecretServiceGatewayServer) ListResources(ctx context.Context, req *v1alpha1.ListResourcesRequest) (*v1alpha1.ListResourcesResponse, error) {
+	return s.listResources(ctx, req)
 }
 
 // RegisterSecretServiceHandlerGatewayServer registers the Connect handlers for the SecretService

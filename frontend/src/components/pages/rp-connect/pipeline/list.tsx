@@ -695,10 +695,6 @@ const PipelineListPageContent = () => {
   );
 };
 
-// ============================================================================
-// Page Wrapper Components
-// ============================================================================
-
 const RedpandaConnectContent = () => (
   <div className="flex flex-col gap-4">
     <Text>

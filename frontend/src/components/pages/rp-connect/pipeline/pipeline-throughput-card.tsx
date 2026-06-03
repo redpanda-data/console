@@ -10,6 +10,7 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
+import { RefreshIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -29,7 +30,6 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
-import { RefreshCcw } from 'lucide-react';
 import type { FC } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
@@ -215,8 +215,8 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               ))}
             </SelectContent>
           </Select>
-          <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-            <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+          <Button aria-label="Refresh" disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
+            <RefreshIcon className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
           </Button>
         </div>
       </div>

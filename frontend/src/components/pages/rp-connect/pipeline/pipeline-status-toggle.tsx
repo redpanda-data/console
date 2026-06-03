@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
+import { cva } from 'class-variance-authority';
 import { StopCircleIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -21,9 +22,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { Label } from 'components/redpanda-ui/components/label';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { PIPELINE_STATE_LABELS } from 'components/ui/pipeline/constants';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -34,24 +37,23 @@ import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/a
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-const STATE_LABEL: Partial<Record<Pipeline_State, string>> = {
-  [PipelineState.RUNNING]: 'Running',
-  [PipelineState.STARTING]: 'Starting',
-  [PipelineState.STOPPING]: 'Stopping',
-  [PipelineState.STOPPED]: 'Stopped',
-  [PipelineState.ERROR]: 'Error',
-  [PipelineState.COMPLETED]: 'Completed',
-};
-
 type Tone = 'success' | 'error' | 'muted';
 
 // Pill chrome per state: running is a filled green pill, error is red text,
 // everything else (stopped/completed/transitioning) reads as plain muted text.
-const TONE_CLASSES: Record<Tone, string> = {
-  success: 'border-outline-success bg-background-success-subtle text-success',
-  error: 'border-transparent text-destructive',
-  muted: 'border-transparent text-muted-foreground',
-};
+const statusPill = cva(
+  'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-sm transition-colors',
+  {
+    variants: {
+      tone: {
+        success: 'border-outline-success bg-background-success-subtle text-success',
+        error: 'border-transparent text-destructive',
+        muted: 'border-transparent text-muted-foreground',
+      },
+    },
+    defaultVariants: { tone: 'muted' },
+  }
+);
 
 function getTone(state?: Pipeline_State): Tone {
   if (state === PipelineState.RUNNING || state === PipelineState.STARTING) {
@@ -112,7 +114,7 @@ export function PipelineStatusToggle({
   const checked = pipelineState === PipelineState.RUNNING || pipelineState === PipelineState.STARTING;
   const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
   const isDisabled = !pipelineId || isTransitioning || isStartPending || isStopPending;
-  const label = (pipelineState !== undefined && STATE_LABEL[pipelineState]) || 'Unknown';
+  const label = (pipelineState !== undefined && PIPELINE_STATE_LABELS[pipelineState]) || 'Unknown';
   const tone = getTone(pipelineState);
 
   const handleCheckedChange = useCallback(
@@ -132,22 +134,20 @@ export function PipelineStatusToggle({
 
   return (
     <>
-      <div
-        className={cn(
-          'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-sm transition-colors',
-          TONE_CLASSES[tone]
-        )}
-      >
+      <div className={statusPill({ tone })}>
         <Switch
           aria-label={checked ? 'Stop pipeline' : 'Start pipeline'}
           checked={checked}
           className={cn(tone === 'success' && 'data-[state=checked]:bg-success')}
           disabled={isDisabled}
+          id={`pipeline-run-toggle-${pipelineId}`}
           onCheckedChange={handleCheckedChange}
           testId="pipeline-run-toggle"
         />
-        {isTransitioning ? <Spinner className="!size-3.5" /> : null}
-        <span>{label}</span>
+        {isTransitioning ? <Spinner className="size-3.5!" /> : null}
+        <Label className="cursor-pointer" htmlFor={`pipeline-run-toggle-${pipelineId}`}>
+          {label}
+        </Label>
       </div>
 
       <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>

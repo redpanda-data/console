@@ -266,8 +266,10 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  // Called right before a successful save navigates away, so the unsaved-changes
-  // guard doesn't block the post-save navigation.
+  /**
+   * Called right before a successful save navigates away, so the unsaved-changes
+   * guard doesn't block the post-save navigation.
+   */
   onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
@@ -641,18 +643,22 @@ function SidebarPanel({
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
   onBrowseTemplates?: () => void;
 }) {
+  // View mode is read-only, so the editing handlers are only wired up otherwise.
+  const editHandlers =
+    mode === 'view'
+      ? {}
+      : {
+          onAddConnector: (type: string) => onAddConnector(type as ConnectComponentType),
+          onAddSasl,
+          onAddTopic,
+          onBrowseTemplates,
+        };
+
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
       <div className="min-h-0 flex-1 overflow-hidden">
         {isPipelineDiagramsEnabled ? (
-          <PipelineFlowDiagram
-            configYaml={yamlContent}
-            hideZoomControls
-            onAddConnector={mode !== 'view' ? (type) => onAddConnector(type as ConnectComponentType) : undefined}
-            onAddSasl={mode !== 'view' ? onAddSasl : undefined}
-            onAddTopic={mode !== 'view' ? onAddTopic : undefined}
-            onBrowseTemplates={mode !== 'view' ? onBrowseTemplates : undefined}
-          />
+          <PipelineFlowDiagram configYaml={yamlContent} hideZoomControls {...editHandlers} />
         ) : null}
       </div>
       {mode !== 'view' && (
@@ -916,8 +922,7 @@ function PipelinePageContent() {
     if (mode === 'create') {
       clearWizardStore();
     }
-    // Edit: go to the pipeline's view page. Routed through `navigate` (not
-    // history.back) so the unsaved-changes blocker reliably intercepts it.
+    // Route through `navigate` (not history.back) so the unsaved-changes blocker intercepts.
     if (mode === 'edit' && pipelineId) {
       navigate({ to: `/rp-connect/${pipelineId}` });
       return;
