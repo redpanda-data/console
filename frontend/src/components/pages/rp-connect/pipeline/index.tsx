@@ -15,7 +15,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { getUserTagEntries, isSystemTag } from 'components/constants';
-import { ArrowLeftIcon, EditIcon } from 'components/icons';
+import { ArrowLeftIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -486,22 +486,16 @@ function EditorSkeleton() {
 
 // Read-only YAML lane for the view page. Reuses the editor for consistent
 // highlighting, but suppresses every "editable" cue (caret, text mouse cursor,
-// active-line highlight) so it reads as a viewer. An Edit button jumps to the
-// edit page.
+// active-line highlight) so it reads as a viewer.
 function YamlViewPanel({
   configYaml,
   schema,
-  onEdit,
 }: {
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
-  onEdit: () => void;
 }) {
   return (
     <div className="relative h-full overflow-hidden p-2 [&_.cursors-layer]:opacity-0">
-      <Button className="absolute top-3 right-3 z-10" icon={<EditIcon />} onClick={onEdit} size="sm" variant="outline">
-        Edit
-      </Button>
       <YamlEditor
         options={{ readOnly: true, domReadOnly: true, renderLineHighlight: 'none', mouseStyle: 'default' }}
         schema={schema}
@@ -1002,11 +996,7 @@ function PipelinePageContent() {
         <div className="min-w-0 flex-1">
           {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
           {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
-            <YamlViewPanel
-              configYaml={pipeline.configYaml}
-              onEdit={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
-              schema={yamlEditorSchema}
-            />
+            <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
           ) : null}
           {mode === 'view' ? null : (
             <EditorPanel
