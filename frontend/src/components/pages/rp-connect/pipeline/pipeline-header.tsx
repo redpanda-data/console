@@ -15,6 +15,7 @@ import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading } from 'components/redpanda-ui/components/typography';
@@ -228,7 +229,7 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <div aria-hidden className="mx-1 h-6 w-px bg-border" />
+          <Separator className="mx-1 h-6" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
