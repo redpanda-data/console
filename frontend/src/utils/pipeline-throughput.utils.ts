@@ -10,7 +10,9 @@
  */
 
 export type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
-export type MergedPoint = { timestamp: number; ingress: number; egress: number };
+// Values are nullable: a null marks a no-data gap so the chart breaks the line
+// there instead of drawing across it (see insertGapMarkers).
+export type MergedPoint = { timestamp: number; ingress: number | null; egress: number | null };
 
 export function addSeriesToMap(
   map: Map<number, MergedPoint>,
@@ -30,11 +32,49 @@ export function addSeriesToMap(
   }
 }
 
+// Smallest regular spacing between consecutive points; for a fixed-step range
+// query this is the step itself, so larger gaps stand out against it.
+function inferStepMs(points: MergedPoint[]): number | null {
+  if (points.length < 2) {
+    return null;
+  }
+  let min = Number.POSITIVE_INFINITY;
+  for (let i = 1; i < points.length; i++) {
+    const delta = points[i].timestamp - points[i - 1].timestamp;
+    if (delta > 0 && delta < min) {
+      min = delta;
+    }
+  }
+  return Number.isFinite(min) ? min : null;
+}
+
+// The backend omits timestamps with no data (e.g. while the pipeline was down),
+// so consecutive points straddle the gap and the chart draws a continuous line
+// across it. Insert a null marker in any larger-than-step gap so the line/area
+// breaks there instead (recharts splits series at nulls when connectNulls=false).
+export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
+  const step = inferStepMs(points);
+  if (step === null) {
+    return points;
+  }
+  const maxGap = step * 1.5;
+  const result: MergedPoint[] = [];
+  for (let i = 0; i < points.length; i++) {
+    result.push(points[i]);
+    const next = points[i + 1];
+    if (next && next.timestamp - points[i].timestamp > maxGap) {
+      result.push({ timestamp: points[i].timestamp + step, ingress: null, egress: null });
+    }
+  }
+  return result;
+}
+
 export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: TimeSeriesResult[]): MergedPoint[] {
   const map = new Map<number, MergedPoint>();
   addSeriesToMap(map, ingressResults, 'ingress');
   addSeriesToMap(map, egressResults, 'egress');
-  return [...map.values()].sort((a, b) => a.timestamp - b.timestamp);
+  const sorted = [...map.values()].sort((a, b) => a.timestamp - b.timestamp);
+  return insertGapMarkers(sorted);
 }
 
 export function formatChartTimestamp(value: number): string {

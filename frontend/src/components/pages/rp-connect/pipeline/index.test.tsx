@@ -594,6 +594,22 @@ describe('PipelinePage', () => {
     });
   });
 
+  it('view page exposes Monitor and Configuration lanes; Configuration shows the YAML read-only', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // Monitor is the default lane — no YAML editor shown yet.
+    expect(await screen.findByText('Configuration')).toBeInTheDocument();
+    expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
+
+    // Switching to Configuration shows the pipeline YAML.
+    await user.click(screen.getByText('Configuration'));
+    const yaml = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
+    expect(yaml.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
+  });
+
   it('confirms before stopping a running pipeline', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });

@@ -34,7 +34,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
-import { Progress } from 'components/redpanda-ui/components/progress';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
@@ -47,10 +47,7 @@ import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
 
-/**
- * TanStack Table assigns a default size of 150 to columns without an explicit `size`.
- * We use this to detect "unsized" columns and avoid applying a fixed width.
- */
+// TanStack Table's default column size; used to detect "unsized" columns.
 const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
 
 type LogPayload = {
@@ -70,6 +67,16 @@ function getLogPayload(msg: TopicMessage): LogPayload | null {
     return payload as LogPayload;
   }
   return null;
+}
+
+// Component paths (e.g. root.pipeline.processors.1.branch.catch) are long; keep
+// the head + tail so the column stays compact (full path shown on hover).
+function abbreviateComponentPath(path: string): string {
+  const parts = path.split('.');
+  if (parts.length <= 3) {
+    return path;
+  }
+  return `${parts[0]}…${parts.slice(-2).join('.')}`;
 }
 
 type LogLevelVariant = 'destructive-inverted' | 'warning-inverted' | 'info-inverted' | 'neutral-inverted';
@@ -254,7 +261,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const messageTableColumns = useMemo<ColumnDef<TopicMessage>[]>(
     () => [
       {
-        header: 'Timestamp',
+        header: 'Time',
         accessorKey: 'timestamp',
         enableSorting: !liveViewEnabled,
         cell: ({
@@ -263,15 +270,16 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           },
         }) => {
           const d = new Date(timestamp);
+          // Time is the scannable field; date sits muted above, full date/time on hover.
           return (
-            <div className="flex flex-col leading-tight">
-              <span className="text-[11px] text-muted-foreground">{d.toLocaleDateString()}</span>
+            <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
+              <span className="text-[11px] text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
               <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
             </div>
           );
         },
-        minSize: 140,
-        size: 140,
+        minSize: 120,
+        size: 132,
       },
       {
         id: 'level',
@@ -291,12 +299,20 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
         enableSorting: !liveViewEnabled,
         cell: ({ row: { original } }) => {
           const path = getLogPayload(original)?.path;
-          return path ? (
-            <Text as="span" className="text-muted-foreground" variant="bodySmall">{path}</Text>
-          ) : null;
+          if (!path) {
+            return null;
+          }
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block truncate text-muted-foreground text-sm">{abbreviateComponentPath(path)}</span>
+              </TooltipTrigger>
+              <TooltipContent>{path}</TooltipContent>
+            </Tooltip>
+          );
         },
-        minSize: 140,
-        size: 160,
+        minSize: 150,
+        size: 180,
       },
       {
         id: 'message',
@@ -406,17 +422,12 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             size="icon"
             variant="ghost"
           >
-            <RefreshIcon className={isSearching ? 'animate-spin' : ''} />
+            <RefreshIcon className={cn(isSearching && 'animate-spin')} />
           </Button>
         </div>
       </div>
 
       <div className="relative min-h-0">
-        {isSearching && hasProgress && (
-          <div className="absolute inset-x-0 top-0 z-10">
-            <Progress className="h-1 w-full rounded-none" testId="log-progress-bar" value={null} />
-          </div>
-        )}
         <div className="overflow-auto">
         <Table className="table-fixed" variant="simple">
           <TableHeader>
@@ -424,7 +435,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                    className={cn('px-3', header.column.getCanSort() && 'cursor-pointer select-none')}
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
@@ -518,6 +529,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
+                      className="px-3 py-2"
                       key={cell.id}
                       style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
                     >

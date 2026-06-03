@@ -205,7 +205,7 @@ describe('LogExplorer', () => {
 
   test('table has expected column headers', () => {
     renderExplorer();
-    expect(screen.getByText('Timestamp')).toBeInTheDocument();
+    expect(screen.getByText('Time')).toBeInTheDocument();
     expect(screen.getByText('Level')).toBeInTheDocument();
     expect(screen.getByText('Component')).toBeInTheDocument();
     expect(screen.getByText('Message')).toBeInTheDocument();

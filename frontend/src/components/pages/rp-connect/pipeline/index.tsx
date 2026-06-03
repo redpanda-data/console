@@ -34,6 +34,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
@@ -89,6 +90,7 @@ import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
+import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { useSlashCommand } from './use-slash-command';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -264,10 +266,7 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  /**
-   * Called right before a successful save navigates away, so the unsaved-changes
-   * guard doesn't block the post-save navigation.
-   */
+  // Called right before a successful save navigates away, so the unsaved-changes guard doesn't block it.
   onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
@@ -478,6 +477,27 @@ function EditorSkeleton() {
       <Skeleton variant="text" width="md" />
       <Skeleton variant="text" width="lg" />
       <Skeleton variant="text" width="sm" />
+    </div>
+  );
+}
+
+// Read-only YAML viewer for the view page: reuses the editor with all editable
+// cues (caret, text cursor, active-line highlight) suppressed.
+function YamlViewPanel({
+  configYaml,
+  schema,
+}: {
+  configYaml: string;
+  schema: ReturnType<typeof parseYamlEditorSchema>;
+}) {
+  return (
+    <div className="relative h-full overflow-hidden p-2 [&_.cursors-layer]:opacity-0">
+      <YamlEditor
+        options={{ readOnly: true, domReadOnly: true, renderLineHighlight: 'none', mouseStyle: 'default' }}
+        schema={schema}
+        transparentBackground
+        value={configYaml}
+      />
     </div>
   );
 }
@@ -697,6 +717,17 @@ function SidebarPanel({
 }
 
 export default function PipelinePage() {
+  const { mode } = usePipelineMode();
+  const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
+  return (
+    <PipelineEditorProvider initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'}>
+      <PipelinePageContent />
+    </PipelineEditorProvider>
+  );
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: top-level page wiring; state now lives in the editor store
+function PipelinePageContent() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
   const router = useRouter();
@@ -704,19 +735,39 @@ export default function PipelinePage() {
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
   const isServerlessMode = search.serverless === 'true';
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
-
-  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
-  const [yamlContent, setYamlContent] = useState('');
-  const [commandMenuFilter, setCommandMenuFilter] = useState<
-    'all' | 'variables' | 'secrets' | 'topics' | 'users' | null
-  >(null);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
-  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
+
+  // Editor session state lives in a context-scoped Zustand store. Actions are
+  // stable, so we read them once; values use selectors.
+  const editorStore = usePipelineEditorStoreApi();
+  const {
+    setYamlContent,
+    setEditorInstance,
+    hydrateFromServer,
+    resolveInitialYaml,
+    setAllowNavigation,
+    setActiveViewLane,
+    setCommandMenuFilter,
+    setAddConnectorType,
+    setSlashTipVisible,
+    setIsConfigDialogOpen,
+    setIsViewConfigDialogOpen,
+    setIsDeleteAlertOpen,
+    setIsTemplateDialogOpen,
+  } = editorStore.getState();
+
+  const yamlContent = usePipelineEditorStore((s) => s.yamlContent);
+  const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
+  const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
+  const hydratedPipelineId = usePipelineEditorStore((s) => s.hydratedPipelineId);
+  const activeViewLane = usePipelineEditorStore((s) => s.activeViewLane);
+  const commandMenuFilter = usePipelineEditorStore((s) => s.commandMenuFilter);
+  const addConnectorType = usePipelineEditorStore((s) => s.addConnectorType);
+  const slashTipVisible = usePipelineEditorStore((s) => s.slashTipVisible);
+  const isConfigDialogOpen = usePipelineEditorStore((s) => s.isConfigDialogOpen);
+  const isViewConfigDialogOpen = usePipelineEditorStore((s) => s.isViewConfigDialogOpen);
+  const isDeleteAlertOpen = usePipelineEditorStore((s) => s.isDeleteAlertOpen);
+  const isTemplateDialogOpen = usePipelineEditorStore((s) => s.isTemplateDialogOpen);
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
@@ -724,7 +775,7 @@ export default function PipelinePage() {
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
 
-  const handleSlashOpen = useCallback(() => setCommandMenuFilter(null), []);
+  const handleSlashOpen = useCallback(() => setCommandMenuFilter(null), [setCommandMenuFilter]);
   const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
 
   const handleCommandMenuOpen = useCallback(
@@ -732,7 +783,7 @@ export default function PipelinePage() {
       slashCommand.close();
       setCommandMenuFilter(filter);
     },
-    [slashCommand]
+    [slashCommand, setCommandMenuFilter]
   );
 
   const { data: pipelineResponse } = useGetPipelineQuery(
@@ -751,13 +802,7 @@ export default function PipelinePage() {
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
-  const allowNavigationRef = useRef(false);
-  const markNavigationAllowed = useCallback(() => {
-    allowNavigationRef.current = true;
-  }, []);
-  // Baseline YAML to diff against for the unsaved-changes guard: the server config
-  // in edit mode, or the first resolved template in create mode.
-  const initialYamlRef = useRef<string | null>(null);
+  const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
     usePipelineSave({
@@ -772,17 +817,17 @@ export default function PipelinePage() {
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
   // Guard against losing unsaved edits when navigating away from the editor (edit or create).
-  const yamlDirty = initialYamlRef.current !== null && yamlContent !== initialYamlRef.current;
+  const yamlDirty = initialYaml !== null && yamlContent !== initialYaml;
   const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
   const blocker = useBlocker({
-    shouldBlockFn: () => hasUnsavedChanges && !allowNavigationRef.current,
+    shouldBlockFn: () => hasUnsavedChanges && !editorStore.getState().allowNavigation,
     enableBeforeUnload: () => hasUnsavedChanges,
     withResolver: true,
   });
   // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).
   useEffect(() => {
-    allowNavigationRef.current = false;
-  }, [mode]);
+    setAllowNavigation(false);
+  }, [mode, setAllowNavigation]);
 
   const handleYamlChange = useCallback(
     (value: string) => {
@@ -792,7 +837,7 @@ export default function PipelinePage() {
         useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
       }
     },
-    [mode, isPipelineDiagramsEnabled, clearErrorLintHints]
+    [mode, isPipelineDiagramsEnabled, clearErrorLintHints, setYamlContent]
   );
 
   const handleConnectorYamlChange = useCallback(
@@ -831,15 +876,15 @@ export default function PipelinePage() {
         handleConnectorYamlChange(newYaml);
       }
     },
-    [components, yamlContent, handleConnectorYamlChange]
+    [components, yamlContent, handleConnectorYamlChange, setAddConnectorType]
   );
 
-  const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
-  if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
-    setHydratedPipelineId(pipeline.id);
-    setYamlContent(pipeline.configYaml);
-    initialYamlRef.current = pipeline.configYaml;
-  }
+  // Hydrate from the loaded pipeline once per id, so re-renders don't clobber edits.
+  useEffect(() => {
+    if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
+      hydrateFromServer(pipeline.id, pipeline.configYaml);
+    }
+  }, [pipeline, mode, hydratedPipelineId, hydrateFromServer]);
 
   useEffect(() => {
     if (pipeline && mode === 'edit') {
@@ -852,12 +897,7 @@ export default function PipelinePage() {
     }
   }, [pipeline, mode, form]);
 
-  const handleInitialYamlResolved = useCallback((yaml: string) => {
-    setYamlContent(yaml);
-    if (initialYamlRef.current === null) {
-      initialYamlRef.current = yaml;
-    }
-  }, []);
+  const handleInitialYamlResolved = useCallback((yaml: string) => resolveInitialYaml(yaml), [resolveInitialYaml]);
 
   const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
     enabled: mode === 'create',
@@ -918,6 +958,19 @@ export default function PipelinePage() {
           url={pipeline?.url}
         />
       ) : null}
+      {/* View-mode lanes: Monitor (throughput/logs) vs Configuration (read-only YAML). */}
+      {mode === 'view' && pipeline ? (
+        <Tabs value={activeViewLane}>
+          <TabsList className="w-fit" variant="underline">
+            <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
+              Monitor
+            </TabsTrigger>
+            <TabsTrigger onClick={() => setActiveViewLane('configuration')} value="configuration" variant="underline">
+              Configuration
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : null}
       {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
           flow panels aren't squished when the summary card is tall. */}
       <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
@@ -934,9 +987,11 @@ export default function PipelinePage() {
           yamlContent={yamlContent}
         />
         <div className="min-w-0 flex-1">
-          {mode === 'view' ? (
-            <ViewModePanel pipeline={pipeline} />
-          ) : (
+          {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
+          {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
+            <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
+          ) : null}
+          {mode === 'view' ? null : (
             <EditorPanel
               isLintPending={isLintPending}
               isServerlessInitializing={isServerlessInitializing}

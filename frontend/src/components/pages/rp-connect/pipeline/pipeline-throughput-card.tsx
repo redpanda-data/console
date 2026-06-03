@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import type { FC } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
@@ -40,9 +41,11 @@ import {
   type MergedPoint,
   mergeTimeSeries,
 } from 'utils/pipeline-throughput.utils';
-import { calculateTimeRange, getTimeRanges, type TimeRange } from 'utils/time-range';
+import { calculateTimeRange, getEvenlySpacedTimeTicks, getTimeRanges, type TimeRange } from 'utils/time-range';
 
-const TIME_RANGES = getTimeRanges(24 * 60 * 60 * 1000);
+// Cap at 12h (matching observability): the range-query backend has no step param
+// and can't serve a 24h window at its default resolution (Prometheus' 11k-point limit).
+const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
 
 const chartConfig = {
   ingress: { label: 'Ingress', color: 'var(--color-primary)' },
@@ -55,9 +58,11 @@ type ThroughputContentProps = {
   hasData: boolean;
   chartData: MergedPoint[];
   id: string;
+  // Full selected window [start, end] in ms, so the axis spans it even when data is sparse.
+  domain: [number, number];
 };
 
-const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, hasData, chartData, id }) => {
+const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, hasData, chartData, id, domain }) => {
   if (isLoading) {
     return <ChartSkeleton className="h-40 w-full" variant="area" />;
   }
@@ -91,9 +96,13 @@ const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, has
         <XAxis
           axisLine={false}
           dataKey="timestamp"
+          domain={domain}
+          scale="time"
           tickFormatter={formatChartTimestamp}
           tickLine={false}
           tickMargin={8}
+          ticks={getEvenlySpacedTimeTicks(domain[0], domain[1])}
+          type="number"
         />
         <YAxis axisLine={false} tickLine={false} tickMargin={8} width={40} />
         <ChartTooltip
@@ -198,6 +207,10 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
+  // Anchor the axis to the full selected window so the graph spans the whole
+  // range even when data only covers part of it.
+  const domain: [number, number] = [timeRange.start.getTime(), timeRange.end.getTime()];
+
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
@@ -216,11 +229,18 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
             </SelectContent>
           </Select>
           <Button aria-label="Refresh" disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-            <RefreshIcon className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+            <RefreshIcon className={cn('size-4', isFetching && 'animate-spin')} />
           </Button>
         </div>
       </div>
-      <ThroughputContent chartData={chartData} hasData={hasData} id={id} isError={isError} isLoading={isLoading} />
+      <ThroughputContent
+        chartData={chartData}
+        domain={domain}
+        hasData={hasData}
+        id={id}
+        isError={isError}
+        isLoading={isLoading}
+      />
     </section>
   );
 };
