@@ -215,7 +215,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               ))}
             </SelectContent>
           </Select>
-          <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
+          <Button aria-label="Refresh" disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
             <RefreshIcon className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
           </Button>
         </div>
