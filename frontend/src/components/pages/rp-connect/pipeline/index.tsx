@@ -871,8 +871,7 @@ export default function PipelinePage() {
     if (mode === 'create') {
       clearWizardStore();
     }
-    // Edit: go to the pipeline's view page. Routed through `navigate` (not
-    // history.back) so the unsaved-changes blocker reliably intercepts it.
+    // Route through `navigate` (not history.back) so the unsaved-changes blocker intercepts.
     if (mode === 'edit' && pipelineId) {
       navigate({ to: `/rp-connect/${pipelineId}` });
       return;

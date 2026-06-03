@@ -25,6 +25,7 @@ import {
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { PIPELINE_STATE_LABELS } from 'components/ui/pipeline/constants';
 import {
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
@@ -34,15 +35,6 @@ import { useCallback, useState } from 'react';
 import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-
-const STATE_LABEL: Partial<Record<Pipeline_State, string>> = {
-  [PipelineState.RUNNING]: 'Running',
-  [PipelineState.STARTING]: 'Starting',
-  [PipelineState.STOPPING]: 'Stopping',
-  [PipelineState.STOPPED]: 'Stopped',
-  [PipelineState.ERROR]: 'Error',
-  [PipelineState.COMPLETED]: 'Completed',
-};
 
 type Tone = 'success' | 'error' | 'muted';
 
@@ -121,7 +113,7 @@ export function PipelineStatusToggle({
   const checked = pipelineState === PipelineState.RUNNING || pipelineState === PipelineState.STARTING;
   const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
   const isDisabled = !pipelineId || isTransitioning || isStartPending || isStopPending;
-  const label = (pipelineState !== undefined && STATE_LABEL[pipelineState]) || 'Unknown';
+  const label = (pipelineState !== undefined && PIPELINE_STATE_LABELS[pipelineState]) || 'Unknown';
   const tone = getTone(pipelineState);
 
   const handleCheckedChange = useCallback(

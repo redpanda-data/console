@@ -254,7 +254,7 @@ export function PipelineViewHeader({
         ) : null}
         {description ? (
           <DetailLine label="Description">
-            <p className="line-clamp-2 whitespace-pre-wrap break-words" title={description}>
+            <p className="line-clamp-2 max-w-[66%] whitespace-pre-wrap break-words" title={description}>
               {description}
             </p>
           </DetailLine>
@@ -332,7 +332,7 @@ export function PipelineEditHeader({
         ) : null}
         {description ? (
           <DetailLine label="Description">
-            <p className="whitespace-pre-wrap break-words" title={description}>
+            <p className="max-w-[66%] whitespace-pre-wrap break-words" title={description}>
               {description}
             </p>
           </DetailLine>
