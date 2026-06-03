@@ -34,7 +34,6 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
-import { Progress } from 'components/redpanda-ui/components/progress';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
