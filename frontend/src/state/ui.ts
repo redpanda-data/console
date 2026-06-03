@@ -253,7 +253,9 @@ type UISettings = {
   topicList: {
     hideInternalTopics: boolean;
     quickSearch: string;
-    pageSize: number; // number of topics to show
+    pageSize: number;
+    sortId: string;
+    sortDesc: boolean;
 
     // Topic Configuration
     valueDisplay: ValueDisplay;
@@ -430,7 +432,9 @@ const defaultUiSettings: UISettings = {
   topicList: {
     hideInternalTopics: true,
     quickSearch: '',
-    pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+    pageSize: DEFAULT_TABLE_PAGE_SIZE,
+    sortId: '',
+    sortDesc: false,
 
     // Topic Configuration
     valueDisplay: 'friendly' as ValueDisplay,
