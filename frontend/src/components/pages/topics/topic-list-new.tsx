@@ -40,7 +40,7 @@ import {
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
@@ -148,11 +148,54 @@ const TopicList: FC = () => {
     [allTopics]
   );
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [{ page: pageIndex, pageSize }, setPagination] = useQueryStates({
-    page: parseAsInteger.withDefault(0),
-    pageSize: parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE),
-  });
+  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
+
+  const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
+    {
+      onUpdate: (val) => {
+        uiSettings.topicList.pageSize = val;
+      },
+      getDefaultValue: () => uiSettings.topicList.pageSize,
+    },
+    'pageSize',
+    parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE)
+  );
+
+  const [sortId, setSortId] = useQueryStateWithCallback<string>(
+    {
+      onUpdate: (val) => {
+        uiSettings.topicList.sortId = val;
+      },
+      getDefaultValue: () => uiSettings.topicList.sortId,
+    },
+    'sortId',
+    parseAsString.withDefault('')
+  );
+
+  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
+    {
+      onUpdate: (val) => {
+        uiSettings.topicList.sortDesc = val;
+      },
+      getDefaultValue: () => uiSettings.topicList.sortDesc,
+    },
+    'sortDesc',
+    parseAsBoolean.withDefault(false)
+  );
+
+  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
+
+  const handleSortingChange = (updater: Updater<SortingState>) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater;
+    if (next.length > 0) {
+      setSortId(next[0].id);
+      setSortDesc(next[0].desc);
+    } else {
+      setSortId('');
+      setSortDesc(false);
+    }
+    void setPageIndex(0);
+  };
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     searchValue ? [{ id: 'topicName', value: searchValue }] : []
   );
@@ -161,14 +204,14 @@ const TopicList: FC = () => {
 
   const handlePaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPagination({ page: next.pageIndex, pageSize: next.pageSize });
-    uiSettings.topicList.pageSize = next.pageSize;
+    void setPageIndex(next.pageIndex);
+    setPageSize(next.pageSize);
   };
 
   const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
     setColumnFilters(next);
-    void setPagination((prev) => ({ ...prev, page: 0 }));
+    void setPageIndex(0);
     const nameFilter = next.find((f) => f.id === 'topicName');
     setSearchValue((nameFilter?.value as string) || null);
   };
@@ -258,7 +301,7 @@ const TopicList: FC = () => {
     data: allTopics,
     columns,
     state: { sorting, pagination, columnFilters },
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     onPaginationChange: handlePaginationChange,
     onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
@@ -413,7 +456,7 @@ const TopicList: FC = () => {
             <Checkbox
               checked={showInternalTopics}
               onCheckedChange={(checked) => {
-                void setPagination((prev) => ({ ...prev, page: 0 }));
+                void setPageIndex(0);
                 setShowInternalTopics(checked === true);
               }}
               testId="show-internal-topics-checkbox"
