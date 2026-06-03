@@ -19,17 +19,29 @@ export const ISSUE_LEVELS = ['warning', 'error'] as const;
 export type IssueLevel = (typeof ISSUE_LEVELS)[number];
 
 /**
+ * Human-readable labels for each pipeline state. Single source of truth for
+ * state copy across the pipeline UI.
+ */
+export const PIPELINE_STATE_LABELS: Partial<Record<Pipeline_State, string>> = {
+  [Pipeline_State.RUNNING]: 'Running',
+  [Pipeline_State.STARTING]: 'Starting',
+  [Pipeline_State.STOPPING]: 'Stopping',
+  [Pipeline_State.STOPPED]: 'Stopped',
+  [Pipeline_State.ERROR]: 'Error',
+  [Pipeline_State.COMPLETED]: 'Completed',
+};
+
+/**
  * Pipeline state options for filtering.
- * Maps Pipeline_State enum to human-readable labels.
  */
 export const PIPELINE_STATE_OPTIONS = [
-  { label: 'Running', value: String(Pipeline_State.RUNNING) },
-  { label: 'Starting', value: String(Pipeline_State.STARTING) },
-  { label: 'Stopping', value: String(Pipeline_State.STOPPING) },
-  { label: 'Stopped', value: String(Pipeline_State.STOPPED) },
-  { label: 'Error', value: String(Pipeline_State.ERROR) },
-  { label: 'Completed', value: String(Pipeline_State.COMPLETED) },
-] as const;
+  Pipeline_State.RUNNING,
+  Pipeline_State.STARTING,
+  Pipeline_State.STOPPING,
+  Pipeline_State.STOPPED,
+  Pipeline_State.ERROR,
+  Pipeline_State.COMPLETED,
+].map((state) => ({ label: PIPELINE_STATE_LABELS[state] ?? 'Unknown', value: String(state) }));
 
 /**
  * Issue filter options for filtering pipelines by log severity.

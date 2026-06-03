@@ -30,12 +30,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpand
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { Progress } from 'components/redpanda-ui/components/progress';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -52,8 +52,6 @@ const DEFAULT_PAGE_SIZE = 10;
  * We use this to detect "unsized" columns and avoid applying a fixed width.
  */
 const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
-
-// --- Log payload helpers ---
 
 type LogPayload = {
   message?: string;
@@ -99,7 +97,6 @@ function LogLevelBadge({ level }: { level: string | undefined }) {
   );
 }
 
-// --- Sheet detail view ---
 
 function LogDetailSheet({
   message,
@@ -196,7 +193,6 @@ function LogDetailSheet({
   );
 }
 
-// --- Main component ---
 
 interface LogExplorerProps {
   pipeline: Pipeline;
@@ -204,9 +200,11 @@ interface LogExplorerProps {
   serverless?: boolean;
   /** Whether to enable the live view. Defaults to false. */
   enableLiveView?: boolean;
+  /** Optional heading rendered inline in the header row, aligned with the controls and table. */
+  title?: ReactNode;
 }
 
-export function LogExplorer({ pipeline, serverless, enableLiveView = false }: LogExplorerProps) {
+export function LogExplorer({ pipeline, serverless, enableLiveView = false, title }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
 
   // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
@@ -231,7 +229,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
     serverless,
   });
 
-  // --- Filter columns (dynamic options from loaded messages) ---
 
   const filterColumns = useMemo<FilterColumnConfig[]>(() => {
     const levelSet = new Set<string>();
@@ -253,7 +250,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
     ];
   }, [messages]);
 
-  // --- Table columns ---
 
   const messageTableColumns = useMemo<ColumnDef<TopicMessage>[]>(
     () => [
@@ -265,9 +261,17 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
           row: {
             original: { timestamp },
           },
-        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-        minSize: 200,
-        size: 200,
+        }) => {
+          const d = new Date(timestamp);
+          return (
+            <div className="flex flex-col leading-tight">
+              <span className="text-[11px] text-muted-foreground">{d.toLocaleDateString()}</span>
+              <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
+            </div>
+          );
+        },
+        minSize: 140,
+        size: 140,
       },
       {
         id: 'level',
@@ -353,9 +357,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
-      {/* Toolbar */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {title ? (
+            <Heading level={4}>{title}</Heading>
+          ) : null}
           {!liveViewEnabled && (
             <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
           )}
@@ -405,16 +411,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
         </div>
       </div>
 
-      {/* Table */}
       <div className="relative min-h-0">
-        {/* Progress bar overlaying top of table */}
         {isSearching && hasProgress && (
           <div className="absolute inset-x-0 top-0 z-10">
             <Progress className="h-1 w-full rounded-none" testId="log-progress-bar" value={null} />
           </div>
         )}
         <div className="overflow-auto">
-        <Table className="table-fixed">
+        <Table className="table-fixed" variant="simple">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -528,12 +532,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false }: Lo
         </div>
       </div>
 
-      {/* Pagination (client-side only) */}
+      {/* Hide DataTablePagination's "X of N row(s) selected." — this table
+          doesn't expose row selection — while keeping its layout slot. */}
       {filteredRowCount > 0 && (
-        <DataTablePagination table={table} />
+        <div className="[&>div>div:first-child]:invisible">
+          <DataTablePagination table={table} />
+        </div>
       )}
 
-      {/* Detail sheet */}
       <LogDetailSheet message={selectedMessage} onClose={() => setSelectedMessage(null)} />
     </div>
   );

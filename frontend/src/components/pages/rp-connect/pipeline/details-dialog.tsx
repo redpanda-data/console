@@ -12,14 +12,13 @@
 import { isSystemTag } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, ListItem, Text } from 'components/redpanda-ui/components/typography';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { InfoIcon, List } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -33,35 +32,116 @@ type DetailsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipeline?: Pipeline;
-  onDelete?: (id: string) => void;
-  isDeleting?: boolean;
+  // Delete clicked in the Danger Zone. The parent should close this dialog and
+  // open the delete confirmation so the two don't stack.
+  onRequestDelete?: () => void;
 };
 
-const DetailRow = ({
-  label,
-  value,
-  children,
-  copyable = false,
-}: {
+const EMPTY_PLACEHOLDER = '—';
+
+const SectionHeading = ({ className, children }: { className?: string; children: React.ReactNode }) => (
+  <Heading className={className} level={3}>
+    {children}
+  </Heading>
+);
+
+type DetailRowProps = {
   label: React.ReactNode;
   value?: string;
   children?: React.ReactNode;
   copyable?: boolean;
-}) => (
-  <div className="grid min-h-7 min-w-0 grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_30px] gap-1">
-    {typeof label === 'string' ? (
-      <Text className="text-muted-foreground" variant="label">
+  /** Let the value cell wrap across multiple lines instead of truncating. */
+  wrap?: boolean;
+};
+
+const renderLabel = (label: React.ReactNode) => {
+  if (typeof label === 'string') {
+    return (
+      <Text className="w-32 shrink-0 pt-0.5 text-muted-foreground" variant="label">
         {label}
       </Text>
-    ) : (
-      (label ?? null)
-    )}
-    {children ?? <Text className="truncate">{value ?? ''}</Text>}
-    {copyable && value ? <CopyButton content={value} size="sm" variant="ghost" /> : null}
-  </div>
+    );
+  }
+  return <div className="w-32 shrink-0 pt-0.5">{label ?? null}</div>;
+};
+
+const renderValue = (value: string | undefined, children: React.ReactNode | undefined, wrap: boolean) => {
+  if (children !== undefined) {
+    return children;
+  }
+  const hasValue = Boolean(value?.length);
+  const displayValue = hasValue ? (value as string) : EMPTY_PLACEHOLDER;
+  return (
+    <Text
+      className={cn(wrap ? 'whitespace-pre-wrap break-words' : 'truncate', hasValue ? '' : 'text-muted-foreground')}
+    >
+      {displayValue}
+    </Text>
+  );
+};
+
+// Fixed-width label on the left, value (or children) on the right. Values wrap
+// with `wrap`, else truncate; copy button appears on hover.
+const DetailRow = ({ label, value, children, copyable = false, wrap = false }: DetailRowProps) => {
+  const showCopy = copyable && Boolean(value?.length);
+  return (
+    <div className="group/row flex min-w-0 items-start gap-4">
+      {renderLabel(label)}
+      <div className="flex min-w-0 flex-1 items-start gap-1">
+        <div className="min-w-0 flex-1">{renderValue(value, children, wrap)}</div>
+        {showCopy ? (
+          <CopyButton
+            className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100"
+            content={value as string}
+            size="sm"
+            variant="ghost"
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+const ComputeUnitsLabel = () => (
+  <Tooltip>
+    <Text className="flex items-center gap-1 text-muted-foreground" variant="label">
+      Compute units
+      <TooltipTrigger>
+        <InfoIcon className="-mt-0.5 size-3 cursor-pointer text-muted-foreground" />
+      </TooltipTrigger>
+    </Text>
+    <TooltipContent>One compute unit = 0.1 CPU and 400 MB memory</TooltipContent>
+  </Tooltip>
 );
 
-export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleting }: DetailsDialogProps) {
+// Badges when populated; otherwise a muted dash to keep the row layout stable.
+const ReferenceList = ({ items }: { items: string[] }) => {
+  if (items.length === 0) {
+    return <Text className="text-muted-foreground">{EMPTY_PLACEHOLDER}</Text>;
+  }
+  return (
+    <BadgeGroup
+      className="flex-wrap"
+      maxVisible={3}
+      renderOverflowContent={(overflow) => (
+        <List>
+          {items.slice(-overflow.length).map((item) => (
+            <ListItem key={item}>{item}</ListItem>
+          ))}
+        </List>
+      )}
+      variant="simple-outline"
+    >
+      {items.map((item) => (
+        <Badge key={item} variant="simple-outline">
+          {item}
+        </Badge>
+      ))}
+    </BadgeGroup>
+  );
+};
+
+export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }: DetailsDialogProps) {
   const configYaml = pipeline?.configYaml;
   const secrets = useMemo(
     () => (configYaml ? getUniqueSecretNames(extractSecretReferences(configYaml)) : []),
@@ -70,11 +150,6 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleti
 
   const topics = useMemo(() => (configYaml ? extractAllTopics(configYaml) : []), [configYaml]);
 
-  const shouldShowReferencesCard = useMemo(
-    () => secrets.length > 0 || topics.length > 0 || Object.keys(pipeline?.tags ?? {}).length > 0,
-    [secrets.length, topics.length, pipeline?.tags]
-  );
-
   const visibleTags = useMemo(
     () => Object.entries(pipeline?.tags ?? {}).filter(([k]) => !isSystemTag(k)),
     [pipeline?.tags]
@@ -82,152 +157,64 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onDelete, isDeleti
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent showCloseButton={false} size="lg">
-        <DialogCloseButton />
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Pipeline details</DialogTitle>
         </DialogHeader>
 
         {pipeline ? (
-          <DialogBody className="flex flex-col gap-6" spacing="none">
-            <Card size="full" variant="outlined">
-              <CardHeader>
-                <CardTitle>Pipeline</CardTitle>
-              </CardHeader>
-              <CardContent className="mt-4">
-                <div className="flex flex-col gap-4">
-                  <DetailRow copyable label="ID" value={pipeline.id} />
-                  <DetailRow label="Description" value={pipeline.description} />
-                  <DetailRow
-                    label={
-                      <Tooltip>
-                        <Text className="flex items-center gap-1" variant="label">
-                          Compute units
-                          <TooltipTrigger>
-                            <InfoIcon className="-mt-0.5 size-3 cursor-pointer text-muted-foreground" />
-                          </TooltipTrigger>
-                        </Text>
-                        <TooltipContent>One compute unit = 0.1 CPU and 400 MB memory</TooltipContent>
-                      </Tooltip>
-                    }
-                    value={`${cpuToTasks(pipeline.resources?.cpuShares) ?? 0}`}
-                  />
-                  <DetailRow copyable label="URL" value={pipeline.url} />
-                  {pipeline.serviceAccount ? (
-                    <DetailRow copyable label="Service account" value={pipeline.serviceAccount.clientId} />
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
+          <DialogBody padding="md" spacing="none">
+            {/* Section gaps live on this inner wrapper. Putting them on
+                DialogBody's outer className doesn't work — DialogBody renders
+                sentinels and a sticky shadow alongside the content wrapper,
+                so a flex/gap on the outer would add space between *those*
+                instead of between my sections. */}
+            <div className="flex flex-col gap-5">
+              <section className="flex flex-col gap-3">
+                <SectionHeading>General</SectionHeading>
+                <DetailRow label="Name" value={pipeline.displayName} />
+                <DetailRow copyable label="ID" value={pipeline.id} />
+                <DetailRow label="Description" value={pipeline.description} wrap />
+                <DetailRow copyable label="URL" value={pipeline.url} />
+                {pipeline.serviceAccount ? (
+                  <DetailRow copyable label="Service account" value={pipeline.serviceAccount.clientId} />
+                ) : null}
+                <DetailRow label={<ComputeUnitsLabel />} value={`${cpuToTasks(pipeline.resources?.cpuShares) ?? 0}`} />
+              </section>
 
-            {shouldShowReferencesCard ? (
-              <Card size="full" variant="outlined">
-                <CardHeader>
-                  <CardTitle>References</CardTitle>
-                </CardHeader>
-                <CardContent className="mt-4">
-                  <div className="flex flex-col gap-4">
-                    <DetailRow label="Secrets">
-                      {secrets.length > 0 ? (
-                        <BadgeGroup
-                          className="flex-wrap"
-                          maxVisible={2}
-                          renderOverflowContent={(overflow) => (
-                            <List>
-                              {secrets.slice(-overflow.length).map((s) => (
-                                <ListItem key={s}>{s}</ListItem>
-                              ))}
-                            </List>
-                          )}
-                          variant="simple-outline"
-                        >
-                          {secrets.map((s) => (
-                            <Badge key={s} variant="simple-outline">
-                              {s}
-                            </Badge>
-                          ))}
-                        </BadgeGroup>
-                      ) : null}
-                    </DetailRow>
-                    <DetailRow label="Topics">
-                      {topics.length > 0 ? (
-                        <BadgeGroup
-                          className="flex-wrap"
-                          maxVisible={2}
-                          renderOverflowContent={(overflow) => (
-                            <List>
-                              {topics.slice(-overflow.length).map((t) => (
-                                <ListItem key={t}>{t}</ListItem>
-                              ))}
-                            </List>
-                          )}
-                          variant="simple-outline"
-                        >
-                          {topics.map((t) => (
-                            <Badge key={t} variant="simple-outline">
-                              {t}
-                            </Badge>
-                          ))}
-                        </BadgeGroup>
-                      ) : null}
-                    </DetailRow>
-                    <DetailRow label="Tags">
-                      {visibleTags.length > 0 ? (
-                        <BadgeGroup
-                          className="flex-wrap"
-                          maxVisible={2}
-                          renderOverflowContent={(overflow) => (
-                            <List>
-                              {visibleTags.slice(-overflow.length).map(([key, value]) => (
-                                <ListItem key={key}>
-                                  {key}: {value}
-                                </ListItem>
-                              ))}
-                            </List>
-                          )}
-                          variant="simple-outline"
-                        >
-                          {visibleTags.map(([key, value]) => (
-                            <Badge key={key} variant="simple-outline">
-                              {key}: {value}
-                            </Badge>
-                          ))}
-                        </BadgeGroup>
-                      ) : null}
-                    </DetailRow>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : null}
+              <Separator />
 
-            {onDelete ? (
-              <div>
-                <Separator />
-                <Card variant="ghost">
-                  <CardHeader>
-                    <Heading level={4}>Danger zone</Heading>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-4">
-                    <Text>
+              <section className="flex flex-col gap-3">
+                <SectionHeading>References</SectionHeading>
+                <DetailRow label="Secrets">
+                  <ReferenceList items={secrets} />
+                </DetailRow>
+                <DetailRow label="Topics">
+                  <ReferenceList items={topics} />
+                </DetailRow>
+                <DetailRow label="Tags">
+                  <ReferenceList items={visibleTags.map(([k, v]) => `${k}: ${v}`)} />
+                </DetailRow>
+              </section>
+
+              {onRequestDelete ? (
+                <>
+                  <Separator />
+                  <section className="flex flex-col gap-3">
+                    <SectionHeading className="text-destructive">Danger zone</SectionHeading>
+                    <Text className="text-muted-foreground text-sm">
                       Deleting this pipeline is permanent and cannot be undone. Any secrets or resources used by this
                       pipeline will need to be cleaned up manually.
                     </Text>
                     <div>
-                      <DeleteResourceAlertDialog
-                        buttonText="Delete pipeline"
-                        buttonVariant="destructive-outline"
-                        isDeleting={isDeleting}
-                        onDelete={onDelete}
-                        resourceId={pipeline.id}
-                        resourceName={pipeline.displayName || 'this pipeline'}
-                        resourceType="Pipeline"
-                        triggerVariant="button"
-                      />
+                      <Button onClick={onRequestDelete} variant="destructive-outline">
+                        Delete pipeline
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : null}
+                  </section>
+                </>
+              ) : null}
+            </div>
           </DialogBody>
         ) : null}
       </DialogContent>

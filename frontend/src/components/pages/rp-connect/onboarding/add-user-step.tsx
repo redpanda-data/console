@@ -85,6 +85,9 @@ type AddUserStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
+  // Renders the form bare (no Card chrome/min-height/margin) so it can sit
+  // inside a host surface like a dialog body. Defaults to false for the wizard.
+  inline?: boolean;
 };
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
@@ -103,6 +106,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       selectionMode = 'both',
       hideTitle,
       className,
+      inline = false,
       ...motionProps
     },
     ref
@@ -194,7 +198,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
     const [isServiceAccountPending, setIsServiceAccountPending] = useState(false);
 
-    // Notify parent when validity changes
     useEffect(() => {
       const isValid =
         authMethod === AuthenticationMethod.SERVICE_ACCOUNT
@@ -265,7 +268,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     const handleSubmit = useCallback(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with dual auth methods requires conditional logic
       async (userData: AddUserFormData): Promise<UserStepSubmissionResult> => {
-        // Service account flow
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
           if (!serviceAccountSelectorRef.current) {
             toast.error('Service account selector not initialized');
@@ -298,7 +300,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           }
         }
 
-        // Existing SASL flow
         const result = await createUserWithSecrets({
           userData,
           topicName,
@@ -384,6 +385,483 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       isPending: isPending || isServiceAccountPending,
     }));
 
+    const formBody = (
+      <Form {...form}>
+        <div className={inline ? 'flex flex-col gap-8' : 'mt-4 max-w-2xl space-y-8'}>
+          <div className="flex flex-col gap-2">
+            <FormLabel>Authentication Method</FormLabel>
+            <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
+            <Tabs
+              onValueChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                setAuthMethod(value as AuthenticationMethodType);
+              }}
+              value={authMethod}
+            >
+              <TabsList variant="underline">
+                <TabsTrigger
+                  disabled={isPending || isServiceAccountPending}
+                  value={AuthenticationMethod.SASL}
+                  variant="underline"
+                >
+                  SASL User
+                </TabsTrigger>
+                <TabsTrigger
+                  disabled={isPending || isServiceAccountPending}
+                  value={AuthenticationMethod.SERVICE_ACCOUNT}
+                  variant="underline"
+                >
+                  Service Account
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          {authMethod === AuthenticationMethod.SASL && (
+            <>
+              <div className="flex flex-col gap-2">
+                <FormLabel>Username</FormLabel>
+                <FormDescription>
+                  {topicName
+                    ? `Choose an existing user that has permissions for ${topicName}, or create a new one with full permissions.`
+                    : 'Select an existing user or create a new one.'}
+                </FormDescription>
+                <div className="flex flex-col items-start gap-2">
+                  {selectionMode === 'both' && (
+                    <ToggleGroup
+                      disabled={isPending}
+                      onValueChange={(value) => {
+                        // Prevent deselection - ToggleGroup emits empty string when trying to deselect
+                        if (!value) {
+                          return;
+                        }
+                        handleUserSelectionTypeChange(value as CreatableSelectionType);
+                      }}
+                      type="single"
+                      value={userSelectionType}
+                      variant="outline"
+                    >
+                      <ToggleGroupItem
+                        disabled={isPending}
+                        id={CreatableSelectionOptions.EXISTING}
+                        value={CreatableSelectionOptions.EXISTING}
+                      >
+                        Existing
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        disabled={isPending}
+                        id={CreatableSelectionOptions.CREATE}
+                        value={CreatableSelectionOptions.CREATE}
+                      >
+                        New
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  )}
+
+                  <div className="flex gap-2">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            {userSelectionType === CreatableSelectionOptions.EXISTING ? (
+                              <Combobox
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isPending}
+                                onChange={(value) => {
+                                  field.onChange(value);
+                                }}
+                                onOpen={() => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listUsers,
+                                      cardinality: 'infinite',
+                                    }),
+                                  });
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listACLs,
+                                      cardinality: 'finite',
+                                    }),
+                                  });
+                                }}
+                                options={userOptions}
+                                placeholder="Select a user"
+                              />
+                            ) : (
+                              <Input
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isPending}
+                                placeholder="Enter a username"
+                              />
+                            )}
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchedUsername && (
+                      <Button disabled={isPending} onClick={handleClearUsername} size="icon" variant="ghost">
+                        <XIcon size={16} />
+                      </Button>
+                    )}
+                  </div>
+
+                  {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
+                    <Alert variant="info">
+                      <AlertDescription>
+                        A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will be
+                        used.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {existingUserSelected &&
+                    userSelectionType === CreatableSelectionOptions.EXISTING &&
+                    topicName &&
+                    userTopicPermissions &&
+                    userTopicPermissions.missingPermissions.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertTitle>
+                          <CircleAlert className="h-4 w-4" /> User does not have required permissions
+                        </AlertTitle>
+                        <AlertDescription>
+                          <Text as="div" variant="small">
+                            The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
+                            <b>{topicName}</b> topic:
+                            <List>
+                              {userTopicPermissions.missingPermissions.map((permission) => (
+                                <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                              ))}
+                            </List>
+                          </Text>
+                          <Text variant="small">
+                            Edit the user's{' '}
+                            <TanStackRouterLink
+                              className="text-blue-800"
+                              params={{ userName: existingUserSelected.name }}
+                              target="_blank"
+                              to="/security/users/$userName/details"
+                            >
+                              ACLs
+                            </TanStackRouterLink>{' '}
+                            to add permissions.
+                          </Text>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  {existingUserSelected &&
+                    topicName &&
+                    userSelectionType === CreatableSelectionOptions.EXISTING &&
+                    userTopicPermissions &&
+                    userTopicPermissions.hasPermissions.length > 0 && (
+                      <Alert variant="success">
+                        <AlertTitle>
+                          <CircleAlert className="h-4 w-4" /> User has required permissions
+                        </AlertTitle>
+                        <AlertDescription>
+                          <Text as="div" variant="small">
+                            The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
+                            <b>{topicName}</b> topic:
+                            <List>
+                              {userTopicPermissions.hasPermissions.map((permission) => (
+                                <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                              ))}
+                            </List>
+                          </Text>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                </div>
+              </div>
+              {userSelectionType === CreatableSelectionOptions.CREATE && (
+                <>
+                  <FormField
+                    control={form.control}
+                    disabled={isPending || isReadOnly}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormDescription>
+                          Make sure to save the password somewhere safe. It cannot be retrieved after creation.
+                        </FormDescription>
+                        <FormControl>
+                          <Group>
+                            <Input containerClassName="max-w-[300px]" type="password" {...field} />
+                            <CopyButton content={field.value} disabled={isReadOnly} size="sm" variant="outline" />
+                            <Button
+                              disabled={isReadOnly}
+                              onClick={generateNewPassword}
+                              size="icon-sm"
+                              type="button"
+                              variant="secondary-outline"
+                            >
+                              <RefreshCcw size={15} />
+                            </Button>
+                          </Group>
+                        </FormControl>
+                        <FormMessage />
+                        <FormField
+                          disabled={isReadOnly}
+                          {...field}
+                          control={form.control}
+                          name="specialCharactersEnabled"
+                          render={({ field: specialCharsField }) => (
+                            <div className="flex flex-row items-center gap-2">
+                              <Checkbox
+                                checked={specialCharsField.value}
+                                id="specialCharactersEnabled"
+                                onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
+                                {...field}
+                              />
+                              <Label className="font-normal text-muted-foreground" htmlFor="specialCharactersEnabled">
+                                Generate with special characters
+                              </Label>
+                            </div>
+                          )}
+                        />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    disabled={isPending || isReadOnly}
+                    name="saslMechanism"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>SASL mechanism</FormLabel>
+                        <FormControl>
+                          <Select {...field} onValueChange={field.onChange}>
+                            <SelectTrigger className="w-[300px]">
+                              <SelectValue placeholder="Select a SASL Mechanism" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SASL_MECHANISMS.map((mechanism) => (
+                                <SelectItem key={mechanism} value={mechanism}>
+                                  {mechanism}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {Boolean(topicName) && (
+                    <FormField
+                      control={form.control}
+                      disabled={isPending || isReadOnly}
+                      name="grantTopicPermissions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center space-x-3">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  disabled={field.disabled}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-medium text-sm">
+                                Enable topic-specific permissions for this user for "{topicName}"
+                              </FormLabel>
+                            </div>
+                            <p className="text-muted-foreground text-sm">
+                              {field.value && topicName ? (
+                                <span>
+                                  This user will have full permissions (read, write, create, delete, describe, alter) on
+                                  for the <b>{topicName}</b> topic.
+                                </span>
+                              ) : (
+                                <Alert variant="destructive">
+                                  <AlertTitle>
+                                    <Text className="flex items-center gap-2" variant="label">
+                                      <CircleAlert size={15} />
+                                      User will not be able to read from topic
+                                    </Text>
+                                  </AlertTitle>
+                                  <AlertDescription>
+                                    <Text variant="small">
+                                      You will need to configure{' '}
+                                      <TanStackRouterLink
+                                        target="_blank"
+                                        to={
+                                          isFeatureFlagEnabled('enableNewSecurityPage')
+                                            ? '/security/permissions'
+                                            : '/security/permissions-list'
+                                        }
+                                      >
+                                        Permissions
+                                      </TanStackRouterLink>{' '}
+                                      for custom user permissions if you want the user to be able to read from the
+                                      topic.
+                                    </Text>
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                            </p>
+
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </>
+              )}
+
+              {Boolean(showConsumerGroupFields) && (
+                <div className="flex flex-col gap-2">
+                  <FormLabel>Consumer Group (Optional)</FormLabel>
+                  <FormDescription>
+                    Associate a consumer group with this user to persist consumer offset position. Or when creating your
+                    pipeline specify a partition on the topic instead.
+                  </FormDescription>
+                  <div className="flex flex-col items-start gap-2">
+                    <div className="flex gap-2">
+                      <FormField
+                        control={form.control}
+                        name="consumerGroup"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                className="w-[300px]"
+                                disabled={isPending}
+                                onFocus={() => {
+                                  queryClient.invalidateQueries({
+                                    queryKey: createConnectQueryKey({
+                                      schema: listACLs,
+                                      cardinality: 'finite',
+                                    }),
+                                  });
+                                }}
+                                placeholder="Enter a consumer group name"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {watchedConsumerGroup && (
+                        <Button disabled={isPending} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
+                          <XIcon size={16} />
+                        </Button>
+                      )}
+                    </div>
+
+                    {existingUserSelected &&
+                      watchedConsumerGroup &&
+                      userConsumerGroupPermissions &&
+                      userConsumerGroupPermissions.missingPermissions.length === 0 &&
+                      userConsumerGroupPermissions.hasPermissions.length > 0 && (
+                        <Alert variant="success">
+                          <AlertTitle>
+                            <CircleAlert className="h-4 w-4" /> User has required consumer group permissions
+                          </AlertTitle>
+                          <AlertDescription>
+                            <Text as="div" variant="small">
+                              The user <b>{existingUserSelected?.name}</b> has the following permissions for the{' '}
+                              <b>{watchedConsumerGroup}</b> consumer group:
+                              <List>
+                                {userConsumerGroupPermissions?.hasPermissions.map((permission) => (
+                                  <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                                ))}
+                              </List>
+                            </Text>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                    {watchedConsumerGroup &&
+                      watchedConsumerGroup.length > 0 &&
+                      (!existingUserSelected ||
+                        (userConsumerGroupPermissions &&
+                          userConsumerGroupPermissions.missingPermissions.length > 0)) && (
+                        <Alert variant="warning">
+                          <AlertTitle>
+                            <Text className="flex items-center gap-2" variant="label">
+                              <CircleAlert size={15} />
+                              Consumer group permissions will be configured
+                            </Text>
+                          </AlertTitle>
+                          <AlertDescription>
+                            <Text variant="small">
+                              {existingUserSelected ? (
+                                <>
+                                  The user <b>{existingUserSelected.name}</b> will be granted READ and DESCRIBE
+                                  permissions for the <b>{watchedConsumerGroup}</b> consumer group.
+                                </>
+                              ) : (
+                                <>
+                                  This user will be able to consume messages from the <b>{watchedConsumerGroup}</b>{' '}
+                                  consumer group.
+                                </>
+                              )}
+                            </Text>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <FormLabel htmlFor="serviceAccountName">Service Account Name</FormLabel>
+                <FormDescription>
+                  Auto-generated name for the service account. You can customize it if needed.
+                </FormDescription>
+                <Input
+                  className="w-[300px]"
+                  disabled={isPending || isServiceAccountPending}
+                  id="serviceAccountName"
+                  onChange={(e) => setServiceAccountName(e.target.value)}
+                  placeholder="cluster-abc-pipeline-my-pipeline-sa"
+                  value={serviceAccountName}
+                />
+              </div>
+
+              <ServiceAccountSelector
+                createSecret={createSecret}
+                onPendingChange={setIsServiceAccountPending}
+                ref={serviceAccountSelectorRef}
+                resourceType="pipeline"
+                secretScopes={[Scope.REDPANDA_CONNECT]}
+                serviceAccountName={serviceAccountName}
+              />
+
+              <Alert variant="warning">
+                <AlertTitle>Service Account Authentication</AlertTitle>
+                <AlertDescription>
+                  A service account will be created with Writer role permissions on the cluster. Credentials are stored
+                  securely and referenced in the pipeline configuration.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+        </div>
+      </Form>
+    );
+
+    if (inline) {
+      return <div className={className}>{formBody}</div>;
+    }
+
     return (
       <Card size="full" {...motionProps} animated className={className} variant="ghost">
         {!hideTitle && (
@@ -396,481 +874,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
             </CardDescription>
           </CardHeader>
         )}
-        <CardContent className="min-h-[300px]">
-          <Form {...form}>
-            <div className="mt-4 max-w-2xl space-y-8">
-              <div className="flex flex-col gap-2">
-                <FormLabel>Authentication Method</FormLabel>
-                <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
-                <Tabs
-                  onValueChange={(value) => {
-                    if (!value) {
-                      return;
-                    }
-                    setAuthMethod(value as AuthenticationMethodType);
-                  }}
-                  value={authMethod}
-                >
-                  <TabsList variant="underline">
-                    <TabsTrigger
-                      disabled={isPending || isServiceAccountPending}
-                      value={AuthenticationMethod.SASL}
-                      variant="underline"
-                    >
-                      SASL User
-                    </TabsTrigger>
-                    <TabsTrigger
-                      disabled={isPending || isServiceAccountPending}
-                      value={AuthenticationMethod.SERVICE_ACCOUNT}
-                      variant="underline"
-                    >
-                      Service Account
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-              {authMethod === AuthenticationMethod.SASL && (
-                <>
-                  <div className="flex flex-col gap-2">
-                    <FormLabel>Username</FormLabel>
-                    <FormDescription>
-                      {topicName
-                        ? `Choose an existing user that has permissions for ${topicName}, or create a new one with full permissions.`
-                        : 'Select an existing user or create a new one.'}
-                    </FormDescription>
-                    <div className="flex flex-col items-start gap-2">
-                      {selectionMode === 'both' && (
-                        <ToggleGroup
-                          disabled={isPending}
-                          onValueChange={(value) => {
-                            // Prevent deselection - ToggleGroup emits empty string when trying to deselect
-                            if (!value) {
-                              return;
-                            }
-                            handleUserSelectionTypeChange(value as CreatableSelectionType);
-                          }}
-                          type="single"
-                          value={userSelectionType}
-                          variant="outline"
-                        >
-                          <ToggleGroupItem
-                            disabled={isPending}
-                            id={CreatableSelectionOptions.EXISTING}
-                            value={CreatableSelectionOptions.EXISTING}
-                          >
-                            Existing
-                          </ToggleGroupItem>
-                          <ToggleGroupItem
-                            disabled={isPending}
-                            id={CreatableSelectionOptions.CREATE}
-                            value={CreatableSelectionOptions.CREATE}
-                          >
-                            New
-                          </ToggleGroupItem>
-                        </ToggleGroup>
-                      )}
-
-                      <div className="flex gap-2">
-                        <FormField
-                          control={form.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                {userSelectionType === CreatableSelectionOptions.EXISTING ? (
-                                  <Combobox
-                                    {...field}
-                                    className="w-[300px]"
-                                    disabled={isPending}
-                                    onChange={(value) => {
-                                      field.onChange(value);
-                                    }}
-                                    onOpen={() => {
-                                      queryClient.invalidateQueries({
-                                        queryKey: createConnectQueryKey({
-                                          schema: listUsers,
-                                          cardinality: 'infinite',
-                                        }),
-                                      });
-                                      queryClient.invalidateQueries({
-                                        queryKey: createConnectQueryKey({
-                                          schema: listACLs,
-                                          cardinality: 'finite',
-                                        }),
-                                      });
-                                    }}
-                                    options={userOptions}
-                                    placeholder="Select a user"
-                                  />
-                                ) : (
-                                  <Input
-                                    {...field}
-                                    className="w-[300px]"
-                                    disabled={isPending}
-                                    placeholder="Enter a username"
-                                  />
-                                )}
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {watchedUsername !== '' && watchedUsername.length > 0 && (
-                          <Button disabled={isPending} onClick={handleClearUsername} size="icon" variant="ghost">
-                            <XIcon size={16} />
-                          </Button>
-                        )}
-                      </div>
-
-                      {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
-                        <Alert variant="info">
-                          <AlertDescription>
-                            A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will
-                            be used.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      {existingUserSelected &&
-                        userSelectionType === CreatableSelectionOptions.EXISTING &&
-                        topicName &&
-                        userTopicPermissions &&
-                        userTopicPermissions.missingPermissions.length > 0 && (
-                          <Alert variant="destructive">
-                            <AlertTitle>
-                              <CircleAlert className="h-4 w-4" /> User does not have required permissions
-                            </AlertTitle>
-                            <AlertDescription>
-                              <Text as="div" variant="small">
-                                The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
-                                <b>{topicName}</b> topic:
-                                <List>
-                                  {userTopicPermissions.missingPermissions.map((permission) => (
-                                    <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                                  ))}
-                                </List>
-                              </Text>
-                              <Text variant="small">
-                                Edit the user's{' '}
-                                <TanStackRouterLink
-                                  className="text-blue-800"
-                                  params={{ userName: existingUserSelected.name }}
-                                  target="_blank"
-                                  to="/security/users/$userName/details"
-                                >
-                                  ACLs
-                                </TanStackRouterLink>{' '}
-                                to add permissions.
-                              </Text>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                      {existingUserSelected &&
-                        topicName &&
-                        userSelectionType === CreatableSelectionOptions.EXISTING &&
-                        userTopicPermissions &&
-                        userTopicPermissions.hasPermissions.length > 0 && (
-                          <Alert variant="success">
-                            <AlertTitle>
-                              <CircleAlert className="h-4 w-4" /> User has required permissions
-                            </AlertTitle>
-                            <AlertDescription>
-                              <Text as="div" variant="small">
-                                The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
-                                <b>{topicName}</b> topic:
-                                <List>
-                                  {userTopicPermissions.hasPermissions.map((permission) => (
-                                    <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                                  ))}
-                                </List>
-                              </Text>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                    </div>
-                  </div>
-                  {userSelectionType === CreatableSelectionOptions.CREATE && (
-                    <>
-                      <FormField
-                        control={form.control}
-                        disabled={isPending || isReadOnly}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormDescription>
-                              Make sure to save the password somewhere safe. It cannot be retrieved after creation.
-                            </FormDescription>
-                            <FormControl>
-                              <Group>
-                                <Input containerClassName="max-w-[300px]" type="password" {...field} />
-                                <CopyButton content={field.value} disabled={isReadOnly} size="sm" variant="outline" />
-                                <Button
-                                  disabled={isReadOnly}
-                                  onClick={generateNewPassword}
-                                  size="icon-sm"
-                                  type="button"
-                                  variant="secondary-outline"
-                                >
-                                  <RefreshCcw size={15} />
-                                </Button>
-                              </Group>
-                            </FormControl>
-                            <FormMessage />
-                            <FormField
-                              disabled={isReadOnly}
-                              {...field}
-                              control={form.control}
-                              name="specialCharactersEnabled"
-                              render={({ field: specialCharsField }) => (
-                                <div className="flex flex-row items-center gap-2">
-                                  <Checkbox
-                                    checked={specialCharsField.value}
-                                    id="specialCharactersEnabled"
-                                    onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
-                                    {...field}
-                                  />
-                                  <Label
-                                    className="font-normal text-muted-foreground"
-                                    htmlFor="specialCharactersEnabled"
-                                  >
-                                    Generate with special characters
-                                  </Label>
-                                </div>
-                              )}
-                            />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        disabled={isPending || isReadOnly}
-                        name="saslMechanism"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SASL mechanism</FormLabel>
-                            <FormControl>
-                              <Select {...field} onValueChange={field.onChange}>
-                                <SelectTrigger className="w-[300px]">
-                                  <SelectValue placeholder="Select a SASL Mechanism" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {SASL_MECHANISMS.map((mechanism) => (
-                                    <SelectItem key={mechanism} value={mechanism}>
-                                      {mechanism}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {Boolean(topicName) && (
-                        <FormField
-                          control={form.control}
-                          disabled={isPending || isReadOnly}
-                          name="grantTopicPermissions"
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center space-x-3">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value}
-                                      disabled={field.disabled}
-                                      onCheckedChange={field.onChange}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-medium text-sm">
-                                    Enable topic-specific permissions for this user for "{topicName}"
-                                  </FormLabel>
-                                </div>
-                                <p className="text-muted-foreground text-sm">
-                                  {field.value && topicName ? (
-                                    <span>
-                                      This user will have full permissions (read, write, create, delete, describe,
-                                      alter) on for the <b>{topicName}</b> topic.
-                                    </span>
-                                  ) : (
-                                    <Alert variant="destructive">
-                                      <AlertTitle>
-                                        <Text className="flex items-center gap-2" variant="label">
-                                          <CircleAlert size={15} />
-                                          User will not be able to read from topic
-                                        </Text>
-                                      </AlertTitle>
-                                      <AlertDescription>
-                                        <Text variant="small">
-                                          You will need to configure{' '}
-                                          <TanStackRouterLink
-                                            target="_blank"
-                                            to={
-                                              isFeatureFlagEnabled('enableNewSecurityPage')
-                                                ? '/security/permissions'
-                                                : '/security/permissions-list'
-                                            }
-                                          >
-                                            Permissions
-                                          </TanStackRouterLink>{' '}
-                                          for custom user permissions if you want the user to be able to read from the
-                                          topic.
-                                        </Text>
-                                      </AlertDescription>
-                                    </Alert>
-                                  )}
-                                </p>
-
-                                <FormMessage />
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                    </>
-                  )}
-
-                  {Boolean(showConsumerGroupFields) && (
-                    <div className="flex flex-col gap-2">
-                      <FormLabel>Consumer Group (Optional)</FormLabel>
-                      <FormDescription>
-                        Associate a consumer group with this user to persist consumer offset position. Or when creating
-                        your pipeline specify a partition on the topic instead.
-                      </FormDescription>
-                      <div className="flex flex-col items-start gap-2">
-                        <div className="flex gap-2">
-                          <FormField
-                            control={form.control}
-                            name="consumerGroup"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    className="w-[300px]"
-                                    disabled={isPending}
-                                    onFocus={() => {
-                                      queryClient.invalidateQueries({
-                                        queryKey: createConnectQueryKey({
-                                          schema: listACLs,
-                                          cardinality: 'finite',
-                                        }),
-                                      });
-                                    }}
-                                    placeholder="Enter a consumer group name"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          {watchedConsumerGroup !== '' && watchedConsumerGroup && watchedConsumerGroup.length > 0 && (
-                            <Button disabled={isPending} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
-                              <XIcon size={16} />
-                            </Button>
-                          )}
-                        </div>
-
-                        {existingUserSelected &&
-                          watchedConsumerGroup &&
-                          userConsumerGroupPermissions &&
-                          userConsumerGroupPermissions.missingPermissions.length === 0 &&
-                          userConsumerGroupPermissions.hasPermissions.length > 0 && (
-                            <Alert variant="success">
-                              <AlertTitle>
-                                <CircleAlert className="h-4 w-4" /> User has required consumer group permissions
-                              </AlertTitle>
-                              <AlertDescription>
-                                <Text as="div" variant="small">
-                                  The user <b>{existingUserSelected?.name}</b> has the following permissions for the{' '}
-                                  <b>{watchedConsumerGroup}</b> consumer group:
-                                  <List>
-                                    {userConsumerGroupPermissions?.hasPermissions.map((permission) => (
-                                      <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                                    ))}
-                                  </List>
-                                </Text>
-                              </AlertDescription>
-                            </Alert>
-                          )}
-
-                        {watchedConsumerGroup &&
-                          watchedConsumerGroup.length > 0 &&
-                          (!existingUserSelected ||
-                            (userConsumerGroupPermissions &&
-                              userConsumerGroupPermissions.missingPermissions.length > 0)) && (
-                            <Alert variant="warning">
-                              <AlertTitle>
-                                <Text className="flex items-center gap-2" variant="label">
-                                  <CircleAlert size={15} />
-                                  Consumer group permissions will be configured
-                                </Text>
-                              </AlertTitle>
-                              <AlertDescription>
-                                <Text variant="small">
-                                  {existingUserSelected ? (
-                                    <>
-                                      The user <b>{existingUserSelected.name}</b> will be granted READ and DESCRIBE
-                                      permissions for the <b>{watchedConsumerGroup}</b> consumer group.
-                                    </>
-                                  ) : (
-                                    <>
-                                      This user will be able to consume messages from the <b>{watchedConsumerGroup}</b>{' '}
-                                      consumer group.
-                                    </>
-                                  )}
-                                </Text>
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && (
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-1.5">
-                    <FormLabel htmlFor="serviceAccountName">Service Account Name</FormLabel>
-                    <FormDescription>
-                      Auto-generated name for the service account. You can customize it if needed.
-                    </FormDescription>
-                    <Input
-                      className="w-[300px]"
-                      disabled={isPending || isServiceAccountPending}
-                      id="serviceAccountName"
-                      onChange={(e) => setServiceAccountName(e.target.value)}
-                      placeholder="cluster-abc-pipeline-my-pipeline-sa"
-                      value={serviceAccountName}
-                    />
-                  </div>
-
-                  <ServiceAccountSelector
-                    createSecret={createSecret}
-                    onPendingChange={setIsServiceAccountPending}
-                    ref={serviceAccountSelectorRef}
-                    resourceType="pipeline"
-                    secretScopes={[Scope.REDPANDA_CONNECT]}
-                    serviceAccountName={serviceAccountName}
-                  />
-
-                  <Alert variant="warning">
-                    <AlertTitle>Service Account Authentication</AlertTitle>
-                    <AlertDescription>
-                      A service account will be created with Writer role permissions on the cluster. Credentials are
-                      stored securely and referenced in the pipeline configuration.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-            </div>
-          </Form>
-        </CardContent>
+        <CardContent className="min-h-[300px]">{formBody}</CardContent>
       </Card>
     );
   }

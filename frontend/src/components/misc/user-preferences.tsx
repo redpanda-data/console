@@ -60,7 +60,7 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
         <DialogHeader>
           <DialogTitle>User Preferences</DialogTitle>
         </DialogHeader>
-        <DialogBody>
+        <DialogBody padding="none">
           <Tabs onValueChange={(value) => setActiveTab(value as SettingsTabKeys)} value={activeTab}>
             <TabsList variant="underline">
               {tabEntries.map(([key, { name }]) => (
@@ -70,7 +70,7 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
               ))}
             </TabsList>
             {tabEntries.map(([key, { component: TabComponent }]) => (
-              <TabsContent key={key} value={key}>
+              <TabsContent className="p-4" key={key} value={key}>
                 <TabComponent />
               </TabsContent>
             ))}

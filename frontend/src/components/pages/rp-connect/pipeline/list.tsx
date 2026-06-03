@@ -22,7 +22,8 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { isSystemTag } from 'components/constants';
+import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -48,7 +49,7 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { AlertCircle, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, Box, MoreHorizontal } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -68,6 +69,7 @@ import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { TabKafkaConnect } from '../../connect/overview';
+import { ConnectorLogo } from '../onboarding/connector-logo';
 import { parseConfigComponents } from '../utils/yaml';
 
 type TagPair = { key: string; value: string };
@@ -86,9 +88,7 @@ type Pipeline = {
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   const { inputs, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
-  const tags = Object.entries(apiPipeline.tags)
-    .filter(([k]) => !isSystemTag(k))
-    .map(([key, value]) => ({ key, value }));
+  const tags = getUserTagEntries(apiPipeline.tags);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
@@ -316,6 +316,13 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
+const ComponentBadge = ({ name }: { name: string }) => (
+  <Badge variant="neutral-inverted">
+    <ConnectorLogo className="size-3.5" fallback={Box} name={name as ComponentName} />
+    {name}
+  </Badge>
+);
+
 const createColumns = ({
   navigate,
   deleteMutation,
@@ -325,21 +332,30 @@ const createColumns = ({
 }: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
   {
     accessorKey: 'name',
-    header: 'Pipeline Name',
+    header: 'Pipeline',
     filterFn: createFilterFn('text'),
-    cell: ({ row }) => (
-      <div className="max-w-[200px] overflow-hidden">
-        <Link
-          as={TanStackRouterLink}
-          className="block truncate text-base text-primary"
-          params={{ pipelineId: encodeURIComponent(row.original.id) }}
-          title={row.getValue('name')}
-          to="/rp-connect/$pipelineId"
-        >
-          {row.getValue('name')}
-        </Link>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const id = row.original.id;
+      const name = row.getValue('name') as string;
+      return (
+        <div className="flex max-w-[200px] flex-col gap-0.5 overflow-hidden">
+          <Link
+            as={TanStackRouterLink}
+            className="block truncate text-base text-primary"
+            params={{ pipelineId: encodeURIComponent(id) }}
+            title={name}
+            to="/rp-connect/$pipelineId"
+          >
+            {name}
+          </Link>
+          {id !== name ? (
+            <span className="truncate font-mono text-muted-foreground text-xs" title={id}>
+              {id}
+            </span>
+          ) : null}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'inputs',
@@ -363,9 +379,7 @@ const createColumns = ({
           )}
         >
           {inputs.map((input) => (
-            <Badge key={input} variant="neutral-inverted">
-              {input}
-            </Badge>
+            <ComponentBadge key={input} name={input} />
           ))}
         </BadgeGroup>
       );
@@ -393,9 +407,7 @@ const createColumns = ({
           )}
         >
           {processors.map((p) => (
-            <Badge key={p} variant="neutral-inverted">
-              {p}
-            </Badge>
+            <ComponentBadge key={p} name={p} />
           ))}
         </BadgeGroup>
       );
@@ -423,9 +435,7 @@ const createColumns = ({
           )}
         >
           {outputs.map((o) => (
-            <Badge key={o} variant="neutral-inverted">
-              {o}
-            </Badge>
+            <ComponentBadge key={o} name={o} />
           ))}
         </BadgeGroup>
       );
@@ -675,14 +685,15 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      <DataTablePagination table={table} />
+      {/* DataTablePagination's footer leads with "X of N row(s) selected." This table
+          doesn't expose row selection, so suppress that text while keeping its space
+          so the pagination controls stay right-aligned. */}
+      <div className="[&>div>div:first-child]:invisible">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   );
 };
-
-// ============================================================================
-// Page Wrapper Components
-// ============================================================================
 
 const RedpandaConnectContent = () => (
   <div className="flex flex-col gap-4">

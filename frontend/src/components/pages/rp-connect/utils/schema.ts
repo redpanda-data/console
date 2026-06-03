@@ -3,6 +3,7 @@ import {
   type ComponentList,
   type ComponentSpec,
   ComponentStatus,
+  type FieldSpec,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { toast } from 'sonner';
 import { onboardingWizardStore } from 'state/onboarding-wizard-store';
@@ -23,7 +24,6 @@ import type {
   RawFieldSpec,
 } from '../types/schema';
 
-// Helper to convert proto ComponentStatus enum to string
 export function componentStatusToString(status: ComponentStatus): string {
   switch (status) {
     case ComponentStatus.STABLE:
@@ -71,6 +71,46 @@ const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, Conne
  * Converts proto ComponentSpec to strongly-typed ConnectComponentSpec by overriding the type field.
  * Returns empty array and shows toast notification on error.
  */
+// `type` scopes the search to one list, needed to disambiguate names shared
+// across types (e.g. `redpanda` is a cache, input, and output). Omitted = first match.
+export function findComponentByName(
+  componentList: ComponentList,
+  name: string,
+  type?: Exclude<ConnectComponentType, 'custom'>
+): ComponentSpec | undefined {
+  const mappings = type ? [COMPONENT_TYPE_MAPPINGS[type]] : Object.values(COMPONENT_TYPE_MAPPINGS);
+  for (const { listKey } of mappings) {
+    const list = componentList[listKey] as ComponentSpec[] | undefined;
+    if (!list) {
+      continue;
+    }
+    const found = list.find((c) => c.name === name);
+    if (found) {
+      return found;
+    }
+  }
+  return;
+}
+
+/**
+ * Walks a dotted field path (e.g. `dsn` or `tls.cert_file`) through a FieldSpec
+ * children tree. The `root` is typically `componentSpec.config`. Returns the
+ * matching FieldSpec or undefined if any segment of the path is missing.
+ */
+export function resolveFieldByPath(root: FieldSpec | undefined, path: string): FieldSpec | undefined {
+  if (!(root && path)) {
+    return;
+  }
+  let current: FieldSpec | undefined = root;
+  for (const segment of path.split('.')) {
+    current = current?.children?.find((c) => c.name === segment);
+    if (!current) {
+      return;
+    }
+  }
+  return current;
+}
+
 export function parseSchema(componentList: ComponentList): ConnectComponentSpec[] {
   try {
     return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
@@ -156,7 +196,6 @@ export const schemaToConfig = (
     return { config, spec: componentSpec };
   }
 
-  // Structure the config according to Redpanda Connect YAML schema
   switch (componentSpec.type) {
     case 'input':
     case 'output':
@@ -219,7 +258,6 @@ function populateWizardFields(
   const topicData = onboardingWizardStore.getTopicData();
   const userData = onboardingWizardStore.getUserData();
 
-  // Populate topic fields
   if (isTopicField(spec.name) && topicData?.topicName) {
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
   }
@@ -268,7 +306,6 @@ function populateContextualVariables(
     return;
   }
 
-  // Schema Registry URL within schema_registry object
   if (isSchemaRegistryUrlField(spec.name, parentName)) {
     return getContextualVariableSyntax('REDPANDA_SCHEMA_REGISTRY_URL');
   }
@@ -326,7 +363,6 @@ function shouldShowField(params: {
     return !!userData?.username;
   }
 
-  // Hide advanced fields unless requested
   if (spec.advanced && !showAdvancedFields) {
     return false;
   }
@@ -616,7 +652,6 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     }
   }
 
-  // Generate value based on field kind
   let generatedValue: unknown;
   switch (spec.kind) {
     case 'scalar':

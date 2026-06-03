@@ -9,6 +9,7 @@ export const FEATURE_FLAGS = {
   enableKnowledgeBaseInConsoleUi: false,
   enableRemoteMcpInConsole: false,
   enableRpcnTiles: false,
+  enableRpcnTemplateGallery: false,
   enableServerlessOnboardingWizard: false,
   enableApiKeyConfigurationAgent: false,
   enableDataplaneObservabilityServerless: false,
@@ -29,7 +30,6 @@ export const CLOUD_MANAGED_TAG_KEYS = {
   SECRET_ID: 'rp_cloud_secret_id',
 } as const;
 
-// Helper function to check if a tag key is cloud-managed
 export const isCloudManagedTagKey = (key: string): boolean =>
   Object.values(CLOUD_MANAGED_TAG_KEYS).includes(
     key as (typeof CLOUD_MANAGED_TAG_KEYS)[keyof typeof CLOUD_MANAGED_TAG_KEYS]
@@ -37,3 +37,9 @@ export const isCloudManagedTagKey = (key: string): boolean =>
 
 /** Returns true if the tag key is a system tag that should be hidden from users. */
 export const isSystemTag = (key: string): boolean => key.startsWith('__') || isCloudManagedTagKey(key);
+
+/** User-visible tags (system tags filtered out) as `{ key, value }` entries. */
+export const getUserTagEntries = (tags: Record<string, string>): { key: string; value: string }[] =>
+  Object.entries(tags)
+    .filter(([k]) => !isSystemTag(k))
+    .map(([key, value]) => ({ key, value }));

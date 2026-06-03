@@ -117,7 +117,6 @@ export const useListPipelinesQuery = (
       if (!nextPageToken) {
         return;
       }
-      // Return a new request object with the updated pageToken
       return create(ListPipelinesRequestSchemaDataPlane, {
         ...listPipelinesRequestDataPlane,
         pageToken: nextPageToken,
@@ -126,7 +125,6 @@ export const useListPipelinesQuery = (
     pageParamKey: 'request',
   });
 
-  // Flatten pipelines from all pages
   const pipelines = useMemo(() => {
     const allPipelines = listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []);
     return allPipelines ?? [];
@@ -145,12 +143,21 @@ export const useCreatePipelineMutation = () => {
 
   return useMutation(createPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: PipelineService.method.listPipelines,
+            cardinality: 'infinite',
+          }),
         }),
-      });
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: PipelineService.method.getPipeline,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        }),
+      ]);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({
@@ -166,12 +173,21 @@ export const useUpdatePipelineMutation = () => {
 
   return useMutation(updatePipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: PipelineService.method.listPipelines,
-          cardinality: 'infinite',
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: PipelineService.method.listPipelines,
+            cardinality: 'infinite',
+          }),
         }),
-      });
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({
+            schema: PipelineService.method.getPipeline,
+            cardinality: 'finite',
+          }),
+          exact: false,
+        }),
+      ]);
     },
     onError: (error) =>
       formatToastErrorMessageGRPC({

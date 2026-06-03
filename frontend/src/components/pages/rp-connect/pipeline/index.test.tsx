@@ -82,6 +82,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
     useNavigate: () => mockNavigate,
     useRouter: () => ({ history: { back: mockBack, canGoBack: () => true } }),
     useSearch: () => mockSearch(),
+    useBlocker: () => ({ status: 'idle', proceed: undefined, reset: undefined }),
   };
 });
 
@@ -211,6 +212,7 @@ function createTransport(overrides?: {
   getPipelineMock?: ReturnType<typeof vi.fn>;
   createPipelineMock?: ReturnType<typeof vi.fn>;
   lintMock?: ReturnType<typeof vi.fn>;
+  stopPipelineMock?: ReturnType<typeof vi.fn>;
 }) {
   return createRouterTransport(({ rpc }) => {
     // Console-layer RPCs (used by react-query/api/pipeline hooks)
@@ -246,7 +248,10 @@ function createTransport(overrides?: {
     rpc(updatePipeline, vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})));
     rpc(deletePipeline, vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {})));
     rpc(startPipeline, vi.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {})));
-    rpc(stopPipeline, vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {})));
+    rpc(
+      stopPipeline,
+      overrides?.stopPipelineMock ?? vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}))
+    );
     rpc(
       consoleGetPipelineServiceConfigSchema,
       vi.fn().mockReturnValue(create(ConsoleGetPipelineServiceConfigSchemaResponseSchema, {}))
@@ -264,6 +269,19 @@ function createTransport(overrides?: {
     );
   });
 }
+
+// The pipeline name now lives in the settings dialog (opened via "Edit settings")
+// rather than an inline field in the header.
+const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  await user.click(screen.getByRole('button', { name: /edit settings/i }));
+  const nameInput = await screen.findByPlaceholderText('Enter pipeline name');
+  await user.clear(nameInput);
+  await user.type(nameInput, name);
+  await user.click(screen.getByRole('button', { name: /save settings/i }));
+  // Wait for the settings dialog to fully close so its "Save settings" button
+  // can't collide with the header's "Save" in later queries.
+  await waitFor(() => expect(screen.queryByPlaceholderText('Enter pipeline name')).not.toBeInTheDocument());
+};
 
 describe('PipelinePage', () => {
   beforeEach(() => {
@@ -370,19 +388,14 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // EditableText with defaultEditing starts in edit mode — use placeholder to find the input
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    // Tab to commit the EditableText value (fires onChange -> handleNameChange -> form.setValue)
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML via the textarea mock
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  generate:\n    mapping: root = "hello"' } });
 
     // Click Save
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -406,22 +419,55 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // Fill in name (min 3 chars for validation)
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML and click Save
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  stdin: {}' } });
 
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/new-pipeline' }));
     });
+  });
+
+  it('lets the name be edited inline from the header title and submits it', async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn().mockReturnValue(
+      create(ConsoleCreatePipelineResponseSchema, {
+        response: create(CreatePipelineResponseSchema, {
+          pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
+        }),
+      })
+    );
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    // Set the name directly in the inline title — no need to open the settings dialog.
+    fireEvent.change(screen.getByRole('textbox', { name: 'Pipeline name' }), { target: { value: 'inline-named' } });
+
+    fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(createPipelineMock).toHaveBeenCalled();
+    });
+    expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('inline-named');
+  });
+
+  it('blocks saving a new pipeline with an invalid name and shows the error inline', async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn();
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    // Click Save with no name entered — validation should block it.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText(/at least 3 characters/i)).toBeInTheDocument();
+    expect(createPipelineMock).not.toHaveBeenCalled();
   });
 
   it('shows both save errors and real-time lint warnings when a save fails', async () => {
@@ -441,11 +487,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock, lintMock }) });
 
-    // Fill in name
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML (triggers lint query which returns response warning)
     const yamlEditor = screen.getByTestId('yaml-editor');
@@ -457,7 +499,7 @@ describe('PipelinePage', () => {
     });
 
     // Click Save to trigger the error
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     // After error, both the error hint from extractLintHintsFromError AND the response hint should be visible
@@ -483,18 +525,14 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock, lintMock }) });
 
-    // Fill in name
-    const nameInput = screen.getByPlaceholderText('Pipeline name');
-    await user.clear(nameInput);
-    await user.type(nameInput, 'my-pipeline');
-    await user.tab();
+    await setPipelineNameViaDialog(user, 'my-pipeline');
 
     // Set YAML
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  bad: {}' } });
 
     // Click Save to trigger the error
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
     // Error hint should appear
@@ -532,14 +570,15 @@ describe('PipelinePage', () => {
     });
   });
 
-  it('displays the pipeline display name (not the ID) in view mode', async () => {
+  it('displays the pipeline display name in the summary in view mode', async () => {
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The toolbar should show the displayName from the pipeline response, not the pipeline ID
-    expect(await screen.findByText('Test Pipeline')).toBeInTheDocument();
-    expect(screen.queryByText('test-pipeline')).not.toBeInTheDocument();
+    // The pipeline name is the page title (level-1 heading); the generic
+    // "Pipeline view" chrome heading was removed. The ID shows in the strip below.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
   });
 
   it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
@@ -552,6 +591,28 @@ describe('PipelinePage', () => {
     await waitFor(() => {
       const diagram = screen.getByTestId('flow-diagram');
       expect(diagram.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
+    });
+  });
+
+  it('confirms before stopping a running pipeline', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+
+    render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
+
+    // The running pipeline shows a run toggle in the header; switching it off
+    // initiates a stop.
+    await user.click(await screen.findByTestId('pipeline-run-toggle'));
+
+    // It must not stop immediately — a confirmation dialog appears first.
+    expect(stopPipelineMock).not.toHaveBeenCalled();
+    expect(await screen.findByText('Stop pipeline?')).toBeInTheDocument();
+
+    // Confirming actually issues the stop.
+    await user.click(screen.getByRole('button', { name: /stop pipeline/i }));
+    await waitFor(() => {
+      expect(stopPipelineMock).toHaveBeenCalled();
     });
   });
 
@@ -666,9 +727,9 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // In edit mode, defaultEditing is false so EditableText renders as a button showing the name
+      // In edit mode the name is pre-filled from the server into the inline-editable title.
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Test Pipeline' })).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: 'Pipeline name' })).toHaveValue('Test Pipeline');
       });
 
       // The yaml editor textarea should be populated with the pipeline's configYaml

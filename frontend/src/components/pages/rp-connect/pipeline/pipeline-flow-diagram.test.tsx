@@ -189,15 +189,14 @@ describe('PipelineFlowDiagram', () => {
       expect(onAddSasl).toHaveBeenCalledWith('input', 'redpanda');
     });
 
-    it('hint buttons render but do nothing when callbacks are not provided', async () => {
-      const user = userEvent.setup();
-      // The parser sets missingTopic/missingSasl flags regardless of callbacks.
-      // Buttons always render as visible hints; clicking them is a no-op without handlers.
+    it('renders static "No topic"/"No user" status pills (not buttons) when callbacks are absent', () => {
+      // View-only mode (no edit callbacks): we still surface the missing-config
+      // signal, but as a static pill so it doesn't look clickable.
       renderDiagram(REDPANDA_INPUT_MISSING_CONFIG);
-      const topicButton = screen.getByText('Topic').closest('button');
-      expect(topicButton).toBeInTheDocument();
-      // Clicking should not throw (optional chaining in onClick)
-      await user.click(topicButton as HTMLButtonElement);
+      expect(screen.getByText('No topic')).toBeInTheDocument();
+      expect(screen.getByText('No user')).toBeInTheDocument();
+      expect(screen.queryByText('Topic')).not.toBeInTheDocument();
+      expect(screen.queryByText('User')).not.toBeInTheDocument();
     });
   });
 

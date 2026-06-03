@@ -9,10 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { type Edge, type Node, PanOnScrollMode, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import {
+  type Edge,
+  type Node,
+  PanOnScrollMode,
+  ReactFlow,
+  type ReactFlowInstance,
+  ReactFlowProvider,
+  useReactFlow,
+} from '@xyflow/react';
 import { Button } from 'components/redpanda-ui/components/button';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { MinusIcon, PlusIcon } from 'lucide-react';
+import { ArrowRight, MinusIcon, PlusIcon, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { PipelineFlowSkeleton, pipelineEdgeTypes, pipelineNodeTypes } from './pipeline-flow-nodes';
@@ -57,31 +66,18 @@ function ZoomControls() {
 
 type PipelineFlowDiagramProps = {
   configYaml: string;
-  /** Callback when user clicks + on a placeholder node. Receives the section type ('input' | 'output'). */
   onAddConnector?: (type: string) => void;
-  /** Callback when user clicks "+ topic" on a redpanda node missing topic config. */
   onAddTopic?: (section: string, componentName: string) => void;
-  /** Callback when user clicks "+ auth" on a redpanda node missing SASL config. */
   onAddSasl?: (section: string, componentName: string) => void;
-  /** Hide the zoom +/- controls and lock zoom to 1. */
+  onBrowseTemplates?: () => void;
   hideZoomControls?: boolean;
-  /** Custom parser — defaults to `parsePipelineFlowTree`. */
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
-  /** Custom layout — defaults to `computeTreeLayout`. */
   computeLayout?: (
     nodes: PipelineFlowNode[],
     collapsedIds: ReadonlySet<string>
   ) => { rfNodes: Node[]; rfEdges: Edge[]; height: number; maxDepth?: number };
 };
 
-/**
- * Compute translate extent from layout node positions.
- *
- * The bottom-right bound is clamped to at least the container dimensions.
- * Without this, d3-zoom centers content that is shorter than the viewport,
- * which manifests as a large top margin in edit/create mode where the node
- * tree is typically shorter than the panel.
- */
 export function computeTranslateExtent(
   rfNodes: Node[],
   containerWidth: number,
@@ -111,9 +107,17 @@ export function computeTranslateExtent(
     }
   }
 
+  // Lock each axis where content fits — the EXTENT_PADDING buffer would
+  // otherwise let the viewport pan by ~40px with nothing to scroll to.
+  const xFits = maxX <= containerWidth;
+  const yFits = maxY <= containerHeight;
+  const lowX = xFits ? 0 : minX - EXTENT_PADDING;
+  const lowY = yFits ? 0 : minY - EXTENT_PADDING;
+  const highX = xFits ? containerWidth : maxX + EXTENT_PADDING;
+  const highY = yFits ? containerHeight : maxY + EXTENT_PADDING;
   return [
-    [minX - EXTENT_PADDING, minY - EXTENT_PADDING],
-    [Math.max(maxX + EXTENT_PADDING, containerWidth), Math.max(maxY + EXTENT_PADDING, containerHeight)],
+    [lowX, lowY],
+    [highX, highY],
   ];
 }
 
@@ -122,6 +126,7 @@ export const PipelineFlowDiagram = ({
   onAddConnector,
   onAddTopic,
   onAddSasl,
+  onBrowseTemplates,
   hideZoomControls,
   parseTree = defaultParseTree,
   computeLayout = defaultComputeLayout,
@@ -129,6 +134,7 @@ export const PipelineFlowDiagram = ({
   const instanceId = useId();
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const rfInstanceRef = useRef<ReactFlowInstance<Node, Edge> | null>(null);
   const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null);
 
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
@@ -149,11 +155,13 @@ export const PipelineFlowDiagram = ({
   // initialises with the correct translateExtent (avoids centering flash).
   useLayoutEffect(() => {
     const el = containerRef.current;
-    if (el) {
-      setContainerSize({
-        width: el.clientWidth,
-        height: el.clientHeight,
-      });
+    if (!el) {
+      return;
+    }
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    if (w > 0 && h > 0) {
+      setContainerSize({ width: w, height: h });
     }
   }, []);
 
@@ -166,6 +174,9 @@ export const PipelineFlowDiagram = ({
     const ro = new ResizeObserver(([entry]) => {
       const w = Math.round(entry.contentRect.width);
       const h = Math.round(entry.contentRect.height);
+      if (w === 0 || h === 0) {
+        return;
+      }
       setContainerSize((prev) => {
         if (prev && prev.width === w && prev.height === h) {
           return prev;
@@ -223,16 +234,55 @@ export const PipelineFlowDiagram = ({
     return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges, maxDepth: layout.maxDepth ?? 0 };
   }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
-  const { translateExtent, panOnScrollMode } = useMemo(() => {
+  const { translateExtent, panOnScrollMode, contentOverflows } = useMemo(() => {
     if (!containerSize) {
-      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical };
+      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical, contentOverflows: false };
     }
     const extent = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
+    const rawMaxX = extent[1][0] - EXTENT_PADDING;
+    const rawMaxY = extent[1][1] - EXTENT_PADDING;
+    const overflows = rawMaxX > containerSize.width || rawMaxY > containerSize.height;
     return {
       translateExtent: extent,
       panOnScrollMode: maxDepth > MAX_NESTING_DEPTH ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
+      contentOverflows: overflows,
     };
   }, [rfNodes, containerSize, maxDepth]);
+
+  // React Flow occasionally settles with a vertical offset when the container
+  // is much taller than the diagram; defaultViewport alone doesn't override it.
+  useLayoutEffect(() => {
+    const rf = rfInstanceRef.current;
+    if (rf && rfNodes.length > 0) {
+      rf.setViewport({ x: 0, y: 0, zoom: 1 });
+    }
+  }, [rfNodes, translateExtent]);
+
+  // At the diagram's top/bottom pan boundary, swallow the wheel event in capture
+  // so the page scrolls instead. Mid-range events fall through to React Flow's pan.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!(el && contentOverflows && translateExtent && containerSize)) {
+      return;
+    }
+    const [[, minBoundY], [, maxBoundY]] = translateExtent;
+    const maxVpY = -minBoundY;
+    const minVpY = containerSize.height - maxBoundY;
+    const handleWheel = (event: WheelEvent) => {
+      const rf = rfInstanceRef.current;
+      if (!rf) {
+        return;
+      }
+      const vp = rf.getViewport();
+      const atTop = vp.y >= maxVpY - 0.5;
+      const atBottom = vp.y <= minVpY + 0.5;
+      if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
+        event.stopPropagation();
+      }
+    };
+    el.addEventListener('wheel', handleWheel, { capture: true, passive: true });
+    return () => el.removeEventListener('wheel', handleWheel, { capture: true } as EventListenerOptions);
+  }, [contentOverflows, translateExtent, containerSize]);
 
   if (rfNodes.length === 0) {
     return (
@@ -242,8 +292,15 @@ export const PipelineFlowDiagram = ({
     );
   }
 
+  // Section labels and `none` placeholders don't count as user content.
+  const isPipelineEmpty = !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
+  const showTemplateFab = Boolean(onBrowseTemplates) && isPipelineEmpty;
+
   return (
-    <div className="relative h-full w-full p-4" ref={containerRef}>
+    <div
+      className="relative h-full w-full overflow-hidden [&_*::-webkit-scrollbar]:hidden [&_*]:[scrollbar-width:none]"
+      ref={containerRef}
+    >
       {containerSize ? (
         <ReactFlowProvider>
           <ReactFlow
@@ -258,15 +315,51 @@ export const PipelineFlowDiagram = ({
             nodesDraggable={false}
             nodesFocusable={false}
             nodeTypes={pipelineNodeTypes}
+            onInit={(instance) => {
+              rfInstanceRef.current = instance;
+              instance.setViewport({ x: 0, y: 0, zoom: 1 });
+            }}
             panOnDrag={false}
-            panOnScroll
+            panOnScroll={contentOverflows}
             panOnScrollMode={panOnScrollMode}
+            preventScrolling={contentOverflows}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}
             zoomOnPinch={false}
             zoomOnScroll={false}
           />
           {hideZoomControls ? null : <ZoomControls />}
+          <AnimatePresence>
+            {showTemplateFab && onBrowseTemplates ? (
+              <motion.div
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                className="pointer-events-none absolute right-4 bottom-4 left-4 z-10"
+                exit={{ opacity: 0, y: 4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                transition={{ duration: 0.3, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <button
+                  aria-label="Start from a template"
+                  className="nodrag nopan group pointer-events-auto flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-primary/30 border-dashed bg-primary/5 px-3 py-2.5 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+                  data-testid="pipeline-diagram-browse-templates"
+                  onClick={onBrowseTemplates}
+                  type="button"
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col leading-tight">
+                    <span className="font-medium text-foreground text-sm">Start from a template</span>
+                    <span className="text-muted-foreground text-xs">Skip the YAML — fill a short form</span>
+                  </div>
+                  <ArrowRight
+                    aria-hidden
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  />
+                </button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </ReactFlowProvider>
       ) : null}
     </div>

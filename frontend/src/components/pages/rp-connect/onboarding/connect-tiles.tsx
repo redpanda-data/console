@@ -272,7 +272,6 @@ export const ConnectTiles = memo(
         [categories, typeOptions]
       );
 
-      // Pre-select type filter when componentTypeFilter is provided
       const defaultFilterValue = useMemo<FiltersState>(() => {
         if (!componentTypeFilter?.length) {
           return [];
@@ -309,7 +308,6 @@ export const ConnectTiles = memo(
         });
       }, [checkScrollable]);
 
-      // Notify parent when validity changes
       useEffect(() => {
         onValidityChange?.(form.formState.isValid);
       }, [form.formState.isValid, onValidityChange]);
@@ -376,7 +374,7 @@ export const ConnectTiles = memo(
 
               <div className="relative">
                 <div
-                  className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
+                  className={cn('max-h-[50vh] min-h-100 overflow-y-auto py-4', tileWrapperClassName)}
                   onScroll={checkScrollable}
                   ref={scrollContainerRef}
                 >
@@ -396,11 +394,9 @@ export const ConnectTiles = memo(
                             key={uniqueKey}
                             onChange={() => {
                               if (isChecked) {
-                                // Unselect if already selected
                                 field.onChange('');
                                 form.setValue('connectionType', '' as ConnectComponentType, { shouldValidate: true });
                               } else {
-                                // Select the component
                                 field.onChange(component.name);
                                 form.setValue('connectionType', component.type as ConnectComponentType, {
                                   shouldValidate: true,
@@ -452,7 +448,6 @@ export const ConnectTiles = memo(
                     }}
                   />
                 </div>
-                {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
                 {Boolean(showScrollGradient) && (
                   <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 )}

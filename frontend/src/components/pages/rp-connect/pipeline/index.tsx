@@ -13,12 +13,12 @@ import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
-import { isSystemTag } from 'components/constants';
+import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
+import { getUserTagEntries, isSystemTag } from 'components/constants';
+import { ArrowLeftIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import {
   Dialog,
@@ -35,9 +35,8 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
-import { DialogCloseButton } from 'components/ui/dialog-close-button';
+import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
@@ -52,6 +51,7 @@ import {
   UpdatePipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
+  type ComponentList,
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
   type Pipeline,
   Pipeline_ServiceAccountSchema,
@@ -61,7 +61,7 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
   useLintPipelineConfigQuery,
@@ -87,8 +87,8 @@ import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
+import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
-import { Toolbar } from './toolbar';
 import { useSlashCommand } from './use-slash-command';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -97,6 +97,7 @@ import { AddTopicStep } from '../onboarding/add-topic-step';
 import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
+import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
 import type { ConnectComponentType } from '../types/schema';
 import type {
   AddTopicFormData,
@@ -115,16 +116,12 @@ import {
   tryPatchRedpandaYaml,
 } from '../utils/yaml';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
-  if (type === 'resource') {
-    return 'Add a resource';
-  }
   if (type === 'input') {
     return 'Add an input';
+  }
+  if (type === 'output') {
+    return 'Add an output';
   }
   if (type) {
     return `Add a ${type}`;
@@ -133,18 +130,11 @@ function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null)
 }
 
 function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null): string | undefined {
-  if (type === 'resource') {
-    return 'Search resources...';
-  }
   if (type) {
     return `Search ${type}s...`;
   }
   return;
 }
-
-// ---------------------------------------------------------------------------
-// Schema + types
-// ---------------------------------------------------------------------------
 
 const pipelineFormSchema = z.object({
   name: z
@@ -167,11 +157,7 @@ const pipelineFormSchema = z.object({
     }, 'Duplicate tag keys are not allowed'),
 });
 
-type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
-
-// ---------------------------------------------------------------------------
-// Pure helpers
-// ---------------------------------------------------------------------------
+export type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
 function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
   const userTags: Record<string, string> = {};
@@ -241,10 +227,6 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Hooks
-// ---------------------------------------------------------------------------
-
 function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
   const { data: lintResponse, isPending: isLintPending } = useLintPipelineConfigQuery(debouncedYamlContent, {
@@ -274,6 +256,7 @@ function usePipelineSave({
   pipelineId,
   pipeline,
   isPipelineDiagramsEnabled,
+  onBeforeSaveNavigate,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   yamlContent: string;
@@ -281,6 +264,11 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
+  /**
+   * Called right before a successful save navigates away, so the unsaved-changes
+   * guard doesn't block the post-save navigation.
+   */
+  onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
   const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
@@ -300,6 +288,11 @@ function usePipelineSave({
   const handleSave = useCallback(async () => {
     const isValid = await form.trigger();
     if (!isValid) {
+      // The editable settings (name especially) live in the header/dialog, so a
+      // silent no-op is confusing — surface why the save was blocked.
+      const fieldErrors = form.formState.errors;
+      const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
+      toast.error(typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.');
       return;
     }
 
@@ -321,6 +314,7 @@ function usePipelineSave({
           toast.success('Pipeline created');
           warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
           const newPipelineId = response.response?.pipeline?.id;
+          onBeforeSaveNavigate?.();
           navigate({ to: newPipelineId ? `/rp-connect/${newPipelineId}` : '/connect-clusters' });
         },
         onError: (err) => onError(err, 'create'),
@@ -348,12 +342,24 @@ function usePipelineSave({
           setErrorLintHints({});
           toast.success('Pipeline updated');
           warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
+          onBeforeSaveNavigate?.();
           navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => onError(err, 'update'),
       });
     }
-  }, [form, yamlContent, mode, pipelineId, createMutation, updateMutation, navigate, clearWizardStore, pipeline]);
+  }, [
+    form,
+    yamlContent,
+    mode,
+    pipelineId,
+    createMutation,
+    updateMutation,
+    navigate,
+    clearWizardStore,
+    pipeline,
+    onBeforeSaveNavigate,
+  ]);
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -462,10 +468,6 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
   };
 }
 
-// ---------------------------------------------------------------------------
-// Render components
-// ---------------------------------------------------------------------------
-
 function EditorSkeleton() {
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -486,27 +488,35 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
     );
   }
+  const showThroughput =
+    isEmbedded() &&
+    (isServerless()
+      ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+      : isFeatureFlagEnabled('enableDataplaneObservability'));
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      {isEmbedded() &&
-        (isServerless()
-          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
-          : isFeatureFlagEnabled('enableDataplaneObservability')) && (
+    <div className="flex h-full flex-col overflow-auto p-6">
+      {showThroughput ? (
+        <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
-        )}
-      <Card size="full" variant="outlined">
-        <CardContent className="pt-6">
-          {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-            <LogExplorer
-              enableLiveView={pipeline.state === Pipeline_State.RUNNING}
-              pipeline={pipeline}
-              serverless={isServerless()}
-            />
-          ) : (
+          <Separator className="my-8" variant="subtle" />
+        </>
+      ) : null}
+      <section className="flex min-h-0 flex-col gap-4">
+        {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+          // Title is rendered inline in the explorer's control row so it lines up with the table.
+          <LogExplorer
+            enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+            pipeline={pipeline}
+            serverless={isServerless()}
+            title="Logs"
+          />
+        ) : (
+          <>
+            <Heading level={3}>Logs</Heading>
             <LogsTab pipeline={pipeline} />
-          )}
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </section>
     </div>
   );
 }
@@ -592,6 +602,7 @@ function SidebarPanel({
   onAddTopic,
   onAddSasl,
   onOpenCommandMenu,
+  onBrowseTemplates,
 }: {
   mode: string;
   yamlContent: string;
@@ -600,18 +611,24 @@ function SidebarPanel({
   onAddTopic: (section: string, componentName: string) => void;
   onAddSasl: (section: string, componentName: string) => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
+  onBrowseTemplates?: () => void;
 }) {
+  // View mode is read-only, so the editing handlers are only wired up otherwise.
+  const editHandlers =
+    mode === 'view'
+      ? {}
+      : {
+          onAddConnector: (type: string) => onAddConnector(type as ConnectComponentType),
+          onAddSasl,
+          onAddTopic,
+          onBrowseTemplates,
+        };
+
   return (
-    <div className="flex w-[300px] shrink-0 flex-col border-border! border-r">
-      <div className="min-h-0 flex-1">
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
+      <div className="min-h-0 flex-1 overflow-hidden">
         {isPipelineDiagramsEnabled ? (
-          <PipelineFlowDiagram
-            configYaml={yamlContent}
-            hideZoomControls
-            onAddConnector={mode !== 'view' ? (type) => onAddConnector(type as ConnectComponentType) : undefined}
-            onAddSasl={mode !== 'view' ? onAddSasl : undefined}
-            onAddTopic={mode !== 'view' ? onAddTopic : undefined}
-          />
+          <PipelineFlowDiagram configYaml={yamlContent} hideZoomControls {...editHandlers} />
         ) : null}
       </div>
       {mode !== 'view' && (
@@ -679,10 +696,6 @@ function SidebarPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main page component
-// ---------------------------------------------------------------------------
-
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
@@ -699,8 +712,11 @@ export default function PipelinePage() {
   >(null);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
   const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
@@ -719,9 +735,7 @@ export default function PipelinePage() {
     [slashCommand]
   );
 
-  // --- Data queries ---
-
-  const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
+  const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
     { enabled: mode !== 'create' && !!pipelineId }
   );
@@ -736,16 +750,39 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
-  const formName = useWatch({ control: form.control, name: 'name' });
-  const pipelineName = mode === 'view' ? pipeline?.displayName : formName;
-
-  // --- Extracted hooks ---
+  // Lets a successful save navigate away without tripping the unsaved-changes guard.
+  const allowNavigationRef = useRef(false);
+  const markNavigationAllowed = useCallback(() => {
+    allowNavigationRef.current = true;
+  }, []);
+  // Baseline YAML to diff against for the unsaved-changes guard: the server config
+  // in edit mode, or the first resolved template in create mode.
+  const initialYamlRef = useRef<string | null>(null);
 
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
-    usePipelineSave({ form, yamlContent, mode, pipelineId, pipeline, isPipelineDiagramsEnabled });
+    usePipelineSave({
+      form,
+      yamlContent,
+      mode,
+      pipelineId,
+      pipeline,
+      isPipelineDiagramsEnabled,
+      onBeforeSaveNavigate: markNavigationAllowed,
+    });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
-  // --- YAML change handlers ---
+  // Guard against losing unsaved edits when navigating away from the editor (edit or create).
+  const yamlDirty = initialYamlRef.current !== null && yamlContent !== initialYamlRef.current;
+  const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
+  const blocker = useBlocker({
+    shouldBlockFn: () => hasUnsavedChanges && !allowNavigationRef.current,
+    enableBeforeUnload: () => hasUnsavedChanges,
+    withResolver: true,
+  });
+  // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).
+  useEffect(() => {
+    allowNavigationRef.current = false;
+  }, [mode]);
 
   const handleYamlChange = useCallback(
     (value: string) => {
@@ -797,12 +834,11 @@ export default function PipelinePage() {
     [components, yamlContent, handleConnectorYamlChange]
   );
 
-  // --- Hydration (edit & view modes) ---
-
   const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
   if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
     setHydratedPipelineId(pipeline.id);
     setYamlContent(pipeline.configYaml);
+    initialYamlRef.current = pipeline.configYaml;
   }
 
   useEffect(() => {
@@ -811,69 +847,89 @@ export default function PipelinePage() {
         name: pipeline.displayName,
         description: pipeline.description || '',
         computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
-        tags: Object.entries(pipeline.tags)
-          .filter(([k]) => !isSystemTag(k))
-          .map(([key, value]) => ({ key, value })),
+        tags: getUserTagEntries(pipeline.tags),
       });
     }
   }, [pipeline, mode, form]);
+
+  const handleInitialYamlResolved = useCallback((yaml: string) => {
+    setYamlContent(yaml);
+    if (initialYamlRef.current === null) {
+      initialYamlRef.current = yaml;
+    }
+  }, []);
 
   const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
     enabled: mode === 'create',
     isServerlessMode,
     components,
     isPipelineDiagramsEnabled,
-    onResolved: setYamlContent,
+    onResolved: handleInitialYamlResolved,
   });
-
-  // --- Navigation ---
 
   const handleCancel = useCallback(() => {
     if (mode === 'create') {
       clearWizardStore();
     }
+    // Route through `navigate` (not history.back) so the unsaved-changes blocker intercepts.
+    if (mode === 'edit' && pipelineId) {
+      navigate({ to: `/rp-connect/${pipelineId}` });
+      return;
+    }
     if (mode === 'view') {
       navigate({ to: '/connect-clusters', search: {} as never });
-    } else if (router.history.canGoBack()) {
+      return;
+    }
+    // Create: return to wherever the user came from.
+    if (router.history.canGoBack()) {
       router.history.back();
     } else {
       navigate({ to: '/connect-clusters', search: {} as never });
     }
-  }, [mode, clearWizardStore, navigate, router]);
-
-  const handleNameChange = useCallback((name: string) => form.setValue('name', name, { shouldValidate: true }), [form]);
-
-  // --- Render ---
+  }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
   return (
-    <div
-      className={cn(
-        'flex max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4',
-        mode === 'view' ? 'h-full min-h-[calc(100dvh-10rem)]' : 'h-[calc(100dvh-10rem)]'
-      )}
-    >
-      <Toolbar
-        defaultEditing={mode === 'create'}
-        isLoading={isPipelineLoading}
-        isSaving={isSaving}
-        mode={mode}
-        nameError={form.formState.errors.name?.message}
-        onCancel={handleCancel}
-        onEditConfig={() => setIsConfigDialogOpen(true)}
-        onNameChange={handleNameChange}
-        onSave={handleSave}
-        onViewConfig={() => setIsViewConfigDialogOpen(true)}
-        pipelineId={pipelineId}
-        pipelineName={pipelineName}
-        pipelineState={pipeline?.state}
-      />
-      <div className="flex min-h-0 flex-1 rounded-lg border border-border!">
+    <div className="flex min-h-[calc(100dvh-10rem)] max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4">
+      {/* Page top divider. Negative margin cancels the layout's pt-8. */}
+      <div className="-mt-8 border-divider-default border-b" />
+      {mode === 'view' && pipeline ? (
+        <PipelineViewHeader
+          onBack={handleCancel}
+          onViewDetails={() => setIsViewConfigDialogOpen(true)}
+          pipeline={pipeline}
+        />
+      ) : null}
+      {mode === 'view' && !pipeline ? (
+        <div className="flex items-center gap-2">
+          <Button className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Button>
+          <Skeleton variant="text" width="md" />
+        </div>
+      ) : null}
+      {mode !== 'view' ? (
+        <PipelineEditHeader
+          form={form}
+          isSaving={isSaving}
+          mode={mode as 'create' | 'edit'}
+          onBack={handleCancel}
+          onEditSettings={() => setIsConfigDialogOpen(true)}
+          onSave={handleSave}
+          url={pipeline?.url}
+        />
+      ) : null}
+      {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
+          flow panels aren't squished when the summary card is tall. */}
+      <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
           mode={mode}
           onAddConnector={(type) => setAddConnectorType(type)}
           onAddSasl={handleAddSasl}
           onAddTopic={handleAddTopic}
+          onBrowseTemplates={
+            isTemplateGalleryEnabled && mode !== 'view' ? () => setIsTemplateDialogOpen(true) : undefined
+          }
           onOpenCommandMenu={handleCommandMenuOpen}
           yamlContent={yamlContent}
         />
@@ -899,12 +955,50 @@ export default function PipelinePage() {
       <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />
 
       <DetailsDialog
-        isDeleting={isDeleting}
-        onDelete={handleDelete}
         onOpenChange={setIsViewConfigDialogOpen}
+        onRequestDelete={
+          pipeline
+            ? () => {
+                // Close the details dialog first so the two don't stack.
+                setIsViewConfigDialogOpen(false);
+                setIsDeleteAlertOpen(true);
+              }
+            : undefined
+        }
         open={isViewConfigDialogOpen}
         pipeline={pipeline}
       />
+
+      {pipeline ? (
+        <DeleteResourceAlertDialog
+          isDeleting={isDeleting}
+          onDelete={handleDelete}
+          onOpenChange={setIsDeleteAlertOpen}
+          open={isDeleteAlertOpen}
+          resourceId={pipeline.id}
+          resourceName={pipeline.displayName || 'this pipeline'}
+          resourceType="Pipeline"
+        />
+      ) : null}
+
+      <Dialog onOpenChange={(open) => (open ? undefined : blocker.reset?.())} open={blocker.status === 'blocked'}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            You have unsaved changes to this pipeline. If you leave now, your changes will be lost.
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={() => blocker.reset?.()} variant="ghost">
+              Keep editing
+            </Button>
+            <Button onClick={() => blocker.proceed?.()} variant="primary">
+              Leave without saving
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <PipelineCommandMenu
         editorInstance={editorInstance}
@@ -942,8 +1036,7 @@ export default function PipelinePage() {
         }}
         open={topicDialog.isOpen}
       >
-        <DialogContent showCloseButton={false} size="lg">
-          <DialogCloseButton />
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
             <DialogDescription>
@@ -952,7 +1045,7 @@ export default function PipelinePage() {
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <AddTopicStep className="border" hideTitle ref={topicStepRef} />
+            <AddTopicStep hideTitle inline ref={topicStepRef} />
           </DialogBody>
           <DialogFooter>
             <Button onClick={topicDialog.close} variant="secondary-ghost">
@@ -977,8 +1070,7 @@ export default function PipelinePage() {
         }}
         open={userDialog.isOpen}
       >
-        <DialogContent showCloseButton={false} size="lg">
-          <DialogCloseButton />
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
             <DialogDescription>
@@ -997,8 +1089,8 @@ export default function PipelinePage() {
               </Alert>
             )}
             <AddUserStep
-              className="border"
               hideTitle
+              inline
               ref={userStepRef}
               showConsumerGroupFields={userDialog.target?.section === 'input'}
               topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
@@ -1019,19 +1111,37 @@ export default function PipelinePage() {
         </DialogContent>
       </Dialog>
 
-      {componentListResponse?.components ? (
-        <AddConnectorDialog
-          components={componentListResponse.components}
-          connectorType={
-            addConnectorType === 'resource'
-              ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
-              : (addConnectorType ?? undefined)
-          }
-          isOpen={addConnectorType !== null}
-          onAddConnector={handleConnectorSelected}
-          onCloseAddConnector={() => setAddConnectorType(null)}
-          searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
-          title={getConnectorDialogTitle(addConnectorType)}
+      <AddConnectorDialog
+        components={componentListResponse?.components ?? ({} as ComponentList)}
+        connectorType={
+          addConnectorType === 'resource'
+            ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
+            : (addConnectorType ?? undefined)
+        }
+        isOpen={addConnectorType !== null}
+        onAddConnector={handleConnectorSelected}
+        onCloseAddConnector={() => setAddConnectorType(null)}
+        searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
+        title={getConnectorDialogTitle(addConnectorType)}
+      />
+
+      {isTemplateGalleryEnabled && mode !== 'view' ? (
+        <TemplateGalleryDialog
+          onClose={(stashedYaml) => {
+            if (stashedYaml) {
+              handleYamlChange(stashedYaml);
+            }
+            setIsTemplateDialogOpen(false);
+          }}
+          onSubmit={({ pipelineName: suggestedName, yaml }) => {
+            handleYamlChange(yaml);
+            if (!form.getValues('name')) {
+              form.setValue('name', suggestedName, { shouldDirty: true, shouldValidate: true });
+            }
+            setIsTemplateDialogOpen(false);
+            toast.success('Template applied — review the YAML and click Save to deploy.');
+          }}
+          open={isTemplateDialogOpen}
         />
       ) : null}
     </div>

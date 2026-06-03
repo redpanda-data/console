@@ -10,6 +10,7 @@
  */
 
 import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
+import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
@@ -19,7 +20,9 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode } from 'components/ui/base-node';
-import { BookOpenIcon, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
+import { BookOpenIcon, Box, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
+
+import { ConnectorLogo } from '../onboarding/connector-logo';
 
 const invisibleHandle = '!w-0 !h-0 !border-0 !bg-transparent !min-w-0 !min-h-0';
 
@@ -103,12 +106,16 @@ const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
 
 const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   <button
-    className={cn('nodrag nopan flex h-7 max-w-[220px] items-center text-sm', data.collapsible && 'cursor-pointer')}
+    className={cn(
+      'nodrag nopan flex h-7 max-w-[220px] items-center gap-1.5 text-sm',
+      data.collapsible && 'cursor-pointer'
+    )}
     disabled={!data.collapsible}
     onClick={data.collapsible ? data.onToggle : undefined}
     type="button"
   >
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
+    <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
     <Text as="span" className="min-w-0 truncate" title={data.label} variant="bodyStrongMedium">
       {data.label}
     </Text>
@@ -124,6 +131,35 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   </button>
 );
 
+// Clickable "+ X" button when `onAdd` is wired, else a static "No X" pill —
+// keeps the missing-config signal visible in view mode without looking clickable.
+type MissingConfigChipProps = {
+  addLabel: string;
+  missingLabel: string;
+  onAdd?: () => void;
+};
+
+const MissingConfigChip = ({ addLabel, missingLabel, onAdd }: MissingConfigChipProps) => {
+  if (onAdd) {
+    return (
+      <Button
+        className="nodrag nopan"
+        icon={<PlusIcon className="size-3" />}
+        onClick={onAdd}
+        size="xs"
+        variant="secondary"
+      >
+        {addLabel}
+      </Button>
+    );
+  }
+  return (
+    <Badge size="sm" variant="neutral-inverted">
+      {missingLabel}
+    </Badge>
+  );
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: leaf node renders topics, setup hints, doc links, and placeholder add button
 const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   const hasTopics = data.topics && data.topics.length > 0;
@@ -134,79 +170,78 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   return (
     <BaseNode
       className={cn(
-        'group min-w-[120px] max-w-[220px] px-3 py-1 font-medium transition-colors',
+        'group min-w-[120px] max-w-[280px] px-3 py-1 font-medium transition-colors',
         isPlaceholder ? 'border-dashed! text-muted-foreground' : 'border-transparent! bg-secondary/5 text-foreground'
       )}
     >
       <Handle className={invisibleHandle} position={Position.Left} type="target" />
-      <div className="flex items-center gap-1.5">
-        <Text
-          as="span"
-          className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}
-          title={isPlaceholder ? undefined : data.label}
-          variant="bodyStrongMedium"
-        >
-          {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
-        </Text>
-        {docsUrl ? (
-          <Button
-            aria-label={`${data.label} documentation`}
-            as="a"
-            className="nodrag nopan shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-            href={docsUrl}
-            rel="noopener noreferrer"
-            size="icon-xs"
-            target="_blank"
-            variant="ghost"
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5">
+          {isPlaceholder ? null : (
+            <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
+          )}
+          <Text
+            as="span"
+            className={cn('min-w-0 truncate', isPlaceholder ? 'text-muted-foreground' : 'text-foreground')}
+            title={isPlaceholder ? undefined : data.label}
+            variant="bodyStrongMedium"
           >
-            <BookOpenIcon />
-          </Button>
-        ) : null}
-      </div>
-      <div className={cn((data.labelText || hasTopics || showSetupHints) && 'mt-2', 'flex flex-wrap gap-1.5')}>
-        {data.labelText ? (
-          <Badge className="max-w-1/2" size="sm" variant="info-inverted">
-            <span className="truncate" title={data.labelText}>
-              {data.labelText}
-            </span>
-          </Badge>
-        ) : null}
-        {hasTopics ? (
-          <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
-            {data.topics?.map((t) => (
-              <Badge className="max-w-1/2" key={t} size="sm" variant="info-outline">
-                <span className="truncate" title={t}>
-                  topic: {t}
+            {isPlaceholder ? `Add ${data.section ?? 'connector'}` : data.label}
+          </Text>
+          {docsUrl ? (
+            <Button
+              aria-label={`${data.label} documentation`}
+              as="a"
+              className="nodrag nopan shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              href={docsUrl}
+              rel="noopener noreferrer"
+              size="icon-xs"
+              target="_blank"
+              variant="ghost"
+            >
+              <BookOpenIcon />
+            </Button>
+          ) : null}
+        </div>
+        {data.labelText || hasTopics || showSetupHints ? (
+          <div className="flex flex-col items-start gap-1.5">
+            {data.labelText ? (
+              <Badge className="max-w-full" size="sm" variant="info-inverted">
+                <span className="truncate" title={data.labelText}>
+                  {data.labelText}
                 </span>
               </Badge>
-            ))}
-          </BadgeGroup>
-        ) : null}
-        {showSetupHints ? (
-          <>
-            {data.missingTopic ? (
-              <Button
-                className="nodrag nopan"
-                icon={<PlusIcon className="size-3" />}
-                onClick={() => data.onAddTopic?.(data.section ?? '', data.label)}
-                size="xs"
-                variant="secondary"
-              >
-                Topic
-              </Button>
             ) : null}
-            {data.missingSasl ? (
-              <Button
-                className="nodrag nopan"
-                icon={<PlusIcon className="size-3" />}
-                onClick={() => data.onAddSasl?.(data.section ?? '', data.label)}
-                size="xs"
-                variant="secondary"
-              >
-                User
-              </Button>
+            {hasTopics ? (
+              <BadgeGroup maxVisible={1} size="sm" variant="info-outline">
+                {data.topics?.map((t) => (
+                  <Badge className="max-w-full" key={t} size="sm" variant="info-outline">
+                    <span className="truncate" title={t}>
+                      topic: {t}
+                    </span>
+                  </Badge>
+                ))}
+              </BadgeGroup>
             ) : null}
-          </>
+            {showSetupHints ? (
+              <>
+                {data.missingTopic ? (
+                  <MissingConfigChip
+                    addLabel="Topic"
+                    missingLabel="No topic"
+                    onAdd={data.onAddTopic ? () => data.onAddTopic?.(data.section ?? '', data.label) : undefined}
+                  />
+                ) : null}
+                {data.missingSasl ? (
+                  <MissingConfigChip
+                    addLabel="User"
+                    missingLabel="No user"
+                    onAdd={data.onAddSasl ? () => data.onAddSasl?.(data.section ?? '', data.label) : undefined}
+                  />
+                ) : null}
+              </>
+            ) : null}
+          </div>
         ) : null}
       </div>
       {showAddButton ? (

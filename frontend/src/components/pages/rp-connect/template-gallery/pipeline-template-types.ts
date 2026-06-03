@@ -1,0 +1,84 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+export type TemplateCategory = 'cdc' | 'ingest' | 'analytics' | 'migration';
+
+export type TemplateSlotSection = 'source' | 'sink' | 'options';
+
+type SlotBase = {
+  id: string;
+  label: string;
+  description?: string;
+  section: TemplateSlotSection;
+  required?: boolean;
+  // Dotted path into the section's component schema (e.g. `dsn`, `tls.cert_file`).
+  // When set, the live schema fills any unset `description` / `required` /
+  // `default` — slot-level values always win.
+  schemaField?: string;
+};
+
+export type StringSlot = SlotBase & {
+  kind: 'string';
+  placeholder?: string;
+  default?: string;
+  multiline?: boolean;
+};
+
+export type SecretSlot = SlotBase & {
+  kind: 'secret';
+  suggestedName?: string;
+};
+
+export type TopicSlot = SlotBase & {
+  kind: 'topic';
+  default?: string;
+};
+
+export type SelectSlot = SlotBase & {
+  kind: 'select';
+  options: { value: string; label: string }[];
+  default?: string;
+};
+
+export type TemplateSlot = StringSlot | SecretSlot | TopicSlot | SelectSlot;
+
+export type TemplateEndpoint = {
+  component: string;
+  type: 'input' | 'output';
+  // Use when `component` is a generic connector name (e.g. `sql_raw`) so the
+  // gallery can show a more recognizable icon. Must be a key in `componentLogoMap`.
+  logoOverride?: string;
+};
+
+export type PipelineTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  category: TemplateCategory;
+  source: TemplateEndpoint;
+  sink: TemplateEndpoint;
+  setupTimeMinutes: number;
+  slots: TemplateSlot[];
+  // Hand-curated YAML with `${slot.X}` placeholders. Every required slot must
+  // appear here or it has no effect on the deployed pipeline.
+  baseYaml: string;
+  // Suggested pipeline display name pre-filled in the form.
+  defaultPipelineName: string;
+};
+
+export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategory, string> = {
+  cdc: 'CDC sources to Redpanda',
+  ingest: 'Ingest sources to Redpanda',
+  analytics: 'Analytics & lakehouse from Redpanda',
+  migration: 'Migration & replication',
+};
+
+export const TEMPLATE_CATEGORY_ORDER: TemplateCategory[] = ['cdc', 'ingest', 'analytics', 'migration'];
