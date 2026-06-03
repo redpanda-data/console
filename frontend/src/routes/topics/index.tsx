@@ -13,14 +13,18 @@ import { createFileRoute } from '@tanstack/react-router';
 import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { CollectionIcon } from 'components/icons';
+import { isFeatureFlagEnabled } from 'config';
 import { z } from 'zod';
 
-import TopicList from '../../components/pages/topics/topic-list-new';
+import TopicListLegacy from '../../components/pages/topics/topic-list';
+import TopicListNew from '../../components/pages/topics/topic-list-new';
 
 const searchSchema = z.object({
   pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
   page: fallback(z.number().int().nonnegative().optional(), 0),
 });
+
+const TopicList = () => (isFeatureFlagEnabled('enableNewTopicPage') ? <TopicListNew /> : <TopicListLegacy />);
 
 export const Route = createFileRoute('/topics/')({
   staticData: {
