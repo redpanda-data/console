@@ -26,6 +26,7 @@ const (
 	SecretService_UpdateSecret_FullMethodName     = "/redpanda.api.console.v1alpha1.SecretService/UpdateSecret"
 	SecretService_DeleteSecret_FullMethodName     = "/redpanda.api.console.v1alpha1.SecretService/DeleteSecret"
 	SecretService_ListSecretScopes_FullMethodName = "/redpanda.api.console.v1alpha1.SecretService/ListSecretScopes"
+	SecretService_ListResources_FullMethodName    = "/redpanda.api.console.v1alpha1.SecretService/ListResources"
 )
 
 // SecretServiceClient is the client API for SecretService service.
@@ -38,6 +39,7 @@ type SecretServiceClient interface {
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*UpdateSecretResponse, error)
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error)
 	ListSecretScopes(ctx context.Context, in *ListSecretScopesRequest, opts ...grpc.CallOption) (*ListSecretScopesResponse, error)
+	ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error)
 }
 
 type secretServiceClient struct {
@@ -108,6 +110,16 @@ func (c *secretServiceClient) ListSecretScopes(ctx context.Context, in *ListSecr
 	return out, nil
 }
 
+func (c *secretServiceClient) ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListResourcesResponse)
+	err := c.cc.Invoke(ctx, SecretService_ListResources_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SecretServiceServer is the server API for SecretService service.
 // All implementations must embed UnimplementedSecretServiceServer
 // for forward compatibility.
@@ -118,6 +130,7 @@ type SecretServiceServer interface {
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*UpdateSecretResponse, error)
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error)
 	ListSecretScopes(context.Context, *ListSecretScopesRequest) (*ListSecretScopesResponse, error)
+	ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error)
 	mustEmbedUnimplementedSecretServiceServer()
 }
 
@@ -145,6 +158,9 @@ func (UnimplementedSecretServiceServer) DeleteSecret(context.Context, *DeleteSec
 }
 func (UnimplementedSecretServiceServer) ListSecretScopes(context.Context, *ListSecretScopesRequest) (*ListSecretScopesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSecretScopes not implemented")
+}
+func (UnimplementedSecretServiceServer) ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListResources not implemented")
 }
 func (UnimplementedSecretServiceServer) mustEmbedUnimplementedSecretServiceServer() {}
 func (UnimplementedSecretServiceServer) testEmbeddedByValue()                       {}
@@ -275,6 +291,24 @@ func _SecretService_ListSecretScopes_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SecretService_ListResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListResourcesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecretServiceServer).ListResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecretService_ListResources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecretServiceServer).ListResources(ctx, req.(*ListResourcesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SecretService_ServiceDesc is the grpc.ServiceDesc for SecretService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -305,6 +339,10 @@ var SecretService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListSecretScopes",
 			Handler:    _SecretService_ListSecretScopes_Handler,
+		},
+		{
+			MethodName: "ListResources",
+			Handler:    _SecretService_ListResources_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
