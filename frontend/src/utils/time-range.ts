@@ -50,3 +50,16 @@ export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates
     end: now,
   };
 }
+
+/**
+ * Evenly spaced timestamps (ms) spanning [startMs, endMs] inclusive, for use as
+ * explicit chart axis ticks. Lets a time axis show the full selected window even
+ * when the underlying data only covers part of it.
+ */
+export function getEvenlySpacedTimeTicks(startMs: number, endMs: number, count = 6): number[] {
+  if (count < 2 || endMs <= startMs) {
+    return [startMs];
+  }
+  const step = (endMs - startMs) / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(startMs + step * i));
+}
