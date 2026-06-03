@@ -24,7 +24,7 @@ import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Controller, useFormState, useWatch } from 'react-hook-form';
+import { Controller, useWatch } from 'react-hook-form';
 
 import { PipelineStatusToggle } from './pipeline-status-toggle';
 import { cpuToTasks } from '../tasks';
@@ -160,17 +160,20 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
     control={form.control}
     name="name"
     render={({ field, fieldState }) => (
-      <input
-        {...field}
-        aria-invalid={fieldState.invalid}
-        aria-label="Pipeline name"
-        className={cn(
-          'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
-          'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
-          fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
-        )}
-        placeholder={placeholder}
-      />
+      <div className="flex min-w-0 flex-col">
+        <input
+          {...field}
+          aria-invalid={fieldState.invalid}
+          aria-label="Pipeline name"
+          className={cn(
+            'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
+            'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
+            fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
+          )}
+          placeholder={placeholder}
+        />
+        {fieldState.error ? <p className="mt-1 text-destructive text-sm">{fieldState.error.message}</p> : null}
+      </div>
     )}
   />
 );
@@ -282,8 +285,6 @@ export function PipelineEditHeader({
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
-  const { errors } = useFormState({ control: form.control });
-  const nameError = typeof errors.name?.message === 'string' ? errors.name.message : undefined;
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -316,7 +317,6 @@ export function PipelineEditHeader({
             </Button>
           </div>
         </div>
-        {nameError ? <p className="pl-11 text-destructive text-sm">{nameError}</p> : null}
       </div>
       <div className="flex flex-col items-start gap-2">
         <MetaStrip items={items} />
