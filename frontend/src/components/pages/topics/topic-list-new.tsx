@@ -333,6 +333,7 @@ const TopicList: FC = () => {
     <>
       <CreateTopicDialog isOpen={isCreateTopicModalOpen} onClose={() => setIsCreateTopicModalOpen(false)} />
       <DeleteResourceAlertDialog
+        confirmButtonTestId="delete-topic-confirm-button"
         isDeleting={deletionPending}
         onDelete={handleDeleteTopic}
         onOpenChange={(open) => {
