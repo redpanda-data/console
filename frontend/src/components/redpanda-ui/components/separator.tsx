@@ -4,21 +4,21 @@ import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
-const separatorVariants = cva(
-  'shrink-0 data-[orientation=horizontal]:h-px data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px',
-  {
-    variants: {
-      variant: {
-        default: 'bg-divider-default',
-        subtle: 'bg-divider-subtle',
-        strong: 'bg-divider-strong',
-      },
+const separatorVariants = cva('shrink-0', {
+  variants: {
+    variant: {
+      default: 'bg-divider-default',
+      subtle: 'bg-divider-subtle',
+      strong: 'bg-divider-strong',
     },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
+const orientationClasses = (orientation: 'horizontal' | 'vertical') =>
+  orientation === 'vertical' ? 'h-full w-px' : 'h-px w-full';
 
 export type SeparatorVariant = VariantProps<typeof separatorVariants>['variant'];
 
@@ -45,7 +45,7 @@ function Separator({
   const a11yProps = decorative ? { 'aria-hidden': true, role: 'none' as const } : {};
   return (
     <SeparatorPrimitive
-      className={cn(separatorVariants({ variant }), className)}
+      className={cn(separatorVariants({ variant }), orientationClasses(orientation), className)}
       data-orientation={orientation}
       data-slot="separator"
       data-testid={testId}
