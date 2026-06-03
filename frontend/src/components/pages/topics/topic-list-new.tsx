@@ -40,7 +40,7 @@ import {
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
@@ -53,6 +53,7 @@ import { api } from '../../../state/backend-api';
 import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { renderLogDirSummary } from '../../misc/common';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
@@ -148,8 +149,10 @@ const TopicList: FC = () => {
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(uiSettings.topicList.pageSize ?? 10);
+  const [{ page: pageIndex, pageSize }, setPagination] = useQueryStates({
+    page: parseAsInteger.withDefault(0),
+    pageSize: parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE),
+  });
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     searchValue ? [{ id: 'topicName', value: searchValue }] : []
   );
@@ -158,14 +161,14 @@ const TopicList: FC = () => {
 
   const handlePaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
-    setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
+    void setPagination({ page: next.pageIndex, pageSize: next.pageSize });
     uiSettings.topicList.pageSize = next.pageSize;
   };
 
   const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
     setColumnFilters(next);
+    void setPagination((prev) => ({ ...prev, page: 0 }));
     const nameFilter = next.find((f) => f.id === 'topicName');
     setSearchValue((nameFilter?.value as string) || null);
   };
@@ -409,7 +412,10 @@ const TopicList: FC = () => {
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <Checkbox
               checked={showInternalTopics}
-              onCheckedChange={(checked) => setShowInternalTopics(checked === true)}
+              onCheckedChange={(checked) => {
+                void setPagination((prev) => ({ ...prev, page: 0 }));
+                setShowInternalTopics(checked === true);
+              }}
               testId="show-internal-topics-checkbox"
             />
             Show internal topics
