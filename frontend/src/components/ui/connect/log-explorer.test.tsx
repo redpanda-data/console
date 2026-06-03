@@ -67,25 +67,14 @@ describe('LogExplorer', () => {
     mockReturn.progress = { bytesConsumed: 0, messagesConsumed: 0 };
     renderExplorer();
     expect(screen.getByTestId('log-loading-spinner')).toBeInTheDocument();
-    expect(screen.queryByTestId('log-progress-bar')).not.toBeInTheDocument();
   });
 
-  test('shows progress bar (no spinner) when backend provides progress data', () => {
+  test('shows progress text (no spinner) when backend provides progress data', () => {
     mockReturn.phase = 'Searching...';
     mockReturn.progress = { bytesConsumed: 2_500_000, messagesConsumed: 150 };
     renderExplorer();
     expect(screen.queryByTestId('log-loading-spinner')).not.toBeInTheDocument();
-    expect(screen.getByTestId('log-progress-bar')).toBeInTheDocument();
     expect(screen.getByTestId('log-search-progress')).toHaveTextContent('150 messages checked');
-  });
-
-  test('progress bar renders above the table, not inside a table cell', () => {
-    mockReturn.phase = 'Searching...';
-    mockReturn.progress = { bytesConsumed: 1_000, messagesConsumed: 10 };
-    renderExplorer();
-    const progressBar = screen.getByTestId('log-progress-bar');
-    // Progress bar should be a sibling/overlay of the table, not inside a <td>
-    expect(progressBar.closest('td')).toBeNull();
   });
 
   test('shows history empty state when no messages and search complete', () => {
