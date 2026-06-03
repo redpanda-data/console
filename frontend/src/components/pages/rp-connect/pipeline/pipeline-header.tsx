@@ -178,8 +178,6 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
   />
 );
 
-// View-mode header: pipeline name as the page title, with details/docs/edit
-// actions. Status and the run control live in a separate ops bar below.
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -262,9 +260,7 @@ export function PipelineViewHeader({
   );
 }
 
-// Edit / create header: name as the title with a mode chip; Docs + Save on the
-// right. The settings the dialog controls are shown below, with "Edit settings"
-// anchored to that block (away from Save).
+// "Edit settings" is anchored to the settings block below, away from Save.
 export function PipelineEditHeader({
   form,
   mode,
