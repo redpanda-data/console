@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import type { FC } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
@@ -42,10 +43,8 @@ import {
 } from 'utils/pipeline-throughput.utils';
 import { calculateTimeRange, getEvenlySpacedTimeTicks, getTimeRanges, type TimeRange } from 'utils/time-range';
 
-// Cap at 12h to match the observability page: the range-query backend derives
-// its own resolution (no step param) and can't reliably serve a 24h window at
-// the default step (Prometheus' 11k-points-per-series limit), which surfaced as
-// "Failed to load throughput metrics".
+// Cap at 12h (matching observability): the range-query backend has no step param
+// and can't serve a 24h window at its default resolution (Prometheus' 11k-point limit).
 const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
 
 const chartConfig = {
@@ -59,7 +58,7 @@ type ThroughputContentProps = {
   hasData: boolean;
   chartData: MergedPoint[];
   id: string;
-  /** Full selected window [start, end] in ms, so the time axis spans it even when data is sparse. */
+  // Full selected window [start, end] in ms, so the axis spans it even when data is sparse.
   domain: [number, number];
 };
 
@@ -208,8 +207,8 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
-  // Anchor the chart's time axis to the full selected window so the graph spans
-  // the whole range (e.g. a full hour) even when data only covers part of it.
+  // Anchor the axis to the full selected window so the graph spans the whole
+  // range even when data only covers part of it.
   const domain: [number, number] = [timeRange.start.getTime(), timeRange.end.getTime()];
 
   return (
@@ -230,7 +229,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
             </SelectContent>
           </Select>
           <Button aria-label="Refresh" disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-            <RefreshIcon className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+            <RefreshIcon className={cn('size-4', isFetching && 'animate-spin')} />
           </Button>
         </div>
       </div>

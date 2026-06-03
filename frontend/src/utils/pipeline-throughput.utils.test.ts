@@ -4,6 +4,7 @@ import {
   addSeriesToMap,
   formatChartTimestamp,
   formatTooltipLabel,
+  insertGapMarkers,
   type MergedPoint,
   mergeTimeSeries,
   type TimeSeriesResult,
@@ -94,6 +95,41 @@ describe('mergeTimeSeries', () => {
     const ingress: TimeSeriesResult[] = [{ values: [{ timestamp: { seconds: 100n }, value: 10 }] }];
     const result = mergeTimeSeries(ingress, []);
     expect(result).toEqual([{ timestamp: 100_000, ingress: 10, egress: 0 }]);
+  });
+});
+
+describe('insertGapMarkers', () => {
+  const pt = (timestamp: number, ingress: number): MergedPoint => ({ timestamp, ingress, egress: ingress });
+
+  test('leaves evenly spaced points untouched', () => {
+    const points = [pt(0, 1), pt(60, 2), pt(120, 3)];
+    expect(insertGapMarkers(points)).toEqual(points);
+  });
+
+  test('inserts a null marker inside a larger-than-step gap', () => {
+    // Regular 60s step, then a jump of 600s (service was down).
+    const points = [pt(0, 1), pt(60, 2), pt(660, 3)];
+    const result = insertGapMarkers(points);
+    expect(result).toEqual([pt(0, 1), pt(60, 2), { timestamp: 120, ingress: null, egress: null }, pt(660, 3)]);
+  });
+
+  test('returns fewer than two points unchanged', () => {
+    expect(insertGapMarkers([])).toEqual([]);
+    expect(insertGapMarkers([pt(0, 1)])).toEqual([pt(0, 1)]);
+  });
+
+  test('mergeTimeSeries breaks the line across a no-data gap', () => {
+    const ingress: TimeSeriesResult[] = [
+      {
+        values: [
+          { timestamp: { seconds: 0n }, value: 1 },
+          { timestamp: { seconds: 60n }, value: 2 },
+          { timestamp: { seconds: 660n }, value: 3 },
+        ],
+      },
+    ];
+    const result = mergeTimeSeries(ingress, []);
+    expect(result.some((p) => p.ingress === null)).toBe(true);
   });
 });
 

@@ -266,10 +266,7 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  /**
-   * Called right before a successful save navigates away, so the unsaved-changes
-   * guard doesn't block the post-save navigation.
-   */
+  // Called right before a successful save navigates away, so the unsaved-changes guard doesn't block it.
   onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
@@ -484,9 +481,8 @@ function EditorSkeleton() {
   );
 }
 
-// Read-only YAML lane for the view page. Reuses the editor for consistent
-// highlighting, but suppresses every "editable" cue (caret, text mouse cursor,
-// active-line highlight) so it reads as a viewer.
+// Read-only YAML viewer for the view page: reuses the editor with all editable
+// cues (caret, text cursor, active-line highlight) suppressed.
 function YamlViewPanel({
   configYaml,
   schema,
@@ -741,8 +737,8 @@ function PipelinePageContent() {
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
-  // Editor session state lives in a context-scoped Zustand store (one per page
-  // mount). Actions are stable, so we read them once; values use selectors.
+  // Editor session state lives in a context-scoped Zustand store. Actions are
+  // stable, so we read them once; values use selectors.
   const editorStore = usePipelineEditorStoreApi();
   const {
     setYamlContent,
@@ -883,8 +879,7 @@ function PipelinePageContent() {
     [components, yamlContent, handleConnectorYamlChange, setAddConnectorType]
   );
 
-  // Hydrate editor content from the loaded pipeline, once per pipeline id, so
-  // re-renders don't clobber in-progress edits.
+  // Hydrate from the loaded pipeline once per id, so re-renders don't clobber edits.
   useEffect(() => {
     if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
       hydrateFromServer(pipeline.id, pipeline.configYaml);
@@ -963,9 +958,7 @@ function PipelinePageContent() {
           url={pipeline?.url}
         />
       ) : null}
-      {/* Lane navigation (view mode): Monitor (throughput/logs) vs Configuration
-          (read-only YAML), both alongside the visualizer. A future full Visual
-          lane slots in here. */}
+      {/* View-mode lanes: Monitor (throughput/logs) vs Configuration (read-only YAML). */}
       {mode === 'view' && pipeline ? (
         <Tabs value={activeViewLane}>
           <TabsList className="w-fit" variant="underline">

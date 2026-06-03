@@ -34,6 +34,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
@@ -46,10 +47,7 @@ import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
 
-/**
- * TanStack Table assigns a default size of 150 to columns without an explicit `size`.
- * We use this to detect "unsized" columns and avoid applying a fixed width.
- */
+// TanStack Table's default column size; used to detect "unsized" columns.
 const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
 
 type LogPayload = {
@@ -71,9 +69,8 @@ function getLogPayload(msg: TopicMessage): LogPayload | null {
   return null;
 }
 
-// Component paths (e.g. root.pipeline.processors.1.branch.catch) are long and
-// repetitive; keep the meaningful head + tail so the column stays compact. The
-// full path is shown on hover and in the detail panel.
+// Component paths (e.g. root.pipeline.processors.1.branch.catch) are long; keep
+// the head + tail so the column stays compact (full path shown on hover).
 function abbreviateComponentPath(path: string): string {
   const parts = path.split('.');
   if (parts.length <= 3) {
@@ -273,8 +270,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           },
         }) => {
           const d = new Date(timestamp);
-          // Time is the scannable field; the date is kept (muted, above) since
-          // logs can span time, with the full date/time on hover.
+          // Time is the scannable field; date sits muted above, full date/time on hover.
           return (
             <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
               <span className="text-[11px] text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
@@ -426,7 +422,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             size="icon"
             variant="ghost"
           >
-            <RefreshIcon className={isSearching ? 'animate-spin' : ''} />
+            <RefreshIcon className={cn(isSearching && 'animate-spin')} />
           </Button>
         </div>
       </div>
@@ -439,7 +435,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    className={`px-3 ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
+                    className={cn('px-3', header.column.getCanSort() && 'cursor-pointer select-none')}
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}

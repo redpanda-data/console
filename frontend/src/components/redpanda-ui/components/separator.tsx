@@ -25,12 +25,8 @@ export type SeparatorVariant = VariantProps<typeof separatorVariants>['variant']
 type SeparatorProps = React.ComponentProps<typeof SeparatorPrimitive> &
   SharedProps & {
     variant?: SeparatorVariant;
-    /**
-     * When `true` (the Radix default), the separator is purely decorative and
-     * will not be announced to assistive tech (`role="none"` + `aria-hidden`).
-     * When `false`, the native Base UI `role="separator"` with an orientation
-     * is used. Honored faithfully — this is not a compat no-op.
-     */
+    // When `true` (default), the separator is decorative (`role="none"` +
+    // `aria-hidden`); when `false`, it uses the native `role="separator"`.
     decorative?: boolean;
   };
 

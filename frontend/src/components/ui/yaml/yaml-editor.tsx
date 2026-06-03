@@ -147,7 +147,6 @@ export const YamlEditor = (props: YamlEditorProps) => {
     yamlRef.current?.update(monacoYamlOptions);
   }, [monacoYamlOptions]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (yamlRef.current) {

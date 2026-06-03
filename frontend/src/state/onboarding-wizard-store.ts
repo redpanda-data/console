@@ -22,11 +22,8 @@ import type {
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
-// Single source of truth for the Connect onboarding wizard. Previously this was
-// four separate stores (wizard connections / topic / user / yaml); they're now
-// one store grouped into logical slices, with one persistence config and one
-// reset. The four `use*` hooks below are kept as aliases so existing consumers
-// (and their selectors) keep working unchanged.
+// One store for the Connect onboarding wizard (was four). The `use*` aliases
+// below keep existing consumers working.
 type OnboardingData = Partial<OnboardingWizardFormData> &
   Partial<MinimalTopicData> &
   Partial<MinimalUserData> & { yamlContent: string | undefined };
@@ -55,8 +52,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
       setHasHydrated: (state) => set({ hasHydrated: state }),
       reset: () => {
         sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-        // replace: true drops every data key (input/output/topic/user/yaml),
-        // restoring a clean slate while preserving the action methods.
+        // replace: true clears all data while preserving the action methods.
         return set(
           {
             ...initialData,
@@ -75,8 +71,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
       storage: createFlatStorage<Pick<OnboardingWizardFormData, 'input' | 'output'>>(),
-      // Only the chosen input/output connections survive navigation; topic/user/
-      // yaml are transient working state.
+      // Only input/output connections persist; topic/user/yaml are transient.
       partialize: (state) => ({
         input: state.input,
         output: state.output,
@@ -88,8 +83,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
   )
 );
 
-// Backward-compatible aliases — all four resolve to the single store above.
-// Selectors keep working because the consolidated store carries every field.
+// Backward-compatible aliases — all resolve to the single store above.
 export const useOnboardingWizardDataStore = useOnboardingStore;
 export const useOnboardingTopicDataStore = useOnboardingStore;
 export const useOnboardingUserDataStore = useOnboardingStore;
@@ -97,7 +91,7 @@ export const useOnboardingYamlContentStore = useOnboardingStore;
 
 export const useResetOnboardingWizardStore = () => useCallback(() => useOnboardingStore.getState().reset(), []);
 
-// Strip store metadata (actions + hydration flag), leaving only the data fields.
+// Strip store metadata, leaving only the data fields.
 function onboardingData(state: OnboardingStore): OnboardingData {
   const {
     setWizardData: _setWizardData,
@@ -112,12 +106,8 @@ function onboardingData(state: OnboardingStore): OnboardingData {
   return data;
 }
 
-/**
- * Read wizard connection data from the store, falling back to session storage.
- * The persist middleware hydrates once at store creation — if CloudV2 writes to
- * session storage and then does a client-side navigation (no full reload), the
- * store may have hydrated before the data was set. This handles that race.
- */
+// Read connection data, falling back to session storage to cover the race where
+// the store hydrated before CloudV2 wrote the data (client-side nav, no reload).
 export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
   let input = useOnboardingStore.getState().input;
   let output = useOnboardingStore.getState().output;

@@ -32,7 +32,6 @@ type PipelineEditorState = {
   hydratedPipelineId: string | null;
   // Lets a successful save navigate away without tripping the guard.
   allowNavigation: boolean;
-  // Which view-page lane (tab) is active.
   activeViewLane: ViewLane;
   // Transient UI.
   commandMenuFilter: CommandMenuFilter;
@@ -127,7 +126,6 @@ function usePipelineEditorStoreContext(): StoreApi<PipelineEditorStore> {
   return store;
 }
 
-// Subscribe to a slice of the store.
 export function usePipelineEditorStore<T>(selector: (state: PipelineEditorStore) => T): T {
   return useStore(usePipelineEditorStoreContext(), selector);
 }

@@ -51,11 +51,8 @@ export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates
   };
 }
 
-/**
- * Evenly spaced timestamps (ms) spanning [startMs, endMs] inclusive, for use as
- * explicit chart axis ticks. Lets a time axis show the full selected window even
- * when the underlying data only covers part of it.
- */
+// Evenly spaced timestamps (ms) across [startMs, endMs] inclusive, for explicit
+// chart axis ticks so the axis can span the full window even when data is sparse.
 export function getEvenlySpacedTimeTicks(startMs: number, endMs: number, count = 6): number[] {
   if (count < 2 || endMs <= startMs) {
     return [startMs];

@@ -154,8 +154,8 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-// Inline-editable pipeline name, styled as the page title. Bound to the same
-// form field as the settings dialog, so editing either keeps both in sync.
+// Inline-editable pipeline name. Bound to the same form field as the settings
+// dialog, so editing either keeps both in sync.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
     control={form.control}
