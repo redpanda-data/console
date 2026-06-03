@@ -39,7 +39,7 @@ import {
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { DatabaseIcon, Search, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
@@ -59,14 +59,6 @@ import { Button } from '../../redpanda-ui/components/button';
 import { Checkbox } from '../../redpanda-ui/components/checkbox';
 import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
 import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../redpanda-ui/components/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -76,9 +68,12 @@ import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 import { Text } from '../../redpanda-ui/components/typography';
+import { DeleteResourceAlertDialog } from '../../ui/delete-resource-alert-dialog';
 
 const nameFilterFn = (row: Row<Topic>, columnId: string, filterValue: string) => {
-  if (!filterValue) return true;
+  if (!filterValue) {
+    return true;
+  }
   try {
     return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
   } catch {
@@ -105,6 +100,7 @@ const TopicList: FC = () => {
 
   const { data, isLoading, isError, error, refetch: refetchTopics } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  const [deletionPending, setDeletionPending] = useState(false);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
 
   const refreshData = useCallback(() => {
@@ -116,6 +112,23 @@ const TopicList: FC = () => {
   useEffect(() => {
     appGlobal.onRefresh = refreshData;
   }, [refreshData]);
+
+  const handleDeleteTopic = (topicName: string) => {
+    setDeletionPending(true);
+    api
+      .deleteTopic(topicName)
+      .then(() => {
+        toast.success('Topic Deleted', {
+          description: `Topic "${topicName}" has been deleted.`,
+        });
+        setTopicToDelete(null);
+        refreshData();
+      })
+      .catch((err: Error) => {
+        toast.error('Failed to delete topic', { description: err.message });
+      })
+      .finally(() => setDeletionPending(false));
+  };
 
   const allTopics = useMemo(() => {
     let filtered = data.topics ?? [];
@@ -319,14 +332,28 @@ const TopicList: FC = () => {
   return (
     <>
       <CreateTopicDialog isOpen={isCreateTopicModalOpen} onClose={() => setIsCreateTopicModalOpen(false)} />
-      <ConfirmDeletionModal
-        onCancel={() => setTopicToDelete(null)}
-        onFinish={async () => {
-          setTopicToDelete(null);
-          await refreshData();
+      <DeleteResourceAlertDialog
+        isDeleting={deletionPending}
+        onDelete={handleDeleteTopic}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTopicToDelete(null);
+          }
         }}
-        topicToDelete={topicToDelete}
-      />
+        open={topicToDelete !== null}
+        resourceId={topicToDelete?.topicName ?? ''}
+        resourceName={topicToDelete?.topicName ?? ''}
+        resourceType="Topic"
+      >
+        {topicToDelete?.isInternal ? (
+          <Alert className="mb-3" variant="destructive">
+            <AlertTitle>Warning</AlertTitle>
+            <AlertDescription>
+              This is an internal topic, deleting it might have unintended side-effects!
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </DeleteResourceAlertDialog>
 
       <ListLayout className="my-4" data-testid="topics-table">
         <div className="flex flex-wrap gap-8">
@@ -423,7 +450,9 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
     ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
 
-  if (!(leaderlessPartitions || underReplicatedPartitions)) return null;
+  if (!(leaderlessPartitions || underReplicatedPartitions)) {
+    return null;
+  }
 
   return (
     <TooltipProvider>
@@ -431,14 +460,7 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex text-destructive">
-              <svg aria-hidden="true" className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <title>Error</title>
-                <path
-                  clipRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                  fillRule="evenodd"
-                />
-              </svg>
+              <AlertCircle aria-hidden="true" className="h-4 w-4" />
             </span>
           </TooltipTrigger>
           <TooltipContent>
@@ -450,14 +472,7 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex text-warning">
-              <svg aria-hidden="true" className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <title>Warning</title>
-                <path
-                  clipRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  fillRule="evenodd"
-                />
-              </svg>
+              <AlertTriangle aria-hidden="true" className="h-4 w-4" />
             </span>
           </TooltipTrigger>
           <TooltipContent>
@@ -473,15 +488,7 @@ const iconAllowed = <span className="text-green-600">✓</span>;
 const iconForbidden = <span className="text-red-600">✗</span>;
 const iconClosedEye = (
   <span className="ml-1 inline-block opacity-50">
-    <svg aria-hidden="true" className="inline h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
-      <title>Hidden</title>
-      <path
-        clipRule="evenodd"
-        d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
-        fillRule="evenodd"
-      />
-      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-    </svg>
+    <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />
   </span>
 );
 
@@ -533,77 +540,6 @@ const TopicName = ({ topic }: { topic: Topic }) => {
     </TooltipProvider>
   );
 };
-
-function ConfirmDeletionModal({
-  topicToDelete,
-  onFinish,
-  onCancel,
-}: {
-  topicToDelete: Topic | null;
-  onFinish: () => void;
-  onCancel: () => void;
-}) {
-  const [deletionPending, setDeletionPending] = useState(false);
-
-  const handleOpenChange = (open: boolean) => {
-    if (!open) onCancel();
-  };
-
-  const handleDelete = () => {
-    if (!topicToDelete?.topicName) return;
-    setDeletionPending(true);
-    api
-      .deleteTopic(topicToDelete.topicName)
-      .then(() => {
-        toast.success('Topic Deleted', {
-          description: `Topic "${topicToDelete.topicName}" has been deleted.`,
-        });
-        onFinish();
-      })
-      .catch((err: Error) => {
-        toast.error('Failed to delete topic', { description: err.message });
-      })
-      .finally(() => setDeletionPending(false));
-  };
-
-  return (
-    <Dialog onOpenChange={handleOpenChange} open={topicToDelete !== null}>
-      <DialogContent variant="destructive">
-        <DialogHeader>
-          <DialogTitle>Delete Topic</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          {topicToDelete?.isInternal && (
-            <Alert className="mb-3" variant="destructive">
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                This is an internal topic, deleting it might have unintended side-effects!
-              </AlertDescription>
-            </Alert>
-          )}
-          <p className="text-sm">
-            Are you sure you want to delete topic{' '}
-            <code className="rounded bg-muted px-1 font-mono text-sm">{topicToDelete?.topicName}</code>?<br />
-            This action cannot be undone.
-          </p>
-        </DialogBody>
-        <DialogFooter>
-          <Button onClick={onCancel} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            data-testid="delete-topic-confirm-button"
-            disabled={deletionPending}
-            onClick={handleDelete}
-            variant="destructive"
-          >
-            {deletionPending ? 'Deleting…' : 'Delete'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function hasDeletePrivilege() {
   // TODO - we will provide ACL for this
