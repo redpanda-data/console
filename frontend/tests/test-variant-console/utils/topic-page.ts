@@ -265,7 +265,12 @@ export class TopicPage {
       await this.goToTopicsList();
       await this.verifyTopicInList(topicName); // Verify topic exists
       await this.page.getByTestId(`topic-actions-trigger-${topicName}`).click();
-      await this.page.getByTestId(`delete-topic-button-${topicName}`).click();
+      await this.page.getByTestId(`delete-topic-button-${topicName}`).dispatchEvent('click');
+      // New topic page requires typing "delete" to confirm
+      const confirmationInput = this.page.getByPlaceholder('Type "delete" to confirm');
+      if (await confirmationInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await confirmationInput.fill('delete');
+      }
       await this.page.getByTestId('delete-topic-confirm-button').click();
       await expect(this.page.getByText('Topic Deleted')).toBeVisible();
       await this.verifyTopicNotInList(topicName);
