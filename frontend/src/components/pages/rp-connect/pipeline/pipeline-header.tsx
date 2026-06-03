@@ -35,7 +35,6 @@ const DOCS_URL = 'https://docs.redpanda.com/redpanda-connect/home/';
 
 type TagEntry = { key: string; value: string };
 
-// Dot-separated strip of short scalar facts. Null nodes are dropped.
 type MetaEntry = { key: string; node: ReactNode };
 
 const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
@@ -59,7 +58,6 @@ const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
   );
 };
 
-// Labelled line below the strip for wider fields (tags, description).
 const DetailLine = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex gap-2 text-sm">
     <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
@@ -67,7 +65,6 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
-// "<n> compute units" with an inline definition tooltip for newcomers.
 const ComputeUnitsMeta = ({ units }: { units: number }) => (
   <span className="flex items-center gap-1.5">
     <span className="font-medium text-foreground">{units}</span>
@@ -81,7 +78,6 @@ const ComputeUnitsMeta = ({ units }: { units: number }) => (
   </span>
 );
 
-// Count fact like "2 topics" — emphasised number, muted noun (pre-pluralised).
 const CountMeta = ({ count, noun }: { count: number; noun: string }) => (
   <span className="flex items-center gap-1.5">
     <span className="font-medium text-foreground">{count}</span>
@@ -89,7 +85,6 @@ const CountMeta = ({ count, noun }: { count: number; noun: string }) => (
   </span>
 );
 
-// Labelled value that reveals a copy button on hover; optionally an external link.
 const CopyableMeta = ({
   label,
   value,
