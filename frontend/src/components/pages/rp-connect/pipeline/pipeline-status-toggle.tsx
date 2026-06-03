@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { Label } from 'components/redpanda-ui/components/label';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -137,13 +138,14 @@ export function PipelineStatusToggle({
         <Switch
           aria-label={checked ? 'Stop pipeline' : 'Start pipeline'}
           checked={checked}
+          id={`pipeline-run-toggle-${pipelineId}`} // for testing
           className={cn(tone === 'success' && 'data-[state=checked]:bg-success')}
           disabled={isDisabled}
           onCheckedChange={handleCheckedChange}
           testId="pipeline-run-toggle"
         />
         {isTransitioning ? <Spinner className="size-3.5!" /> : null}
-        <span>{label}</span>
+        <Label className="cursor-pointer" htmlFor={`pipeline-run-toggle-${pipelineId}`}>{label}</Label>
       </div>
 
       <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>
