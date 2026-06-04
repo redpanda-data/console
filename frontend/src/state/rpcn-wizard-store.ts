@@ -22,13 +22,13 @@ import type {
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
-// One store for the Connect onboarding wizard (was four). The `use*` aliases
-// below keep existing consumers working.
-type OnboardingData = Partial<OnboardingWizardFormData> &
+// Single store for the RPCN (Redpanda Connect) creation wizard, grouping the
+// connection / topic / user / yaml slices that were once separate stores.
+type RpcnWizardData = Partial<OnboardingWizardFormData> &
   Partial<MinimalTopicData> &
   Partial<MinimalUserData> & { yamlContent: string | undefined };
 
-type OnboardingStore = OnboardingData & {
+type RpcnWizardStore = RpcnWizardData & {
   hasHydrated: boolean;
   setWizardData: (data: Partial<OnboardingWizardFormData>) => void;
   setTopicData: (data: Partial<MinimalTopicData>) => void;
@@ -38,9 +38,9 @@ type OnboardingStore = OnboardingData & {
   reset: () => void;
 };
 
-const initialData: OnboardingData = { yamlContent: undefined };
+const initialData: RpcnWizardData = { yamlContent: undefined };
 
-export const useOnboardingStore = create<OnboardingStore>()(
+export const useRpcnWizardStore = create<RpcnWizardStore>()(
   persist(
     (set, get) => ({
       ...initialData,
@@ -83,16 +83,10 @@ export const useOnboardingStore = create<OnboardingStore>()(
   )
 );
 
-// Backward-compatible aliases — all resolve to the single store above.
-export const useOnboardingWizardDataStore = useOnboardingStore;
-export const useOnboardingTopicDataStore = useOnboardingStore;
-export const useOnboardingUserDataStore = useOnboardingStore;
-export const useOnboardingYamlContentStore = useOnboardingStore;
-
-export const useResetOnboardingWizardStore = () => useCallback(() => useOnboardingStore.getState().reset(), []);
+export const useResetRpcnWizardStore = () => useCallback(() => useRpcnWizardStore.getState().reset(), []);
 
 // Strip store metadata, leaving only the data fields.
-function onboardingData(state: OnboardingStore): OnboardingData {
+function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
   const {
     setWizardData: _setWizardData,
     setTopicData: _setTopicData,
@@ -109,8 +103,8 @@ function onboardingData(state: OnboardingStore): OnboardingData {
 // Read connection data, falling back to session storage to cover the race where
 // the store hydrated before CloudV2 wrote the data (client-side nav, no reload).
 export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
-  let input = useOnboardingStore.getState().input;
-  let output = useOnboardingStore.getState().output;
+  let input = useRpcnWizardStore.getState().input;
+  let output = useRpcnWizardStore.getState().output;
 
   if (!(input || output)) {
     try {
@@ -120,7 +114,7 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
         input = parsed.input;
         output = parsed.output;
         // Sync the store so other consumers see the data
-        useOnboardingStore.getState().setWizardData({ input, output });
+        useRpcnWizardStore.getState().setWizardData({ input, output });
       }
     } catch {
       // Ignore malformed session storage
@@ -131,15 +125,15 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
 }
 
 // Imperative API for non-hook contexts (class components, utility functions).
-export const onboardingWizardStore = {
-  getWizardData: () => onboardingData(useOnboardingStore.getState()),
-  getTopicData: () => onboardingData(useOnboardingStore.getState()),
-  getUserData: () => onboardingData(useOnboardingStore.getState()),
-  getYamlContent: () => onboardingData(useOnboardingStore.getState()),
-  hasHydrated: () => useOnboardingStore.getState().hasHydrated,
-  setWizardData: (data: Partial<OnboardingWizardFormData>) => useOnboardingStore.getState().setWizardData(data),
-  setTopicData: (data: Partial<MinimalTopicData>) => useOnboardingStore.getState().setTopicData(data),
-  setUserData: (data: Partial<MinimalUserData>) => useOnboardingStore.getState().setUserData(data),
-  setYamlContent: (data: { yamlContent: string | undefined }) => useOnboardingStore.getState().setYamlContent(data),
-  reset: () => useOnboardingStore.getState().reset(),
+export const rpcnWizardStore = {
+  getWizardData: () => rpcnWizardData(useRpcnWizardStore.getState()),
+  getTopicData: () => rpcnWizardData(useRpcnWizardStore.getState()),
+  getUserData: () => rpcnWizardData(useRpcnWizardStore.getState()),
+  getYamlContent: () => rpcnWizardData(useRpcnWizardStore.getState()),
+  hasHydrated: () => useRpcnWizardStore.getState().hasHydrated,
+  setWizardData: (data: Partial<OnboardingWizardFormData>) => useRpcnWizardStore.getState().setWizardData(data),
+  setTopicData: (data: Partial<MinimalTopicData>) => useRpcnWizardStore.getState().setTopicData(data),
+  setUserData: (data: Partial<MinimalUserData>) => useRpcnWizardStore.getState().setUserData(data),
+  setYamlContent: (data: { yamlContent: string | undefined }) => useRpcnWizardStore.getState().setYamlContent(data),
+  reset: () => useRpcnWizardStore.getState().reset(),
 };

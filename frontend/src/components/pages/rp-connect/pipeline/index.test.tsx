@@ -183,23 +183,11 @@ vi.mock('./pipeline-command-menu', async () => ({
 }));
 
 // 7. Mock Zustand stores
-vi.mock('state/onboarding-wizard-store', () => ({
-  useOnboardingYamlContentStore: Object.assign(
+vi.mock('state/rpcn-wizard-store', () => ({
+  useRpcnWizardStore: Object.assign(
     vi.fn(() => ''),
     {
-      getState: () => ({ setYamlContent: vi.fn(), yamlContent: '' }),
-    }
-  ),
-  useOnboardingWizardDataStore: Object.assign(
-    vi.fn(() => ({ hasHydrated: true })),
-    {
-      getState: () => ({ setWizardData: vi.fn() }),
-    }
-  ),
-  useOnboardingUserDataStore: Object.assign(
-    vi.fn(() => ({})),
-    {
-      getState: () => ({ reset: vi.fn() }),
+      getState: () => ({ setYamlContent: vi.fn(), yamlContent: '', setWizardData: vi.fn(), reset: vi.fn() }),
     }
   ),
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),

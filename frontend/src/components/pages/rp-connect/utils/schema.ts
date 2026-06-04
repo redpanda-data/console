@@ -6,7 +6,7 @@ import {
   type FieldSpec,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { toast } from 'sonner';
-import { onboardingWizardStore } from 'state/onboarding-wizard-store';
+import { rpcnWizardStore } from 'state/rpcn-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
@@ -133,7 +133,7 @@ export function parseSchema(componentList: ComponentList): ConnectComponentSpec[
 }
 
 const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
-  const userData = onboardingWizardStore.getUserData();
+  const userData = rpcnWizardStore.getUserData();
   const redpandaConfig: Record<string, unknown> = {};
 
   if (userData?.username) {
@@ -255,8 +255,8 @@ function populateWizardFields(
     return;
   }
 
-  const topicData = onboardingWizardStore.getTopicData();
-  const userData = onboardingWizardStore.getUserData();
+  const topicData = rpcnWizardStore.getTopicData();
+  const userData = rpcnWizardStore.getUserData();
 
   if (isTopicField(spec.name) && topicData?.topicName) {
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
@@ -341,7 +341,7 @@ function populateConnectionDefaults(
   // SASL mechanism from session storage or default to SCRAM-SHA-256
   const isMechanismField = spec.name.toLowerCase() === 'mechanism' && parentName?.toLowerCase() === 'sasl';
   if (isMechanismField) {
-    const userData = onboardingWizardStore.getUserData();
+    const userData = rpcnWizardStore.getUserData();
     return userData?.saslMechanism || 'SCRAM-SHA-256';
   }
 
@@ -359,7 +359,7 @@ function shouldShowField(params: {
 
   // Redpanda SASL: show when wizard has user data (even though it's advanced)
   if (isRedpandaComponent(componentName) && spec.name === 'sasl') {
-    const userData = onboardingWizardStore.getUserData();
+    const userData = rpcnWizardStore.getUserData();
     return !!userData?.username;
   }
 

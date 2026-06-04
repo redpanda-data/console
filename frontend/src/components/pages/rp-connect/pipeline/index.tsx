@@ -75,11 +75,7 @@ import {
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
-import {
-  useOnboardingUserDataStore,
-  useOnboardingWizardDataStore,
-  useOnboardingYamlContentStore,
-} from 'state/onboarding-wizard-store';
+import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
@@ -186,7 +182,7 @@ function buildCreateRequest(opts: {
   userTags: Record<string, string>;
   yamlContent: string;
 }) {
-  const userData = useOnboardingUserDataStore.getState();
+  const userData = useRpcnWizardStore.getState();
   const tags: Record<string, string> = {
     __redpanda_cloud_pipeline_type: 'pipeline',
   };
@@ -279,9 +275,9 @@ function usePipelineSave({
 
   const clearWizardStore = useCallback(() => {
     if (!isPipelineDiagramsEnabled) {
-      useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: '' });
+      useRpcnWizardStore.getState().setYamlContent({ yamlContent: '' });
     }
-    useOnboardingWizardDataStore.getState().setWizardData({ input: undefined, output: undefined });
+    useRpcnWizardStore.getState().setWizardData({ input: undefined, output: undefined });
   }, [isPipelineDiagramsEnabled]);
 
   const handleSave = useCallback(async () => {
@@ -834,7 +830,7 @@ function PipelinePageContent() {
       clearErrorLintHints();
       setYamlContent(value);
       if (mode === 'create' && !isPipelineDiagramsEnabled) {
-        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
+        useRpcnWizardStore.getState().setYamlContent({ yamlContent: value });
       }
     },
     [mode, isPipelineDiagramsEnabled, clearErrorLintHints, setYamlContent]

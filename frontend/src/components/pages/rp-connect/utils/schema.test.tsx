@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { ComponentStatus, FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { onboardingWizardStore } from 'state/onboarding-wizard-store';
+import { rpcnWizardStore } from 'state/rpcn-wizard-store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
@@ -16,7 +16,7 @@ describe('generateDefaultValue', () => {
 
   describe('SASL visibility for Redpanda components', () => {
     test('SASL shown for Redpanda components when wizard user data exists', () => {
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setUserData({
         username: 'testuser',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: '',
@@ -46,11 +46,11 @@ describe('generateDefaultValue', () => {
       expect(result).toBeDefined();
       expect((result as Record<string, unknown>).mechanism).toBe('SCRAM-SHA-256');
 
-      onboardingWizardStore.setUserData({ username: '', consumerGroup: '' });
+      rpcnWizardStore.setUserData({ username: '', consumerGroup: '' });
     });
 
     test('SASL NOT shown for Redpanda components without wizard user data', () => {
-      onboardingWizardStore.setUserData({ username: '', consumerGroup: '' });
+      rpcnWizardStore.setUserData({ username: '', consumerGroup: '' });
 
       const spec = {
         name: 'sasl',
@@ -160,8 +160,8 @@ describe('generateDefaultValue', () => {
 
   describe('Wizard data population', () => {
     beforeEach(() => {
-      onboardingWizardStore.setTopicData({ topicName: 'example' });
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setTopicData({ topicName: 'example' });
+      rpcnWizardStore.setUserData({
         username: 'admin',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: 'my-consumer-group',
@@ -201,7 +201,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('topics array field without wizard data returns sentinel for required field', () => {
-      onboardingWizardStore.setTopicData({ topicName: undefined });
+      rpcnWizardStore.setTopicData({ topicName: undefined });
 
       const spec = {
         name: 'topics',
@@ -444,7 +444,7 @@ describe('generateDefaultValue', () => {
 
   describe('SASL critical field behavior', () => {
     test('SASL populates with wizard data (user, password as secrets)', () => {
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setUserData({
         username: 'admin',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: '',
@@ -570,8 +570,8 @@ describe('generateDefaultValue', () => {
 
   describe('Full component integration', () => {
     beforeEach(() => {
-      onboardingWizardStore.setTopicData({ topicName: 'example' });
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setTopicData({ topicName: 'example' });
+      rpcnWizardStore.setUserData({
         username: 'admin',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: '',

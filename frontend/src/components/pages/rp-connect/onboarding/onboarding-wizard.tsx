@@ -12,13 +12,7 @@ import { AnimatePresence } from 'motion/react';
 import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
-import {
-  useOnboardingTopicDataStore,
-  useOnboardingUserDataStore,
-  useOnboardingWizardDataStore,
-  useOnboardingYamlContentStore,
-  useResetOnboardingWizardStore,
-} from 'state/onboarding-wizard-store';
+import { useResetRpcnWizardStore, useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AddTopicStep } from './add-topic-step';
@@ -72,18 +66,16 @@ export const ConnectOnboardingWizard = ({
     [componentListResponse]
   );
 
-  const persistedInputConnectionName = useOnboardingWizardDataStore(useShallow((state) => state.input?.connectionName));
-  const persistedOutputConnectionName = useOnboardingWizardDataStore(
-    useShallow((state) => state.output?.connectionName)
-  );
-  const persistedTopicName = useOnboardingTopicDataStore(useShallow((state) => state.topicName));
-  const persistedUserSaslMechanism = useOnboardingUserDataStore(useShallow((state) => state.saslMechanism));
-  const persistedUsername = useOnboardingUserDataStore(useShallow((state) => state.username));
-  const persistedConsumerGroup = useOnboardingUserDataStore(useShallow((state) => state.consumerGroup));
-  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
-  const setWizardData = useOnboardingWizardDataStore(useShallow((state) => state.setWizardData));
-  const setTopicData = useOnboardingTopicDataStore(useShallow((state) => state.setTopicData));
-  const setUserData = useOnboardingUserDataStore(useShallow((state) => state.setUserData));
+  const persistedInputConnectionName = useRpcnWizardStore(useShallow((state) => state.input?.connectionName));
+  const persistedOutputConnectionName = useRpcnWizardStore(useShallow((state) => state.output?.connectionName));
+  const persistedTopicName = useRpcnWizardStore(useShallow((state) => state.topicName));
+  const persistedUserSaslMechanism = useRpcnWizardStore(useShallow((state) => state.saslMechanism));
+  const persistedUsername = useRpcnWizardStore(useShallow((state) => state.username));
+  const persistedConsumerGroup = useRpcnWizardStore(useShallow((state) => state.consumerGroup));
+  const resetRpcnWizardStore = useResetRpcnWizardStore();
+  const setWizardData = useRpcnWizardStore(useShallow((state) => state.setWizardData));
+  const setTopicData = useRpcnWizardStore(useShallow((state) => state.setTopicData));
+  const setUserData = useRpcnWizardStore(useShallow((state) => state.setUserData));
 
   const persistedInputIsRedpandaComponent = useMemo<boolean>(
     () =>
@@ -93,7 +85,7 @@ export const ConnectOnboardingWizard = ({
   );
 
   useEffect(() => {
-    const store = useOnboardingWizardDataStore;
+    const store = useRpcnWizardStore;
     store.persist.rehydrate();
   }, []);
 
@@ -102,10 +94,10 @@ export const ConnectOnboardingWizard = ({
       // Only clear if we're navigating away from the wizard
       const currentPath = window.location.pathname;
       if (!currentPath.includes('/rp-connect/wizard')) {
-        resetOnboardingWizardStore();
+        resetRpcnWizardStore();
       }
     };
-  }, [resetOnboardingWizardStore]);
+  }, [resetRpcnWizardStore]);
 
   const search = routeApi.useSearch();
 
@@ -144,7 +136,7 @@ export const ConnectOnboardingWizard = ({
 
   const handleSkipToCreatePipeline = (methods: WizardStepperSteps) => {
     if (methods.current.id === WizardStep.ADD_INPUT) {
-      resetOnboardingWizardStore();
+      resetRpcnWizardStore();
     } else if (methods.current.id === WizardStep.ADD_OUTPUT) {
       setTopicData({});
       setUserData({});
@@ -169,11 +161,11 @@ export const ConnectOnboardingWizard = ({
             connectionName,
             connectionType,
             components,
-            existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
+            existingYaml: useRpcnWizardStore.getState().yamlContent,
           });
 
           if (yamlContent) {
-            useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+            useRpcnWizardStore.getState().setYamlContent({ yamlContent });
           }
 
           if (connectionName === 'redpanda_common') {
@@ -189,7 +181,7 @@ export const ConnectOnboardingWizard = ({
             });
             methods.goTo(WizardStep.ADD_TOPIC);
           } else {
-            const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
+            const { setWizardData: _, ...currentWizardData } = useRpcnWizardStore.getState();
             setWizardData({
               input: {
                 connectionName,
@@ -218,11 +210,11 @@ export const ConnectOnboardingWizard = ({
             connectionName,
             connectionType,
             components,
-            existingYaml: useOnboardingYamlContentStore.getState().yamlContent,
+            existingYaml: useRpcnWizardStore.getState().yamlContent,
           });
 
           if (yamlContent) {
-            useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+            useRpcnWizardStore.getState().setYamlContent({ yamlContent });
           }
 
           if (connectionName === 'redpanda_common') {
@@ -237,7 +229,7 @@ export const ConnectOnboardingWizard = ({
               },
             });
           } else {
-            const { setWizardData: _, ...currentWizardData } = useOnboardingWizardDataStore.getState();
+            const { setWizardData: _, ...currentWizardData } = useRpcnWizardStore.getState();
             setWizardData({
               output: {
                 connectionName,
@@ -301,7 +293,7 @@ export const ConnectOnboardingWizard = ({
   };
 
   const handleCancel = useCallback(() => {
-    resetOnboardingWizardStore();
+    resetRpcnWizardStore();
     if (onCancelProp) {
       onCancelProp();
     } else if (search.serverless === 'true') {
@@ -310,7 +302,7 @@ export const ConnectOnboardingWizard = ({
     } else {
       navigate({ to: '/connect-clusters', search: {} as never });
     }
-  }, [onCancelProp, navigate, resetOnboardingWizardStore, search.serverless]);
+  }, [onCancelProp, navigate, resetRpcnWizardStore, search.serverless]);
 
   // Callbacks to update validity for each step
   const handleInputValidityChange = useCallback((isValid: boolean) => {
