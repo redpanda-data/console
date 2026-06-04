@@ -20,6 +20,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
@@ -279,7 +280,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           // Time is the scannable field; date sits muted above, full date/time on hover.
           return (
             <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
-              <span className="text-[11px] text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
               <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
             </div>
           );
@@ -492,12 +493,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                     <TableCell className="p-4" colSpan={table.getVisibleFlatColumns().length}>
                       <Alert data-testid="pipeline-stopped-banner" variant="info">
                         <AlertTitle>Pipeline is not running</AlertTitle>
-                        <AlertDescription>
-                          Live logs require a running pipeline.{' '}
-                          <button className="font-medium underline" onClick={() => setLiveView(false)} type="button">
+                        <AlertDescription className="flex flex-col items-start gap-2">
+                          Live logs require a running pipeline. Switch to recent logs to view historical logs.
+                          <Button onClick={() => setLiveView(false)} size="sm" variant="secondary-outline">
                             Switch to Recent Logs
-                          </button>{' '}
-                          to view historical logs.
+                          </Button>
                         </AlertDescription>
                       </Alert>
                     </TableCell>
@@ -550,7 +550,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                           {/* Mirror the Time cell's two-line height so placeholder rows match data rows. */}
                           {columnIndex === 0 ? (
                             <div className="flex flex-col leading-tight">
-                              <span className="text-[11px]">&nbsp;</span>
+                              <span className="text-xs">&nbsp;</span>
                               <span className="text-sm">&nbsp;</span>
                             </div>
                           ) : null}
