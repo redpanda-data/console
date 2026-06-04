@@ -212,6 +212,18 @@ interface LogExplorerProps {
 
 export function LogExplorer({ pipeline, serverless, enableLiveView = false, title }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [selectedMessage, setSelectedMessage] = useState<TopicMessage | null>(null);
+
+  // Switching live/history swaps the dataset (and its ordering), so reset to the
+  // first page and drop sorting — otherwise a stale page index hides new logs.
+  const setLiveView = (enabled: boolean) => {
+    setLiveViewEnabled(enabled);
+    setPageIndex(0);
+    setSorting([]);
+  };
 
   // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
   // Skip mount — always start in history mode; only react to subsequent transitions.
@@ -219,14 +231,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   useEffect(() => {
     if (mountedRef.current) {
       setLiveViewEnabled(enableLiveView);
+      setPageIndex(0);
+      setSorting([]);
     }
     mountedRef.current = true;
   }, [enableLiveView]);
-
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [selectedMessage, setSelectedMessage] = useState<TopicMessage | null>(null);
 
   const { messages, phase, error, progress, refresh } = useLogSearch({
     pipelineId: pipeline.id,
@@ -372,6 +381,15 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const hasProgress = progress.bytesConsumed > 0 || progress.messagesConsumed > 0;
   const pipelineNotRunning = pipeline.state !== Pipeline_State.RUNNING;
 
+  // Clamp back to the first page if filtering (or a smaller dataset) leaves the
+  // current page out of range — otherwise the user is stranded on a blank page.
+  useEffect(() => {
+    const pageCount = Math.ceil(filteredRowCount / pageSize);
+    if (pageCount > 0 && pageIndex > pageCount - 1) {
+      setPageIndex(0);
+    }
+  }, [filteredRowCount, pageSize, pageIndex]);
+
   return (
     <div className="flex min-h-0 flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
@@ -408,8 +426,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             disabled={!enableLiveView}
             id="live-view-toggle"
             onCheckedChange={(checked) => {
-              setLiveViewEnabled(checked);
-              setSorting([]);
+              setLiveView(checked);
               if (checked) {
                 actions.removeAllFilters();
               }
@@ -480,11 +497,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                         <AlertTitle>Pipeline is not running</AlertTitle>
                         <AlertDescription>
                           Live logs require a running pipeline.{' '}
-                          <button
-                            className="font-medium underline"
-                            onClick={() => setLiveViewEnabled(false)}
-                            type="button"
-                          >
+                          <button className="font-medium underline" onClick={() => setLiveView(false)} type="button">
                             Switch to Recent Logs
                           </button>{' '}
                           to view historical logs.
@@ -514,23 +527,43 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                   </TableRow>
                 );
               }
-              return table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className="cursor-pointer"
-                  key={row.id}
-                  onClick={() => setSelectedMessage(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      className="px-3 py-2"
-                      key={cell.id}
-                      style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+              const rows = table.getRowModel().rows;
+              const placeholderColumns = table.getVisibleFlatColumns();
+              // Pad partial pages up to pageSize so the table keeps a constant
+              // height and doesn't jump as logs stream in.
+              const placeholderCount = Math.max(0, pageSize - rows.length);
+              return (
+                <>
+                  {rows.map((row) => (
+                    <TableRow className="cursor-pointer" key={row.id} onClick={() => setSelectedMessage(row.original)}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          className="px-3 py-2"
+                          key={cell.id}
+                          style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ));
+                  {Array.from({ length: placeholderCount }, (_, i) => (
+                    <TableRow aria-hidden className="pointer-events-none" key={`placeholder-${i}`}>
+                      {placeholderColumns.map((column, columnIndex) => (
+                        <TableCell className="px-3 py-2" key={column.id}>
+                          {/* Mirror the Time cell's two-line height so placeholder rows match data rows. */}
+                          {columnIndex === 0 ? (
+                            <div className="flex flex-col leading-tight">
+                              <span className="text-[11px]">&nbsp;</span>
+                              <span className="text-sm">&nbsp;</span>
+                            </div>
+                          ) : null}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </>
+              );
             })()}
           </TableBody>
         </Table>

@@ -192,6 +192,23 @@ describe('LogExplorer', () => {
     expect(rows.length).toBe(11); // 1 header + 10 data
   });
 
+  test('resets to the first page when switching to live mode', async () => {
+    const user = userEvent.setup();
+    mockReturn.messages = Array.from({ length: 15 }, (_, i) =>
+      makeMessage({ offset: i, valuePayload: { message: `Log ${i}`, level: 'INFO', path: 'x' } }),
+    );
+    renderExplorer({ enableLiveView: true });
+
+    // Page 2 shows the later logs.
+    await user.click(screen.getByRole('button', { name: /go to next page/i }));
+    expect(screen.getByText('Log 10')).toBeInTheDocument();
+    expect(screen.queryByText('Log 0')).not.toBeInTheDocument();
+
+    // Toggling live must jump back to page 1 so new logs are visible.
+    await user.click(screen.getByTestId('log-live-toggle'));
+    expect(screen.getByText('Log 0')).toBeInTheDocument();
+  });
+
   test('table has expected column headers', () => {
     renderExplorer();
     expect(screen.getByText('Time')).toBeInTheDocument();

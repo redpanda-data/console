@@ -205,4 +205,27 @@ describe('useLogSearch history mode', () => {
       expect(result.current.progress.messagesConsumed).toBe(99);
     });
   });
+
+  test('returns history messages newest-first (matches live ordering)', async () => {
+    fakeMessages.push(makeMessage(1), makeMessage(2), makeMessage(3));
+
+    mockListMessages.mockImplementation(async function* () {
+      for (const _msg of fakeMessages) {
+        yield { controlMessage: { case: 'data' as const, value: {} } };
+      }
+      yield { controlMessage: { case: 'done' as const, value: {} } };
+    });
+
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(3);
+    });
+
+    expect(result.current.messages[0].offset).toBe(3);
+    expect(result.current.messages[2].offset).toBe(1);
+  });
 });

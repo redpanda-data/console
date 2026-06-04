@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
@@ -226,7 +226,8 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   });
 
   // While streaming, show incremental messages. Once resolved, show query data.
-  const messages = query.data ?? streamingMessages;
+  // Reversed to newest-first so it matches the live tail's ordering.
+  const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
   return { messages, phase, progress, error: query.error?.message ?? null, refetch: query.refetch };
 }
