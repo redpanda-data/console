@@ -415,7 +415,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             <TooltipContent side="top" testId="log-live-tooltip-content">
               {liveViewEnabled
                 ? 'Showing new log messages as they arrive in real time.'
-                : 'Showing log messages from the last 5 hours. Toggle on to see live logs as they arrive.'}
+                : 'Showing the most recent log messages. Toggle on to see live logs as they arrive.'}
             </TooltipContent>
           </Tooltip>
           <Switch
@@ -514,7 +514,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                 } else if (liveViewEnabled) {
                   emptyText = 'Listening for new log messages… Switch to Recent Logs to view historical logs.';
                 } else {
-                  emptyText = 'No logs found in the last 5 hours for this pipeline.';
+                  emptyText = 'No logs found for this pipeline.';
                 }
                 return (
                   <TableRow>
@@ -529,9 +529,9 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               }
               const rows = table.getRowModel().rows;
               const placeholderColumns = table.getVisibleFlatColumns();
-              // Pad partial pages up to pageSize so the table keeps a constant
-              // height and doesn't jump as logs stream in.
-              const placeholderCount = Math.max(0, pageSize - rows.length);
+              // Pad partial pages so the table keeps a constant height and doesn't
+              // jump as logs stream in — capped at DEFAULT_PAGE_SIZE rows.
+              const placeholderCount = Math.max(0, Math.min(pageSize, DEFAULT_PAGE_SIZE) - rows.length);
               return (
                 <>
                   {rows.map((row) => (

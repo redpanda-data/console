@@ -79,7 +79,7 @@ describe('LogExplorer', () => {
 
   test('shows history empty state when no messages and search complete', () => {
     renderExplorer();
-    expect(screen.getByText('No logs found in the last 5 hours for this pipeline.')).toBeInTheDocument();
+    expect(screen.getByText('No logs found for this pipeline.')).toBeInTheDocument();
   });
 
   test('shows live empty state when live mode enabled and no messages', async () => {

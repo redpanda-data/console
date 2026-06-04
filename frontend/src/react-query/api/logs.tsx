@@ -32,7 +32,6 @@ import { encodeBase64 } from '../../utils/utils';
 const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
-const HISTORY_HOURS = 5;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
 const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
@@ -88,10 +87,10 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     req.startTimestamp = 0n;
     req.maxResults = LIVE_MAX_RESULTS;
   } else {
-    const startTime = new Date();
-    startTime.setHours(startTime.getHours() - HISTORY_HOURS);
-    req.startOffset = BigInt(PartitionOffsetOrigin.Timestamp);
-    req.startTimestamp = BigInt(startTime.getTime());
+    // Most recent HISTORY_MAX_RESULTS messages (high water mark - maxResults), so
+    // newly produced logs stay visible instead of being capped to the oldest N.
+    req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
+    req.startTimestamp = 0n;
     req.maxResults = HISTORY_MAX_RESULTS;
   }
 
