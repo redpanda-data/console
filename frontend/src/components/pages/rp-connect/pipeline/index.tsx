@@ -108,12 +108,7 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import {
-  extractConnectorTopics,
-  getConnectTemplate,
-  type RedpandaSetupResultLike,
-  tryPatchRedpandaYaml,
-} from '../utils/yaml';
+import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
@@ -388,20 +383,19 @@ function usePipelineSave({
 
 type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
 
-function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml: string) => void) {
+function useDiagramDialogs(
+  yamlContent: string,
+  patchComponent: (section: 'input' | 'output', componentName: string, patch: RedpandaSetupResultLike) => boolean,
+  focusEditorEnd: () => void
+) {
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
-      if (data.topicName) {
-        const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, {
-          topicName: data.topicName,
-        });
-        if (patched) {
-          handleConnectorYamlChange(patched);
-        }
+      if (data.topicName && patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
+        focusEditorEnd();
       }
     },
   });
@@ -422,9 +416,8 @@ function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml
           saslMechanism: (data as AddUserFormData).saslMechanism,
         };
       }
-      const patched = tryPatchRedpandaYaml(yamlContent, target.section, target.componentName, setupResult);
-      if (patched) {
-        handleConnectorYamlChange(patched);
+      if (patchComponent(target.section, target.componentName, setupResult)) {
+        focusEditorEnd();
       }
     },
   });
@@ -714,10 +707,12 @@ function SidebarPanel({
 }
 
 export default function PipelinePage() {
-  const { mode } = usePipelineMode();
+  const { mode, pipelineId } = usePipelineMode();
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
+  // Key by pipeline id so navigating between pipelines remounts a clean editor
+  // store instead of carrying the previous lane / YAML / selection over.
   return (
-    <PipelineEditorProvider initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'}>
+    <PipelineEditorProvider initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'} key={pipelineId ?? 'create'}>
       <PipelinePageContent />
     </PipelineEditorProvider>
   );
@@ -739,6 +734,7 @@ function PipelinePageContent() {
   const editorStore = usePipelineEditorStoreApi();
   const {
     setYamlContent,
+    patchComponent,
     setEditorInstance,
     hydrateFromServer,
     resolveInitialYaml,
@@ -826,38 +822,43 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  const handleYamlChange = useCallback(
-    (value: string) => {
-      clearErrorLintHints();
-      setYamlContent(value);
-      if (mode === 'create' && !isPipelineDiagramsEnabled) {
-        useRpcnWizardStore.getState().setYamlContent({ yamlContent: value });
-      }
-    },
-    [mode, isPipelineDiagramsEnabled, clearErrorLintHints, setYamlContent]
+  // Side effects for any document change — typing, dialog patches, or templates.
+  // Centralized here (rather than per call site) so every mutation path, including
+  // a future visual editor, clears stale lint and mirrors create-mode drafts.
+  useEffect(
+    () =>
+      editorStore.subscribe((state, prev) => {
+        if (state.yamlContent === prev.yamlContent) {
+          return;
+        }
+        clearErrorLintHints();
+        if (mode === 'create' && !isPipelineDiagramsEnabled) {
+          useRpcnWizardStore.getState().setYamlContent({ yamlContent: state.yamlContent });
+        }
+      }),
+    [editorStore, clearErrorLintHints, mode, isPipelineDiagramsEnabled]
   );
 
-  const handleConnectorYamlChange = useCallback(
-    (yaml: string) => {
-      handleYamlChange(yaml);
-      setTimeout(() => {
-        if (editorInstance) {
-          const model = editorInstance.getModel();
-          if (model) {
-            const lastLine = model.getLineCount();
-            const lastColumn = model.getLineMaxColumn(lastLine);
-            editorInstance.setPosition({ lineNumber: lastLine, column: lastColumn });
-            editorInstance.revealLine(lastLine);
-          }
-          editorInstance.focus();
-        }
-      }, 0);
-    },
-    [handleYamlChange, editorInstance]
-  );
+  // Move the caret to the end of the editor after a programmatic edit (dialog
+  // patch / template insert) so the user sees what changed.
+  const focusEditorEnd = useCallback(() => {
+    setTimeout(() => {
+      const ed = editorStore.getState().editorInstance;
+      if (!ed) {
+        return;
+      }
+      const model = ed.getModel();
+      if (model) {
+        const lastLine = model.getLineCount();
+        ed.setPosition({ lineNumber: lastLine, column: model.getLineMaxColumn(lastLine) });
+        ed.revealLine(lastLine);
+      }
+      ed.focus();
+    }, 0);
+  }, [editorStore]);
 
   const { topicDialog, userDialog, topicStepRef, userStepRef, connectorTopics, handleAddTopic, handleAddSasl } =
-    useDiagramDialogs(yamlContent, handleConnectorYamlChange);
+    useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -870,10 +871,11 @@ function PipelinePageContent() {
         existingYaml: yamlContent,
       });
       if (newYaml) {
-        handleConnectorYamlChange(newYaml);
+        setYamlContent(newYaml);
+        focusEditorEnd();
       }
     },
-    [components, yamlContent, handleConnectorYamlChange, setAddConnectorType]
+    [components, yamlContent, setYamlContent, focusEditorEnd, setAddConnectorType]
   );
 
   // Hydrate from the loaded pipeline once per id, so re-renders don't clobber edits.
@@ -995,7 +997,7 @@ function PipelinePageContent() {
               lintHints={lintHints}
               onDismissSlashTip={() => setSlashTipVisible(false)}
               onEditorMount={setEditorInstance}
-              onYamlChange={handleYamlChange}
+              onYamlChange={setYamlContent}
               slashTipVisible={slashTipVisible}
               yamlContent={yamlContent}
               yamlEditorSchema={yamlEditorSchema}
@@ -1181,12 +1183,12 @@ function PipelinePageContent() {
         <TemplateGalleryDialog
           onClose={(stashedYaml) => {
             if (stashedYaml) {
-              handleYamlChange(stashedYaml);
+              setYamlContent(stashedYaml);
             }
             setIsTemplateDialogOpen(false);
           }}
           onSubmit={({ pipelineName: suggestedName, yaml }) => {
-            handleYamlChange(yaml);
+            setYamlContent(yaml);
             if (!form.getValues('name')) {
               form.setValue('name', suggestedName, { shouldDirty: true, shouldValidate: true });
             }
