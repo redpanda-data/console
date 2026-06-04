@@ -145,28 +145,34 @@ interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<type
 // Defaults to <div> so Text can safely wrap block-level children (lists, inputs, etc.)
 // without emitting React `validateDOMNesting` warnings. Consumers that need paragraph
 // semantics can opt in via `as="p"`.
-export function Text({ variant, align, as = 'div', className, children, testId, ...props }: TextProps) {
-  const Component = as;
+// Uses forwardRef so Text can serve as a Slot/asChild child (e.g. TooltipTrigger asChild).
+export const Text = forwardRef<HTMLElement, TextProps>((componentProps, ref) => {
+  const { variant, align, as = 'div', className, children, testId, ...props } = componentProps;
 
-  return (
-    <Component className={cn(textVariants({ variant, align }), className)} data-testid={testId} {...props}>
-      {children}
-    </Component>
+  return React.createElement(
+    as,
+    {
+      ref,
+      className: cn(textVariants({ variant, align }), className),
+      'data-testid': testId,
+      ...props,
+    },
+    children
   );
-}
+});
 
 // Blockquote Component
 interface BlockquoteProps extends React.HTMLAttributes<HTMLQuoteElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Blockquote({ className, children, testId, ...props }: BlockquoteProps) {
-  return (
-    <blockquote className={cn('border-l-2 pl-6 italic', className)} data-testid={testId} {...props}>
+export const Blockquote = forwardRef<HTMLQuoteElement, BlockquoteProps>(
+  ({ className, children, testId, ...props }, ref) => (
+    <blockquote className={cn('border-l-2 pl-6 italic', className)} data-testid={testId} ref={ref} {...props}>
       {children}
     </blockquote>
-  );
-}
+  )
+);
 
 // List Component
 interface ListProps extends React.HTMLAttributes<HTMLUListElement | HTMLOListElement>, SharedProps {
@@ -174,59 +180,62 @@ interface ListProps extends React.HTMLAttributes<HTMLUListElement | HTMLOListEle
   ordered?: boolean;
 }
 
-export function List({ ordered = false, className, children, testId, ...props }: ListProps) {
+export const List = forwardRef<HTMLUListElement | HTMLOListElement, ListProps>((componentProps, ref) => {
+  const { ordered = false, className, children, testId, ...props } = componentProps;
   const ListTag = ordered ? 'ol' : 'ul';
   const listClass = ordered ? 'mt-1 mb-3 ml-6 list-decimal [&>li]:mt-1' : 'mt-1 mb-3 ml-6 list-disc [&>li]:mt-0.5';
 
-  return (
-    <ListTag className={cn(listClass, className)} data-testid={testId} {...props}>
-      {children}
-    </ListTag>
+  return React.createElement(
+    ListTag,
+    {
+      ref,
+      className: cn(listClass, className),
+      'data-testid': testId,
+      ...props,
+    },
+    children
   );
-}
+});
 
 // List Item Component
 interface ListItemProps extends React.HTMLAttributes<HTMLLIElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function ListItem({ className, children, testId, ...props }: ListItemProps) {
-  return (
-    <li className={className} data-testid={testId} {...props}>
-      {children}
-    </li>
-  );
-}
+export const ListItem = forwardRef<HTMLLIElement, ListItemProps>(({ className, children, testId, ...props }, ref) => (
+  <li className={className} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </li>
+));
 
 // Optional List Item Text component to emulate prose p-in-li behavior
 interface ListItemTextProps extends React.HTMLAttributes<HTMLParagraphElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function ListItemText({ className, children, testId, ...props }: ListItemTextProps) {
-  return (
-    <p className={cn('my-0 inline', className)} data-testid={testId} {...props}>
+export const ListItemText = forwardRef<HTMLParagraphElement, ListItemTextProps>(
+  ({ className, children, testId, ...props }, ref) => (
+    <p className={cn('my-0 inline', className)} data-testid={testId} ref={ref} {...props}>
       {children}
     </p>
-  );
-}
+  )
+);
 
 // Inline Code Component
 interface InlineCodeProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function InlineCode({ className, children, testId, ...props }: InlineCodeProps) {
-  return (
-    <code
-      className={cn('relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm', className)}
-      data-testid={testId}
-      {...props}
-    >
-      {children}
-    </code>
-  );
-}
+export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className, children, testId, ...props }, ref) => (
+  <code
+    className={cn('relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm', className)}
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  >
+    {children}
+  </code>
+));
 
 // Base props shared by both link types
 type BaseLinkProps = SharedProps & {
@@ -258,12 +267,16 @@ type LinkProps =
 const linkStyles =
   'font-medium text-primary decoration-dotted underline underline-offset-[3px] hover:text-primary/80 transition-colors';
 
-export function Link({ className, children, testId, ...props }: LinkProps) {
+export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, ref) => {
+  // Re-assert the discriminated union: forwardRef's PropsWithoutRef collapses the
+  // index-signature branch, widening className/children to `unknown`.
+  const { className, children, testId, ...props } = componentProps as LinkProps;
+
   if ('as' in props && props.as === TanStackLink) {
     // Render as TanStack Router Link when explicitly specified
     const { as: _, ...routerProps } = props;
     return (
-      <TanStackLink className={cn(linkStyles, className)} data-testid={testId} {...routerProps}>
+      <TanStackLink className={cn(linkStyles, className)} data-testid={testId} ref={ref} {...routerProps}>
         {children}
       </TanStackLink>
     );
@@ -271,120 +284,132 @@ export function Link({ className, children, testId, ...props }: LinkProps) {
   // Render as anchor tag (default)
 
   return (
-    <a className={cn(linkStyles, className)} data-testid={testId} {...props}>
+    <a className={cn(linkStyles, className)} data-testid={testId} ref={ref} {...props}>
       {children}
     </a>
   );
-}
+});
 
 // Preformatted Code Block Component
 interface PreProps extends React.HTMLAttributes<HTMLPreElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Pre({ className, children, testId, ...props }: PreProps) {
-  return (
-    <pre
-      className={cn('my-6 overflow-y-auto rounded-md bg-muted p-4 text-sm', className)}
-      data-testid={testId}
-      {...props}
-    >
-      {children}
-    </pre>
-  );
-}
+export const Pre = forwardRef<HTMLPreElement, PreProps>(({ className, children, testId, ...props }, ref) => (
+  <pre
+    className={cn('my-6 overflow-y-auto rounded-md bg-muted p-4 text-sm', className)}
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  >
+    {children}
+  </pre>
+));
 
 // Horizontal Rule Component
 interface HrProps extends React.HTMLAttributes<HTMLHRElement>, SharedProps {}
 
-export function Hr({ className, testId, ...props }: HrProps) {
-  return <hr className={cn('my-10', className)} data-testid={testId} {...props} />;
-}
+export const Hr = forwardRef<HTMLHRElement, HrProps>(({ className, testId, ...props }, ref) => (
+  <hr className={cn('my-10', className)} data-testid={testId} ref={ref} {...props} />
+));
 
 // Description List Components
 interface DlProps extends React.HTMLAttributes<HTMLDListElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Dl({ className, children, testId, ...props }: DlProps) {
-  return (
-    <dl className={cn('my-6', className)} data-testid={testId} {...props}>
-      {children}
-    </dl>
-  );
-}
+export const Dl = forwardRef<HTMLDListElement, DlProps>(({ className, children, testId, ...props }, ref) => (
+  <dl className={cn('my-6', className)} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </dl>
+));
 
 interface DtProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Dt({ className, children, testId, ...props }: DtProps) {
-  return (
-    <dt className={cn('font-semibold tracking-tight', className)} data-testid={testId} {...props}>
-      {children}
-    </dt>
-  );
-}
+export const Dt = forwardRef<HTMLElement, DtProps>(({ className, children, testId, ...props }, ref) => (
+  <dt className={cn('font-semibold tracking-tight', className)} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </dt>
+));
 
 interface DdProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Dd({ className, children, testId, ...props }: DdProps) {
-  return (
-    <dd className={className} data-testid={testId} {...props}>
-      {children}
-    </dd>
-  );
-}
+export const Dd = forwardRef<HTMLElement, DdProps>(({ className, children, testId, ...props }, ref) => (
+  <dd className={className} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </dd>
+));
 
 // Details/Summary Components
 interface DetailsProps extends React.DetailsHTMLAttributes<HTMLDetailsElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Details({ className, children, testId, ...props }: DetailsProps) {
-  return (
-    <details className={className} data-testid={testId} {...props}>
+export const Details = forwardRef<HTMLDetailsElement, DetailsProps>(
+  ({ className, children, testId, ...props }, ref) => (
+    <details className={className} data-testid={testId} ref={ref} {...props}>
       {children}
     </details>
-  );
-}
+  )
+);
 
 interface SummaryProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Summary({ className, children, testId, ...props }: SummaryProps) {
-  return (
-    <summary className={cn('cursor-pointer font-semibold tracking-tight', className)} data-testid={testId} {...props}>
-      {children}
-    </summary>
-  );
-}
+export const Summary = forwardRef<HTMLElement, SummaryProps>(({ className, children, testId, ...props }, ref) => (
+  <summary
+    className={cn('cursor-pointer font-semibold tracking-tight', className)}
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  >
+    {children}
+  </summary>
+));
 
 // Marked/Highlight Component
 interface MarkProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Mark({ className, children, testId, ...props }: MarkProps) {
-  return (
-    <mark className={cn('bg-yellow-200', className)} data-testid={testId} {...props}>
-      {children}
-    </mark>
-  );
-}
+export const Mark = forwardRef<HTMLElement, MarkProps>(({ className, children, testId, ...props }, ref) => (
+  <mark className={cn('bg-yellow-200', className)} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </mark>
+));
 
 // Small text Component
 interface SmallProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export function Small({ className, children, testId, ...props }: SmallProps) {
-  return (
-    <small className={cn('text-xs leading-none', className)} data-testid={testId} {...props}>
-      {children}
-    </small>
-  );
-}
+export const Small = forwardRef<HTMLElement, SmallProps>(({ className, children, testId, ...props }, ref) => (
+  <small className={cn('text-xs leading-none', className)} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </small>
+));
+
+// Set displayName on every forwardRef component so they show their real name in React
+// DevTools, error boundaries, and component stacks instead of an anonymous "ForwardRef".
+Heading.displayName = 'Heading';
+Text.displayName = 'Text';
+Blockquote.displayName = 'Blockquote';
+List.displayName = 'List';
+ListItem.displayName = 'ListItem';
+ListItemText.displayName = 'ListItemText';
+InlineCode.displayName = 'InlineCode';
+Link.displayName = 'Link';
+Pre.displayName = 'Pre';
+Hr.displayName = 'Hr';
+Dl.displayName = 'Dl';
+Dt.displayName = 'Dt';
+Dd.displayName = 'Dd';
+Details.displayName = 'Details';
+Summary.displayName = 'Summary';
+Mark.displayName = 'Mark';
+Small.displayName = 'Small';

@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
+import { useFieldContext } from './field';
 import { cn, type SharedProps } from '../lib/utils';
 
 const textareaVariants = cva(
@@ -30,15 +31,20 @@ const textareaVariants = cva(
 interface TextareaProps extends React.ComponentProps<'textarea'>, VariantProps<typeof textareaVariants>, SharedProps {}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, size, resize, testId, ...props }, ref) => (
-    <textarea
-      className={cn(textareaVariants({ size, resize }), className)}
-      data-slot="textarea"
-      data-testid={testId}
-      ref={ref}
-      {...props}
-    />
-  )
+  ({ className, size, resize, testId, ...props }, ref) => {
+    const fieldCtx = useFieldContext();
+    return (
+      <textarea
+        {...props}
+        aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
+        aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
+        className={cn(textareaVariants({ size, resize }), className)}
+        data-slot="textarea"
+        data-testid={testId}
+        ref={ref}
+      />
+    );
+  }
 );
 
 Textarea.displayName = 'Textarea';

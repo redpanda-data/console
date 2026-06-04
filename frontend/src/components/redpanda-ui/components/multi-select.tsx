@@ -193,8 +193,8 @@ const MultiSelectTrigger = React.forwardRef<React.ComponentRef<'button'>, MultiS
             data-testid={testId}
             {...props}
             className={cn(
-              "!border-input flex min-h-9 w-fit items-start justify-between gap-2 rounded-md border bg-transparent px-3 py-1.5 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:hover:bg-input/50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
-              disabled ? 'cursor-not-allowed opacity-50' : 'cursor-text',
+              "!border-input flex min-h-9 w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-1.5 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:hover:bg-input/50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
+              disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
               className
             )}
             onClick={disabled ? PreventClick : props.onClick}
@@ -335,10 +335,42 @@ const MultiSelectContent = React.forwardRef<React.ComponentRef<typeof PopoverPri
     const context = useMultiSelect();
 
     const fragmentRef = React.useRef<DocumentFragment | null>(null);
+    const popupRef = React.useRef<HTMLDivElement | null>(null);
 
     if (!fragmentRef.current && typeof window !== 'undefined') {
       fragmentRef.current = document.createDocumentFragment();
     }
+
+    const setPopupRef = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        popupRef.current = node;
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
+          ref.current = node;
+        }
+      },
+      [ref]
+    );
+
+    // Focus the search input (or popup) with `preventScroll`, otherwise Base UI's
+    // FloatingFocusManager focuses the first tabbable element without it — which
+    // scrolls the page when the popup flips above the trigger.
+    const initialFocus = React.useCallback((openType: string) => {
+      const popup = popupRef.current;
+      if (!popup) {
+        return false;
+      }
+      if (openType === 'touch') {
+        return popup;
+      }
+      const input = popup.querySelector<HTMLElement>('[cmdk-input]');
+      if (input) {
+        input.focus({ preventScroll: true });
+        return false;
+      }
+      return popup;
+    }, []);
 
     if (!context.open) {
       return fragmentRef.current ? createPortal(<Command>{children}</Command>, fragmentRef.current) : null;
@@ -346,14 +378,21 @@ const MultiSelectContent = React.forwardRef<React.ComponentRef<typeof PopoverPri
 
     return (
       <PopoverPrimitive.Portal container={container as HTMLElement | undefined} keepMounted>
-        <PopoverPrimitive.Positioner align="start" className="z-50" collisionPadding={10} sideOffset={4}>
+        <PopoverPrimitive.Positioner
+          align="start"
+          className="z-50"
+          collisionPadding={10}
+          positionMethod="fixed"
+          sideOffset={4}
+        >
           <PopoverPrimitive.Popup
             className={cn(
               'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1 data-[state=closed]:animate-out data-[state=open]:animate-in',
               className
             )}
             data-testid={testId}
-            ref={ref}
+            initialFocus={initialFocus}
+            ref={setPopupRef}
             render={renderWithDataState('div')}
             {...props}
           >
@@ -537,6 +576,7 @@ function renderMultiSelectOptions(list: MultiSelectOption[]) {
 // Simplified API for backend developers
 type SimpleMultiSelectProps = PortalRootProps &
   SharedProps &
+  Pick<React.AriaAttributes, 'aria-describedby' | 'aria-invalid'> &
   Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
     id?: string;
     options: MultiSelectOption[] | string[];
@@ -578,6 +618,8 @@ function SimpleMultiSelect({
   defaultOpen,
   onOpenChange,
   testId,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
 }: SimpleMultiSelectProps) {
   // Convert simple string array to option objects
   const normalizedOptions: MultiSelectOption[] = React.useMemo(
@@ -603,6 +645,8 @@ function SimpleMultiSelect({
       value={value}
     >
       <MultiSelectTrigger
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         className={cn(widthClasses[width], className)}
         id={id}
         testId={testId ? `${testId}-control` : undefined}

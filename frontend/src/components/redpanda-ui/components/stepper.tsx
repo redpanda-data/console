@@ -43,7 +43,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
     const renderedChildren = typeof children === 'function' ? children({ methods }) : children;
 
     return (
-      <div className={cn('w-full', className)} data-testid={testId} date-component="stepper" {...props}>
+      <div className={cn('w-full', className)} data-component="stepper" data-testid={testId} {...props}>
         {renderedChildren}
       </div>
     );
@@ -74,8 +74,8 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       Navigation: ({ children, 'aria-label': ariaLabel = 'Stepper Navigation', testId, ...props }) => {
         const { variant } = useStepperProvider();
         return (
-          <nav aria-label={ariaLabel} data-testid={testId} date-component="stepper-navigation" {...props}>
-            <ol className={classForNavigationList({ variant })} date-component="stepper-navigation-list">
+          <nav aria-label={ariaLabel} data-component="stepper-navigation" data-testid={testId} {...props}>
+            <ol className={classForNavigationList({ variant })} data-component="stepper-navigation-list">
               {children}
             </ol>
           </nav>
@@ -109,10 +109,10 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
           return (
             <li
               className={cn('flex shrink-0 items-center gap-4 rounded-md transition-colors', className)}
-              date-component="stepper-step"
+              data-component="stepper-step"
             >
               <CircleStepIndicator currentStep={stepIndex + 1} totalSteps={steps.length} />
-              <div className="flex flex-col items-start gap-1" date-component="stepper-step-content">
+              <div className="flex flex-col items-start gap-1" data-component="stepper-step-content">
                 {title}
                 {description}
               </div>
@@ -130,11 +130,11 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                 'data-[label-orientation=vertical]:flex-col',
                 'data-[label-orientation=vertical]:justify-center',
               ])}
+              data-component="stepper-step"
               data-disabled={props.disabled}
               data-label-orientation={labelOrientation}
               data-state={dataState}
               data-variant={variant}
-              date-component="stepper-step"
             >
               <Button
                 aria-controls={`step-panel-${props.of}`}
@@ -143,8 +143,8 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                 aria-selected={isActive}
                 aria-setsize={steps.length}
                 className={cn('rounded-full', isActive && 'ring-3 ring-secondary/20')}
+                data-component="stepper-step-indicator"
                 data-testid={testId}
-                date-component="stepper-step-indicator"
                 id={`step-${step.id}`}
                 onKeyDown={(e) => onStepKeyDown(e, utils.getNext(props.of), utils.getPrev(props.of))}
                 role="tab"
@@ -165,7 +165,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                   state={dataState}
                 />
               )}
-              <div className="flex flex-col items-start" date-component="stepper-step-content">
+              <div className="flex flex-col items-start" data-component="stepper-step-content">
                 {title}
                 {description}
               </div>
@@ -201,7 +201,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
 
         return (
           <Comp
-            date-component="stepper-step-panel"
+            data-component="stepper-step-panel"
             ref={(node: HTMLDivElement | null) => scrollIntoStepperPanel(node, tracking)}
             {...props}
           >
@@ -212,7 +212,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       Controls: ({ children, className, asChild, ...props }) => {
         const Comp = asChild ? Slot : 'div';
         return (
-          <Comp className={cn('flex justify-end gap-4', className)} date-component="stepper-controls" {...props}>
+          <Comp className={cn('flex justify-end gap-4', className)} data-component="stepper-controls" {...props}>
             {children}
           </Comp>
         );
@@ -227,7 +227,7 @@ const Title = ({ children, className, asChild, ...props }: React.ComponentProps<
   return (
     <Comp
       className={cn('font-medium text-base selection:bg-selected selection:text-selected-foreground', className)}
-      date-component="stepper-step-title"
+      data-component="stepper-step-title"
       level={asChild ? undefined : 4}
       {...props}
     >
@@ -245,7 +245,7 @@ const Description = ({ children, className, asChild, ...props }: React.Component
         'text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
         className
       )}
-      date-component="stepper-step-description"
+      data-component="stepper-step-description"
       {...props}
     >
       {children}
@@ -271,10 +271,10 @@ const StepperSeparator = ({
     <div
       aria-hidden="true"
       className={classForSeparator({ orientation, labelOrientation })}
+      data-component="stepper-separator"
       data-disabled={disabled}
       data-orientation={orientation}
       data-state={state}
-      date-component="stepper-separator"
     />
   );
 };
@@ -295,7 +295,7 @@ const CircleStepIndicator = ({
       aria-valuemin={1}
       aria-valuenow={currentStep}
       className="relative inline-flex items-center justify-center"
-      date-component="stepper-step-indicator"
+      data-component="stepper-step-indicator"
       role="progressbar"
       tabIndex={-1}
     >
