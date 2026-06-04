@@ -32,8 +32,7 @@ export function addSeriesToMap(
   }
 }
 
-// Smallest regular spacing between consecutive points; for a fixed-step range
-// query this is the step itself, so larger gaps stand out against it.
+// Smallest spacing between points — the step for a fixed-step range query.
 function inferStepMs(points: MergedPoint[]): number | null {
   if (points.length < 2) {
     return null;
@@ -48,10 +47,10 @@ function inferStepMs(points: MergedPoint[]): number | null {
   return Number.isFinite(min) ? min : null;
 }
 
-// The backend omits timestamps with no data (e.g. while the pipeline was down),
-// so consecutive points straddle the gap and the chart draws a continuous line
-// across it. Insert a null marker in any larger-than-step gap so the line/area
-// breaks there instead (recharts splits series at nulls when connectNulls=false).
+/**
+ * Insert a null marker into any larger-than-step gap so the chart breaks the line
+ * there (recharts splits at nulls) instead of drawing across a no-data stretch.
+ */
 export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   const step = inferStepMs(points);
   if (step === null) {

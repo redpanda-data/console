@@ -23,9 +23,8 @@ type ConnectorSection = 'input' | 'output';
 // View-page lanes. A future 'visual' lane (full react-flow editor) slots in here.
 export type ViewLane = 'monitor' | 'configuration';
 
-// The pipeline document: the canonical config YAML all views read and mutate,
-// plus its baseline. Semantic edits go through these actions so every consumer
-// shares one parse/patch/serialize path.
+// The canonical config YAML all views read and mutate, plus its baseline.
+// Semantic edits go through these actions so consumers share one patch path.
 type DocumentSlice = {
   yamlContent: string;
   initialYaml: string | null;

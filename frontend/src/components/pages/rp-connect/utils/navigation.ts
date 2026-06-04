@@ -13,8 +13,7 @@ import type { useNavigate } from '@tanstack/react-router';
 
 type NavigateFn = ReturnType<typeof useNavigate>;
 
-// '/connect-clusters' takes no search params; centralize the empty-search cast
-// TanStack requires so the route name + cast live in one place.
+/** Navigate to the connect-clusters list, centralizing the empty-search cast TanStack requires. */
 export function navigateToConnectClusters(navigate: NavigateFn) {
   navigate({ to: '/connect-clusters', search: {} as never });
 }

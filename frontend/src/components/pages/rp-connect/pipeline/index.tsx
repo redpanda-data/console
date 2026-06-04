@@ -258,7 +258,7 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  // Called right before a successful save navigates away, so the unsaved-changes guard doesn't block it.
+  /** Called right before a successful save navigates away, so the guard doesn't block it. */
   onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
@@ -279,8 +279,7 @@ function usePipelineSave({
   const handleSave = useCallback(async () => {
     const isValid = await form.trigger();
     if (!isValid) {
-      // The editable settings (name especially) live in the header/dialog, so a
-      // silent no-op is confusing — surface why the save was blocked.
+      // Settings live in the header/dialog, so surface why the save was blocked.
       const fieldErrors = form.formState.errors;
       const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
       toast.error(typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.');
@@ -471,8 +470,7 @@ function EditorSkeleton() {
   );
 }
 
-// Read-only YAML viewer for the view page: reuses the editor with all editable
-// cues (caret, text cursor, active-line highlight) suppressed.
+/** Read-only YAML viewer for the view page — reuses the editor with editing cues suppressed. */
 function YamlViewPanel({
   configYaml,
   schema,
@@ -728,8 +726,7 @@ function PipelinePageContent() {
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
-  // Editor session state lives in a context-scoped Zustand store. Actions are
-  // stable, so we read them once; values use selectors.
+  // Actions are stable, so read them once via getState; values use selectors.
   const editorStore = usePipelineEditorStoreApi();
   const {
     setYamlContent,
@@ -837,8 +834,7 @@ function PipelinePageContent() {
     [editorStore, clearErrorLintHints, mode, isPipelineDiagramsEnabled]
   );
 
-  // Move the caret to the end of the editor after a programmatic edit (dialog
-  // patch / template insert) so the user sees what changed.
+  // Move the caret to the end after a programmatic edit so the user sees the change.
   const focusEditorEnd = useCallback(() => {
     setTimeout(() => {
       const ed = editorStore.getState().editorInstance;
@@ -917,7 +913,6 @@ function PipelinePageContent() {
       navigateToConnectClusters(navigate);
       return;
     }
-    // Create: return to wherever the user came from.
     if (router.history.canGoBack()) {
       router.history.back();
     } else {

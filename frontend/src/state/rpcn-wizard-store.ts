@@ -100,8 +100,10 @@ function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
   return data;
 }
 
-// Read connection data, falling back to session storage to cover the race where
-// the store hydrated before CloudV2 wrote the data (client-side nav, no reload).
+/**
+ * Read connection data, falling back to session storage for the race where the
+ * store hydrated before CloudV2 wrote it (client-side nav, no full reload).
+ */
 export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
   let input = useRpcnWizardStore.getState().input;
   let output = useRpcnWizardStore.getState().output;
@@ -124,7 +126,7 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
   return { input, output };
 }
 
-// Imperative API for non-hook contexts (class components, utility functions).
+/** Imperative API for non-hook contexts (class components, utility functions). */
 export const rpcnWizardStore = {
   getWizardData: (): Partial<OnboardingWizardFormData> => rpcnWizardData(useRpcnWizardStore.getState()),
   getTopicData: (): Partial<MinimalTopicData> => rpcnWizardData(useRpcnWizardStore.getState()),

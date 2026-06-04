@@ -51,8 +51,7 @@ export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates
   };
 }
 
-// Evenly spaced timestamps (ms) across [startMs, endMs] inclusive, for explicit
-// chart axis ticks so the axis can span the full window even when data is sparse.
+/** Evenly spaced timestamps (ms) across [startMs, endMs] inclusive, for chart axis ticks. */
 export function getEvenlySpacedTimeTicks(startMs: number, endMs: number, count = 6): number[] {
   if (count < 2 || endMs <= startMs) {
     return [startMs];

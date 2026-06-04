@@ -87,8 +87,7 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     req.startTimestamp = 0n;
     req.maxResults = LIVE_MAX_RESULTS;
   } else {
-    // Most recent HISTORY_MAX_RESULTS messages (high water mark - maxResults), so
-    // newly produced logs stay visible instead of being capped to the oldest N.
+    // Most recent N (high water mark - maxResults), so new logs stay visible instead of the oldest N.
     req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
     req.startTimestamp = 0n;
     req.maxResults = HISTORY_MAX_RESULTS;

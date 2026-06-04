@@ -22,8 +22,7 @@ type RefreshButtonProps = {
   testId?: string;
 };
 
-// Ghost icon button with a refresh icon that spins while loading. Shared so the
-// throughput card, log explorer, etc. keep a consistent refresh affordance.
+/** Ghost icon button whose icon spins while `loading`; shared for a consistent refresh affordance. */
 export function RefreshButton({ onClick, loading = false, disabled, label = 'Refresh', testId }: RefreshButtonProps) {
   return (
     <Button

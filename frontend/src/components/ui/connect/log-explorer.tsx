@@ -217,16 +217,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedMessage, setSelectedMessage] = useState<TopicMessage | null>(null);
 
-  // Switching live/history swaps the dataset (and its ordering), so reset to the
-  // first page and drop sorting — otherwise a stale page index hides new logs.
+  // Switching modes swaps the dataset, so reset page + sorting (a stale page index hides new logs).
   const setLiveView = (enabled: boolean) => {
     setLiveViewEnabled(enabled);
     setPageIndex(0);
     setSorting([]);
   };
 
-  // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
-  // Skip mount — always start in history mode; only react to subsequent transitions.
+  // Sync live mode on enableLiveView changes (start/stop), but never on mount — start in history.
   const mountedRef = useRef(false);
   useEffect(() => {
     if (mountedRef.current) {
@@ -381,8 +379,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const hasProgress = progress.bytesConsumed > 0 || progress.messagesConsumed > 0;
   const pipelineNotRunning = pipeline.state !== Pipeline_State.RUNNING;
 
-  // Clamp back to the first page if filtering (or a smaller dataset) leaves the
-  // current page out of range — otherwise the user is stranded on a blank page.
+  // Clamp to the first page when filtering leaves the current page out of range.
   useEffect(() => {
     const pageCount = Math.ceil(filteredRowCount / pageSize);
     if (pageCount > 0 && pageIndex > pageCount - 1) {
@@ -529,8 +526,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               }
               const rows = table.getRowModel().rows;
               const placeholderColumns = table.getVisibleFlatColumns();
-              // Pad partial pages so the table keeps a constant height and doesn't
-              // jump as logs stream in — capped at DEFAULT_PAGE_SIZE rows.
+              // Pad partial pages to a constant height (capped at DEFAULT_PAGE_SIZE) so it doesn't jump.
               const placeholderCount = Math.max(0, Math.min(pageSize, DEFAULT_PAGE_SIZE) - rows.length);
               return (
                 <>
