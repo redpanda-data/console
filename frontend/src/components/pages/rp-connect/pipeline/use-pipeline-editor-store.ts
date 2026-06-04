@@ -23,10 +23,9 @@ type ConnectorSection = 'input' | 'output';
 // View-page lanes. A future 'visual' lane (full react-flow editor) slots in here.
 export type ViewLane = 'monitor' | 'configuration';
 
-// The pipeline document: the config YAML that every view (editor, diagram, and a
-// future visual lane) reads from and mutates, plus the baseline + hydration
-// bookkeeping. Semantic edits go through the actions here so all consumers share
-// one parse/patch/serialize path.
+// The pipeline document: the canonical config YAML all views read and mutate,
+// plus its baseline. Semantic edits go through these actions so every consumer
+// shares one parse/patch/serialize path.
 type DocumentSlice = {
   yamlContent: string;
   initialYaml: string | null;
@@ -119,9 +118,8 @@ export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStor
 
 const PipelineEditorContext = createContext<StoreApi<PipelineEditorStore> | null>(null);
 
-// Context-scoped so each PipelinePage mount gets its own store. Callers should
-// key the provider by pipeline id (`key={pipelineId}`) so navigating between
-// pipelines starts a clean store rather than carrying lane/selection/YAML over.
+// Context-scoped: each mount gets its own store. Key the provider by pipeline id
+// so navigating between pipelines starts clean instead of carrying state over.
 export function PipelineEditorProvider({
   children,
   initialSlashTipVisible,

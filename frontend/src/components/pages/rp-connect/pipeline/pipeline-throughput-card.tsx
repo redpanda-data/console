@@ -205,8 +205,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
-  // Anchor the axis to the full selected window so the graph spans the whole
-  // range even when data only covers part of it.
+  // Anchor the axis to the full selected window, not just the data extent.
   const domain: [number, number] = [timeRange.start.getTime(), timeRange.end.getTime()];
 
   return (

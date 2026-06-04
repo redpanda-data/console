@@ -709,8 +709,7 @@ function SidebarPanel({
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
-  // Key by pipeline id so navigating between pipelines remounts a clean editor
-  // store instead of carrying the previous lane / YAML / selection over.
+  // Keyed by pipeline id so each pipeline gets a fresh editor store.
   return (
     <PipelineEditorProvider initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'} key={pipelineId ?? 'create'}>
       <PipelinePageContent />
@@ -718,7 +717,7 @@ export default function PipelinePage() {
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: top-level page wiring; state now lives in the editor store
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: top-level page wiring across many concerns
 function PipelinePageContent() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
@@ -822,9 +821,8 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // Side effects for any document change — typing, dialog patches, or templates.
-  // Centralized here (rather than per call site) so every mutation path, including
-  // a future visual editor, clears stale lint and mirrors create-mode drafts.
+  // Runs on any document change so every mutation path clears stale lint and
+  // mirrors the create-mode draft to the wizard store.
   useEffect(
     () =>
       editorStore.subscribe((state, prev) => {
