@@ -10,9 +10,7 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { RefreshIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
 import {
   type ChartConfig,
   ChartContainer,
@@ -29,8 +27,8 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
+import { RefreshButton } from 'components/ui/refresh-button';
 import type { FC } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
@@ -228,9 +226,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               ))}
             </SelectContent>
           </Select>
-          <Button aria-label="Refresh" disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-            <RefreshIcon className={cn('size-4', isFetching && 'animate-spin')} />
-          </Button>
+          <RefreshButton loading={isFetching} onClick={handleRefresh} />
         </div>
       </div>
       <ThroughputContent

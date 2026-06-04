@@ -126,10 +126,9 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
 
 // Imperative API for non-hook contexts (class components, utility functions).
 export const rpcnWizardStore = {
-  getWizardData: () => rpcnWizardData(useRpcnWizardStore.getState()),
-  getTopicData: () => rpcnWizardData(useRpcnWizardStore.getState()),
-  getUserData: () => rpcnWizardData(useRpcnWizardStore.getState()),
-  getYamlContent: () => rpcnWizardData(useRpcnWizardStore.getState()),
+  getWizardData: (): Partial<OnboardingWizardFormData> => rpcnWizardData(useRpcnWizardStore.getState()),
+  getTopicData: (): Partial<MinimalTopicData> => rpcnWizardData(useRpcnWizardStore.getState()),
+  getUserData: (): Partial<MinimalUserData> => rpcnWizardData(useRpcnWizardStore.getState()),
   hasHydrated: () => useRpcnWizardStore.getState().hasHydrated,
   setWizardData: (data: Partial<OnboardingWizardFormData>) => useRpcnWizardStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useRpcnWizardStore.getState().setTopicData(data),

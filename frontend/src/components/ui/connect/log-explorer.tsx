@@ -21,7 +21,6 @@ import {
 } from '@tanstack/react-table';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
@@ -42,7 +41,7 @@ import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/da
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { TimestampDisplay } from '../../../utils/tsx-utils';
 import { cullText, prettyBytes } from '../../../utils/utils';
-import { RefreshIcon } from 'components/icons';
+import { RefreshButton } from 'components/ui/refresh-button';
 import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -305,7 +304,9 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           return (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="block truncate text-muted-foreground text-sm">{abbreviateComponentPath(path)}</span>
+                <Text as="span" className="block truncate text-muted-foreground" variant="bodySmall">
+                  {abbreviateComponentPath(path)}
+                </Text>
               </TooltipTrigger>
               <TooltipContent>{path}</TooltipContent>
             </Tooltip>
@@ -415,15 +416,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             }}
           />
           </div>
-          <Button
-            data-testid="log-refresh-button"
-            disabled={isSearching}
-            onClick={refresh}
-            size="icon"
-            variant="ghost"
-          >
-            <RefreshIcon className={cn(isSearching && 'animate-spin')} />
-          </Button>
+          <RefreshButton loading={isSearching} onClick={refresh} testId="log-refresh-button" />
         </div>
       </div>
 

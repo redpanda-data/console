@@ -29,6 +29,7 @@ import {
 } from '../types/constants';
 import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, ConnectTilesListFormData, UserStepRef } from '../types/wizard';
+import { navigateToConnectClusters } from '../utils/navigation';
 import { parseSchema } from '../utils/schema';
 import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
 import { getConnectTemplate } from '../utils/yaml';
@@ -300,7 +301,7 @@ export const ConnectOnboardingWizard = ({
       navigate({ to: '/overview' });
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     } else {
-      navigate({ to: '/connect-clusters', search: {} as never });
+      navigateToConnectClusters(navigate);
     }
   }, [onCancelProp, navigate, resetRpcnWizardStore, search.serverless]);
 

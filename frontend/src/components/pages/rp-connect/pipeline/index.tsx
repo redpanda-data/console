@@ -104,6 +104,7 @@ import type {
   ServiceAccountSubmissionData,
   UserStepRef,
 } from '../types/wizard';
+import { navigateToConnectClusters } from '../utils/navigation';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -362,7 +363,7 @@ function usePipelineSave({
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters', search: {} as never });
+          navigateToConnectClusters(navigate);
         },
         onError: (err) => {
           toast.error(
@@ -913,14 +914,14 @@ function PipelinePageContent() {
       return;
     }
     if (mode === 'view') {
-      navigate({ to: '/connect-clusters', search: {} as never });
+      navigateToConnectClusters(navigate);
       return;
     }
     // Create: return to wherever the user came from.
     if (router.history.canGoBack()) {
       router.history.back();
     } else {
-      navigate({ to: '/connect-clusters', search: {} as never });
+      navigateToConnectClusters(navigate);
     }
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
