@@ -1,0 +1,190 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+/*
+ * SQL workspace styles, ported from the design prototype. Scoped under `.sqlws`
+ * with its own local CSS variables so the indigo/purple look is self-contained
+ * and does not depend on global theme tokens. Class names match the prototype
+ * so the leaf components (CatalogTree, SqlEditor, SqlResults) can use them.
+ */
+
+.sqlws {
+  /* color scale */
+  --sql-indigo-100: #e0eaff;
+  --sql-indigo-300: #a4bcfd;
+  --sql-indigo-600: #444ce7;
+  --sql-indigo-700: #3538cd;
+  --sql-indigo-alpha-100: rgba(99, 102, 241, 0.04);
+  --sql-indigo-alpha-200: rgba(99, 102, 241, 0.08);
+  --sql-purple-700: #6941c6;
+  --sql-green-100: #d7eed5;
+  --sql-green-700: #276749;
+  --sql-orange-700: #f77923;
+  --sql-blue-700: #1c9be3;
+  --sql-blue-alpha-100: rgba(69, 173, 232, 0.08);
+
+  /* semantic */
+  --sql-bg: #fff;
+  --sql-card: #fff;
+  --sql-popover: #fff;
+  --sql-foreground: #4b5563;
+  --sql-strong: #111827;
+  --sql-muted-foreground: #6b7280;
+  --sql-subtle: #79797d;
+  --sql-disabled: #9ca3af;
+  --sql-muted: #f3f4f6;
+  --sql-border: #c3c4c6;
+  --sql-border-subtle: #eef0f2;
+  --sql-border-strong: #d1d5db;
+  --sql-selected: var(--sql-indigo-100);
+  --sql-selected-hover: rgba(44, 48, 160, 0.06);
+  --sql-grey-50: #f5f5f5;
+  --sql-grey-200: #c3c4c6;
+  --sql-action-primary: var(--sql-indigo-600);
+
+  --sql-radius-sm: 0.25rem;
+  --sql-radius-md: 0.375rem;
+  --sql-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--sql-bg);
+  color: var(--sql-strong);
+}
+
+/* ============ TOP BAR ============ */
+.sqlws .ws-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  height: 52px;
+  flex-shrink: 0;
+  background: var(--sql-bg);
+  border-bottom: 1px solid var(--sql-border);
+}
+.sqlws .ws-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sql-strong);
+  letter-spacing: -0.01em;
+}
+.sqlws .ws-title svg {
+  color: var(--sql-action-primary);
+}
+.sqlws .ws-title-dim {
+  color: var(--sql-muted-foreground);
+  font-weight: 500;
+}
+.sqlws .ws-bar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============ BODY / PANES ============ */
+.sqlws .ws-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.sqlws .ws-tree {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--sql-bg);
+  border-right: 1px solid var(--sql-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sqlws .ws-work {
+  flex: 1;
+  min-width: 0;
+  /* min-height: 0 lets the height chain constrain to the available space
+     instead of content — required so the nested resizable PanelGroup gets a
+     definite height and the editor/results divider is actually draggable. */
+  min-height: 0;
+  display: flex;
+}
+.sqlws .ws-split {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* ws-editor / ws-results are ResizablePanels — the panel group sets their
+   sizes (defaultSize/minSize), so no fixed height/flex here. The
+   ResizableHandle between them is the divider, so no border-top on results. */
+.sqlws .ws-editor {
+  display: flex;
+  min-height: 0;
+  background: var(--sql-bg);
+}
+.sqlws .ws-results {
+  min-height: 0;
+  display: flex;
+  background: var(--sql-bg);
+}
+.sqlws .ws-editor > * {
+  flex: 1;
+  min-width: 0;
+}
+.sqlws .ws-results > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ============ SHARED: syntax tokens (used by the editor overlay) ============ */
+.sqlws .sql-kw {
+  color: var(--sql-purple-700);
+  font-weight: 600;
+}
+.sqlws .sql-fn {
+  color: var(--sql-action-primary);
+}
+.sqlws .sql-str {
+  color: var(--sql-green-700);
+}
+.sqlws .sql-num {
+  color: var(--sql-orange-700);
+}
+.sqlws .sql-cm {
+  color: var(--sql-muted-foreground);
+  font-style: italic;
+}
+.sqlws .sql-pn {
+  color: var(--sql-subtle);
+}
+.sqlws .sql-id {
+  color: var(--sql-strong);
+}
+
+/* ============ STUB PLACEHOLDER (removed as children are implemented) ============ */
+.sqlws .sql-stub {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-size: 13px;
+  color: var(--sql-muted-foreground);
+  text-align: center;
+}
+.sqlws .sql-stub-tree {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 16px 14px;
+}

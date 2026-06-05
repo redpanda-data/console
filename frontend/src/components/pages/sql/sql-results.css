@@ -1,0 +1,501 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+/*
+ * SQL results styles, ported from the design prototype's `.res-*` and
+ * `.res-bridge-*` blocks. Scoped under `.sqlws` and built on the workspace's
+ * local `--sql-*` tokens (defined in sql.css). A few extra color stops the
+ * results grid + bridge viz need are declared locally here so this file stays
+ * self-contained and does not depend on global theme tokens.
+ */
+
+.sqlws {
+  /* Extra stops the results grid + bridge viz need, derived from the
+     workspace tokens already defined in sql.css (no new raw colors). */
+  --sql-green-300: color-mix(in srgb, var(--sql-green-700) 45%, white);
+  --sql-green-500: color-mix(in srgb, var(--sql-green-700) 70%, white);
+  --sql-green-alpha-300: color-mix(in srgb, var(--sql-green-700) 22%, transparent);
+  --sql-blue-300: color-mix(in srgb, var(--sql-blue-700) 50%, white);
+  --sql-blue-alpha-200: color-mix(in srgb, var(--sql-blue-700) 16%, transparent);
+  --sql-orange-alpha-100: color-mix(in srgb, var(--sql-orange-700) 10%, transparent);
+  --sql-indigo-200: color-mix(in srgb, var(--sql-indigo-300) 60%, white);
+  --sql-grey-500: var(--sql-subtle);
+  --sql-grey-700: var(--sql-foreground);
+  --sql-success: var(--sql-green-700);
+}
+
+/* ============ RESULTS ============ */
+.sqlws .res,
+.sqlws .res-empty,
+.sqlws .res-status {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+.sqlws .res-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.sqlws .res-empty-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--sql-muted);
+  color: var(--sql-muted-foreground);
+}
+.sqlws .res-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sql-strong);
+  margin-bottom: 6px;
+}
+.sqlws .res-empty-description {
+  font-size: 13px;
+  color: var(--sql-muted-foreground);
+  max-width: 420px;
+  line-height: 1.5;
+}
+.sqlws .res-empty-description .inline-code-mini {
+  font-family: var(--sql-font-mono);
+  background: var(--sql-muted);
+  padding: 1px 5px;
+  border-radius: var(--sql-radius-sm);
+}
+.sqlws .res-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  margin: 0 2px;
+  font-family: var(--sql-font-mono);
+  font-size: 11px;
+  color: var(--sql-strong);
+  background: var(--sql-card);
+  border: 1px solid var(--sql-border);
+  border-radius: var(--sql-radius-sm);
+}
+
+.sqlws .res-spinner {
+  width: 22px;
+  height: 22px;
+  color: var(--sql-action-primary);
+  animation: sql-res-spin 0.8s linear infinite;
+}
+@keyframes sql-res-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* status panel (errors / non-SELECT messages) */
+.sqlws .res-status {
+  padding: 22px;
+  gap: 14px;
+  overflow-y: auto;
+}
+.sqlws .res-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--sql-radius-md);
+  border: 1px solid var(--sql-border);
+  background: var(--sql-card);
+}
+.sqlws .res-alert[data-variant='destructive'] {
+  border-color: var(--sql-orange-700);
+  color: var(--sql-orange-700);
+}
+.sqlws .res-alert[data-variant='destructive'] svg {
+  color: var(--sql-orange-700);
+}
+.sqlws .res-alert[data-variant='success'] {
+  border-color: var(--sql-green-700);
+  color: var(--sql-green-700);
+}
+.sqlws .res-alert[data-variant='success'] svg {
+  color: var(--sql-green-700);
+}
+.sqlws .res-alert-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sql-strong);
+}
+.sqlws .res-alert-description {
+  font-size: 12.5px;
+  color: var(--sql-muted-foreground);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+.sqlws .res-status-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--sql-muted-foreground);
+}
+
+/* status dot */
+.sqlws .res-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--sql-success);
+  flex-shrink: 0;
+}
+
+/* summary bar */
+.sqlws .res-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 16px;
+  flex-shrink: 0;
+  background: var(--sql-card);
+  border-bottom: 1px solid var(--sql-border);
+}
+.sqlws .res-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.sqlws .res-bar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sqlws .res-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--sql-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.sqlws .res-stat svg {
+  color: var(--sql-muted-foreground);
+}
+.sqlws .res-stat.ok {
+  font-weight: 600;
+  color: var(--sql-green-700);
+}
+.sqlws .res-stat-dim {
+  color: var(--sql-muted-foreground);
+  font-family: var(--sql-font-mono);
+  font-size: 11.5px;
+}
+.sqlws .res-truncated {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--sql-orange-700);
+  background: var(--sql-orange-alpha-100);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.sqlws .res-bar[data-bridge] .res-stat {
+  white-space: nowrap;
+}
+
+/* grid */
+.sqlws .res-grid-wrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+.sqlws .res-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.sqlws .res-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sql-muted);
+  border-bottom: 1px solid var(--sql-border);
+  padding: 8px 16px;
+  vertical-align: bottom;
+  text-align: left;
+}
+.sqlws .res-grid thead th .res-th {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.sqlws .res-grid thead th[data-align='right'] .res-th {
+  align-items: flex-end;
+}
+.sqlws .res-th-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sqlws .res-grid thead th[data-align='right'] .res-th-top {
+  flex-direction: row-reverse;
+}
+.sqlws .res-th-name {
+  font-family: var(--sql-font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sql-strong);
+}
+.sqlws .res-th-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--sql-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.sqlws .res-th-sort {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  color: var(--sql-disabled);
+}
+.sqlws .res-th[data-sort='asc'] .res-th-sort,
+.sqlws .res-th[data-sort='desc'] .res-th-sort {
+  color: var(--sql-action-primary);
+}
+.sqlws .res-grid tbody td {
+  font-family: var(--sql-font-mono);
+  font-size: 12.5px;
+  padding: 7px 16px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--sql-border-subtle);
+  color: var(--sql-foreground);
+}
+.sqlws .res-grid tbody td.res-num {
+  text-align: right;
+}
+.sqlws .res-grid tbody tr:nth-child(even) {
+  background: var(--sql-grey-50);
+}
+.sqlws .res-grid tbody tr:hover {
+  background: var(--sql-selected-hover);
+}
+.sqlws .res-rownum {
+  color: var(--sql-disabled);
+  text-align: right;
+  font-family: var(--sql-font-mono);
+  font-size: 11px;
+  width: 1%;
+  white-space: nowrap;
+  user-select: none;
+  background: var(--sql-card);
+  position: sticky;
+  left: 0;
+}
+.sqlws .res-grid thead th.res-rownum {
+  z-index: 3;
+  background: var(--sql-muted);
+}
+.sqlws .res-null {
+  color: var(--sql-disabled);
+  font-style: italic;
+}
+.sqlws .res-bool {
+  font-weight: 600;
+}
+.sqlws .res-bool-t {
+  color: var(--sql-green-700);
+}
+.sqlws .res-bool-f {
+  color: var(--sql-orange-700);
+}
+
+/* footer / load more */
+.sqlws .res-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--sql-border);
+  background: var(--sql-card);
+}
+.sqlws .res-foot-info {
+  font-size: 12px;
+  color: var(--sql-muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ BRIDGE QUERY — results bar ============ */
+.sqlws .res-bridge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sql-action-primary);
+  background: var(--sql-indigo-100);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.sqlws .res-bridge-chip svg {
+  color: currentColor;
+}
+.sqlws .res-bridge-lag .res-dot {
+  margin-right: 1px;
+}
+.sqlws .res-bridge-att {
+  font-size: 10.5px;
+  color: var(--sql-disabled);
+  font-style: normal;
+  margin-left: 3px;
+  white-space: nowrap;
+}
+.sqlws .res-bridge-stage {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--sql-green-700);
+}
+.sqlws .res-bridge-stage::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  margin-right: 4px;
+  vertical-align: baseline;
+}
+.sqlws .res-bridge-stage.stage-x::before {
+  background: var(--sql-green-500);
+}
+.sqlws .res-bridge-stage.stage-c::before {
+  background: var(--sql-green-300);
+}
+
+/* timeline */
+.sqlws .res-bridge-tl {
+  padding: 12px 16px 14px;
+  flex-shrink: 0;
+  background: var(--sql-card);
+  border-bottom: 1px solid var(--sql-border);
+}
+.sqlws .res-bridge-tl-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.sqlws .res-bridge-tl-labels span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.sqlws .res-bridge-tl-labels span:first-child {
+  color: var(--sql-blue-700);
+}
+.sqlws .res-bridge-tl-labels .live {
+  color: var(--sql-green-700);
+}
+.sqlws .res-bridge-tl-track {
+  display: flex;
+  align-items: stretch;
+  height: 30px;
+  position: relative;
+}
+.sqlws .res-bridge-tl-ice {
+  background: var(--sql-blue-alpha-200);
+  border: 1px solid var(--sql-blue-300);
+  border-right: 0;
+  border-radius: var(--sql-radius-md) 0 0 var(--sql-radius-md);
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  min-width: 0;
+}
+/* In sync: the Iceberg segment spans 100% with no live-tail to abut, so close
+   off its right edge — otherwise it reads as cut off. */
+.sqlws .res-bridge-tl-track[data-caught] .res-bridge-tl-ice {
+  border-right: 1px solid var(--sql-blue-300);
+  border-radius: var(--sql-radius-md);
+}
+.sqlws .res-bridge-tl-live {
+  background: var(--sql-green-100);
+  border: 1px solid var(--sql-green-300);
+  border-left: 0;
+  border-radius: 0 var(--sql-radius-md) var(--sql-radius-md) 0;
+  position: relative;
+  overflow: hidden;
+}
+.sqlws .res-bridge-tl-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    var(--sql-green-alpha-300) 5px,
+    var(--sql-green-alpha-300) 10px
+  );
+}
+.sqlws .res-bridge-tl-seam {
+  width: 0;
+  align-self: stretch;
+  border-left: 2px dashed var(--sql-grey-500);
+  position: relative;
+  z-index: 2;
+}
+.sqlws .res-bridge-tl-flag {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  transform: translate(-50%, 120%);
+  white-space: nowrap;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--sql-grey-700);
+  background: var(--sql-muted);
+  border: 1px solid var(--sql-border);
+  padding: 1px 7px;
+  border-radius: 999px;
+  z-index: 3;
+}
+.sqlws .res-bridge-tl-cap {
+  margin-top: 24px;
+  font-size: 11.5px;
+  color: var(--sql-muted-foreground);
+  line-height: 1.4;
+}

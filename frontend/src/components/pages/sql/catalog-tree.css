@@ -1,0 +1,378 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+/* Catalog tree: Catalog -> Namespace -> Table -> Columns. Ported from the
+   design prototype's .cat-* classes. */
+
+.cat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 8px;
+}
+.cat-head-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted-foreground);
+}
+.cat-head-hint {
+  font-size: 10px;
+  color: var(--color-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cat-search {
+  padding: 0 12px 10px;
+}
+
+.cat-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+}
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--color-strong);
+  font-size: 13px;
+}
+.cat-row:hover {
+  background: var(--color-selected-hover);
+}
+.cat-chev {
+  color: var(--color-disabled);
+  flex-shrink: 0;
+}
+.cat-label {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cat-row,
+.cat-table-main,
+.cat-cat-main,
+.cat-row-ns,
+.cat-row-catalog {
+  text-align: left;
+}
+.cat-row-catalog {
+  padding: 0;
+  gap: 0;
+}
+.cat-cat-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 8px;
+  color: var(--color-strong);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.cat-cat-add {
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--color-action-primary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.cat-cat-add:hover {
+  background: var(--color-indigo-100);
+}
+.cat-row-catalog:hover .cat-cat-add {
+  opacity: 1;
+}
+.cat-engine {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.cat-engine-rp {
+  background: var(--color-indigo-alpha-100);
+  color: var(--color-indigo-700);
+}
+.cat-engine-ice {
+  background: var(--color-blue-alpha-100);
+  color: var(--color-blue-700);
+}
+.cat-ns {
+  margin-left: 10px;
+}
+.cat-row-ns {
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+.cat-ns-ico {
+  color: var(--color-muted-foreground);
+}
+.cat-count {
+  font-size: 11px;
+  color: var(--color-muted-foreground);
+  background: var(--color-muted);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.cat-tables {
+  margin-left: 10px;
+}
+.cat-row-table {
+  padding: 0;
+  gap: 0;
+}
+.cat-table-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 8px;
+  color: var(--color-strong);
+  font-size: 13px;
+  font-family: inherit;
+}
+.cat-table-main:disabled {
+  cursor: default;
+  color: var(--color-disabled);
+}
+.cat-table-ico {
+  color: var(--color-action-primary);
+  flex-shrink: 0;
+}
+.cat-row-table[data-locked] .cat-table-ico {
+  color: var(--color-disabled);
+}
+.cat-row-table[data-active] {
+  background: var(--color-selected);
+}
+.cat-table-run {
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--color-action-primary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.cat-table-run:hover {
+  background: var(--color-indigo-100);
+}
+.cat-row-table:hover .cat-table-run {
+  opacity: 1;
+}
+.cat-lock {
+  color: var(--color-disabled);
+  margin-left: 2px;
+}
+.cat-table-ico-ice {
+  color: var(--color-blue-700);
+}
+.cat-ice {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-blue-700);
+  background: var(--color-blue-alpha-100);
+  padding: 1px 5px 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.cat-ice svg {
+  color: currentColor;
+}
+html.dark .cat-ice {
+  color: var(--color-blue-300);
+}
+html.dark .cat-table-ico-ice {
+  color: var(--color-blue-400);
+}
+.cat-cols {
+  margin-left: 26px;
+  border-left: 1px solid var(--color-border-subtle);
+  padding-left: 8px;
+  margin-bottom: 2px;
+}
+.cat-col {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--color-foreground);
+}
+.cat-col-ico {
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+.cat-col-name {
+  font-family: var(--font-mono);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cat-col-type {
+  font-size: 10px;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.cat-ns-empty {
+  font-size: 12px;
+  color: var(--color-disabled);
+  padding: 6px 16px;
+}
+.cat-add-row {
+  padding: 6px 8px;
+  color: var(--color-action-primary);
+  font-weight: 500;
+  font-family: inherit;
+  font-size: 13px;
+  width: 100%;
+}
+.cat-add-row .cat-label {
+  color: var(--color-action-primary);
+}
+.cat-add-row .cat-add-row-ico {
+  color: var(--color-action-primary);
+  flex-shrink: 0;
+  margin-left: 19px;
+}
+.cat-add-row:hover {
+  background: var(--color-indigo-100);
+}
+.cat-more {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 2px;
+  padding: 7px 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-action-primary);
+  font-weight: 500;
+  text-align: left;
+  font-family: inherit;
+}
+.cat-more:hover {
+  background: var(--color-indigo-100);
+}
+.cat-more-ico {
+  color: var(--color-action-primary);
+  flex-shrink: 0;
+}
+
+/* Loading / spinner */
+.cat-loading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 16px;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+.cat-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--color-muted);
+  border-top-color: var(--color-action-primary);
+  border-radius: 999px;
+  animation: cat-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes cat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Bridge query (Iceberg-tiered Redpanda table) markers */
+.cat-row-table[data-tiered] .cat-table-ico {
+  color: var(--color-blue-700);
+}
+html.dark .cat-row-table[data-tiered] .cat-table-ico {
+  color: var(--color-blue-400);
+}
+.cat-bridge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-blue-700);
+  background: var(--color-blue-alpha-100);
+  padding: 1px 5px 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.cat-bridge svg {
+  color: currentColor;
+}
+html.dark .cat-bridge {
+  color: var(--color-blue-300);
+}
