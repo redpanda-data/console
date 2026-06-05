@@ -1,6 +1,17 @@
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 
 import ConfigurationEditor from './topic-configuration';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    useSearch: () => ({}),
+    useNavigate: () => vi.fn(),
+  };
+});
+
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 
 describe('TopicConfiguration', () => {
@@ -45,7 +56,7 @@ describe('TopicConfiguration', () => {
 
     const groups = container.querySelectorAll('.configGroupTitle');
 
-    expect([
+    expect(Array.from(groups).map((g) => g.textContent)).toEqual([
       'Retention',
       'Compaction',
       'Replication',
@@ -57,6 +68,6 @@ describe('TopicConfiguration', () => {
       'Compression',
       'Storage Internals',
       'Other',
-    ]).toEqual(Array.from(groups).map((g) => g.textContent));
+    ]);
   });
 });

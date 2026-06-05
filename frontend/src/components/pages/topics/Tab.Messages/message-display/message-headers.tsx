@@ -9,11 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, DataTable } from '@redpanda-data/ui';
-
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import { Ellipsis, toSafeString } from '../../../../../utils/tsx-utils';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
+import { DataTable } from '../../../../redpanda-ui/components/data-table';
 import { renderEmptyIcon } from '../common/empty-icon';
 
 export const MessageHeaders = (props: { msg: TopicMessage }) => {
@@ -78,7 +77,7 @@ export const MessageHeaders = (props: { msg: TopicMessage }) => {
           pagination
           sorting
           subComponent={({ row: { original: header } }) => (
-            <Box px={10} py={6}>
+            <div className="px-10 py-6">
               {typeof header.value?.payload !== 'object' ? (
                 <div className="codeBox" style={{ margin: '0', width: '100%' }}>
                   {toSafeString(header.value.payload)}
@@ -86,7 +85,7 @@ export const MessageHeaders = (props: { msg: TopicMessage }) => {
               ) : (
                 <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
               )}
-            </Box>
+            </div>
           )}
         />
       </div>

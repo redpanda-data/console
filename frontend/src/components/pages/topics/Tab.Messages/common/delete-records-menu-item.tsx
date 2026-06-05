@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, Tooltip } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 import type { TopicAction } from '../../../../../state/rest-interfaces';
 import { getDeleteErrorText, isDeleteEnabled } from '../helpers';
@@ -22,18 +23,24 @@ export function DeleteRecordsMenuItem(
   const isEnabled = isDeleteEnabled(isCompacted, allowedActions);
   const errorText = getDeleteErrorText(isCompacted, allowedActions);
 
-  let content: JSX.Element | string = 'Delete Records';
+  const button = (
+    <Button disabled={!isEnabled} onClick={onClick} variant="destructive-outline">
+      Delete Records
+    </Button>
+  );
+
   if (errorText) {
-    content = (
-      <Tooltip hasArrow label={errorText} placement="top">
-        {content}
-      </Tooltip>
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>{button}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top">{errorText}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
-  return (
-    <Button isDisabled={!isEnabled} onClick={onClick} variant="outline">
-      {content}
-    </Button>
-  );
+  return button;
 }

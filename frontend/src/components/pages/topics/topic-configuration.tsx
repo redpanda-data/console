@@ -1,43 +1,42 @@
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  Flex,
-  FormField,
-  Icon,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  PasswordInput,
-  Popover,
-  RadioGroup,
-  SearchField,
-  Text,
-  Tooltip,
-  useToast,
-} from '@redpanda-data/ui';
-import { EditIcon, InfoIcon } from 'components/icons';
-import type { FC } from 'react';
-import { useState } from 'react';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from 'components/redpanda-ui/components/input-group';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Slider } from 'components/redpanda-ui/components/slider';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Pencil as EditIcon, Info as InfoIcon, Search } from 'lucide-react';
+import type { FC, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
-import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/create-topic-modal';
+import { isServerless } from '../../../config';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 import {
   entryHasInfiniteValue,
   formatConfigValue,
   getInfiniteValueForEntry,
 } from '../../../utils/formatters/config-value-formatter';
-import './TopicConfiguration.scss';
-
-import { isServerless } from '../../../config';
-import { api, useApiStoreHook } from '../../../state/backend-api';
-import { SingleSelect } from '../../misc/select';
 
 type ConfigurationEditorProps = {
   targetTopic: string; // topic name, or null if default configs
@@ -56,7 +55,6 @@ const ConfigEditorForm: FC<{
   onSuccess: () => void;
   targetTopic: string;
 }> = ({ editedEntry, onClose, targetTopic, onSuccess }) => {
-  const toast = useToast();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const defaultValueType = (() => {
@@ -121,14 +119,7 @@ const ConfigEditorForm: FC<{
           value: configValue,
         },
       ]);
-      toast({
-        status: 'success',
-        description: (
-          <span>
-            Config <code>{editedEntry.name}</code> updated
-          </span>
-        ),
-      });
+      toast.success(`Config ${editedEntry.name} updated`);
       onSuccess();
       onClose();
     } catch (err) {
@@ -153,27 +144,42 @@ const ConfigEditorForm: FC<{
     .sort((a, b) => SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source))[0];
 
   return (
-    <Modal isOpen onClose={onClose}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <ModalOverlay />
-        <ModalContent minW="2xl">
-          <ModalHeader>{`Edit ${editedEntry.name}`}</ModalHeader>
-          <ModalBody>
-            <Text mb={6}>{editedEntry.documentation}</Text>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      open
+    >
+      <DialogContent size="lg">
+        <form className="contents" onSubmit={handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>{`Edit ${editedEntry.name}`}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="mb-6">{editedEntry.documentation}</p>
 
-            <Flex flexDirection="column" gap={4}>
-              <FormField label={editedEntry.name}>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label>{editedEntry.name}</Label>
                 <Controller
                   control={control}
                   name="valueType"
                   render={({ field: { onChange, value } }) => (
-                    <RadioGroup name="valueType" onChange={onChange} options={valueTypeOptions} value={value} />
+                    <RadioGroup onValueChange={onChange} value={value}>
+                      {valueTypeOptions.map((opt) => (
+                        <div className="flex items-center gap-2" key={opt.value}>
+                          <RadioGroupItem id={`value-type-${opt.value}`} value={opt.value} />
+                          <Label htmlFor={`value-type-${opt.value}`}>{opt.label}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
                   )}
                 />
-              </FormField>
+              </div>
               {valueType === 'custom' && (
-                <FormField label={`Set a custom ${editedEntry.name} value for this topic`}>
-                  <Box maxW="fit-content">
+                <div className="flex flex-col gap-1.5">
+                  <Label>{`Set a custom ${editedEntry.name} value for this topic`}</Label>
+                  <div className="w-fit">
                     <Controller
                       control={control}
                       name="customValue"
@@ -181,52 +187,52 @@ const ConfigEditorForm: FC<{
                         <ConfigEntryEditorController entry={editedEntry} onChange={onChange} value={value} />
                       )}
                     />
-                  </Box>
-                </FormField>
+                  </div>
+                </div>
               )}
-              {/*It's not possible to show default value until we get it always from the BE.*/}
-              {/*Currently we only retrieve the current value and not default if it's set to custom/infinite*/}
               {valueType === 'default' && defaultConfigSynonym && (
-                <Box>
+                <div>
                   The default value is{' '}
-                  <Text display="inline" fontWeight="bold">
-                    {/*{JSON.stringify(editedEntry)}*/}
-                    {formatConfigValue(editedEntry.name, defaultConfigSynonym.value, 'friendly')}
-                  </Text>
-                  . This is inherited from {defaultConfigSynonym.source}.
-                </Box>
+                  <strong>{formatConfigValue(editedEntry.name, defaultConfigSynonym.value, 'friendly')}</strong>. This
+                  is inherited from {defaultConfigSynonym.source}.
+                </div>
               )}
-            </Flex>
+            </div>
             {Boolean(globalError) && (
-              <Alert my={2} status="error">
-                <AlertIcon />
-                {globalError}
+              <Alert className="mt-2" variant="destructive">
+                <AlertDescription>{globalError}</AlertDescription>
               </Alert>
             )}
-          </ModalBody>
-          <ModalFooter display="flex" gap={2}>
+          </DialogBody>
+          <DialogFooter>
             <Button
               onClick={() => {
                 onClose();
               }}
+              type="button"
               variant="ghost"
             >
               Cancel
             </Button>
-            <Button isDisabled={isSubmitting} type="submit" variant="solid">
+            <Button disabled={isSubmitting} type="submit">
               Save changes
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </form>
-    </Modal>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
-  const [filter, setFilter] = useState<string>('');
+  const navigate = useNavigate({ from: '/topics/$topicName/' });
+  const { configFilter = '' } = useSearch({ from: '/topics/$topicName/' });
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
+
+  const setFilter = (value: string) => {
+    navigate({ search: (prev) => ({ ...prev, configFilter: value || undefined }), replace: true });
+  };
 
   const editConfig = (configEntry: ConfigEntryExtended) => {
     setEditedEntry(configEntry);
@@ -236,8 +242,8 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const hasEditPermissions = topic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 
   let entries = props.entries;
-  if (filter) {
-    entries = entries.filter((x) => x.name.includes(filter) || (x.value ?? '').includes(filter));
+  if (configFilter) {
+    entries = entries.filter((x) => x.name.includes(configFilter) || (x.value ?? '').includes(configFilter));
   }
 
   const entryOrder = {
@@ -281,7 +287,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   categories.sort((a, b) => displayOrder.indexOf(a.key ?? '') - displayOrder.indexOf(b.key ?? ''));
 
   return (
-    <Box pt={4}>
+    <div className="pt-4">
       {editedEntry !== null && (
         <ConfigEditorForm
           editedEntry={editedEntry}
@@ -294,8 +300,18 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
           targetTopic={props.targetTopic}
         />
       )}
-      <div className="configGroupTable" data-testid="config-group-table">
-        <SearchField icon="filter" placeholderText="Filter" searchText={filter} setSearchText={setFilter} />
+      <div
+        className="grid w-full grid-cols-[minmax(300px,auto)_auto_auto_1fr] items-center gap-3"
+        data-testid="config-group-table"
+      >
+        <div className="col-span-4 mb-4">
+          <InputGroup>
+            <InputGroupAddon>
+              <Search className="size-4" />
+            </InputGroupAddon>
+            <InputGroupInput onChange={(e) => setFilter(e.target.value)} placeholder="Filter" value={configFilter} />
+          </InputGroup>
+        </div>
         {categories.map((x) => (
           <ConfigGroup
             entries={x.items}
@@ -306,7 +322,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
           />
         ))}
       </div>
-    </Box>
+    </div>
   );
 };
 
@@ -319,8 +335,8 @@ const ConfigGroup = (p: {
   hasEditPermissions: boolean;
 }) => (
   <>
-    <div className="configGroupSpacer" />
-    {Boolean(p.groupName) && <div className="configGroupTitle">{p.groupName}</div>}
+    <div className="col-span-4 my-4 h-px bg-border first:hidden" />
+    {Boolean(p.groupName) && <div className="configGroupTitle col-span-4 font-semibold text-2xl">{p.groupName}</div>}
     {p.entries.map((e) => (
       <ConfigEntryComponent
         entry={e}
@@ -342,47 +358,55 @@ const ConfigEntryComponent = (p: {
   const entry = p.entry;
   const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
 
+  const editButton = (
+    <button
+      className={
+        canEdit
+          ? 'inline-flex cursor-pointer rounded-sm p-0.5 hover:bg-muted hover:text-primary'
+          : 'inline-flex cursor-default rounded-sm p-0.5 [&_svg]:opacity-50'
+      }
+      onClick={() => {
+        if (canEdit) {
+          p.onEditEntry(p.entry);
+        }
+      }}
+      type="button"
+    >
+      <EditIcon className="size-[21px]" />
+    </button>
+  );
+
   return (
     <>
-      <Flex direction="column">
-        <Text fontWeight="600">{p.entry.name}</Text>
-      </Flex>
+      <div className="flex flex-col">
+        <span className="font-semibold">{p.entry.name}</span>
+      </div>
 
-      <Text>{friendlyValue}</Text>
+      <span>{friendlyValue}</span>
 
-      <span className="isEditted">{Boolean(entry.isExplicitlySet) && 'Custom'}</span>
+      <span className="mx-5 opacity-50">{Boolean(entry.isExplicitlySet) && 'Custom'}</span>
 
-      <span className="configButtons">
-        <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
-          <button
-            className={`btnEdit${canEdit ? '' : 'disabled'}`}
-            onClick={() => {
-              if (canEdit) {
-                p.onEditEntry(p.entry);
-              }
-            }}
-            type="button"
-          >
-            <Icon as={EditIcon} />
-          </button>
-        </Tooltip>
+      <span className="inline-flex items-center gap-3 text-[hsl(0_0%_35%)]">
+        {canEdit ? (
+          editButton
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>{editButton}</TooltipTrigger>
+            <TooltipContent side="left">{nonEdittableReason}</TooltipContent>
+          </Tooltip>
+        )}
         {Boolean(entry.documentation) && (
-          <Popover
-            content={
-              <Flex flexDirection="column" gap={2}>
-                <Text fontSize="lg" fontWeight="bold">
-                  {entry.name}
-                </Text>
-                <Text fontSize="sm">{entry.documentation}</Text>
-                <Text fontSize="sm">{getConfigDescription(entry.source)}</Text>
-              </Flex>
-            }
-            hideCloseButton
-            size="lg"
-          >
-            <Box>
-              <Icon as={InfoIcon} />
-            </Box>
+          <Popover>
+            <PopoverTrigger className="inline-flex cursor-pointer rounded-sm p-0.5 hover:bg-muted">
+              <InfoIcon className="size-[18px]" />
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="flex flex-col gap-2">
+                <p className="font-bold text-lg">{entry.name}</p>
+                <p className="text-sm">{entry.documentation}</p>
+                <p className="text-sm">{getConfigDescription(entry.source)}</p>
+              </div>
+            </PopoverContent>
           </Popover>
         )}
       </span>
@@ -429,51 +453,41 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
   switch (entry.frontendFormat) {
     case 'BOOLEAN':
       return (
-        <SingleSelect<T>
-          onChange={onChange}
-          options={[
-            { value: 'false' as T, label: 'False' },
-            { value: 'true' as T, label: 'True' },
-          ]}
-          value={value}
-        />
+        <Select onValueChange={(v) => onChange(v as T)} value={String(value)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="false">False</SelectItem>
+            <SelectItem value="true">True</SelectItem>
+          </SelectContent>
+        </Select>
       );
 
     case 'SELECT':
       return (
-        <SingleSelect
-          chakraStyles={{ container: (base) => ({ ...base, minWidth: '240px' }) }}
-          className={p.className}
-          onChange={onChange}
-          options={
-            entry.enumValues?.map((enumValue) => ({
-              value: enumValue as T,
-              label: enumValue,
-            })) ?? []
-          }
-          value={value}
-        />
+        <Select onValueChange={(v) => onChange(v as T)} value={String(value)}>
+          <SelectTrigger className={p.className}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(entry.enumValues ?? []).map((v) => (
+              <SelectItem key={v} value={v}>
+                {v}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       );
 
     case 'BYTE_SIZE':
-      return (
-        <DataSizeSelect
-          allowInfinite={false}
-          onChange={(e) => onChange(Math.round(e) as T)}
-          valueBytes={Number(value ?? 0)}
-        />
-      );
+      return <DataSizeSelect onChange={(e) => onChange(Math.round(e) as T)} valueBytes={Number(value ?? 0)} />;
+
     case 'DURATION':
-      return (
-        <DurationSelect
-          allowInfinite={false}
-          onChange={(e) => onChange(Math.round(e) as T)}
-          valueMilliseconds={Number(value ?? 0)}
-        />
-      );
+      return <DurationSelect onChange={(e) => onChange(Math.round(e) as T)} valueMilliseconds={Number(value ?? 0)} />;
 
     case 'PASSWORD':
-      return <PasswordInput onChange={(x) => onChange(x.target.value as T)} value={value ?? ''} />;
+      return <Input onChange={(x) => onChange(x.target.value as T)} type="password" value={String(value ?? '')} />;
 
     case 'RATIO':
       return <RatioInput onChange={(x) => onChange(x as T)} value={Number(value || entry.value)} />;
@@ -483,6 +497,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
 
     case 'DECIMAL':
       return <NumInput onChange={(e) => onChange(e as T)} value={Number(value)} />;
+
     default:
       return <Input onChange={(e) => onChange(e.target.value as T)} value={String(value)} />;
   }
@@ -500,4 +515,177 @@ function getConfigDescription(source: string): string {
     default:
       return '';
   }
+}
+
+// ── Local input helpers ────────────────────────────────────────────────────────
+
+function NumInput(p: {
+  value: number | undefined;
+  onChange: (n: number | undefined) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  disabled?: boolean;
+  addonAfter?: ReactNode;
+}) {
+  const [editValue, setEditValue] = useState(p.value === undefined ? undefined : String(p.value));
+  useEffect(() => setEditValue(p.value === undefined ? undefined : String(p.value)), [p.value]);
+
+  const commit = (x: number | undefined) => {
+    if (p.disabled) return;
+    let v = x;
+    if (v !== undefined && p.min !== undefined && v < p.min) v = p.min;
+    if (v !== undefined && p.max !== undefined && v > p.max) v = p.max;
+    setEditValue(v === undefined ? undefined : String(v));
+    p.onChange?.(v);
+  };
+
+  const input = (
+    <Input
+      className={p.addonAfter ? 'flex-1 rounded-r-none border-r-0' : undefined}
+      disabled={p.disabled}
+      onBlur={() => {
+        if (!editValue) {
+          commit(undefined);
+          setEditValue('');
+          return;
+        }
+        const n = Number(editValue);
+        if (!Number.isFinite(n)) {
+          commit(undefined);
+          setEditValue('');
+          return;
+        }
+        commit(n);
+      }}
+      onChange={(e) => {
+        setEditValue(e.target.value);
+        const n = Number(e.target.value);
+        if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
+        else p.onChange?.(undefined);
+      }}
+      onWheel={(e) => commit(Math.round((p.value ?? 0) - Math.sign(e.deltaY)))}
+      placeholder={p.placeholder}
+      spellCheck={false}
+      value={p.disabled && p.placeholder && p.value === undefined ? '' : (editValue ?? '')}
+    />
+  );
+
+  if (!p.addonAfter) return input;
+  return (
+    <div className="flex">
+      {input}
+      {p.addonAfter}
+    </div>
+  );
+}
+
+function UnitInput<U extends string>({
+  baseValue,
+  unitFactors,
+  onChange,
+}: {
+  baseValue: number;
+  unitFactors: Readonly<Record<U, number>>;
+  onChange: (v: number) => void;
+}) {
+  const getInitialUnit = (): U => {
+    const pairs = (Object.entries(unitFactors) as [U, number][])
+      .map(([unit, factor]) => ({ unit, text: String(baseValue / factor) }))
+      .sort((a, b) => a.text.length - b.text.length);
+    return pairs[0].unit;
+  };
+
+  const [unit, setUnit] = useState<U>(getInitialUnit);
+  const unitValue = baseValue / unitFactors[unit];
+
+  return (
+    <NumInput
+      addonAfter={
+        <Select onValueChange={(u) => setUnit(u as U)} value={unit}>
+          <SelectTrigger className="w-[100px] rounded-l-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(unitFactors) as U[]).map((u) => (
+              <SelectItem key={u} value={u}>
+                {u}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      }
+      min={0}
+      onChange={(x) => onChange((x ?? 0) * unitFactors[unit])}
+      value={unitValue}
+    />
+  );
+}
+
+const dataSizeFactors = {
+  Bytes: 1,
+  KiB: 1024,
+  MiB: 1024 * 1024,
+  GiB: 1024 * 1024 * 1024,
+  TiB: 1024 * 1024 * 1024 * 1024,
+} as const;
+
+const durationFactors = {
+  ms: 1,
+  seconds: 1000,
+  minutes: 60_000,
+  hours: 3_600_000,
+  days: 86_400_000,
+} as const;
+
+function DataSizeSelect(p: { valueBytes: number; onChange: (v: number) => void }) {
+  return <UnitInput baseValue={p.valueBytes} onChange={p.onChange} unitFactors={dataSizeFactors} />;
+}
+
+function DurationSelect(p: { valueMilliseconds: number; onChange: (v: number) => void }) {
+  return <UnitInput baseValue={p.valueMilliseconds} onChange={p.onChange} unitFactors={durationFactors} />;
+}
+
+function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
+  const pct = Math.round(p.value * 100);
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <Label className="font-medium text-muted-foreground text-sm">Percentage ({pct}%)</Label>
+        <Slider
+          aria-label="Percentage slider"
+          className="w-full"
+          max={100}
+          min={0}
+          onValueChange={(values) => p.onChange(values[0] / 100)}
+          step={1}
+          value={[pct]}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Label className="whitespace-nowrap font-medium text-sm" htmlFor="ratio-input">
+          Precise value:
+        </Label>
+        <div className="relative flex-shrink-0">
+          <Input
+            aria-label="Percentage input"
+            className="w-20 pr-6 text-right"
+            id="ratio-input"
+            max={100}
+            min={0}
+            onChange={(e) => {
+              if (e.target.value === '') return;
+              const n = Number(e.target.value);
+              if (!Number.isNaN(n) && n >= 0 && n <= 100) p.onChange(n / 100);
+            }}
+            type="number"
+            value={pct}
+          />
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground text-sm">
+            %
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }

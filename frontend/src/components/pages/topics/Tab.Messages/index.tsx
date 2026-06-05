@@ -23,28 +23,6 @@ import {
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import '../../../../utils/array-extensions';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Badge,
-  Box,
-  Button,
-  Flex,
-  Grid,
-  GridItem,
-  IconButton,
-  Input,
-  Menu,
-  MenuButton,
-  MenuDivider,
-  MenuItem,
-  MenuList,
-  Spinner,
-  Switch,
-  Tooltip,
-  useToast,
-} from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import {
   flexRender,
@@ -55,7 +33,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import {
-  AlertIcon,
   CalendarIcon,
   CodeIcon,
   DownloadIcon,
@@ -71,19 +48,32 @@ import {
   TabIcon,
   TimerIcon,
 } from 'components/icons';
-import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { Button } from 'components/redpanda-ui/components/button';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
 import {
-  Select as RegistrySelect,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
+import { Input } from 'components/redpanda-ui/components/input';
+import {
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Tooltip as RegistryTooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
+import { toast } from 'sonner';
 
 import { MessageSearchFilterBar } from './common/message-search-filter-bar';
 import { SaveMessagesDialog } from './dialogs/save-messages-dialog';
@@ -115,7 +105,6 @@ import {
 import { encodeBase64, prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import RemovableFilter from '../../../misc/removable-filter';
-import { SingleSelect } from '../../../misc/select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -200,56 +189,20 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
   return JSON.stringify(value, null, 4);
 }
 
-const defaultSelectChakraStyles = {
-  control: (provided: Record<string, unknown>) => ({
-    ...provided,
-    minWidth: 'max-content',
-  }),
-  option: (provided: Record<string, unknown>) => ({
-    ...provided,
-    wordBreak: 'keep-all',
-    whiteSpace: 'nowrap',
-  }),
-  menuList: (provided: Record<string, unknown>) => ({
-    ...provided,
-    minWidth: 'min-content',
-  }),
-} as const;
-
-const inlineSelectChakraStyles = {
-  ...defaultSelectChakraStyles,
-  control: (provided: Record<string, unknown>) => ({
-    ...provided,
-    _hover: {
-      borderColor: 'transparent',
-    },
-  }),
-  container: (provided: Record<string, unknown>) => ({
-    ...provided,
-    borderColor: 'transparent',
-  }),
-} as const;
-
-function onCopyValue(original: TopicMessage, toast: ReturnType<typeof useToast>) {
+function onCopyValue(original: TopicMessage) {
   navigator.clipboard
     .writeText(getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object))
     .then(() => {
-      toast({
-        status: 'success',
-        description: 'Value copied to clipboard',
-      });
+      toast.success('Value copied to clipboard');
     })
     .catch(navigatorClipboardErrorHandler);
 }
 
-function onCopyKey(original: TopicMessage, toast: ReturnType<typeof useToast>) {
+function onCopyKey(original: TopicMessage) {
   navigator.clipboard
     .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
     .then(() => {
-      toast({
-        status: 'success',
-        description: 'Key copied to clipboard',
-      });
+      toast.success('Key copied to clipboard');
     })
     .catch(navigatorClipboardErrorHandler);
 }
@@ -328,10 +281,6 @@ async function loadLargeMessage({
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
-  const toast = useToast();
-  const toastRef = useRef(toast);
-  toastRef.current = toast;
-
   // Zustand store for topic settings
   const { setSorting, getSorting, setTopicSettings, perTopicSettings, setSearchParams, getSearchParams } =
     useTopicSettingsStore();
@@ -908,13 +857,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           (err: unknown) => {
             const shouldReport = isMountedRef.current && !abortController.signal.aborted;
             if (shouldReport) {
-              toastRef.current({
-                title: 'Failed to load more messages',
-                description: (err as Error).message,
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-              });
+              toast.error('Failed to load more messages', { description: (err as Error).message });
             }
             return { type: 'error' as const, shouldReport };
           }
@@ -1028,8 +971,8 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const onSetDownloadMessages = useCallback((nextMessages: TopicMessage[]) => {
     setDownloadMessages(nextMessages);
   }, []);
-  const handleCopyKey = useCallback((msg: TopicMessage) => onCopyKey(msg, toast), [toast]);
-  const handleCopyValue = useCallback((msg: TopicMessage) => onCopyValue(msg, toast), [toast]);
+  const handleCopyKey = useCallback((msg: TopicMessage) => onCopyKey(msg), []);
+  const handleCopyValue = useCallback((msg: TopicMessage) => onCopyValue(msg), []);
 
   const paginationParams = {
     pageIndex: isOnUnloadedPage ? loadedPages - 1 : boundedLocalPageIndex,
@@ -1071,7 +1014,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     key: {
       header: () =>
         isKeyDeserializerActive ? (
-          <Flex alignItems="center" display="inline-flex" gap={2}>
+          <div className="inline-flex items-center gap-2">
             Key{' '}
             <button
               onClick={(e) => {
@@ -1082,7 +1025,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[keyDeserializer]}</Badge>
             </button>
-          </Flex>
+          </div>
         ) : (
           'Key'
         ),
@@ -1100,7 +1043,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     value: {
       header: () =>
         isValueDeserializerActive ? (
-          <Flex alignItems="center" display="inline-flex" gap={2}>
+          <div className="inline-flex items-center gap-2">
             Value{' '}
             <button
               onClick={(e) => {
@@ -1111,7 +1054,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[valueDeserializer]}</Badge>
             </button>
-          </Flex>
+          </div>
         ) : (
           'Value'
         ),
@@ -1181,56 +1124,52 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       id: 'action',
       size: 0,
       cell: ({ row: { original } }) => (
-        <Menu computePositionOnMount>
-          <MenuButton as={Button} className="iconButton" variant="link">
-            <MoreHorizontalIcon />
-          </MenuButton>
-          <MenuList>
-            <MenuItem
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="iconButton" size="icon" variant="ghost">
+              <MoreHorizontalIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
               onClick={() => {
                 navigator.clipboard
                   .writeText(getMessageAsString(original))
                   .then(() => {
-                    toast({
-                      status: 'success',
-                      description: 'Message copied to clipboard',
-                    });
+                    toast.success('Message copied to clipboard');
                   })
                   .catch(navigatorClipboardErrorHandler);
               }}
             >
               Copy Message
-            </MenuItem>
-            <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original, toast)}>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
               Copy Key
-            </MenuItem>
-            <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original, toast)}>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
               Copy Value
-            </MenuItem>
-            <MenuItem
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => {
                 navigator.clipboard
                   .writeText(original.timestamp.toString())
                   .then(() => {
-                    toast({
-                      status: 'success',
-                      description: 'Epoch Timestamp copied to clipboard',
-                    });
+                    toast.success('Epoch Timestamp copied to clipboard');
                   })
                   .catch(navigatorClipboardErrorHandler);
               }}
             >
               Copy Epoch Timestamp
-            </MenuItem>
-            <MenuItem
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => {
                 setDownloadMessages([original]);
               }}
             >
               Save to File
-            </MenuItem>
-          </MenuList>
-        </Menu>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
   ];
@@ -1241,14 +1180,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     enableSorting: false,
     cell: ({ row }) =>
       row.getCanExpand() ? (
-        <RegistryButton
+        <Button
           aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
           onClick={row.getToggleExpandedHandler()}
           size="icon-xs"
           variant="ghost"
         >
           {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-        </RegistryButton>
+        </Button>
       ) : null,
   };
 
@@ -1292,48 +1231,48 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     {
       value: PartitionOffsetOrigin.End,
       label: (
-        <Flex alignItems="center" gap={2}>
+        <div className="flex items-center gap-2">
           <PlayIcon />
           <span data-testid="start-offset-latest-live">Latest / Live</span>
-        </Flex>
+        </div>
       ),
     },
     {
       value: PartitionOffsetOrigin.EndMinusResults,
       label: (
-        <Flex alignItems="center" gap={2}>
+        <div className="flex items-center gap-2">
           <ReplyIcon />
           <span data-testid="start-offset-newest">
             {continuousPaginationEnabled ? 'Newest' : `Newest - ${String(maxResults)}`}
           </span>
-        </Flex>
+        </div>
       ),
     },
     {
       value: PartitionOffsetOrigin.Start,
       label: (
-        <Flex alignItems="center" gap={2}>
+        <div className="flex items-center gap-2">
           <SkipBackIcon />
           <span data-testid="start-offset-beginning">Beginning</span>
-        </Flex>
+        </div>
       ),
     },
     {
       value: PartitionOffsetOrigin.Custom,
       label: (
-        <Flex alignItems="center" gap={2}>
+        <div className="flex items-center gap-2">
           <TabIcon />
           <span data-testid="start-offset-custom">Offset</span>
-        </Flex>
+        </div>
       ),
     },
     {
       value: PartitionOffsetOrigin.Timestamp,
       label: (
-        <Flex alignItems="center" gap={2}>
+        <div className="flex items-center gap-2">
           <CalendarIcon />
           <span data-testid="start-offset-timestamp">Timestamp</span>
-        </Flex>
+        </div>
       ),
     },
   ];
@@ -1349,14 +1288,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   // Return JSX for the component
   return (
     <>
-      <Grid gap={3} gridTemplateColumns="auto 1fr" my={4} width="full">
-        <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
+      <div className="my-4 grid w-full grid-cols-[auto_1fr] gap-3">
+        <div className="col-span-full flex gap-3 md:col-auto">
           <Label text="Start Offset">
-            <Flex gap={3}>
-              <SingleSelect<PartitionOffsetOriginType>
-                chakraStyles={defaultSelectChakraStyles}
-                data-testid="start-offset-dropdown"
-                onChange={(e) => {
+            <div className="flex gap-3">
+              <Select
+                onValueChange={(val) => {
+                  const e = Number(val) as PartitionOffsetOriginType;
                   if (e === PartitionOffsetOrigin.Custom) {
                     if (startOffset < 0) {
                       setStartOffset(0);
@@ -1385,24 +1323,41 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     setStartTimestamp(null);
                   }
                 }}
-                options={startOffsetOptions}
-                value={currentOffsetOrigin}
-              />
+                value={String(currentOffsetOrigin)}
+              >
+                <SelectTrigger testId="start-offset-dropdown">
+                  <SelectValue>
+                    {(value: unknown) => startOffsetOptions.find((o) => String(o.value) === String(value))?.label}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {startOffsetOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {currentOffsetOrigin === PartitionOffsetOrigin.Custom && (
-                <Tooltip hasArrow isOpen={!customStartOffsetValid} label="Offset must be a number" placement="right">
-                  <Input
-                    isDisabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
-                    maxLength={20}
-                    onChange={(e) => {
-                      setCustomStartOffsetValue(e.target.value);
-                      if (!Number.isNaN(Number(e.target.value))) {
-                        setStartOffset(Number(e.target.value));
-                      }
-                    }}
-                    style={{ width: '7.5em' }}
-                    value={customStartOffsetValue}
-                  />
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip open={!customStartOffsetValid}>
+                    <TooltipTrigger asChild>
+                      <Input
+                        disabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
+                        maxLength={20}
+                        onChange={(e) => {
+                          setCustomStartOffsetValue(e.target.value);
+                          if (!Number.isNaN(Number(e.target.value))) {
+                            setStartOffset(Number(e.target.value));
+                          }
+                        }}
+                        style={{ width: '7.5em' }}
+                        value={customStartOffsetValue}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Offset must be a number</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && (
                 <StartOffsetDateTimePicker
@@ -1411,25 +1366,33 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   value={startTimestamp}
                 />
               )}
-            </Flex>
+            </div>
           </Label>
 
           <Label text="Max Results">
-            <SingleSelect<number>
+            <Select
               data-testid="max-results-select"
-              onChange={(c) => {
-                setMaxResults(c);
-              }}
-              options={[...[1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, 10_000].map((i) => ({ value: i }))]}
-              value={maxResults}
-            />
+              onValueChange={(val) => setMaxResults(Number(val))}
+              value={String(maxResults)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 3, 5, 10, 20, 50, 100, 200, 500, 1000, 10_000].map((i) => (
+                  <SelectItem key={i} value={String(i)}>
+                    {i.toLocaleString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Label>
 
           <Label
             style={{}}
             text="Continuous Pagination"
             textSuffix={
-              <RegistryTooltip>
+              <Tooltip>
                 <TooltipTrigger asChild>
                   <span style={{ display: 'inline-flex', verticalAlign: 'text-top', cursor: 'pointer' }}>
                     <InfoIcon size={11} />
@@ -1440,15 +1403,15 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     ? 'Continuous pagination is only available with Newest or Beginning start offsets'
                     : 'Continuously load more messages as you page forward through the topic. Only the most recent pages are kept in memory.'}
                 </TooltipContent>
-              </RegistryTooltip>
+              </Tooltip>
             }
           >
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
               <Switch
+                checked={continuousPaginationEnabled}
                 data-testid="continuous-pagination-toggle"
-                isChecked={continuousPaginationEnabled}
-                isDisabled={continuousPaginationDisabled}
-                onChange={(e) => setContinuousPaginationEnabled(e.target.checked)}
+                disabled={continuousPaginationDisabled}
+                onCheckedChange={(checked) => setContinuousPaginationEnabled(checked)}
               />
             </div>
           </Label>
@@ -1464,59 +1427,54 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         setPartitionID(DEFAULT_SEARCH_PARAMS.partitionID);
                       }}
                     >
-                      <SingleSelect<number>
-                        chakraStyles={inlineSelectChakraStyles}
-                        onChange={(c) => {
-                          setPartitionID(c);
-                        }}
-                        options={[
-                          {
-                            value: -1,
-                            label: 'All',
-                          },
-                        ].concat(
-                          range(0, props.topic.partitionCount).map((i) => ({
-                            value: i,
-                            label: String(i),
-                          }))
-                        )}
-                        value={partitionID}
-                      />
+                      <Select onValueChange={(val) => setPartitionID(Number(val))} value={String(partitionID)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="-1">All</SelectItem>
+                          {range(0, props.topic.partitionCount).map((i) => (
+                            <SelectItem key={i} value={String(i)}>
+                              {i}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </RemovableFilter>
                   </Label>
                 ),
               })[filter]
           )}
 
-          <Flex alignItems="flex-end">
-            <Menu>
-              <MenuButton as={Button} data-testid="add-topic-filter" variant="outline">
-                Add filter
-              </MenuButton>
-              <MenuList>
-                <MenuItem
+          <div className="flex items-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button data-testid="add-topic-filter" variant="outline">
+                  Add filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
                   data-testid="add-topic-filter-partition"
-                  icon={<LayersIcon size="1.5rem" />}
-                  isDisabled={dynamicFilters.includes('partition')}
+                  disabled={dynamicFilters.includes('partition')}
                   onClick={() => addDynamicFilter('partition')}
                 >
-                  Partition
-                </MenuItem>
-                <MenuDivider />
-                <MenuItem
+                  <LayersIcon size="1.5rem" /> Partition
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
                   data-testid="add-topic-filter-javascript"
-                  icon={<CodeIcon size="1.5rem" />}
-                  isDisabled={!canUseFilters}
+                  disabled={!canUseFilters}
                   onClick={() => {
                     const filter = createFilterEntry();
                     setCurrentJSFilter(filter);
                   }}
                 >
-                  JavaScript Filter
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Flex>
+                  <CodeIcon size="1.5rem" /> JavaScript Filter
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Search Progress Indicator: "Consuming Messages 30/30" */}
           {Boolean(searchPhase && searchPhase.length > 0) && (
@@ -1534,74 +1492,77 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               statusText={searchPhase!}
             />
           )}
-        </GridItem>
+        </div>
 
-        <GridItem alignItems="flex-end" display="flex" gap={3} justifyContent="flex-end">
-          <Menu>
-            <MenuButton
-              as={IconButton}
-              data-testid="message-settings-button"
-              icon={<SettingsIcon size="1.5rem" />}
-              variant="outline"
-            />
-            <MenuList>
-              <MenuItem
+        <div className="flex items-end justify-end gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button data-testid="message-settings-button" size="icon" variant="outline">
+                <SettingsIcon size="1.5rem" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
                 data-testid="deserialization-settings-menu-item"
-                onClick={() => {
-                  setShowDeserializersModal(true);
-                }}
+                onClick={() => setShowDeserializersModal(true)}
               >
                 Deserialization
-              </MenuItem>
-              <MenuItem
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 data-testid="column-settings-menu-item"
-                onClick={() => {
-                  setShowColumnSettingsModal(true);
-                }}
+                onClick={() => setShowColumnSettingsModal(true)}
               >
                 Column settings
-              </MenuItem>
-              <MenuItem
-                data-testid="preview-fields-menu-item"
-                onClick={() => {
-                  setShowPreviewFieldsModal(true);
-                }}
-              >
+              </DropdownMenuItem>
+              <DropdownMenuItem data-testid="preview-fields-menu-item" onClick={() => setShowPreviewFieldsModal(true)}>
                 Preview fields
-              </MenuItem>
-            </MenuList>
-          </Menu>
-          <Flex alignItems="flex-end">
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex items-end">
             {/* Refresh Button */}
             {searchPhase === null && (
-              <Tooltip hasArrow label="Repeat current search" placement="top">
-                <IconButton
-                  aria-label="Repeat current search"
-                  data-testid="refresh-messages-button"
-                  icon={<RefreshIcon />}
-                  onClick={() => searchFunc('manual')}
-                  variant="outline"
-                />
-              </Tooltip>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label="Repeat current search"
+                      data-testid="refresh-messages-button"
+                      onClick={() => searchFunc('manual')}
+                      size="icon"
+                      variant="outline"
+                    >
+                      <RefreshIcon />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Repeat current search</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             {searchPhase !== null && (
-              <Tooltip hasArrow label="Stop searching" placement="top">
-                <IconButton
-                  aria-label="Stop searching"
-                  colorScheme="red"
-                  data-testid="stop-search-button"
-                  icon={<ErrorIcon />}
-                  onClick={() => {
-                    if (abortControllerRef.current) {
-                      abortControllerRef.current.abort();
-                    }
-                  }}
-                  variant="solid"
-                />
-              </Tooltip>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label="Stop searching"
+                      data-testid="stop-search-button"
+                      onClick={() => {
+                        if (abortControllerRef.current) {
+                          abortControllerRef.current.abort();
+                        }
+                      }}
+                      size="icon"
+                      variant="destructive"
+                    >
+                      <ErrorIcon />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Stop searching</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
-          </Flex>
-        </GridItem>
+          </div>
+        </div>
 
         {/* Filter Tags */}
         <MessageSearchFilterBar
@@ -1617,26 +1578,26 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           }}
         />
 
-        <GridItem display="flex" gap={4} gridColumn="1/-1" mt={4}>
+        <div className="col-span-full mt-4 flex gap-4">
           {/* Quick Search */}
           <Input
+            className="px-4"
             data-testid="message-quick-search-input"
             onChange={(x) => {
               setQuickSearch(x.target.value);
             }}
             placeholder="Filter table content ..."
-            px={4}
             value={quickSearch}
           />
-          <Flex alignItems="center" fontSize="sm" gap={2} whiteSpace="nowrap">
+          <div className="flex items-end gap-2 whitespace-nowrap text-sm">
             {searchPhase === null || searchPhase === 'Done' ? (
               <>
-                <Flex alignItems="center" gap={2}>
+                <div className="flex items-center gap-2">
                   <DownloadIcon size={14} /> {prettyBytes(bytesConsumed)}
-                </Flex>
-                <Flex alignItems="center" gap={2}>
+                </div>
+                <div className="flex items-center gap-2">
                   <TimerIcon size={14} /> {elapsedMs ? prettyMilliseconds(elapsedMs) : ''}
-                </Flex>
+                </div>
               </>
             ) : (
               <>
@@ -1644,9 +1605,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 <span className="pulsating">Fetching data...</span>
               </>
             )}
-          </Flex>
-        </GridItem>
-      </Grid>
+          </div>
+        </div>
+      </div>
 
       {currentJSFilter ? (
         <JavascriptFilterModal
@@ -1669,22 +1630,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
       {/* Message Table (or error display) */}
       {fetchError ? (
-        <Alert status="error">
-          <Box alignSelf="flex-start">
-            <AlertIcon />
-          </Box>
-          <Box>
-            <AlertTitle>Backend Error</AlertTitle>
-            <AlertDescription>
-              <Box>Check and modify the request before resubmitting.</Box>
-              <Box mt="4">
-                <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
-              </Box>
-              <Button mt="4" onClick={() => executeMessageSearch()}>
-                Retry Search
-              </Button>
-            </AlertDescription>
-          </Box>
+        <Alert icon={<ErrorIcon />} variant="destructive">
+          <AlertTitle>Backend Error</AlertTitle>
+          <AlertDescription>
+            <div>Check and modify the request before resubmitting.</div>
+            <div className="mt-4">
+              <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
+            </div>
+            <Button className="mt-4" onClick={() => executeMessageSearch()}>
+              Retry Search
+            </Button>
+          </AlertDescription>
         </Alert>
       ) : (
         <>
@@ -1714,7 +1670,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     return (
                       <TableRow>
                         <TableCell className="py-10 text-center" colSpan={table.getVisibleFlatColumns().length}>
-                          <Spinner size="md" />
+                          <Spinner />
                         </TableCell>
                       </TableRow>
                     );
@@ -1784,7 +1740,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 {/* Rows per page selector */}
                 <div className="flex items-center space-x-2">
                   <p className="font-medium text-sm">Rows per page</p>
-                  <RegistrySelect
+                  <Select
                     onValueChange={(value) => {
                       const newSize = Number(value);
                       uiState.topicSettings.searchParams.pageSize = newSize;
@@ -1802,12 +1758,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </RegistrySelect>
+                  </Select>
                 </div>
 
                 {/* Navigation buttons */}
                 <div className="flex items-center space-x-2">
-                  <RegistryButton
+                  <Button
                     className="hidden size-8 lg:flex"
                     disabled={pageIndex === 0}
                     onClick={() => setPageIndex(0)}
@@ -1816,9 +1772,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   >
                     <span className="sr-only">Go to first page</span>
                     <ChevronsLeft />
-                  </RegistryButton>
+                  </Button>
 
-                  <RegistryButton
+                  <Button
                     className="size-8"
                     disabled={localPageIndex === 0}
                     onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
@@ -1827,9 +1783,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   >
                     <span className="sr-only">Go to previous page</span>
                     <ChevronLeft />
-                  </RegistryButton>
+                  </Button>
 
-                  <RegistryButton
+                  <Button
                     className="size-8"
                     disabled={boundedLocalPageIndex >= loadedPages - 1 && !hasMoreData}
                     onClick={() => setPageIndex((prev) => (prev ?? 0) + 1)}
@@ -1838,12 +1794,12 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   >
                     <span className="sr-only">Go to next page</span>
                     <ChevronRight />
-                  </RegistryButton>
+                  </Button>
 
-                  <RegistryButton className="hidden size-8 lg:flex" disabled size="icon" variant="outline">
+                  <Button className="hidden size-8 lg:flex" disabled size="icon" variant="outline">
                     <span className="sr-only">Go to last page</span>
                     <ChevronsRight />
-                  </RegistryButton>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1851,19 +1807,18 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           {/* Virtual page indicator for continuous pagination mode */}
           {continuousPaginationEnabled && messages.length > 0 && (
-            <Flex align="center" className="text-muted-foreground text-sm" gap={2} justify="center" mt={2}>
+            <div className="mt-2 flex items-center justify-center gap-2 text-muted-foreground text-sm">
               <span>
                 Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
                 {` (pages ${windowStartPage + 1}–${windowStartPage + loadedPages} in memory)`}
                 {messageSearch?.nextPageToken ? ' · more available' : ''}
               </span>
-            </Flex>
+            </div>
           )}
 
           {/* Warning when filters are active with continuous pagination */}
           {continuousPaginationEnabled && filters.length > 0 && messages.length > 0 && (
-            <Alert mt={4} status="info">
-              <AlertIcon />
+            <Alert className="mt-4">
               <AlertDescription>
                 Auto-pagination is disabled when filters are active. Remove filters to enable automatic loading.
               </AlertDescription>
@@ -1874,14 +1829,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <div
             className={`mt-4 flex h-6 items-center justify-center ${continuousPaginationEnabled && showLoadingIndicator ? 'visible' : 'invisible'}`}
           >
-            <Spinner mr={2} size="sm" />
+            <Spinner className="mr-2" />
             <span>Loading more messages...</span>
           </div>
 
           <Button
+            className="mt-4"
             data-testid="save-messages-button"
-            isDisabled={messages.length === 0}
-            mt={4}
+            disabled={messages.length === 0}
             onClick={() => {
               setDownloadMessages(messages);
             }}

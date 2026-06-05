@@ -17,8 +17,18 @@ import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interf
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import '../../../utils/array-extensions';
-import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
 import { TopicQuickInfoStatistic } from './quick-info';
@@ -34,104 +44,87 @@ import { isServerless } from '../../../config';
 import { AppFeatures } from '../../../utils/env';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
-import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];
 
-// A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
-class TopicTab {
-  readonly topicGetter: () => Topic | undefined | null;
+type TopicTabProps = {
+  topic: Topic;
   id: TopicTabId;
-  private readonly requiredPermission: TopicAction;
+  requiredPermission: TopicAction;
   titleText: React.ReactNode;
-  private readonly contentFunc: (topic: Topic) => React.ReactNode;
-  private readonly disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+  disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+  children: (topic: Topic) => React.ReactNode;
+};
 
-  // biome-ignore lint/nursery/useMaxParams: Legacy class with many constructor parameters
-  constructor(
-    topicGetter: () => Topic | undefined | null,
-    id: TopicTabId,
-    requiredPermission: TopicAction,
-    titleText: React.ReactNode,
-    contentFunc: (topic: Topic) => React.ReactNode,
-    disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
-  ) {
-    this.topicGetter = topicGetter;
-    this.id = id;
-    this.requiredPermission = requiredPermission;
-    this.titleText = titleText;
-    this.contentFunc = contentFunc;
-    this.disableHooks = disableHooks;
-  }
+// Context controls whether TopicTab renders its trigger or its content panel.
+// The same <TopicTab> elements are rendered twice — once inside <TabsList> and
+// once outside — so each instance only renders the relevant part.
+const TopicTabModeCtx = React.createContext<'trigger' | 'content'>('content');
 
-  get isEnabled(): boolean {
-    const topic = this.topicGetter();
+const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titleText, disableHooks, children }) => {
+  const mode = React.useContext(TopicTabModeCtx);
 
-    if (topic && this.disableHooks) {
-      for (const h of this.disableHooks) {
-        if (h(topic)) {
-          return false;
-        }
+  let customTitle: React.ReactNode | undefined;
+  if (disableHooks) {
+    for (const h of disableHooks) {
+      const result = h(topic);
+      if (result) {
+        customTitle = result;
+        break;
       }
     }
-
-    if (!topic) {
-      return true; // no data yet
-    }
-    if (!topic.allowedActions || topic.allowedActions[0] === 'all') {
-      return true; // Redpanda Console free version
-    }
-
-    return topic.allowedActions.includes(this.requiredPermission);
   }
 
-  get isDisabled(): boolean {
-    return !this.isEnabled;
-  }
+  const hasPermission =
+    !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission);
+  const isDisabled = !!customTitle || !hasPermission;
 
-  get title(): React.ReactNode {
-    if (this.isEnabled) {
-      return this.titleText;
-    }
-
-    const topic = this.topicGetter();
-    if (topic && this.disableHooks) {
-      for (const h of this.disableHooks) {
-        const replacementTitle = h(topic);
-        if (replacementTitle) {
-          return replacementTitle;
-        }
-      }
-    }
-
-    return (
-      <Popover
-        content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}
-        hideCloseButton={true}
-      >
-        <div>
-          <LockIcon size={16} /> {this.titleText}
-        </div>
+  const title =
+    customTitle ??
+    (hasPermission ? (
+      titleText
+    ) : (
+      <Popover>
+        <PopoverTrigger asChild>
+          <div>
+            <LockIcon size={16} /> {titleText}
+          </div>
+        </PopoverTrigger>
+        <PopoverContent>{`You're missing the required permission '${requiredPermission}' to view this tab`}</PopoverContent>
       </Popover>
+    ));
+
+  if (mode === 'trigger') {
+    return (
+      <TabsTrigger
+        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[state=active]:text-foreground"
+        disabled={isDisabled}
+        value={id}
+        variant="underline"
+      >
+        {title}
+      </TabsTrigger>
     );
   }
 
-  get content(): React.ReactNode {
-    const topic = this.topicGetter();
-    if (topic) {
-      return this.contentFunc(topic);
-    }
-    return null;
-  }
-}
+  return (
+    <TabsContent tabIndex={-1} value={id}>
+      {children(topic)}
+    </TabsContent>
+  );
+};
 
 const mkDocuTip = (text: string, icon?: JSX.Element) => (
-  <Tooltip hasArrow label={text} placement="left">
-    <span>{icon ?? null}Documentation</span>
-  </Tooltip>
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span>{icon ?? null}Documentation</span>
+      </TooltipTrigger>
+      <TooltipContent side="left">{text}</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
 );
 const warnIcon = (
   <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
@@ -227,110 +220,124 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
     ({ topicName: tn }) => tn === topicName
   )?.partitionIds;
 
-  const topicTabs: TopicTab[] = [
-    new TopicTab(
-      () => topic,
-      'messages',
-      'viewMessages',
-      'Messages',
-      (t) => <TopicMessageView refreshTopicData={(force: boolean) => refreshTopicData(topicName, force)} topic={t} />
-    ),
-    new TopicTab(
-      () => topic,
-      'consumers',
-      'viewConsumers',
-      'Consumers',
-      (t) => <TopicConsumers topic={t} />
-    ),
-    new TopicTab(
-      () => topic,
-      'partitions',
-      'viewPartitions',
-      <Flex gap={1} key="partitions-title">
-        Partitions
-        {!!leaderLessPartitionIds && (
-          <Tooltip
-            hasArrow
-            label={`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
-            placement="top"
-          >
-            <Box>
-              <ErrorIcon color={colors.brandError} size={18} />
-            </Box>
-          </Tooltip>
-        )}
-        {!!underReplicatedPartitionIds && (
-          <Tooltip
-            hasArrow
-            label={`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
-            placement="top"
-          >
-            <Box>
-              <WarningIcon color={colors.brandWarning} size={18} />
-            </Box>
-          </Tooltip>
-        )}
-      </Flex>,
-      (t) => <TopicPartitions topic={t} />
-    ),
-    new TopicTab(
-      () => topic,
-      'configuration',
-      'viewConfig',
-      'Configuration',
-      (t) => <TopicConfiguration topic={t} />
-    ),
-    new TopicTab(
-      () => topic,
-      'topicacl',
-      'seeTopic',
-      'ACL',
-      () => <AclList acl={topicAcls} />,
-      [
-        () => {
-          if (
-            AppFeatures.SINGLE_SIGN_ON &&
-            api.userData !== null &&
-            api.userData !== undefined &&
-            !api.userData.canListAcls
-          ) {
-            return (
-              <Popover content={"You need the cluster-permission 'viewAcl' to view this tab"} hideCloseButton={true}>
-                <div>
-                  {' '}
-                  <LockIcon size={16} /> ACL
-                </div>
-              </Popover>
-            );
-          }
-          return;
-        },
-      ]
-    ),
-    new TopicTab(
-      () => topic,
-      'documentation',
-      'seeTopic',
-      'Documentation',
-      (t) => <TopicDocumentation topic={t} />,
-      [
-        (t) => (t.documentation === 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null),
-        (t) =>
-          t.documentation === 'NOT_EXISTENT'
-            ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
-            : null,
-      ]
-    ),
+  const aclDisableHooks: ((topic: Topic) => React.ReactNode | undefined)[] = [
+    () => {
+      if (
+        AppFeatures.SINGLE_SIGN_ON &&
+        api.userData !== null &&
+        api.userData !== undefined &&
+        !api.userData.canListAcls
+      ) {
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <div>
+                <LockIcon size={16} /> ACL
+              </div>
+            </PopoverTrigger>
+            <PopoverContent>You need the cluster-permission &apos;viewAcl&apos; to view this tab</PopoverContent>
+          </Popover>
+        );
+      }
+    },
   ];
 
-  if (isServerless()) {
-    topicTabs.splice(
-      topicTabs.findIndex((t) => t.id === 'documentation'),
-      1
-    );
-  }
+  const docuDisableHooks: ((topic: Topic) => React.ReactNode | undefined)[] = [
+    (t) => (t.documentation === 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null),
+    (t) =>
+      t.documentation === 'NOT_EXISTENT'
+        ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
+        : null,
+  ];
 
-  const selectedTabId = getSelectedTabId(topicTabs);
+  const enabledTabIds = new Set<TopicTabId>(
+    [
+      isTopicTabEnabled(topic, 'viewMessages') && 'messages',
+      isTopicTabEnabled(topic, 'viewConsumers') && 'consumers',
+      isTopicTabEnabled(topic, 'viewPartitions') && 'partitions',
+      isTopicTabEnabled(topic, 'viewConfig') && 'configuration',
+      isTopicTabEnabled(topic, 'seeTopic', aclDisableHooks) && 'topicacl',
+      !isServerless() && isTopicTabEnabled(topic, 'seeTopic', docuDisableHooks) && 'documentation',
+    ].filter(Boolean) as TopicTabId[]
+  );
+
+  const selectedTabId = getSelectedTabId(enabledTabIds);
+
+  const tabElements = (
+    <>
+      <TopicTab id="messages" requiredPermission="viewMessages" titleText="Messages" topic={topic}>
+        {(t) => (
+          <TopicMessageView refreshTopicData={(force: boolean) => refreshTopicData(topicName, force)} topic={t} />
+        )}
+      </TopicTab>
+      <TopicTab id="consumers" requiredPermission="viewConsumers" titleText="Consumers" topic={topic}>
+        {(t) => <TopicConsumers topic={t} />}
+      </TopicTab>
+      <TopicTab
+        id="partitions"
+        requiredPermission="viewPartitions"
+        titleText={
+          <div className="flex gap-1" key="partitions-title">
+            Partitions
+            {!!leaderLessPartitionIds && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <ErrorIcon color={colors.brandError} size={18} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {!!underReplicatedPartitionIds && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <WarningIcon color={colors.brandWarning} size={18} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        }
+        topic={topic}
+      >
+        {(t) => <TopicPartitions topic={t} />}
+      </TopicTab>
+      <TopicTab id="configuration" requiredPermission="viewConfig" titleText="Configuration" topic={topic}>
+        {(t) => <TopicConfiguration topic={t} />}
+      </TopicTab>
+      <TopicTab
+        disableHooks={aclDisableHooks}
+        id="topicacl"
+        requiredPermission="seeTopic"
+        titleText="ACL"
+        topic={topic}
+      >
+        {() => <AclList acl={topicAcls} />}
+      </TopicTab>
+      {!isServerless() && (
+        <TopicTab
+          disableHooks={docuDisableHooks}
+          id="documentation"
+          requiredPermission="seeTopic"
+          titleText="Documentation"
+          topic={topic}
+        >
+          {(t) => <TopicDocumentation topic={t} />}
+        </TopicTab>
+      )}
+    </>
+  );
 
   const setTabPage = (activeKey: string): void => {
     uiSettings.topicDetailsActiveTabKey = activeKey as TopicTabId;
@@ -345,38 +352,32 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
   return (
     <>
       <PageContent key={'b'}>
-        {Boolean(uiSettings.topicDetailsShowStatisticsBar) && <TopicQuickInfoStatistic topic={topic} />}
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
+          {Boolean(uiSettings.topicDetailsShowStatisticsBar) && <TopicQuickInfoStatistic topic={topic} />}
+          <div className="flex shrink-0 items-center gap-2 md:ml-auto">
+            <Button
+              data-testid="produce-record-button"
+              onClick={() => {
+                appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+              }}
+              variant="outline"
+            >
+              Produce Record
+            </Button>
+            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
+              setDeleteRecordsModalAlive(true);
+            })}
+          </div>
+        </div>
 
-        <Flex gap={2} mb={4}>
-          <Button
-            data-testid="produce-record-button"
-            onClick={() => {
-              appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
-            }}
-            variant="outline"
-          >
-            Produce Record
-          </Button>
-          {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
-            setDeleteRecordsModalAlive(true);
-          })}
-        </Flex>
-
-        {/* Tabs:  Messages, Configuration */}
-        <Section>
-          <Tabs
-            data-testid="topic-details-tabs"
-            isFitted
-            onChange={setTabPage}
-            selectedTabKey={selectedTabId}
-            tabs={topicTabs.map(({ id, title, content, isDisabled }) => ({
-              key: id,
-              disabled: isDisabled,
-              title,
-              content,
-            }))}
-          />
-        </Section>
+        <Tabs data-testid="topic-details-tabs" onValueChange={setTabPage} value={selectedTabId}>
+          <TopicTabModeCtx.Provider value="trigger">
+            <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
+              {tabElements}
+            </TabsList>
+          </TopicTabModeCtx.Provider>
+          <TopicTabModeCtx.Provider value="content">{tabElements}</TopicTabModeCtx.Provider>
+        </Tabs>
       </PageContent>
       {Boolean(deleteRecordsModalAlive) && (
         <DeleteRecordsModal
@@ -419,7 +420,22 @@ function addBaseFavs(topicConfig: ConfigEntry[]): void {
   }
 }
 
-function getSelectedTabId(topicTabs: TopicTab[]): TopicTabId {
+function isTopicTabEnabled(
+  topic: Topic,
+  requiredPermission: TopicAction,
+  disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
+): boolean {
+  if (disableHooks) {
+    for (const h of disableHooks) {
+      if (h(topic)) return false;
+    }
+  }
+  return (
+    !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission)
+  );
+}
+
+function getSelectedTabId(enabledTabIds: Set<TopicTabId>): TopicTabId {
   function computeTabId() {
     // use url anchor if possible
     let key = appGlobal.location.hash.replace('#', '');
@@ -434,33 +450,31 @@ function getSelectedTabId(topicTabs: TopicTab[]): TopicTabId {
       return key as TopicTabId;
     }
 
-    // default to partitions
     return 'messages';
   }
 
   const id = computeTabId();
-  if (topicTabs.first((t) => t.id === id)?.isEnabled) {
+  if (enabledTabIds.has(id)) {
     return id;
   }
-  return topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
+  return TopicTabIds.find((t) => enabledTabIds.has(t)) ?? 'messages';
 }
 
 function topicNotFound(name: string) {
   return (
-    <Result
-      extra={
-        <Button onClick={() => appGlobal.historyPush('/topics')} variant="solid">
+    <Empty>
+      <EmptyHeader>
+        <EmptyTitle>404</EmptyTitle>
+        <EmptyDescription>
+          The topic <code className="font-mono">{name}</code> does not exist.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button onClick={() => appGlobal.historyPush('/topics')} variant="primary">
           Go Back
         </Button>
-      }
-      status={404}
-      title="404"
-      userMessage={
-        <div>
-          The topic <Code>{name}</Code> does not exist.
-        </div>
-      }
-    />
+      </EmptyContent>
+    </Empty>
   );
 }
 

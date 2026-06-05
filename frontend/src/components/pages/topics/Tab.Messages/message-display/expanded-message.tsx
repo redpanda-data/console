@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Flex, Tabs as RpTabs, useColorModeValue } from '@redpanda-data/ui';
+import { Box, Flex, useColorModeValue } from '@redpanda-data/ui';
 import React, { type FC, type ReactNode, useCallback } from 'react';
 
 import { MessageHeaders } from './message-headers';
@@ -18,6 +18,8 @@ import { PayloadComponent } from './payload-component';
 import { TroubleshootReportViewer } from './troubleshoot-report-viewer';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { prettyBytes } from '../../../../../utils/utils';
+import { Button } from '../../../../redpanda-ui/components/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../redpanda-ui/components/tabs';
 
 const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () => void }> = ({
   children,
@@ -80,71 +82,47 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
     return (
       <Box bg={bg} px={10} py={6}>
         <MessageMetaData msg={msg} />
-        <RpTabs
-          defaultIndex={1}
-          isFitted
-          items={[
-            {
-              key: 'key',
-              name: (
-                <Box minWidth="6rem">
-                  {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
-                </Box>
-              ),
-              isDisabled: msg.key === null || msg.key.size === 0,
-              component: (
-                <Box>
-                  <TroubleshootReportViewer payload={msg.key} />
-                  <PayloadComponent loadLargeMessage={handleLoadLargeMessage} payload={msg.key} />
-                  <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
-                    {onCopyKey ? (
-                      <Button isDisabled={msg.key.isPayloadNull} onClick={handleCopyKey} variant="outline">
-                        Copy Key
-                      </Button>
-                    ) : null}
-                  </ExpandedMessageFooter>
-                </Box>
-              ),
-            },
-            {
-              key: 'value',
-              name: (
-                <Box minWidth="6rem">
-                  {msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}
-                </Box>
-              ),
-              component: (
-                <Box>
-                  <TroubleshootReportViewer payload={msg.value} />
-                  <PayloadComponent loadLargeMessage={handleLoadLargeMessage} payload={msg.value} />
-                  <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
-                    {onCopyValue ? (
-                      <Button isDisabled={msg.value.isPayloadNull} onClick={handleCopyValue} variant="outline">
-                        Copy Value
-                      </Button>
-                    ) : null}
-                  </ExpandedMessageFooter>
-                </Box>
-              ),
-            },
-            {
-              key: 'headers',
-              name: (
-                <Box minWidth="6rem">{msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}</Box>
-              ),
-              isDisabled: msg.headers.length === 0,
-              component: (
-                <Box>
-                  <MessageHeaders msg={msg} />
-                  {onSetDownloadMessages || onDownloadRecord ? (
-                    <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord} />
-                  ) : null}
-                </Box>
-              ),
-            },
-          ]}
-          variant="fitted"
-        />
+        <Tabs defaultValue="value">
+          <TabsList className="w-full" columns={3} layout="equal">
+            <TabsTrigger disabled={msg.key === null || msg.key.size === 0} value="key">
+              {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
+            </TabsTrigger>
+            <TabsTrigger value="value">
+              {msg.value === null || msg.value.size === 0 ? 'Value' : `Value (${prettyBytes(msg.value.size)})`}
+            </TabsTrigger>
+            <TabsTrigger disabled={msg.headers.length === 0} value="headers">
+              {msg.headers.length === 0 ? 'Headers' : `Headers (${msg.headers.length})`}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="key">
+            <TroubleshootReportViewer payload={msg.key} />
+            <PayloadComponent loadLargeMessage={handleLoadLargeMessage} payload={msg.key} />
+            <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
+              {onCopyKey ? (
+                <Button disabled={msg.key.isPayloadNull} onClick={handleCopyKey} variant="outline">
+                  Copy Key
+                </Button>
+              ) : null}
+            </ExpandedMessageFooter>
+          </TabsContent>
+          <TabsContent value="value">
+            <TroubleshootReportViewer payload={msg.value} />
+            <PayloadComponent loadLargeMessage={handleLoadLargeMessage} payload={msg.value} />
+            <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord}>
+              {onCopyValue ? (
+                <Button disabled={msg.value.isPayloadNull} onClick={handleCopyValue} variant="outline">
+                  Copy Value
+                </Button>
+              ) : null}
+            </ExpandedMessageFooter>
+          </TabsContent>
+          <TabsContent value="headers">
+            <MessageHeaders msg={msg} />
+            {onSetDownloadMessages || onDownloadRecord ? (
+              <ExpandedMessageFooter onDownloadRecord={handleDownloadRecord} />
+            ) : null}
+          </TabsContent>
+        </Tabs>
       </Box>
     );
   }
