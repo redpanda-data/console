@@ -37,25 +37,24 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
   return (
     <div className={cn('space-y-3', className)}>
       {isPending && !hasHints && <Spinner className="size-4 text-foreground" />}
-      {hasHints && (
-        <div className="overflow-hidden rounded-lg border border-surface-strong">
-          <div className="flex min-w-0 flex-col gap-4 p-3">
-            {Object.entries(lintHints).map(([toolName, hint]) => (
-              <div className="flex min-w-0 flex-col gap-1.5" key={toolName}>
-                {/* min-w-0 + wrapping the inner <pre> keep long lint messages from stretching the page. */}
-                <SimpleCodeBlock
-                  className="my-0 text-xs [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
-                  code={hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint}
-                  width="full"
-                />
-                {hint.lintType && (
-                  <Text className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{hint.lintType}</Text>
-                )}
-              </div>
-            ))}
+      {/* One code block per hint, stacked — no outer wrapper, to avoid a box-in-box look. */}
+      {hasHints &&
+        Object.entries(lintHints).map(([toolName, hint]) => (
+          <div className="flex min-w-0 flex-col gap-1" key={toolName}>
+            {/* Type label heads its message so each hint reads as one group. */}
+            {hint.lintType && (
+              <Text className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                {hint.lintType}
+              </Text>
+            )}
+            {/* min-w-0 + wrapping the inner <pre> keep long lint messages from stretching the page. */}
+            <SimpleCodeBlock
+              className="my-0 text-xs [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+              code={hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint}
+              width="full"
+            />
           </div>
-        </div>
-      )}
+        ))}
     </div>
   );
 });

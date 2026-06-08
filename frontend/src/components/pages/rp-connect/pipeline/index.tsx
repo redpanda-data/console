@@ -624,8 +624,8 @@ function EditorPanel({
       <ResizableHandle withHandle />
       <ResizablePanel collapsible defaultSize={30}>
         <div className="h-full overflow-auto p-4">
-          <div className="flex items-center gap-2">
-            <Heading className="mb-2 text-muted-foreground" level={5}>
+          <div className="mb-3 flex items-center gap-2">
+            <Heading className="text-muted-foreground" level={5}>
               Lint issues
             </Heading>
             {Object.keys(lintHints).length > 0 ? (
