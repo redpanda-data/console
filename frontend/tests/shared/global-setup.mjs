@@ -909,6 +909,16 @@ async function startBackendServerWithConfig(
     });
   }
 
+  // Capture container output as it is produced. When .start() fails its wait
+  // strategy, testcontainers stops AND removes the container, so a later
+  // `docker logs` returns "No such container". A log consumer buffers the
+  // output while the container is alive, so we still have it on failure.
+  const capturedLogs = [];
+  const logConsumer = (stream) => {
+    stream.on('data', (line) => capturedLogs.push(line.toString()));
+    stream.on('err', (line) => capturedLogs.push(line.toString()));
+  };
+
   let containerId;
   try {
     const backend = await new GenericContainer(imageTag)
@@ -916,6 +926,7 @@ async function startBackendServerWithConfig(
       .withNetworkAliases(networkAlias)
       .withExposedPorts({ container: 3000, host: externalPort })
       .withBindMounts(bindMounts)
+      .withLogConsumer(logConsumer)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
       .start();
 
@@ -954,20 +965,23 @@ async function startBackendServerWithConfig(
       }
     }
 
+    // Try live `docker inspect`/`docker logs` first (works if the container
+    // still exists), then always fall back to the buffered log consumer output
+    // which survives even after testcontainers removes the crashed container.
     if (containerId) {
       try {
-        const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
         const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
         const inspectJson = JSON.parse(inspect);
         console.error(`Container ${containerId} exit code:`, inspectJson[0].State.ExitCode);
         console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
-        console.error('=== CONTAINER LOGS START ===');
-        console.error(logs || '(no logs)');
-        console.error('=== CONTAINER LOGS END ===');
-      } catch (logError) {
-        console.error('Could not fetch container diagnostics:', logError.message);
+      } catch (inspectError) {
+        console.error('Could not inspect container (likely already removed):', inspectError.message);
       }
     }
+
+    console.error('=== CONTAINER LOGS START ===');
+    console.error(capturedLogs.length > 0 ? capturedLogs.join('') : '(no logs captured)');
+    console.error('=== CONTAINER LOGS END ===');
 
     throw error;
   }
