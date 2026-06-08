@@ -1,0 +1,29 @@
+input:
+  aws_s3:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    bucket: ${slot.bucket}
+    prefix: ${slot.prefix}
+    region: ${slot.region}
+    credentials:
+      id: ${slot.awsAccessKey}
+      secret: ${slot.awsSecretKey}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    delete_objects: false                  # set true to remove objects after reading
+    # force_path_style_urls: false         # set true for S3-compatible stores (MinIO etc.)
+    # codec: all-bytes                     # legacy alias; prefer 'scanner' below
+
+    # ── Object scanner — interpret each object's contents ───────────────────
+    scanner:
+      lines: {}                            # one message per line; swap for csv / json / tar etc.
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true

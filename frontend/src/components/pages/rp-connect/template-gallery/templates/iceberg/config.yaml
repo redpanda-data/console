@@ -1,0 +1,32 @@
+input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topics:
+      - ${slot.sourceTopic}
+    consumer_group: ${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  iceberg:
+    # ── Catalog (filled in from the form) ───────────────────────────────────
+    catalog_uri: ${slot.catalogUri}
+    warehouse: ${slot.warehouse}
+    namespace: ${slot.namespace}
+    table: ${slot.tableName}
+
+    # ── Write tuning — Iceberg is happiest with sizable batches ─────────────
+    batching:
+      count: 1000
+      period: 10s
+    # write_mode: append                   # append | overwrite
+    # partition_spec: ""                   # e.g. 'days(event_time)'
+
+    # ── Schema handling ─────────────────────────────────────────────────────
+    # schema_evolution:
+    #   enabled: true                      # auto-add columns from incoming records
+    # mapping: ""                          # bloblang to reshape records before write

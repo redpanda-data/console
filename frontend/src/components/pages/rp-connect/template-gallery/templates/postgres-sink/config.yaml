@@ -1,0 +1,28 @@
+input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topics:
+      - ${slot.sourceTopic}
+    consumer_group: ${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  sql_raw:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    driver: postgres
+    dsn: ${slot.dsn}
+
+    # ── Insert query — adjust columns & mapping for your schema ─────────────
+    query: INSERT INTO ${slot.tableName} (payload) VALUES ($1)
+    args_mapping: root = [content().string()]
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 200
+      period: 1s
+    # max_in_flight: 1                     # >1 risks out-of-order writes on conflicts

@@ -174,8 +174,12 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     }, [componentListResponse, defaultValues, form, template.id]);
 
     const stitchCurrentYaml = (values: FormValues): string => {
-      const { [PIPELINE_NAME_FIELD]: _ignored, ...slotValues } = values;
-      return stitchTemplateYaml({ template, values: slotValues as Record<string, string> });
+      const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;
+      return stitchTemplateYaml({
+        template,
+        values: slotValues as Record<string, string>,
+        pipelineName: pipelineName?.trim() || template.defaultPipelineName,
+      });
     };
 
     useImperativeHandle(ref, () => ({

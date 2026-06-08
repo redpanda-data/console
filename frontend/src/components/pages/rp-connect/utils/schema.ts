@@ -534,6 +534,11 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (spec.optional === true) {
     return false;
   }
+  // Deprecated fields are being phased out and drop their defaults in the schema;
+  // they're never required (treating them so would wrongly force a removed field).
+  if (spec.deprecated === true) {
+    return false;
+  }
   // Ancestor is optional AND field is non-scalar: proto likely lost a collection default
   // (e.g., include_prefixes had default: [] which became ""). Suppress required marking.
   // Scalar fields are NOT suppressed — they're genuinely required if they have no default.

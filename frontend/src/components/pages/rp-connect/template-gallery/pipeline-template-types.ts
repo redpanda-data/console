@@ -30,6 +30,10 @@ export type StringSlot = SlotBase & {
   placeholder?: string;
   default?: string;
   multiline?: boolean;
+  // When an optional slot is left blank but the connector still requires the key,
+  // emit this generated value instead of dropping the line. Receives the pipeline
+  // name so the value can be deterministic and unique per pipeline.
+  defaultWhenBlank?: (ctx: { pipelineName: string }) => string;
 };
 
 export type SecretSlot = SlotBase & {

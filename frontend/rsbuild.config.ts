@@ -17,6 +17,9 @@ import path from 'node:path';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
+// Matches the `?raw` import query used to load files as raw source strings.
+const RAW_QUERY = /raw/;
+
 export default defineConfig({
   plugins: [
     pluginReact({
@@ -192,6 +195,16 @@ export default defineConfig({
         );
       }
       appendPlugins(plugins);
+    },
+    bundlerChain: (chain) => {
+      // pluginYaml registers a `.yaml` rule that parses YAML into a JS object.
+      // Exclude `?raw` imports from it and load those as raw source strings, so
+      // pipeline templates can ship real .yaml files imported verbatim (comments
+      // and ${...} tokens preserved). Plain `.yaml` imports are unaffected.
+      if (chain.module.rules.has('yaml')) {
+        chain.module.rule('yaml').resourceQuery({ not: [RAW_QUERY] });
+      }
+      chain.module.rule('raw-source').resourceQuery(RAW_QUERY).type('asset/source');
     },
   },
 });
