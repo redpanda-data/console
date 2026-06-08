@@ -36,6 +36,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
@@ -478,13 +479,45 @@ function YamlViewPanel({
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
 }) {
+  // Track vertical overflow off the editor's scroll position to drive top/bottom
+  // shadows. The registry's useScrollShadow can't help: it observes sentinels in a
+  // native scroll container, but Monaco virtualizes and scrolls internally, so
+  // onDidScrollChange is the only reliable signal.
+  const [overflow, setOverflow] = useState({ top: false, bottom: false });
+  const handleMount = useCallback((instance: editor.IStandaloneCodeEditor) => {
+    const sync = () => {
+      const scrollTop = instance.getScrollTop();
+      const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
+      setOverflow({ top: scrollTop > 1, bottom: scrollTop < maxY - 1 });
+    };
+    instance.onDidScrollChange(sync);
+    instance.onDidContentSizeChange(sync);
+    instance.onDidLayoutChange(sync);
+    sync();
+  }, []);
+
+  const edge =
+    'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
   return (
-    <div className="relative h-full overflow-hidden p-2 [&_.cursors-layer]:opacity-0">
+    <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
       <YamlEditor
-        options={{ readOnly: true, domReadOnly: true, renderLineHighlight: 'none', mouseStyle: 'default' }}
+        onEditorMount={handleMount}
+        options={{
+          readOnly: true,
+          domReadOnly: true,
+          renderLineHighlight: 'none',
+          mouseStyle: 'default',
+          padding: { top: 0 },
+          scrollbar: { alwaysConsumeMouseWheel: false, useShadows: false },
+        }}
         schema={schema}
         transparentBackground
         value={configYaml}
+      />
+      <div aria-hidden className={cn(edge, 'top-0 bg-gradient-to-b', overflow.top ? 'opacity-100' : 'opacity-0')} />
+      <div
+        aria-hidden
+        className={cn(edge, 'bottom-0 bg-gradient-to-t', overflow.bottom ? 'opacity-100' : 'opacity-0')}
       />
     </div>
   );
