@@ -940,13 +940,30 @@ async function startBackendServerWithConfig(
   } catch (error) {
     console.error(`Failed to start backend on port ${externalPort}:`, error.message);
 
+    // When the container crashes during the testcontainers wait strategy, .start()
+    // throws before containerId is assigned. The error message ("container <id> is
+    // not running") still contains the ID, so recover it to dump diagnostics.
+    if (!containerId) {
+      const containerIdMatch = error.message.match(CONTAINER_ID_REGEX);
+      if (containerIdMatch) {
+        containerId = containerIdMatch[1];
+        state.backendId = containerId;
+        console.log(`Recovered container ID from error message: ${containerId}`);
+      } else {
+        console.log('Could not extract container ID from error message - no logs available');
+      }
+    }
+
     if (containerId) {
       try {
         const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
         const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
         const inspectJson = JSON.parse(inspect);
+        console.error(`Container ${containerId} exit code:`, inspectJson[0].State.ExitCode);
         console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
-        console.error('Container logs:', logs);
+        console.error('=== CONTAINER LOGS START ===');
+        console.error(logs || '(no logs)');
+        console.error('=== CONTAINER LOGS END ===');
       } catch (logError) {
         console.error('Could not fetch container diagnostics:', logError.message);
       }
