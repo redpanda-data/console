@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Flex, useColorModeValue } from '@redpanda-data/ui';
 import React, { type FC, type ReactNode, useCallback } from 'react';
 
 import { MessageHeaders } from './message-headers';
@@ -25,14 +24,14 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
   children,
   onDownloadRecord,
 }) => (
-  <Flex gap={2} my={4} style={{ justifyContent: 'flex-end' }}>
+  <div className="my-4 flex justify-end gap-2">
     {children}
     {Boolean(onDownloadRecord) && (
       <Button onClick={onDownloadRecord} variant="outline">
         Download Record
       </Button>
     )}
-  </Flex>
+  </div>
 );
 
 type ExpandedMessageProps = {
@@ -57,7 +56,6 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
     onCopyKey,
     onCopyValue,
   }) => {
-    const bg = useColorModeValue('gray.50', 'gray.600');
     const handleLoadLargeMessage = useCallback(
       () =>
         onLoadLargeMessage && topicName !== undefined
@@ -80,7 +78,7 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
     }, [msg, onCopyValue]);
 
     return (
-      <Box bg={bg} px={10} py={6}>
+      <div className="bg-muted/30 px-10 py-6">
         <MessageMetaData msg={msg} />
         <Tabs defaultValue="value">
           <TabsList className="w-full" columns={3} layout="equal">
@@ -123,7 +121,7 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
             ) : null}
           </TabsContent>
         </Tabs>
-      </Box>
+      </div>
     );
   }
 );
