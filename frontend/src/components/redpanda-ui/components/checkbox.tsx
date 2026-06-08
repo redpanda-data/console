@@ -153,4 +153,66 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
 
 Checkbox.displayName = 'Checkbox';
 
-export { Checkbox, checkboxVariants, type CheckboxProps };
+/**
+ * Presentational, non-interactive sibling of `Checkbox` — same visual, no
+ * Base UI primitive, no internal state. Use for row-selection surfaces where
+ * many controlled `Checkbox` instances under a re-rendering parent would
+ * otherwise feed enough updates to hit React's max-update-depth limit.
+ */
+export interface CheckboxViewProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
+    VariantProps<typeof checkboxVariants> {
+  checked: boolean | 'indeterminate';
+}
+
+const CheckboxView = React.forwardRef<HTMLDivElement, CheckboxViewProps>(
+  ({ checked, className, variant, ...divProps }, ref) => {
+    const isIndeterminate = checked === 'indeterminate';
+    const dataState = isIndeterminate ? 'indeterminate' : checked ? 'checked' : 'unchecked';
+    const showCheckmark = checked === true;
+
+    return (
+      <div
+        aria-checked={isIndeterminate ? 'mixed' : checked}
+        className={cn(checkboxVariants({ variant, className }), 'cursor-default')}
+        data-slot="checkbox-view"
+        data-state={dataState}
+        ref={ref}
+        role="checkbox"
+        {...divProps}
+      >
+        <svg
+          className="size-3.5"
+          data-slot="checkbox-view-indicator"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3.5"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <title>Checkbox</title>
+          <path
+            className={pathDrawClassName}
+            d="M4.5 12.75l6 6 9-13.5"
+            data-visible={showCheckmark}
+            pathLength={1}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            className={pathDrawClassName}
+            d="M5 12h14"
+            data-visible={isIndeterminate}
+            pathLength={1}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    );
+  }
+);
+
+CheckboxView.displayName = 'CheckboxView';
+
+export { Checkbox, CheckboxView, checkboxVariants, type CheckboxProps };

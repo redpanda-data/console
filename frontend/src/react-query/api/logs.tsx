@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
@@ -32,7 +32,6 @@ import { encodeBase64 } from '../../utils/utils';
 const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
-const HISTORY_HOURS = 5;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
 const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
@@ -88,10 +87,9 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     req.startTimestamp = 0n;
     req.maxResults = LIVE_MAX_RESULTS;
   } else {
-    const startTime = new Date();
-    startTime.setHours(startTime.getHours() - HISTORY_HOURS);
-    req.startOffset = BigInt(PartitionOffsetOrigin.Timestamp);
-    req.startTimestamp = BigInt(startTime.getTime());
+    // Most recent N (high water mark - maxResults), so new logs stay visible instead of the oldest N.
+    req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
+    req.startTimestamp = 0n;
     req.maxResults = HISTORY_MAX_RESULTS;
   }
 
@@ -226,7 +224,8 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   });
 
   // While streaming, show incremental messages. Once resolved, show query data.
-  const messages = query.data ?? streamingMessages;
+  // Reversed to newest-first so it matches the live tail's ordering.
+  const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
   return { messages, phase, progress, error: query.error?.message ?? null, refetch: query.refetch };
 }

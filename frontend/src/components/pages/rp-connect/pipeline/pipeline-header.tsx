@@ -16,6 +16,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, List, ListItem } from 'components/redpanda-ui/components/typography';
@@ -153,8 +154,7 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-// Inline-editable pipeline name, styled as the page title. Bound to the same
-// form field as the settings dialog, so editing either keeps both in sync.
+// Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
     control={form.control}
@@ -237,7 +237,9 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <div aria-hidden className="mx-1 h-6 w-px bg-border" />
+          {/* self-center! overrides the registry's data-[orientation=vertical]:self-stretch,
+              which would otherwise top-align a fixed-height (h-6) vertical separator. */}
+          <Separator className="self-center! mx-1 h-6" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>

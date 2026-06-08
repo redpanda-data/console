@@ -56,7 +56,7 @@ export type FilterColumnConfig = {
   icon?: React.ComponentType<{ className?: string }>;
 } & (
   | { type: 'text'; placeholder?: string }
-  | { type: 'option'; options?: FilterOption[] }
+  | { type: 'option'; options?: FilterOption[]; mode?: 'single' | 'multiple' }
   | { type: 'multiOption'; options?: FilterOption[] }
 );
 
@@ -102,6 +102,19 @@ function renderIcon(icon: React.ComponentType<{ className?: string }> | undefine
   }
   const Icon = icon;
   return isValidElement(Icon) ? Icon : <Icon className={className} />;
+}
+
+function RadioIndicator({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className={cn(
+        'mr-1 flex size-4 shrink-0 items-center justify-center rounded-full border border-primary',
+        checked ? 'opacity-100' : 'opacity-0 group-data-[selected=true]:opacity-100'
+      )}
+    >
+      {checked && <span className="size-2 rounded-full bg-primary" />}
+    </span>
+  );
 }
 
 // ── DataTableFilter (root) ─────────────────────────────────────────────
@@ -154,10 +167,12 @@ function MatchingOptionItem({
   match,
   isSelected,
   onSelect,
+  singleMode,
 }: {
   match: MatchingOption;
   isSelected: boolean;
   onSelect: () => void;
+  singleMode?: boolean;
 }) {
   const { icon: MatchIcon } = match.option;
   const ColIcon = match.columnIcon;
@@ -168,10 +183,14 @@ function MatchingOptionItem({
       onSelect={onSelect}
       value={`${match.columnId}:${match.option.value}`}
     >
-      <Checkbox
-        checked={isSelected}
-        className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
-      />
+      {singleMode ? (
+        <RadioIndicator checked={isSelected} />
+      ) : (
+        <Checkbox
+          checked={isSelected}
+          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+        />
+      )}
       <span className="inline-flex items-center gap-1 text-muted-foreground">
         {ColIcon ? <ColIcon className="size-3.5" /> : null}
         <span>{match.columnDisplayName}</span>
@@ -288,6 +307,8 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
                 <CommandSeparator />
                 <CommandGroup>
                   {matchingOptions.map((match) => {
+                    const col = columns.find((c) => c.id === match.columnId);
+                    const singleMode = col?.type === 'option' && col.mode === 'single';
                     const selectedValues = filters.find((f) => f.columnId === match.columnId)?.values ?? [];
                     const isSelected = selectedValues.includes(match.option.value);
                     return (
@@ -296,13 +317,18 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
                         key={`${match.columnId}:${match.option.value}`}
                         match={match}
                         onSelect={() => {
-                          if (isSelected) {
+                          if (singleMode) {
+                            if (!isSelected) {
+                              actions.setFilterValues(match.columnId, [match.option.value]);
+                            }
+                          } else if (isSelected) {
                             actions.removeFilterValue(match.columnId, match.option.value);
                           } else {
                             actions.addFilterValue(match.columnId, match.option.value);
                           }
                           setOpen(false);
                         }}
+                        singleMode={singleMode}
                       />
                     );
                   })}
@@ -640,21 +666,29 @@ function TextValueController({
 type OptionItemProps = {
   option: FilterOption & { selected: boolean; count?: number };
   onToggle: (value: string, checked: boolean) => void;
+  singleMode?: boolean;
 };
 
-const OptionItem = memo(function OptionItemImpl({ option, onToggle }: OptionItemProps) {
+const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }: OptionItemProps) {
   const { value, label, icon: ItemIcon, selected, count } = option;
 
   const handleSelect = useCallback(() => {
+    if (singleMode && selected) {
+      return;
+    }
     onToggle(value, !selected);
-  }, [onToggle, value, selected]);
+  }, [onToggle, value, selected, singleMode]);
 
   return (
     <CommandItem className="group flex items-center gap-1.5" onSelect={handleSelect}>
-      <Checkbox
-        checked={selected}
-        className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
-      />
+      {singleMode ? (
+        <RadioIndicator checked={selected} />
+      ) : (
+        <Checkbox
+          checked={selected}
+          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+        />
+      )}
       {ItemIcon ? renderIcon(ItemIcon, 'size-4 text-primary') : null}
       <span>
         {label}
@@ -687,6 +721,7 @@ function OptionValueController<TData>({
   actions: DataTableFilterActions;
   table?: Table<TData>;
 }) {
+  const singleMode = filterColumn.type === 'option' && filterColumn.mode === 'single';
   const baseOptions = filterColumn.options ?? [];
   const facetedCounts = table?.getColumn(columnId)?.getFacetedUniqueValues();
 
@@ -702,13 +737,15 @@ function OptionValueController<TData>({
 
   const handleToggle = useCallback(
     (val: string, checked: boolean) => {
-      if (checked) {
+      if (singleMode && checked) {
+        actions.setFilterValues(columnId, [val]);
+      } else if (checked) {
         actions.addFilterValue(columnId, val);
       } else {
         actions.removeFilterValue(columnId, val);
       }
     },
-    [actions, columnId]
+    [actions, columnId, singleMode]
   );
 
   return (
@@ -718,7 +755,7 @@ function OptionValueController<TData>({
       <CommandList className="max-h-fit">
         <CommandGroup>
           {enrichedOptions.map((option) => (
-            <OptionItem key={option.value} onToggle={handleToggle} option={option} />
+            <OptionItem key={option.value} onToggle={handleToggle} option={option} singleMode={singleMode} />
           ))}
         </CommandGroup>
       </CommandList>

@@ -5,7 +5,7 @@ import React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 const separatorVariants = cva(
-  'shrink-0 data-[orientation=horizontal]:h-px data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px',
+  'shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch',
   {
     variants: {
       variant: {

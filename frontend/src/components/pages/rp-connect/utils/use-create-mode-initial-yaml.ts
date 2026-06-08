@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { getWizardConnectionData, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
+import { getWizardConnectionData, useRpcnWizardStore } from 'state/rpcn-wizard-store';
 
 import { generateYamlFromWizardData } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
@@ -40,7 +40,7 @@ export function useCreateModeInitialYaml(opts: {
   isInitializing: boolean;
 } {
   const { enabled, isServerlessMode, components, isPipelineDiagramsEnabled, timeoutMs = DEFAULT_TIMEOUT_MS } = opts;
-  const persistedYamlContent = useOnboardingYamlContentStore((s) => s.yamlContent);
+  const persistedYamlContent = useRpcnWizardStore((s) => s.yamlContent);
   const onResolvedRef = useRef(opts.onResolved);
   onResolvedRef.current = opts.onResolved;
 
@@ -66,7 +66,7 @@ export function useCreateModeInitialYaml(opts: {
     const yaml = generateYamlFromWizardData(input, output, components);
 
     if (yaml && !isPipelineDiagramsEnabled) {
-      useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: yaml });
+      useRpcnWizardStore.getState().setYamlContent({ yamlContent: yaml });
     }
 
     if (yaml) {

@@ -50,3 +50,12 @@ export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates
     end: now,
   };
 }
+
+/** Evenly spaced timestamps (ms) across [startMs, endMs] inclusive, for chart axis ticks. */
+export function getEvenlySpacedTimeTicks(startMs: number, endMs: number, count = 6): number[] {
+  if (count < 2 || endMs <= startMs) {
+    return [startMs];
+  }
+  const step = (endMs - startMs) / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(startMs + step * i));
+}

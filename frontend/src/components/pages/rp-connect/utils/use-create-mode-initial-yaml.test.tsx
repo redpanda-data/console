@@ -18,8 +18,8 @@ import type { ConnectComponentSpec } from '../types/schema';
 const mockStoreSetYamlContent = vi.fn();
 let mockPersistedYaml: string | undefined;
 
-vi.mock('state/onboarding-wizard-store', () => ({
-  useOnboardingYamlContentStore: Object.assign(
+vi.mock('state/rpcn-wizard-store', () => ({
+  useRpcnWizardStore: Object.assign(
     vi.fn((selector: (s: { yamlContent: string | undefined }) => unknown) =>
       selector({ yamlContent: mockPersistedYaml })
     ),
