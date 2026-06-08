@@ -500,20 +500,24 @@ function YamlViewPanel({
     'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
   return (
     <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
-      <YamlEditor
-        onEditorMount={handleMount}
-        options={{
-          readOnly: true,
-          domReadOnly: true,
-          renderLineHighlight: 'none',
-          mouseStyle: 'default',
-          padding: { top: 0 },
-          scrollbar: { alwaysConsumeMouseWheel: false, useShadows: false },
-        }}
-        schema={schema}
-        transparentBackground
-        value={configYaml}
-      />
+      {/* Absolutely positioned so Monaco fills the panel without feeding its width
+          back up the layout (which would stretch the page and never shrink back). */}
+      <div className="absolute inset-0">
+        <YamlEditor
+          onEditorMount={handleMount}
+          options={{
+            readOnly: true,
+            domReadOnly: true,
+            renderLineHighlight: 'none',
+            mouseStyle: 'default',
+            padding: { top: 0 },
+            scrollbar: { alwaysConsumeMouseWheel: false, useShadows: false },
+          }}
+          schema={schema}
+          transparentBackground
+          value={configYaml}
+        />
+      </div>
       <div aria-hidden className={cn(edge, 'top-0 bg-gradient-to-b', overflow.top ? 'opacity-100' : 'opacity-0')} />
       <div
         aria-hidden
@@ -605,14 +609,19 @@ function EditorPanel({
                   </Banner>
                 </div>
               ) : null}
-              <YamlEditor
-                onChange={(val) => onYamlChange(val || '')}
-                onEditorMount={onEditorMount}
-                options={slashTipVisible ? { padding: { top: 32 } } : undefined}
-                schema={yamlEditorSchema}
-                transparentBackground
-                value={yamlContent}
-              />
+              {/* Absolutely positioned so Monaco fills the panel but never feeds its
+                  width back up the layout — otherwise automaticLayout grows it and it
+                  never shrinks, stretching the page horizontally. */}
+              <div className="absolute inset-0">
+                <YamlEditor
+                  onChange={(val) => onYamlChange(val || '')}
+                  onEditorMount={onEditorMount}
+                  options={slashTipVisible ? { padding: { top: 32 } } : undefined}
+                  schema={yamlEditorSchema}
+                  transparentBackground
+                  value={yamlContent}
+                />
+              </div>
             </>
           )}
         </div>
@@ -953,7 +962,9 @@ function PipelinePageContent() {
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-10rem)] max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4">
+    // min-w-0 lets the column shrink; overflow-x-clip guards the page from any stray
+    // horizontal overflow (clip avoids hidden's overflow-y:auto side-effect).
+    <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
       {/* Page top divider. Negative margin cancels the layout's pt-8. */}
       <div className="-mt-8 border-divider-default border-b" />
       {mode === 'view' && pipeline ? (
@@ -995,8 +1006,9 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* Keeps a usable minimum height so the editor/flow panels aren't squished by a tall summary card. */}
-      <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
+      {/* min-w-0 + overflow-hidden bound the editor region: it clips its own
+          overflow and never propagates a min-width up to the latch-prone shell. */}
+      <div className="flex min-h-[640px] min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
           mode={mode}

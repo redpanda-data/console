@@ -237,8 +237,7 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          {/* self-center! overrides the registry's self-stretch so the fixed-height separator isn't top-aligned. */}
-          <Separator className="self-center! mx-1 h-6" orientation="vertical" />
+          <Separator className="mx-1 h-6" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
