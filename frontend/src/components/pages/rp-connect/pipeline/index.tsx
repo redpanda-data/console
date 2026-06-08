@@ -479,10 +479,8 @@ function YamlViewPanel({
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
 }) {
-  // Track vertical overflow off the editor's scroll position to drive top/bottom
-  // shadows. The registry's useScrollShadow can't help: it observes sentinels in a
-  // native scroll container, but Monaco virtualizes and scrolls internally, so
-  // onDidScrollChange is the only reliable signal.
+  // Top/bottom shadows from Monaco's scroll position (useScrollShadow needs a native
+  // scroll container; Monaco virtualizes, so onDidScrollChange is the only signal).
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
   const handleMount = useCallback((instance: editor.IStandaloneCodeEditor) => {
     const sync = () => {
@@ -500,8 +498,7 @@ function YamlViewPanel({
     'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
   return (
     <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
-      {/* Absolutely positioned so Monaco fills the panel without feeding its width
-          back up the layout (which would stretch the page and never shrink back). */}
+      {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
       <div className="absolute inset-0">
         <YamlEditor
           onEditorMount={handleMount}
@@ -609,9 +606,7 @@ function EditorPanel({
                   </Banner>
                 </div>
               ) : null}
-              {/* Absolutely positioned so Monaco fills the panel but never feeds its
-                  width back up the layout — otherwise automaticLayout grows it and it
-                  never shrinks, stretching the page horizontally. */}
+              {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
               <div className="absolute inset-0">
                 <YamlEditor
                   onChange={(val) => onYamlChange(val || '')}
@@ -962,8 +957,7 @@ function PipelinePageContent() {
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
   return (
-    // min-w-0 lets the column shrink; overflow-x-clip guards the page from any stray
-    // horizontal overflow (clip avoids hidden's overflow-y:auto side-effect).
+    // overflow-x-clip guards against stray horizontal overflow (clip, not hidden, to keep overflow-y visible).
     <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
       {/* Page top divider. Negative margin cancels the layout's pt-8. */}
       <div className="-mt-8 border-divider-default border-b" />
@@ -1006,8 +1000,7 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* min-w-0 + overflow-hidden bound the editor region: it clips its own
-          overflow and never propagates a min-width up to the latch-prone shell. */}
+      {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
       <div className="flex min-h-[640px] min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
