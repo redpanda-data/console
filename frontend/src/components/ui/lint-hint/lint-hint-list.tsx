@@ -39,14 +39,15 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
       {isPending && !hasHints && <Spinner className="size-4 text-foreground" />}
       {hasHints && (
         <div className="overflow-hidden rounded-lg border border-surface-strong">
-          <div className="flex flex-col gap-4 p-3">
+          <div className="flex min-w-0 flex-col gap-4 p-3">
             {Object.entries(lintHints).map(([toolName, hint]) => (
-              <div className="flex-col flex gap-1.5" key={toolName}>
-                {hint.line > 0 ? (
-                    <SimpleCodeBlock code={`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`} width="full" className="my-0"/>
-                ) : (
-                  <SimpleCodeBlock code={hint.hint} width="full" className="my-0"/>
-                )}
+              <div className="flex min-w-0 flex-col gap-1.5" key={toolName}>
+                {/* min-w-0 + wrapping the inner <pre> keep long lint messages from stretching the page. */}
+                <SimpleCodeBlock
+                  className="my-0 text-xs [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+                  code={hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint}
+                  width="full"
+                />
                 {hint.lintType && (
                   <Text className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{hint.lintType}</Text>
                 )}
