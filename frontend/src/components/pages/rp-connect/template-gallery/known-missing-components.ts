@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-// Components that templates reference but are absent from the committed Connect
-// schema snapshot (`src/assets/rp-connect-schema-full.json`) — either renamed
-// since capture, enterprise-only, or pending the next snapshot refresh. The
-// schema regression tests skip these so they still flag drift on known
-// components. Re-capture the snapshot and prune this list as components land.
+/**
+ * Components templates reference but are absent from the committed schema snapshot
+ * (enterprise-only or pending a snapshot refresh). Schema regression tests skip these;
+ * prune as components land in the snapshot.
+ */
 export const KNOWN_MISSING_COMPONENTS: ReadonlySet<string> = new Set([
   'aws_dynamodb_stream',
   'oracle_cdc',

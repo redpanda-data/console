@@ -19,26 +19,20 @@ export type SlotValues = Record<string, string>;
 export type StitchTemplateArgs = {
   template: PipelineTemplate;
   values: SlotValues;
-  // Used both to label the generated config and to derive blank-slot fallbacks
-  // (see TemplateSlot.defaultWhenBlank).
+  // Labels the generated config and feeds blank-slot fallbacks (TemplateSlot.defaultWhenBlank).
   pipelineName: string;
 };
 
 const SLOT_TOKEN_PATTERN = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
 
-// matchAll builds a fresh iterator each call, so there's no shared-lastIndex
-// hazard (unlike RegExp.test on a global pattern).
+// matchAll avoids the shared-lastIndex hazard of RegExp.test on a global pattern.
 const referencedSlotIdsIn = (text: string): string[] => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);
 
 const isBlank = (v: string | undefined): boolean => !v?.trim();
 
 const yamlStringifyConfig = { indent: 2, lineWidth: 120 };
 
-/**
- * Resolve a single `${slot.X}` reference to the text it should emit, or `null`
- * when the slot is blank and has no fallback — signalling the caller to drop the
- * surrounding node so the connector falls back to its own default.
- */
+/** Resolve a `${slot.X}` reference to its text, or `null` when blank with no fallback (drop the node). */
 const resolveSlotToken = (slot: TemplateSlot | undefined, raw: string, pipelineName: string): string | null => {
   if (!isBlank(raw)) {
     return slot?.kind === 'secret' ? getSecretSyntax(raw) : raw;
@@ -47,11 +41,7 @@ const resolveSlotToken = (slot: TemplateSlot | undefined, raw: string, pipelineN
   return fallback ? fallback({ pipelineName }) : null;
 };
 
-/**
- * Substitute every slot token in a scalar string. Returns `null` if any
- * referenced slot resolves to a drop (blank, no fallback), else the substituted
- * text (unchanged when it contains no tokens).
- */
+/** Substitute every slot token in a scalar; `null` if any referenced slot resolves to a drop. */
 const substituteScalar = (
   text: string,
   slotMap: Map<string, TemplateSlot>,
@@ -74,19 +64,16 @@ const substituteScalar = (
 };
 
 /**
- * Render a template's `baseYaml` with the user's form values. Parses the YAML so
- * substitution is structure-aware: blank optional fields drop their whole key
- * (or sequence item) rather than leaving a dangling `key:`/empty value, and a
- * sequence/map emptied by those drops is removed too. Comments and layout from
- * the curated template are preserved.
+ * Render `baseYaml` with the user's form values via structure-aware substitution:
+ * blank optional fields drop their whole key/sequence-item (and any sequence emptied as a result),
+ * rather than leaving a dangling key or empty value. Curated comments and layout are preserved.
  */
 export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTemplateArgs): string => {
   const slotMap = new Map(template.slots.map((s) => [s.id, s]));
   const doc = parseDocument(template.baseYaml);
 
   visit(doc, {
-    // A mapping value that resolves to a drop removes the whole pair, so we never
-    // emit `key: null`. (Removing just the scalar would leave the key behind.)
+    // Drop the whole pair (not just the scalar) so we never emit `key: null`.
     Pair(_, pair) {
       if (
         isScalar(pair.value) &&
@@ -101,23 +88,19 @@ export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTem
         return;
       }
       const resolved = substituteScalar(node.value, slotMap, values, pipelineName);
-      // null here only reaches sequence items (mapping values are handled above);
-      // dropping the item keeps the sequence well-formed.
+      // null here only reaches sequence items (mapping values handled above); dropping keeps the seq well-formed.
       if (resolved === null) {
         return visit.REMOVE;
       }
       if (resolved !== node.value) {
         node.value = resolved;
-        // Keep interpolation tokens (${secrets.X}) unquoted; the serializer still
-        // quotes values that genuinely need it even with an explicit PLAIN type.
+        // Keep interpolation tokens (${secrets.X}) unquoted; PLAIN still quotes values that truly need it.
         node.type = Scalar.PLAIN;
       }
     },
   });
 
-  // Drop keys whose sequence was emptied by the removals above (e.g. a `tables:`
-  // list whose only templated item was blank). Empty maps are left alone — those
-  // are authored intentionally (e.g. `scanner: { lines: {} }`, `memory: {}`).
+  // Drop keys whose sequence was emptied above; empty maps are left alone (authored intentionally, e.g. `memory: {}`).
   visit(doc, {
     Pair(_, pair) {
       if (isSeq(pair.value) && pair.value.items.length === 0) {

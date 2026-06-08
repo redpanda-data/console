@@ -30,10 +30,7 @@ export const bigqueryTemplate: PipelineTemplate = {
       section: 'sink',
       kind: 'string',
       label: 'GCP project ID',
-      // Connector falls back to the project encoded in the service-account
-      // credentials or the GOOGLE_CLOUD_PROJECT env var. Most templated runs
-      // have the project in the credentials JSON, so we let users leave it
-      // blank rather than block on schema-inferred required.
+      // Optional: connector falls back to the project in the credentials JSON or GOOGLE_CLOUD_PROJECT.
       required: false,
       placeholder: 'Inferred from credentials if blank',
       schemaField: 'project',

@@ -622,8 +622,7 @@ const PipelineListPageContent = () => {
 
   const handleCreateClick = useCallback(() => {
     resetRpcnWizardStore();
-    // enablePipelineDiagrams: skip wizard, go straight to pipeline editor
-    // otherwise: go through wizard (master behavior)
+    // enablePipelineDiagrams skips the wizard and goes straight to the editor.
     if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
       navigate({ to: '/rp-connect/create', search: {} as never });
     } else {
@@ -685,9 +684,7 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      {/* DataTablePagination's footer leads with "X of N row(s) selected." This table
-          doesn't expose row selection, so suppress that text while keeping its space
-          so the pagination controls stay right-aligned. */}
+      {/* Hide the pagination footer's "X of N selected" text (no row selection here) but keep its space so controls stay right-aligned. */}
       <div className="[&>div>div:first-child]:invisible">
         <DataTablePagination table={table} />
       </div>

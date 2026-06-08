@@ -41,8 +41,7 @@ import {
 } from 'utils/pipeline-throughput.utils';
 import { calculateTimeRange, getEvenlySpacedTimeTicks, getTimeRanges, type TimeRange } from 'utils/time-range';
 
-// Cap at 12h (matching observability): the range-query backend has no step param
-// and can't serve a 24h window at its default resolution (Prometheus' 11k-point limit).
+// Cap at 12h: the range-query backend can't serve a wider window at its default resolution (Prometheus' 11k-point limit).
 const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
 
 const chartConfig = {
@@ -198,8 +197,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     [ingressData, egressData]
   );
 
-  // isPending stays true when enabled:false (query will never run), so only
-  // treat enabled queries as "still loading" to avoid an infinite skeleton.
+  // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
   const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
   const isError = isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;

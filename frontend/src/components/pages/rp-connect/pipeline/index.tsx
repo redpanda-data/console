@@ -511,7 +511,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       ) : null}
       <section className="flex min-h-0 flex-col gap-4">
         {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-          // Title is rendered inline in the explorer's control row so it lines up with the table.
+          // Title renders inline in the explorer's control row to line up with the table.
           <LogExplorer
             enableLiveView={pipeline.state === Pipeline_State.RUNNING}
             pipeline={pipeline}
@@ -621,7 +621,7 @@ function SidebarPanel({
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
   onBrowseTemplates?: () => void;
 }) {
-  // View mode is read-only, so the editing handlers are only wired up otherwise.
+  // View mode is read-only; only wire editing handlers otherwise.
   const editHandlers =
     mode === 'view'
       ? {}
@@ -818,8 +818,7 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // Runs on any document change so every mutation path clears stale lint and
-  // mirrors the create-mode draft to the wizard store.
+  // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
   useEffect(
     () =>
       editorStore.subscribe((state, prev) => {
@@ -963,8 +962,7 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
-          flow panels aren't squished when the summary card is tall. */}
+      {/* Keeps a usable minimum height so the editor/flow panels aren't squished by a tall summary card. */}
       <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}

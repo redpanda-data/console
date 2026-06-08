@@ -85,9 +85,7 @@ describe('stitchTemplateYaml', () => {
   test('drops the YAML key entirely when an optional slot is blank', () => {
     const yaml = stitch(buildTemplate(), { dsn: 'X', topic: 'my-topic' });
 
-    // The `note:` value referenced `${slot.optionalNote}`, which resolved to ''.
-    // We drop the key so the connector falls back to its own default rather than
-    // receiving an empty value (or a `note: null`) it may reject.
+    // Blank optional slot drops the key so the connector uses its own default, not an empty/`null` value.
     expect(yaml).not.toMatch(/^\s*note:/m);
     expect(yaml).not.toContain('slot.optionalNote');
   });

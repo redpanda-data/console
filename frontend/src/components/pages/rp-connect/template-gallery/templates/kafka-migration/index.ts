@@ -44,9 +44,7 @@ export const kafkaMigrationTemplate: PipelineTemplate = {
       required: true,
       schemaField: 'topics',
     },
-    // SASL fields live under sasl[].{username,password}; the dotted-path resolver
-    // can't express array indexing, so we don't bind these to the schema. The
-    // hand-curated DSN slot copy stands on its own.
+    // SASL fields live under sasl[].{username,password}; not schema-bound because the dotted-path resolver can't index arrays.
     dsnSlot('sourceUser', 'Source SASL user', 'SOURCE_KAFKA_USER'),
     dsnSlot('sourcePassword', 'Source SASL password', 'SOURCE_KAFKA_PASSWORD'),
   ],

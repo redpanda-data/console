@@ -41,10 +41,7 @@ export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined,
   return false;
 };
 
-/**
- * Regenerates YAML templates for components that require topic/user data
- * Used at ADD_TOPIC and ADD_USER steps to update YAML with new context
- */
+/** Regenerates YAML for components needing topic/user data, at the ADD_TOPIC and ADD_USER steps. */
 export const regenerateYamlForTopicUserComponents = (components: ConnectComponentSpec[]): void => {
   const { setWizardData: _, ...wizardData } = useRpcnWizardStore.getState();
 
@@ -80,40 +77,23 @@ export const regenerateYamlForTopicUserComponents = (components: ConnectComponen
   }
 };
 
-/**
- * Checks if a field name is topic-related
- * Matches: 'topic' (outputs/cache) or 'topics' (inputs)
- */
+/** Matches 'topic' (outputs/cache) or 'topics' (inputs). */
 export const isTopicField = (fieldName: string): boolean => {
   const normalizedName = fieldName.toLowerCase();
   return normalizedName === 'topic' || normalizedName === 'topics';
 };
 
-/**
- * Checks if a field name is user/authentication-related
- * Matches: 'user' (kafka sasl) or 'username' (redpanda sasl)
- */
+/** Matches 'user' (kafka sasl) or 'username' (redpanda sasl). */
 export const isUserField = (fieldName: string): boolean => {
   const normalized = fieldName.toLowerCase();
   return normalized === 'user' || normalized === 'username';
 };
 
-/**
- * Checks if a field name is password-related
- * Matches: 'password' (nested in sasl object)
- */
 export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
 
-/**
- * Checks if a field name is consumer group-related
- * Matches: 'consumer_group' (kafka_franz input)
- */
 export const isConsumerGroupField = (fieldName: string): boolean => fieldName.toLowerCase() === 'consumer_group';
 
-/**
- * Checks if a field is schema_registry.url that should use REDPANDA_SCHEMA_REGISTRY_URL
- * Requires checking both field name and parent context
- */
+/** True for schema_registry.url, which should use REDPANDA_SCHEMA_REGISTRY_URL. */
 export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string): boolean => {
   const isUrl = fieldName.toLowerCase() === 'url';
   const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';

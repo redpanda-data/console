@@ -17,10 +17,8 @@ import { findComponentByName, resolveFieldByPath } from '../../utils/schema';
 import { KNOWN_MISSING_COMPONENTS } from '../known-missing-components';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 
-// Regression check against the committed Connect schema snapshot
-// (`src/assets/rp-connect-schema-full.json`). A renamed/removed field shows up
-// as a failing assertion here instead of silently dropping the schema-driven
-// description/required/default for that slot at runtime.
+// Asserts each slot's schemaField resolves against the committed schema snapshot, so a renamed/removed
+// field fails here instead of silently dropping that slot's schema-driven description/required/default at runtime.
 describe('PIPELINE_TEMPLATES schemaField paths resolve against the schema snapshot', () => {
   const componentList = schemaJson as unknown as ComponentList;
 

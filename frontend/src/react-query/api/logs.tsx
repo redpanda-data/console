@@ -27,16 +27,12 @@ import { sanitizeString } from '../../utils/filter-helper';
 import { convertListMessageData } from '../../utils/message-converters';
 import { encodeBase64 } from '../../utils/utils';
 
-// --- Constants ---
-
 const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
 const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
-
-// --- Types ---
 
 type UseLogSearchOptions = {
   pipelineId: string;
@@ -58,8 +54,6 @@ type UseLogSearchReturn = {
   progress: SearchProgress;
   refresh: () => void;
 };
-
-// --- Helpers ---
 
 const LOG_HISTORY_KEY = (pipelineId: string) => ['log-history', pipelineId] as const;
 
@@ -87,7 +81,7 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     req.startTimestamp = 0n;
     req.maxResults = LIVE_MAX_RESULTS;
   } else {
-    // Most recent N (high water mark - maxResults), so new logs stay visible instead of the oldest N.
+    // Start at high-water-mark - maxResults so we get the most recent N, not the oldest.
     req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
     req.startTimestamp = 0n;
     req.maxResults = HISTORY_MAX_RESULTS;
@@ -97,15 +91,14 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
 }
 
 function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean): boolean {
-  // Server-side pushdown filter handles pipelineId matching for serverful clusters;
-  // serverless clusters need client-side filtering.
+  // Serverful clusters filter by pipelineId via server-side pushdown; serverless filters here.
   if (!serverless) {
     return true;
   }
   return msg.keyJson === pipelineId;
 }
 
-// --- History streaming (extracted for React Compiler compatibility) ---
+// History streaming (extracted for React Compiler compatibility).
 
 type HistoryStreamOpts = {
   pipelineId: string;
@@ -176,8 +169,6 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
   return opts.messagesRef.current ?? [];
 }
 
-// --- useLogHistory: React Query + ref/interval for incremental streaming ---
-
 const ZERO_PROGRESS: SearchProgress = { bytesConsumed: 0, messagesConsumed: 0 };
 
 function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled: boolean }) {
@@ -187,7 +178,7 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   const [progress, setProgress] = useState<SearchProgress>(ZERO_PROGRESS);
   const [phase, setPhase] = useState<string | null>(null);
 
-  // Flush ref to state every 200ms during streaming
+  // Flush ref to state on an interval while streaming.
   useEffect(() => {
     if (!phase) {
       return;
@@ -223,14 +214,11 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
     refetchOnWindowFocus: false,
   });
 
-  // While streaming, show incremental messages. Once resolved, show query data.
-  // Reversed to newest-first so it matches the live tail's ordering.
+  // Incremental messages while streaming, query data once resolved; newest-first to match live tail.
   const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
   return { messages, phase, progress, error: query.error?.message ?? null, refetch: query.refetch };
 }
-
-// --- useLogLive: Standalone streaming hook for live tail ---
 
 type LiveState = {
   messages: TopicMessage[];
@@ -261,7 +249,7 @@ function liveReducer(state: LiveState, action: LiveAction): LiveState {
       if (action.msgs.length === 0) {
         return state;
       }
-      // Reverse so newest message is first (matches per-message prepend behavior)
+      // Newest message first.
       return { ...state, messages: [...action.msgs.toReversed(), ...state.messages] };
     case 'setPhase':
       return { ...state, phase: action.phase };
@@ -368,7 +356,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
     };
   }, []);
 
-  // Flush pending messages to state every 200ms (matches useLogHistory's batching)
+  // Flush pending messages to state on an interval.
   useEffect(() => {
     if (!opts.enabled) {
       return;
@@ -423,8 +411,6 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
 
   return state;
 }
-
-// --- useLogSearch: Public composition hook ---
 
 export function useLogSearch({
   pipelineId,

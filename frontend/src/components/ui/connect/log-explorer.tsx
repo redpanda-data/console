@@ -47,7 +47,7 @@ import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
 
-// TanStack Table's default column size; used to detect "unsized" columns.
+// TanStack default; used to detect "unsized" columns.
 const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
 
 type LogPayload = {
@@ -69,8 +69,7 @@ function getLogPayload(msg: TopicMessage): LogPayload | null {
   return null;
 }
 
-// Component paths (e.g. root.pipeline.processors.1.branch.catch) are long; keep
-// the head + tail so the column stays compact (full path shown on hover).
+// Keep head + tail so long component paths stay compact (full path on hover).
 function abbreviateComponentPath(path: string): string {
   const parts = path.split('.');
   if (parts.length <= 3) {
@@ -205,9 +204,7 @@ interface LogExplorerProps {
   pipeline: Pipeline;
   /** Pass `isServerless()` from config — controls whether pipelineId filtering uses server-side pushdown or client-side. */
   serverless?: boolean;
-  /** Whether to enable the live view. Defaults to false. */
   enableLiveView?: boolean;
-  /** Optional heading rendered inline in the header row, aligned with the controls and table. */
   title?: ReactNode;
 }
 
@@ -225,7 +222,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
     setSorting([]);
   };
 
-  // Sync live mode on enableLiveView changes (start/stop), but never on mount — start in history.
+  // Sync live mode on enableLiveView change, but not on mount — start in history.
   const mountedRef = useRef(false);
   useEffect(() => {
     if (mountedRef.current) {
@@ -277,7 +274,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           },
         }) => {
           const d = new Date(timestamp);
-          // Time is the scannable field; date sits muted above, full date/time on hover.
           return (
             <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
               <span className="text-xs text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
@@ -418,7 +414,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           </Tooltip>
           <Switch
             checked={liveViewEnabled}
-            // overriding size to make it more prominent, user feedback showed it was not discoverable
+            // Enlarged for discoverability (user feedback).
             className="h-5 w-9 **:data-[slot=switch-thumb]:size-4.5"
             data-testid="log-live-toggle"
             disabled={!enableLiveView}
@@ -547,7 +543,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                     <TableRow aria-hidden className="pointer-events-none" key={`placeholder-${i}`}>
                       {placeholderColumns.map((column, columnIndex) => (
                         <TableCell className="px-3 py-2" key={column.id}>
-                          {/* Mirror the Time cell's two-line height so placeholder rows match data rows. */}
+                          {/* Mirror the Time cell's two-line height. */}
                           {columnIndex === 0 ? (
                             <div className="flex flex-col leading-tight">
                               <span className="text-xs">&nbsp;</span>
@@ -566,8 +562,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
         </div>
       </div>
 
-      {/* Hide DataTablePagination's "X of N row(s) selected." — this table
-          doesn't expose row selection — while keeping its layout slot. */}
+      {/* Hide DataTablePagination's "X of N row(s) selected." (no row selection) while keeping its layout slot. */}
       {filteredRowCount > 0 && (
         <div className="[&>div>div:first-child]:invisible">
           <DataTablePagination table={table} />

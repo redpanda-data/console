@@ -64,8 +64,8 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   editContext: false,
 } as const;
 
-// Give each `anyOf` variant a title (its first property name) so monaco-yaml's
-// hover doesn't render `|| || ||` between empty alternatives.
+// Title each `anyOf` variant (first property name) so monaco-yaml's hover
+// doesn't render `|| || ||` between empty alternatives.
 export function annotateAnyOfTitles(node: unknown): void {
   if (!node || typeof node !== 'object') {
     return;
@@ -137,7 +137,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
     [schema],
   );
 
-  // Update Monaco YAML when schema changes after initial mount
+  // Re-apply options when schema changes after mount.
   useEffect(() => {
     if (!hasInitializedRef.current) {
       hasInitializedRef.current = true;
@@ -174,9 +174,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       onMount={(editorInstance) => {
-        // Invisible space separators (esp. U+00A0) pasted from docs/chat aren't
-        // valid YAML indentation and silently break parsing. Replace just the
-        // pasted range so config behaves as written.
+        // Normalize invisible spaces in the pasted range (see whitespace.ts).
         editorInstance.onDidPaste((e) => {
           const model = editorInstance.getModel();
           if (!model) {

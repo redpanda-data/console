@@ -29,10 +29,7 @@ export const postgresCdcTemplate: PipelineTemplate = {
       section: 'source',
       kind: 'string',
       label: 'Logical replication slot',
-      // Optional in the form, but the connector lints `slot_name` as required.
-      // Rather than force users to invent one, derive a stable name from the
-      // pipeline when blank (see defaultWhenBlank) so the config always lints
-      // clean and re-deploys reuse the same slot instead of orphaning one.
+      // Optional in the form; derive a stable name from the pipeline when blank so redeploys reuse the slot instead of orphaning one.
       required: false,
       placeholder: 'Auto-generated from pipeline name if blank',
       schemaField: 'slot_name',

@@ -9,7 +9,5 @@
  * by the Apache License, Version 2.0
  */
 
-// Templates live one-per-directory under ./templates, each pairing its slot
-// definitions (index.ts) with a real, editor-lintable config.yaml. This barrel
-// preserves the original import path.
+// Barrel preserving the original import path; templates live one-per-directory under ./templates.
 export { getTemplateById, PIPELINE_TEMPLATES } from './templates';

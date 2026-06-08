@@ -19,9 +19,7 @@ type SlotBase = {
   description?: string;
   section: TemplateSlotSection;
   required?: boolean;
-  // Dotted path into the section's component schema (e.g. `dsn`, `tls.cert_file`).
-  // When set, the live schema fills any unset `description` / `required` /
-  // `default` — slot-level values always win.
+  /** Dotted path into the section's component schema; live schema fills unset description/required/default, slot-level values win. */
   schemaField?: string;
 };
 
@@ -30,9 +28,7 @@ export type StringSlot = SlotBase & {
   placeholder?: string;
   default?: string;
   multiline?: boolean;
-  // When an optional slot is left blank but the connector still requires the key,
-  // emit this generated value instead of dropping the line. Receives the pipeline
-  // name so the value can be deterministic and unique per pipeline.
+  /** When blank but the connector still needs the key, emit this generated value instead of dropping the line. */
   defaultWhenBlank?: (ctx: { pipelineName: string }) => string;
 };
 
@@ -57,8 +53,7 @@ export type TemplateSlot = StringSlot | SecretSlot | TopicSlot | SelectSlot;
 export type TemplateEndpoint = {
   component: string;
   type: 'input' | 'output';
-  // Use when `component` is a generic connector name (e.g. `sql_raw`) so the
-  // gallery can show a more recognizable icon. Must be a key in `componentLogoMap`.
+  /** Icon override for generic connector names (e.g. `sql_raw`); must be a key in `componentLogoMap`. */
   logoOverride?: string;
 };
 
@@ -71,10 +66,8 @@ export type PipelineTemplate = {
   sink: TemplateEndpoint;
   setupTimeMinutes: number;
   slots: TemplateSlot[];
-  // Hand-curated YAML with `${slot.X}` placeholders. Every required slot must
-  // appear here or it has no effect on the deployed pipeline.
+  /** Curated YAML with `${slot.X}` placeholders; a slot has no effect unless referenced here. */
   baseYaml: string;
-  // Suggested pipeline display name pre-filled in the form.
   defaultPipelineName: string;
 };
 

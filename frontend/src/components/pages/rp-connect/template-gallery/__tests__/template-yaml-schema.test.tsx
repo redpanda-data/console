@@ -23,9 +23,7 @@ import { stitchTemplateYaml } from '../template-deploy';
 
 const componentList = schemaJson as unknown as ComponentList;
 
-// The committed snapshot uses raw schema field names (is_optional/default/
-// is_advanced/is_deprecated); checkRequired expects the proto FieldSpec names.
-// Bridge them so the test reuses the same required-field logic the form uses.
+// Bridge snapshot field names (is_optional/default/...) to proto FieldSpec names so we reuse the form's required-field logic.
 type SnapshotField = {
   is_optional?: boolean;
   default?: string;
@@ -43,19 +41,16 @@ const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
     children: f.children?.map(toRawFieldSpec),
   }) as unknown as RawFieldSpec;
 
-// Keys every input/output accepts regardless of component — injected by the
-// Connect framework, so they're absent from a component's own field tree.
+// Framework-injected keys every input/output accepts; absent from a component's own field tree.
 const FRAMEWORK_KEYS = new Set(['label', 'processors']);
 
-// Fill every slot so nothing is dropped — this validates the maximal field set
-// each template can emit.
+// Fill every slot so nothing is dropped: validates the maximal field set a template can emit.
 const sampleValues = (slotIds: string[]): Record<string, string> =>
   Object.fromEntries(slotIds.map((id) => [id, `value_${id}`]));
 
 type FieldNode = { children?: { name: string }[] };
 
-// Walk a stitched mapping and assert every field path exists on the component's
-// schema. Recurses into nested maps; sequence items and scalars are leaves here.
+// Walk a stitched mapping, collecting field paths absent from the component schema (recurses into nested maps).
 function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | undefined, prefix: string): string[] {
   if (!isMap(node)) {
     return [];
@@ -82,11 +77,8 @@ function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | un
   return unknown;
 }
 
-// Guards "valid outputs after completing the template forms": stitches each
-// template with sample values and checks every emitted field resolves against
-// the committed Connect schema snapshot. A connector that renames/removes a
-// field (the kind of drift that silently broke templates before) fails here
-// instead of only surfacing as a server-side lint error after the user submits.
+// Stitches each template with sample values and asserts every emitted field resolves against the
+// schema snapshot, so connector field renames/removals fail here rather than as a server lint error post-submit.
 describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   test.each(
     PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t }))
@@ -142,8 +134,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     if (!postgres) {
       return;
     }
-    // includedTable is optional with no fallback; leaving it blank should drop
-    // the whole `tables:` key rather than emit `tables: []` / a blank item.
+    // includedTable is optional with no fallback; blank should drop the whole `tables:` key, not emit `tables: []`.
     const yaml = stitchTemplateYaml({
       template: postgres,
       values: { dsn: 'PG_DSN', slotName: '', includedTable: '', targetTopic: 'orders' },
@@ -154,10 +145,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     expect(doc.getIn(['input', 'postgres_cdc', 'tables'])).toBeUndefined();
   });
 
-  // Mirrors applySchemaToSlots: a slot is required if it says so, else the schema
-  // decides. Used to fill only what the form would force, leaving everything else
-  // blank — the worst case for a connector that needs a field the form treats as
-  // optional (the class of bug that produced "field X is required" lint errors).
+  // Mirrors applySchemaToSlots: required if the slot says so, else the schema decides.
   const endpointForSection = (template: PipelineTemplate, section: TemplateSlot['section']) => {
     if (section === 'source') {
       return template.source;
@@ -181,8 +169,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     return field ? checkRequired(toRawFieldSpec(field as unknown as SnapshotField)) : false;
   };
 
-  // Fill only the form-required slots; blank the rest (slots with defaultWhenBlank
-  // still emit a value, so they stay present).
+  // Fill only the form-required slots; blank the rest (defaultWhenBlank slots still emit a value).
   const minimalValues = (template: PipelineTemplate): Record<string, string> =>
     Object.fromEntries(template.slots.map((s) => [s.id, isSlotRequired(template, s) ? `value_${s.id}` : '']));
 
@@ -243,7 +230,6 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       pipelineName: 'My Pipeline 1',
     });
     const doc = parseDocument(yaml);
-    // Sanitized to Postgres slot rules ([a-z0-9_]) and prefixed.
     expect(doc.getIn(['input', 'postgres_cdc', 'slot_name'])).toBe('rpcn_my_pipeline_1');
   });
 });
