@@ -389,10 +389,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
       className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
       ref={rootRef}
     >
-      <div
-        className="flex h-[52px] shrink-0 items-center gap-3 border-b bg-background px-6"
-        style={{ borderColor: 'var(--color-border)' }}
-      >
+      <div className="flex h-[52px] shrink-0 items-center gap-3 border-b bg-background px-6">
         <div className="flex items-center gap-2 font-semibold text-sm text-strong tracking-heading [&_svg]:text-action-primary">
           <Database size={16} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
@@ -404,10 +401,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <div
-          className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">
           <CatalogTree
             catalogs={catalogs}
             isLoading={isLoading}

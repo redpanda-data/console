@@ -124,9 +124,8 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
         <div
           className={cn(
             'flex min-w-0 items-center border border-info border-r-0 bg-info-subtle px-[11px]',
-            caught ? 'rounded-md border-r' : 'rounded-l-md'
+            caught ? 'w-full rounded-md border-r' : 'w-[74%] rounded-l-md'
           )}
-          style={{ width: caught ? '100%' : '74%' }}
         />
         {!caught && (
           <>
@@ -137,8 +136,7 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
             </div>
             {/* .res-bridge-tl-live: live-tail segment with the 45deg hatch overlay. */}
             <div
-              className="relative overflow-hidden rounded-r-md border border-success border-l-0 bg-background-success-subtle after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-success-subtle)_5px,var(--color-success-subtle)_10px)]"
-              style={{ width: '26%' }}
+              className="relative w-[26%] overflow-hidden rounded-r-md border border-success border-l-0 bg-background-success-subtle after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-success-subtle)_5px,var(--color-success-subtle)_10px)]"
             />
           </>
         )}
