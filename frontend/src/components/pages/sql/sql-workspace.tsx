@@ -393,7 +393,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
         className="flex h-[52px] shrink-0 items-center gap-3 border-b bg-background px-6"
         style={{ borderColor: 'var(--color-border)' }}
       >
-        <div className="flex items-center gap-2 font-semibold text-sm text-strong tracking-[-0.01em] [&_svg]:text-action-primary">
+        <div className="flex items-center gap-2 font-semibold text-sm text-strong tracking-heading [&_svg]:text-action-primary">
           <Database size={16} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">

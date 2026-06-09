@@ -374,7 +374,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             </Badge>
           </div>
           {!expanded && (
-            <div className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
+            <div className="min-w-0 truncate font-mono text-xs text-muted-foreground">
               {formatted.split('\n')[0]}
             </div>
           )}
@@ -632,7 +632,7 @@ function FeatureFlagsTab() {
                       </Badge>
                     )}
                   </div>
-                  <Text className="text-[11px] text-muted-foreground">
+                  <Text className="text-xs text-muted-foreground">
                     default: <InlineCode>{String(defaultValue)}</InlineCode> · effective:{' '}
                     <InlineCode>{String(effectiveValue)}</InlineCode>
                   </Text>
