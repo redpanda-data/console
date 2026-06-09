@@ -563,6 +563,19 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   );
 }
 
+// "Visual" lane placeholder for both view and edit modes. The richer, fully laid-out
+// visual editor (its own React Flow canvas with editing affordances) is built out in a
+// follow-up — until then we intentionally don't reuse the minimal sidebar diagram here.
+function VisualEditorPanel() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+      <LayoutGrid className="size-8 text-muted-foreground" />
+      <Heading level={3}>Visual editor</Heading>
+      <p className="max-w-md text-muted-foreground text-sm">The visual pipeline editor is coming soon.</p>
+    </div>
+  );
+}
+
 function EditorPanel({
   isServerlessInitializing,
   slashTipVisible,
@@ -761,6 +774,7 @@ function PipelinePageContent() {
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
   const isServerlessMode = search.serverless === 'true';
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
+  const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isEmbedded();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
   // Actions are stable, so read them once via getState; values use selectors.
@@ -773,6 +787,7 @@ function PipelinePageContent() {
     resolveInitialYaml,
     setAllowNavigation,
     setActiveViewLane,
+    setActiveEditLane,
     setCommandMenuFilter,
     setAddConnectorType,
     setSlashTipVisible,
@@ -787,6 +802,7 @@ function PipelinePageContent() {
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const hydratedPipelineId = usePipelineEditorStore((s) => s.hydratedPipelineId);
   const activeViewLane = usePipelineEditorStore((s) => s.activeViewLane);
+  const activeEditLane = usePipelineEditorStore((s) => s.activeEditLane);
   const commandMenuFilter = usePipelineEditorStore((s) => s.commandMenuFilter);
   const addConnectorType = usePipelineEditorStore((s) => s.addConnectorType);
   const slashTipVisible = usePipelineEditorStore((s) => s.slashTipVisible);
@@ -956,6 +972,11 @@ function PipelinePageContent() {
     }
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
+  // The Visual lanes (view and edit) take the full canvas, so the YAML/diagram sidebar is hidden.
+  const isViewVisualLane = mode === 'view' && activeViewLane === 'visual';
+  const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
+  const showSidebar = !(isViewVisualLane || isEditVisualLane);
+
   return (
     // overflow-x-clip guards against stray horizontal overflow (clip, not hidden, to keep overflow-y visible).
     <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
@@ -987,7 +1008,7 @@ function PipelinePageContent() {
           url={pipeline?.url}
         />
       ) : null}
-      {/* View-mode lanes: Monitor (throughput/logs) vs Configuration (read-only YAML). */}
+      {/* View-mode lanes: Monitor (throughput/logs), YAML (read-only config), Visual (diagram). */}
       {mode === 'view' && pipeline ? (
         <Tabs value={activeViewLane}>
           <TabsList className="w-fit" variant="underline">
@@ -995,31 +1016,53 @@ function PipelinePageContent() {
               Monitor
             </TabsTrigger>
             <TabsTrigger onClick={() => setActiveViewLane('configuration')} value="configuration" variant="underline">
-              Configuration
+              YAML
+            </TabsTrigger>
+            {isVisualEditorEnabled ? (
+              <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
+                Visual
+              </TabsTrigger>
+            ) : null}
+          </TabsList>
+        </Tabs>
+      ) : null}
+      {/* Edit-mode lanes: YAML editor vs. the (forthcoming) drag-and-drop visual editor. */}
+      {mode !== 'view' && isVisualEditorEnabled ? (
+        <Tabs value={activeEditLane}>
+          <TabsList className="w-fit" variant="underline">
+            <TabsTrigger onClick={() => setActiveEditLane('yaml')} value="yaml" variant="underline">
+              YAML
+            </TabsTrigger>
+            <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
+              Visual
             </TabsTrigger>
           </TabsList>
         </Tabs>
       ) : null}
       {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
       <div className="flex min-h-[640px] min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
-        <SidebarPanel
-          isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
-          mode={mode}
-          onAddConnector={(type) => setAddConnectorType(type)}
-          onAddSasl={handleAddSasl}
-          onAddTopic={handleAddTopic}
-          onBrowseTemplates={
-            isTemplateGalleryEnabled && mode !== 'view' ? () => setIsTemplateDialogOpen(true) : undefined
-          }
-          onOpenCommandMenu={handleCommandMenuOpen}
-          yamlContent={yamlContent}
-        />
+        {showSidebar ? (
+          <SidebarPanel
+            isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
+            mode={mode}
+            onAddConnector={(type) => setAddConnectorType(type)}
+            onAddSasl={handleAddSasl}
+            onAddTopic={handleAddTopic}
+            onBrowseTemplates={
+              isTemplateGalleryEnabled && mode !== 'view' ? () => setIsTemplateDialogOpen(true) : undefined
+            }
+            onOpenCommandMenu={handleCommandMenuOpen}
+            yamlContent={yamlContent}
+          />
+        ) : null}
         <div className="min-w-0 flex-1">
           {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
           {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
             <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
           ) : null}
-          {mode === 'view' ? null : (
+          {mode === 'view' && pipeline && activeViewLane === 'visual' ? <VisualEditorPanel /> : null}
+          {mode !== 'view' && activeEditLane === 'visual' ? <VisualEditorPanel /> : null}
+          {mode === 'view' || activeEditLane === 'visual' ? null : (
             <EditorPanel
               isLintPending={isLintPending}
               isServerlessInitializing={isServerlessInitializing}

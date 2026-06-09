@@ -589,20 +589,61 @@ describe('PipelinePage', () => {
     });
   });
 
-  it('view page exposes Monitor and Configuration lanes; Configuration shows the YAML read-only', async () => {
+  it('view page exposes Monitor and YAML lanes; YAML shows the config read-only', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
     render(<PipelinePage />, { transport: createTransport() });
 
     // Monitor is the default lane — no YAML editor shown yet.
-    expect(await screen.findByText('Configuration')).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
     expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
 
-    // Switching to Configuration shows the pipeline YAML.
-    await user.click(screen.getByText('Configuration'));
+    // Switching to the YAML lane shows the pipeline config read-only.
+    await user.click(screen.getByRole('tab', { name: 'YAML' }));
     const yaml = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
     expect(yaml.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
+  });
+
+  it('hides the view-mode Visual lane unless the visual editor flag is enabled', async () => {
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
+  });
+
+  it('view page Visual lane shows the placeholder, not the minimal sidebar diagram', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    await user.click(await screen.findByRole('tab', { name: 'Visual' }));
+
+    // The richer visualizer is forthcoming; the lane must not fall back to the sidebar diagram.
+    expect(await screen.findByText('Visual editor')).toBeInTheDocument();
+    expect(screen.queryByTestId('flow-diagram')).not.toBeInTheDocument();
+  });
+
+  it('edit page exposes YAML and Visual lanes when the visual editor flag is enabled', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // YAML is the default edit lane.
+    expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
+
+    // Switching to Visual swaps in the (placeholder) visual editor.
+    await user.click(await screen.findByRole('tab', { name: 'Visual' }));
+    expect(await screen.findByText('Visual editor')).toBeInTheDocument();
+    expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
   });
 
   it('confirms before stopping a running pipeline', async () => {

@@ -16,6 +16,7 @@ export const FEATURE_FLAGS = {
   enableDataplaneObservability: false,
   enableNewPipelineLogs: false,
   enablePipelineDiagrams: false,
+  enableRpcnVisualEditor: false,
   enableConnectSlashMenu: false,
   enableNewSecurityPage: true,
   enableTeamsBridge: false,
