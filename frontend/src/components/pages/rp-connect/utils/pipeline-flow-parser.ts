@@ -51,6 +51,11 @@ export type PipelineFlowNode = {
   editTarget?: EditTarget;
   // Key config values surfaced on the expanded canvas card (ignored by the mini lane).
   meta?: NodeMetaEntry[];
+  // For group nodes: how the data flows through the children. `sequential` chains
+  // them (a sub-pipeline, e.g. branch/catch processors); `parallel` fans out to all
+  // of them (alternatives/merges, e.g. switch cases, broker inputs). Defaults to
+  // sequential when unset.
+  childFlow?: 'sequential' | 'parallel';
 };
 
 type BranchContext = {
@@ -76,6 +81,8 @@ function buildGroupWithChildren(spec: GroupSpec, childNames: string[]): Pipeline
       section: spec.section,
       parentId: spec.sectionId,
       collapsible: true,
+      // A `sequence` input runs its children in order; broker/switch/fallback fan out.
+      childFlow: spec.groupLabel === 'sequence' ? 'sequential' : 'parallel',
     },
     ...childNames.map(
       (name, i): PipelineFlowNode => ({
@@ -204,6 +211,10 @@ function makeLeaf(name: string, ctx: BranchContext): PipelineFlowNode {
   return { id: ctx.idPrefix, kind: 'leaf', label: name, section: ctx.section, parentId: ctx.parentId };
 }
 
+// Components whose children are alternatives/parallel branches rather than a
+// sequential sub-pipeline.
+const PARALLEL_GROUP_COMPONENTS: ReadonlySet<string> = new Set(['switch', 'workflow', 'parallel']);
+
 function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
   return {
     id: ctx.idPrefix,
@@ -212,6 +223,7 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
     section: ctx.section,
     parentId: ctx.parentId,
     collapsible: true,
+    childFlow: PARALLEL_GROUP_COMPONENTS.has(name) ? 'parallel' : 'sequential',
   };
 }
 
@@ -235,6 +247,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       section: ctx.section,
       parentId: ctx.idPrefix,
       collapsible: true,
+      childFlow: 'sequential',
     });
     pushProcessorChildren(nodes, caseProcs, { ...ctx, parentId: caseId, idPrefix: caseId });
   }
@@ -266,6 +279,7 @@ function parseWorkflowStages(fieldValue: unknown, ctx: BranchContext): PipelineF
       section: ctx.section,
       parentId: ctx.idPrefix,
       collapsible: true,
+      childFlow: 'sequential',
     });
     pushProcessorChildren(nodes, stageProcs, { ...ctx, parentId: stageId, idPrefix: stageId });
   }
@@ -596,6 +610,72 @@ export function parsePipelineFlowTree(
   }
 }
 
+// ============================================================================
+// Shared data-flow model
+// ----------------------------------------------------------------------------
+// Both layouts draw the same flow: the main data path runs input → each
+// top-level processor → output, and every group threads its own children
+// (sequential sub-pipelines chain; parallel branches fan out). Positioning is
+// layout-specific, but the connections come from these helpers so the mini lane
+// and the expanded canvas agree on how data moves through the graph.
+// ============================================================================
+
+function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {
+  const map = new Map<string | undefined, PipelineFlowNode[]>();
+  for (const node of nodes) {
+    const siblings = map.get(node.parentId);
+    if (siblings) {
+      siblings.push(node);
+    } else {
+      map.set(node.parentId, [node]);
+    }
+  }
+  return map;
+}
+
+/** The linear data path: input component(s) → top-level processors → output(s). */
+export function mainFlowSequence(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
+  const map = buildChildrenMap(nodes);
+  const childrenOf = (id: string) => map.get(id) ?? [];
+  return [...childrenOf('section-input'), ...childrenOf('section-processors'), ...childrenOf('section-output')];
+}
+
+export type FlowConnection = { from: string; to: string };
+
+// Connections for a single group's children based on how its data flows.
+function groupChildConnections(node: PipelineFlowNode, kids: PipelineFlowNode[]): FlowConnection[] {
+  // Inputs are merged: each child input flows INTO the broker/sequence.
+  if (node.section === 'input') {
+    return kids.map((kid) => ({ from: kid.id, to: node.id }));
+  }
+  // Alternatives / parallel branches: the group fans out to each child.
+  if (node.childFlow === 'parallel') {
+    return kids.map((kid) => ({ from: node.id, to: kid.id }));
+  }
+  // Sequential sub-pipeline: enter the first child, then chain the rest.
+  const connections: FlowConnection[] = [{ from: node.id, to: kids[0].id }];
+  for (let i = 0; i < kids.length - 1; i += 1) {
+    connections.push({ from: kids[i].id, to: kids[i + 1].id });
+  }
+  return connections;
+}
+
+/** Connections inside each group/branch: sequential children chain, parallel fan out. */
+export function subFlowConnections(nodes: PipelineFlowNode[]): FlowConnection[] {
+  const map = buildChildrenMap(nodes);
+  const connections: FlowConnection[] = [];
+  for (const node of nodes) {
+    if (node.kind !== 'group') {
+      continue;
+    }
+    const kids = map.get(node.id) ?? [];
+    if (kids.length > 0) {
+      connections.push(...groupChildConnections(node, kids));
+    }
+  }
+  return connections;
+}
+
 const INDENT_X = 40;
 export const MAX_NESTING_DEPTH = 5;
 const NODE_H_DEFAULT = 28;
@@ -650,6 +730,8 @@ type LayoutState = {
   maxDepth: number;
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
   collapsedIds: ReadonlySet<string>;
+  // Ids of nodes hidden because an ancestor is collapsed; their flow edges are hidden too.
+  hiddenIds: Set<string>;
 };
 
 type RfNodeParams = {
@@ -698,15 +780,38 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
   };
 }
 
-function createTreeEdge(parentId: string, node: PipelineFlowNode, isHidden: boolean): Edge {
-  return {
-    id: `e-${parentId}-${node.id}`,
-    source: parentId,
-    target: node.id,
-    type: 'treeEdge',
-    hidden: isHidden,
-    markerEnd: { type: MarkerType.Arrow, width: 16, height: 16, color: 'var(--color-border)' },
-  };
+// Mini-lane edges: the main data path as a primary spine (sectionEdge) plus each
+// group's sub-flow as branch edges (treeEdge). Edges to collapsed-away nodes hide.
+function buildTreeFlowEdges(nodes: PipelineFlowNode[], hiddenIds: Set<string>): Edge[] {
+  const edges: Edge[] = [];
+  const isHidden = (a: string, b: string) => hiddenIds.has(a) || hiddenIds.has(b);
+
+  const main = mainFlowSequence(nodes);
+  for (let i = 0; i < main.length - 1; i += 1) {
+    const source = main[i].id;
+    const target = main[i + 1].id;
+    edges.push({
+      id: `flow-main-${source}-${target}`,
+      source,
+      target,
+      type: 'sectionEdge',
+      hidden: isHidden(source, target),
+      markerEnd: { type: MarkerType.Arrow, width: 14, height: 14, color: 'var(--color-primary)' },
+    });
+  }
+
+  for (const { from, to } of subFlowConnections(nodes)) {
+    edges.push({
+      id: `flow-branch-${from}-${to}`,
+      source: from,
+      target: to,
+      type: 'treeEdge',
+      hidden: isHidden(from, to),
+      markerEnd: { type: MarkerType.Arrow, width: 16, height: 16, color: 'var(--color-border)' },
+    });
+  }
+
+  return edges;
 }
 
 type DfsParams = {
@@ -731,6 +836,9 @@ function layoutDfs(params: DfsParams, state: LayoutState): void {
   const isCollapsed = state.collapsedIds.has(node.id) || autoCollapsed;
 
   const nodeY = hiddenByParent ? snapY : state.y;
+  if (hiddenByParent) {
+    state.hiddenIds.add(node.id);
+  }
   state.rfNodes.push(
     createRfNode(
       {
@@ -743,10 +851,6 @@ function layoutDfs(params: DfsParams, state: LayoutState): void {
       state
     )
   );
-
-  if (node.parentId) {
-    state.rfEdges.push(createTreeEdge(node.parentId, node, hiddenByParent));
-  }
 
   if (!hiddenByParent) {
     const nodeH = node.kind === 'leaf' ? leafHeight(node) : NODE_H_DEFAULT;
@@ -780,7 +884,15 @@ export function computeTreeLayout(
     }
   }
 
-  const state: LayoutState = { rfNodes: [], rfEdges: [], y: 0, maxDepth: 0, childrenMap, collapsedIds };
+  const state: LayoutState = {
+    rfNodes: [],
+    rfEdges: [],
+    y: 0,
+    maxDepth: 0,
+    childrenMap,
+    collapsedIds,
+    hiddenIds: new Set(),
+  };
 
   const roots = childrenMap.get(undefined);
   if (roots) {
@@ -789,21 +901,7 @@ export function computeTreeLayout(
     }
   }
 
-  // Add section-to-section edges. `position` lets the visual editor place an
-  // insertion affordance: 'start' inserts a processor at the top of the pipeline
-  // (the spine leaving the input), 'end' appends it.
-  const sectionNodes = state.rfNodes.filter((n) => n.type === 'treeSection');
-  for (let i = 0; i < sectionNodes.length - 1; i++) {
-    const sourceLabel = (sectionNodes[i].data as { label?: string }).label;
-    state.rfEdges.push({
-      id: `section-edge-${i}`,
-      source: sectionNodes[i].id,
-      target: sectionNodes[i + 1].id,
-      type: 'sectionEdge',
-      data: { position: sourceLabel === 'input' ? 'start' : 'end' },
-      markerEnd: { type: MarkerType.Arrow, width: 14, height: 14, color: 'var(--color-primary)' },
-    });
-  }
+  state.rfEdges.push(...buildTreeFlowEdges(nodes, state.hiddenIds));
 
   const MIN_HEIGHT = 200;
   return {
@@ -815,152 +913,168 @@ export function computeTreeLayout(
 }
 
 // ============================================================================
-// Expanded canvas layout (left → right flow)
+// Expanded canvas layout (left → right flow with nested containers)
 // ----------------------------------------------------------------------------
-// A second, deterministic layout used by the full-size visual editor. The main
-// data flow (input → top-level processors → output) runs left→right as a spine
-// of large cards; a processor that contains a sub-pipeline (branch/catch/switch)
-// threads its inner steps downward beneath it. Resources sit in a lane below.
-// Shares node IDs with `computeTreeLayout` so the two views can be reconciled.
+// The main data path runs left→right: input → each top-level processor → output.
+// A processor that wraps a sub-pipeline (branch/try/catch/for_each/while/retry),
+// runs alternatives/branches (switch/workflow/parallel), or a multi-input broker
+// is rendered as a titled CONTAINER that visually encloses its children — the
+// message enters the container, its inner steps run, then flow continues to the
+// next top-level step. This mirrors how Step Functions / NiFi show nested flows.
+// Container children are real React Flow child nodes (parentId + relative
+// position). Shares node IDs with `computeTreeLayout`.
 // ============================================================================
 
-/** Card width on the expanded canvas; the node component must match this. */
+/** Leaf card width on the canvas; the node component must match this. */
 export const FLOW_CARD_WIDTH = 240;
-/** Row height used for spacing; the node component caps its content to fit. */
-export const FLOW_CARD_HEIGHT = 104;
-const FLOW_COL_STRIDE = FLOW_CARD_WIDTH + 76; // 316
-const FLOW_ROW_STRIDE = FLOW_CARD_HEIGHT + 28; // 132
-const FLOW_INDENT = 28;
+const FLOW_LEAF_BASE_H = 56;
+const FLOW_META_ROW_H = 22;
+const FLOW_CONTAINER_HEADER_H = 48;
+const FLOW_PAD = 16;
+const FLOW_STACK_GAP = 18;
+const FLOW_COL_GAP = 72;
+const FLOW_MAX_META_ROWS = 4;
 
-type FlowNodeRole = 'main' | 'sub' | 'resource';
+function leafCardHeight(node: PipelineFlowNode): number {
+  const rows = Math.min(
+    (node.meta?.length ?? 0) +
+      (node.topics && node.topics.length > 0 ? 1 : 0) +
+      (node.missingTopic ? 1 : 0) +
+      (node.missingSasl ? 1 : 0),
+    FLOW_MAX_META_ROWS
+  );
+  return FLOW_LEAF_BASE_H + (rows > 0 ? 8 + rows * FLOW_META_ROW_H : 0);
+}
 
-function makeFlowNode({
-  node,
-  x,
-  y,
-  role,
-  childCount,
-}: {
+type SizedNode = {
   node: PipelineFlowNode;
-  x: number;
-  y: number;
-  role: FlowNodeRole;
-  childCount: number;
-}): Node {
+  w: number;
+  h: number;
+  collapsed: boolean;
+  children: SizedNode[];
+};
+
+// Recursively measure a node: leaves get a content-sized card, containers wrap a
+// vertical stack of their children (header + padding + stacked child heights).
+function measureFlowNode(
+  node: PipelineFlowNode,
+  childrenOf: (id: string) => PipelineFlowNode[],
+  collapsedIds: ReadonlySet<string>
+): SizedNode {
+  const collapsed = collapsedIds.has(node.id);
+  const kids = node.kind === 'group' && !collapsed ? childrenOf(node.id) : [];
+  if (kids.length === 0) {
+    const h = node.kind === 'group' ? FLOW_CONTAINER_HEADER_H : leafCardHeight(node);
+    return { node, w: FLOW_CARD_WIDTH, h, collapsed, children: [] };
+  }
+  const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds));
+  const innerW = Math.max(...children.map((c) => c.w));
+  const innerH = children.reduce((sum, c) => sum + c.h, 0) + FLOW_STACK_GAP * (children.length - 1);
+  return { node, w: innerW + 2 * FLOW_PAD, h: FLOW_CONTAINER_HEADER_H + innerH + 2 * FLOW_PAD, children, collapsed };
+}
+
+function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number) {
   return {
-    id: node.id,
-    type: 'flowCard',
-    position: { x, y },
-    // React Flow sets pointer-events:none on non-selectable/non-draggable nodes,
-    // which would route clicks on in-card controls straight to the pane (pan).
-    // Re-enable them here (node.style overrides the wrapper default); the card's
-    // native press listener then lets the canvas pan from the body but not controls.
-    style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-    data: {
-      label: node.label,
-      role,
-      collapsible: node.collapsible ?? false,
-      ...(node.section ? { section: node.section } : {}),
-      ...(node.labelText ? { labelText: node.labelText } : {}),
-      ...(node.topics ? { topics: node.topics } : {}),
-      ...(node.meta && node.meta.length > 0 ? { meta: node.meta } : {}),
-      ...(node.missingTopic ? { missingTopic: true } : {}),
-      ...(node.missingSasl ? { missingSasl: true } : {}),
-      ...(node.editTarget ? { editTarget: node.editTarget } : {}),
-      ...(childCount > 0 ? { childCount } : {}),
-    },
+    label: node.label,
+    collapsible: node.collapsible ?? false,
+    collapsed,
+    ...(node.section ? { section: node.section } : {}),
+    ...(node.labelText ? { labelText: node.labelText } : {}),
+    ...(node.topics ? { topics: node.topics } : {}),
+    ...(node.meta && node.meta.length > 0 ? { meta: node.meta } : {}),
+    ...(node.missingTopic ? { missingTopic: true } : {}),
+    ...(node.missingSasl ? { missingSasl: true } : {}),
+    ...(node.editTarget ? { editTarget: node.editTarget } : {}),
+    ...(childCount > 0 ? { childCount } : {}),
   };
+}
+
+type EmitContext = {
+  rfNodes: Node[];
+  rfEdges: Edge[];
+  childrenMap: Map<string | undefined, PipelineFlowNode[]>;
+};
+
+// Emit a node (and recursively its children) at a position relative to `parentId`
+// (or absolute for top-level steps). Containers stack children and chain
+// sequential sub-pipelines; alternatives/parallel/inputs are shown enclosed only.
+function emitFlowNode(
+  sized: SizedNode,
+  parentId: string | undefined,
+  pos: { x: number; y: number },
+  ctx: EmitContext
+): void {
+  const { node, w, h, collapsed, children } = sized;
+  const isContainer = children.length > 0;
+  const childCount = collapsed ? countDescendants(node.id, ctx.childrenMap) : 0;
+
+  ctx.rfNodes.push({
+    id: node.id,
+    type: isContainer ? 'flowContainer' : 'flowCard',
+    position: pos,
+    ...(parentId ? { parentId, extent: 'parent' as const } : {}),
+    // node.style overrides React Flow's pointer-events default so in-card controls stay clickable.
+    style: isContainer
+      ? { width: w, height: h, pointerEvents: 'all', transition: 'transform 200ms ease' }
+      : { pointerEvents: 'all', transition: 'transform 200ms ease' },
+    data: makeFlowNodeData(node, collapsed, childCount),
+  });
+
+  let childY = FLOW_CONTAINER_HEADER_H + FLOW_PAD;
+  for (const child of children) {
+    emitFlowNode(child, node.id, { x: FLOW_PAD, y: childY }, ctx);
+    childY += child.h + FLOW_STACK_GAP;
+  }
+
+  // Chain the inner steps of a sequential sub-pipeline so the order is explicit.
+  // Alternatives (switch/workflow/parallel) and merged inputs are shown enclosed
+  // by the container box without inter-child arrows.
+  const isSequential = node.childFlow !== 'parallel' && node.section !== 'input';
+  if (isContainer && isSequential && children.length > 1) {
+    for (let i = 0; i < children.length - 1; i += 1) {
+      ctx.rfEdges.push({
+        id: `chain-${children[i].node.id}-${children[i + 1].node.id}`,
+        source: children[i].node.id,
+        target: children[i + 1].node.id,
+        sourceHandle: 'b',
+        targetHandle: 't',
+        type: 'flowChain',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: 'var(--color-border)' },
+      });
+    }
+  }
 }
 
 export function computeFlowLayout(
   nodes: PipelineFlowNode[],
   collapsedIds: ReadonlySet<string> = new Set()
 ): { rfNodes: Node[]; rfEdges: Edge[]; width: number; height: number } {
-  const childrenMap = new Map<string | undefined, PipelineFlowNode[]>();
-  for (const node of nodes) {
-    const siblings = childrenMap.get(node.parentId);
-    if (siblings) {
-      siblings.push(node);
-    } else {
-      childrenMap.set(node.parentId, [node]);
-    }
-  }
+  const childrenMap = buildChildrenMap(nodes);
   const childrenOf = (id: string) => childrenMap.get(id) ?? [];
 
-  // Depth-first list of a node's descendants (respecting collapse), with depth.
-  const flattenSubtree = (nodeId: string): { node: PipelineFlowNode; depth: number }[] => {
-    const acc: { node: PipelineFlowNode; depth: number }[] = [];
-    const walk = (id: string, depth: number) => {
-      for (const child of childrenOf(id)) {
-        acc.push({ node: child, depth });
-        if (!collapsedIds.has(child.id)) {
-          walk(child.id, depth + 1);
-        }
-      }
-    };
-    walk(nodeId, 1);
-    return acc;
-  };
+  const mainSequence = mainFlowSequence(nodes);
+  const sized = mainSequence.map((node) => measureFlowNode(node, childrenOf, collapsedIds));
 
-  // The data-flow spine: input component(s), then each top-level processor, then output.
-  const mainSequence = [
-    ...childrenOf('section-input'),
-    ...childrenOf('section-processors'),
-    ...childrenOf('section-output'),
-  ];
+  const ctx: EmitContext = { rfNodes: [], rfEdges: [], childrenMap };
 
-  const rfNodes: Node[] = [];
-  const rfEdges: Edge[] = [];
-  let maxRows = 0;
+  // Place each top-level step left→right, top-aligned so the main spine is level.
+  let x = 0;
+  let maxStepHeight = 0;
+  for (const step of sized) {
+    emitFlowNode(step, undefined, { x, y: 0 }, ctx);
+    x += step.w + FLOW_COL_GAP;
+    maxStepHeight = Math.max(maxStepHeight, step.h);
+  }
+  const flowWidth = x - FLOW_COL_GAP;
 
-  mainSequence.forEach((node, col) => {
-    const x = col * FLOW_COL_STRIDE;
-    const isCollapsed = collapsedIds.has(node.id);
-    const subtree = isCollapsed ? [] : flattenSubtree(node.id);
-    rfNodes.push(
-      makeFlowNode({
-        node,
-        x,
-        y: 0,
-        role: 'main',
-        childCount: isCollapsed ? countDescendants(node.id, childrenMap) : 0,
-      })
-    );
-
-    // Thread the sub-pipeline downward, connecting each step to the previous one.
-    let prevId = node.id;
-    subtree.forEach((entry, i) => {
-      rfNodes.push(
-        makeFlowNode({
-          node: entry.node,
-          x: x + entry.depth * FLOW_INDENT,
-          y: (i + 1) * FLOW_ROW_STRIDE,
-          role: 'sub',
-          childCount: 0,
-        })
-      );
-      rfEdges.push({
-        id: `chain-${prevId}-${entry.node.id}`,
-        source: prevId,
-        target: entry.node.id,
-        sourceHandle: 'b',
-        targetHandle: 't',
-        type: 'flowChain',
-        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: 'var(--color-border)' },
-      });
-      prevId = entry.node.id;
-    });
-    maxRows = Math.max(maxRows, subtree.length);
-  });
-
-  // Spine edges between consecutive main cards, each carrying the processor index
-  // an insertion at that gap would use (count of processors at or before it).
+  // Main-path edges between consecutive top-level steps; each carries the index a
+  // processor insertion at that gap would use (count of processors at or before it).
   let processorsSeen = 0;
   for (let i = 0; i < mainSequence.length - 1; i += 1) {
     if (mainSequence[i].section === 'processor') {
       processorsSeen += 1;
     }
-    rfEdges.push({
+    ctx.rfEdges.push({
       id: `spine-${mainSequence[i].id}-${mainSequence[i + 1].id}`,
       source: mainSequence[i].id,
       target: mainSequence[i + 1].id,
@@ -972,15 +1086,21 @@ export function computeFlowLayout(
     });
   }
 
-  // Resources lane, below the deepest sub-pipeline. Referenced by label, so no edges.
+  // Resources lane below the flow (referenced by label, so no flow edges).
   const resources = childrenOf('section-resources');
-  const laneY = (maxRows + 2) * FLOW_ROW_STRIDE;
-  resources.forEach((resource, i) => {
-    rfNodes.push(makeFlowNode({ node: resource, x: i * FLOW_COL_STRIDE, y: laneY, role: 'resource', childCount: 0 }));
-  });
+  const laneY = maxStepHeight + 2 * FLOW_STACK_GAP + 24;
+  for (const [i, resource] of resources.entries()) {
+    ctx.rfNodes.push({
+      id: resource.id,
+      type: 'flowCard',
+      position: { x: i * (FLOW_CARD_WIDTH + FLOW_COL_GAP), y: laneY },
+      style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
+      data: makeFlowNodeData(resource, false, 0),
+    });
+  }
 
-  const columns = Math.max(mainSequence.length, resources.length, 1);
-  const width = columns * FLOW_COL_STRIDE;
-  const bottomRows = resources.length > 0 ? laneY + FLOW_ROW_STRIDE : (maxRows + 1) * FLOW_ROW_STRIDE;
-  return { rfNodes, rfEdges, width, height: Math.max(FLOW_ROW_STRIDE, bottomRows) };
+  const width = Math.max(flowWidth, resources.length * (FLOW_CARD_WIDTH + FLOW_COL_GAP), FLOW_CARD_WIDTH);
+  const height =
+    resources.length > 0 ? laneY + leafCardHeight(resources[0]) : Math.max(maxStepHeight, FLOW_LEAF_BASE_H);
+  return { rfNodes: ctx.rfNodes, rfEdges: ctx.rfEdges, width, height };
 }

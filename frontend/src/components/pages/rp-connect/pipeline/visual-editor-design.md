@@ -3,6 +3,36 @@
 Feature flag: `enableRpcnVisualEditor` (defined in `src/components/constants.ts`)
 Owner area: `src/components/pages/rp-connect/pipeline/`
 
+## How RPCN pipelines actually flow (research)
+
+Redpanda Connect (Benthos) data flow, confirmed against the docs:
+
+- A pipeline is `input → (buffer) → pipeline.processors (in order) → output`.
+- **input `broker`/`sequence`** combine multiple child inputs — the children **fan
+  in / merge** into one stream that feeds the pipeline (data flows child → broker).
+- **`pipeline.processors`** is an ordered list; each processor transforms the
+  message and passes it to the next: `proc0 → proc1 → … → procN`.
+- **output `broker`/`switch`/`fallback`** fan a single stream **out** to multiple
+  child outputs (data flows broker → children).
+- **Container processors** are steps in the main line that run a sub-pipeline; the
+  message enters, the inner steps run, then flow continues to the next processor:
+  - sequential sub-pipelines: `branch` (on a copy via request/result map),
+    `try`, `catch`, `for_each`, `while`, `retry`, `group_by` — children run in order.
+  - alternatives / parallel: `switch` (one matching case runs), `workflow`
+    (DAG of stages), `parallel` (children across the batch) — children fan out.
+
+**Visualization model** (mirrors AWS Step Functions Workflow Studio and Apache
+NiFi process groups): the **main path is linear** (input → each processor →
+output) and **container processors are titled boxes that visually enclose their
+inner flow**. Sequential children chain inside the box; alternatives/parallel and
+merged broker inputs are shown enclosed without inter-child arrows. This is why
+e.g. an `http` processor inside a `parallel` is drawn *inside the parallel box*
+rather than wired directly to the next top-level processor — the message goes
+through `parallel` (which runs `http`) and then on to the next step.
+
+Sources: Redpanda Connect docs (processing pipelines, broker input, branch
+processor); AWS Step Functions Workflow Studio (nested Parallel/Map canvases).
+
 ## Implementation status
 
 The dedicated, full-canvas visual editor has shipped (behind the flag):

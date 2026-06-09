@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { summarizeComponent } from './pipeline-flow-meta';
-import { computeFlowLayout, computeTreeLayout, parsePipelineFlowTree } from './pipeline-flow-parser';
+import {
+  computeFlowLayout,
+  computeTreeLayout,
+  mainFlowSequence,
+  parsePipelineFlowTree,
+  subFlowConnections,
+} from './pipeline-flow-parser';
 
 describe('parsePipelineFlowTree', () => {
   it('returns placeholder input/output sections with placeholder leaves for empty string', () => {
@@ -638,14 +644,37 @@ describe('computeTreeLayout', () => {
     expect(leafX).toBeGreaterThan(sectionX);
   });
 
-  it('creates parent-child edges', () => {
-    const yaml = 'input:\n  kafka: {}';
+  it('connects components along the data flow (not section containment)', () => {
+    const yaml = 'input:\n  kafka: {}\npipeline:\n  processors:\n    - log: {}';
     const { nodes } = parsePipelineFlowTree(yaml);
     const { rfEdges } = computeTreeLayout(nodes);
 
-    // section-input→input-0 + section-output→output-placeholder + section-to-section edge
-    const treeEdges = rfEdges.filter((e) => e.type === 'treeEdge');
-    expect(treeEdges.find((e) => e.source === 'section-input' && e.target === 'input-0')).toBeDefined();
+    // The main path flows input → processor → output(placeholder) as primary edges.
+    const main = rfEdges.filter((e) => e.type === 'sectionEdge');
+    expect(main.find((e) => e.source === 'input-0' && e.target === 'proc-0')).toBeDefined();
+    expect(main.find((e) => e.source === 'proc-0' && e.target === 'output-placeholder')).toBeDefined();
+    // No containment edges from a section header to its components.
+    expect(rfEdges.find((e) => e.source.startsWith('section-'))).toBeUndefined();
+  });
+
+  it('threads a group sub-pipeline with branch edges', () => {
+    const yaml = `input:
+  generate: {}
+pipeline:
+  processors:
+    - branch:
+        processors:
+          - mapping: 'root = this'
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const { rfEdges } = computeTreeLayout(nodes);
+    // The branch group feeds its inner processor via a branch (treeEdge) connection.
+    expect(rfEdges.find((e) => e.type === 'treeEdge' && e.source === 'proc-0' && e.target === 'proc-0-processors-p0')).toBeDefined();
+    // And the main path still flows generate → branch → drop.
+    const main = rfEdges.filter((e) => e.type === 'sectionEdge');
+    expect(main.find((e) => e.source === 'input-0' && e.target === 'proc-0')).toBeDefined();
+    expect(main.find((e) => e.source === 'proc-0' && e.target === 'output-0')).toBeDefined();
   });
 
   it('adds arrow markers to all edges', () => {
@@ -842,8 +871,9 @@ describe('computeFlowLayout', () => {
     const log = byId('proc-0');
     const branch = byId('proc-1');
     const output = byId('output-0');
+    // Top-level steps are absolutely positioned (no parent) along a level row.
     for (const node of [input, log, branch, output]) {
-      expect(node?.data.role).toBe('main');
+      expect(node?.parentId).toBeUndefined();
       expect(node?.position.y).toBe(0);
     }
     // Strictly increasing x along the flow.
@@ -852,11 +882,15 @@ describe('computeFlowLayout', () => {
     expect((branch?.position.x ?? 0) < (output?.position.x ?? 0)).toBe(true);
   });
 
-  it('threads a branch sub-pipeline below its card', () => {
+  it('renders a branch as a container that encloses its sub-pipeline', () => {
+    const branch = byId('proc-1');
     const child = byId('proc-1-processors-p0');
-    expect(child?.data.role).toBe('sub');
+    // The branch is a container; its inner processor is a React Flow child of it.
+    expect(branch?.type).toBe('flowContainer');
+    expect(child?.parentId).toBe('proc-1');
+    expect(child?.extent).toBe('parent');
+    // The child sits inside the container body (below the title bar).
     expect((child?.position.y ?? 0) > 0).toBe(true);
-    expect(rfEdges.some((e) => e.id === 'chain-proc-1-proc-1-processors-p0' && e.type === 'flowChain')).toBe(true);
   });
 
   it('annotates each spine edge with the processor index an insertion there would use', () => {
@@ -873,8 +907,68 @@ describe('computeFlowLayout', () => {
     const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
     const layout = computeFlowLayout(parsePipelineFlowTree(withCache).nodes);
     const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
-    expect(resource?.data.role).toBe('resource');
+    expect(resource?.parentId).toBeUndefined();
     expect((resource?.position.y ?? 0) > 0).toBe(true);
+  });
+});
+
+describe('data-flow model', () => {
+  it('orders the main path input → processors → output', () => {
+    const yaml = `input:
+  generate: {}
+pipeline:
+  processors:
+    - log: {}
+    - mapping: 'root = this'
+output:
+  drop: {}`;
+    const seq = mainFlowSequence(parsePipelineFlowTree(yaml).nodes).map((n) => n.id);
+    expect(seq).toEqual(['input-0', 'proc-0', 'proc-1', 'output-0']);
+  });
+
+  it('chains a sequential sub-pipeline (branch processors)', () => {
+    const yaml = `pipeline:
+  processors:
+    - branch:
+        processors:
+          - mapping: 'root = 1'
+          - log: {}`;
+    const conns = subFlowConnections(parsePipelineFlowTree(yaml).nodes);
+    expect(conns).toContainEqual({ from: 'proc-0', to: 'proc-0-processors-p0' });
+    expect(conns).toContainEqual({ from: 'proc-0-processors-p0', to: 'proc-0-processors-p1' });
+  });
+
+  it('feeds multiple inputs into their broker (fan-in)', () => {
+    const yaml = `input:
+  broker:
+    inputs:
+      - generate: {}
+      - kafka: {}`;
+    const conns = subFlowConnections(parsePipelineFlowTree(yaml).nodes);
+    // Each child input flows INTO the broker, not the other way around.
+    expect(conns).toContainEqual({ from: 'input-broker-0', to: 'input-broker' });
+    expect(conns).toContainEqual({ from: 'input-broker-1', to: 'input-broker' });
+    expect(conns).not.toContainEqual({ from: 'input-broker', to: 'input-broker-0' });
+  });
+
+  it('fans out parallel branches (switch cases) instead of chaining them', () => {
+    const yaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'a'
+          processors:
+            - mapping: 'root = 1'
+        - check: 'b'
+          processors:
+            - mapping: 'root = 2'`;
+    const conns = subFlowConnections(parsePipelineFlowTree(yaml).nodes);
+    // The switch fans out to each case…
+    expect(conns).toContainEqual({ from: 'proc-0', to: 'proc-0-case-1' });
+    expect(conns).toContainEqual({ from: 'proc-0', to: 'proc-0-case-2' });
+    // …and the cases are NOT chained to one another.
+    expect(conns).not.toContainEqual({ from: 'proc-0-case-1', to: 'proc-0-case-2' });
+    // Each case still chains its own processors.
+    expect(conns).toContainEqual({ from: 'proc-0-case-1', to: 'proc-0-case-1-p0' });
   });
 });
 

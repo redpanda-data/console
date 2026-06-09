@@ -38,7 +38,9 @@ export function getConnectorDocsUrl(section: string, connectorName: string): str
 }
 const ARROW_GAP = 8;
 const BRANCH_INDENT = 12;
-const SECTION_EDGE_GAP = 20;
+// Small gap so the main-flow spine reads as one continuous line through the
+// components (just enough room for the arrowhead before the next node).
+const SECTION_EDGE_GAP = 6;
 
 const SKELETON_SECTIONS = [
   { label: 'INPUT', leaves: 1 },

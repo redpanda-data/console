@@ -81,7 +81,6 @@ const SECTION_LABEL: Record<string, string> = {
 
 export type FlowCardData = {
   label: string;
-  role: 'main' | 'sub' | 'resource';
   section?: string;
   collapsible?: boolean;
   collapsed?: boolean;
@@ -294,6 +293,49 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
+// A container processor (branch/switch/parallel/…) or multi-input broker: a titled
+// box that visually encloses its children. React Flow renders the child nodes
+// inside the body; this component only draws the chrome (title bar + border).
+const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
+  const ref = useStopPanOnControls();
+  const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
+  const docsUrl = getConnectorDocsUrl(data.section ?? '', data.label);
+
+  return (
+    <div
+      className="group relative flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm"
+      ref={ref}
+    >
+      <NodeHandles />
+      <div className="flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80 px-3 py-2">
+        <button
+          className={cn('nodrag nopan flex min-w-0 items-center gap-2 text-left', data.collapsible && 'cursor-pointer')}
+          disabled={!data.collapsible}
+          onClick={data.collapsible ? data.onToggle : undefined}
+          type="button"
+        >
+          <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
+          <span className="flex min-w-0 flex-col">
+            <Text as="span" className="text-[10px] text-muted-foreground uppercase leading-none tracking-wide">
+              {kindLabel}
+            </Text>
+            <Text as="span" className="min-w-0 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
+              {data.label}
+            </Text>
+          </span>
+          {data.collapsible ? (
+            <span className="shrink-0 text-subtle">
+              {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            </span>
+          ) : null}
+          {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
+        </button>
+        <CardActions data={data} docsUrl={docsUrl} />
+      </div>
+    </div>
+  );
+};
+
 export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, data }: EdgeProps) {
   // The spine runs along a single row, so a straight line reads cleanest.
   const [path, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
@@ -341,6 +383,7 @@ export function FlowChainEdge({
 
 export const flowNodeTypes = {
   flowCard: FlowCardNode,
+  flowContainer: FlowContainerNode,
 };
 
 export const flowEdgeTypes = {
