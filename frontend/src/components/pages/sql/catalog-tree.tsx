@@ -69,7 +69,7 @@ const COL_KIND_ICON: Record<ColumnKind, typeof Hash> = {
 // Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
 // subtle hover background. Used by namespace rows and the "Add a topic" row.
 const ROW_BASE =
-  'flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left text-[13px] text-strong hover:bg-accent-subtle';
+  'flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left text-sm text-strong hover:bg-accent-subtle';
 
 // Truncating label that fills the remaining row width.
 const LABEL = 'flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap';
@@ -77,13 +77,13 @@ const LABEL = 'flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap'
 function engineMark(engine: CatalogEngine) {
   if (engine === 'redpanda') {
     return (
-      <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-indigo-alpha-100 text-indigo-700">
+      <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-primary-subtle text-primary">
         <Layers size={13} />
       </span>
     );
   }
   return (
-    <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-blue-alpha-100 text-blue-700">
+    <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-info-subtle text-info">
       <Box size={13} />
     </span>
   );
@@ -125,7 +125,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
   if (isLoading) {
     return (
       <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-        <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-[12px] text-muted-foreground">
+        <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-xs text-muted-foreground">
           <Spinner />
           <span>Loading columns…</span>
         </div>
@@ -143,7 +143,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
   if (columns.length === 0) {
     return (
       <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-        <div className="px-[16px] py-[6px] text-[12px] text-disabled">No columns</div>
+        <div className="px-[16px] py-[6px] text-xs text-disabled">No columns</div>
       </div>
     );
   }
@@ -153,10 +153,10 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
       {columns.map((col) => {
         const KindIcon = COL_KIND_ICON[col.kind];
         return (
-          <div className="flex items-center gap-[7px] px-[8px] py-[3px] text-[12px] text-foreground" key={col.name}>
+          <div className="flex items-center gap-[7px] px-[8px] py-[3px] text-xs text-foreground" key={col.name}>
             <KindIcon className="flex-shrink-0 text-muted-foreground" size={11} />
             <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">{col.name}</span>
-            <span className="font-mono text-[10px] text-muted-foreground tracking-[0.02em]">{col.short}</span>
+            <span className="font-mono text-caption-sm text-muted-foreground tracking-wide">{col.short}</span>
           </div>
         );
       })}
@@ -187,7 +187,7 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
   // The table icon picks up the Iceberg blue when the table is Iceberg-backed or
   // tiered, the disabled grey when locked, else the action-primary accent.
   const tableIcoClass = cn('flex-shrink-0 text-action-primary', {
-    'text-blue-700 dark:text-blue-400': (isIceberg || tiered) && allowed,
+    'text-info': (isIceberg || tiered) && allowed,
     'text-disabled': !allowed,
   });
 
@@ -200,7 +200,7 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
         data-tiered={tiered || undefined}
       >
         <button
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-[inherit] text-[13px] text-strong disabled:cursor-default disabled:text-disabled"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-sans text-sm text-strong disabled:cursor-default disabled:text-disabled"
           disabled={!allowed}
           onClick={() => allowed && onToggle()}
           type="button"
@@ -209,14 +209,14 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
           <TableIcon className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
           {isIceberg && (
-            <span className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-[3px] bg-blue-alpha-100 py-[1px] pr-[5px] pl-[4px] font-bold text-[9px] text-blue-700 uppercase tracking-[0.03em] dark:text-blue-300">
+            <span className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-sm bg-info-subtle py-[1px] pr-[5px] pl-[4px] font-bold text-caption-sm text-info uppercase tracking-wide">
               <Box size={9} />
               Iceberg
             </span>
           )}
           {tiered && (
             <span
-              className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-[3px] bg-blue-alpha-100 py-[1px] pr-[5px] pl-[4px] font-bold text-[9px] text-blue-700 uppercase tracking-[0.03em] dark:text-blue-300"
+              className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-sm bg-info-subtle py-[1px] pr-[5px] pl-[4px] font-bold text-caption-sm text-info uppercase tracking-wide"
               title="Iceberg-tiered · bridge queried"
             >
               <GitMerge size={9} />
@@ -227,7 +227,7 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
         </button>
         {allowed && (
           <button
-            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-indigo-100 group-hover:opacity-100"
+            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-accent group-hover:opacity-100"
             onClick={() => onQueryTable(catalog, table)}
             title="Query this table"
             type="button"
@@ -301,12 +301,12 @@ function NamespaceNode({
         <NsChevron className="flex-shrink-0 text-disabled" size={14} />
         <GitBranch className="text-muted-foreground" size={13} />
         <span className={LABEL}>{namespace.name}</span>
-        <span className="rounded-full bg-muted px-[7px] py-[1px] text-[11px] text-muted-foreground">{countLabel}</span>
+        <span className="rounded-full bg-muted px-[7px] py-[1px] text-xs text-muted-foreground">{countLabel}</span>
       </button>
       {isOpen && (
         <div className="ml-[10px]">
           {isLoading && allTables.length === 0 && (
-            <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-[12px] text-muted-foreground">
+            <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-xs text-muted-foreground">
               <Spinner />
               <span>Loading tables…</span>
             </div>
@@ -323,11 +323,11 @@ function NamespaceNode({
             />
           ))}
           {!isLoading && matched.length === 0 && (
-            <div className="px-[16px] py-[6px] text-[12px] text-disabled">No tables</div>
+            <div className="px-[16px] py-[6px] text-xs text-disabled">No tables</div>
           )}
           {paginate && remaining > 0 && (
             <button
-              className="mt-[2px] flex w-full cursor-pointer items-center gap-[7px] rounded border-0 bg-transparent px-[8px] py-[7px] text-left font-[inherit] font-medium text-[12px] text-action-primary hover:bg-indigo-100"
+              className="mt-[2px] flex w-full cursor-pointer items-center gap-[7px] rounded border-0 bg-transparent px-[8px] py-[7px] text-left font-sans font-medium text-xs text-action-primary hover:bg-accent"
               onClick={onLoadMore}
               title="Load more tables"
               type="button"
@@ -338,7 +338,7 @@ function NamespaceNode({
           )}
           {showAddTopic && (
             <button
-              className="flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left font-[inherit] font-medium text-[13px] text-action-primary hover:bg-indigo-100"
+              className="flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left font-sans font-medium text-sm text-action-primary hover:bg-accent"
               onClick={onAddTable}
               title="Create a SQL table from a Redpanda topic"
               type="button"
@@ -403,7 +403,7 @@ function CatalogNode({
     <div>
       <div className="group flex w-full items-center rounded">
         <button
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-[inherit] font-semibold text-[13px] text-strong"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-sans font-semibold text-sm text-strong"
           onClick={() => onToggle(catalog.name)}
           type="button"
         >
@@ -413,7 +413,7 @@ function CatalogNode({
         </button>
         {showAdd && (
           <button
-            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-indigo-100 group-hover:opacity-100"
+            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-accent group-hover:opacity-100"
             onClick={onAddTable}
             title="Add a topic to this catalog"
             type="button"
@@ -462,16 +462,16 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between px-[14px] pt-[14px] pb-[8px]">
-        <span className="font-semibold text-[12px] text-muted-foreground uppercase tracking-[0.04em]">Catalogs</span>
+        <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">Catalogs</span>
         {role === 'admin' && (
-          <span className="text-[10px] text-disabled uppercase tracking-[0.04em]">Redpanda only</span>
+          <span className="text-caption-sm text-disabled uppercase tracking-wider">Redpanda only</span>
         )}
       </div>
       <div className="px-[12px] pb-[10px]">
         <div className="flex items-center">
           <Search className="mr-[6px] flex-shrink-0 text-muted-foreground" size={15} />
           <input
-            className="flex-1 border-0 bg-transparent text-[13px] outline-none"
+            className="flex-1 border-0 bg-transparent text-sm outline-none"
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tables"
             value={query}
@@ -481,13 +481,13 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
 
       <div className="flex-1 overflow-y-auto px-[8px] pb-[8px]">
         {isLoading && catalogs.length === 0 && (
-          <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-[12px] text-muted-foreground">
+          <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-xs text-muted-foreground">
             <Spinner />
             <span>Loading catalogs…</span>
           </div>
         )}
         {!isLoading && catalogs.length === 0 && (
-          <div className="px-[16px] py-[6px] text-[12px] text-disabled">No catalogs</div>
+          <div className="px-[16px] py-[6px] text-xs text-disabled">No catalogs</div>
         )}
         {catalogs.map((catalog) => (
           <CatalogNode

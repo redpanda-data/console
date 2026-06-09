@@ -215,10 +215,10 @@ export function escHTML(s: string): string {
 // highlighted HTML (rendered via dangerouslySetInnerHTML in the wizard preview)
 // is styled purely from the registry theme and tracks light/dark.
 const TOKEN_CLASS: Record<Exclude<SqlTokenType, 'ws'>, string> = {
-  kw: 'text-purple-700 font-semibold',
+  kw: 'text-accent-foreground font-semibold',
   fn: 'text-action-primary',
-  str: 'text-green-700',
-  num: 'text-orange-700',
+  str: 'text-success',
+  num: 'text-warning',
   cm: 'text-muted-foreground italic',
   pn: 'text-subtle',
   id: 'text-strong',

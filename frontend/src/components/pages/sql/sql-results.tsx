@@ -62,7 +62,7 @@ const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
 
 // .res-stat: shared inline-stat layout used across the summary bar.
 const RES_STAT =
-  'inline-flex items-center gap-1.5 text-[12.5px] text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
+  'inline-flex items-center gap-1.5 text-xs text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
 
 function TypeIcon({ kind, size = 11 }: { kind: ColumnKind; size?: number }) {
   switch (kind) {
@@ -81,16 +81,16 @@ function TypeIcon({ kind, size = 11 }: { kind: ColumnKind; size?: number }) {
 function BridgeBar({ bridge }: { bridge: BridgeInfo }) {
   return (
     <>
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-[3px] font-semibold text-[12.5px] text-accent-foreground [&_svg]:text-current">
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-[3px] font-semibold text-xs text-accent-foreground [&_svg]:text-current">
         <GitMerge size={15} strokeWidth={1.85} /> Bridge query
       </span>
       {bridge.totalLag > 0 && (
         <span
-          className={cn(RES_STAT, 'whitespace-nowrap font-mono text-[11.5px] text-muted-foreground')}
+          className={cn(RES_STAT, 'whitespace-nowrap font-mono text-xs text-muted-foreground')}
           title="Iceberg lag at query time"
         >
           <Waves size={13} /> Iceberg {offStr(bridge.totalLag)} behind{' '}
-          <span className="ml-[3px] whitespace-nowrap font-normal text-[10.5px] text-disabled not-italic">
+          <span className="ml-[3px] whitespace-nowrap font-normal text-caption-sm text-disabled not-italic">
             at query time
           </span>
         </span>
@@ -108,12 +108,12 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
   const caught = bridge.totalLag === 0;
   return (
     <div className="flex-shrink-0 border-border border-b bg-card px-4 pt-3 pb-3.5">
-      <div className="mb-[7px] flex justify-between font-semibold text-[11px]">
-        <span className="inline-flex items-center gap-[5px] text-blue-700">
+      <div className="mb-[7px] flex justify-between font-semibold text-xs">
+        <span className="inline-flex items-center gap-[5px] text-info">
           <Box size={12} /> Iceberg history
         </span>
         {!caught && (
-          <span className="inline-flex items-center gap-[5px] text-green-700">
+          <span className="inline-flex items-center gap-[5px] text-success">
             <Activity size={12} /> Live topic tail
           </span>
         )}
@@ -123,7 +123,7 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
             right edge (full radius); otherwise it abuts the live segment. */}
         <div
           className={cn(
-            'flex min-w-0 items-center border border-blue-300 border-r-0 bg-blue-alpha-200 px-[11px]',
+            'flex min-w-0 items-center border border-info border-r-0 bg-info-subtle px-[11px]',
             caught ? 'rounded-md border-r' : 'rounded-l-md'
           )}
           style={{ width: caught ? '100%' : '74%' }}
@@ -131,26 +131,26 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
         {!caught && (
           <>
             <div className="relative z-[2] w-0 self-stretch border-subtle border-l-2 border-dashed">
-              <span className="absolute bottom-[-2px] left-1/2 z-[3] -translate-x-1/2 translate-y-[120%] whitespace-nowrap rounded-full border border-border bg-muted px-[7px] py-px font-bold text-[9.5px] text-foreground uppercase tracking-[0.03em]">
+              <span className="absolute bottom-[-2px] left-1/2 z-[3] -translate-x-1/2 translate-y-[120%] whitespace-nowrap rounded-full border border-border bg-muted px-[7px] py-px font-bold text-caption-sm text-foreground uppercase tracking-wide">
                 watermark · {offStr(bridge.totalLag)}
               </span>
             </div>
             {/* .res-bridge-tl-live: live-tail segment with the 45deg hatch overlay. */}
             <div
-              className="relative overflow-hidden rounded-r-md border border-green-300 border-l-0 bg-green-100 after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-green-alpha-300)_5px,var(--color-green-alpha-300)_10px)]"
+              className="relative overflow-hidden rounded-r-md border border-success border-l-0 bg-background-success-subtle after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-success-subtle)_5px,var(--color-success-subtle)_10px)]"
               style={{ width: '26%' }}
             />
           </>
         )}
       </div>
       {!caught && (
-        <div className="mt-6 text-[11.5px] text-muted-foreground leading-[1.4]">
+        <div className="mt-6 text-xs text-muted-foreground leading-snug">
           Live tail covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
-          <span className="whitespace-nowrap font-semibold text-green-700 before:mr-1 before:inline-block before:h-[7px] before:w-[7px] before:rounded-full before:bg-green-500 before:align-baseline before:content-['']">
+          <span className="whitespace-nowrap font-semibold text-success before:mr-1 before:inline-block before:h-[7px] before:w-[7px] before:rounded-full before:bg-success before:align-baseline before:content-['']">
             {fmtNum(bridge.translationLag)} pending translation
           </span>{' '}
           +{' '}
-          <span className="whitespace-nowrap font-semibold text-green-700 before:mr-1 before:inline-block before:h-[7px] before:w-[7px] before:rounded-full before:bg-green-300 before:align-baseline before:content-['']">
+          <span className="whitespace-nowrap font-semibold text-success before:mr-1 before:inline-block before:h-[7px] before:w-[7px] before:rounded-full before:bg-success before:align-baseline before:content-['']">
             {fmtNum(bridge.commitLag)} pending commit
           </span>
           . Bridging serves them from the topic so results stay realtime.
@@ -264,7 +264,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
           {bridge ? (
             <BridgeBar bridge={bridge} />
           ) : (
-            <span className={cn(RES_STAT, 'font-semibold text-green-700')}>
+            <span className={cn(RES_STAT, 'font-semibold text-success')}>
               <span className="inline-block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-success" /> Success
             </span>
           )}
@@ -276,7 +276,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
           </span>
           {run.truncated && (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-orange-alpha-100 px-[7px] py-0.5 font-semibold text-[10.5px] text-orange-700 uppercase tracking-[0.02em]"
+              className="inline-flex items-center gap-1 rounded-full bg-background-warning-subtle px-[7px] py-0.5 font-semibold text-caption-sm text-warning uppercase tracking-wide"
               title="The server row cap fired; not all rows were returned."
             >
               truncated
@@ -300,7 +300,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
           <thead>
             <tr>
               {/* .res-rownum (th): sticky row-number header, above body rownum cells. */}
-              <th className="sticky top-0 left-0 z-[3] w-[1%] whitespace-nowrap border-border border-b bg-muted px-4 py-2 text-right align-bottom font-mono text-[11px] text-disabled [user-select:none]">
+              <th className="sticky top-0 left-0 z-[3] w-[1%] whitespace-nowrap border-border border-b bg-muted px-4 py-2 text-right align-bottom font-mono text-xs text-disabled [user-select:none]">
                 #
               </th>
               {cols.map((c) => {
@@ -314,7 +314,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                   >
                     <button
                       className={cn(
-                        'flex w-full cursor-pointer flex-col gap-[3px] border-0 bg-transparent p-0 font-[inherit]',
+                        'flex w-full cursor-pointer flex-col gap-[3px] border-0 bg-transparent p-0 font-sans',
                         alignRight ? 'items-end' : 'items-start'
                       )}
                       data-sort={ds}
@@ -322,7 +322,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                       type="button"
                     >
                       <span className={cn('flex items-center gap-1.5', alignRight && 'flex-row-reverse')}>
-                        <span className="font-mono font-semibold text-[12.5px] text-strong">{c.name}</span>
+                        <span className="font-mono font-semibold text-xs text-strong">{c.name}</span>
                         <span
                           className={cn(
                             'inline-flex h-[13px] w-[13px]',
@@ -338,7 +338,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                           )}
                         </span>
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-[0.02em]">
+                      <span className="inline-flex items-center gap-1 text-caption-sm text-muted-foreground uppercase tracking-wide">
                         <TypeIcon kind={c.kind} /> {c.short}
                       </span>
                     </button>
@@ -361,7 +361,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
               >
                 {/* .res-rownum (td): sticky row-number column; inherits the row
                     surface so the stripe carries across and occludes scroll. */}
-                <td className="sticky left-0 w-[1%] whitespace-nowrap border-border-subtle border-b bg-inherit px-4 py-[7px] text-right font-mono text-[11px] text-disabled [user-select:none]">
+                <td className="sticky left-0 w-[1%] whitespace-nowrap border-border-subtle border-b bg-inherit px-4 py-[7px] text-right font-mono text-xs text-disabled [user-select:none]">
                   {i + 1}
                 </td>
                 {cols.map((c) => {
@@ -369,13 +369,13 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                   return (
                     <td
                       className={cn(
-                        'whitespace-nowrap border-border-subtle border-b px-4 py-[7px] font-mono text-[12.5px] text-foreground',
+                        'whitespace-nowrap border-border-subtle border-b px-4 py-[7px] font-mono text-xs text-foreground',
                         c.kind === 'num' && 'text-right'
                       )}
                       key={c.name}
                     >
                       {c.kind === 'bool' && typeof v === 'boolean' ? (
-                        <span className={cn('font-semibold', v ? 'text-green-700' : 'text-orange-700')}>
+                        <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>
                           {String(v)}
                         </span>
                       ) : v === null || v === undefined ? (
@@ -393,7 +393,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
       </div>
 
       <div className="flex flex-shrink-0 items-center justify-between border-border border-t bg-card px-4 py-2">
-        <span className="text-[12px] text-muted-foreground [font-variant-numeric:tabular-nums]">
+        <span className="text-xs text-muted-foreground [font-variant-numeric:tabular-nums]">
           Showing {fmtNum(visible.length)} of {fmtNum(run.totalRows)} rows
         </span>
         {shown < sorted.length && (
@@ -414,14 +414,14 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
           <div className="mx-auto mb-3 flex h-[44px] w-[44px] items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Terminal size={20} />
           </div>
-          <div className="mb-1.5 font-semibold text-[14px] text-strong">Run a query to see results</div>
-          <div className="mx-auto max-w-[420px] text-[13px] text-muted-foreground leading-[1.5]">
+          <div className="mb-1.5 font-semibold text-sm text-strong">Run a query to see results</div>
+          <div className="mx-auto max-w-[420px] text-sm text-muted-foreground leading-normal">
             Write a <code className="rounded bg-muted px-[5px] py-px font-mono">SELECT</code> against a table in the
             catalog, then press{' '}
-            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-[11px] text-strong">
+            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-xs text-strong">
               ⌘
             </span>
-            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-[11px] text-strong">
+            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-xs text-strong">
               ↵
             </span>{' '}
             or hit Run.
@@ -438,7 +438,7 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
           <div className="mx-auto mb-3 flex h-[44px] w-[44px] items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Loader2 className="h-[22px] w-[22px] animate-spin text-action-primary" size={22} />
           </div>
-          <div className="mb-1.5 font-semibold text-[14px] text-strong">Running query…</div>
+          <div className="mb-1.5 font-semibold text-sm text-strong">Running query…</div>
         </div>
       </div>
     );
@@ -449,17 +449,17 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
       <div className="flex h-full min-h-0 w-full flex-col gap-3.5 overflow-y-auto p-[22px]">
         {/* .res-alert[data-variant='destructive']: orange-bordered error card. */}
         <div
-          className="flex items-start gap-2.5 rounded-md border border-orange-700 bg-card px-3.5 py-3 text-orange-700 [&_svg]:text-orange-700"
+          className="flex items-start gap-2.5 rounded-md border border-warning bg-card px-3.5 py-3 text-warning [&_svg]:text-warning"
           data-variant="destructive"
         >
           <CircleX size={18} />
           <div>
-            <div className="font-semibold text-[13px] text-strong">{run.title}</div>
-            <div className="mt-0.5 text-[12.5px] text-muted-foreground leading-[1.45]">{run.message}</div>
+            <div className="font-semibold text-sm text-strong">{run.title}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground leading-normal">{run.message}</div>
           </div>
         </div>
         {run.hint && (
-          <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {run.hint}
             {run.hintAction && role === 'admin' && (
               <Button onClick={onAddTable} size="sm" variant="primary">

@@ -77,7 +77,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-card">
-      <div className="flex items-center justify-between border-border-subtle border-b px-[18px] py-3 font-semibold text-[14px] text-strong">
+      <div className="flex items-center justify-between border-border-subtle border-b px-[18px] py-3 font-semibold text-sm text-strong">
         <span className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap [&_svg]:text-action-primary">
           <Plus size={16} /> Add a topic to SQL
         </span>
@@ -93,10 +93,10 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
 
       <div className="flex min-h-0 flex-1 flex-col p-0" data-variant="inline">
         <div className="mx-auto w-full max-w-[720px] px-[22px] pt-4 pb-1">
-          <span className="font-semibold text-[11px] text-action-primary uppercase tracking-[0.05em]">
+          <span className="font-semibold text-xs text-action-primary uppercase tracking-wider">
             Step {step + 1} of {STEPS.length}
           </span>
-          <span className="mt-1 mb-2 block font-display font-semibold text-[16px] text-strong">{STEPS[step]}</span>
+          <span className="mt-1 mb-2 block font-display font-semibold text-base text-strong">{STEPS[step]}</span>
           <div className="h-1 overflow-hidden rounded-full bg-muted">
             <span
               className="block h-full rounded-full bg-action-primary transition-[width] duration-[220ms] ease-out"
@@ -108,7 +108,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
         <div className="mx-auto min-h-0 w-full max-w-[720px] flex-1 overflow-y-auto px-[22px] py-4">
           {step === 0 && (
             <div>
-              <p className="mt-0 mr-0 mb-[14px] ml-0 text-[13px] text-muted-foreground leading-[1.5] [&_code]:font-mono">
+              <p className="mt-0 mr-0 mb-[14px] ml-0 text-sm text-muted-foreground leading-normal [&_code]:font-mono">
                 Pick a Redpanda topic to expose as a SQL table. Tables are created in{' '}
                 <code>default_redpanda_catalog</code> — the catalog for Redpanda topics.
               </p>
@@ -122,7 +122,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                 {visibleTopics.map((t) => (
                   <button
                     className={cn(
-                      'flex w-full cursor-pointer items-center gap-3 rounded-md border border-border bg-card px-[14px] py-3 text-left font-[inherit]',
+                      'flex w-full cursor-pointer items-center gap-3 rounded-md border border-border bg-card px-[14px] py-3 text-left font-sans',
                       'hover:border-border-strong hover:bg-muted',
                       'data-[selected]:border-2 data-[selected]:border-secondary data-[selected]:px-[13px] data-[selected]:py-[11px]'
                     )}
@@ -141,15 +141,15 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                     </span>
                     <Layers className="flex-shrink-0 text-action-primary" size={15} />
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="font-mono font-semibold text-[13.5px] text-strong">{t.name}</span>
-                      <span className="mt-px text-[11.5px] text-muted-foreground">
+                      <span className="font-mono font-semibold text-sm text-strong">{t.name}</span>
+                      <span className="mt-px text-xs text-muted-foreground">
                         {typeof t.partitions === 'number' ? `${t.partitions} partitions` : 'topic'}
                         {t.format ? ` · ${t.format}` : ''}
                       </span>
                     </span>
                     {t.iceberg && (
                       <span
-                        className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-full bg-blue-alpha-100 px-[7px] py-0.5 font-semibold text-[10px] text-blue-700 dark:text-blue-300 [&_svg]:text-current"
+                        className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-full bg-info-subtle px-[7px] py-0.5 font-semibold text-caption-sm text-info [&_svg]:text-current"
                         title="Iceberg tiering enabled"
                       >
                         <GitMerge size={11} />
@@ -159,7 +159,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                   </button>
                 ))}
                 {visibleTopics.length === 0 && (
-                  <div className="text-[13px] text-muted-foreground leading-[1.5]">No topics found.</div>
+                  <div className="text-sm text-muted-foreground leading-normal">No topics found.</div>
                 )}
               </div>
             </div>
@@ -168,25 +168,25 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
           {step === 1 && (
             <div>
               <div className="mb-4">
-                <span className="mb-1.5 block font-semibold text-[13px] text-strong">Catalog</span>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-[13px] text-strong [&_svg]:text-muted-foreground">
+                <span className="mb-1.5 block font-semibold text-sm text-strong">Catalog</span>
+                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-sm text-strong [&_svg]:text-muted-foreground">
                   <Layers size={14} /> default_redpanda_catalog{' '}
-                  <span className="ml-auto font-sans text-[11px] text-muted-foreground">fixed for Redpanda topics</span>
+                  <span className="ml-auto font-sans text-xs text-muted-foreground">fixed for Redpanda topics</span>
                 </div>
               </div>
               <div className="mb-4">
-                <span className="mb-1.5 block font-semibold text-[13px] text-strong">Source topic</span>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-[13px] text-strong [&_svg]:text-muted-foreground">
+                <span className="mb-1.5 block font-semibold text-sm text-strong">Source topic</span>
+                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-sm text-strong [&_svg]:text-muted-foreground">
                   <GitBranch size={14} /> {topic}
                   {chosen?.iceberg && (
-                    <span className="ml-auto inline-flex items-center gap-1 font-sans text-[11px] text-blue-700 dark:text-blue-300 [&_svg]:text-current">
+                    <span className="ml-auto inline-flex items-center gap-1 font-sans text-xs text-info [&_svg]:text-current">
                       <GitMerge size={11} /> Iceberg-tiered
                     </span>
                   )}
                 </div>
               </div>
               {chosen?.iceberg && (
-                <div className="mb-4 flex items-start gap-[9px] rounded-md border border-blue-200 bg-blue-alpha-100 px-[13px] py-[11px] text-[12.5px] text-foreground leading-[1.45] dark:border-blue-700 dark:bg-blue-alpha-300 [&_code]:font-mono [&_svg]:mt-px [&_svg]:flex-shrink-0 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-400">
+                <div className="mb-4 flex items-start gap-[9px] rounded-md border border-info bg-info-subtle px-[13px] py-[11px] text-xs text-foreground leading-normal [&_code]:font-mono [&_svg]:mt-px [&_svg]:flex-shrink-0 [&_svg]:text-info">
                   <GitMerge size={15} />
                   <span>
                     This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes
@@ -195,7 +195,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                 </div>
               )}
               <div className="mb-4">
-                <label className="mb-1.5 block font-semibold text-[13px] text-strong" htmlFor="wz-table-name">
+                <label className="mb-1.5 block font-semibold text-sm text-strong" htmlFor="wz-table-name">
                   Table name
                 </label>
                 <Input
@@ -207,26 +207,26 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                   value={name}
                 />
                 {nameError ? (
-                  <span className="mt-1.5 block text-[12px] text-destructive">
+                  <span className="mt-1.5 block text-xs text-destructive">
                     Use lowercase letters, numbers and underscores; must start with a letter or underscore.
                   </span>
                 ) : (
-                  <span className="mt-1.5 block text-[12px] text-muted-foreground">
+                  <span className="mt-1.5 block text-xs text-muted-foreground">
                     How the table appears in the catalog and your queries.
                   </span>
                 )}
               </div>
               <div className="mb-4">
-                <span className="mb-1.5 block font-semibold text-[13px] text-strong">This will run</span>
+                <span className="mb-1.5 block font-semibold text-sm text-strong">This will run</span>
                 <div className="overflow-x-auto rounded-md bg-background-inverse-base px-4 py-[14px]">
                   <pre
-                    className="m-0 font-mono text-[12.5px] leading-[1.6]"
+                    className="m-0 font-mono text-xs leading-relaxed"
                     // biome-ignore lint/security/noDangerouslySetInnerHtml: highlightSQL HTML-escapes all token text
                     dangerouslySetInnerHTML={{ __html: highlightSQL(createSQL(tableName, topic ?? '')) }}
                   />
                 </div>
               </div>
-              {error && <div className="mt-1.5 block text-[12px] text-destructive">{error}</div>}
+              {error && <div className="mt-1.5 block text-xs text-destructive">{error}</div>}
             </div>
           )}
         </div>
