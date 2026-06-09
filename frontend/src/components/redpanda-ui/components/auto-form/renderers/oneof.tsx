@@ -14,6 +14,15 @@ import { createEmptyFieldValue, getFieldErrorMessage, getFieldUiConfig, UNSET_SE
 import { FormDepthProvider, useFormDepth } from '../layout-context';
 import { getAutoFormFieldTestId } from '../test-ids';
 
+function renderOneofSelectedValue(value: unknown, fields: ParsedField[], required: boolean) {
+  if (value === UNSET_SELECT_VALUE || value === undefined || value === null || value === '') {
+    return required ? null : 'Not set';
+  }
+
+  const selectedField = fields.find((candidate) => candidate.key === String(value));
+  return selectedField ? getLabel(selectedField) : null;
+}
+
 export function OneofFieldRenderer({
   field,
   path,
@@ -96,7 +105,9 @@ export function OneofFieldRenderer({
           value={oneofValue.case ?? UNSET_SELECT_VALUE}
         >
           <SelectTrigger aria-label={String(label)} disabled={isDisabled} id={fullPath} testId={controlTestId}>
-            <SelectValue placeholder="Choose a field" />
+            <SelectValue placeholder="Choose a field">
+              {(value) => renderOneofSelectedValue(value, availableFields, field.required)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {field.required ? null : (

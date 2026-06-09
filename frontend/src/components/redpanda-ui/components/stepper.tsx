@@ -11,7 +11,7 @@ import {
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
-import { Button } from './button';
+import { Button, type ButtonVariants } from './button';
 import { Heading, Text } from './typography';
 import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
@@ -456,6 +456,8 @@ namespace Stepper {
           of: Get.Id<Steps>;
           icon?: React.ReactNode;
           testId?: string;
+          /** Render the trigger Button in a non-default variant. */
+          variant?: ButtonVariants['variant'];
         }
       ) => React.ReactElement;
       Title: (props: AsChildProps<'h4'>) => React.ReactElement;

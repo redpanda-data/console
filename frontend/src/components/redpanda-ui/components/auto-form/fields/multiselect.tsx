@@ -1,6 +1,7 @@
 'use client';
 
 import { getGroupedOptions, readDataProviderId, renderOptionLabel, useFieldTestIds } from './shared';
+import { useFieldContext } from '../../field';
 import { SimpleMultiSelect } from '../../multi-select';
 import { useAutoForm } from '../context';
 import type { AutoFormFieldProps } from '../core-types';
@@ -8,8 +9,9 @@ import { resolveDataProvider } from '../data-providers';
 import { getFieldUiConfig, NUMERIC_OPTION_PATTERN } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
 
-function MultiSelectFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
+function MultiSelectFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
+  const { errorId } = useFieldContext();
   const itemField = field.schema?.[0];
   const numericOptions = Boolean(itemField?.options?.every(([value]) => NUMERIC_OPTION_PATTERN.test(value)));
   const optionGroups = itemField ? getGroupedOptions(itemField) : undefined;
@@ -33,6 +35,8 @@ function MultiSelectFieldComponent({ field, id, inputProps }: AutoFormFieldProps
 
   return (
     <SimpleMultiSelect
+      aria-describedby={error ? errorId : undefined}
+      aria-invalid={Boolean(error)}
       disabled={inputProps.disabled}
       id={id}
       onValueChange={(values) =>
@@ -69,8 +73,9 @@ export const multiselectFieldDefinition: FieldTypeDefinition = {
 // button — one row per method. A multi-select collapses that to a single
 // control that holds every picked method as a chip.
 
-function DataProviderMultiSelectComponent({ field, id, inputProps }: AutoFormFieldProps) {
+function DataProviderMultiSelectComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
+  const { errorId } = useFieldContext();
   const itemField = field.schema?.[0];
   const providerId = readDataProviderId(itemField);
   const { dataProviders } = useAutoForm();
@@ -103,6 +108,8 @@ function DataProviderMultiSelectComponent({ field, id, inputProps }: AutoFormFie
 
   return (
     <SimpleMultiSelect
+      aria-describedby={error ? errorId : undefined}
+      aria-invalid={Boolean(error)}
       disabled={inputProps.disabled || isLoading}
       id={id}
       onValueChange={(values) => inputProps.onValueChange(values)}

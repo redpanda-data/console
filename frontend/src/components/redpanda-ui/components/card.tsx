@@ -6,7 +6,7 @@ import { Heading, Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
 const cardVariants = cva(
-  'flex min-w-0 flex-col rounded-lg border border-base-200 border-solid bg-white dark:border-base-800 dark:bg-base-900',
+  'flex min-w-0 flex-col rounded-lg border border-border border-solid bg-card',
   {
     variants: {
       size: {
