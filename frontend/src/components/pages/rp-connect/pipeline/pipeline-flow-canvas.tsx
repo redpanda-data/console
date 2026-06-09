@@ -28,6 +28,10 @@ import { computeFlowLayout, parsePipelineFlowTree } from '../utils/pipeline-flow
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
+// How far past the diagram bounds the canvas may be panned, and the zoom range.
+const PAN_PADDING = 240;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 1.25;
 
 type CanvasCallbacks = {
   onEditNode?: (target: EditTarget) => void;
@@ -104,7 +108,7 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  const { rfNodes, rfEdges } = useMemo(() => {
+  const { rfNodes, rfEdges, translateExtent } = useMemo(() => {
     const layout = computeFlowLayout(nodes, collapsedIds);
 
     const callbacks: CanvasCallbacks = {
@@ -132,7 +136,12 @@ export function PipelineFlowCanvas({
         )
       : layout.rfEdges;
 
-    return { rfNodes: injectedNodes, rfEdges: injectedEdges };
+    const extent: [[number, number], [number, number]] = [
+      [-PAN_PADDING, -PAN_PADDING],
+      [layout.width + PAN_PADDING, layout.height + PAN_PADDING],
+    ];
+
+    return { rfNodes: injectedNodes, rfEdges: injectedEdges, translateExtent: extent };
   }, [nodes, collapsedIds, toggleCollapse, onEditNode, onDeleteNode, onInsert, onAddConnector, onAddTopic, onAddSasl]);
 
   if (rfNodes.length === 0) {
@@ -151,9 +160,9 @@ export function PipelineFlowCanvas({
           edgeTypes={flowEdgeTypes}
           elementsSelectable={false}
           fitView
-          fitViewOptions={{ padding: 0.25, maxZoom: 1 }}
-          maxZoom={1.5}
-          minZoom={0.3}
+          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+          maxZoom={MAX_ZOOM}
+          minZoom={MIN_ZOOM}
           nodes={rfNodes}
           nodesConnectable={false}
           nodesDraggable={false}
@@ -162,6 +171,7 @@ export function PipelineFlowCanvas({
           panOnDrag
           panOnScroll={false}
           proOptions={{ hideAttribution: true }}
+          translateExtent={translateExtent}
           zoomOnScroll
         >
           <Background gap={20} size={1.5} variant={BackgroundVariant.Dots} />

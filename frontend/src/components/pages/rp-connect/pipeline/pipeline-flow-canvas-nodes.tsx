@@ -9,7 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath, Handle, Position } from '@xyflow/react';
+import {
+  BaseEdge,
+  EdgeLabelRenderer,
+  type EdgeProps,
+  getSmoothStepPath,
+  getStraightPath,
+  Handle,
+  Position,
+} from '@xyflow/react';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -25,6 +33,14 @@ import { FLOW_CARD_WIDTH } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
+// Anchor the spine (left/right) handles a fixed distance below the card top —
+// roughly the title row — so cards of differing heights still connect along a
+// horizontal line. Bottom/top handles (branch threads) keep their defaults.
+const SPINE_HANDLE_TOP = 36;
+
+// React Flow's pane starts a pan on pointerdown; stop propagation so clicks on
+// in-card controls (edit, add, collapse) register instead of being swallowed.
+const stopPan = (event: { stopPropagation: () => void }) => event.stopPropagation();
 
 const SECTION_LABEL: Record<string, string> = {
   input: 'Input',
@@ -65,45 +81,56 @@ const HANDLE_IDS = [
 const NodeHandles = () => (
   <>
     {HANDLE_IDS.map((h) => (
-      <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} type={h.type} />
+      <Handle
+        className={invisibleHandle}
+        id={h.id}
+        key={h.id}
+        position={h.position}
+        style={h.id === 'l' || h.id === 'r' ? { top: SPINE_HANDLE_TOP } : undefined}
+        type={h.type}
+      />
     ))}
   </>
 );
 
-const HoverActions = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
+// Docs + remove reveal on hover; the Edit button stays visible so every editable
+// node has an obvious entry point into its config dialog.
+const CardActions = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
   if (!(data.onEdit || data.onDelete || docsUrl)) {
     return null;
   }
   return (
-    <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-      {docsUrl ? (
-        <Button
-          aria-label={`${data.label} documentation`}
-          as="a"
-          className="nodrag nopan"
-          href={docsUrl}
-          rel="noopener noreferrer"
-          size="icon-xs"
-          target="_blank"
-          variant="ghost"
-        >
-          <BookOpenIcon />
-        </Button>
-      ) : null}
+    <div className="flex shrink-0 items-center gap-0.5" onPointerDown={stopPan}>
+      <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        {docsUrl ? (
+          <Button
+            aria-label={`${data.label} documentation`}
+            as="a"
+            className="nodrag nopan"
+            href={docsUrl}
+            rel="noopener noreferrer"
+            size="icon-xs"
+            target="_blank"
+            variant="ghost"
+          >
+            <BookOpenIcon />
+          </Button>
+        ) : null}
+        {data.onDelete ? (
+          <Button aria-label="Remove" className="nodrag nopan" onClick={data.onDelete} size="icon-xs" variant="ghost">
+            <Trash2 />
+          </Button>
+        ) : null}
+      </div>
       {data.onEdit ? (
         <Button
           aria-label="Edit configuration"
           className="nodrag nopan"
           onClick={data.onEdit}
           size="icon-xs"
-          variant="ghost"
+          variant="outline"
         >
           <PencilIcon />
-        </Button>
-      ) : null}
-      {data.onDelete ? (
-        <Button aria-label="Remove" className="nodrag nopan" onClick={data.onDelete} size="icon-xs" variant="ghost">
-          <Trash2 />
         </Button>
       ) : null}
     </div>
@@ -161,6 +188,7 @@ const MissingChip = ({
       className="nodrag nopan"
       icon={<PlusIcon className="size-3" />}
       onClick={onAdd}
+      onPointerDown={stopPan}
       size="xs"
       variant="secondary"
     >
@@ -177,6 +205,7 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => (
     className="nodrag nopan flex h-full w-full items-center justify-center gap-1.5 rounded-lg border border-border border-dashed bg-card/40 px-3 py-4 text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:text-foreground"
     disabled={!data.onAddConnector}
     onClick={data.onAddConnector ? () => data.onAddConnector?.(data.section ?? '') : undefined}
+    onPointerDown={stopPan}
     type="button"
   >
     <PlusIcon className="size-4" />
@@ -192,7 +221,7 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
         <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
           {kindLabel}
         </Text>
-        <HoverActions data={data} docsUrl={docsUrl} />
+        <CardActions data={data} docsUrl={docsUrl} />
       </div>
       <button
         className={cn(
@@ -201,6 +230,7 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
         )}
         disabled={!data.collapsible}
         onClick={data.collapsible ? data.onToggle : undefined}
+        onPointerDown={stopPan}
         type="button"
       >
         <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
@@ -236,25 +266,9 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-export function FlowSpineEdge({
-  sourceX,
-  sourceY,
-  sourcePosition,
-  targetX,
-  targetY,
-  targetPosition,
-  markerEnd,
-  data,
-}: EdgeProps) {
-  const [path, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 8,
-  });
+export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, data }: EdgeProps) {
+  // The spine runs along a single row, so a straight line reads cleanest.
+  const [path, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
   const onInsert = (data as { onInsert?: () => void } | undefined)?.onInsert;
   return (
     <>
@@ -265,6 +279,7 @@ export function FlowSpineEdge({
             aria-label="Insert a step"
             className="nodrag nopan pointer-events-auto absolute flex size-6 items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
             onClick={onInsert}
+            onPointerDown={stopPan}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
             type="button"
           >
