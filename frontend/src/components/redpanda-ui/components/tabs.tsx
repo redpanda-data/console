@@ -29,8 +29,10 @@ type TabsRenderFn = any;
 
 type TabsRenderProp = React.ReactElement | TabsRenderFn | undefined;
 
-// Build the data-state attribute from Base UI's state so Radix-era CSS selectors
-// (`data-[state=active]:...`) keep working.
+/**
+ * Build the data-state attribute from Base UI's render-prop state so Radix-era
+ * CSS selectors (`data-[state=active]:...`) keep working.
+ */
 function dataStateFromBaseUi(state: { active?: boolean; hidden?: boolean }): Record<string, unknown> {
   const attrs: Record<string, unknown> = {};
   if (typeof state?.active === 'boolean') {
@@ -41,8 +43,12 @@ function dataStateFromBaseUi(state: { active?: boolean; hidden?: boolean }): Rec
   return attrs;
 }
 
-// Render prop factory: inject `data-state` onto the default element, or compose
-// it onto a user-supplied render so router links/anchors keep working as triggers.
+/**
+ * Render prop factory. When no user-supplied render is provided, render the
+ * given element tag with injected `data-state`. When the user supplies a
+ * render (JSX element or function), compose it with `data-state` so router
+ * links / anchors keep working as Tabs triggers.
+ */
 function renderTabWithActiveState(Element: 'button' | 'div', userRender?: TabsRenderProp): TabsRenderFn {
   return ((props: Record<string, unknown>, state: { active?: boolean; hidden?: boolean }) => {
     const mergedProps = { ...props, ...dataStateFromBaseUi(state) };
@@ -239,8 +245,9 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
 
     const prefersReducedMotion = useReducedMotion();
     const isHorizontal = orientation !== 'vertical';
-    // Lock the perpendicular axis so the highlight snaps (not animates) when the
-    // active tab moves to a different row/column.
+    // Lock the perpendicular axis: when the active tab moves to a different
+    // row (horizontal) or column (vertical), the highlight should snap on that
+    // axis instead of animating in 2D, which looks amateur.
     const axisLockedTransition: Transition = React.useMemo(() => {
       if (prefersReducedMotion) {
         return { duration: 0 };
@@ -311,14 +318,20 @@ const tabsTriggerVariants = cva(
 type TabsTriggerProps = Omit<React.ComponentProps<typeof TabsPrimitive.Tab>, 'render'> &
   SharedProps & {
     variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
-    // Base UI render prop: swap the rendered element (e.g. a router `<Link />`)
-    // while keeping Tab behavior. Defaults to a native `<button>`.
+    /**
+     * Base UI render prop. Pass a JSX element (e.g. a router `<Link />`) or a
+     * function to swap the rendered element while keeping Tab keyboard and
+     * active-state behavior. Defaults to a native `<button>`.
+     */
     render?: TabsRenderProp;
   };
 
 function TabsTrigger({ className, value, variant, testId, disabled, render, ...props }: TabsTriggerProps) {
-  // Non-button intrinsic renders (e.g. `<a href>`) need Base UI's button-semantics
-  // polyfill; function/component renders are assumed to render a <button>.
+  // If the consumer's render is a non-button intrinsic (e.g. `<a href>` for
+  // link-style tabs), tell Base UI to polyfill button semantics instead of
+  // asserting a native button. Function-form renders and component children
+  // are assumed to render a <button>; consumers can pass nativeButton={false}
+  // explicitly otherwise.
   const nativeButton =
     React.isValidElement(render) && typeof render.type === 'string' && render.type !== 'button' ? false : undefined;
 
