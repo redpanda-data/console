@@ -1,17 +1,25 @@
 import { describe, expect, test } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 
 import { mockComponents } from './__fixtures__/component-schemas';
 import { schemaToConfig } from './schema';
 import {
+  appendResource,
   applyRedpandaSetup,
+  buildInsertableComponent,
   configToYaml,
+  type EditTarget,
   extractAllTopics,
   extractConnectorTopics,
   generateYamlFromWizardData,
+  getComponentAt,
   getConnectTemplate,
+  insertProcessorAt,
   mergeConnectConfigs,
   parseConfigComponents,
   patchRedpandaConfig,
+  removeComponentAt,
+  setComponentAt,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -1555,5 +1563,105 @@ output:
 
   test('returns undefined for invalid YAML', () => {
     expect(patchRedpandaConfig('{{{', 'input', 'kafka_franz', { topicName: 'x' })).toBeUndefined();
+  });
+});
+
+describe('visual-editor mutations', () => {
+  const pipelineYaml = `input:
+  generate:
+    mapping: 'root = {}'
+pipeline:
+  processors:
+    - log:
+        message: hello
+    - mapping: 'root = this'
+output:
+  drop: {}`;
+
+  describe('getComponentAt', () => {
+    test('reads the input component', () => {
+      expect(getComponentAt(pipelineYaml, { kind: 'input' })).toEqual({ generate: { mapping: 'root = {}' } });
+    });
+
+    test('reads a processor by index', () => {
+      expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+    });
+
+    test('returns undefined on parse failure', () => {
+      expect(getComponentAt('{{{', { kind: 'input' })).toBeUndefined();
+    });
+  });
+
+  describe('setComponentAt', () => {
+    test('replaces a processor config in place', () => {
+      const next = setComponentAt(pipelineYaml, { kind: 'processor', index: 0 }, { log: { message: 'changed' } });
+      expect(next).not.toBeNull();
+      expect(getComponentAt(next as string, { kind: 'processor', index: 0 })).toEqual({ log: { message: 'changed' } });
+      // Sibling processor is untouched.
+      expect(getComponentAt(next as string, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+    });
+
+    test('returns null on parse failure', () => {
+      expect(setComponentAt('{{{', { kind: 'input' }, { generate: {} })).toBeNull();
+    });
+  });
+
+  describe('insertProcessorAt', () => {
+    test('inserts at the given index', () => {
+      const next = insertProcessorAt(pipelineYaml, 1, { mapping: 'root = inserted' });
+      expect(next).not.toBeNull();
+      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
+      expect(parsed.pipeline.processors).toHaveLength(3);
+      expect(parsed.pipeline.processors[1]).toEqual({ mapping: 'root = inserted' });
+    });
+
+    test('creates the processors array when missing', () => {
+      const next = insertProcessorAt('input:\n  generate: {}\noutput:\n  drop: {}', 0, { mapping: 'root = x' });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
+      expect(parsed.pipeline.processors).toEqual([{ mapping: 'root = x' }]);
+    });
+
+    test('clamps an out-of-range index to append', () => {
+      const next = insertProcessorAt(pipelineYaml, 99, { mapping: 'root = last' });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
+      expect(parsed.pipeline.processors.at(-1)).toEqual({ mapping: 'root = last' });
+    });
+  });
+
+  describe('appendResource', () => {
+    test('appends to a new cache_resources array', () => {
+      const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
+      const parsed = parseYaml(next as string) as { cache_resources: Record<string, unknown>[] };
+      expect(parsed.cache_resources).toEqual([{ label: 'c', memory: {} }]);
+    });
+  });
+
+  describe('removeComponentAt', () => {
+    test('removes a processor and keeps the rest', () => {
+      const next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 0 });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
+      expect(parsed.pipeline.processors).toEqual([{ mapping: 'root = this' }]);
+    });
+
+    test('prunes the pipeline key when the last processor is removed', () => {
+      let next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 1 }) as string;
+      next = removeComponentAt(next, { kind: 'processor', index: 0 }) as string;
+      const parsed = parseYaml(next) as Record<string, unknown>;
+      expect(parsed.pipeline).toBeUndefined();
+    });
+
+    test('removes the input key', () => {
+      const next = removeComponentAt(pipelineYaml, { kind: 'input' });
+      const parsed = parseYaml(next as string) as Record<string, unknown>;
+      expect(parsed.input).toBeUndefined();
+    });
+  });
+
+  describe('buildInsertableComponent', () => {
+    test('returns undefined when the component spec is unknown', () => {
+      const target: EditTarget = { kind: 'processor', index: 0 };
+      expect(target.kind).toBe('processor');
+      expect(buildInsertableComponent('does_not_exist', 'processor', [])).toBeUndefined();
+    });
   });
 });

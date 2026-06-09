@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps, Handle, Position } from '@xyflow/react';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
@@ -20,9 +20,10 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BaseNode } from 'components/ui/base-node';
-import { BookOpenIcon, Box, ChevronDown, ChevronUp, PlusIcon } from 'lucide-react';
+import { BookOpenIcon, Box, ChevronDown, ChevronUp, PencilIcon, PlusIcon, Trash2 } from 'lucide-react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-0 !h-0 !border-0 !bg-transparent !min-w-0 !min-h-0';
 
@@ -92,6 +93,37 @@ type TreeNodeData = {
   onAddConnector?: (type: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
+  // Visual-editor affordances, injected only for editable nodes in edit mode.
+  editTarget?: EditTarget;
+  onEdit?: () => void;
+  onDelete?: () => void;
+};
+
+// Hover-revealed Edit / Remove actions, shown on editable nodes in edit mode.
+const NodeActions = ({ data }: { data: TreeNodeData }) => {
+  if (!(data.onEdit || data.onDelete)) {
+    return null;
+  }
+  return (
+    <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      {data.onEdit ? (
+        <Button
+          aria-label="Edit configuration"
+          className="nodrag nopan"
+          onClick={data.onEdit}
+          size="icon-xs"
+          variant="ghost"
+        >
+          <PencilIcon />
+        </Button>
+      ) : null}
+      {data.onDelete ? (
+        <Button aria-label="Remove" className="nodrag nopan" onClick={data.onDelete} size="icon-xs" variant="ghost">
+          <Trash2 />
+        </Button>
+      ) : null}
+    </div>
+  );
 };
 
 const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
@@ -105,30 +137,30 @@ const TreeSectionNode = ({ data }: { data: TreeNodeData }) => (
 );
 
 const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
-  <button
-    className={cn(
-      'nodrag nopan flex h-7 max-w-[220px] items-center gap-1.5 text-sm',
-      data.collapsible && 'cursor-pointer'
-    )}
-    disabled={!data.collapsible}
-    onClick={data.collapsible ? data.onToggle : undefined}
-    type="button"
-  >
+  <div className="group flex h-7 max-w-[260px] items-center gap-1.5 text-sm">
     <Handle className={invisibleHandle} position={Position.Left} type="target" />
-    <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
-    <Text as="span" className="min-w-0 truncate" title={data.label} variant="bodyStrongMedium">
-      {data.label}
-    </Text>
-    {data.collapsible ? (
-      <Text as="span" className="ml-1 text-subtle" variant="bodySmall">
-        {data.collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+    <button
+      className={cn('nodrag nopan flex min-w-0 items-center gap-1.5', data.collapsible && 'cursor-pointer')}
+      disabled={!data.collapsible}
+      onClick={data.collapsible ? data.onToggle : undefined}
+      type="button"
+    >
+      <ConnectorLogo className="size-4" fallback={Box} name={data.label as ComponentName} />
+      <Text as="span" className="min-w-0 truncate" title={data.label} variant="bodyStrongMedium">
+        {data.label}
       </Text>
-    ) : null}
-    {data.collapsed && data.childCount ? (
-      <CountDot className="ml-1.5" count={data.childCount} size="sm" variant="disabled" />
-    ) : null}
+      {data.collapsible ? (
+        <Text as="span" className="ml-1 text-subtle" variant="bodySmall">
+          {data.collapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </Text>
+      ) : null}
+      {data.collapsed && data.childCount ? (
+        <CountDot className="ml-1.5" count={data.childCount} size="sm" variant="disabled" />
+      ) : null}
+    </button>
+    <NodeActions data={data} />
     {!data.collapsed && <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />}
-  </button>
+  </div>
 );
 
 // Clickable "+ X" button when `onAdd` is wired, else a static "No X" pill —
@@ -202,6 +234,7 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
               <BookOpenIcon />
             </Button>
           ) : null}
+          <NodeActions data={data} />
         </div>
         {data.labelText || hasTopics || showSetupHints ? (
           <div className="flex flex-col items-start gap-1.5">
@@ -263,17 +296,34 @@ export function TreeEdge({ sourceX, sourceY, targetX, targetY, markerEnd }: Edge
   return <BaseEdge markerEnd={markerEnd} path={path} style={{ stroke: 'var(--color-border)', strokeWidth: 1 }} />;
 }
 
-export function SectionEdge({ sourceX, sourceY, targetY, markerEnd }: EdgeProps) {
+export function SectionEdge({ sourceX, sourceY, targetY, markerEnd, data }: EdgeProps) {
   const path = `M ${sourceX} ${sourceY} V ${targetY - SECTION_EDGE_GAP}`;
+  const onInsert = (data as { onInsert?: () => void } | undefined)?.onInsert;
+  const midY = (sourceY + targetY) / 2;
   return (
-    <BaseEdge
-      markerEnd={markerEnd}
-      path={path}
-      style={{
-        stroke: 'var(--color-primary)',
-        strokeWidth: 2,
-      }}
-    />
+    <>
+      <BaseEdge
+        markerEnd={markerEnd}
+        path={path}
+        style={{
+          stroke: 'var(--color-primary)',
+          strokeWidth: 2,
+        }}
+      />
+      {onInsert ? (
+        <EdgeLabelRenderer>
+          <button
+            aria-label="Insert a step"
+            className="nodrag nopan pointer-events-auto absolute flex size-5 items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+            onClick={onInsert}
+            style={{ transform: `translate(-50%, -50%) translate(${sourceX}px, ${midY}px)` }}
+            type="button"
+          >
+            <PlusIcon className="size-3" />
+          </button>
+        </EdgeLabelRenderer>
+      ) : null}
+    </>
   );
 }
 

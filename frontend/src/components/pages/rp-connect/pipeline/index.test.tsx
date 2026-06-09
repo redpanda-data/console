@@ -140,6 +140,14 @@ vi.mock('./pipeline-flow-diagram', async () => {
       React.createElement('div', { 'data-testid': 'flow-diagram', 'data-configyaml': props.configYaml }),
   };
 });
+// The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
+vi.mock('./pipeline-flow-canvas', async () => {
+  const React = await import('react');
+  return {
+    PipelineFlowCanvas: (props: { configYaml: string }) =>
+      React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
+  };
+});
 vi.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
 vi.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
 vi.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
@@ -614,7 +622,7 @@ describe('PipelinePage', () => {
     expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
   });
 
-  it('view page Visual lane shows the placeholder, not the minimal sidebar diagram', async () => {
+  it('view page Visual lane renders the full pipeline diagram from the pipeline config', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
@@ -624,12 +632,11 @@ describe('PipelinePage', () => {
 
     await user.click(await screen.findByRole('tab', { name: 'Visual' }));
 
-    // The richer visualizer is forthcoming; the lane must not fall back to the sidebar diagram.
-    expect(await screen.findByText('Visual editor')).toBeInTheDocument();
-    expect(screen.queryByTestId('flow-diagram')).not.toBeInTheDocument();
+    const canvas = await screen.findByTestId('flow-canvas');
+    expect(canvas.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
   });
 
-  it('edit page exposes YAML and Visual lanes when the visual editor flag is enabled', async () => {
+  it('edit page exposes YAML and Visual lanes; Visual swaps the editor for the canvas', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
@@ -640,9 +647,9 @@ describe('PipelinePage', () => {
     // YAML is the default edit lane.
     expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
 
-    // Switching to Visual swaps in the (placeholder) visual editor.
+    // Switching to Visual swaps in the interactive canvas.
     await user.click(await screen.findByRole('tab', { name: 'Visual' }));
-    expect(await screen.findByText('Visual editor')).toBeInTheDocument();
+    expect(await screen.findByTestId('flow-canvas')).toBeInTheDocument();
     expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
   });
 

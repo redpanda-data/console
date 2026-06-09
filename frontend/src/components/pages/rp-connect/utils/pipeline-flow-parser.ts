@@ -13,7 +13,8 @@ import type { Edge, Node } from '@xyflow/react';
 import { MarkerType } from '@xyflow/react';
 import { parse as parseYaml } from 'yaml';
 
-import { firstKey, parseMultiInputs, parseMultiOutputs } from './yaml';
+import { type NodeMetaEntry, summarizeComponent } from './pipeline-flow-meta';
+import { type EditTarget, firstKey, parseMultiInputs, parseMultiOutputs, type ResourceArrayKey } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 
 type ParsedYamlConfig = {
@@ -44,6 +45,12 @@ export type PipelineFlowNode = {
   collapsible?: boolean;
   missingTopic?: boolean;
   missingSasl?: boolean;
+  // Set only on top-level, visually editable nodes (input/output/top-level
+  // processor/array resource). Drives the visual editor's edit & delete actions;
+  // nested nodes intentionally have none and stay read-only.
+  editTarget?: EditTarget;
+  // Key config values surfaced on the expanded canvas card (ignored by the mini lane).
+  meta?: NodeMetaEntry[];
 };
 
 type BranchContext = {
@@ -140,10 +147,12 @@ function parseInputNodes(
 
   const childNames = parseMultiInputs(inputKey, inputObj[inputKey]);
   if (childNames && childNames.length > 0) {
-    return buildGroupWithChildren(
+    const groupNodes = buildGroupWithChildren(
       { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
       childNames
     );
+    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' } };
+    return groupNodes;
   }
 
   const labelText = extractLabel(inputObj);
@@ -160,6 +169,8 @@ function parseInputNodes(
       parentId: sectionId,
       missingTopic: isRedpanda && !topics ? true : undefined,
       missingSasl: isRedpanda && !hasSaslConfig(inputObj[inputKey], config) ? true : undefined,
+      editTarget: { kind: 'input' },
+      meta: summarizeComponent(inputKey, inputObj[inputKey]),
     },
   ];
 }
@@ -393,8 +404,14 @@ function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: s
     const labelText = extractLabel(proc);
     const ctx: BranchContext = { section: 'processor', parentId: sectionId, idPrefix: `proc-${i}`, depth: 0 };
     const nodes = parseComponentWithBranching(name, proc[name], ctx);
-    if (labelText && nodes.length > 0) {
-      nodes[0] = { ...nodes[0], labelText };
+    // The first node is the top-level processor; mark it editable by array index.
+    if (nodes.length > 0) {
+      nodes[0] = {
+        ...nodes[0],
+        ...(labelText ? { labelText } : {}),
+        editTarget: { kind: 'processor', index: i },
+        meta: summarizeComponent(name, proc[name]),
+      };
     }
     return nodes;
   });
@@ -410,8 +427,13 @@ const RESOURCE_YAML_KEYS = [
   'redpanda',
 ] as const;
 
+// Array resources addressable by the visual editor (cache/rate-limit). Singleton
+// root resources (buffer/metrics/tracer/…) are read-only for now.
+const EDITABLE_RESOURCE_KEYS: ReadonlySet<string> = new Set(['cache_resources', 'rate_limit_resources']);
+
 function parseArrayResource(value: unknown[], key: string, sectionId: string): PipelineFlowNode[] {
   const nodes: PipelineFlowNode[] = [];
+  const editable = EDITABLE_RESOURCE_KEYS.has(key);
   for (const [i, item] of value.entries()) {
     if (item && typeof item === 'object') {
       const itemObj = item as Record<string, unknown>;
@@ -424,6 +446,8 @@ function parseArrayResource(value: unknown[], key: string, sectionId: string): P
         labelText,
         section: 'resource',
         parentId: sectionId,
+        editTarget: editable ? { kind: 'resource', resourceKey: key as ResourceArrayKey, index: i } : undefined,
+        meta: itemName ? summarizeComponent(itemName, itemObj[itemName]) : undefined,
       });
     }
   }
@@ -458,10 +482,12 @@ function parseOutputNodes(
 
   const childNames = parseMultiOutputs(outputKey, outputObj[outputKey]);
   if (childNames && childNames.length > 0) {
-    return buildGroupWithChildren(
+    const groupNodes = buildGroupWithChildren(
       { groupId: `output-${outputKey}`, groupLabel: outputKey, section: 'output', sectionId },
       childNames
     );
+    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'output' } };
+    return groupNodes;
   }
 
   const labelText = extractLabel(outputObj);
@@ -478,6 +504,8 @@ function parseOutputNodes(
       parentId: sectionId,
       missingTopic: isRedpanda && !topics ? true : undefined,
       missingSasl: isRedpanda && !hasSaslConfig(outputObj[outputKey], config) ? true : undefined,
+      editTarget: { kind: 'output' },
+      meta: summarizeComponent(outputKey, outputObj[outputKey]),
     },
   ];
 }
@@ -664,6 +692,7 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
       ...(node.section ? { section: node.section } : {}),
       ...(node.missingTopic ? { missingTopic: true } : {}),
       ...(node.missingSasl ? { missingSasl: true } : {}),
+      ...(node.editTarget ? { editTarget: node.editTarget } : {}),
       ...(isCollapsed ? { childCount: countDescendants(node.id, state.childrenMap) } : {}),
     },
   };
@@ -760,14 +789,18 @@ export function computeTreeLayout(
     }
   }
 
-  // Add section-to-section edges
+  // Add section-to-section edges. `position` lets the visual editor place an
+  // insertion affordance: 'start' inserts a processor at the top of the pipeline
+  // (the spine leaving the input), 'end' appends it.
   const sectionNodes = state.rfNodes.filter((n) => n.type === 'treeSection');
   for (let i = 0; i < sectionNodes.length - 1; i++) {
+    const sourceLabel = (sectionNodes[i].data as { label?: string }).label;
     state.rfEdges.push({
       id: `section-edge-${i}`,
       source: sectionNodes[i].id,
       target: sectionNodes[i + 1].id,
       type: 'sectionEdge',
+      data: { position: sourceLabel === 'input' ? 'start' : 'end' },
       markerEnd: { type: MarkerType.Arrow, width: 14, height: 14, color: 'var(--color-primary)' },
     });
   }
@@ -779,4 +812,172 @@ export function computeTreeLayout(
     height: Math.max(MIN_HEIGHT, state.y + 8),
     maxDepth: state.maxDepth,
   };
+}
+
+// ============================================================================
+// Expanded canvas layout (left → right flow)
+// ----------------------------------------------------------------------------
+// A second, deterministic layout used by the full-size visual editor. The main
+// data flow (input → top-level processors → output) runs left→right as a spine
+// of large cards; a processor that contains a sub-pipeline (branch/catch/switch)
+// threads its inner steps downward beneath it. Resources sit in a lane below.
+// Shares node IDs with `computeTreeLayout` so the two views can be reconciled.
+// ============================================================================
+
+/** Card width on the expanded canvas; the node component must match this. */
+export const FLOW_CARD_WIDTH = 240;
+/** Row height used for spacing; the node component caps its content to fit. */
+export const FLOW_CARD_HEIGHT = 104;
+const FLOW_COL_STRIDE = FLOW_CARD_WIDTH + 76; // 316
+const FLOW_ROW_STRIDE = FLOW_CARD_HEIGHT + 28; // 132
+const FLOW_INDENT = 28;
+
+type FlowNodeRole = 'main' | 'sub' | 'resource';
+
+function makeFlowNode({
+  node,
+  x,
+  y,
+  role,
+  childCount,
+}: {
+  node: PipelineFlowNode;
+  x: number;
+  y: number;
+  role: FlowNodeRole;
+  childCount: number;
+}): Node {
+  return {
+    id: node.id,
+    type: 'flowCard',
+    position: { x, y },
+    // A transition makes future view morphing (and live edits) feel smooth.
+    style: { transition: 'transform 200ms ease' },
+    data: {
+      label: node.label,
+      role,
+      collapsible: node.collapsible ?? false,
+      ...(node.section ? { section: node.section } : {}),
+      ...(node.labelText ? { labelText: node.labelText } : {}),
+      ...(node.topics ? { topics: node.topics } : {}),
+      ...(node.meta && node.meta.length > 0 ? { meta: node.meta } : {}),
+      ...(node.missingTopic ? { missingTopic: true } : {}),
+      ...(node.missingSasl ? { missingSasl: true } : {}),
+      ...(node.editTarget ? { editTarget: node.editTarget } : {}),
+      ...(childCount > 0 ? { childCount } : {}),
+    },
+  };
+}
+
+export function computeFlowLayout(
+  nodes: PipelineFlowNode[],
+  collapsedIds: ReadonlySet<string> = new Set()
+): { rfNodes: Node[]; rfEdges: Edge[]; width: number; height: number } {
+  const childrenMap = new Map<string | undefined, PipelineFlowNode[]>();
+  for (const node of nodes) {
+    const siblings = childrenMap.get(node.parentId);
+    if (siblings) {
+      siblings.push(node);
+    } else {
+      childrenMap.set(node.parentId, [node]);
+    }
+  }
+  const childrenOf = (id: string) => childrenMap.get(id) ?? [];
+
+  // Depth-first list of a node's descendants (respecting collapse), with depth.
+  const flattenSubtree = (nodeId: string): { node: PipelineFlowNode; depth: number }[] => {
+    const acc: { node: PipelineFlowNode; depth: number }[] = [];
+    const walk = (id: string, depth: number) => {
+      for (const child of childrenOf(id)) {
+        acc.push({ node: child, depth });
+        if (!collapsedIds.has(child.id)) {
+          walk(child.id, depth + 1);
+        }
+      }
+    };
+    walk(nodeId, 1);
+    return acc;
+  };
+
+  // The data-flow spine: input component(s), then each top-level processor, then output.
+  const mainSequence = [
+    ...childrenOf('section-input'),
+    ...childrenOf('section-processors'),
+    ...childrenOf('section-output'),
+  ];
+
+  const rfNodes: Node[] = [];
+  const rfEdges: Edge[] = [];
+  let maxRows = 0;
+
+  mainSequence.forEach((node, col) => {
+    const x = col * FLOW_COL_STRIDE;
+    const isCollapsed = collapsedIds.has(node.id);
+    const subtree = isCollapsed ? [] : flattenSubtree(node.id);
+    rfNodes.push(
+      makeFlowNode({
+        node,
+        x,
+        y: 0,
+        role: 'main',
+        childCount: isCollapsed ? countDescendants(node.id, childrenMap) : 0,
+      })
+    );
+
+    // Thread the sub-pipeline downward, connecting each step to the previous one.
+    let prevId = node.id;
+    subtree.forEach((entry, i) => {
+      rfNodes.push(
+        makeFlowNode({
+          node: entry.node,
+          x: x + entry.depth * FLOW_INDENT,
+          y: (i + 1) * FLOW_ROW_STRIDE,
+          role: 'sub',
+          childCount: 0,
+        })
+      );
+      rfEdges.push({
+        id: `chain-${prevId}-${entry.node.id}`,
+        source: prevId,
+        target: entry.node.id,
+        sourceHandle: 'b',
+        targetHandle: 't',
+        type: 'flowChain',
+        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: 'var(--color-border)' },
+      });
+      prevId = entry.node.id;
+    });
+    maxRows = Math.max(maxRows, subtree.length);
+  });
+
+  // Spine edges between consecutive main cards, each carrying the processor index
+  // an insertion at that gap would use (count of processors at or before it).
+  let processorsSeen = 0;
+  for (let i = 0; i < mainSequence.length - 1; i += 1) {
+    if (mainSequence[i].section === 'processor') {
+      processorsSeen += 1;
+    }
+    rfEdges.push({
+      id: `spine-${mainSequence[i].id}-${mainSequence[i + 1].id}`,
+      source: mainSequence[i].id,
+      target: mainSequence[i + 1].id,
+      sourceHandle: 'r',
+      targetHandle: 'l',
+      type: 'flowSpine',
+      data: { insertIndex: processorsSeen },
+      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: 'var(--color-primary)' },
+    });
+  }
+
+  // Resources lane, below the deepest sub-pipeline. Referenced by label, so no edges.
+  const resources = childrenOf('section-resources');
+  const laneY = (maxRows + 2) * FLOW_ROW_STRIDE;
+  resources.forEach((resource, i) => {
+    rfNodes.push(makeFlowNode({ node: resource, x: i * FLOW_COL_STRIDE, y: laneY, role: 'resource', childCount: 0 }));
+  });
+
+  const columns = Math.max(mainSequence.length, resources.length, 1);
+  const width = columns * FLOW_COL_STRIDE;
+  const bottomRows = resources.length > 0 ? laneY + FLOW_ROW_STRIDE : (maxRows + 1) * FLOW_ROW_STRIDE;
+  return { rfNodes, rfEdges, width, height: Math.max(FLOW_ROW_STRIDE, bottomRows) };
 }

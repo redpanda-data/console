@@ -1,0 +1,382 @@
+# RPCN Visual Editor — Design & Requirements
+
+Feature flag: `enableRpcnVisualEditor` (defined in `src/components/constants.ts`)
+Owner area: `src/components/pages/rp-connect/pipeline/`
+
+## Implementation status
+
+The dedicated, full-canvas visual editor has shipped (behind the flag):
+
+- **Dedicated left→right canvas** (`pipeline-flow-canvas.tsx`) — its own React Flow
+  surface with background dots, pan/zoom and Controls. It does **not** reuse the
+  mini sidebar diagram. Layout is `computeFlowLayout` (deterministic): the data
+  flow (input → top-level processors → output) runs left→right as a spine of large
+  cards; a processor containing a sub-pipeline (branch/catch/switch) threads its
+  inner steps downward beneath it; resources sit in a lane below. Edges route
+  through the actual nodes via smooth-step paths and per-node handles.
+- **Larger node cards** (`pipeline-flow-canvas-nodes.tsx`) showing a kind badge,
+  connector logo + name, and the most important config values (`meta`, from
+  `pipeline-flow-meta.ts`), with hover Edit/Remove/Docs and a `+` insertion
+  affordance on the spine.
+- **Form-based per-node editor** (`node-config-form.tsx`): renders the component
+  schema's scalar fields (required first, optional with defaults, advanced
+  collapsed, enums as selects, bools as switches), with a raw-YAML fallback for
+  nested objects/arrays and for components whose schema we don't have
+  (`node-config-dialog.tsx` chooses form vs. raw).
+- All edits remain deterministic YAML mutations (`utils/yaml.ts`):
+  `getComponentAt`, `setComponentAt`, `removeComponentAt`, `insertProcessorAt`,
+  `appendResource`, `buildInsertableComponent`, keyed by an `EditTarget`.
+
+Shared node IDs: both the canvas and the mini sidebar diagram derive from the same
+`parsePipelineFlowTree` output, so node IDs line up across views.
+
+Not yet built (deferred): the cross-view **morph animation** (nodes gliding
+between the mini lane and the canvas) and the matching arrow-flow polish of the
+mini lane; full recursive form editing of deeply nested fields (nested still uses
+the raw-YAML fallback); multi-input/output array editing; reorder. See §10.
+§4 records why we used **edit targets** instead of generic paths.
+
+This document captures the analysis, design, and requirements for the Redpanda
+Connect (RPCN) **Visual editor** — the third lane on the pipeline page.
+
+---
+
+## 1. Goals
+
+1. A **Visual** representation of a pipeline that is richer and better laid out
+   than the minimal sidebar diagram (`PipelineFlowDiagram`), usable as the primary
+   way to read and edit a pipeline.
+2. In **view mode**: a large, read-only diagram with the most important meta per
+   node and a way to open a read-only config view per node.
+3. In **edit mode**: the same diagram plus inline, contextual editing affordances:
+   - Add input / output where missing.
+   - Insertion points (a `+` circle) on the connecting lines to add a connector,
+     cache, processor, etc. at that position.
+   - Per-node meta + an **Edit** button that opens a dialog to edit that node's
+     config.
+
+### Non-goals / hard constraints
+
+- **No drag-and-drop.** Layout and node identity are 100% **deterministic from
+  the YAML state**. Re-parsing the same YAML always yields the same diagram. All
+  mutations go through YAML; the diagram is a pure projection of it.
+- We are **not** replacing the YAML editor. YAML remains the source of truth and
+  its own lane. Visual edits mutate the YAML; switching to the YAML lane shows the
+  result.
+- We do not introduce a separate in-memory graph model that can drift from YAML.
+
+---
+
+## 2. Guiding principle: YAML is the single source of truth
+
+```
+                     parse (pure)            layout (pure)
+   YAML string  ───────────────────▶  PipelineFlowNode[]  ──────────▶  React Flow nodes/edges
+       ▲                                                                      │
+       │                                                                      │ user action
+       │              mutation helpers (pure: string ─▶ string)               ▼
+       └──────────────────────────────────────────────  { type, path, payload }
+```
+
+- The diagram is derived from YAML via `parsePipelineFlowTree` →
+  `computeTreeLayout` (both already exist and are pure). The visual editor reuses
+  this pipeline; it does **not** fork the model.
+- Every user action in the Visual lane produces a **YAML mutation** (a pure
+  `string → string` transform), which is written back via the editor store's
+  `setYamlContent`. The diagram then re-renders deterministically.
+- This guarantees: undo/redo works through the existing Monaco history + store,
+  the YAML and Visual lanes never disagree, and the diagram is testable as a pure
+  function of YAML fixtures.
+
+---
+
+## 3. What already exists (reuse, don't rebuild)
+
+| Concern | Existing asset | Location |
+|---|---|---|
+| Parse YAML → tree of nodes | `parsePipelineFlowTree`, `PipelineFlowNode` | `utils/pipeline-flow-parser.ts` |
+| Deterministic layout (x/y, edges, collapse) | `computeTreeLayout`, `MAX_NESTING_DEPTH` | `utils/pipeline-flow-parser.ts` |
+| Node rendering (section/group/leaf) | `pipelineNodeTypes`, `TreeLeafNode`, `TreeGroupNode`, `TreeSectionNode` | `pipeline-flow-nodes.tsx` |
+| Edge rendering | `pipelineEdgeTypes` (`TreeEdge`, `SectionEdge`) | `pipeline-flow-nodes.tsx` |
+| React Flow container, zoom, extent, scroll | `PipelineFlowDiagram` | `pipeline-flow-diagram.tsx` |
+| Component logos | `ConnectorLogo` | `onboarding/connector-logo.tsx` |
+| Docs links per connector | `getConnectorDocsUrl` | `pipeline-flow-nodes.tsx` |
+| Connector picker (search + categories) | `AddConnectorDialog`, `ConnectTiles` | `onboarding/add-connector-dialog.tsx`, `onboarding/connect-tiles.tsx` |
+| Add topic / add user flows | `AddTopicStep`, `AddUserStep`, `useDiagramDialogs` | `onboarding/`, `index.tsx` |
+| Pipeline settings form | `ConfigDialog` (name/description/compute/tags) | `config-dialog.tsx` |
+| Read-only details | `DetailsDialog` | `details-dialog.tsx` |
+| Component schema (fields, types, required, advanced, descriptions) | `parseSchema`, `ConnectComponentSpec`, `RawFieldSpec` | `utils/schema.ts`, `types/schema.ts` |
+| Template generation for a component | `getConnectTemplate`, `schemaToConfig`, `generateDefaultValue` | `utils/yaml.ts`, `utils/schema.ts` |
+| Surgical redpanda patch (topic/SASL) | `patchRedpandaConfig`, `tryPatchRedpandaYaml`, `patchComponent` store action | `utils/yaml.ts`, `use-pipeline-editor-store.ts` |
+| Runtime JSON schema for fields | `useGetPipelineServiceConfigSchemaQuery`, `parseYamlEditorSchema` | `index.tsx`, `react-query/api/connect.tsx` |
+| Component list (inputs/outputs/processors/…) | `useListComponentsQuery` | `react-query/api/connect.tsx` |
+
+### Gaps that must be built
+
+The current mutation surface only supports **append/merge** and **surgical patch
+of redpanda topic/SASL**. The visual editor needs positional and structural edits
+that do **not** exist yet:
+
+- ❌ Insert a processor at a specific index (not just append).
+- ❌ Insert/add a resource (cache / rate_limit / buffer) from a `+` affordance.
+- ❌ Set/replace a node's full config from an edit dialog.
+- ❌ Remove a node.
+- ❌ Reorder (lower priority; may stay YAML-only initially).
+- ❌ A stable, reversible **path** from each visual node back into the YAML AST.
+
+These are the core net-new pieces. They are detailed in §6 and §7.
+
+---
+
+## 4. Addressing edits: edit targets, not generic paths
+
+Each `PipelineFlowNode` carries a **synthetic display id** (`proc-0`, `input-0`,
+`proc-1-branch-p0`, …) that's great for rendering but says nothing about *where
+in the YAML* the node lives. To edit a node we need that location.
+
+The original design proposed a generic `path: (string|number)[]` on every node.
+But a generic path only earns its keep when you edit **deeply nested** components
+(a `mapping` inside a `branch` inside a `switch`). The editing we actually want
+first — input, output, top-level processors, and array resources — lives at
+flat, well-known locations. So instead of generic paths we attach a small
+**`editTarget`** only to those top-level nodes:
+
+```ts
+type EditTarget =
+  | { kind: 'input' }
+  | { kind: 'output' }
+  | { kind: 'processor'; index: number }
+  | { kind: 'resource'; resourceKey: 'cache_resources' | 'rate_limit_resources'; index: number };
+```
+
+- `targetPath()` in `utils/yaml.ts` maps an `EditTarget` to a Document path
+  (`['pipeline','processors',i]`, etc.) for `getIn`/`setIn`/`deleteIn`.
+- Nodes with **no** `editTarget` (everything nested) stay read-only in the visual
+  editor; they're still editable via the YAML lane. This is the deliberate scope
+  boundary that lets us avoid the generic-path machinery entirely.
+- Insertion points are addressed by **position** (`'start' | 'end'`) carried on
+  the section-spine edges, resolved to a processor index at mutation time.
+
+If/when nested editing is needed, `editTarget` can grow a `{ kind: 'path'; path }`
+variant without disturbing the existing cases.
+
+---
+
+## 5. Feature requirements
+
+### 5.1 View mode (read-only Visual lane)
+
+- Large diagram filling the lane (reuse `PipelineFlowDiagram`'s container, with
+  zoom controls visible — not `hideZoomControls`).
+- Each node shows the **most important meta** for its kind (see §5.4).
+- Each node has a way to open a **read-only config view** for that section (a
+  dialog or side panel showing that component's YAML/fields). Reuse the read-only
+  YAML viewer (`YamlViewPanel`'s Monaco read-only setup) scoped to the node's
+  config, or a fields table built from the schema.
+- No insertion points, no edit buttons.
+
+### 5.2 Edit mode (interactive Visual lane)
+
+All of view mode, plus:
+
+1. **Add input / output when missing.** Placeholder nodes already render an
+   `Add input` / `Add output` affordance (`TreeLeafNode` with `label === 'none'`
+   and `onAddConnector`). In the Visual lane these open `AddConnectorDialog`
+   filtered to `input` / `output`; selection calls `getConnectTemplate` and writes
+   YAML (existing `handleConnectorSelected` path).
+
+2. **Insertion points (`+` circle on connecting lines).** On each connecting line
+   — primarily the section spine (`SectionEdge`) and between sibling
+   processors/leaves — render a clickable circle-with-plus. Clicking opens a
+   small **contextual menu** of what can be inserted *at that position*:
+   - Between/around processors → **Add processor** (insert at that index), **Add
+     cache** / **rate limit** / **buffer** (resources).
+   - Above the first processor / on the INPUT→PROCESSORS spine → add processor at
+     index 0, or add a resource.
+   - The menu is position-aware: it only offers insertions valid for that slot.
+   - Selecting a connector opens `AddConnectorDialog`/`ConnectTiles` filtered to
+     the chosen type; selection generates a template and inserts it at the target
+     path/index (see §6 new helpers).
+
+3. **Per-node meta + Edit button.** Each card shows its key meta (§5.4) and an
+   **Edit** button (visible on hover, like the existing docs-link button) that
+   opens the **node config dialog** (§5.3) for that node's config.
+
+4. **Remove node.** Each editable node offers a remove action (overflow menu or
+   trailing icon) that deletes the node's path from the YAML
+   (`deleteIn`). Guard against removing required singletons (input/output) — for
+   those, removal converts back to the placeholder, or is disabled.
+
+### 5.3 Node config dialog (schema-driven)
+
+A dialog that edits one node's configuration:
+
+- Resolve the node's `ConnectComponentSpec` from `useListComponentsQuery` +
+  `parseSchema` by component name and type.
+- Render a form from the component's `RawFieldSpec` tree: respect `optional`,
+  `advanced` (collapsed by default), `defaultValue`, `description`/`summary` (help
+  text), enums, and field `kind` (scalar/array/map/object).
+- Prefer **react-hook-form + Zod** (project standard) with a schema derived from
+  the field specs; fall back to a raw scoped-YAML editor for fields/components the
+  form can't yet express (so nothing is uneditable).
+- On submit: serialize the form back to a config object and **set it at the node's
+  path** (`setIn`) — a localized replace, preserving the rest of the YAML.
+- Topic/user sub-flows reuse `AddTopicStep` / `AddUserStep` and the existing
+  `patchComponent` surgical patch where applicable (redpanda input/output).
+
+This dialog is the editing counterpart to today's `ConfigDialog` (which stays
+scoped to pipeline-level settings: name/description/compute/tags).
+
+### 5.4 Meta shown per node ("most important field")
+
+Define a small, schema-/heuristic-driven **summary extractor** that maps a
+component to its one or two most salient fields. Initial mapping:
+
+| Node kind / component | Primary meta |
+|---|---|
+| redpanda / kafka input/output | topic(s) (existing `topics` badge), SASL/user status (existing `missingSasl`) |
+| Any connector with a `label` | the label (existing `labelText` badge) |
+| `mapping` / `bloblang` | first line / truncated expression |
+| `log` | `level` + truncated `message` |
+| `branch` / `switch` / `workflow` | child/case/stage count (existing collapsed `childCount`) |
+| `http_client` / HTTP-ish | `url` |
+| cache resource | backend kind + `label` |
+| generic | component `summary` from schema, else nothing |
+
+Reuse the existing badge rows in `TreeLeafNode` (`labelText`, `topics`,
+missing-config chips). Extend `PipelineFlowNode` with the extra summary fields the
+extractor produces, mirroring how `labelText`/`topics` already flow through the
+parser → node data → renderer. Keep it compact (≤2 rows) to preserve layout
+determinism (`countLeafExtraRows`/`leafHeight` already accounts for extra rows —
+update it if new row types are added).
+
+---
+
+## 6. New YAML mutation helpers (in `utils/yaml.ts`)
+
+All pure `string → string` (or `string → string | null` on parse failure),
+operating on a `yaml` `Document` so comments/formatting are preserved where
+possible. Each is unit-tested against fixtures (mirror `yaml.test.tsx`).
+
+```ts
+// Insert a generated component template into a container at an index.
+insertComponentAt(yaml, containerPath, index, componentName, type, components): string | null
+
+// Replace the config at a node path with a new config object (from the edit dialog).
+setComponentConfigAt(yaml, path, configObject): string | null
+
+// Delete the node at a path (processor element, resource element, or input/output → placeholder).
+removeComponentAt(yaml, path): string | null
+
+// Add a resource (cache_resources / rate_limit_resources, or singletons buffer/metrics/tracer).
+addResource(yaml, kind, componentName, components): string | null
+
+// Optional / later: reorder a processor within its container.
+moveComponent(yaml, containerPath, fromIndex, toIndex): string | null
+```
+
+Notes:
+- Build on the existing `mergeConnectConfigs` / `getConnectTemplate` /
+  `schemaToConfig` for template generation; the new part is **positional** insert
+  and **path-targeted** set/delete via the Document API.
+- For redpanda input/output topic/SASL edits, keep using the surgical
+  `patchRedpandaConfig` / `patchComponent` path — don't regenerate the block.
+- Insertion into multi-input/output arrays (broker `inputs[]`, switch `cases[]`,
+  fallback `[]`) is **out of scope for v1** (read-only there); revisit later.
+
+---
+
+## 7. Component & file plan
+
+New files under `pipeline/` (names indicative):
+
+- `visual-editor-panel.tsx` — the interactive Visual lane (replaces the current
+  `VisualEditorPanel` placeholder). Composes the diagram + insertion layer +
+  toolbar. Read-only when `mode === 'view'`, interactive when editing.
+- `visual-editor-flow.tsx` — wraps/extends `PipelineFlowDiagram` to inject
+  insertion-point nodes/edges and per-node edit/remove callbacks. Keep the parser
+  + layout as-is; add an overlay of `+` affordances driven by node `path`s.
+- `node-config-dialog.tsx` — the schema-driven per-node config editor (§5.3).
+- `node-meta.ts` — the summary extractor (§5.4): `getNodeSummary(spec, config)`.
+- `insertion-points.ts` — derives valid insertion slots (`{ containerPath, index,
+  allowedTypes }`) from the parsed tree.
+
+Changes to existing files:
+
+- `utils/pipeline-flow-parser.ts` — add `path` to `PipelineFlowNode`; populate it
+  in every `parse*Nodes`/`make*` site. Optionally surface insertion slots.
+- `pipeline-flow-nodes.tsx` — add an Edit button + remove action to leaf/group
+  nodes (hover-revealed, `nodrag nopan`), and a new insertion-point node type.
+- `utils/yaml.ts` — the new mutation helpers (§6).
+- `index.tsx` — render `visual-editor-panel` instead of the placeholder when on
+  the Visual lane; thread `setYamlContent`, `components`, schema, and the existing
+  dialog hooks through.
+- `use-pipeline-editor-store.ts` — add any Visual-specific UI state (e.g.,
+  `activeNodeConfigPath`, insertion-menu state) following the existing dialog-flag
+  pattern.
+
+---
+
+## 8. State management
+
+- **Document state** stays in the editor store (`yamlContent`, `initialYaml`,
+  `patchComponent`, `setYamlContent`). Visual edits call these — no new source of
+  truth.
+- **Visual UI state** (which node's config dialog is open, which insertion point's
+  menu is open) lives in the store's UI slice, mirroring `isConfigDialogOpen` etc.
+- The diagram derives everything else from `yamlContent` via the pure parser, so
+  no synchronization code is needed.
+
+---
+
+## 9. Determinism & testing
+
+- Parser + layout remain pure → snapshot/fixture tests map YAML → nodes/edges
+  (extend `pipeline-flow-parser.test.tsx`).
+- Each mutation helper is a pure function → fixture tests `inputYaml + action →
+  expectedYaml` (extend `yaml.test.tsx`).
+- Node-path correctness: tests asserting `getIn(doc, node.path)` returns the
+  expected component for representative pipelines (flat, branched, multi-resource).
+- Integration tests (`index.test.tsx` style): clicking a `+` opens the contextual
+  menu; selecting a connector inserts it at the right index; Edit opens the dialog;
+  saving the dialog updates the YAML lane; remove deletes the node.
+- The existing tests already assert the Visual lane shows the placeholder and
+  hides the sidebar diagram — update those as the panel is built.
+
+---
+
+## 10. Phased delivery
+
+1. **M1 — Node paths.** Add `path` to `PipelineFlowNode` + tests. No UI change.
+   Unblocks all editing.
+2. **M2 — Large read-only Visual lane.** Render the full diagram in the lane with
+   zoom; per-node read-only config view; richer meta (§5.4). View mode complete.
+3. **M3 — Per-node Edit dialog.** Schema-driven `node-config-dialog` + `setIn`
+   mutation; wire the Edit button. Edit existing nodes works end to end.
+4. **M4 — Insertion points.** `+` affordances on lines, contextual insert menu,
+   `insertComponentAt` / `addResource`, reusing `AddConnectorDialog`.
+5. **M5 — Add input/output + remove.** Placeholder add flows in the lane; remove
+   action; required-singleton guards.
+6. **M6 (optional) — Reorder, multi-input/output array editing.**
+
+Each milestone is independently shippable behind `enableRpcnVisualEditor`.
+
+---
+
+## 11. Open questions
+
+- **Config dialog vs. side panel** for per-node editing — dialog is simpler and
+  matches existing patterns; a docked side panel may scale better for large
+  configs. Start with a dialog.
+- **Fields the schema can't model** (custom/`unknown` components, free-form maps):
+  confirm the scoped-YAML fallback is acceptable for v1.
+- **Comment/formatting preservation** on `setIn`/`deleteIn` round-trips — how much
+  do we guarantee? (The `yaml` Document API preserves most, but template
+  regeneration does not.)
+- **Resource placement UX** — do cache/rate_limit resources appear as their own
+  "RESOURCES" section (they already do in the parser) with their own insertion
+  point, or are they offered from the processor spine `+` menu? (Proposal: both —
+  spine `+` can add a resource, and the RESOURCES section has its own `+`.)
+- **Remove of input/output** — revert to placeholder vs. disabled. (Proposal:
+  revert to placeholder so the section stays visible.)
+```

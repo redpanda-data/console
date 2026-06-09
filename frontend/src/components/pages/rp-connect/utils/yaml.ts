@@ -1,7 +1,7 @@
 import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { Document, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
+import { Document, isSeq, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
 import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
@@ -958,4 +958,175 @@ export function generateYamlFromWizardData(
   }
 
   return yaml;
+}
+
+// ============================================================================
+// Visual-editor mutations
+// ----------------------------------------------------------------------------
+// Deterministic, position-aware edits used by the visual editor. Each is a pure
+// (yaml string -> yaml string | null) transform operating on a parsed Document,
+// so comments/formatting survive and the YAML stays the single source of truth.
+// `null` is returned on parse failure so callers can keep the prior content.
+//
+// Only top-level locations are addressable (input, output, top-level
+// processors, cache/rate-limit resources). Nested components are read-only in
+// the visual editor and edited via raw YAML — this is why no generic "path"
+// abstraction is needed.
+// ============================================================================
+
+export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
+
+/** Addresses a top-level, visually editable component in the config. */
+export type EditTarget =
+  | { kind: 'input' }
+  | { kind: 'output' }
+  | { kind: 'processor'; index: number }
+  | { kind: 'resource'; resourceKey: ResourceArrayKey; index: number };
+
+function targetPath(target: EditTarget): (string | number)[] {
+  switch (target.kind) {
+    case 'input':
+      return ['input'];
+    case 'output':
+      return ['output'];
+    case 'processor':
+      return ['pipeline', 'processors', target.index];
+    default:
+      return [target.resourceKey, target.index];
+  }
+}
+
+function isEmptySeq(node: unknown): boolean {
+  return isSeq(node) && node.items.length === 0;
+}
+
+function isEmptyMap(node: unknown): boolean {
+  const items = (node as { items?: unknown[] } | undefined)?.items;
+  return Array.isArray(items) && items.length === 0;
+}
+
+// After a delete, drop containers that have become empty so the diagram falls
+// back to its placeholder (e.g. removing the last processor removes `pipeline`).
+function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
+  if (target.kind === 'processor') {
+    if (isEmptySeq(doc.getIn(['pipeline', 'processors']))) {
+      doc.deleteIn(['pipeline', 'processors']);
+    }
+    if (isEmptyMap(doc.get('pipeline'))) {
+      doc.delete('pipeline');
+    }
+  } else if (target.kind === 'resource' && isEmptySeq(doc.getIn([target.resourceKey]))) {
+    doc.delete(target.resourceKey);
+  }
+}
+
+/** Read the component object at an edit target as plain JS (for the edit dialog). */
+export function getComponentAt(yaml: string, target: EditTarget): Record<string, unknown> | undefined {
+  try {
+    const node = parseDocument(yaml).getIn(targetPath(target)) as { toJSON?: () => unknown } | undefined;
+    const obj = node?.toJSON?.();
+    return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
+  } catch {
+    return;
+  }
+}
+
+/** Replace the component object at an edit target with a new one. */
+export function setComponentAt(
+  yaml: string,
+  target: EditTarget,
+  componentObject: Record<string, unknown>
+): string | null {
+  try {
+    const doc = parseDocument(yaml);
+    doc.setIn(targetPath(target), componentObject);
+    return doc.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Remove the component at an edit target, pruning containers left empty. */
+export function removeComponentAt(yaml: string, target: EditTarget): string | null {
+  try {
+    const doc = parseDocument(yaml);
+    doc.deleteIn(targetPath(target));
+    pruneEmptyContainers(doc, target);
+    return doc.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Insert a processor object into `pipeline.processors` at `index` (creating structure as needed). */
+export function insertProcessorAt(
+  yaml: string,
+  index: number,
+  processorObject: Record<string, unknown>
+): string | null {
+  try {
+    const doc = parseDocument(yaml);
+    const seq = doc.getIn(['pipeline', 'processors']);
+    if (isSeq(seq)) {
+      const clamped = Math.max(0, Math.min(index, seq.items.length));
+      seq.items.splice(clamped, 0, doc.createNode(processorObject));
+    } else {
+      // No processors yet — create the array with this item as its only element.
+      doc.setIn(['pipeline', 'processors'], [processorObject]);
+    }
+    return doc.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Append a resource object to a resource array (creating the array as needed). */
+export function appendResource(
+  yaml: string,
+  resourceKey: ResourceArrayKey,
+  resourceObject: Record<string, unknown>
+): string | null {
+  try {
+    const doc = parseDocument(yaml);
+    const seq = doc.getIn([resourceKey]);
+    if (isSeq(seq)) {
+      seq.items.push(doc.createNode(resourceObject));
+    } else {
+      doc.setIn([resourceKey], [resourceObject]);
+    }
+    return doc.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build the bare component object to splice into the config for a freshly chosen
+ * connector, e.g. `{ mapping: '...' }` for a processor. Reuses `getConnectTemplate`
+ * (generated against empty YAML) so insert output matches templates elsewhere.
+ */
+export function buildInsertableComponent(
+  connectionName: string,
+  connectionType: 'processor' | 'cache' | 'rate_limit',
+  components: ConnectComponentSpec[]
+): Record<string, unknown> | undefined {
+  const yaml = getConnectTemplate({ connectionName, connectionType, components, existingYaml: '' });
+  if (!yaml) {
+    return;
+  }
+  try {
+    const parsed = parseYaml(yaml) as Record<string, unknown> | null;
+    if (!parsed) {
+      return;
+    }
+    if (connectionType === 'processor') {
+      const procs = (parsed.pipeline as { processors?: unknown[] } | undefined)?.processors;
+      return Array.isArray(procs) ? (procs[0] as Record<string, unknown>) : undefined;
+    }
+    const key: ResourceArrayKey = connectionType === 'cache' ? 'cache_resources' : 'rate_limit_resources';
+    const arr = parsed[key];
+    return Array.isArray(arr) ? (arr[0] as Record<string, unknown>) : undefined;
+  } catch {
+    return;
+  }
 }

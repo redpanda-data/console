@@ -89,6 +89,7 @@ import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { useSlashCommand } from './use-slash-command';
+import { VisualEditorPanel } from './visual-editor-panel';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
@@ -559,19 +560,6 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
           </>
         )}
       </section>
-    </div>
-  );
-}
-
-// "Visual" lane placeholder for both view and edit modes. The richer, fully laid-out
-// visual editor (its own React Flow canvas with editing affordances) is built out in a
-// follow-up — until then we intentionally don't reuse the minimal sidebar diagram here.
-function VisualEditorPanel() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <LayoutGrid className="size-8 text-muted-foreground" />
-      <Heading level={3}>Visual editor</Heading>
-      <p className="max-w-md text-muted-foreground text-sm">The visual pipeline editor is coming soon.</p>
     </div>
   );
 }
@@ -1060,8 +1048,27 @@ function PipelinePageContent() {
           {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
             <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
           ) : null}
-          {mode === 'view' && pipeline && activeViewLane === 'visual' ? <VisualEditorPanel /> : null}
-          {mode !== 'view' && activeEditLane === 'visual' ? <VisualEditorPanel /> : null}
+          {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
+            <VisualEditorPanel
+              componentList={componentListResponse?.components ?? ({} as ComponentList)}
+              components={components}
+              mode="view"
+              onYamlChange={setYamlContent}
+              yamlContent={pipeline.configYaml}
+            />
+          ) : null}
+          {mode !== 'view' && activeEditLane === 'visual' ? (
+            <VisualEditorPanel
+              componentList={componentListResponse?.components ?? ({} as ComponentList)}
+              components={components}
+              mode={mode}
+              onAddConnector={(type) => setAddConnectorType(type)}
+              onAddSasl={handleAddSasl}
+              onAddTopic={handleAddTopic}
+              onYamlChange={setYamlContent}
+              yamlContent={yamlContent}
+            />
+          ) : null}
           {mode === 'view' || activeEditLane === 'visual' ? null : (
             <EditorPanel
               isLintPending={isLintPending}

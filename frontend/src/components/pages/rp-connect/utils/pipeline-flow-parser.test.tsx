@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { computeTreeLayout, parsePipelineFlowTree } from './pipeline-flow-parser';
+import { summarizeComponent } from './pipeline-flow-meta';
+import { computeFlowLayout, computeTreeLayout, parsePipelineFlowTree } from './pipeline-flow-parser';
 
 describe('parsePipelineFlowTree', () => {
   it('returns placeholder input/output sections with placeholder leaves for empty string', () => {
@@ -815,5 +816,85 @@ output:
 
     // processors section (0) → switch group (1) → case group (2) → mapping leaf (3)
     expect(maxDepth).toBe(3);
+  });
+});
+
+const BRANCHING_PIPELINE = `input:
+  generate:
+    mapping: 'root = {}'
+pipeline:
+  processors:
+    - log:
+        message: hi
+    - branch:
+        processors:
+          - mapping: 'root = this'
+output:
+  drop: {}`;
+
+describe('computeFlowLayout', () => {
+  const { nodes } = parsePipelineFlowTree(BRANCHING_PIPELINE);
+  const { rfNodes, rfEdges } = computeFlowLayout(nodes);
+  const byId = (id: string) => rfNodes.find((n) => n.id === id);
+
+  it('lays the input → processors → output spine left-to-right on the main row', () => {
+    const input = byId('input-0');
+    const log = byId('proc-0');
+    const branch = byId('proc-1');
+    const output = byId('output-0');
+    for (const node of [input, log, branch, output]) {
+      expect(node?.data.role).toBe('main');
+      expect(node?.position.y).toBe(0);
+    }
+    // Strictly increasing x along the flow.
+    expect((input?.position.x ?? 0) < (log?.position.x ?? 0)).toBe(true);
+    expect((log?.position.x ?? 0) < (branch?.position.x ?? 0)).toBe(true);
+    expect((branch?.position.x ?? 0) < (output?.position.x ?? 0)).toBe(true);
+  });
+
+  it('threads a branch sub-pipeline below its card', () => {
+    const child = byId('proc-1-processors-p0');
+    expect(child?.data.role).toBe('sub');
+    expect((child?.position.y ?? 0) > 0).toBe(true);
+    expect(rfEdges.some((e) => e.id === 'chain-proc-1-proc-1-processors-p0' && e.type === 'flowChain')).toBe(true);
+  });
+
+  it('annotates each spine edge with the processor index an insertion there would use', () => {
+    const spine = rfEdges.filter((e) => e.type === 'flowSpine');
+    expect(spine.map((e) => (e.data as { insertIndex: number }).insertIndex)).toEqual([0, 1, 2]);
+  });
+
+  it('carries edit targets and metadata onto the flow nodes', () => {
+    expect(byId('proc-0')?.data.editTarget).toEqual({ kind: 'processor', index: 0 });
+    expect(byId('proc-0')?.data.meta).toEqual([{ label: 'message', value: 'hi' }]);
+  });
+
+  it('places array resources in a lane below the flow', () => {
+    const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(withCache).nodes);
+    const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
+    expect(resource?.data.role).toBe('resource');
+    expect((resource?.position.y ?? 0) > 0).toBe(true);
+  });
+});
+
+describe('summarizeComponent', () => {
+  it('surfaces preferred fields for known components', () => {
+    expect(summarizeComponent('log', { level: 'INFO', message: 'hi' })).toEqual([
+      { label: 'level', value: 'INFO' },
+      { label: 'message', value: 'hi' },
+    ]);
+  });
+
+  it('handles bare-string configs like mappings', () => {
+    expect(summarizeComponent('mapping', 'root = this.foo')).toEqual([{ label: 'expr', value: 'root = this.foo' }]);
+  });
+
+  it('falls back to the first scalar fields for unknown components', () => {
+    const meta = summarizeComponent('mystery', { label: 'x', alpha: 1, beta: 'two', nested: {} });
+    expect(meta).toEqual([
+      { label: 'alpha', value: '1' },
+      { label: 'beta', value: 'two' },
+    ]);
   });
 });

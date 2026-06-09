@@ -32,6 +32,7 @@ import {
   type ParsePipelineFlowTreeResult,
   type PipelineFlowNode,
 } from '../utils/pipeline-flow-parser';
+import type { EditTarget } from '../utils/yaml';
 
 const EXTENT_PADDING = 40;
 const PARSE_DEBOUNCE_MS = 300;
@@ -71,6 +72,11 @@ type PipelineFlowDiagramProps = {
   onAddSasl?: (section: string, componentName: string) => void;
   onBrowseTemplates?: () => void;
   hideZoomControls?: boolean;
+  // Visual-editor callbacks. When provided, editable nodes show Edit/Remove
+  // actions and the section spine shows insertion (+) affordances.
+  onEditNode?: (target: EditTarget) => void;
+  onDeleteNode?: (target: EditTarget) => void;
+  onInsert?: (position: 'start' | 'end') => void;
   parseTree?: (yaml: string) => ParsePipelineFlowTreeResult;
   computeLayout?: (
     nodes: PipelineFlowNode[],
@@ -128,6 +134,9 @@ export const PipelineFlowDiagram = ({
   onAddSasl,
   onBrowseTemplates,
   hideZoomControls,
+  onEditNode,
+  onDeleteNode,
+  onInsert,
   parseTree = defaultParseTree,
   computeLayout = defaultComputeLayout,
 }: PipelineFlowDiagramProps) => {
@@ -199,40 +208,73 @@ export const PipelineFlowDiagram = ({
   const { rfNodes, rfEdges, maxDepth } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
-    // Inject callbacks into group, placeholder, and setup-hint leaf nodes.
-    const nodesWithCallbacks = layout.rfNodes.map((node: Node) => {
-      if (node.type === 'treeGroup') {
-        return {
-          ...node,
-          data: { ...node.data, onToggle: () => toggleCollapse(node.id) },
-        };
+    // Edit/Remove actions for editable nodes (only when their handlers are wired).
+    const editActionsFor = (node: Node): { onEdit?: () => void; onDelete?: () => void } | undefined => {
+      const target = (node.data as { editTarget?: EditTarget }).editTarget;
+      if (!target) {
+        return;
       }
-      if (node.type === 'treeLeaf') {
+      return {
+        ...(onEditNode ? { onEdit: () => onEditNode(target) } : {}),
+        ...(onDeleteNode ? { onDelete: () => onDeleteNode(target) } : {}),
+      };
+    };
+
+    // Inject callbacks into group, placeholder, setup-hint, and editable nodes.
+    const nodesWithCallbacks = layout.rfNodes.map((node: Node) => {
+      let data: Record<string, unknown> = { ...node.data };
+      if (node.type === 'treeGroup') {
+        data.onToggle = () => toggleCollapse(node.id);
+      } else if (node.type === 'treeLeaf') {
         const isPlaceholder = node.data.label === 'none';
         // Placeholder nodes: show "+" connector button
         if (isPlaceholder && onAddConnector && (node.data.section === 'input' || node.data.section === 'output')) {
-          return {
-            ...node,
-            data: { ...node.data, onAddConnector },
-          };
-        }
-        // Non-placeholder redpanda nodes: inject setup hint callbacks
-        if (!isPlaceholder && (node.data.missingTopic || node.data.missingSasl)) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              ...(onAddTopic && node.data.missingTopic ? { onAddTopic } : {}),
-              ...(onAddSasl && node.data.missingSasl ? { onAddSasl } : {}),
-            },
-          };
+          data.onAddConnector = onAddConnector;
+        } else if (!isPlaceholder && (node.data.missingTopic || node.data.missingSasl)) {
+          // Non-placeholder redpanda nodes: inject setup hint callbacks
+          if (onAddTopic && node.data.missingTopic) {
+            data.onAddTopic = onAddTopic;
+          }
+          if (onAddSasl && node.data.missingSasl) {
+            data.onAddSasl = onAddSasl;
+          }
         }
       }
-      return node;
+      const editActions = editActionsFor(node);
+      if (editActions?.onEdit || editActions?.onDelete) {
+        data = { ...data, ...editActions };
+      }
+      return { ...node, data };
     });
 
-    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges, maxDepth: layout.maxDepth ?? 0 };
-  }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
+    // Inject the insertion callback into the section-spine edges.
+    const edgesWithCallbacks = onInsert
+      ? layout.rfEdges.map((edge: Edge) =>
+          edge.type === 'sectionEdge'
+            ? {
+                ...edge,
+                data: {
+                  ...edge.data,
+                  onInsert: () => onInsert((edge.data as { position?: 'start' | 'end' })?.position ?? 'end'),
+                },
+              }
+            : edge
+        )
+      : layout.rfEdges;
+
+    return { rfNodes: nodesWithCallbacks, rfEdges: edgesWithCallbacks, maxDepth: layout.maxDepth ?? 0 };
+  }, [
+    nodes,
+    collapsedIds,
+    toggleCollapse,
+    computeLayout,
+    onAddConnector,
+    onAddTopic,
+    onAddSasl,
+    onEditNode,
+    onDeleteNode,
+    onInsert,
+  ]);
 
   const { translateExtent, panOnScrollMode, contentOverflows } = useMemo(() => {
     if (!containerSize) {
