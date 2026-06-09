@@ -25,6 +25,7 @@ import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpenIcon, Box, ChevronDown, ChevronRight, PencilIcon, PlusIcon, Trash2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
@@ -38,9 +39,38 @@ const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h
 // horizontal line. Bottom/top handles (branch threads) keep their defaults.
 const SPINE_HANDLE_TOP = 36;
 
-// React Flow's pane starts a pan on pointerdown; stop propagation so clicks on
-// in-card controls (edit, add, collapse) register instead of being swallowed.
-const stopPan = (event: { stopPropagation: () => void }) => event.stopPropagation();
+// React Flow drives panning/dragging from native listeners on ancestor elements:
+// d3-zoom pans on `mousedown`/`touchstart`, d3-drag uses `pointerdown`. React's
+// synthetic handlers run after those, so they can't cancel the gesture. We attach
+// native listeners on the card and stop propagation only for presses that land on
+// a real control — so the Edit/Add/collapse buttons click, while dragging the card
+// body (or canvas) still pans.
+const CONTROL_SELECTOR = 'button, a, input, select, textarea, [role="button"]';
+const PRESS_EVENTS = ['mousedown', 'pointerdown', 'touchstart'] as const;
+
+function useStopPanOnControls() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+    const handlePress = (event: Event) => {
+      if ((event.target as HTMLElement | null)?.closest(CONTROL_SELECTOR)) {
+        event.stopPropagation();
+      }
+    };
+    for (const name of PRESS_EVENTS) {
+      el.addEventListener(name, handlePress);
+    }
+    return () => {
+      for (const name of PRESS_EVENTS) {
+        el.removeEventListener(name, handlePress);
+      }
+    };
+  }, []);
+  return ref;
+}
 
 const SECTION_LABEL: Record<string, string> = {
   input: 'Input',
@@ -100,7 +130,7 @@ const CardActions = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }
     return null;
   }
   return (
-    <div className="flex shrink-0 items-center gap-0.5" onPointerDown={stopPan}>
+    <div className="flex shrink-0 items-center gap-0.5">
       <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
         {docsUrl ? (
           <Button
@@ -188,7 +218,6 @@ const MissingChip = ({
       className="nodrag nopan"
       icon={<PlusIcon className="size-3" />}
       onClick={onAdd}
-      onPointerDown={stopPan}
       size="xs"
       variant="secondary"
     >
@@ -202,10 +231,9 @@ const MissingChip = ({
 
 const PlaceholderCard = ({ data }: { data: FlowCardData }) => (
   <button
-    className="nodrag nopan flex h-full w-full items-center justify-center gap-1.5 rounded-lg border border-border border-dashed bg-card/40 px-3 py-4 text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:text-foreground"
+    className="nodrag nopan flex h-full w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border border-dashed bg-card/40 px-3 py-4 text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-card/70 hover:text-foreground"
     disabled={!data.onAddConnector}
     onClick={data.onAddConnector ? () => data.onAddConnector?.(data.section ?? '') : undefined}
-    onPointerDown={stopPan}
     type="button"
   >
     <PlusIcon className="size-4" />
@@ -226,11 +254,10 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
       <button
         className={cn(
           'nodrag nopan flex w-full items-center gap-2 px-3 pb-2 text-left',
-          data.collapsible && 'cursor-pointer'
+          data.collapsible && 'cursor-pointer rounded transition-colors hover:bg-muted/40'
         )}
         disabled={!data.collapsible}
         onClick={data.collapsible ? data.onToggle : undefined}
-        onPointerDown={stopPan}
         type="button"
       >
         <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
@@ -257,9 +284,10 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
 const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   const isPlaceholder = data.label === 'none';
   const docsUrl = isPlaceholder ? undefined : getConnectorDocsUrl(data.section ?? '', data.label);
+  const ref = useStopPanOnControls();
 
   return (
-    <div className="group relative" style={{ width: FLOW_CARD_WIDTH }}>
+    <div className="group relative" ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
       <NodeHandles />
       {isPlaceholder ? <PlaceholderCard data={data} /> : <ComponentCard data={data} docsUrl={docsUrl} />}
     </div>
@@ -277,9 +305,8 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
         <EdgeLabelRenderer>
           <button
             aria-label="Insert a step"
-            className="nodrag nopan pointer-events-auto absolute flex size-6 items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+            className="nodrag nopan pointer-events-auto absolute flex size-6 cursor-pointer items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
             onClick={onInsert}
-            onPointerDown={stopPan}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
             type="button"
           >

@@ -851,8 +851,11 @@ function makeFlowNode({
     id: node.id,
     type: 'flowCard',
     position: { x, y },
-    // A transition makes future view morphing (and live edits) feel smooth.
-    style: { transition: 'transform 200ms ease' },
+    // React Flow sets pointer-events:none on non-selectable/non-draggable nodes,
+    // which would route clicks on in-card controls straight to the pane (pan).
+    // Re-enable them here (node.style overrides the wrapper default); the card's
+    // native press listener then lets the canvas pan from the body but not controls.
+    style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
     data: {
       label: node.label,
       role,
