@@ -20,6 +20,7 @@ const searchSchema = z.object({
   pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
   page: fallback(z.number().int().nonnegative().optional(), 0),
   configFilter: fallback(z.string().optional(), undefined),
+  configScope: fallback(z.enum(['all', 'modified']).optional(), undefined),
 });
 
 export const Route = createFileRoute('/topics/$topicName/')({

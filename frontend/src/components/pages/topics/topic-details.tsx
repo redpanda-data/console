@@ -18,6 +18,7 @@ import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import '../../../utils/array-extensions';
 import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Empty,
@@ -110,7 +111,7 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
   }
 
   return (
-    <TabsContent tabIndex={-1} value={id}>
+    <TabsContent className="mt-4" tabIndex={-1} value={id}>
       {children(topic)}
     </TabsContent>
   );
@@ -213,6 +214,8 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
 
   setTimeout(() => topicConfig && addBaseFavs(topicConfig));
 
+  const modifiedConfigCount = topicConfig?.filter((e) => e.isExplicitlySet).length ?? 0;
+
   const leaderLessPartitionIds = (api.clusterHealth?.leaderlessPartitions ?? []).find(
     ({ topicName: tn }) => tn === topicName
   )?.partitionIds;
@@ -313,7 +316,21 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       >
         {(t) => <TopicPartitions topic={t} />}
       </TopicTab>
-      <TopicTab id="configuration" requiredPermission="viewConfig" titleText="Configuration" topic={topic}>
+      <TopicTab
+        id="configuration"
+        requiredPermission="viewConfig"
+        titleText={
+          <span className="inline-flex items-center gap-2">
+            Configuration
+            {modifiedConfigCount > 0 ? (
+              <Badge aria-label={`${modifiedConfigCount} modified`} size="sm" variant="info-inverted">
+                {modifiedConfigCount}
+              </Badge>
+            ) : null}
+          </span>
+        }
+        topic={topic}
+      >
         {(t) => <TopicConfiguration topic={t} />}
       </TopicTab>
       <TopicTab
