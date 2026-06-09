@@ -1,0 +1,26 @@
+input:
+  gcp_pubsub:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    project: ${slot.project}
+    subscription: ${slot.subscription}
+    credentials_json: ${slot.credentialsJson}
+
+    # ── Streaming tuning ────────────────────────────────────────────────────
+    sync: false                            # false = streaming pull (recommended)
+    max_outstanding_messages: 1000         # in-flight cap per subscription
+    max_outstanding_bytes: 1000000000      # 1 GiB outstanding-byte cap
+    # endpoint: ""                         # for emulator or regional endpoints
+    # create_subscription:
+    #   enabled: false
+    #   topic: ""
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true

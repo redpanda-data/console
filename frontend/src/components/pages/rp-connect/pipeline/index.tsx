@@ -36,6 +36,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Heading } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
@@ -478,13 +479,46 @@ function YamlViewPanel({
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
 }) {
+  // Top/bottom shadows from Monaco's scroll position (useScrollShadow needs a native
+  // scroll container; Monaco virtualizes, so onDidScrollChange is the only signal).
+  const [overflow, setOverflow] = useState({ top: false, bottom: false });
+  const handleMount = useCallback((instance: editor.IStandaloneCodeEditor) => {
+    const sync = () => {
+      const scrollTop = instance.getScrollTop();
+      const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
+      setOverflow({ top: scrollTop > 1, bottom: scrollTop < maxY - 1 });
+    };
+    instance.onDidScrollChange(sync);
+    instance.onDidContentSizeChange(sync);
+    instance.onDidLayoutChange(sync);
+    sync();
+  }, []);
+
+  const edge =
+    'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
   return (
-    <div className="relative h-full overflow-hidden p-2 [&_.cursors-layer]:opacity-0">
-      <YamlEditor
-        options={{ readOnly: true, domReadOnly: true, renderLineHighlight: 'none', mouseStyle: 'default' }}
-        schema={schema}
-        transparentBackground
-        value={configYaml}
+    <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
+      {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
+      <div className="absolute inset-0">
+        <YamlEditor
+          onEditorMount={handleMount}
+          options={{
+            readOnly: true,
+            domReadOnly: true,
+            renderLineHighlight: 'none',
+            mouseStyle: 'default',
+            padding: { top: 0 },
+            scrollbar: { alwaysConsumeMouseWheel: false, useShadows: false },
+          }}
+          schema={schema}
+          transparentBackground
+          value={configYaml}
+        />
+      </div>
+      <div aria-hidden className={cn(edge, 'top-0 bg-gradient-to-b', overflow.top ? 'opacity-100' : 'opacity-0')} />
+      <div
+        aria-hidden
+        className={cn(edge, 'bottom-0 bg-gradient-to-t', overflow.bottom ? 'opacity-100' : 'opacity-0')}
       />
     </div>
   );
@@ -511,7 +545,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       ) : null}
       <section className="flex min-h-0 flex-col gap-4">
         {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-          // Title is rendered inline in the explorer's control row so it lines up with the table.
+          // Title renders inline in the explorer's control row to line up with the table.
           <LogExplorer
             enableLiveView={pipeline.state === Pipeline_State.RUNNING}
             pipeline={pipeline}
@@ -572,14 +606,17 @@ function EditorPanel({
                   </Banner>
                 </div>
               ) : null}
-              <YamlEditor
-                onChange={(val) => onYamlChange(val || '')}
-                onEditorMount={onEditorMount}
-                options={slashTipVisible ? { padding: { top: 32 } } : undefined}
-                schema={yamlEditorSchema}
-                transparentBackground
-                value={yamlContent}
-              />
+              {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
+              <div className="absolute inset-0">
+                <YamlEditor
+                  onChange={(val) => onYamlChange(val || '')}
+                  onEditorMount={onEditorMount}
+                  options={slashTipVisible ? { padding: { top: 32 } } : undefined}
+                  schema={yamlEditorSchema}
+                  transparentBackground
+                  value={yamlContent}
+                />
+              </div>
             </>
           )}
         </div>
@@ -587,8 +624,8 @@ function EditorPanel({
       <ResizableHandle withHandle />
       <ResizablePanel collapsible defaultSize={30}>
         <div className="h-full overflow-auto p-4">
-          <div className="flex items-center gap-2">
-            <Heading className="mb-2 text-muted-foreground" level={5}>
+          <div className="mb-3 flex items-center gap-2">
+            <Heading className="text-muted-foreground" level={5}>
               Lint issues
             </Heading>
             {Object.keys(lintHints).length > 0 ? (
@@ -621,7 +658,7 @@ function SidebarPanel({
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
   onBrowseTemplates?: () => void;
 }) {
-  // View mode is read-only, so the editing handlers are only wired up otherwise.
+  // View mode is read-only; only wire editing handlers otherwise.
   const editHandlers =
     mode === 'view'
       ? {}
@@ -818,8 +855,7 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // Runs on any document change so every mutation path clears stale lint and
-  // mirrors the create-mode draft to the wizard store.
+  // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
   useEffect(
     () =>
       editorStore.subscribe((state, prev) => {
@@ -921,7 +957,8 @@ function PipelinePageContent() {
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-10rem)] max-w-[calc(100dvw-(--sidebar-width))] flex-col gap-4">
+    // overflow-x-clip guards against stray horizontal overflow (clip, not hidden, to keep overflow-y visible).
+    <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
       {/* Page top divider. Negative margin cancels the layout's pt-8. */}
       <div className="-mt-8 border-divider-default border-b" />
       {mode === 'view' && pipeline ? (
@@ -963,9 +1000,8 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* Grows to fill a tall viewport but keeps a usable minimum so the editor /
-          flow panels aren't squished when the summary card is tall. */}
-      <div className="flex min-h-[640px] flex-1 rounded-lg border border-border!">
+      {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
+      <div className="flex min-h-[640px] min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
         <SidebarPanel
           isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
           mode={mode}

@@ -92,7 +92,7 @@ export const ConnectOnboardingWizard = ({
 
   useEffect(() => {
     return () => {
-      // Only clear if we're navigating away from the wizard
+      // Only clear when navigating away from the wizard.
       const currentPath = window.location.pathname;
       if (!currentPath.includes('/rp-connect/wizard')) {
         resetRpcnWizardStore();
@@ -127,7 +127,6 @@ export const ConnectOnboardingWizard = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Track form validity for each step
   const [stepValidity, setStepValidity] = useState<Record<string, boolean>>({
     [WizardStep.ADD_INPUT]: false,
     [WizardStep.ADD_OUTPUT]: false,
@@ -264,7 +263,6 @@ export const ConnectOnboardingWizard = ({
         const userResult = await addUserStepRef.current?.triggerSubmit().finally(() => setIsSubmitting(false));
         if (userResult?.success && userResult.data) {
           if ('authMethod' in userResult.data && userResult.data.authMethod === 'service-account') {
-            // Service account data
             setUserData({
               authMethod: 'service-account',
               username: '',
@@ -275,7 +273,6 @@ export const ConnectOnboardingWizard = ({
               serviceAccountSecretName: userResult.data.serviceAccountSecretName,
             });
           } else if ('username' in userResult.data) {
-            // SASL user data
             setUserData({
               authMethod: 'sasl',
               username: userResult.data.username,
@@ -305,7 +302,6 @@ export const ConnectOnboardingWizard = ({
     }
   }, [onCancelProp, navigate, resetRpcnWizardStore, search.serverless]);
 
-  // Callbacks to update validity for each step
   const handleInputValidityChange = useCallback((isValid: boolean) => {
     setStepValidity((prev) => ({ ...prev, [WizardStep.ADD_INPUT]: isValid }));
   }, []);

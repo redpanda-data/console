@@ -4,33 +4,31 @@ import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
-const separatorVariants = cva(
-  'shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch',
-  {
-    variants: {
-      variant: {
-        default: 'bg-divider-default',
-        subtle: 'bg-divider-subtle',
-        strong: 'bg-divider-strong',
-      },
+const separatorVariants = cva('shrink-0', {
+  variants: {
+    variant: {
+      default: 'bg-divider-default',
+      subtle: 'bg-divider-subtle',
+      strong: 'bg-divider-strong',
     },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
+
+// Plain classes (not data-[orientation] variants) so a consumer's explicit size wins.
+const orientationClasses = {
+  horizontal: 'h-px w-full',
+  vertical: 'h-full w-px',
+} as const;
 
 export type SeparatorVariant = VariantProps<typeof separatorVariants>['variant'];
 
 type SeparatorProps = React.ComponentProps<typeof SeparatorPrimitive> &
   SharedProps & {
     variant?: SeparatorVariant;
-    /**
-     * When `true` (the Radix default), the separator is purely decorative and
-     * will not be announced to assistive tech (`role="none"` + `aria-hidden`).
-     * When `false`, the native Base UI `role="separator"` with an orientation
-     * is used. Honored faithfully — this is not a compat no-op.
-     */
+    /** `true` (default): decorative (`role="none"` + `aria-hidden`). `false`: native `role="separator"`. */
     decorative?: boolean;
   };
 
@@ -45,7 +43,7 @@ function Separator({
   const a11yProps = decorative ? { 'aria-hidden': true, role: 'none' as const } : {};
   return (
     <SeparatorPrimitive
-      className={cn(separatorVariants({ variant }), className)}
+      className={cn(separatorVariants({ variant }), orientationClasses[orientation], className)}
       data-orientation={orientation}
       data-slot="separator"
       data-testid={testId}

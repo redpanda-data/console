@@ -1,0 +1,29 @@
+input:
+  http_server:
+    # ── Server binding (filled in from the form) ────────────────────────────
+    address: ${slot.address}
+    path: ${slot.path}
+
+    # ── Allowed methods ─────────────────────────────────────────────────────
+    allowed_verbs:
+      - POST
+      # - PUT
+
+    # ── Tuning ──────────────────────────────────────────────────────────────
+    timeout: 5s                            # per-request timeout
+    rate_limit: ""                         # set to a rate_limit resource name to throttle
+    # sync_response:
+    #   status: "200"
+    #   headers:
+    #     Content-Type: application/json
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true

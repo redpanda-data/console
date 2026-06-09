@@ -22,8 +22,7 @@ import type {
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
-// Single store for the RPCN (Redpanda Connect) creation wizard, grouping the
-// connection / topic / user / yaml slices that were once separate stores.
+// Single store for the RPCN creation wizard (connection/topic/user/yaml slices).
 type RpcnWizardData = Partial<OnboardingWizardFormData> &
   Partial<MinimalTopicData> &
   Partial<MinimalUserData> & { yamlContent: string | undefined };
@@ -52,7 +51,7 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
       setHasHydrated: (state) => set({ hasHydrated: state }),
       reset: () => {
         sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-        // replace: true clears all data while preserving the action methods.
+        // replace: true clears data; re-supply the action methods.
         return set(
           {
             ...initialData,
@@ -115,11 +114,11 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
         const parsed = JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>;
         input = parsed.input;
         output = parsed.output;
-        // Sync the store so other consumers see the data
+        // Sync the store so other consumers see the data.
         useRpcnWizardStore.getState().setWizardData({ input, output });
       }
     } catch {
-      // Ignore malformed session storage
+      // Ignore malformed session storage.
     }
   }
 

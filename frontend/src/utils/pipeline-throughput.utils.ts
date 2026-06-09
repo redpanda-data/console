@@ -10,8 +10,7 @@
  */
 
 export type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
-// Values are nullable: a null marks a no-data gap so the chart breaks the line
-// there instead of drawing across it (see insertGapMarkers).
+// null values mark no-data gaps so recharts breaks the line (see insertGapMarkers).
 export type MergedPoint = { timestamp: number; ingress: number | null; egress: number | null };
 
 export function addSeriesToMap(
@@ -32,7 +31,7 @@ export function addSeriesToMap(
   }
 }
 
-// Smallest spacing between points — the step for a fixed-step range query.
+// Smallest spacing between points — the fixed-step query step.
 function inferStepMs(points: MergedPoint[]): number | null {
   if (points.length < 2) {
     return null;
@@ -47,10 +46,7 @@ function inferStepMs(points: MergedPoint[]): number | null {
   return Number.isFinite(min) ? min : null;
 }
 
-/**
- * Insert a null marker into any larger-than-step gap so the chart breaks the line
- * there (recharts splits at nulls) instead of drawing across a no-data stretch.
- */
+/** Insert a null marker into any larger-than-step gap so recharts breaks the line at no-data stretches. */
 export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   const step = inferStepMs(points);
   if (step === null) {

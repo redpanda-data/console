@@ -20,11 +20,9 @@ import { type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yam
 type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | null;
 type AddConnectorType = ConnectComponentType | 'resource' | null;
 type ConnectorSection = 'input' | 'output';
-// View-page lanes. A future 'visual' lane (full react-flow editor) slots in here.
 export type ViewLane = 'monitor' | 'configuration';
 
-// The canonical config YAML all views read and mutate, plus its baseline.
-// Semantic edits go through these actions so consumers share one patch path.
+// Canonical config YAML (plus baseline) that all views read/mutate through these actions.
 type DocumentSlice = {
   yamlContent: string;
   initialYaml: string | null;
@@ -32,17 +30,16 @@ type DocumentSlice = {
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
   allowNavigation: boolean;
   setYamlContent: (yamlContent: string) => void;
-  // Patch a single redpanda component in the current config; returns false if the
-  // YAML couldn't be parsed/patched (so callers can skip follow-up side effects).
+  // Patch one redpanda component; returns false if the YAML couldn't be parsed/patched.
   patchComponent: (section: ConnectorSection, componentName: string, patch: RedpandaSetupResultLike) => boolean;
-  // Hydrate from a freshly-loaded server pipeline (sets content + baseline + id).
+  // Hydrate from a freshly-loaded server pipeline (content + baseline + id).
   hydrateFromServer: (pipelineId: string, configYaml: string) => void;
-  // Resolve the create-mode starting YAML; only seeds the baseline once.
+  // Resolve the create-mode starting YAML; seeds the baseline only once.
   resolveInitialYaml: (yaml: string) => void;
   setAllowNavigation: (allowNavigation: boolean) => void;
 };
 
-// Transient editor-page UI: the Monaco handle, the active lane, and dialog/menu flags.
+// Transient editor-page UI: Monaco handle, active lane, dialog/menu flags.
 type UiSlice = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   activeViewLane: ViewLane;
@@ -117,8 +114,7 @@ export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStor
 
 const PipelineEditorContext = createContext<StoreApi<PipelineEditorStore> | null>(null);
 
-// Context-scoped: each mount gets its own store. Key the provider by pipeline id
-// so navigating between pipelines starts clean instead of carrying state over.
+// Context-scoped: each mount gets its own store (key the provider by pipeline id for clean nav).
 export function PipelineEditorProvider({
   children,
   initialSlashTipVisible,

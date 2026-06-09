@@ -101,6 +101,13 @@ const mockEditorInstance = {
   }),
   executeEdits: vi.fn(),
   focus: vi.fn(),
+  // Scroll API used by the read-only viewer's vertical overflow shadows.
+  onDidScrollChange: vi.fn(() => ({ dispose: vi.fn() })),
+  onDidContentSizeChange: vi.fn(() => ({ dispose: vi.fn() })),
+  onDidLayoutChange: vi.fn(() => ({ dispose: vi.fn() })),
+  getScrollTop: vi.fn(() => 0),
+  getScrollHeight: vi.fn(() => 0),
+  getLayoutInfo: vi.fn(() => ({ height: 0 })),
 } as unknown as editor.IStandaloneCodeEditor;
 
 vi.mock('components/ui/yaml/yaml-editor', async () => {

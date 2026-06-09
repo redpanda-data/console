@@ -1,0 +1,27 @@
+input:
+  aws_sqs:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    url: ${slot.queueUrl}
+    region: ${slot.region}
+    credentials:
+      id: ${slot.awsAccessKey}
+      secret: ${slot.awsSecretKey}
+
+    # ── Polling tuning ──────────────────────────────────────────────────────
+    max_number_of_messages: 10             # max batch per receive (1-10)
+    wait_time_seconds: 20                  # long-poll wait (0 = short poll)
+    # message_timeout: 30s                 # visibility timeout for in-flight messages
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    delete_message: true                   # delete only on successful ack
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true

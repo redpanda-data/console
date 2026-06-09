@@ -15,14 +15,14 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 
 type RefreshButtonProps = {
   onClick: () => void;
-  /** Spins the icon and (by default) disables the button while a refresh is in flight. */
+  /** Spins the icon and (by default) disables the button while refreshing. */
   loading?: boolean;
   disabled?: boolean;
   label?: string;
   testId?: string;
 };
 
-/** Ghost icon button whose icon spins while `loading`; shared for a consistent refresh affordance. */
+/** Shared refresh button; icon spins while `loading`. */
 export function RefreshButton({ onClick, loading = false, disabled, label = 'Refresh', testId }: RefreshButtonProps) {
   return (
     <Button

@@ -1,0 +1,28 @@
+input:
+  aws_dynamodb_stream:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    table: ${slot.tableName}
+    region: ${slot.region}
+    credentials:
+      id: ${slot.awsAccessKey}
+      secret: ${slot.awsSecretKey}
+
+    # ── Stream tuning ───────────────────────────────────────────────────────
+    # batching:
+    #   count: 100
+    #   period: 1s
+    # checkpoint_limit: 1024
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
