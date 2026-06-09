@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Box,
   Calendar,
@@ -26,10 +27,9 @@ import {
   ToggleLeft,
   Type,
 } from 'lucide-react';
-import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 import { useState } from 'react';
+import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 
-import './catalog-tree.css';
 import {
   type Catalog,
   type CatalogEngine,
@@ -66,23 +66,36 @@ const COL_KIND_ICON: Record<ColumnKind, typeof Hash> = {
   time: Calendar,
 };
 
+// Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
+// subtle hover background. Used by namespace rows and the "Add a topic" row.
+const ROW_BASE =
+  'flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left text-[13px] text-strong hover:bg-accent-subtle';
+
+// Truncating label that fills the remaining row width.
+const LABEL = 'flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap';
+
 function engineMark(engine: CatalogEngine) {
   if (engine === 'redpanda') {
     return (
-      <span className="cat-engine cat-engine-rp">
+      <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-indigo-alpha-100 text-indigo-700">
         <Layers size={13} />
       </span>
     );
   }
   return (
-    <span className="cat-engine cat-engine-ice">
+    <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-blue-alpha-100 text-blue-700">
       <Box size={13} />
     </span>
   );
 }
 
 function Spinner() {
-  return <span className="cat-spinner" aria-hidden="true" />;
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-[13px] w-[13px] flex-shrink-0 animate-spin rounded-full border-2 border-muted border-t-action-primary"
+    />
+  );
 }
 
 // Merge tables seeded on the namespace with tables fetched from ListTables for
@@ -111,8 +124,8 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
 
   if (isLoading) {
     return (
-      <div className="cat-cols">
-        <div className="cat-loading">
+      <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
+        <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-[12px] text-muted-foreground">
           <Spinner />
           <span>Loading columns…</span>
         </div>
@@ -129,21 +142,21 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
 
   if (columns.length === 0) {
     return (
-      <div className="cat-cols">
-        <div className="cat-ns-empty">No columns</div>
+      <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
+        <div className="px-[16px] py-[6px] text-[12px] text-disabled">No columns</div>
       </div>
     );
   }
 
   return (
-    <div className="cat-cols">
+    <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
       {columns.map((col) => {
         const KindIcon = COL_KIND_ICON[col.kind];
         return (
-          <div className="cat-col" key={col.name}>
-            <KindIcon className="cat-col-ico" size={11} />
-            <span className="cat-col-name">{col.name}</span>
-            <span className="cat-col-type">{col.short}</span>
+          <div className="flex items-center gap-[7px] px-[8px] py-[3px] text-[12px] text-foreground" key={col.name}>
+            <KindIcon className="flex-shrink-0 text-muted-foreground" size={11} />
+            <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">{col.name}</span>
+            <span className="font-mono text-[10px] text-muted-foreground tracking-[0.02em]">{col.short}</span>
           </div>
         );
       })}
@@ -171,40 +184,50 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
   const tiered = catalog.engine === 'redpanda' && topicTiered;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
 
+  // The table icon picks up the Iceberg blue when the table is Iceberg-backed or
+  // tiered, the disabled grey when locked, else the action-primary accent.
+  const tableIcoClass = cn('flex-shrink-0 text-action-primary', {
+    'text-blue-700 dark:text-blue-400': (isIceberg || tiered) && allowed,
+    'text-disabled': !allowed,
+  });
+
   return (
-    <div className="cat-table-wrap">
+    <div>
       <div
-        className="cat-row cat-row-table"
+        className={cn('group flex w-full items-center rounded', isActive && 'bg-selected')}
         data-active={isActive || undefined}
         data-locked={!allowed || undefined}
         data-tiered={tiered || undefined}
       >
         <button
-          className="cat-table-main"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-[inherit] text-[13px] text-strong disabled:cursor-default disabled:text-disabled"
           disabled={!allowed}
           onClick={() => allowed && onToggle()}
           type="button"
         >
-          <Chevron className="cat-chev" size={13} />
-          <TableIcon className={`cat-table-ico${isIceberg ? ' cat-table-ico-ice' : ''}`} size={13} />
-          <span className="cat-label">{table.name}</span>
+          <Chevron className="flex-shrink-0 text-disabled" size={13} />
+          <TableIcon className={tableIcoClass} size={13} />
+          <span className={LABEL}>{table.name}</span>
           {isIceberg && (
-            <span className="cat-ice">
+            <span className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-[3px] bg-blue-alpha-100 py-[1px] pr-[5px] pl-[4px] font-bold text-[9px] text-blue-700 uppercase tracking-[0.03em] dark:text-blue-300">
               <Box size={9} />
               Iceberg
             </span>
           )}
           {tiered && (
-            <span className="cat-bridge" title="Iceberg-tiered · bridge queried">
+            <span
+              className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-[3px] bg-blue-alpha-100 py-[1px] pr-[5px] pl-[4px] font-bold text-[9px] text-blue-700 uppercase tracking-[0.03em] dark:text-blue-300"
+              title="Iceberg-tiered · bridge queried"
+            >
               <GitMerge size={9} />
               Iceberg
             </span>
           )}
-          {!allowed && <Lock className="cat-lock" size={12} />}
+          {!allowed && <Lock className="ml-[2px] text-disabled" size={12} />}
         </button>
         {allowed && (
           <button
-            className="cat-table-run"
+            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-indigo-100 group-hover:opacity-100"
             onClick={() => onQueryTable(catalog, table)}
             title="Query this table"
             type="button"
@@ -268,21 +291,22 @@ function NamespaceNode({
   // admin-gating is a follow-up once the session role is plumbed through.
   const showAddTopic = catalog.engine === 'redpanda' && !q && onAddTable;
 
-  const countLabel = q && matched.length !== allTables.length ? `${matched.length}/${allTables.length}` : allTables.length;
+  const countLabel =
+    q && matched.length !== allTables.length ? `${matched.length}/${allTables.length}` : allTables.length;
   const NsChevron = isOpen ? ChevronDown : ChevronRight;
 
   return (
-    <div className="cat-ns">
-      <button className="cat-row cat-row-ns" onClick={onToggleNamespace} type="button">
-        <NsChevron className="cat-chev" size={14} />
-        <GitBranch className="cat-ns-ico" size={13} />
-        <span className="cat-label">{namespace.name}</span>
-        <span className="cat-count">{countLabel}</span>
+    <div className="ml-[10px]">
+      <button className={cn(ROW_BASE, 'font-medium text-foreground')} onClick={onToggleNamespace} type="button">
+        <NsChevron className="flex-shrink-0 text-disabled" size={14} />
+        <GitBranch className="text-muted-foreground" size={13} />
+        <span className={LABEL}>{namespace.name}</span>
+        <span className="rounded-full bg-muted px-[7px] py-[1px] text-[11px] text-muted-foreground">{countLabel}</span>
       </button>
       {isOpen && (
-        <div className="cat-tables">
+        <div className="ml-[10px]">
           {isLoading && allTables.length === 0 && (
-            <div className="cat-loading">
+            <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-[12px] text-muted-foreground">
               <Spinner />
               <span>Loading tables…</span>
             </div>
@@ -298,22 +322,29 @@ function NamespaceNode({
               table={t}
             />
           ))}
-          {!isLoading && matched.length === 0 && <div className="cat-ns-empty">No tables</div>}
+          {!isLoading && matched.length === 0 && (
+            <div className="px-[16px] py-[6px] text-[12px] text-disabled">No tables</div>
+          )}
           {paginate && remaining > 0 && (
-            <button className="cat-more" onClick={onLoadMore} title="Load more tables" type="button">
-              <ChevronDown className="cat-more-ico" size={12} />
+            <button
+              className="mt-[2px] flex w-full cursor-pointer items-center gap-[7px] rounded border-0 bg-transparent px-[8px] py-[7px] text-left font-[inherit] font-medium text-[12px] text-action-primary hover:bg-indigo-100"
+              onClick={onLoadMore}
+              title="Load more tables"
+              type="button"
+            >
+              <ChevronDown className="flex-shrink-0 text-action-primary" size={12} />
               <span>Load more · {remaining} remaining</span>
             </button>
           )}
           {showAddTopic && (
             <button
-              className="cat-row cat-add-row"
+              className="flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left font-[inherit] font-medium text-[13px] text-action-primary hover:bg-indigo-100"
               onClick={onAddTable}
               title="Create a SQL table from a Redpanda topic"
               type="button"
             >
-              <Plus className="cat-add-row-ico" size={13} />
-              <span className="cat-label">Add a topic</span>
+              <Plus className="ml-[19px] flex-shrink-0 text-action-primary" size={13} />
+              <span className={cn(LABEL, 'text-action-primary')}>Add a topic</span>
             </button>
           )}
         </div>
@@ -369,15 +400,24 @@ function CatalogNode({
   const showAdd = role === 'admin' && catalog.engine === 'redpanda' && onAddTable;
 
   return (
-    <div className="cat-catalog">
-      <div className="cat-row cat-row-catalog">
-        <button className="cat-cat-main" onClick={() => onToggle(catalog.name)} type="button">
-          <CatChevron className="cat-chev" size={14} />
+    <div>
+      <div className="group flex w-full items-center rounded">
+        <button
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-[inherit] font-semibold text-[13px] text-strong"
+          onClick={() => onToggle(catalog.name)}
+          type="button"
+        >
+          <CatChevron className="flex-shrink-0 text-disabled" size={14} />
           {engineMark(catalog.engine)}
-          <span className="cat-label">{catalog.displayLabel || catalog.name}</span>
+          <span className={LABEL}>{catalog.displayLabel || catalog.name}</span>
         </button>
         {showAdd && (
-          <button className="cat-cat-add" onClick={onAddTable} title="Add a topic to this catalog" type="button">
+          <button
+            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-indigo-100 group-hover:opacity-100"
+            onClick={onAddTable}
+            title="Add a topic to this catalog"
+            type="button"
+          >
             <Plus size={15} />
           </button>
         )}
@@ -406,14 +446,7 @@ function CatalogNode({
   );
 }
 
-export function CatalogTree({
-  catalogs,
-  role,
-  isLoading,
-  activeTableId,
-  onQueryTable,
-  onAddTable,
-}: CatalogTreeProps) {
+export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryTable, onAddTable }: CatalogTreeProps) {
   // Expand/collapse state per node id. Undefined => default open for catalogs
   // and namespaces (see `!== false` checks below).
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -427,32 +460,35 @@ export function CatalogTree({
     setShown((s) => ({ ...s, [namespaceId]: (s[namespaceId] ?? CAT_LIMIT) + CAT_LIMIT }));
 
   return (
-    <div className="cat">
-      <div className="cat-head">
-        <span className="cat-head-title">Catalogs</span>
-        {role === 'admin' && <span className="cat-head-hint">Redpanda only</span>}
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex items-center justify-between px-[14px] pt-[14px] pb-[8px]">
+        <span className="font-semibold text-[12px] text-muted-foreground uppercase tracking-[0.04em]">Catalogs</span>
+        {role === 'admin' && (
+          <span className="text-[10px] text-disabled uppercase tracking-[0.04em]">Redpanda only</span>
+        )}
       </div>
-      <div className="cat-search">
-        <div className="rp-input-group" style={{ display: 'flex', alignItems: 'center' }}>
-          <Search size={15} style={{ color: 'var(--color-muted-foreground)', marginRight: 6, flexShrink: 0 }} />
+      <div className="px-[12px] pb-[10px]">
+        <div className="flex items-center">
+          <Search className="mr-[6px] flex-shrink-0 text-muted-foreground" size={15} />
           <input
-            className="rp-input-group-input"
+            className="flex-1 border-0 bg-transparent text-[13px] outline-none"
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tables"
-            style={{ border: 0, background: 'transparent', outline: 'none', flex: 1, fontSize: 13 }}
             value={query}
           />
         </div>
       </div>
 
-      <div className="cat-tree">
+      <div className="flex-1 overflow-y-auto px-[8px] pb-[8px]">
         {isLoading && catalogs.length === 0 && (
-          <div className="cat-loading">
+          <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-[12px] text-muted-foreground">
             <Spinner />
             <span>Loading catalogs…</span>
           </div>
         )}
-        {!isLoading && catalogs.length === 0 && <div className="cat-ns-empty">No catalogs</div>}
+        {!isLoading && catalogs.length === 0 && (
+          <div className="px-[16px] py-[6px] text-[12px] text-disabled">No catalogs</div>
+        )}
         {catalogs.map((catalog) => (
           <CatalogNode
             activeTableId={activeTableId}
