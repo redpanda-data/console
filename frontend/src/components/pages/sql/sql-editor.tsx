@@ -373,10 +373,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-background">
-      <div
-        className="flex shrink-0 items-center gap-2 border-b pr-[10px]"
-        style={{ borderColor: 'var(--color-border)' }}
-      >
+      <div className="flex shrink-0 items-center gap-2 border-b pr-[10px]">
         <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto">
           {tabs.map((t) => (
             <div
