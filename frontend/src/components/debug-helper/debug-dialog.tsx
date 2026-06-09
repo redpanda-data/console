@@ -49,11 +49,13 @@ import {
   FileCode,
   Flag,
   Info,
+  LayoutDashboard,
   RotateCw,
   Trash2,
   Wrench,
   Zap,
 } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -761,7 +763,311 @@ function ConnectTab() {
   );
 }
 
-type Tab = 'general' | 'flags' | 'connect';
+type OverlayOption = readonly [label: string, value: string | null];
+
+const OVERLAY_ON: readonly OverlayOption[] = [
+  ['off', null],
+  ['on', 'on'],
+];
+const OVERLAY_HEALTH: readonly OverlayOption[] = [
+  ['off', null],
+  ['degraded', 'degraded'],
+  ['down', 'down'],
+];
+const OVERLAY_DATAPLANE: readonly OverlayOption[] = [
+  ['off', null],
+  ['failed', 'failed'],
+];
+const OVERLAY_CUSTOMER_MANAGED: readonly OverlayOption[] = [
+  ['off', null],
+  ['gcp', 'gcp'],
+  ['aws', 'aws'],
+  ['azure', 'azure'],
+];
+const OVERLAY_SQL_METRICS: readonly OverlayOption[] = [
+  ['off', null],
+  ['silent', 'silent'],
+];
+const OVERLAY_PEERING_BANNER: readonly OverlayOption[] = [
+  ['off', null],
+  ['aws', 'aws'],
+  ['gcp', 'gcp'],
+];
+const OVERLAY_LIFECYCLE: readonly OverlayOption[] = [
+  ['creating', 'creating'],
+  ['upgrading', 'upgrading'],
+  ['deleting', 'deleting'],
+  ['failed', 'failed'],
+  ['suspended', 'suspended'],
+];
+const OVERLAY_PRIVATE: readonly OverlayOption[] = [
+  ['aws-privatelink', 'aws-privatelink'],
+  ['azure-privatelink', 'azure-privatelink'],
+  ['gcp-psc', 'gcp-psc'],
+  ['aws-peering', 'aws-peering'],
+  ['azure-peering', 'azure-peering'],
+  ['gcp-peering', 'gcp-peering'],
+  ['aws-privatelink-unconfigured', 'aws-privatelink-unconfigured'],
+  ['aws-privatelink-provisioning', 'aws-privatelink-provisioning'],
+  ['aws-privatelink-pending', 'aws-privatelink-pending'],
+  ['aws-privatelink-failed', 'aws-privatelink-failed'],
+  ['aws-privatelink-deleting', 'aws-privatelink-deleting'],
+  ['aws-privatelink-deleted', 'aws-privatelink-deleted'],
+  ['azure-privatelink-unconfigured', 'azure-privatelink-unconfigured'],
+  ['gcp-psc-unconfigured', 'gcp-psc-unconfigured'],
+];
+
+function parseOverlay(raw: string): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const pair of raw.split(',')) {
+    const i = pair.indexOf(':');
+    const key = (i === -1 ? pair : pair.slice(0, i)).trim();
+    if (key) {
+      map[key] = i === -1 ? 'on' : pair.slice(i + 1).trim();
+    }
+  }
+  return map;
+}
+
+function buildOverlayString(map: Record<string, string>): string {
+  return Object.entries(map)
+    .filter(([k, v]) => k && v)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(',');
+}
+
+function OverlaySeg({
+  label,
+  urlKey,
+  current,
+  options,
+  onSet,
+}: {
+  label: string;
+  urlKey: string;
+  current: string | null;
+  options: readonly OverlayOption[];
+  onSet: (key: string, value: string | null) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="w-32 shrink-0 font-medium text-foreground/80">{label}</span>
+      <div className="inline-flex flex-wrap gap-1">
+        {options.map(([optLabel, value]) => {
+          const active = current === value || (value === null && !current);
+          return (
+            <Button
+              key={optLabel}
+              onClick={() => onSet(urlKey, value)}
+              size="xs"
+              variant={active ? 'primary' : 'outline'}
+            >
+              {optLabel}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OverlaySelect({
+  label,
+  urlKey,
+  current,
+  options,
+  onSet,
+}: {
+  label: string;
+  urlKey: string;
+  current: string | null;
+  options: readonly OverlayOption[];
+  onSet: (key: string, value: string | null) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="w-32 shrink-0 font-medium text-foreground/80">{label}</span>
+      <select
+        className="flex-1 rounded-md border bg-background px-2 py-1 font-mono text-xs"
+        onChange={(e) => onSet(urlKey, e.target.value === '' ? null : e.target.value)}
+        value={current ?? ''}
+      >
+        <option value="">off</option>
+        {options.map(([optLabel, value]) => (
+          <option key={value} value={value ?? ''}>
+            {optLabel}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function OverviewPageTab() {
+  const [raw, setRaw] = useQueryState('devOverlay');
+  const map = parseOverlay(raw ?? '');
+  const cur = (key: string): string | null => map[key] ?? null;
+  const activeCount = Object.keys(map).filter((k) => map[k]).length;
+
+  const onSet = (key: string, value: string | null) => {
+    const next = { ...map };
+    if (value === null) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+    setRaw(buildOverlayString(next) || null);
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Text className="text-muted-foreground" variant="bodySmall">
+        Each control updates this page's <InlineCode>?devOverlay=</InlineCode> URL param. The Tampermonkey
+        response-rewrite userscript reads it and fakes the matching API responses; hit <strong>Reload to apply</strong>.
+        Nothing here ships in the app.
+      </Text>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge size="sm" variant={activeCount > 0 ? 'warning-inverted' : 'simple-outline'}>
+          {activeCount > 0 ? `${activeCount} active` : 'no overlays'}
+        </Badge>
+        <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="xs" variant="primary">
+          Reload to apply
+        </Button>
+        <Button
+          disabled={activeCount === 0}
+          icon={<Trash2 />}
+          onClick={() => setRaw(null)}
+          size="xs"
+          variant="destructive-ghost"
+        >
+          Reset all
+        </Button>
+      </div>
+
+      <DebugSection title="Cluster & network">
+        <div className="flex flex-col gap-2">
+          <OverlaySelect
+            current={cur('lifecycle')}
+            label="Lifecycle"
+            onSet={onSet}
+            options={OVERLAY_LIFECYCLE}
+            urlKey="lifecycle"
+          />
+          <OverlaySelect
+            current={cur('private')}
+            label="Private"
+            onSet={onSet}
+            options={OVERLAY_PRIVATE}
+            urlKey="private"
+          />
+          <OverlaySeg
+            current={cur('dataplane')}
+            label="Dataplane"
+            onSet={onSet}
+            options={OVERLAY_DATAPLANE}
+            urlKey="dataplane"
+          />
+          <OverlaySeg
+            current={cur('natGateways')}
+            label="NAT gateways"
+            onSet={onSet}
+            options={OVERLAY_ON}
+            urlKey="natGateways"
+          />
+          <OverlaySeg current={cur('multiAz')} label="Multi-AZ" onSet={onSet} options={OVERLAY_ON} urlKey="multiAz" />
+          <OverlaySeg
+            current={cur('customerManaged')}
+            label="Customer-managed"
+            onSet={onSet}
+            options={OVERLAY_CUSTOMER_MANAGED}
+            urlKey="customerManaged"
+          />
+        </div>
+      </DebugSection>
+
+      <DebugSection title="Modules & cards">
+        <div className="flex flex-col gap-2">
+          <OverlaySeg
+            current={cur('connectorsScale')}
+            label="Connectors scale"
+            onSet={onSet}
+            options={OVERLAY_ON}
+            urlKey="connectorsScale"
+          />
+          <OverlaySeg
+            current={cur('shadowLink')}
+            label="Shadow link"
+            onSet={onSet}
+            options={OVERLAY_ON}
+            urlKey="shadowLink"
+          />
+          <OverlaySeg
+            current={cur('sqlMetrics')}
+            label="SQL metrics"
+            onSet={onSet}
+            options={OVERLAY_SQL_METRICS}
+            urlKey="sqlMetrics"
+          />
+        </div>
+      </DebugSection>
+
+      <DebugSection title="Legacy banners">
+        <div className="flex flex-col gap-2">
+          <OverlaySeg
+            current={cur('azureBanner')}
+            label="Azure banner"
+            onSet={onSet}
+            options={OVERLAY_ON}
+            urlKey="azureBanner"
+          />
+          <OverlaySeg
+            current={cur('peeringBanner')}
+            label="Peering banner"
+            onSet={onSet}
+            options={OVERLAY_PEERING_BANNER}
+            urlKey="peeringBanner"
+          />
+        </div>
+      </DebugSection>
+
+      <DebugSection title="Health">
+        <div className="flex flex-col gap-2">
+          <OverlaySeg
+            current={cur('health')}
+            label="Health (legacy)"
+            onSet={onSet}
+            options={OVERLAY_HEALTH}
+            urlKey="health"
+          />
+          <OverlaySeg
+            current={cur('streamingHealth')}
+            label="Streaming"
+            onSet={onSet}
+            options={OVERLAY_HEALTH}
+            urlKey="streamingHealth"
+          />
+          <OverlaySeg
+            current={cur('sqlHealth')}
+            label="SQL"
+            onSet={onSet}
+            options={OVERLAY_HEALTH}
+            urlKey="sqlHealth"
+          />
+          <OverlaySeg
+            current={cur('connectHealth')}
+            label="Connect"
+            onSet={onSet}
+            options={OVERLAY_HEALTH}
+            urlKey="connectHealth"
+          />
+        </div>
+      </DebugSection>
+    </div>
+  );
+}
+
+type Tab = 'general' | 'flags' | 'connect' | 'overview-page';
 
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [tab, setTab] = useState<Tab>('general');
@@ -791,6 +1097,9 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 <TabsTrigger value="connect" variant="underline">
                   <AppWindow className="mr-1 h-3 w-3" /> Connect
                 </TabsTrigger>
+                <TabsTrigger value="overview-page" variant="underline">
+                  <LayoutDashboard className="mr-1 h-3 w-3" /> Overview page
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -804,6 +1113,11 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             </TabsContent>
             <TabsContent value="connect">
               <ConnectTab />
+            </TabsContent>
+            <TabsContent value="overview-page">
+              <div className="px-4 py-4">
+                <OverviewPageTab />
+              </div>
             </TabsContent>
           </Tabs>
         </DialogBody>

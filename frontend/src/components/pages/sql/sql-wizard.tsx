@@ -11,10 +11,10 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 
-import './sql-wizard.css';
 import { highlightSQL } from './sql';
 
 export type WizardTopic = {
@@ -76,93 +76,117 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
   };
 
   return (
-    <div className="wz-inline">
-      <div className="wz-inline-head">
-        <span>
+    <div className="flex min-h-0 w-full flex-1 flex-col bg-card">
+      <div className="flex items-center justify-between border-border-subtle border-b px-[18px] py-3 font-semibold text-[14px] text-strong">
+        <span className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap [&_svg]:text-action-primary">
           <Plus size={16} /> Add a topic to SQL
         </span>
-        <button aria-label="Close" className="wz-head-close" onClick={onClose} type="button">
+        <button
+          aria-label="Close"
+          className="inline-flex cursor-pointer items-center justify-center rounded-md border-0 bg-transparent p-1 text-muted-foreground hover:bg-muted hover:text-strong"
+          onClick={onClose}
+          type="button"
+        >
           <X size={16} />
         </button>
       </div>
 
-      <div className="wz-body" data-variant="inline">
-        <div className="wz-progress">
-          <span className="wz-step-label">
+      <div className="flex min-h-0 flex-1 flex-col p-0" data-variant="inline">
+        <div className="mx-auto w-full max-w-[720px] px-[22px] pt-4 pb-1">
+          <span className="font-semibold text-[11px] text-action-primary uppercase tracking-[0.05em]">
             Step {step + 1} of {STEPS.length}
           </span>
-          <span className="wz-step-name">{STEPS[step]}</span>
-          <div className="wz-progress-bar">
-            <span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+          <span className="mt-1 mb-2 block font-display font-semibold text-[16px] text-strong">{STEPS[step]}</span>
+          <div className="h-1 overflow-hidden rounded-full bg-muted">
+            <span
+              className="block h-full rounded-full bg-action-primary transition-[width] duration-[220ms] ease-out"
+              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            />
           </div>
         </div>
 
-        <div className="wz-content">
+        <div className="mx-auto min-h-0 w-full max-w-[720px] flex-1 overflow-y-auto px-[22px] py-4">
           {step === 0 && (
-            <div className="wz-pane">
-              <p className="wz-help">
+            <div>
+              <p className="mt-0 mr-0 mb-[14px] ml-0 text-[13px] text-muted-foreground leading-[1.5] [&_code]:font-mono">
                 Pick a Redpanda topic to expose as a SQL table. Tables are created in{' '}
                 <code>default_redpanda_catalog</code> — the catalog for Redpanda topics.
               </p>
               <Input
-                className="wz-search"
+                className="mb-3"
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search topics"
                 value={search}
               />
-              <div className="wz-topics">
+              <div className="flex flex-col gap-2">
                 {visibleTopics.map((t) => (
                   <button
-                    className="wz-topic"
+                    className={cn(
+                      'flex w-full cursor-pointer items-center gap-3 rounded-md border border-border bg-card px-[14px] py-3 text-left font-[inherit]',
+                      'hover:border-border-strong hover:bg-muted',
+                      'data-[selected]:border-2 data-[selected]:border-secondary data-[selected]:px-[13px] data-[selected]:py-[11px]'
+                    )}
                     data-selected={topic === t.name || undefined}
                     key={t.name}
                     onClick={() => pickTopic(t)}
                     type="button"
                   >
-                    <span className="wz-topic-radio">{topic === t.name && <span />}</span>
-                    <Layers className="wz-topic-ico" size={15} />
-                    <span className="wz-topic-main">
-                      <span className="wz-topic-name">{t.name}</span>
-                      <span className="wz-topic-meta">
+                    <span
+                      className={cn(
+                        'inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-input',
+                        topic === t.name && 'border-secondary'
+                      )}
+                    >
+                      {topic === t.name && <span className="h-[9px] w-[9px] rounded-full bg-secondary" />}
+                    </span>
+                    <Layers className="flex-shrink-0 text-action-primary" size={15} />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="font-mono font-semibold text-[13.5px] text-strong">{t.name}</span>
+                      <span className="mt-px text-[11.5px] text-muted-foreground">
                         {typeof t.partitions === 'number' ? `${t.partitions} partitions` : 'topic'}
                         {t.format ? ` · ${t.format}` : ''}
                       </span>
                     </span>
                     {t.iceberg && (
-                      <span className="wz-topic-ice" title="Iceberg tiering enabled">
+                      <span
+                        className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-full bg-blue-alpha-100 px-[7px] py-0.5 font-semibold text-[10px] text-blue-700 dark:text-blue-300 [&_svg]:text-current"
+                        title="Iceberg tiering enabled"
+                      >
                         <GitMerge size={11} />
                         Iceberg
                       </span>
                     )}
                   </button>
                 ))}
-                {visibleTopics.length === 0 && <div className="wz-help">No topics found.</div>}
+                {visibleTopics.length === 0 && (
+                  <div className="text-[13px] text-muted-foreground leading-[1.5]">No topics found.</div>
+                )}
               </div>
             </div>
           )}
 
           {step === 1 && (
-            <div className="wz-pane">
-              <div className="wz-field">
-                <span className="wz-field-label">Catalog</span>
-                <div className="wz-readonly">
+            <div>
+              <div className="mb-4">
+                <span className="mb-1.5 block font-semibold text-[13px] text-strong">Catalog</span>
+                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-[13px] text-strong [&_svg]:text-muted-foreground">
                   <Layers size={14} /> default_redpanda_catalog{' '}
-                  <span className="wz-readonly-tag">fixed for Redpanda topics</span>
+                  <span className="ml-auto font-sans text-[11px] text-muted-foreground">fixed for Redpanda topics</span>
                 </div>
               </div>
-              <div className="wz-field">
-                <span className="wz-field-label">Source topic</span>
-                <div className="wz-readonly">
+              <div className="mb-4">
+                <span className="mb-1.5 block font-semibold text-[13px] text-strong">Source topic</span>
+                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-[13px] text-strong [&_svg]:text-muted-foreground">
                   <GitBranch size={14} /> {topic}
                   {chosen?.iceberg && (
-                    <span className="wz-readonly-tag wz-readonly-ice">
+                    <span className="ml-auto inline-flex items-center gap-1 font-sans text-[11px] text-blue-700 dark:text-blue-300 [&_svg]:text-current">
                       <GitMerge size={11} /> Iceberg-tiered
                     </span>
                   )}
                 </div>
               </div>
               {chosen?.iceberg && (
-                <div className="wz-bridge-note">
+                <div className="mb-4 flex items-start gap-[9px] rounded-md border border-blue-200 bg-blue-alpha-100 px-[13px] py-[11px] text-[12.5px] text-foreground leading-[1.45] dark:border-blue-700 dark:bg-blue-alpha-300 [&_code]:font-mono [&_svg]:mt-px [&_svg]:flex-shrink-0 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-400">
                   <GitMerge size={15} />
                   <span>
                     This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes
@@ -170,45 +194,48 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                   </span>
                 </div>
               )}
-              <div className="wz-field">
-                <label className="wz-field-label" htmlFor="wz-table-name">
+              <div className="mb-4">
+                <label className="mb-1.5 block font-semibold text-[13px] text-strong" htmlFor="wz-table-name">
                   Table name
                 </label>
                 <Input
+                  className={cn(nameError && 'border-destructive')}
                   id="wz-table-name"
                   onBlur={() => setTouched(true)}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="cars"
-                  style={nameError ? { borderColor: 'var(--color-destructive)' } : undefined}
                   value={name}
                 />
                 {nameError ? (
-                  <span className="wz-field-err">
+                  <span className="mt-1.5 block text-[12px] text-destructive">
                     Use lowercase letters, numbers and underscores; must start with a letter or underscore.
                   </span>
                 ) : (
-                  <span className="wz-field-help">How the table appears in the catalog and your queries.</span>
+                  <span className="mt-1.5 block text-[12px] text-muted-foreground">
+                    How the table appears in the catalog and your queries.
+                  </span>
                 )}
               </div>
-              <div className="wz-field">
-                <span className="wz-field-label">This will run</span>
-                <div className="wz-sql">
+              <div className="mb-4">
+                <span className="mb-1.5 block font-semibold text-[13px] text-strong">This will run</span>
+                <div className="overflow-x-auto rounded-md bg-background-inverse-base px-4 py-[14px]">
                   <pre
+                    className="m-0 font-mono text-[12.5px] leading-[1.6]"
                     // biome-ignore lint/security/noDangerouslySetInnerHtml: highlightSQL HTML-escapes all token text
                     dangerouslySetInnerHTML={{ __html: highlightSQL(createSQL(tableName, topic ?? '')) }}
                   />
                 </div>
               </div>
-              {error && <div className="wz-field-err">{error}</div>}
+              {error && <div className="mt-1.5 block text-[12px] text-destructive">{error}</div>}
             </div>
           )}
         </div>
 
-        <div className="wz-foot">
+        <div className="mx-auto flex w-full max-w-[720px] flex-shrink-0 items-center justify-between border-border-subtle border-t px-[22px] py-[14px]">
           <Button onClick={onClose} size="md" variant="secondary-ghost">
             Cancel
           </Button>
-          <div className="wz-foot-right">
+          <div className="flex gap-2">
             {step > 0 && (
               <Button disabled={isCreating} onClick={() => setStep(0)} size="md" variant="secondary-outline">
                 Back

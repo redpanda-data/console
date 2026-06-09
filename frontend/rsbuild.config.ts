@@ -166,7 +166,7 @@ export default defineConfig({
           semicolons: true,
         }),
         new MonacoWebpackPlugin({
-          languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf'],
+          languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf', 'sql'],
           customLanguages: [
             {
               label: 'yaml',

@@ -11,7 +11,7 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
@@ -51,14 +51,10 @@ function RootLayout() {
         <ErrorBoundary>
           <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
         </ErrorBoundary>
+        {process.env.NODE_ENV === 'development' && <DebugHelper />}
       </NuqsAdapter>
 
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          <TanStackRouterDevtools position="bottom-right" />
-          <DebugHelper />
-        </>
-      )}
+      {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
     </>
   );
 }
@@ -90,6 +86,24 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
+  const matches = useMatches();
+  const isFullscreen = matches.some((m) => (m.staticData as { fullscreen?: boolean }).fullscreen);
+
+  if (isFullscreen) {
+    return (
+      <div id="mainLayout">
+        <TooltipProvider>
+          <ModalContainer />
+          <ErrorDisplay>
+            <Outlet />
+          </ErrorDisplay>
+          <ErrorModalsRenderer />
+          <Toaster position="top-right" richColors />
+        </TooltipProvider>
+      </div>
+    );
+  }
+
   return (
     <div id="mainLayout">
       <TooltipProvider>

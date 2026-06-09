@@ -14,8 +14,8 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Database } from 'lucide-react';
-import { CatalogType } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { ExecuteQueryRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
+import { CatalogType, ExecuteQueryRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
   useExecuteQueryMutation,
@@ -24,14 +24,12 @@ import {
   useListTablesQuery,
 } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import './sql.css';
 import { CatalogTree } from './catalog-tree';
+import { firstKeyword, SQL_KEYWORDS } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
-import { SqlWizard, type WizardTopic } from './sql-wizard';
 import {
   type BridgeInfo,
   type Catalog,
@@ -45,7 +43,7 @@ import {
   shortPgType,
   type TableRef,
 } from './sql-types';
-import { firstKeyword, SQL_KEYWORDS } from './sql';
+import { SqlWizard, type WizardTopic } from './sql-wizard';
 
 const INITIAL_QUERY = 'SELECT name, type\nFROM system.catalogs\nORDER BY name;';
 
@@ -148,12 +146,43 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
       el.style.right = '0px';
       el.style.bottom = '0px';
       el.style.height = 'auto';
-      el.style.borderTop = '1px solid var(--sql-border)';
+      el.style.borderTop = '1px solid var(--color-border)';
     };
 
     layout();
     window.addEventListener('resize', layout);
-    return () => window.removeEventListener('resize', layout);
+
+    // The overlay is fixed, but the host page (cloud-ui chrome when embedded)
+    // still scrolls behind it — dragging the host page header up/down/sideways
+    // while the pinned editor stays put. Lock every scrollable ancestor (plus
+    // the document scroller) so nothing behind the overlay can scroll, keeping
+    // the host header static. No-op in standalone console, where nothing scrolls.
+    const locked: Array<{ node: HTMLElement; overflow: string }> = [];
+    const lock = (node: HTMLElement) => {
+      locked.push({ node, overflow: node.style.overflow });
+      node.style.overflow = 'hidden';
+    };
+    let node: HTMLElement | null = el.parentElement;
+    while (node && node !== document.body) {
+      const c = getComputedStyle(node);
+      const scrollable = /(auto|scroll)/.test(c.overflowY + c.overflowX);
+      if (scrollable && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
+        lock(node);
+      }
+      node = node.parentElement;
+    }
+    const scroller = (document.scrollingElement ?? document.documentElement) as HTMLElement;
+    lock(scroller);
+    if (document.body) {
+      lock(document.body);
+    }
+
+    return () => {
+      window.removeEventListener('resize', layout);
+      for (const { node: n, overflow } of locked) {
+        n.style.overflow = overflow;
+      }
+    };
   }, []);
 
   const { data: catalogsData, isLoading } = useListCatalogsQuery();
@@ -162,14 +191,13 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
   // Map proto catalogs to the tree view model. Tables/columns are filled in by
   // the catalog-tree agent via ListTables/DescribeTable.
   const catalogs = useMemo<Catalog[]>(() => {
-    const list = catalogsData?.catalogs ?? [];
+    // MVP surfaces only the Redpanda catalog; Iceberg catalog support lands later.
+    const list = (catalogsData?.catalogs ?? []).filter((c) => c.type === CatalogType.REDPANDA);
     return list.map((c) => ({
       name: c.name,
       displayLabel: c.type === CatalogType.REDPANDA ? 'Redpanda Catalog' : c.name,
       engine: c.type === CatalogType.REDPANDA ? 'redpanda' : 'iceberg',
-      namespaces: c.namespaceName
-        ? [{ id: `${c.name}.${c.namespaceName}`, name: c.namespaceName, tables: [] }]
-        : [],
+      namespaces: c.namespaceName ? [{ id: `${c.name}.${c.namespaceName}`, name: c.namespaceName, tables: [] }] : [],
     }));
   }, [catalogsData]);
 
@@ -353,20 +381,33 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
   );
 
   return (
-    <div className="sqlws" ref={rootRef}>
-      <div className="ws-bar">
-        <div className="ws-title">
-          <Database size={16} /> SQL <span className="ws-title-dim">· Studio</span>
+    <div
+      // The registry's near-black dark theme renders borders at rgba(255,255,255,0.04)
+      // — effectively invisible. The SQL design uses visible grey dividers
+      // (grey-700/600/800), so re-point the border tokens to those registry grey
+      // scale values for this surface in dark mode only. Light mode is untouched.
+      className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      ref={rootRef}
+    >
+      <div
+        className="flex h-[52px] shrink-0 items-center gap-3 border-b bg-background px-6"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
+        <div className="flex items-center gap-2 font-semibold text-sm text-strong tracking-[-0.01em] [&_svg]:text-action-primary">
+          <Database size={16} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
-        <div className="ws-bar-right">
+        <div className="ml-auto flex items-center gap-2">
           <Badge size="sm" variant={role === 'admin' ? 'info-inverted' : 'simple'}>
             {role === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
         </div>
       </div>
 
-      <div className="ws-body">
-        <div className="ws-tree">
+      <div className="flex min-h-0 flex-1">
+        <div
+          className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <CatalogTree
             catalogs={catalogs}
             isLoading={isLoading}
@@ -375,7 +416,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
             role={role}
           />
         </div>
-        <div className="ws-work">
+        <div className="flex min-h-0 min-w-0 flex-1">
           {wizardOpen ? (
             <SqlWizard
               error={wizardError}
@@ -385,8 +426,12 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
               topics={wizardTopics}
             />
           ) : (
-            <ResizablePanelGroup className="ws-split" direction="vertical">
-              <ResizablePanel className="ws-editor" defaultSize={42} minSize={15}>
+            <ResizablePanelGroup className="min-w-0 flex-1" direction="vertical">
+              <ResizablePanel
+                className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
+                defaultSize={42}
+                minSize={15}
+              >
                 <SqlEditor
                   identifiers={identifiers}
                   initialQuery={INITIAL_QUERY}
@@ -396,7 +441,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
                 />
               </ResizablePanel>
               <ResizableHandle withHandle />
-              <ResizablePanel className="ws-results" minSize={20}>
+              <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize={20}>
                 <SqlResults role={role} run={run.state === 'success' ? { ...run, bridge } : run} />
               </ResizablePanel>
             </ResizablePanelGroup>

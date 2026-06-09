@@ -211,15 +211,27 @@ export function escHTML(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Build highlighted HTML (used inside the overlay <pre>). Token classes match
-// the shared CSS: sql-kw, sql-fn, sql-str, sql-num, sql-cm, sql-id, sql-pn.
+// Maps each token type to redpanda-ui registry theme utility classes, so the
+// highlighted HTML (rendered via dangerouslySetInnerHTML in the wizard preview)
+// is styled purely from the registry theme and tracks light/dark.
+const TOKEN_CLASS: Record<Exclude<SqlTokenType, 'ws'>, string> = {
+  kw: 'text-purple-700 font-semibold',
+  fn: 'text-action-primary',
+  str: 'text-green-700',
+  num: 'text-orange-700',
+  cm: 'text-muted-foreground italic',
+  pn: 'text-subtle',
+  id: 'text-strong',
+};
+
+// Build highlighted HTML (used inside the wizard preview <pre>).
 export function highlightSQL(src: string): string {
   return tokenizeSQL(src)
     .map((t) => {
       if (t.type === 'ws') {
         return escHTML(t.value);
       }
-      return `<span class="sql-${t.type}">${escHTML(t.value)}</span>`;
+      return `<span class="${TOKEN_CLASS[t.type]}">${escHTML(t.value)}</span>`;
     })
     .join('');
 }

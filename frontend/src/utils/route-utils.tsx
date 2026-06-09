@@ -14,6 +14,7 @@
  * Provides sidebar item generation and visibility management.
  */
 
+import { Database } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -248,6 +249,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: ScaleIcon,
     group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
+  },
+  {
+    path: '/sql',
+    title: 'SQL',
+    icon: Database,
+    group: SidebarSection.STREAMING,
+    visibilityCheck: routeVisibility(() => isFeatureFlagEnabled('enableSqlInConsole')),
   },
   {
     path: '/connect-clusters',
