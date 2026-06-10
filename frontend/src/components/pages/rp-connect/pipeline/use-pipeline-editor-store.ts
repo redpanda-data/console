@@ -124,13 +124,19 @@ const PipelineEditorContext = createContext<StoreApi<PipelineEditorStore> | null
 export function PipelineEditorProvider({
   children,
   initialSlashTipVisible,
+  initialEditLane = 'yaml',
 }: {
   children: ReactNode;
   initialSlashTipVisible: boolean;
+  // Which edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
+  initialEditLane?: EditLane;
 }) {
   const storeRef = useRef<StoreApi<PipelineEditorStore>>();
   if (!storeRef.current) {
-    storeRef.current = createPipelineEditorStore({ slashTipVisible: initialSlashTipVisible });
+    storeRef.current = createPipelineEditorStore({
+      slashTipVisible: initialSlashTipVisible,
+      activeEditLane: initialEditLane,
+    });
   }
   return createElement(PipelineEditorContext.Provider, { value: storeRef.current }, children);
 }

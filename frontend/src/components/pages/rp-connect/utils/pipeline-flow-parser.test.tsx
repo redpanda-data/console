@@ -903,12 +903,57 @@ describe('computeFlowLayout', () => {
     expect(byId('proc-0')?.data.meta).toEqual([{ label: 'message', value: 'hi' }]);
   });
 
+  it('adds INPUT/PROCESSORS/OUTPUT section labels in the compact vertical lane only', () => {
+    const verticalLabels = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(), 'vertical', true)
+      .rfNodes.filter((n) => n.type === 'flowSectionLabel')
+      .map((n) => (n.data as { label?: string }).label);
+    expect(verticalLabels).toEqual(['INPUT', 'PROCESSORS', 'OUTPUT']);
+
+    // The full horizontal canvas relies on per-card kind badges, not section labels.
+    const horizontal = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes);
+    expect(horizontal.rfNodes.some((n) => n.type === 'flowSectionLabel')).toBe(false);
+  });
+
+  it('stacks compact cards vertically on a straight axis in compact vertical mode', () => {
+    const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(), 'vertical', true);
+    const input = layout.rfNodes.find((n) => n.id === 'input-0');
+    const output = layout.rfNodes.find((n) => n.id === 'output-0');
+    // Compact rendering is flagged on the node data…
+    expect(input?.data.compact).toBe(true);
+    // …and top-level steps share the same x (vertical stack → straight connectors).
+    expect(input?.position.x).toBe(0);
+    expect(output?.position.x).toBe(0);
+    // Vertically ordered: input above output.
+    expect((input?.position.y ?? 0) < (output?.position.y ?? 0)).toBe(true);
+  });
+
+  it('keeps a collapsed group as a container (with a toggle) and hides its children', () => {
+    const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(['proc-1']));
+    const branch = layout.rfNodes.find((n) => n.id === 'proc-1');
+    // Still a container so it keeps its header + chevron and can be expanded again.
+    expect(branch?.type).toBe('flowContainer');
+    expect(branch?.data.collapsed).toBe(true);
+    expect(branch?.data.collapsible).toBe(true);
+    // Its inner step is not rendered while collapsed.
+    expect(layout.rfNodes.some((n) => n.id === 'proc-1-processors-p0')).toBe(false);
+  });
+
   it('places array resources in a lane below the flow', () => {
     const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
     const layout = computeFlowLayout(parsePipelineFlowTree(withCache).nodes);
     const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
     expect(resource?.parentId).toBeUndefined();
     expect((resource?.position.y ?? 0) > 0).toBe(true);
+  });
+
+  it('keeps the resource lane near the main row in horizontal layout (cross-axis, not main-axis, offset)', () => {
+    const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(withCache).nodes);
+    const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
+    // The lane must drop by the cross-axis (height) extent, not the much larger
+    // main-axis (width) extent — otherwise fitView zooms the whole graph out of view.
+    expect(resource?.position.y ?? 0).toBeLessThan(layout.width);
+    expect(layout.height).toBeLessThan(layout.width);
   });
 });
 
@@ -924,6 +969,19 @@ output:
   drop: {}`;
     const seq = mainFlowSequence(parsePipelineFlowTree(yaml).nodes).map((n) => n.id);
     expect(seq).toEqual(['input-0', 'proc-0', 'proc-1', 'output-0']);
+  });
+
+  it('resolves the main sequence even when node IDs are prefixed (mini lane)', () => {
+    const yaml = `input:
+  kafka: {}
+pipeline:
+  processors:
+    - log: {}
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml, { idPrefix: 'm1' });
+    const seq = mainFlowSequence(nodes).map((n) => n.id);
+    expect(seq).toEqual(['m1-input-0', 'm1-proc-0', 'm1-output-0']);
   });
 
   it('chains a sequential sub-pipeline (branch processors)', () => {

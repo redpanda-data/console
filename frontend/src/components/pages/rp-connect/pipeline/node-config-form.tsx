@@ -11,7 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { DialogFooter } from 'components/redpanda-ui/components/dialog';
+import { DialogBody, DialogFooter } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -220,8 +220,8 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
   const submit = handleSubmit((data) => onSubmit(buildComponentEntry(componentName, scalarFields, showRaw, data)));
 
   return (
-    <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto px-0.5 pb-1">
+    <>
+      <DialogBody className="space-y-4">
         <div className="flex flex-col gap-1.5">
           <Label className="font-medium text-sm">label</Label>
           <Controller
@@ -275,15 +275,17 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
             />
           </FieldGroup>
         ) : null}
-      </div>
+      </DialogBody>
 
       <DialogFooter>
         <Button onClick={onCancel} type="button" variant="ghost">
           Cancel
         </Button>
-        <Button type="submit">Save</Button>
+        <Button onClick={submit} type="button">
+          Save
+        </Button>
       </DialogFooter>
-    </form>
+    </>
   );
 }
 
@@ -303,6 +305,10 @@ const FieldGroup = ({
         className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
       />
     </CollapsibleTrigger>
-    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
+    {/* No height animation: the Dialog animates its own height, so animating the
+        panel too makes the two stagger. Open/close instantly here. */}
+    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3" transition={{ duration: 0 }}>
+      {children}
+    </CollapsibleContent>
   </Collapsible>
 );

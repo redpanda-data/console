@@ -60,6 +60,21 @@ The dedicated, full-canvas visual editor has shipped (behind the flag):
 Shared node IDs: both the canvas and the mini sidebar diagram derive from the same
 `parsePipelineFlowTree` output, so node IDs line up across views.
 
+**Mini sidebar lane**: renders the **same `PipelineFlowCanvas`** as the Visual tab
+but in a `simple` + `orientation="vertical"` mode — a compact, static overview:
+- `simple`: no background dots, no zoom, no free pan, no controls — locked at
+  zoom 1, **top-aligned**, with vertical scroll only for tall pipelines.
+- `compact`: smaller one-row cards (no kind badge / metadata), tighter spacing
+  (`COMPACT_DIMS` in `computeFlowLayout`).
+- Straight connectors: the top/bottom handles are anchored at a fixed left offset
+  (`SPINE_HANDLE_LEFT`), so vertically-stacked cards of differing widths connect on
+  a straight vertical line rather than center-to-center diagonals.
+- Section dividers (`INPUT`/`PROCESSORS`/`OUTPUT`) are indented
+  (`FLOW_SECTION_LABEL_INDENT`) so the spine runs clear to their left.
+
+The old indented-tree layout (`computeTreeLayout` / `PipelineFlowDiagram`) is no
+longer used by the page (kept for now, still tested).
+
 Not yet built (deferred): the cross-view **morph animation** (nodes gliding
 between the mini lane and the canvas) and the matching arrow-flow polish of the
 mini lane; full recursive form editing of deeply nested fields (nested still uses

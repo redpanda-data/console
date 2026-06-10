@@ -633,11 +633,25 @@ function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, Pi
   return map;
 }
 
+// Children of a section, found by kind+section so it works whether or not node
+// IDs are prefixed (the mini lane parses with an idPrefix).
+function sectionChildren(
+  nodes: PipelineFlowNode[],
+  map: Map<string | undefined, PipelineFlowNode[]>,
+  section: NonNullable<PipelineFlowNode['section']>
+): PipelineFlowNode[] {
+  const sectionNode = nodes.find((n) => n.kind === 'section' && n.section === section);
+  return sectionNode ? (map.get(sectionNode.id) ?? []) : [];
+}
+
 /** The linear data path: input component(s) → top-level processors → output(s). */
 export function mainFlowSequence(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
   const map = buildChildrenMap(nodes);
-  const childrenOf = (id: string) => map.get(id) ?? [];
-  return [...childrenOf('section-input'), ...childrenOf('section-processors'), ...childrenOf('section-output')];
+  return [
+    ...sectionChildren(nodes, map, 'input'),
+    ...sectionChildren(nodes, map, 'processor'),
+    ...sectionChildren(nodes, map, 'output'),
+  ];
 }
 
 export type FlowConnection = { from: string; to: string };
@@ -925,17 +939,67 @@ export function computeTreeLayout(
 // position). Shares node IDs with `computeTreeLayout`.
 // ============================================================================
 
-/** Leaf card width on the canvas; the node component must match this. */
+/** Leaf card width on the full canvas; the node component must match this. */
 export const FLOW_CARD_WIDTH = 240;
-const FLOW_LEAF_BASE_H = 56;
-const FLOW_META_ROW_H = 22;
-const FLOW_CONTAINER_HEADER_H = 48;
-const FLOW_PAD = 16;
-const FLOW_STACK_GAP = 18;
-const FLOW_COL_GAP = 72;
+/** Leaf card width on the compact (sidebar) canvas. */
+export const FLOW_COMPACT_CARD_WIDTH = 188;
 const FLOW_MAX_META_ROWS = 4;
 
-function leafCardHeight(node: PipelineFlowNode): number {
+// Spacing/sizing differs between the full Visual lane and the compact sidebar.
+type FlowDims = {
+  cardW: number;
+  leafBaseH: number;
+  metaRowH: number; // 0 in compact (meta hidden)
+  headerH: number;
+  pad: number;
+  stackGap: number;
+  colGap: number;
+};
+const FULL_DIMS: FlowDims = {
+  cardW: FLOW_CARD_WIDTH,
+  leafBaseH: 56,
+  metaRowH: 22,
+  headerH: 48,
+  pad: 16,
+  stackGap: 18,
+  colGap: 72,
+};
+const COMPACT_DIMS: FlowDims = {
+  cardW: FLOW_COMPACT_CARD_WIDTH,
+  leafBaseH: 32,
+  metaRowH: 0,
+  headerH: 32,
+  pad: 8,
+  stackGap: 10,
+  colGap: 26,
+};
+
+// Section dividers ("INPUT" / "PROCESSORS" / "OUTPUT" / "RESOURCES") shown in the
+// compact (vertical) lane, like the original mini diagram.
+const SECTION_TITLES: Record<string, string> = {
+  input: 'INPUT',
+  processor: 'PROCESSORS',
+  output: 'OUTPUT',
+  resource: 'RESOURCES',
+};
+const FLOW_SECTION_LABEL_H = 18;
+const FLOW_SECTION_LABEL_GAP = 6;
+// Indent labels so they align with the card's text and sit clear (to the right) of
+// the spine connector, which runs near the card's left edge.
+const FLOW_SECTION_LABEL_INDENT = 30;
+
+// Empty-state "Add input/output" cards are taller and more prominent than a regular
+// leaf. The height is 2× the spine-handle offset (SPINE_HANDLE_TOP = 36) so the
+// connecting arrow lands on the card's vertical center rather than near its bottom.
+const FLOW_PLACEHOLDER_LEAF_H = 72;
+
+function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
+  if (dims.metaRowH === 0) {
+    return dims.leafBaseH;
+  }
+  if (node.label === 'none') {
+    return FLOW_PLACEHOLDER_LEAF_H;
+  }
   const rows = Math.min(
     (node.meta?.length ?? 0) +
       (node.topics && node.topics.length > 0 ? 1 : 0) +
@@ -943,7 +1007,7 @@ function leafCardHeight(node: PipelineFlowNode): number {
       (node.missingSasl ? 1 : 0),
     FLOW_MAX_META_ROWS
   );
-  return FLOW_LEAF_BASE_H + (rows > 0 ? 8 + rows * FLOW_META_ROW_H : 0);
+  return dims.leafBaseH + (rows > 0 ? 8 + rows * dims.metaRowH : 0);
 }
 
 type SizedNode = {
@@ -959,25 +1023,27 @@ type SizedNode = {
 function measureFlowNode(
   node: PipelineFlowNode,
   childrenOf: (id: string) => PipelineFlowNode[],
-  collapsedIds: ReadonlySet<string>
+  collapsedIds: ReadonlySet<string>,
+  dims: FlowDims
 ): SizedNode {
   const collapsed = collapsedIds.has(node.id);
   const kids = node.kind === 'group' && !collapsed ? childrenOf(node.id) : [];
   if (kids.length === 0) {
-    const h = node.kind === 'group' ? FLOW_CONTAINER_HEADER_H : leafCardHeight(node);
-    return { node, w: FLOW_CARD_WIDTH, h, collapsed, children: [] };
+    const h = node.kind === 'group' ? dims.headerH : leafCardHeight(node, dims);
+    return { node, w: dims.cardW, h, collapsed, children: [] };
   }
-  const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds));
+  const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds, dims));
   const innerW = Math.max(...children.map((c) => c.w));
-  const innerH = children.reduce((sum, c) => sum + c.h, 0) + FLOW_STACK_GAP * (children.length - 1);
-  return { node, w: innerW + 2 * FLOW_PAD, h: FLOW_CONTAINER_HEADER_H + innerH + 2 * FLOW_PAD, children, collapsed };
+  const innerH = children.reduce((sum, c) => sum + c.h, 0) + dims.stackGap * (children.length - 1);
+  return { node, w: innerW + 2 * dims.pad, h: dims.headerH + innerH + 2 * dims.pad, children, collapsed };
 }
 
-function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number) {
+function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean) {
   return {
     label: node.label,
     collapsible: node.collapsible ?? false,
     collapsed,
+    ...(compact ? { compact: true } : {}),
     ...(node.section ? { section: node.section } : {}),
     ...(node.labelText ? { labelText: node.labelText } : {}),
     ...(node.topics ? { topics: node.topics } : {}),
@@ -993,6 +1059,8 @@ type EmitContext = {
   rfNodes: Node[];
   rfEdges: Edge[];
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
+  dims: FlowDims;
+  compact: boolean;
 };
 
 // Emit a node (and recursively its children) at a position relative to `parentId`
@@ -1005,7 +1073,9 @@ function emitFlowNode(
   ctx: EmitContext
 ): void {
   const { node, w, h, collapsed, children } = sized;
-  const isContainer = children.length > 0;
+  // A group is always a container (so a collapsed group keeps its header + toggle,
+  // letting it be expanded again); leaves render as plain cards.
+  const isContainer = node.kind === 'group';
   const childCount = collapsed ? countDescendants(node.id, ctx.childrenMap) : 0;
 
   ctx.rfNodes.push({
@@ -1017,13 +1087,13 @@ function emitFlowNode(
     style: isContainer
       ? { width: w, height: h, pointerEvents: 'all', transition: 'transform 200ms ease' }
       : { pointerEvents: 'all', transition: 'transform 200ms ease' },
-    data: makeFlowNodeData(node, collapsed, childCount),
+    data: makeFlowNodeData(node, collapsed, childCount, ctx.compact),
   });
 
-  let childY = FLOW_CONTAINER_HEADER_H + FLOW_PAD;
+  let childY = ctx.dims.headerH + ctx.dims.pad;
   for (const child of children) {
-    emitFlowNode(child, node.id, { x: FLOW_PAD, y: childY }, ctx);
-    childY += child.h + FLOW_STACK_GAP;
+    emitFlowNode(child, node.id, { x: ctx.dims.pad, y: childY }, ctx);
+    childY += child.h + ctx.dims.stackGap;
   }
 
   // Chain the inner steps of a sequential sub-pipeline so the order is explicit.
@@ -1045,62 +1115,149 @@ function emitFlowNode(
   }
 }
 
-export function computeFlowLayout(
-  nodes: PipelineFlowNode[],
-  collapsedIds: ReadonlySet<string> = new Set()
-): { rfNodes: Node[]; rfEdges: Edge[]; width: number; height: number } {
-  const childrenMap = buildChildrenMap(nodes);
-  const childrenOf = (id: string) => childrenMap.get(id) ?? [];
+export type FlowOrientation = 'horizontal' | 'vertical';
 
-  const mainSequence = mainFlowSequence(nodes);
-  const sized = mainSequence.map((node) => measureFlowNode(node, childrenOf, collapsedIds));
-
-  const ctx: EmitContext = { rfNodes: [], rfEdges: [], childrenMap };
-
-  // Place each top-level step left→right, top-aligned so the main spine is level.
-  let x = 0;
-  let maxStepHeight = 0;
-  for (const step of sized) {
-    emitFlowNode(step, undefined, { x, y: 0 }, ctx);
-    x += step.w + FLOW_COL_GAP;
-    maxStepHeight = Math.max(maxStepHeight, step.h);
-  }
-  const flowWidth = x - FLOW_COL_GAP;
-
-  // Main-path edges between consecutive top-level steps; each carries the index a
-  // processor insertion at that gap would use (count of processors at or before it).
+// Main-path edges between consecutive top-level steps; each carries the processor
+// index an insertion at that gap would use (count of processors at or before it).
+function buildSpineEdges(mainSequence: PipelineFlowNode[], isVertical: boolean): Edge[] {
+  const edges: Edge[] = [];
   let processorsSeen = 0;
   for (let i = 0; i < mainSequence.length - 1; i += 1) {
     if (mainSequence[i].section === 'processor') {
       processorsSeen += 1;
     }
-    ctx.rfEdges.push({
+    edges.push({
       id: `spine-${mainSequence[i].id}-${mainSequence[i + 1].id}`,
       source: mainSequence[i].id,
       target: mainSequence[i + 1].id,
-      sourceHandle: 'r',
-      targetHandle: 'l',
+      sourceHandle: isVertical ? 'b' : 'r',
+      targetHandle: isVertical ? 't' : 'l',
       type: 'flowSpine',
       data: { insertIndex: processorsSeen },
       markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: 'var(--color-primary)' },
     });
   }
+  return edges;
+}
 
-  // Resources lane below the flow (referenced by label, so no flow edges).
-  const resources = childrenOf('section-resources');
-  const laneY = maxStepHeight + 2 * FLOW_STACK_GAP + 24;
+export function computeFlowLayout(
+  nodes: PipelineFlowNode[],
+  collapsedIds: ReadonlySet<string> = new Set(),
+  orientation: FlowOrientation = 'horizontal',
+  compact = false
+): { rfNodes: Node[]; rfEdges: Edge[]; width: number; height: number } {
+  const childrenMap = buildChildrenMap(nodes);
+  const childrenOf = (id: string) => childrenMap.get(id) ?? [];
+  const isVertical = orientation === 'vertical';
+  const dims = compact ? COMPACT_DIMS : FULL_DIMS;
+
+  const mainSequence = mainFlowSequence(nodes);
+  const sized = mainSequence.map((node) => measureFlowNode(node, childrenOf, collapsedIds, dims));
+
+  const ctx: EmitContext = { rfNodes: [], rfEdges: [], childrenMap, dims, compact };
+
+  const { mainExtent, maxCross } = placeTopLevelSteps(sized, isVertical, ctx);
+  ctx.rfEdges.push(...buildSpineEdges(mainSequence, isVertical));
+  // The resource lane sits past the main flow along the cross axis: below the row
+  // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
+  const laneStart = (isVertical ? mainExtent : maxCross) + 2 * dims.stackGap + 24;
+  const resources = placeResourceLane({ nodes, childrenMap, isVertical, laneStart, ctx });
+
+  return {
+    rfNodes: ctx.rfNodes,
+    rfEdges: ctx.rfEdges,
+    ...flowDimensions({ isVertical, mainExtent, maxCross, laneStart, resources, dims }),
+  };
+}
+
+// Lay the top-level steps along the main axis (left→right or top→bottom), each
+// aligned to the cross-axis start so the spine reads as one line.
+function placeTopLevelSteps(
+  sized: SizedNode[],
+  isVertical: boolean,
+  ctx: EmitContext
+): { mainExtent: number; maxCross: number } {
+  let cursor = 0;
+  let maxCross = 0;
+  let prevSection: PipelineFlowNode['section'];
+  // Steps are separated by the main-axis gap (colGap) in both orientations; the
+  // tighter stackGap is reserved for children inside a container.
+  const gap = ctx.dims.colGap;
+  for (const step of sized) {
+    const section = step.node.section;
+    // In the compact (vertical) lane, divide sections with a small label.
+    if (isVertical && section && section !== prevSection) {
+      ctx.rfNodes.push({
+        id: `section-label-${section}`,
+        type: 'flowSectionLabel',
+        position: { x: FLOW_SECTION_LABEL_INDENT, y: cursor },
+        selectable: false,
+        draggable: false,
+        data: { label: SECTION_TITLES[section] ?? '' },
+      });
+      cursor += FLOW_SECTION_LABEL_H + FLOW_SECTION_LABEL_GAP;
+    }
+    prevSection = section;
+    emitFlowNode(step, undefined, isVertical ? { x: 0, y: cursor } : { x: cursor, y: 0 }, ctx);
+    cursor += (isVertical ? step.h : step.w) + gap;
+    maxCross = Math.max(maxCross, isVertical ? step.w : step.h);
+  }
+  return { mainExtent: cursor - gap, maxCross };
+}
+
+// Resources lane after the flow (referenced by label, so no flow edges).
+function placeResourceLane({
+  nodes,
+  childrenMap,
+  isVertical,
+  laneStart,
+  ctx,
+}: {
+  nodes: PipelineFlowNode[];
+  childrenMap: Map<string | undefined, PipelineFlowNode[]>;
+  isVertical: boolean;
+  laneStart: number;
+  ctx: EmitContext;
+}): PipelineFlowNode[] {
+  const resources = sectionChildren(nodes, childrenMap, 'resource');
+  let stackY = laneStart;
   for (const [i, resource] of resources.entries()) {
     ctx.rfNodes.push({
       id: resource.id,
       type: 'flowCard',
-      position: { x: i * (FLOW_CARD_WIDTH + FLOW_COL_GAP), y: laneY },
+      position: isVertical ? { x: 0, y: stackY } : { x: i * (ctx.dims.cardW + ctx.dims.colGap), y: laneStart },
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-      data: makeFlowNodeData(resource, false, 0),
+      data: makeFlowNodeData(resource, false, 0, ctx.compact),
     });
+    stackY += leafCardHeight(resource, ctx.dims) + ctx.dims.stackGap;
   }
+  return resources;
+}
 
-  const width = Math.max(flowWidth, resources.length * (FLOW_CARD_WIDTH + FLOW_COL_GAP), FLOW_CARD_WIDTH);
-  const height =
-    resources.length > 0 ? laneY + leafCardHeight(resources[0]) : Math.max(maxStepHeight, FLOW_LEAF_BASE_H);
-  return { rfNodes: ctx.rfNodes, rfEdges: ctx.rfEdges, width, height };
+function flowDimensions({
+  isVertical,
+  mainExtent,
+  maxCross,
+  laneStart,
+  resources,
+  dims,
+}: {
+  isVertical: boolean;
+  mainExtent: number;
+  maxCross: number;
+  laneStart: number;
+  resources: PipelineFlowNode[];
+  dims: FlowDims;
+}): { width: number; height: number } {
+  if (isVertical) {
+    const resourcesExtent = resources.reduce((sum, r) => sum + leafCardHeight(r, dims) + dims.stackGap, 0);
+    return {
+      width: Math.max(maxCross, dims.cardW),
+      height: resources.length > 0 ? laneStart + resourcesExtent : Math.max(mainExtent, dims.leafBaseH),
+    };
+  }
+  return {
+    width: Math.max(mainExtent, resources.length * (dims.cardW + dims.colGap), dims.cardW),
+    height: resources.length > 0 ? laneStart + leafCardHeight(resources[0], dims) : Math.max(maxCross, dims.leafBaseH),
+  };
 }

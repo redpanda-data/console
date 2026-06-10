@@ -84,7 +84,7 @@ import { z } from 'zod';
 import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
-import { PipelineFlowDiagram } from './pipeline-flow-diagram';
+import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
@@ -648,7 +648,6 @@ function SidebarPanel({
   onAddTopic,
   onAddSasl,
   onOpenCommandMenu,
-  onBrowseTemplates,
 }: {
   mode: string;
   yamlContent: string;
@@ -657,24 +656,22 @@ function SidebarPanel({
   onAddTopic: (section: string, componentName: string) => void;
   onAddSasl: (section: string, componentName: string) => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
-  onBrowseTemplates?: () => void;
 }) {
-  // View mode is read-only; only wire editing handlers otherwise.
-  const editHandlers =
-    mode === 'view'
-      ? {}
-      : {
-          onAddConnector: (type: string) => onAddConnector(type as ConnectComponentType),
-          onAddSasl,
-          onAddTopic,
-          onBrowseTemplates,
-        };
+  // View mode is read-only; only wire add handlers otherwise.
+  const canEdit = mode !== 'view';
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {isPipelineDiagramsEnabled ? (
-          <PipelineFlowDiagram configYaml={yamlContent} hideZoomControls {...editHandlers} />
+          <PipelineFlowCanvas
+            configYaml={yamlContent}
+            onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
+            onAddSasl={canEdit ? onAddSasl : undefined}
+            onAddTopic={canEdit ? onAddTopic : undefined}
+            orientation="vertical"
+            simple
+          />
         ) : null}
       </div>
       {mode !== 'view' && (
@@ -745,9 +742,15 @@ function SidebarPanel({
 export default function PipelinePage() {
   const { mode, pipelineId } = usePipelineMode();
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
+  // When the visual editor is enabled, open editing on the Visual lane by default.
+  const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isEmbedded();
   // Keyed by pipeline id so each pipeline gets a fresh editor store.
   return (
-    <PipelineEditorProvider initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'} key={pipelineId ?? 'create'}>
+    <PipelineEditorProvider
+      initialEditLane={isVisualEditorEnabled ? 'visual' : 'yaml'}
+      initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'}
+      key={pipelineId ?? 'create'}
+    >
       <PipelinePageContent />
     </PipelineEditorProvider>
   );
@@ -1036,9 +1039,6 @@ function PipelinePageContent() {
             onAddConnector={(type) => setAddConnectorType(type)}
             onAddSasl={handleAddSasl}
             onAddTopic={handleAddTopic}
-            onBrowseTemplates={
-              isTemplateGalleryEnabled && mode !== 'view' ? () => setIsTemplateDialogOpen(true) : undefined
-            }
             onOpenCommandMenu={handleCommandMenuOpen}
             yamlContent={yamlContent}
           />

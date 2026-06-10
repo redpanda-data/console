@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { BaseEdge, EdgeLabelRenderer, type EdgeProps, Handle, Position } from '@xyflow/react';
+import { BaseEdge, type EdgeProps, Handle, Position } from '@xyflow/react';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
@@ -36,11 +36,10 @@ export function getConnectorDocsUrl(section: string, connectorName: string): str
   }
   return `${DOCS_BASE}/${section}s/${connectorName}/`;
 }
-const ARROW_GAP = 8;
+// Left-rail offsets for the flow edges: the main path sits on the outer rail and
+// sub-flows (branch/fan-in) on an inner rail, so the two read as distinct lines.
 const BRANCH_INDENT = 12;
-// Small gap so the main-flow spine reads as one continuous line through the
-// components (just enough room for the arrowhead before the next node).
-const SECTION_EDGE_GAP = 6;
+const MAIN_RAIL_OFFSET = 22;
 
 const SKELETON_SECTIONS = [
   { label: 'INPUT', leaves: 1 },
@@ -161,7 +160,8 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
       ) : null}
     </button>
     <NodeActions data={data} />
-    {!data.collapsed && <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />}
+    {/* Source handle for the outgoing flow edge — present even when collapsed. */}
+    <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />
   </div>
 );
 
@@ -289,43 +289,40 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
           <PlusIcon />
         </Button>
       ) : null}
+      {/* Leaves are also flow sources (proc → next), so they need a source handle. */}
+      <Handle className={`${invisibleHandle} left-0!`} position={Position.Bottom} type="source" />
     </BaseNode>
   );
 };
 
-export function TreeEdge({ sourceX, sourceY, targetX, targetY, markerEnd }: EdgeProps) {
-  const path = `M ${sourceX + BRANCH_INDENT} ${sourceY} V ${targetY} H ${targetX - ARROW_GAP}`;
-  return <BaseEdge markerEnd={markerEnd} path={path} style={{ stroke: 'var(--color-border)', strokeWidth: 1 }} />;
+// Route an edge out to a vertical rail on the LEFT of the cards, then into the
+// target — so the flow line stays in the gutter and is never hidden behind a card.
+// `offset` controls which rail (main path sits further left than sub-flows).
+function gutterFlowPath(edge: Pick<EdgeProps, 'sourceX' | 'sourceY' | 'targetX' | 'targetY'>, offset: number): string {
+  const { sourceX, sourceY, targetX, targetY } = edge;
+  const railX = Math.min(sourceX, targetX) - offset;
+  return `M ${sourceX} ${sourceY} L ${railX} ${sourceY} L ${railX} ${targetY} L ${targetX} ${targetY}`;
 }
 
-export function SectionEdge({ sourceX, sourceY, targetY, markerEnd, data }: EdgeProps) {
-  const path = `M ${sourceX} ${sourceY} V ${targetY - SECTION_EDGE_GAP}`;
-  const onInsert = (data as { onInsert?: () => void } | undefined)?.onInsert;
-  const midY = (sourceY + targetY) / 2;
+// Sub-flow (branch/fan-in) connector: muted, on an inner rail.
+export function TreeEdge(props: EdgeProps) {
   return (
-    <>
-      <BaseEdge
-        markerEnd={markerEnd}
-        path={path}
-        style={{
-          stroke: 'var(--color-primary)',
-          strokeWidth: 2,
-        }}
-      />
-      {onInsert ? (
-        <EdgeLabelRenderer>
-          <button
-            aria-label="Insert a step"
-            className="nodrag nopan pointer-events-auto absolute flex size-5 items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
-            onClick={onInsert}
-            style={{ transform: `translate(-50%, -50%) translate(${sourceX}px, ${midY}px)` }}
-            type="button"
-          >
-            <PlusIcon className="size-3" />
-          </button>
-        </EdgeLabelRenderer>
-      ) : null}
-    </>
+    <BaseEdge
+      markerEnd={props.markerEnd}
+      path={gutterFlowPath(props, BRANCH_INDENT)}
+      style={{ stroke: 'var(--color-border)', strokeWidth: 1.5 }}
+    />
+  );
+}
+
+// Main data path: primary, on the outer (leftmost) rail so it reads as the spine.
+export function SectionEdge(props: EdgeProps) {
+  return (
+    <BaseEdge
+      markerEnd={props.markerEnd}
+      path={gutterFlowPath(props, MAIN_RAIL_OFFSET)}
+      style={{ stroke: 'var(--color-primary)', strokeWidth: 2 }}
+    />
   );
 }
 

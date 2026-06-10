@@ -24,7 +24,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes } from './pipeline-flow-canvas-nodes';
 import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
-import { computeFlowLayout, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import { computeFlowLayout, type FlowOrientation, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
@@ -73,6 +73,12 @@ function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
 
 type PipelineFlowCanvasProps = {
   configYaml: string;
+  /** Main-axis direction: 'horizontal' for the Visual lane, 'vertical' for the compact sidebar. */
+  orientation?: FlowOrientation;
+  /** Hide the zoom controls (used by the compact sidebar). */
+  hideControls?: boolean;
+  /** Static overview: no background dots, no pan/zoom — just a fit-to-view diagram (sidebar). */
+  simple?: boolean;
   // Edit-mode callbacks. When omitted the canvas is a read-only viewer.
   onEditNode?: (target: EditTarget) => void;
   onDeleteNode?: (target: EditTarget) => void;
@@ -84,6 +90,9 @@ type PipelineFlowCanvasProps = {
 
 export function PipelineFlowCanvas({
   configYaml,
+  orientation = 'horizontal',
+  hideControls,
+  simple,
   onEditNode,
   onDeleteNode,
   onInsert,
@@ -108,8 +117,8 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  const { rfNodes, rfEdges, translateExtent } = useMemo(() => {
-    const layout = computeFlowLayout(nodes, collapsedIds);
+  const { rfNodes, rfEdges, translateExtent, contentHeight } = useMemo(() => {
+    const layout = computeFlowLayout(nodes, collapsedIds, orientation, simple);
 
     const callbacks: CanvasCallbacks = {
       onEditNode,
@@ -136,13 +145,28 @@ export function PipelineFlowCanvas({
         )
       : layout.rfEdges;
 
+    // The compact sidebar scrolls vertically and should hug the content (just a
+    // little breathing room); the full canvas allows generous panning room.
+    const pad = simple ? 16 : PAN_PADDING;
     const extent: [[number, number], [number, number]] = [
-      [-PAN_PADDING, -PAN_PADDING],
-      [layout.width + PAN_PADDING, layout.height + PAN_PADDING],
+      [-pad, -pad],
+      [layout.width + pad, layout.height + pad],
     ];
 
-    return { rfNodes: injectedNodes, rfEdges: injectedEdges, translateExtent: extent };
-  }, [nodes, collapsedIds, toggleCollapse, onEditNode, onDeleteNode, onInsert, onAddConnector, onAddTopic, onAddSasl]);
+    return { rfNodes: injectedNodes, rfEdges: injectedEdges, translateExtent: extent, contentHeight: layout.height };
+  }, [
+    nodes,
+    collapsedIds,
+    orientation,
+    simple,
+    toggleCollapse,
+    onEditNode,
+    onDeleteNode,
+    onInsert,
+    onAddConnector,
+    onAddTopic,
+    onAddSasl,
+  ]);
 
   if (rfNodes.length === 0) {
     return (
@@ -153,29 +177,35 @@ export function PipelineFlowCanvas({
   }
 
   return (
-    <div className="h-full w-full">
+    // Compact lane: the canvas is exactly as tall as its content and top-anchored,
+    // so it never re-centers as the lane resizes — the surrounding lane scrolls.
+    <div className="w-full" style={simple ? { height: contentHeight + 16 } : { height: '100%' }}>
       <ReactFlowProvider>
         <ReactFlow
+          defaultViewport={simple ? { x: 8, y: 8, zoom: 1 } : undefined}
           edges={rfEdges}
           edgeTypes={flowEdgeTypes}
           elementsSelectable={false}
-          fitView
+          fitView={!simple}
           fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
-          maxZoom={MAX_ZOOM}
-          minZoom={MIN_ZOOM}
+          maxZoom={simple ? 1 : MAX_ZOOM}
+          minZoom={simple ? 1 : MIN_ZOOM}
           nodes={rfNodes}
           nodesConnectable={false}
           nodesDraggable={false}
           nodesFocusable={false}
           nodeTypes={flowNodeTypes}
-          panOnDrag
+          panOnDrag={!simple}
           panOnScroll={false}
+          preventScrolling={!simple}
           proOptions={{ hideAttribution: true }}
-          translateExtent={translateExtent}
-          zoomOnScroll
+          translateExtent={simple ? undefined : translateExtent}
+          zoomOnDoubleClick={!simple}
+          zoomOnPinch={!simple}
+          zoomOnScroll={!simple}
         >
-          <Background gap={20} size={1.5} variant={BackgroundVariant.Dots} />
-          <Controls position="bottom-right" showInteractive={false} />
+          {simple ? null : <Background gap={20} size={1.5} variant={BackgroundVariant.Dots} />}
+          {hideControls || simple ? null : <Controls position="bottom-right" showInteractive={false} />}
         </ReactFlow>
       </ReactFlowProvider>
     </div>

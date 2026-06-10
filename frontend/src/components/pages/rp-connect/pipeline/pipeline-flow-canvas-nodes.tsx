@@ -30,14 +30,17 @@ import { useEffect, useRef } from 'react';
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { FLOW_CARD_WIDTH } from '../utils/pipeline-flow-parser';
+import { FLOW_CARD_WIDTH, FLOW_COMPACT_CARD_WIDTH } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
 // Anchor the spine (left/right) handles a fixed distance below the card top —
-// roughly the title row — so cards of differing heights still connect along a
-// horizontal line. Bottom/top handles (branch threads) keep their defaults.
+// roughly the title row — so cards of differing heights connect along a
+// horizontal line. The top/bottom handles are anchored a fixed distance from the
+// left so vertically-stacked cards of differing widths connect along a straight
+// vertical line (no diagonal connectors).
 const SPINE_HANDLE_TOP = 36;
+const SPINE_HANDLE_LEFT = 18;
 
 // React Flow drives panning/dragging from native listeners on ancestor elements:
 // d3-zoom pans on `mousedown`/`touchstart`, d3-drag uses `pointerdown`. React's
@@ -82,6 +85,8 @@ const SECTION_LABEL: Record<string, string> = {
 export type FlowCardData = {
   label: string;
   section?: string;
+  /** Compact rendering for the sidebar (smaller, no kind badge or metadata). */
+  compact?: boolean;
   collapsible?: boolean;
   collapsed?: boolean;
   childCount?: number;
@@ -115,7 +120,7 @@ const NodeHandles = () => (
         id={h.id}
         key={h.id}
         position={h.position}
-        style={h.id === 'l' || h.id === 'r' ? { top: SPINE_HANDLE_TOP } : undefined}
+        style={h.id === 'l' || h.id === 'r' ? { top: SPINE_HANDLE_TOP } : { left: SPINE_HANDLE_LEFT }}
         type={h.type}
       />
     ))}
@@ -228,16 +233,48 @@ const MissingChip = ({
     </Badge>
   );
 
-const PlaceholderCard = ({ data }: { data: FlowCardData }) => (
-  <button
-    className="nodrag nopan flex h-full w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border border-dashed bg-card/40 px-3 py-4 text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-card/70 hover:text-foreground"
-    disabled={!data.onAddConnector}
-    onClick={data.onAddConnector ? () => data.onAddConnector?.(data.section ?? '') : undefined}
-    type="button"
-  >
-    <PlusIcon className="size-4" />
-    Add {data.section ?? 'connector'}
-  </button>
+const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
+  const onClick = data.onAddConnector ? () => data.onAddConnector?.(data.section ?? '') : undefined;
+  const label = `Add ${data.section ?? 'connector'}`;
+  if (data.compact) {
+    return (
+      <button
+        className="nodrag nopan flex h-full w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border border-dashed bg-card/40 px-2.5 py-1.5 text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-card/70 hover:text-foreground"
+        disabled={!data.onAddConnector}
+        onClick={onClick}
+        type="button"
+      >
+        <PlusIcon className="size-4" />
+        {label}
+      </button>
+    );
+  }
+  return (
+    <button
+      className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
+      disabled={!data.onAddConnector}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="flex size-8 items-center justify-center rounded-full border border-current/40 bg-background/70 transition-colors group-hover:border-primary group-hover:bg-primary/10">
+        <PlusIcon className="size-4" />
+      </span>
+      <Text as="span" className="font-medium text-sm" variant="bodyStrongMedium">
+        {label}
+      </Text>
+    </button>
+  );
+};
+
+// A small one-row pill used in the compact sidebar (logo + name, no badge/meta).
+const CompactCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => (
+  <div className="group flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md">
+    <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
+    <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
+      {data.label}
+    </Text>
+    <CardActions data={data} docsUrl={docsUrl} />
+  </div>
 );
 
 const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
@@ -284,11 +321,23 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   const isPlaceholder = data.label === 'none';
   const docsUrl = isPlaceholder ? undefined : getConnectorDocsUrl(data.section ?? '', data.label);
   const ref = useStopPanOnControls();
+  const width = data.compact ? FLOW_COMPACT_CARD_WIDTH : FLOW_CARD_WIDTH;
+
+  const card = (() => {
+    if (isPlaceholder) {
+      return <PlaceholderCard data={data} />;
+    }
+    return data.compact ? (
+      <CompactCard data={data} docsUrl={docsUrl} />
+    ) : (
+      <ComponentCard data={data} docsUrl={docsUrl} />
+    );
+  })();
 
   return (
-    <div className="group relative" ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
+    <div className="group relative" ref={ref} style={{ width }}>
       <NodeHandles />
-      {isPlaceholder ? <PlaceholderCard data={data} /> : <ComponentCard data={data} docsUrl={docsUrl} />}
+      {card}
     </div>
   );
 };
@@ -307,22 +356,37 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       ref={ref}
     >
       <NodeHandles />
-      <div className="flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80 px-3 py-2">
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
+          data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2'
+        )}
+      >
         <button
           className={cn('nodrag nopan flex min-w-0 items-center gap-2 text-left', data.collapsible && 'cursor-pointer')}
           disabled={!data.collapsible}
           onClick={data.collapsible ? data.onToggle : undefined}
           type="button"
         >
-          <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
-          <span className="flex min-w-0 flex-col">
-            <Text as="span" className="text-[10px] text-muted-foreground uppercase leading-none tracking-wide">
-              {kindLabel}
-            </Text>
-            <Text as="span" className="min-w-0 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
+          <ConnectorLogo
+            className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
+            fallback={Box}
+            name={data.label as ComponentName}
+          />
+          {data.compact ? (
+            <Text as="span" className="min-w-0 truncate font-medium text-sm" title={data.label}>
               {data.label}
             </Text>
-          </span>
+          ) : (
+            <span className="flex min-w-0 flex-col">
+              <Text as="span" className="text-[10px] text-muted-foreground uppercase leading-none tracking-wide">
+                {kindLabel}
+              </Text>
+              <Text as="span" className="min-w-0 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
+                {data.label}
+              </Text>
+            </span>
+          )}
           {data.collapsible ? (
             <span className="shrink-0 text-subtle">
               {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
@@ -335,6 +399,13 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
     </div>
   );
 };
+
+// A non-interactive section divider ("INPUT" / "PROCESSORS" / …) in the compact lane.
+const FlowSectionLabel = ({ data }: { data: { label?: string } }) => (
+  <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
+    {data.label}
+  </Text>
+);
 
 export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, data }: EdgeProps) {
   // The spine runs along a single row, so a straight line reads cleanest.
@@ -384,6 +455,7 @@ export function FlowChainEdge({
 export const flowNodeTypes = {
   flowCard: FlowCardNode,
   flowContainer: FlowContainerNode,
+  flowSectionLabel: FlowSectionLabel,
 };
 
 export const flowEdgeTypes = {

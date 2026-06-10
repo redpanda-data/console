@@ -584,7 +584,7 @@ describe('PipelinePage', () => {
     expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
   });
 
-  it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
+  it('hydrates the sidebar flow canvas with pipeline configYaml in view mode', async () => {
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
     mockIsEmbedded.mockReturnValue(true);
@@ -592,7 +592,7 @@ describe('PipelinePage', () => {
     render(<PipelinePage />, { transport: createTransport() });
 
     await waitFor(() => {
-      const diagram = screen.getByTestId('flow-diagram');
+      const diagram = screen.getByTestId('flow-canvas');
       expect(diagram.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
     });
   });
@@ -636,7 +636,7 @@ describe('PipelinePage', () => {
     expect(canvas.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
   });
 
-  it('edit page exposes YAML and Visual lanes; Visual swaps the editor for the canvas', async () => {
+  it('opens editing on the Visual lane when the visual editor is enabled, and YAML swaps in the editor', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
@@ -644,13 +644,13 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // YAML is the default edit lane.
-    expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
-
-    // Switching to Visual swaps in the interactive canvas.
-    await user.click(await screen.findByRole('tab', { name: 'Visual' }));
+    // Visual is the default edit lane when the flag is on — the editor is not shown.
     expect(await screen.findByTestId('flow-canvas')).toBeInTheDocument();
     expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
+
+    // Switching to YAML swaps in the editor.
+    await user.click(await screen.findByRole('tab', { name: 'YAML' }));
+    expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
   });
 
   it('confirms before stopping a running pipeline', async () => {
