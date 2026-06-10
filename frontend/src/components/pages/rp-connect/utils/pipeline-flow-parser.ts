@@ -56,6 +56,20 @@ export type PipelineFlowNode = {
   // of them (alternatives/merges, e.g. switch cases, broker inputs). Defaults to
   // sequential when unset.
   childFlow?: 'sequential' | 'parallel';
+  // The routing condition that selects this branch (switch `check`, fallback "on
+  // failure"). Shown as a label on the fan-out edge that enters this node.
+  condition?: string;
+  // A catch-all / else branch (a switch case with no `check`, drawn explicitly).
+  isDefault?: boolean;
+  // An error / dead-letter path (catch handler, `errored()` route, fallback). Drawn
+  // with a distinct (red, dashed) edge style.
+  isErrorPath?: boolean;
+  // Marks a `branch` processor container: data is copied out (request_map), run
+  // through the sub-pipeline, then merged back (result_map). Drives copy/merge edges.
+  branch?: { request: boolean; result: boolean };
+  // Label of a resource this component references (cache/rate_limit `resource`), used
+  // to draw a dashed reference edge to the matching resource node.
+  resourceRef?: string;
 };
 
 type BranchContext = {
@@ -72,7 +86,9 @@ type GroupSpec = {
   sectionId: string;
 };
 
-function buildGroupWithChildren(spec: GroupSpec, childNames: string[]): PipelineFlowNode[] {
+type GroupChildSpec = { name: string; condition?: string; isDefault?: boolean; isErrorPath?: boolean };
+
+function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): PipelineFlowNode[] {
   return [
     {
       id: spec.groupId,
@@ -84,16 +100,48 @@ function buildGroupWithChildren(spec: GroupSpec, childNames: string[]): Pipeline
       // A `sequence` input runs its children in order; broker/switch/fallback fan out.
       childFlow: spec.groupLabel === 'sequence' ? 'sequential' : 'parallel',
     },
-    ...childNames.map(
-      (name, i): PipelineFlowNode => ({
+    ...children.map(
+      (child, i): PipelineFlowNode => ({
         id: `${spec.groupId}-${i}`,
         kind: 'leaf',
-        label: name,
+        label: child.name,
         section: spec.section,
         parentId: spec.groupId,
+        condition: child.condition,
+        isDefault: child.isDefault,
+        isErrorPath: child.isErrorPath,
       })
     ),
   ];
+}
+
+// Output branches with their routing semantics: switch cases carry a `check`
+// condition (no check ⇒ default), fallback tiers route "on failure" of the prior.
+function parseOutputBranches(outputKey: string, value: unknown): GroupChildSpec[] | undefined {
+  if (outputKey === 'switch' && value && typeof value === 'object' && 'cases' in value) {
+    const cases = (value as { cases?: Record<string, unknown>[] }).cases;
+    if (!Array.isArray(cases)) {
+      return;
+    }
+    return cases.map((c) => {
+      const check = c.check;
+      const hasCheck = typeof check === 'string' && check !== '';
+      return {
+        name: firstKey(c.output) ?? 'output',
+        condition: hasCheck ? (check as string) : undefined,
+        isDefault: hasCheck ? undefined : true,
+        isErrorPath: isErroredCheck(check) ? true : undefined,
+      };
+    });
+  }
+  if (outputKey === 'fallback' && Array.isArray(value)) {
+    return value.map((item, i) => ({
+      name: firstKey(item) ?? 'output',
+      condition: i === 0 ? undefined : 'on failure',
+      isErrorPath: i === 0 ? undefined : true,
+    }));
+  }
+  return;
 }
 
 function extractLabel(obj: Record<string, unknown>): string | undefined {
@@ -156,7 +204,7 @@ function parseInputNodes(
   if (childNames && childNames.length > 0) {
     const groupNodes = buildGroupWithChildren(
       { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
-      childNames
+      childNames.map((name) => ({ name }))
     );
     groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' } };
     return groupNodes;
@@ -207,8 +255,33 @@ function extractProcessorArray(value: unknown): Record<string, unknown>[] | unde
   return;
 }
 
-function makeLeaf(name: string, ctx: BranchContext): PipelineFlowNode {
-  return { id: ctx.idPrefix, kind: 'leaf', label: name, section: ctx.section, parentId: ctx.parentId };
+// A reference to a resource is expressed as a string `resource:` field on the
+// component (cache/rate_limit processors). We surface it so the canvas can draw a
+// dashed edge to the matching resource node.
+function extractResourceRef(componentValue: unknown): string | undefined {
+  if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
+    return;
+  }
+  const ref = (componentValue as Record<string, unknown>).resource;
+  return typeof ref === 'string' && ref !== '' ? ref : undefined;
+}
+
+// A Bloblang check references the error flag (`errored()`), i.e. this branch handles
+// failed messages — a dead-letter path.
+const ERRORED_CHECK_RE = /errored\s*\(/;
+function isErroredCheck(check: unknown): boolean {
+  return typeof check === 'string' && ERRORED_CHECK_RE.test(check);
+}
+
+function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): PipelineFlowNode {
+  return {
+    id: ctx.idPrefix,
+    kind: 'leaf',
+    label: name,
+    section: ctx.section,
+    parentId: ctx.parentId,
+    resourceRef: extractResourceRef(componentValue),
+  };
 }
 
 // Components whose children are alternatives/parallel branches rather than a
@@ -224,6 +297,8 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
     parentId: ctx.parentId,
     collapsible: true,
     childFlow: PARALLEL_GROUP_COMPONENTS.has(name) ? 'parallel' : 'sequential',
+    // `catch` runs only when an upstream processor errored — a dead-letter handler.
+    isErrorPath: name === 'catch' ? true : undefined,
   };
 }
 
@@ -239,6 +314,8 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       continue;
     }
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
+    const check = caseRecord.check;
+    const hasCheck = typeof check === 'string' && check !== '';
     const caseLabel = `case ${ci + 1}`;
     nodes.push({
       id: caseId,
@@ -248,6 +325,9 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       parentId: ctx.idPrefix,
       collapsible: true,
       childFlow: 'sequential',
+      condition: hasCheck ? (check as string) : undefined,
+      isDefault: hasCheck ? undefined : true,
+      isErrorPath: isErroredCheck(check) ? true : undefined,
     });
     pushProcessorChildren(nodes, caseProcs, { ...ctx, parentId: caseId, idPrefix: caseId });
   }
@@ -393,7 +473,7 @@ function parseComponentWithBranching(
   ctx: BranchContext
 ): PipelineFlowNode[] {
   if (ctx.depth >= MAX_BRANCH_DEPTH || !componentValue || typeof componentValue !== 'object') {
-    return [makeLeaf(componentName, ctx)];
+    return [makeLeaf(componentName, ctx, componentValue)];
   }
 
   if (Array.isArray(componentValue) && BRANCHING_FIELDS.has(componentName)) {
@@ -403,10 +483,30 @@ function parseComponentWithBranching(
   const config = componentValue as Record<string, unknown>;
   const childNodes = parseBranchingKeys(config, ctx);
   if (childNodes.length === 0) {
-    return [makeLeaf(componentName, ctx)];
+    return [makeLeaf(componentName, ctx, componentValue)];
   }
 
-  return [makeGroup(componentName, ctx), ...childNodes];
+  return [withBranchMeta(makeGroup(componentName, ctx), componentName, config), ...childNodes];
+}
+
+// A `branch` processor copies a portion of the message out (request_map), runs the
+// sub-pipeline, then merges the result back (result_map). Mark the container so the
+// canvas can draw copy/merge edges instead of a plain sequential chain.
+function withBranchMeta(
+  group: PipelineFlowNode,
+  componentName: string,
+  config: Record<string, unknown>
+): PipelineFlowNode {
+  if (componentName !== 'branch') {
+    return group;
+  }
+  return {
+    ...group,
+    branch: {
+      request: typeof config.request_map === 'string' && config.request_map !== '',
+      result: typeof config.result_map === 'string' && config.result_map !== '',
+    },
+  };
 }
 
 function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: string): PipelineFlowNode[] {
@@ -496,9 +596,11 @@ function parseOutputNodes(
 
   const childNames = parseMultiOutputs(outputKey, outputObj[outputKey]);
   if (childNames && childNames.length > 0) {
+    const branches = parseOutputBranches(outputKey, outputObj[outputKey]);
+    const children = branches ?? childNames.map((name) => ({ name }));
     const groupNodes = buildGroupWithChildren(
       { groupId: `output-${outputKey}`, groupLabel: outputKey, section: 'output', sectionId },
-      childNames
+      children
     );
     groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'output' } };
     return groupNodes;
@@ -1096,23 +1198,188 @@ function emitFlowNode(
     childY += child.h + ctx.dims.stackGap;
   }
 
-  // Chain the inner steps of a sequential sub-pipeline so the order is explicit.
-  // Alternatives (switch/workflow/parallel) and merged inputs are shown enclosed
-  // by the container box without inter-child arrows.
-  const isSequential = node.childFlow !== 'parallel' && node.section !== 'input';
-  if (isContainer && isSequential && children.length > 1) {
-    for (let i = 0; i < children.length - 1; i += 1) {
-      ctx.rfEdges.push({
+  if (isContainer && children.length > 0) {
+    emitContainerEdges(node, children, ctx);
+  }
+}
+
+type LinkTone = 'primary' | 'muted' | 'error';
+
+const LINK_TONE_COLOR: Record<LinkTone, string> = {
+  primary: 'var(--color-primary)',
+  muted: 'var(--color-border)',
+  error: 'var(--color-destructive)',
+};
+
+function linkEdge(params: {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle: string;
+  targetHandle: string;
+  tone: LinkTone;
+  label?: string;
+  dashed?: boolean;
+}): Edge {
+  return {
+    id: params.id,
+    source: params.source,
+    target: params.target,
+    sourceHandle: params.sourceHandle,
+    targetHandle: params.targetHandle,
+    type: 'flowLink',
+    data: { label: params.label, tone: params.tone, dashed: params.dashed ?? false },
+    markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
+  };
+}
+
+function chainChildren(children: SizedNode[], ctx: EmitContext): void {
+  for (let i = 0; i < children.length - 1; i += 1) {
+    ctx.rfEdges.push(
+      linkEdge({
         id: `chain-${children[i].node.id}-${children[i + 1].node.id}`,
         source: children[i].node.id,
         target: children[i + 1].node.id,
         sourceHandle: 'b',
         targetHandle: 't',
-        type: 'flowChain',
-        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: 'var(--color-border)' },
-      });
+        tone: 'muted',
+      })
+    );
+  }
+}
+
+// The text shown on a fan-out edge: a switch/fallback condition, or "default" for a
+// catch-all branch. Suppressed in the compact lane to keep it uncluttered.
+function conditionLabel(node: PipelineFlowNode, compact: boolean): string | undefined {
+  if (compact) {
+    return;
+  }
+  if (node.condition) {
+    return node.condition;
+  }
+  return node.isDefault ? 'default' : undefined;
+}
+
+// Edges that show how data threads through a container's children:
+//   branch   → copy out (request_map) ⇒ sub-pipeline ⇒ merge back (result_map)
+//   input    → child sources fan in (merge) to the broker/sequence
+//   parallel → fan out to each alternative, labeled with its routing condition
+//   sequential → enter the first child, then chain in order
+function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
+  const first = children[0].node.id;
+  const last = children.at(-1)?.node.id ?? first;
+  const label = (text: string) => (ctx.compact ? undefined : text);
+
+  if (node.branch) {
+    ctx.rfEdges.push(
+      linkEdge({
+        id: `copy-${node.id}`,
+        source: node.id,
+        target: first,
+        sourceHandle: 'gs',
+        targetHandle: 'l',
+        tone: 'primary',
+        dashed: true,
+        label: label('copy'),
+      })
+    );
+    chainChildren(children, ctx);
+    ctx.rfEdges.push(
+      linkEdge({
+        id: `merge-${node.id}`,
+        source: last,
+        target: node.id,
+        sourceHandle: 'r',
+        targetHandle: 'gt',
+        tone: 'primary',
+        dashed: true,
+        label: label('merge'),
+      })
+    );
+    return;
+  }
+
+  if (node.section === 'input') {
+    for (const child of children) {
+      ctx.rfEdges.push(
+        linkEdge({
+          id: `fanin-${child.node.id}`,
+          source: child.node.id,
+          target: node.id,
+          sourceHandle: 'r',
+          targetHandle: 'gt',
+          tone: 'primary',
+        })
+      );
+    }
+    return;
+  }
+
+  if (node.childFlow === 'parallel') {
+    for (const child of children) {
+      ctx.rfEdges.push(
+        linkEdge({
+          id: `fanout-${child.node.id}`,
+          source: node.id,
+          target: child.node.id,
+          sourceHandle: 'gs',
+          targetHandle: 'l',
+          tone: child.node.isErrorPath ? 'error' : 'primary',
+          dashed: child.node.isErrorPath,
+          label: conditionLabel(child.node, ctx.compact),
+        })
+      );
+    }
+    return;
+  }
+
+  // Sequential sub-pipeline.
+  ctx.rfEdges.push(
+    linkEdge({
+      id: `entry-${node.id}`,
+      source: node.id,
+      target: first,
+      sourceHandle: 'gs',
+      targetHandle: 'l',
+      tone: node.isErrorPath ? 'error' : 'primary',
+      dashed: node.isErrorPath,
+    })
+  );
+  chainChildren(children, ctx);
+}
+
+// Dashed edges from a component to the resource it references (cache/rate_limit
+// `resource:`). Matched by the resource's label. Skipped in the compact lane.
+function buildReferenceEdges(nodes: PipelineFlowNode[], placedIds: Set<string>): Edge[] {
+  const resourceByLabel = new Map<string, string>();
+  for (const node of nodes) {
+    if (node.section === 'resource' && node.labelText) {
+      resourceByLabel.set(node.labelText, node.id);
     }
   }
+  const edges: Edge[] = [];
+  for (const node of nodes) {
+    if (!node.resourceRef) {
+      continue;
+    }
+    const targetId = resourceByLabel.get(node.resourceRef);
+    if (!(targetId && placedIds.has(node.id) && placedIds.has(targetId))) {
+      continue;
+    }
+    edges.push(
+      linkEdge({
+        id: `ref-${node.id}-${targetId}`,
+        source: node.id,
+        target: targetId,
+        sourceHandle: 'b',
+        targetHandle: 't',
+        tone: 'muted',
+        dashed: true,
+        label: 'uses',
+      })
+    );
+  }
+  return edges;
 }
 
 export type FlowOrientation = 'horizontal' | 'vertical';
@@ -1162,6 +1429,13 @@ export function computeFlowLayout(
   // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
   const laneStart = (isVertical ? mainExtent : maxCross) + 2 * dims.stackGap + 24;
   const resources = placeResourceLane({ nodes, childrenMap, isVertical, laneStart, ctx });
+
+  // Resource-reference edges (cache/rate_limit → resource). Skipped in the compact
+  // lane to keep it clean, and only between nodes that were actually placed.
+  if (!compact) {
+    const placedIds = new Set(ctx.rfNodes.map((n) => n.id));
+    ctx.rfEdges.push(...buildReferenceEdges(nodes, placedIds));
+  }
 
   return {
     rfNodes: ctx.rfNodes,

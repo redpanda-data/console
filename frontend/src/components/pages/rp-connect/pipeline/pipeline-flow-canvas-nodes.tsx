@@ -127,6 +127,30 @@ const NodeHandles = () => (
   </>
 );
 
+// Internal ports on a container so flow visibly threads through it: `gs` emits the
+// entry / copy / fan-out edges from the header into the children; `gt` receives the
+// merge-back / fan-in edges. Anchored at the header so the lines start/end there.
+const HEADER_PORT_TOP = 22;
+const ContainerHandles = () => (
+  <>
+    <NodeHandles />
+    <Handle
+      className={invisibleHandle}
+      id="gs"
+      position={Position.Right}
+      style={{ left: 0, top: HEADER_PORT_TOP }}
+      type="source"
+    />
+    <Handle
+      className={invisibleHandle}
+      id="gt"
+      position={Position.Left}
+      style={{ right: 0, left: 'auto', top: HEADER_PORT_TOP }}
+      type="target"
+    />
+  </>
+);
+
 // Docs + remove reveal on hover; the Edit button stays visible so every editable
 // node has an obvious entry point into its config dialog.
 const CardActions = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
@@ -355,7 +379,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       className="group relative flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm"
       ref={ref}
     >
-      <NodeHandles />
+      <ContainerHandles />
       <div
         className={cn(
           'flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
@@ -431,7 +455,19 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
   );
 }
 
-export function FlowChainEdge({
+type LinkTone = 'primary' | 'muted' | 'error';
+type FlowLinkData = { label?: string; tone?: LinkTone; dashed?: boolean };
+
+const LINK_STROKE: Record<LinkTone, string> = {
+  primary: 'var(--color-primary)',
+  muted: 'var(--color-border)',
+  error: 'var(--color-destructive)',
+};
+
+// Every non-spine edge: container entry/chain, fan-out (with a routing-condition
+// label), branch copy/merge (dashed), error/DLQ paths (red dashed), and resource
+// references (muted dashed). Style is driven entirely by edge `data`.
+export function FlowLinkEdge({
   sourceX,
   sourceY,
   sourcePosition,
@@ -439,8 +475,9 @@ export function FlowChainEdge({
   targetY,
   targetPosition,
   markerEnd,
+  data,
 }: EdgeProps) {
-  const [path] = getSmoothStepPath({
+  const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -449,7 +486,35 @@ export function FlowChainEdge({
     targetPosition,
     borderRadius: 8,
   });
-  return <BaseEdge markerEnd={markerEnd} path={path} style={{ stroke: 'var(--color-border)', strokeWidth: 1.5 }} />;
+  const d = data as FlowLinkData | undefined;
+  const tone = d?.tone ?? 'muted';
+  return (
+    <>
+      <BaseEdge
+        markerEnd={markerEnd}
+        path={path}
+        style={{
+          stroke: LINK_STROKE[tone],
+          strokeWidth: tone === 'muted' ? 1.5 : 2,
+          strokeDasharray: d?.dashed ? '5 4' : undefined,
+        }}
+      />
+      {d?.label ? (
+        <EdgeLabelRenderer>
+          <div
+            className={cn(
+              'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-medium text-[10px] shadow-sm',
+              tone === 'error' ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground'
+            )}
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            title={d.label}
+          >
+            {d.label}
+          </div>
+        </EdgeLabelRenderer>
+      ) : null}
+    </>
+  );
 }
 
 export const flowNodeTypes = {
@@ -460,5 +525,5 @@ export const flowNodeTypes = {
 
 export const flowEdgeTypes = {
   flowSpine: FlowSpineEdge,
-  flowChain: FlowChainEdge,
+  flowLink: FlowLinkEdge,
 };

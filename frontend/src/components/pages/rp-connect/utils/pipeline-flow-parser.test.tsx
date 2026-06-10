@@ -957,6 +957,68 @@ describe('computeFlowLayout', () => {
   });
 });
 
+describe('enhanced flow semantics', () => {
+  const ENRICHMENT = `pipeline:
+  processors:
+    - cache: { resource: dedupe_cache, operator: add, key: x }
+    - branch:
+        request_map: 'root = this.user_id'
+        processors:
+          - http: { url: http://x }
+        result_map: 'root.p = this'
+    - try:
+        - mapping: 'root = this'
+    - catch:
+        - log: { message: oops }
+output:
+  switch:
+    cases:
+      - check: 'errored()'
+        output: { redpanda: { topic: dlq } }
+      - output: { aws_s3: { bucket: b } }
+cache_resources:
+  - label: dedupe_cache
+    redis: { url: x }`;
+
+  const edges = () => computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfEdges;
+  const edge = (id: string) => edges().find((e) => e.id === id);
+  const data = (id: string) => edge(id)?.data as { tone?: string; dashed?: boolean; label?: string } | undefined;
+
+  it('draws a branch as copy-out (request_map) and merge-back (result_map)', () => {
+    expect(data('copy-proc-1')).toMatchObject({ tone: 'primary', dashed: true, label: 'copy' });
+    expect(data('merge-proc-1')).toMatchObject({ tone: 'primary', dashed: true, label: 'merge' });
+    // Copy leaves the container; merge returns to it.
+    expect(edge('copy-proc-1')?.source).toBe('proc-1');
+    expect(edge('merge-proc-1')?.target).toBe('proc-1');
+  });
+
+  it('labels switch fan-out edges with their condition and marks the catch-all default', () => {
+    expect(data('fanout-output-switch-0')).toMatchObject({ label: 'errored()', tone: 'error', dashed: true });
+    expect(data('fanout-output-switch-1')).toMatchObject({ label: 'default', tone: 'primary' });
+  });
+
+  it('styles a catch handler as an error path', () => {
+    const catchEntry = edges().find((e) => e.id.startsWith('entry-') && e.id.includes('proc-3'));
+    expect((catchEntry?.data as { tone?: string }).tone).toBe('error');
+  });
+
+  it('threads a plain sequential container with an entry edge (no error styling)', () => {
+    // proc-2 is the `try` container.
+    const tryEntry = edges().find((e) => e.id.startsWith('entry-proc-2'));
+    expect((tryEntry?.data as { tone?: string }).tone).toBe('primary');
+  });
+
+  it('draws dashed reference edges from a component to the resource it uses', () => {
+    expect(data('ref-proc-0-resource-cache_resources-0')).toMatchObject({ tone: 'muted', dashed: true, label: 'uses' });
+  });
+
+  it('omits condition labels and reference edges in the compact lane', () => {
+    const compact = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes, new Set(), 'vertical', true).rfEdges;
+    expect(compact.some((e) => e.id.startsWith('ref-'))).toBe(false);
+    expect(compact.find((e) => e.id === 'fanout-output-switch-0')?.data).toMatchObject({ label: undefined });
+  });
+});
+
 describe('data-flow model', () => {
   it('orders the main path input → processors → output', () => {
     const yaml = `input:

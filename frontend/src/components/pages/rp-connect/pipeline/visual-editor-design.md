@@ -57,6 +57,38 @@ The dedicated, full-canvas visual editor has shipped (behind the flag):
   `getComponentAt`, `setComponentAt`, `removeComponentAt`, `insertProcessorAt`,
   `appendResource`, `buildInsertableComponent`, keyed by an `EditTarget`.
 
+### Flow semantics (data-flow accuracy)
+
+Beyond the left→right spine, the canvas draws **how data actually moves**, so
+containers are no longer black boxes (informed by NiFi relationship labels, Step
+Functions Choice/Parallel/Catch, n8n copy-fan-out, Apache Hop copy-vs-error hops):
+
+- **Branch** (`branch`): rendered as **copy-out → sub-pipeline → merge-back**. A
+  dashed `copy` edge (request_map) leaves the container into the sub-pipeline; a
+  dashed `merge` edge (result_map) returns to it. The message itself passes through
+  on the spine; the branch only enriches it.
+- **Switch / fallback fan-out** (processor `switch`, output `switch`/`fallback`):
+  one labeled fan-out edge per case, **labeled with its `check` condition**; a case
+  with no check is drawn explicitly as **`default`**. Applies to both processor and
+  output switches.
+- **Error / dead-letter paths**: `catch` handlers, `errored()` routes and fallback
+  tiers use a distinct **red dashed** edge style (`tone: 'error'`).
+- **Sequential containers** (`try`/`for_each`/`while`/`retry`/`group_by`/cases):
+  an entry edge from the container header into the first child, then the children
+  chain in order.
+- **Input merge** (broker/sequence): child sources **fan in** to the container.
+- **Resource references**: a muted dashed **`uses`** edge from a component to the
+  resource it references (cache/rate_limit `resource:`), matched by resource label.
+
+Mechanics: containers expose two internal handles — `gs` (header source, emits
+entry/copy/fan-out) and `gt` (header target, receives merge-back/fan-in). All
+non-spine edges share one configurable edge type (`flowLink`) whose stroke colour,
+dash and optional label come from edge `data` (`tone` ∈ primary|muted|error,
+`dashed`, `label`). Condition labels and reference edges are **suppressed in the
+compact sidebar** to keep it clean. All of this is derived purely from
+`parsePipelineFlowTree` (new node fields: `condition`, `isDefault`, `isErrorPath`,
+`branch`, `resourceRef`) — still 100% deterministic from YAML.
+
 Shared node IDs: both the canvas and the mini sidebar diagram derive from the same
 `parsePipelineFlowTree` output, so node IDs line up across views.
 
