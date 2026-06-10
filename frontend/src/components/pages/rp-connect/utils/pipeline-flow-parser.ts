@@ -1070,8 +1070,8 @@ const FULL_DIMS: FlowDims = {
   pad: 16,
   stackGap: 18,
   colGap: 72,
-  fanGutter: 52,
-  fanGap: 28,
+  fanGutter: 72,
+  fanGap: 32,
 };
 const COMPACT_DIMS: FlowDims = {
   cardW: FLOW_COMPACT_CARD_WIDTH,
@@ -1111,13 +1111,15 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   if (node.label === 'none') {
     return FLOW_PLACEHOLDER_LEAF_H;
   }
-  const rows = Math.min(
+  const metaRows = Math.min(
     (node.meta?.length ?? 0) +
       (node.topics && node.topics.length > 0 ? 1 : 0) +
       (node.missingTopic ? 1 : 0) +
       (node.missingSasl ? 1 : 0),
     FLOW_MAX_META_ROWS
   );
+  // The label badge (e.g. a resource's label) gets its own row so it isn't truncated.
+  const rows = metaRows + (node.labelText ? 1 : 0);
   return dims.leafBaseH + (rows > 0 ? 8 + rows * dims.metaRowH : 0);
 }
 
@@ -1134,13 +1136,21 @@ type SizedNode = {
 //   left  — the `gs` source side (entry / copy / fan-out)
 //   right — the `gt` target side (merge-back / fan-in)
 //   gap   — vertical spacing between children
-function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
-  const fansOut = Boolean(node.branch) || (node.childFlow === 'parallel' && node.section !== 'input');
-  const fansIn = Boolean(node.branch) || node.section === 'input';
+// Which sides of a container carry routed edges: `out` is the `gs` source side
+// (entry / copy / fan-out), `in` is the `gt` target side (merge-back / fan-in).
+function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   return {
-    left: fansOut ? dims.fanGutter : dims.pad,
-    right: fansIn ? dims.fanGutter : dims.pad,
-    gap: fansOut || fansIn ? dims.fanGap : dims.stackGap,
+    out: Boolean(node.branch) || (node.childFlow === 'parallel' && node.section !== 'input'),
+    in: Boolean(node.branch) || node.section === 'input',
+  };
+}
+
+function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
+  const sides = fanSides(node);
+  return {
+    left: sides.out ? dims.fanGutter : dims.pad,
+    right: sides.in ? dims.fanGutter : dims.pad,
+    gap: sides.out || sides.in ? dims.fanGap : dims.stackGap,
   };
 }
 
@@ -1184,11 +1194,25 @@ function routingData(node: PipelineFlowNode, compact: boolean) {
   };
 }
 
+// Center the routing port (gs/gt) so fanned branches diverge from the middle of the
+// box instead of running parallel down a gutter from the header.
+function fanData(node: PipelineFlowNode) {
+  if (node.kind !== 'group') {
+    return {};
+  }
+  const sides = fanSides(node);
+  return {
+    ...(sides.out ? { fanOut: true } : {}),
+    ...(sides.in ? { fanIn: true } : {}),
+  };
+}
+
 function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean) {
   return {
     label: node.label,
     collapsible: node.collapsible ?? false,
     collapsed,
+    ...fanData(node),
     ...(compact ? { compact: true } : {}),
     ...(node.section ? { section: node.section } : {}),
     ...(node.labelText ? { labelText: node.labelText } : {}),
@@ -1225,6 +1249,12 @@ function emitFlowNode(
   const isContainer = node.kind === 'group';
   const childCount = collapsed ? countDescendants(node.id, ctx.childrenMap) : 0;
 
+  // Anchor the fanning ports at the vertical centre of the *children area* (below
+  // the header) so copy/merge/fan-out edges leave/enter level with the children
+  // rather than offset by the header — keeping them horizontal, not diagonal.
+  const sides = isContainer ? fanSides(node) : { out: false, in: false };
+  const portY = children.length > 0 && (sides.out || sides.in) ? (ctx.dims.headerH + h) / 2 : undefined;
+
   ctx.rfNodes.push({
     id: node.id,
     type: isContainer ? 'flowContainer' : 'flowCard',
@@ -1234,7 +1264,7 @@ function emitFlowNode(
     style: isContainer
       ? { width: w, height: h, pointerEvents: 'all', transition: 'transform 200ms ease' }
       : { pointerEvents: 'all', transition: 'transform 200ms ease' },
-    data: makeFlowNodeData(node, collapsed, childCount, ctx.compact),
+    data: { ...makeFlowNodeData(node, collapsed, childCount, ctx.compact), ...(portY === undefined ? {} : { portY }) },
   });
 
   const insets = containerInsets(node, ctx.dims);
@@ -1265,7 +1295,15 @@ function linkEdge(params: {
   targetHandle: string;
   tone: LinkTone;
   label?: string;
+  // Nudge the label off the line (px); used to lift copy/merge labels above their
+  // (horizontal) edge so they don't sit on it.
+  labelOffsetY?: number;
   dashed?: boolean;
+  // Distinct vertical lane (px offset from the container edge) so sibling fan-out /
+  // fan-in edges don't overlap on a shared bend. From the source for fan-out, from
+  // the target for fan-in.
+  laneFromSource?: number;
+  laneFromTarget?: number;
 }): Edge {
   return {
     id: params.id,
@@ -1274,9 +1312,24 @@ function linkEdge(params: {
     sourceHandle: params.sourceHandle,
     targetHandle: params.targetHandle,
     type: 'flowLink',
-    data: { label: params.label, tone: params.tone, dashed: params.dashed ?? false },
+    data: {
+      label: params.label,
+      labelOffsetY: params.labelOffsetY,
+      tone: params.tone,
+      dashed: params.dashed ?? false,
+      laneFromSource: params.laneFromSource,
+      laneFromTarget: params.laneFromTarget,
+    },
     markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
   };
+}
+
+// Each fanned sibling gets its own vertical lane inside the routing gutter, capped
+// so the lanes stay clear of the children (and of the container edge).
+function laneOffset(index: number, count: number, dims: FlowDims): number {
+  const usable = dims.fanGutter - 14;
+  const step = count > 1 ? Math.min(12, usable / count) : 0;
+  return 14 + index * step;
 }
 
 function chainChildren(children: SizedNode[], ctx: EmitContext): void {
@@ -1315,6 +1368,7 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
         tone: 'primary',
         dashed: true,
         label: label('copy'),
+        labelOffsetY: -18,
       })
     );
     chainChildren(children, ctx);
@@ -1328,13 +1382,14 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
         tone: 'primary',
         dashed: true,
         label: label('merge'),
+        labelOffsetY: -18,
       })
     );
     return;
   }
 
   if (node.section === 'input') {
-    for (const child of children) {
+    for (const [i, child] of children.entries()) {
       ctx.rfEdges.push(
         linkEdge({
           id: `fanin-${child.node.id}`,
@@ -1343,6 +1398,7 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
           sourceHandle: 'r',
           targetHandle: 'gt',
           tone: 'primary',
+          laneFromTarget: laneOffset(children.length - 1 - i, children.length, ctx.dims),
         })
       );
     }
@@ -1352,7 +1408,8 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
   if (node.childFlow === 'parallel') {
     // The routing condition is rendered as a chip on each receiving card, so the
     // fan-out edge stays a clean unlabeled line (red dashed for error branches).
-    for (const child of children) {
+    // Each branch routes down its own lane so siblings never overlap.
+    for (const [i, child] of children.entries()) {
       ctx.rfEdges.push(
         linkEdge({
           id: `fanout-${child.node.id}`,
@@ -1362,6 +1419,7 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
           targetHandle: 'l',
           tone: child.node.isErrorPath ? 'error' : 'primary',
           dashed: child.node.isErrorPath,
+          laneFromSource: laneOffset(i, children.length, ctx.dims),
         })
       );
     }
@@ -1401,6 +1459,7 @@ function buildReferenceEdges(nodes: PipelineFlowNode[], placedIds: Set<string>):
     if (!(targetId && placedIds.has(node.id) && placedIds.has(targetId))) {
       continue;
     }
+    // No label — the legend documents the dashed muted line as "uses resource".
     edges.push(
       linkEdge({
         id: `ref-${node.id}-${targetId}`,
@@ -1410,7 +1469,6 @@ function buildReferenceEdges(nodes: PipelineFlowNode[], placedIds: Set<string>):
         targetHandle: 't',
         tone: 'muted',
         dashed: true,
-        label: 'uses',
       })
     );
   }

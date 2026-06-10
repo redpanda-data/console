@@ -1016,7 +1016,9 @@ cache_resources:
   });
 
   it('draws dashed reference edges from a component to the resource it uses', () => {
-    expect(data('ref-proc-0-resource-cache_resources-0')).toMatchObject({ tone: 'muted', dashed: true, label: 'uses' });
+    // Unlabeled — the legend documents the muted dashed line as "uses resource".
+    expect(data('ref-proc-0-resource-cache_resources-0')).toMatchObject({ tone: 'muted', dashed: true });
+    expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
   });
 
   it('omits condition labels and reference edges in the compact lane', () => {

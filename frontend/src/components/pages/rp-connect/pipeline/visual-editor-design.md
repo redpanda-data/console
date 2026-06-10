@@ -101,7 +101,17 @@ Supporting polish:
 - **Roomy container routing.** A container reserves a wider routing gutter
   (`fanGutter`) on the side it fans out (`gs`) and/or merges/fans in (`gt`), plus
   extra vertical spacing between fanned children (`fanGap`) — see `containerInsets`
-  — so switch/branch/broker edges aren't crammed against the box edge.
+  — so switch/branch/broker edges aren't crammed against the box edge. Each fanned
+  sibling routes down its **own vertical lane** in that gutter (`laneOffset` →
+  per-edge `centerX` in `FlowLinkEdge`) so parallel branches never overlap on a
+  shared trunk. The fanning port (`gs`/`gt`) is **anchored at the vertical centre of
+  the children area** (`portY`, computed from the container height, passed to
+  `ContainerHandles`) so branches radiate level with the children — copy/merge come
+  out horizontal and switch branches diverge immediately rather than running
+  parallel down a gutter.
+- **No on-edge text labels.** Routing conditions are chips on cards and the edge
+  vocabulary lives in the legend; the only edge labels are the short branch
+  `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
 - **Conditions as chips, not floating labels.** A branch's routing condition is a
   chip on the receiving card (`if <check>` / `default`, red for error routes) via
   `BranchConditionChip`, so fan-out edges stay clean unlabeled lines. All of this is derived purely from

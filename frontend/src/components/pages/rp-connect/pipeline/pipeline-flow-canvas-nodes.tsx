@@ -125,6 +125,11 @@ export type FlowCardData = {
   section?: string;
   /** Compact rendering for the sidebar (smaller, no kind badge or metadata). */
   compact?: boolean;
+  /** Center the gs/gt routing port (fan-out / fan-in / branch containers). */
+  fanOut?: boolean;
+  fanIn?: boolean;
+  /** Y (px) of the children-area centre, where fanning ports anchor. */
+  portY?: number;
   collapsible?: boolean;
   collapsed?: boolean;
   childCount?: number;
@@ -170,28 +175,41 @@ const NodeHandles = () => (
 );
 
 // Internal ports on a container so flow visibly threads through it: `gs` emits the
-// entry / copy / fan-out edges from the header into the children; `gt` receives the
-// merge-back / fan-in edges. Anchored at the header so the lines start/end there.
+// entry / copy / fan-out edges into the children; `gt` receives the merge-back /
+// fan-in edges. A fanning side is centered vertically so its branches radiate from
+// the middle of the box (clean divergence); a non-fanning side stays at the header
+// so a sequential entry drops naturally into the first child.
 const HEADER_PORT_TOP = 22;
-const ContainerHandles = () => (
-  <>
-    <NodeHandles />
-    <Handle
-      className={invisibleHandle}
-      id="gs"
-      position={Position.Right}
-      style={{ left: 0, top: HEADER_PORT_TOP }}
-      type="source"
-    />
-    <Handle
-      className={invisibleHandle}
-      id="gt"
-      position={Position.Left}
-      style={{ right: 0, left: 'auto', top: HEADER_PORT_TOP }}
-      type="target"
-    />
-  </>
-);
+const ContainerHandles = ({
+  gsCenter,
+  gtCenter,
+  portY,
+}: {
+  gsCenter?: boolean;
+  gtCenter?: boolean;
+  portY?: number;
+}) => {
+  const centerTop = portY ?? '50%';
+  return (
+    <>
+      <NodeHandles />
+      <Handle
+        className={invisibleHandle}
+        id="gs"
+        position={Position.Right}
+        style={{ left: 0, top: gsCenter ? centerTop : HEADER_PORT_TOP }}
+        type="source"
+      />
+      <Handle
+        className={invisibleHandle}
+        id="gt"
+        position={Position.Left}
+        style={{ right: 0, left: 'auto', top: gtCenter ? centerTop : HEADER_PORT_TOP }}
+        type="target"
+      />
+    </>
+  );
+};
 
 // Docs + remove reveal on hover; the Edit button stays visible so every editable
 // node has an obvious entry point into its config dialog.
@@ -378,11 +396,6 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
         <Text as="span" className="min-w-0 flex-1 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
           {data.label}
         </Text>
-        {data.labelText ? (
-          <Badge className="max-w-[40%] shrink-0" size="sm" variant="info-inverted">
-            <span className="truncate">{data.labelText}</span>
-          </Badge>
-        ) : null}
         {data.collapsible ? (
           <span className="shrink-0 text-subtle">
             {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
@@ -390,6 +403,13 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
         ) : null}
         {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
       </button>
+      {data.labelText ? (
+        <div className="px-3 pb-2">
+          <Badge className="max-w-full" size="sm" variant="info-inverted">
+            <span className="truncate">{data.labelText}</span>
+          </Badge>
+        </div>
+      ) : null}
       <MetaRows data={data} />
     </div>
   );
@@ -461,7 +481,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       ref={ref}
       style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
     >
-      <ContainerHandles />
+      <ContainerHandles gsCenter={data.fanOut} gtCenter={data.fanIn} portY={data.portY} />
       <div
         className={cn(
           'flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
@@ -528,7 +548,14 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
 }
 
 type LinkTone = 'primary' | 'muted' | 'error';
-type FlowLinkData = { label?: string; tone?: LinkTone; dashed?: boolean };
+type FlowLinkData = {
+  label?: string;
+  labelOffsetY?: number;
+  tone?: LinkTone;
+  dashed?: boolean;
+  laneFromSource?: number;
+  laneFromTarget?: number;
+};
 
 const LINK_STROKE: Record<LinkTone, string> = {
   primary: 'var(--color-primary)',
@@ -549,6 +576,15 @@ export function FlowLinkEdge({
   markerEnd,
   data,
 }: EdgeProps) {
+  const d = data as FlowLinkData | undefined;
+  // Place the vertical bend in this edge's own lane so fanned siblings don't share
+  // (and overlap on) a single trunk.
+  let centerX: number | undefined;
+  if (d?.laneFromSource !== undefined) {
+    centerX = sourceX + d.laneFromSource;
+  } else if (d?.laneFromTarget !== undefined) {
+    centerX = targetX - d.laneFromTarget;
+  }
   const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -557,8 +593,8 @@ export function FlowLinkEdge({
     targetY,
     targetPosition,
     borderRadius: 8,
+    ...(centerX === undefined ? {} : { centerX }),
   });
-  const d = data as FlowLinkData | undefined;
   const tone = d?.tone ?? 'muted';
   return (
     <>
@@ -578,7 +614,7 @@ export function FlowLinkEdge({
               'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-medium text-[10px] shadow-sm',
               tone === 'error' ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground'
             )}
-            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY + (d.labelOffsetY ?? 0)}px)` }}
             title={d.label}
           >
             {d.label}
