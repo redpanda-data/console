@@ -564,6 +564,141 @@ tracer:
       ratio: 0.1
 `;
 
+const heavyBranching = `# Heavy branching & routing — stress-tests the visualizer's container/edge model:
+# broker fan-in input; nested switch -> branch -> try/catch; for_each + parallel;
+# resource references (cache + rate limit); switch output with DLQ + fallback tiers.
+input:
+  broker:
+    inputs:
+      - redpanda:
+          seed_brokers:
+            - \${REDPANDA_BROKERS}
+          topics: [orders, payments]
+          consumer_group: routing-demo
+          sasl:
+            - mechanism: SCRAM-SHA-256
+              username: \${secrets.KAFKA_USER}
+              password: \${secrets.KAFKA_PASSWORD}
+          tls:
+            enabled: true
+      - generate:
+          interval: 5s
+          mapping: 'root = {"synthetic": true, "region": "us"}'
+
+pipeline:
+  threads: 4
+  processors:
+    - cache:
+        resource: dedupe_cache
+        operator: add
+        key: \${! json("order_id") }
+        value: "1"
+    - mapping: 'root = if errored() { deleted() } else { this }'
+    - switch:
+        - check: this.region == "us"
+          processors:
+            - branch:
+                request_map: 'root = this.customer_id'
+                processors:
+                  - http:
+                      url: https://us.api/customers
+                      verb: GET
+                      retries: 3
+                result_map: 'root.customer = this'
+            - rate_limit:
+                resource: us_limiter
+        - check: this.region == "eu"
+          processors:
+            - branch:
+                request_map: 'root = this.customer_id'
+                processors:
+                  - try:
+                      - http:
+                          url: https://eu.api/customers
+                      - cache:
+                          resource: customer_cache
+                          operator: set
+                          key: \${! json("id") }
+                          value: \${! content() }
+                  - catch:
+                      - log:
+                          level: WARN
+                          message: 'EU customer lookup failed'
+                      - mapping: 'root.customer = {"fallback": true}'
+                result_map: 'root.customer = this'
+        - processors:
+            - mapping: 'root.region = "unknown"'
+    - for_each:
+        - mapping: 'root = this'
+    - parallel:
+        cap: 3
+        processors:
+          - http:
+              url: https://enrich.geo
+          - http:
+              url: https://enrich.risk
+    - branch:
+        request_map: 'root = this'
+        processors:
+          - aws_lambda:
+              function: fraud-score
+              region: us-east-1
+        result_map: 'root.fraud = this'
+
+output:
+  switch:
+    cases:
+      - check: errored()
+        output:
+          redpanda:
+            seed_brokers:
+              - \${REDPANDA_BROKERS}
+            topic: orders-dlq
+            sasl:
+              - mechanism: SCRAM-SHA-256
+                username: \${secrets.KAFKA_USER}
+                password: \${secrets.KAFKA_PASSWORD}
+            tls:
+              enabled: true
+      - check: this.fraud.score > 0.9
+        output:
+          redpanda:
+            seed_brokers:
+              - \${REDPANDA_BROKERS}
+            topic: orders-review
+      - check: this.region == "us"
+        output:
+          aws_s3:
+            bucket: us-orders-prod
+            path: orders/\${! timestamp_unix() }-\${! uuid_v4() }.json
+      - output:
+          fallback:
+            - gcp_pubsub:
+                project: my-project
+                topic: orders-stream
+            - redpanda:
+                seed_brokers:
+                  - \${REDPANDA_BROKERS}
+                topic: orders-fallback
+
+cache_resources:
+  - label: dedupe_cache
+    redis:
+      url: redis://cache:6379
+      prefix: "dedupe:"
+  - label: customer_cache
+    memcached:
+      addresses:
+        - memcached:11211
+      default_ttl: 5m
+
+rate_limit_resources:
+  - label: us_limiter
+    local:
+      count: 1000
+      interval: 1s
+`;
+
 const malformedYaml = `# Intentionally broken — for testing editor error states.
 input:
   redpanda
@@ -729,6 +864,14 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
     name: 'Complex — kitchen sink',
     description: 'Many component types (broker, workflow, parallel, retry, fan_out) for editor stress-testing.',
     yaml: allComponentsKitchenSink,
+    tags: ['complex'],
+  },
+  {
+    id: 'complex-heavy-branching',
+    name: 'Complex — heavy branching & routing',
+    description:
+      'Broker fan-in, nested switch → branch → try/catch, for_each, parallel, cache/rate-limit refs, switch+fallback DLQ output. Built to exercise the visualizer.',
+    yaml: heavyBranching,
     tags: ['complex'],
   },
   {

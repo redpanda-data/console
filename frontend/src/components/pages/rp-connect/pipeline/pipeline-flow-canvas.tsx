@@ -257,12 +257,14 @@ export function PipelineFlowCanvas({
           nodeTypes={flowNodeTypes}
           panOnDrag={!simple}
           panOnScroll={false}
-          preventScrolling={!simple}
+          // Let the mouse wheel scroll the page rather than zoom/capture the canvas.
+          // Zooming stays available via the Controls buttons and trackpad pinch.
+          preventScrolling={false}
           proOptions={{ hideAttribution: true }}
           translateExtent={simple ? undefined : translateExtent}
           zoomOnDoubleClick={!simple}
           zoomOnPinch={!simple}
-          zoomOnScroll={!simple}
+          zoomOnScroll={false}
         >
           {simple ? null : <Background gap={20} size={1.5} variant={BackgroundVariant.Dots} />}
           {hideControls || simple ? null : <Controls position="bottom-right" showInteractive={false} />}
