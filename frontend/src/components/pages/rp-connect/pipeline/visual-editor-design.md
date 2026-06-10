@@ -97,7 +97,14 @@ Supporting polish:
   label by role (input green, processor blue, output purple, resource orange) so
   sources/transforms/sinks/resources read apart at a glance (`SECTION_ACCENT`).
 - **Adaptive edge legend.** The full canvas shows a small bottom-left legend that
-  lists only the edge kinds actually present (flow / copy-merge / error / uses). All of this is derived purely from
+  lists only the edge kinds actually present (flow / copy-merge / error / uses).
+- **Roomy container routing.** A container reserves a wider routing gutter
+  (`fanGutter`) on the side it fans out (`gs`) and/or merges/fans in (`gt`), plus
+  extra vertical spacing between fanned children (`fanGap`) — see `containerInsets`
+  — so switch/branch/broker edges aren't crammed against the box edge.
+- **Conditions as chips, not floating labels.** A branch's routing condition is a
+  chip on the receiving card (`if <check>` / `default`, red for error routes) via
+  `BranchConditionChip`, so fan-out edges stay clean unlabeled lines. All of this is derived purely from
 `parsePipelineFlowTree` (new node fields: `condition`, `isDefault`, `isErrorPath`,
 `branch`, `resourceRef`) — still 100% deterministic from YAML.
 

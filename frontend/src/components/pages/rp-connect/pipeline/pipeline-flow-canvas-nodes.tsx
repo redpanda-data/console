@@ -91,6 +91,35 @@ const SECTION_ACCENT: Record<string, string> = {
   resource: 'var(--color-orange-500)',
 };
 
+// The routing condition that selects a branch, shown as a chip on the receiving
+// card: `if <check>` for a condition, `default` for the catch-all, red for an
+// error / dead-letter route.
+const BranchConditionChip = ({ data }: { data: FlowCardData }) => {
+  if (!(data.condition || data.isDefault)) {
+    return null;
+  }
+  const text = data.condition ? `if ${data.condition}` : 'default';
+  let tone: 'error' | 'muted' | 'condition' = 'condition';
+  if (data.isErrorPath) {
+    tone = 'error';
+  } else if (data.isDefault) {
+    tone = 'muted';
+  }
+  return (
+    <span
+      className={cn(
+        'inline-flex max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
+        tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
+        tone === 'muted' && 'border-border bg-muted/50 text-muted-foreground',
+        tone === 'condition' && 'border-blue-500/40 bg-blue-500/5 text-blue-600'
+      )}
+      title={text}
+    >
+      <span className="truncate">{text}</span>
+    </span>
+  );
+};
+
 export type FlowCardData = {
   label: string;
   section?: string;
@@ -104,6 +133,10 @@ export type FlowCardData = {
   meta?: NodeMetaEntry[];
   missingTopic?: boolean;
   missingSasl?: boolean;
+  // Routing into this branch (switch/fallback). Shown as a chip on the card.
+  condition?: string;
+  isDefault?: boolean;
+  isErrorPath?: boolean;
   editTarget?: EditTarget;
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
@@ -319,14 +352,17 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
       style={accent ? { borderLeftColor: accent, borderLeftWidth: 3 } : undefined}
     >
       <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-0.5">
-        <Text
-          as="span"
-          className="uppercase tracking-wide"
-          style={accent ? { color: accent } : undefined}
-          variant="captionStrongMedium"
-        >
-          {kindLabel}
-        </Text>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Text
+            as="span"
+            className="shrink-0 uppercase tracking-wide"
+            style={accent ? { color: accent } : undefined}
+            variant="captionStrongMedium"
+          >
+            {kindLabel}
+          </Text>
+          <BranchConditionChip data={data} />
+        </div>
         <CardActions data={data} docsUrl={docsUrl} />
       </div>
       <button
@@ -451,7 +487,10 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
           ) : null}
           {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
         </button>
-        <CardActions data={data} docsUrl={docsUrl} />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <BranchConditionChip data={data} />
+          <CardActions data={data} docsUrl={docsUrl} />
+        </div>
       </div>
     </div>
   );

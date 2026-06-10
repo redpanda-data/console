@@ -1056,6 +1056,11 @@ type FlowDims = {
   pad: number;
   stackGap: number;
   colGap: number;
+  // Wider inner inset reserved as a routing gutter on the side a container fans
+  // out (gs) or merges back / fans in (gt), plus the extra vertical spacing
+  // between fanned children, so the lines and arrows aren't cramped.
+  fanGutter: number;
+  fanGap: number;
 };
 const FULL_DIMS: FlowDims = {
   cardW: FLOW_CARD_WIDTH,
@@ -1065,6 +1070,8 @@ const FULL_DIMS: FlowDims = {
   pad: 16,
   stackGap: 18,
   colGap: 72,
+  fanGutter: 52,
+  fanGap: 28,
 };
 const COMPACT_DIMS: FlowDims = {
   cardW: FLOW_COMPACT_CARD_WIDTH,
@@ -1074,6 +1081,8 @@ const COMPACT_DIMS: FlowDims = {
   pad: 8,
   stackGap: 10,
   colGap: 26,
+  fanGutter: 18,
+  fanGap: 12,
 };
 
 // Section dividers ("INPUT" / "PROCESSORS" / "OUTPUT" / "RESOURCES") shown in the
@@ -1120,8 +1129,23 @@ type SizedNode = {
   children: SizedNode[];
 };
 
+// Inner spacing of a container, widened on the side(s) that carry routed edges so
+// the fan-out / copy / merge / fan-in lines and labels have room to breathe:
+//   left  — the `gs` source side (entry / copy / fan-out)
+//   right — the `gt` target side (merge-back / fan-in)
+//   gap   — vertical spacing between children
+function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
+  const fansOut = Boolean(node.branch) || (node.childFlow === 'parallel' && node.section !== 'input');
+  const fansIn = Boolean(node.branch) || node.section === 'input';
+  return {
+    left: fansOut ? dims.fanGutter : dims.pad,
+    right: fansIn ? dims.fanGutter : dims.pad,
+    gap: fansOut || fansIn ? dims.fanGap : dims.stackGap,
+  };
+}
+
 // Recursively measure a node: leaves get a content-sized card, containers wrap a
-// vertical stack of their children (header + padding + stacked child heights).
+// vertical stack of their children (header + insets + stacked child heights).
 function measureFlowNode(
   node: PipelineFlowNode,
   childrenOf: (id: string) => PipelineFlowNode[],
@@ -1135,9 +1159,29 @@ function measureFlowNode(
     return { node, w: dims.cardW, h, collapsed, children: [] };
   }
   const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds, dims));
+  const insets = containerInsets(node, dims);
   const innerW = Math.max(...children.map((c) => c.w));
-  const innerH = children.reduce((sum, c) => sum + c.h, 0) + dims.stackGap * (children.length - 1);
-  return { node, w: innerW + 2 * dims.pad, h: dims.headerH + innerH + 2 * dims.pad, children, collapsed };
+  const innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
+  return {
+    node,
+    w: innerW + insets.left + insets.right,
+    h: dims.headerH + innerH + 2 * dims.pad,
+    children,
+    collapsed,
+  };
+}
+
+// Routing condition shown as a chip on the receiving card (not a floating edge
+// label) so fanned branches stay readable. Hidden in the compact lane.
+function routingData(node: PipelineFlowNode, compact: boolean) {
+  if (compact) {
+    return {};
+  }
+  return {
+    ...(node.condition ? { condition: node.condition } : {}),
+    ...(node.isDefault ? { isDefault: true } : {}),
+    ...(node.isErrorPath ? { isErrorPath: true } : {}),
+  };
 }
 
 function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean) {
@@ -1154,6 +1198,7 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.missingSasl ? { missingSasl: true } : {}),
     ...(node.editTarget ? { editTarget: node.editTarget } : {}),
     ...(childCount > 0 ? { childCount } : {}),
+    ...routingData(node, compact),
   };
 }
 
@@ -1192,10 +1237,11 @@ function emitFlowNode(
     data: makeFlowNodeData(node, collapsed, childCount, ctx.compact),
   });
 
+  const insets = containerInsets(node, ctx.dims);
   let childY = ctx.dims.headerH + ctx.dims.pad;
   for (const child of children) {
-    emitFlowNode(child, node.id, { x: ctx.dims.pad, y: childY }, ctx);
-    childY += child.h + ctx.dims.stackGap;
+    emitFlowNode(child, node.id, { x: insets.left, y: childY }, ctx);
+    childY += child.h + insets.gap;
   }
 
   if (isContainer && children.length > 0) {
@@ -1246,18 +1292,6 @@ function chainChildren(children: SizedNode[], ctx: EmitContext): void {
       })
     );
   }
-}
-
-// The text shown on a fan-out edge: a switch/fallback condition, or "default" for a
-// catch-all branch. Suppressed in the compact lane to keep it uncluttered.
-function conditionLabel(node: PipelineFlowNode, compact: boolean): string | undefined {
-  if (compact) {
-    return;
-  }
-  if (node.condition) {
-    return node.condition;
-  }
-  return node.isDefault ? 'default' : undefined;
 }
 
 // Edges that show how data threads through a container's children:
@@ -1316,6 +1350,8 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
   }
 
   if (node.childFlow === 'parallel') {
+    // The routing condition is rendered as a chip on each receiving card, so the
+    // fan-out edge stays a clean unlabeled line (red dashed for error branches).
     for (const child of children) {
       ctx.rfEdges.push(
         linkEdge({
@@ -1326,7 +1362,6 @@ function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: 
           targetHandle: 'l',
           tone: child.node.isErrorPath ? 'error' : 'primary',
           dashed: child.node.isErrorPath,
-          label: conditionLabel(child.node, ctx.compact),
         })
       );
     }

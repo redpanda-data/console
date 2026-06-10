@@ -992,9 +992,16 @@ cache_resources:
     expect(edge('merge-proc-1')?.target).toBe('proc-1');
   });
 
-  it('labels switch fan-out edges with their condition and marks the catch-all default', () => {
-    expect(data('fanout-output-switch-0')).toMatchObject({ label: 'errored()', tone: 'error', dashed: true });
-    expect(data('fanout-output-switch-1')).toMatchObject({ label: 'default', tone: 'primary' });
+  it('styles switch fan-out edges by branch (error vs normal) and shows the condition as a chip on the receiving card', () => {
+    // The fan-out edge itself stays unlabeled; the routing condition is a chip on the node.
+    expect(data('fanout-output-switch-0')).toMatchObject({ tone: 'error', dashed: true });
+    expect(data('fanout-output-switch-0')?.label).toBeUndefined();
+    expect(data('fanout-output-switch-1')).toMatchObject({ tone: 'primary' });
+
+    const nodes = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
+    const nodeData = (id: string) => nodes.find((n) => n.id === id)?.data as Record<string, unknown> | undefined;
+    expect(nodeData('output-switch-0')).toMatchObject({ condition: 'errored()', isErrorPath: true });
+    expect(nodeData('output-switch-1')).toMatchObject({ isDefault: true });
   });
 
   it('styles a catch handler as an error path', () => {
