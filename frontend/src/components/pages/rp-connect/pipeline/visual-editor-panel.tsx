@@ -12,7 +12,7 @@
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useState } from 'react';
 
-import { NodeConfigDialog } from './node-config-dialog';
+import { NodeInspector } from './node-inspector';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
@@ -89,7 +89,7 @@ export function VisualEditorPanel({
   onAddSasl,
 }: VisualEditorPanelProps) {
   const isEditing = mode !== 'view';
-  const [configTarget, setConfigTarget] = useState<EditTarget | null>(null);
+  const [selected, setSelected] = useState<{ id: string; target: EditTarget } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
 
   const handleDeleteNode = useCallback(
@@ -98,6 +98,7 @@ export function VisualEditorPanel({
       if (next !== null) {
         onYamlChange(next);
       }
+      setSelected(null);
     },
     [yamlContent, onYamlChange]
   );
@@ -118,31 +119,33 @@ export function VisualEditorPanel({
   );
 
   return (
-    <div className="h-full w-full">
-      <PipelineFlowCanvas
-        configYaml={yamlContent}
-        onAddConnector={
-          isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
-        }
-        onAddSasl={isEditing ? onAddSasl : undefined}
-        onAddTopic={isEditing ? onAddTopic : undefined}
-        onDeleteNode={isEditing ? handleDeleteNode : undefined}
-        onEditNode={isEditing ? setConfigTarget : undefined}
-        onInsert={isEditing ? setInsertIndex : undefined}
-      />
-
-      <NodeConfigDialog
-        components={components}
-        onChange={onYamlChange}
-        onOpenChange={(open) => {
-          if (!open) {
-            setConfigTarget(null);
+    <div className="flex h-full w-full">
+      <div className="min-w-0 flex-1">
+        <PipelineFlowCanvas
+          configYaml={yamlContent}
+          onAddConnector={
+            isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
           }
-        }}
-        open={configTarget !== null}
-        target={configTarget}
-        yaml={yamlContent}
-      />
+          onAddSasl={isEditing ? onAddSasl : undefined}
+          onAddTopic={isEditing ? onAddTopic : undefined}
+          onClearSelection={() => setSelected(null)}
+          onInsert={isEditing ? setInsertIndex : undefined}
+          onSelectNode={(id, target) => setSelected({ id, target })}
+          selectedNodeId={selected?.id}
+        />
+      </div>
+
+      {/* Always-present inspector rail (Figma-style): the selected node's config. */}
+      <aside className="flex w-96 shrink-0 flex-col overflow-hidden border-border border-l bg-background">
+        <NodeInspector
+          components={components}
+          onApply={onYamlChange}
+          onDelete={isEditing ? handleDeleteNode : undefined}
+          readOnly={!isEditing}
+          target={selected?.target ?? null}
+          yaml={yamlContent}
+        />
+      </aside>
 
       <AddConnectorDialog
         components={componentList}

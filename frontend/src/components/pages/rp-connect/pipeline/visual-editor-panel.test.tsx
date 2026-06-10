@@ -11,16 +11,15 @@ import { mockComponents } from '../utils/__fixtures__/component-schemas';
 vi.mock('./pipeline-flow-canvas', () => ({
   PipelineFlowCanvas: (props: {
     configYaml: string;
-    onEditNode?: (t: unknown) => void;
-    onDeleteNode?: (t: unknown) => void;
+    onSelectNode?: (id: string, t: unknown) => void;
     onInsert?: (index: number) => void;
   }) => (
     <div data-configyaml={props.configYaml} data-testid="flow-canvas">
-      <button onClick={() => props.onEditNode?.({ kind: 'input' })} type="button">
-        edit-input
+      <button onClick={() => props.onSelectNode?.('input-0', { kind: 'input' })} type="button">
+        select-input
       </button>
-      <button onClick={() => props.onDeleteNode?.({ kind: 'processor', index: 0 })} type="button">
-        delete-proc0
+      <button onClick={() => props.onSelectNode?.('proc-0', { kind: 'processor', index: 0 })} type="button">
+        select-proc0
       </button>
       <button onClick={() => props.onInsert?.(1)} type="button">
         insert-end
@@ -79,28 +78,35 @@ describe('VisualEditorPanel', () => {
     expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toBe(sampleYaml);
   });
 
-  test('editing a node opens a dialog seeded from that component and writes the change back', async () => {
+  test('the inspector shows an empty state until a node is selected', () => {
+    renderPanel();
+    expect(screen.getByText(/select a node/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
+  });
+
+  test('selecting a node shows its config in the inspector and applying writes it back', async () => {
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel();
 
-    await user.click(screen.getByText('edit-input'));
+    await user.click(screen.getByText('select-input'));
 
     const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
     expect(editor.value).toContain('generate');
 
     await user.clear(editor);
     await user.type(editor, 'generate:\n  mapping: root = 1');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Apply changes' }));
 
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     expect(onYamlChange.mock.calls[0][0]).toContain('root = 1');
   });
 
-  test('removing a node mutates the YAML to drop it', async () => {
+  test('removing the selected node from the inspector mutates the YAML to drop it', async () => {
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel();
 
-    await user.click(screen.getByText('delete-proc0'));
+    await user.click(screen.getByText('select-proc0'));
+    await user.click(await screen.findByRole('button', { name: 'Remove node' }));
 
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     // The only processor (`log`) is gone, so `pipeline` is pruned entirely.
@@ -119,14 +125,15 @@ describe('VisualEditorPanel', () => {
     expect(onYamlChange.mock.calls[0][0]).toContain('cache_resources');
   });
 
-  test('view mode is read-only — node actions are inert', async () => {
+  test('view mode inspector is read-only — no apply or remove actions', async () => {
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel({ mode: 'view' });
 
-    await user.click(screen.getByText('edit-input'));
-    await user.click(screen.getByText('delete-proc0'));
-
-    expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
+    await user.click(screen.getByText('select-input'));
+    // The component is shown (read-only), but there's no way to apply or remove it.
+    await screen.findByTestId('node-yaml');
+    expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove node' })).not.toBeInTheDocument();
     expect(onYamlChange).not.toHaveBeenCalled();
   });
 });

@@ -11,7 +11,6 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { DialogBody, DialogFooter } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -440,11 +439,11 @@ type NodeConfigFormProps = {
   componentName: string;
   /** The full component entry, e.g. `{ label, kafka: {...} }`. */
   value: Record<string, unknown>;
-  onSubmit: (next: Record<string, unknown>) => void;
-  onCancel: () => void;
+  /** Apply the edited config back to the YAML. */
+  onApply: (next: Record<string, unknown>) => void;
 };
 
-export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel }: NodeConfigFormProps) {
+export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConfigFormProps) {
   const fields = spec.config?.children ?? [];
   const inner =
     value[componentName] && typeof value[componentName] === 'object' && !Array.isArray(value[componentName])
@@ -466,7 +465,7 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
   const showRaw = rawKeys.length > 0;
   const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
 
-  const { control, handleSubmit, formState } = useForm<FormValues>({
+  const { control, handleSubmit, formState, reset } = useForm<FormValues>({
     defaultValues: {
       label: typeof value.label === 'string' ? value.label : '',
       raw: showRaw ? yamlStringify(rawObject) : '',
@@ -480,16 +479,16 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
     },
   });
 
-  // Read dirtyFields during render so react-hook-form subscribes to (and keeps
-  // updating) it — otherwise it stays empty and every field looks untouched.
-  const { dirtyFields } = formState;
+  // Read dirtyFields/isDirty during render so react-hook-form subscribes to (and
+  // keeps updating) them — otherwise they stay empty and every field looks untouched.
+  const { dirtyFields, isDirty } = formState;
   const submit = handleSubmit((data) =>
-    onSubmit(buildComponentEntry({ componentName, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
+    onApply(buildComponentEntry({ componentName, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
   );
 
   return (
-    <>
-      <DialogBody className="space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-1.5">
           <Label className="font-medium text-sm">label</Label>
           <Controller
@@ -543,16 +542,18 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
             />
           </FieldGroup>
         ) : null}
-      </DialogBody>
+      </div>
 
-      <DialogFooter>
-        <Button onClick={onCancel} type="button" variant="ghost">
-          Cancel
+      <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
+        {isDirty ? (
+          <Button onClick={() => reset()} type="button" variant="ghost">
+            Reset
+          </Button>
+        ) : null}
+        <Button disabled={!isDirty} onClick={submit} type="button">
+          Apply changes
         </Button>
-        <Button onClick={submit} type="button">
-          Save
-        </Button>
-      </DialogFooter>
-    </>
+      </div>
+    </div>
   );
 }

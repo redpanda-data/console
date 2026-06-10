@@ -24,10 +24,9 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { BookOpenIcon, Box, ChevronDown, ChevronRight, PencilIcon, PlusIcon, Trash2 } from 'lucide-react';
+import { Box, ChevronDown, ChevronRight, PlusIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
-import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
 import { FLOW_CARD_WIDTH, FLOW_COMPACT_CARD_WIDTH } from '../utils/pipeline-flow-parser';
@@ -143,10 +142,10 @@ export type FlowCardData = {
   isDefault?: boolean;
   isErrorPath?: boolean;
   editTarget?: EditTarget;
+  /** Highlighted because it's the node selected in the inspector. */
+  selected?: boolean;
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
@@ -212,50 +211,6 @@ const ContainerHandles = ({
         type="target"
       />
     </>
-  );
-};
-
-// Docs + remove reveal on hover; the Edit button stays visible so every editable
-// node has an obvious entry point into its config dialog.
-const CardActions = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
-  if (!(data.onEdit || data.onDelete || docsUrl)) {
-    return null;
-  }
-  return (
-    <div className="flex shrink-0 items-center gap-0.5">
-      <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-        {docsUrl ? (
-          <Button
-            aria-label={`${data.label} documentation`}
-            as="a"
-            className="nodrag nopan"
-            href={docsUrl}
-            rel="noopener noreferrer"
-            size="icon-xs"
-            target="_blank"
-            variant="ghost"
-          >
-            <BookOpenIcon />
-          </Button>
-        ) : null}
-        {data.onDelete ? (
-          <Button aria-label="Remove" className="nodrag nopan" onClick={data.onDelete} size="icon-xs" variant="ghost">
-            <Trash2 />
-          </Button>
-        ) : null}
-      </div>
-      {data.onEdit ? (
-        <Button
-          aria-label="Edit configuration"
-          className="nodrag nopan"
-          onClick={data.onEdit}
-          size="icon-xs"
-          variant="outline"
-        >
-          <PencilIcon />
-        </Button>
-      ) : null}
-    </div>
   );
 };
 
@@ -355,58 +310,49 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
 };
 
 // A small one-row pill used in the compact sidebar (logo + name, no badge/meta).
-const CompactCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => (
+const CompactCard = ({ data }: { data: FlowCardData }) => (
   <div className="group flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md">
     <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
     <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
       {data.label}
     </Text>
-    <CardActions data={data} docsUrl={docsUrl} />
   </div>
 );
 
-const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
+// The selection ring shown on the node the inspector is editing.
+const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
+
+// A leaf component card. The whole card is the click target (selection is handled
+// by React Flow's onNodeClick); editing happens in the inspector rail.
+const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: boolean }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   const accent = SECTION_ACCENT[data.section ?? ''];
   return (
     <div
-      className="overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
+      className={cn(
+        'overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
+        selectable && 'cursor-pointer',
+        data.selected && SELECTED_RING
+      )}
       style={accent ? { borderLeftColor: accent, borderLeftWidth: 3 } : undefined}
     >
-      <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-0.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Text
-            as="span"
-            className="shrink-0 uppercase tracking-wide"
-            style={accent ? { color: accent } : undefined}
-            variant="captionStrongMedium"
-          >
-            {kindLabel}
-          </Text>
-          <BranchConditionChip data={data} />
-        </div>
-        <CardActions data={data} docsUrl={docsUrl} />
+      <div className="flex items-center gap-1.5 px-3 pt-2 pb-0.5">
+        <Text
+          as="span"
+          className="shrink-0 uppercase tracking-wide"
+          style={accent ? { color: accent } : undefined}
+          variant="captionStrongMedium"
+        >
+          {kindLabel}
+        </Text>
+        <BranchConditionChip data={data} />
       </div>
-      <button
-        className={cn(
-          'nodrag nopan flex w-full items-center gap-2 px-3 pb-2 text-left',
-          data.collapsible && 'cursor-pointer rounded transition-colors hover:bg-muted/40'
-        )}
-        disabled={!data.collapsible}
-        onClick={data.collapsible ? data.onToggle : undefined}
-        type="button"
-      >
+      <div className="flex w-full items-center gap-2 px-3 pb-2 text-left">
         <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
         <Text as="span" className="min-w-0 flex-1 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
           {data.label}
         </Text>
-        {data.collapsible ? (
-          <span className="shrink-0 text-subtle">
-            {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-          </span>
-        ) : null}
-        {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
-      </button>
+      </div>
       {data.labelText ? (
         <div className="px-3 pb-2">
           <Badge className="max-w-full" size="sm" variant="info-inverted">
@@ -421,19 +367,16 @@ const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string
 
 const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   const isPlaceholder = data.label === 'none';
-  const docsUrl = isPlaceholder ? undefined : getConnectorDocsUrl(data.section ?? '', data.label);
   const ref = useStopPanOnControls();
   const width = data.compact ? FLOW_COMPACT_CARD_WIDTH : FLOW_CARD_WIDTH;
+  // Leaves on the full canvas are selectable; placeholders and the compact sidebar are not.
+  const selectable = !(isPlaceholder || data.compact);
 
   const card = (() => {
     if (isPlaceholder) {
       return <PlaceholderCard data={data} />;
     }
-    return data.compact ? (
-      <CompactCard data={data} docsUrl={docsUrl} />
-    ) : (
-      <ComponentCard data={data} docsUrl={docsUrl} />
-    );
+    return data.compact ? <CompactCard data={data} /> : <ComponentCard data={data} selectable={selectable} />;
   })();
 
   return (
@@ -477,7 +420,9 @@ const ContainerTitleText = ({ data, accent }: { data: FlowCardData; accent?: str
 const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
   const accent = SECTION_ACCENT[data.section ?? ''];
-  const docsUrl = getConnectorDocsUrl(data.section ?? '', data.label);
+  // The full-canvas container header is the click target for selection; the compact
+  // sidebar isn't selectable.
+  const selectable = !data.compact;
 
   return (
     // The handles live on this border-less wrapper so their `left`/`top` offsets are
@@ -487,43 +432,41 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
     <div className="group relative h-full w-full" ref={ref}>
       <ContainerHandles gsCenter={data.fanOut} gtCenter={data.fanIn} portY={data.portY} />
       <div
-        className="flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm"
+        className={cn(
+          'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm',
+          data.selected && SELECTED_RING
+        )}
         style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
       >
         <div
           className={cn(
-            'flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
+            'flex items-center gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
+            selectable && 'cursor-pointer',
             data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2'
           )}
         >
-          <button
-            className={cn(
-              'nodrag nopan flex min-w-0 items-center gap-2 text-left',
-              data.collapsible && 'cursor-pointer'
-            )}
-            disabled={!data.collapsible}
-            onClick={data.collapsible ? data.onToggle : undefined}
-            type="button"
-          >
-            <ConnectorLogo
-              className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
-              fallback={Box}
-              name={data.label as ComponentName}
-            />
-            <ContainerTitleText accent={accent} data={data} />
-            {data.collapsible ? (
-              <span className="shrink-0 text-subtle">
-                {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-              </span>
-            ) : null}
-            {data.collapsed && data.childCount ? (
-              <CountDot count={data.childCount} size="sm" variant="disabled" />
-            ) : null}
-          </button>
-          <div className="flex min-w-0 items-center gap-1.5">
-            <BranchConditionChip data={data} />
-            <CardActions data={data} docsUrl={docsUrl} />
-          </div>
+          <ConnectorLogo
+            className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
+            fallback={Box}
+            name={data.label as ComponentName}
+          />
+          <ContainerTitleText accent={accent} data={data} />
+          <BranchConditionChip data={data} />
+          {/* Collapse toggle is a separate control so it doesn't also select the node. */}
+          {data.collapsible ? (
+            <button
+              aria-label={data.collapsed ? 'Expand' : 'Collapse'}
+              className="nodrag nopan ml-auto shrink-0 cursor-pointer rounded p-0.5 text-subtle transition-colors hover:bg-muted/60"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onToggle?.();
+              }}
+              type="button"
+            >
+              {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            </button>
+          ) : null}
+          {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
         </div>
       </div>
     </div>

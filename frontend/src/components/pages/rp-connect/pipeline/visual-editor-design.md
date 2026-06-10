@@ -52,7 +52,7 @@ The dedicated, full-canvas visual editor has shipped (behind the flag):
   schema's scalar fields (required first, optional with defaults, advanced
   collapsed, enums as selects, bools as switches), with a raw-YAML fallback for
   nested objects/arrays and for components whose schema we don't have
-  (`node-config-dialog.tsx` chooses form vs. raw).
+  (`node-inspector.tsx` chooses form vs. raw, in the right rail).
 - All edits remain deterministic YAML mutations (`utils/yaml.ts`):
   `getComponentAt`, `setComponentAt`, `removeComponentAt`, `insertProcessorAt`,
   `appendResource`, `buildInsertableComponent`, keyed by an `EditTarget`.
@@ -120,6 +120,16 @@ Supporting polish:
 
 ### Editing experience
 
+- **Figma-style inspector rail (not modals).** The Visual lane is a flex row:
+  the canvas (`flex-1`) plus an always-present right rail (`NodeInspector`,
+  `w-96`, `border-l`). Clicking a node **selects** it (React Flow `onNodeClick`,
+  highlighted with a ring; `onPaneClick` clears); the rail then shows that node's
+  identity (logo / kind / name) with docs + remove actions and its config — a
+  schema form (editable components) or scoped YAML (unknown schema). Edits are
+  applied with an **Apply changes** button (enabled only when something changed).
+  In the read-only view lane the rail shows the component as read-only YAML. There
+  is no per-node edit/delete button and no edit dialog — selection is the affordance
+  (the container collapse chevron is a separate control that doesn't select).
 - **Every node is editable, including nested ones.** Beyond the top-level
   input/output/processor/resource targets, the parser threads the YAML **path**
   through branch/switch/try/catch/for_each/broker and assigns each nested component
@@ -424,7 +434,7 @@ New files under `pipeline/` (names indicative):
 - `visual-editor-flow.tsx` — wraps/extends `PipelineFlowDiagram` to inject
   insertion-point nodes/edges and per-node edit/remove callbacks. Keep the parser
   + layout as-is; add an overlay of `+` affordances driven by node `path`s.
-- `node-config-dialog.tsx` — the schema-driven per-node config editor (§5.3).
+- `node-inspector.tsx` — the persistent right-rail config editor (form vs. raw YAML).
 - `node-meta.ts` — the summary extractor (§5.4): `getNodeSummary(spec, config)`.
 - `insertion-points.ts` — derives valid insertion slots (`{ containerPath, index,
   allowedTypes }`) from the parsed tree.

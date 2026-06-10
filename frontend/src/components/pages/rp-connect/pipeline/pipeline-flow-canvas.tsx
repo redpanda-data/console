@@ -34,30 +34,25 @@ const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
 
 type CanvasCallbacks = {
-  onEditNode?: (target: EditTarget) => void;
-  onDeleteNode?: (target: EditTarget) => void;
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
+  selectedNodeId?: string;
 };
 
-// Wire interactivity into a layout node's data: collapse toggle, edit/remove for
-// editable nodes, and the add-connector / redpanda setup-hint handlers.
+// Wire interactivity into a layout node's data: collapse toggle, selection
+// highlight, and the add-connector / redpanda setup-hint handlers. Editing now
+// happens in the inspector rail (selection), not via a per-node button.
 function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   const data = { ...node.data } as FlowCardData;
   if (data.collapsible) {
     data.collapsed = cb.collapsedIds.has(node.id);
     data.onToggle = () => cb.toggleCollapse(node.id);
   }
-  if (data.editTarget && cb.onEditNode) {
-    const target = data.editTarget;
-    data.onEdit = () => cb.onEditNode?.(target);
-  }
-  if (data.editTarget && cb.onDeleteNode) {
-    const target = data.editTarget;
-    data.onDelete = () => cb.onDeleteNode?.(target);
+  if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
+    data.selected = true;
   }
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
@@ -125,9 +120,13 @@ type PipelineFlowCanvasProps = {
   hideControls?: boolean;
   /** Static overview: no background dots, no pan/zoom — just a fit-to-view diagram (sidebar). */
   simple?: boolean;
+  /** Currently selected node id (highlighted on the canvas). */
+  selectedNodeId?: string;
+  /** Select a node by id + its edit target (clicking a node). */
+  onSelectNode?: (nodeId: string, target: EditTarget) => void;
+  /** Clear the selection (clicking empty canvas). */
+  onClearSelection?: () => void;
   // Edit-mode callbacks. When omitted the canvas is a read-only viewer.
-  onEditNode?: (target: EditTarget) => void;
-  onDeleteNode?: (target: EditTarget) => void;
   onInsert?: (processorIndex: number) => void;
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
@@ -139,8 +138,9 @@ export function PipelineFlowCanvas({
   orientation = 'horizontal',
   hideControls,
   simple,
-  onEditNode,
-  onDeleteNode,
+  selectedNodeId,
+  onSelectNode,
+  onClearSelection,
   onInsert,
   onAddConnector,
   onAddTopic,
@@ -167,13 +167,12 @@ export function PipelineFlowCanvas({
     const layout = computeFlowLayout(nodes, collapsedIds, orientation, simple);
 
     const callbacks: CanvasCallbacks = {
-      onEditNode,
-      onDeleteNode,
       onAddConnector,
       onAddTopic,
       onAddSasl,
       collapsedIds,
       toggleCollapse,
+      selectedNodeId,
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
 
@@ -220,8 +219,7 @@ export function PipelineFlowCanvas({
     orientation,
     simple,
     toggleCollapse,
-    onEditNode,
-    onDeleteNode,
+    selectedNodeId,
     onInsert,
     onAddConnector,
     onAddTopic,
@@ -255,6 +253,17 @@ export function PipelineFlowCanvas({
           nodesDraggable={false}
           nodesFocusable={false}
           nodeTypes={flowNodeTypes}
+          onNodeClick={
+            simple
+              ? undefined
+              : (_, node) => {
+                  const target = (node.data as FlowCardData).editTarget;
+                  if (target) {
+                    onSelectNode?.(node.id, target);
+                  }
+                }
+          }
+          onPaneClick={simple ? undefined : () => onClearSelection?.()}
           panOnDrag={!simple}
           panOnScroll={false}
           // Let the mouse wheel scroll the page rather than zoom/capture the canvas.
