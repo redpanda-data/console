@@ -1021,10 +1021,15 @@ cache_resources:
     expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
   });
 
-  it('omits condition labels and reference edges in the compact lane', () => {
+  it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {
     const compact = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes, new Set(), 'vertical', true).rfEdges;
+    // The minimal sidebar overview draws only the spine + nested sequential chains.
     expect(compact.some((e) => e.id.startsWith('ref-'))).toBe(false);
-    expect(compact.find((e) => e.id === 'fanout-output-switch-0')?.data).toMatchObject({ label: undefined });
+    expect(compact.some((e) => e.id.startsWith('fanout-'))).toBe(false);
+    expect(compact.some((e) => e.id.startsWith('copy-') || e.id.startsWith('merge-'))).toBe(false);
+    expect(compact.some((e) => e.id.startsWith('fanin-'))).toBe(false);
+    // Only the vertical spine connecting top-level steps remains.
+    expect(compact.some((e) => e.type === 'flowSpine')).toBe(true);
   });
 });
 

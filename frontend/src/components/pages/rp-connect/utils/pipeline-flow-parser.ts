@@ -1061,6 +1061,9 @@ type FlowDims = {
   // between fanned children, so the lines and arrows aren't cramped.
   fanGutter: number;
   fanGap: number;
+  // The compact sidebar lane: a minimal vertical overview (no fan-out / copy /
+  // merge routing — just the spine + nested sub-pipeline chains).
+  compact: boolean;
 };
 const FULL_DIMS: FlowDims = {
   cardW: FLOW_CARD_WIDTH,
@@ -1072,6 +1075,7 @@ const FULL_DIMS: FlowDims = {
   colGap: 72,
   fanGutter: 72,
   fanGap: 32,
+  compact: false,
 };
 const COMPACT_DIMS: FlowDims = {
   cardW: FLOW_COMPACT_CARD_WIDTH,
@@ -1083,6 +1087,7 @@ const COMPACT_DIMS: FlowDims = {
   colGap: 26,
   fanGutter: 18,
   fanGap: 12,
+  compact: true,
 };
 
 // Section dividers ("INPUT" / "PROCESSORS" / "OUTPUT" / "RESOURCES") shown in the
@@ -1146,6 +1151,11 @@ function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
 }
 
 function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
+  // The compact lane draws no fan-out/copy/merge edges, so it needs no routing
+  // gutters — children just nest in by a consistent small inset.
+  if (dims.compact) {
+    return { left: dims.fanGutter, right: dims.pad, gap: dims.stackGap };
+  }
   const sides = fanSides(node);
   return {
     left: sides.out ? dims.fanGutter : dims.pad,
@@ -1353,6 +1363,19 @@ function chainChildren(children: SizedNode[], ctx: EmitContext): void {
 //   parallel → fan out to each alternative, labeled with its routing condition
 //   sequential → enter the first child, then chain in order
 function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
+  // Compact lane: a minimal vertical overview — no copy/merge/fan-out/fan-in
+  // routing (and no right-side arrows). Sub-pipelines that run in order keep a
+  // simple nested vertical chain; alternatives/sources just nest inside the box.
+  if (ctx.compact) {
+    if (node.childFlow !== 'parallel' && node.section !== 'input') {
+      chainChildren(children, ctx);
+    }
+    return;
+  }
+  emitFullContainerEdges(node, children, ctx);
+}
+
+function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
   const first = children[0].node.id;
   const last = children.at(-1)?.node.id ?? first;
   const label = (text: string) => (ctx.compact ? undefined : text);

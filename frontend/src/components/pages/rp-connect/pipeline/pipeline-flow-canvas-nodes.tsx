@@ -161,16 +161,20 @@ const HANDLE_IDS = [
 
 const NodeHandles = () => (
   <>
-    {HANDLE_IDS.map((h) => (
-      <Handle
-        className={invisibleHandle}
-        id={h.id}
-        key={h.id}
-        position={h.position}
-        style={h.id === 'l' || h.id === 'r' ? { top: SPINE_HANDLE_TOP } : { left: SPINE_HANDLE_LEFT }}
-        type={h.type}
-      />
-    ))}
+    {HANDLE_IDS.map((h) => {
+      const horizontal = h.id === 'l' || h.id === 'r';
+      // Pin the handle to a fixed offset and clear React Flow's default centering
+      // transform. Without this, overriding only `left`/`top` leaves the default
+      // `translate(-50%, …)` in place, so the spine handle's coordinate shifts with
+      // the node's size and the connecting line angles between cards of different
+      // widths. `transform: none` makes the offset absolute and identical for all.
+      const style = horizontal
+        ? { top: SPINE_HANDLE_TOP, transform: 'none' }
+        : { left: SPINE_HANDLE_LEFT, transform: 'none' };
+      return (
+        <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
+      );
+    })}
   </>
 );
 
@@ -476,40 +480,50 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
   const docsUrl = getConnectorDocsUrl(data.section ?? '', data.label);
 
   return (
-    <div
-      className="group relative flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm"
-      ref={ref}
-      style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
-    >
+    // The handles live on this border-less wrapper so their `left`/`top` offsets are
+    // measured from the node's outer edge — identical to leaf cards. (Putting them on
+    // the bordered box below would shift them by the border/accent width and angle the
+    // spine between cards and containers.)
+    <div className="group relative h-full w-full" ref={ref}>
       <ContainerHandles gsCenter={data.fanOut} gtCenter={data.fanIn} portY={data.portY} />
       <div
-        className={cn(
-          'flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
-          data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2'
-        )}
+        className="flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm"
+        style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
       >
-        <button
-          className={cn('nodrag nopan flex min-w-0 items-center gap-2 text-left', data.collapsible && 'cursor-pointer')}
-          disabled={!data.collapsible}
-          onClick={data.collapsible ? data.onToggle : undefined}
-          type="button"
+        <div
+          className={cn(
+            'flex items-center justify-between gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
+            data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2'
+          )}
         >
-          <ConnectorLogo
-            className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
-            fallback={Box}
-            name={data.label as ComponentName}
-          />
-          <ContainerTitleText accent={accent} data={data} />
-          {data.collapsible ? (
-            <span className="shrink-0 text-subtle">
-              {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-            </span>
-          ) : null}
-          {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
-        </button>
-        <div className="flex min-w-0 items-center gap-1.5">
-          <BranchConditionChip data={data} />
-          <CardActions data={data} docsUrl={docsUrl} />
+          <button
+            className={cn(
+              'nodrag nopan flex min-w-0 items-center gap-2 text-left',
+              data.collapsible && 'cursor-pointer'
+            )}
+            disabled={!data.collapsible}
+            onClick={data.collapsible ? data.onToggle : undefined}
+            type="button"
+          >
+            <ConnectorLogo
+              className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
+              fallback={Box}
+              name={data.label as ComponentName}
+            />
+            <ContainerTitleText accent={accent} data={data} />
+            {data.collapsible ? (
+              <span className="shrink-0 text-subtle">
+                {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+              </span>
+            ) : null}
+            {data.collapsed && data.childCount ? (
+              <CountDot count={data.childCount} size="sm" variant="disabled" />
+            ) : null}
+          </button>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <BranchConditionChip data={data} />
+            <CardActions data={data} docsUrl={docsUrl} />
+          </div>
         </div>
       </div>
     </div>
