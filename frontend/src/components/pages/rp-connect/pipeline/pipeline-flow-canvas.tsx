@@ -71,6 +71,52 @@ function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   return { ...node, data };
 }
 
+type LegendFlags = { copyMerge: boolean; error: boolean; reference: boolean };
+
+// A line swatch matching the edge styles drawn on the canvas.
+function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
+  return (
+    <span
+      className="inline-block h-0 w-5 shrink-0 align-middle"
+      style={{ borderTopColor: color, borderTopWidth: 2, borderTopStyle: dashed ? 'dashed' : 'solid' }}
+    />
+  );
+}
+
+// Explains the edge vocabulary (flow / copy-merge / error / resource use). Only the
+// kinds present in the current diagram are listed.
+function FlowLegend({ flags }: { flags: LegendFlags }) {
+  if (!(flags.copyMerge || flags.error || flags.reference)) {
+    return null;
+  }
+  return (
+    <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-border bg-background/90 px-3 py-2 text-muted-foreground text-xs shadow-sm backdrop-blur-sm">
+      <div className="flex items-center gap-2">
+        <LegendSwatch color="var(--color-primary)" />
+        Data flow
+      </div>
+      {flags.copyMerge ? (
+        <div className="flex items-center gap-2">
+          <LegendSwatch color="var(--color-primary)" dashed />
+          Copy / merge (branch)
+        </div>
+      ) : null}
+      {flags.error ? (
+        <div className="flex items-center gap-2">
+          <LegendSwatch color="var(--color-destructive)" dashed />
+          Error / dead-letter
+        </div>
+      ) : null}
+      {flags.reference ? (
+        <div className="flex items-center gap-2">
+          <LegendSwatch color="var(--color-border)" dashed />
+          Uses resource
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 type PipelineFlowCanvasProps = {
   configYaml: string;
   /** Main-axis direction: 'horizontal' for the Visual lane, 'vertical' for the compact sidebar. */
@@ -117,7 +163,7 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  const { rfNodes, rfEdges, translateExtent, contentHeight } = useMemo(() => {
+  const { rfNodes, rfEdges, translateExtent, contentHeight, legend } = useMemo(() => {
     const layout = computeFlowLayout(nodes, collapsedIds, orientation, simple);
 
     const callbacks: CanvasCallbacks = {
@@ -153,7 +199,21 @@ export function PipelineFlowCanvas({
       [layout.width + pad, layout.height + pad],
     ];
 
-    return { rfNodes: injectedNodes, rfEdges: injectedEdges, translateExtent: extent, contentHeight: layout.height };
+    // Which edge vocabularies appear — drives an adaptive legend (only shows the
+    // kinds actually present, so trivial pipelines stay legend-free).
+    const legendFlags = {
+      copyMerge: layout.rfEdges.some((e: Edge) => e.id.startsWith('copy-') || e.id.startsWith('merge-')),
+      error: layout.rfEdges.some((e: Edge) => (e.data as { tone?: string } | undefined)?.tone === 'error'),
+      reference: layout.rfEdges.some((e: Edge) => e.id.startsWith('ref-')),
+    };
+
+    return {
+      rfNodes: injectedNodes,
+      rfEdges: injectedEdges,
+      translateExtent: extent,
+      contentHeight: layout.height,
+      legend: legendFlags,
+    };
   }, [
     nodes,
     collapsedIds,
@@ -179,7 +239,7 @@ export function PipelineFlowCanvas({
   return (
     // Compact lane: the canvas is exactly as tall as its content and top-anchored,
     // so it never re-centers as the lane resizes — the surrounding lane scrolls.
-    <div className="w-full" style={simple ? { height: contentHeight + 16 } : { height: '100%' }}>
+    <div className="relative w-full" style={simple ? { height: contentHeight + 16 } : { height: '100%' }}>
       <ReactFlowProvider>
         <ReactFlow
           defaultViewport={simple ? { x: 8, y: 8, zoom: 1 } : undefined}
@@ -208,6 +268,7 @@ export function PipelineFlowCanvas({
           {hideControls || simple ? null : <Controls position="bottom-right" showInteractive={false} />}
         </ReactFlow>
       </ReactFlowProvider>
+      {simple ? null : <FlowLegend flags={legend} />}
     </div>
   );
 }

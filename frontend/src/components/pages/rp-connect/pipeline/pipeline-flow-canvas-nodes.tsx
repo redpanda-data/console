@@ -82,6 +82,15 @@ const SECTION_LABEL: Record<string, string> = {
   resource: 'Resource',
 };
 
+// A colored left accent gives each role a quick visual identity: sources, transforms,
+// sinks, and shared resources read apart at a glance.
+const SECTION_ACCENT: Record<string, string> = {
+  input: 'var(--color-green-500)',
+  processor: 'var(--color-blue-500)',
+  output: 'var(--color-purple-500)',
+  resource: 'var(--color-orange-500)',
+};
+
 export type FlowCardData = {
   label: string;
   section?: string;
@@ -303,10 +312,19 @@ const CompactCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }
 
 const ComponentCard = ({ data, docsUrl }: { data: FlowCardData; docsUrl?: string }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
+  const accent = SECTION_ACCENT[data.section ?? ''];
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div
+      className="overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
+      style={accent ? { borderLeftColor: accent, borderLeftWidth: 3 } : undefined}
+    >
       <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-0.5">
-        <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
+        <Text
+          as="span"
+          className="uppercase tracking-wide"
+          style={accent ? { color: accent } : undefined}
+          variant="captionStrongMedium"
+        >
           {kindLabel}
         </Text>
         <CardActions data={data} docsUrl={docsUrl} />
@@ -366,18 +384,46 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
+// The logo + (kind / name) of a container's title bar — compact shows one row, full
+// stacks the colored kind label above the name.
+const ContainerTitleText = ({ data, accent }: { data: FlowCardData; accent?: string }) => {
+  if (data.compact) {
+    return (
+      <Text as="span" className="min-w-0 truncate font-medium text-sm" title={data.label}>
+        {data.label}
+      </Text>
+    );
+  }
+  const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
+  return (
+    <span className="flex min-w-0 flex-col">
+      <Text
+        as="span"
+        className="text-[10px] uppercase leading-none tracking-wide"
+        style={{ color: accent ?? 'var(--color-muted-foreground)' }}
+      >
+        {kindLabel}
+      </Text>
+      <Text as="span" className="min-w-0 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
+        {data.label}
+      </Text>
+    </span>
+  );
+};
+
 // A container processor (branch/switch/parallel/…) or multi-input broker: a titled
 // box that visually encloses its children. React Flow renders the child nodes
 // inside the body; this component only draws the chrome (title bar + border).
 const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
-  const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
+  const accent = SECTION_ACCENT[data.section ?? ''];
   const docsUrl = getConnectorDocsUrl(data.section ?? '', data.label);
 
   return (
     <div
       className="group relative flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm"
       ref={ref}
+      style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
     >
       <ContainerHandles />
       <div
@@ -397,20 +443,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
             fallback={Box}
             name={data.label as ComponentName}
           />
-          {data.compact ? (
-            <Text as="span" className="min-w-0 truncate font-medium text-sm" title={data.label}>
-              {data.label}
-            </Text>
-          ) : (
-            <span className="flex min-w-0 flex-col">
-              <Text as="span" className="text-[10px] text-muted-foreground uppercase leading-none tracking-wide">
-                {kindLabel}
-              </Text>
-              <Text as="span" className="min-w-0 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
-                {data.label}
-              </Text>
-            </span>
-          )}
+          <ContainerTitleText accent={accent} data={data} />
           {data.collapsible ? (
             <span className="shrink-0 text-subtle">
               {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}

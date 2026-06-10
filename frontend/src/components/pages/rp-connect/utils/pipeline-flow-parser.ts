@@ -1428,7 +1428,7 @@ export function computeFlowLayout(
   // The resource lane sits past the main flow along the cross axis: below the row
   // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
   const laneStart = (isVertical ? mainExtent : maxCross) + 2 * dims.stackGap + 24;
-  const resources = placeResourceLane({ nodes, childrenMap, isVertical, laneStart, ctx });
+  const { resources, resourceRight } = placeResourceLane({ nodes, childrenMap, isVertical, laneStart, ctx });
 
   // Resource-reference edges (cache/rate_limit → resource). Skipped in the compact
   // lane to keep it clean, and only between nodes that were actually placed.
@@ -1440,7 +1440,7 @@ export function computeFlowLayout(
   return {
     rfNodes: ctx.rfNodes,
     rfEdges: ctx.rfEdges,
-    ...flowDimensions({ isVertical, mainExtent, maxCross, laneStart, resources, dims }),
+    ...flowDimensions({ isVertical, mainExtent, maxCross, laneStart, resources, resourceRight, dims }),
   };
 }
 
@@ -1479,6 +1479,47 @@ function placeTopLevelSteps(
   return { mainExtent: cursor - gap, maxCross };
 }
 
+// Absolute x of a placed node (sum its position up the parent chain), or undefined
+// if it (or an ancestor) was not placed — e.g. hidden inside a collapsed container.
+function absoluteX(id: string, placed: Map<string, { x: number; parentId?: string }>): number | undefined {
+  let cur = placed.get(id);
+  if (!cur) {
+    return;
+  }
+  let x = 0;
+  while (cur) {
+    x += cur.x;
+    cur = cur.parentId ? placed.get(cur.parentId) : undefined;
+  }
+  return x;
+}
+
+// In horizontal layout, pick each resource's x so it sits roughly under the node
+// that references it (short reference edges), falling back to left-to-right order
+// for unreferenced resources. A left→right sweep then de-overlaps the cards.
+function resourceLaneX(
+  resources: PipelineFlowNode[],
+  nodes: PipelineFlowNode[],
+  ctx: EmitContext
+): Map<string, number> {
+  const placed = new Map(ctx.rfNodes.map((n) => [n.id, { x: n.position.x, parentId: n.parentId }]));
+  const desired = resources.map((resource, i) => {
+    const ref = resource.labelText ? nodes.find((n) => n.resourceRef === resource.labelText) : undefined;
+    const refX = ref ? absoluteX(ref.id, placed) : undefined;
+    return { id: resource.id, x: refX ?? i * (ctx.dims.cardW + ctx.dims.colGap) };
+  });
+  desired.sort((a, b) => a.x - b.x);
+  const step = ctx.dims.cardW + ctx.dims.colGap;
+  const out = new Map<string, number>();
+  let prevX = Number.NEGATIVE_INFINITY;
+  for (const d of desired) {
+    const x = Math.max(d.x, prevX === Number.NEGATIVE_INFINITY ? d.x : prevX + step);
+    out.set(d.id, x);
+    prevX = x;
+  }
+  return out;
+}
+
 // Resources lane after the flow (referenced by label, so no flow edges).
 function placeResourceLane({
   nodes,
@@ -1492,20 +1533,24 @@ function placeResourceLane({
   isVertical: boolean;
   laneStart: number;
   ctx: EmitContext;
-}): PipelineFlowNode[] {
+}): { resources: PipelineFlowNode[]; resourceRight: number } {
   const resources = sectionChildren(nodes, childrenMap, 'resource');
+  const laneX = isVertical ? null : resourceLaneX(resources, nodes, ctx);
   let stackY = laneStart;
+  let resourceRight = 0;
   for (const [i, resource] of resources.entries()) {
+    const x = isVertical ? 0 : (laneX?.get(resource.id) ?? i * (ctx.dims.cardW + ctx.dims.colGap));
     ctx.rfNodes.push({
       id: resource.id,
       type: 'flowCard',
-      position: isVertical ? { x: 0, y: stackY } : { x: i * (ctx.dims.cardW + ctx.dims.colGap), y: laneStart },
+      position: { x, y: isVertical ? stackY : laneStart },
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
       data: makeFlowNodeData(resource, false, 0, ctx.compact),
     });
+    resourceRight = Math.max(resourceRight, x + ctx.dims.cardW);
     stackY += leafCardHeight(resource, ctx.dims) + ctx.dims.stackGap;
   }
-  return resources;
+  return { resources, resourceRight };
 }
 
 function flowDimensions({
@@ -1514,6 +1559,7 @@ function flowDimensions({
   maxCross,
   laneStart,
   resources,
+  resourceRight,
   dims,
 }: {
   isVertical: boolean;
@@ -1521,6 +1567,7 @@ function flowDimensions({
   maxCross: number;
   laneStart: number;
   resources: PipelineFlowNode[];
+  resourceRight: number;
   dims: FlowDims;
 }): { width: number; height: number } {
   if (isVertical) {
@@ -1531,7 +1578,7 @@ function flowDimensions({
     };
   }
   return {
-    width: Math.max(mainExtent, resources.length * (dims.cardW + dims.colGap), dims.cardW),
+    width: Math.max(mainExtent, resourceRight, dims.cardW),
     height: resources.length > 0 ? laneStart + leafCardHeight(resources[0], dims) : Math.max(maxCross, dims.leafBaseH),
   };
 }

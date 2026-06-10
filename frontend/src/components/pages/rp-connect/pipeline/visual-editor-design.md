@@ -85,7 +85,19 @@ entry/copy/fan-out) and `gt` (header target, receives merge-back/fan-in). All
 non-spine edges share one configurable edge type (`flowLink`) whose stroke colour,
 dash and optional label come from edge `data` (`tone` ∈ primary|muted|error,
 `dashed`, `label`). Condition labels and reference edges are **suppressed in the
-compact sidebar** to keep it clean. All of this is derived purely from
+compact sidebar** to keep it clean.
+
+Supporting polish:
+
+- **Resources sit under the node that uses them.** In horizontal layout each
+  resource's x is aligned to the (absolute) x of its referencing component, then a
+  left→right sweep de-overlaps the lane — so a `uses` edge is a short drop, not a
+  full-canvas traversal (`resourceLaneX`/`absoluteX`).
+- **Section colour accents.** Cards/containers carry a left accent + tinted kind
+  label by role (input green, processor blue, output purple, resource orange) so
+  sources/transforms/sinks/resources read apart at a glance (`SECTION_ACCENT`).
+- **Adaptive edge legend.** The full canvas shows a small bottom-left legend that
+  lists only the edge kinds actually present (flow / copy-merge / error / uses). All of this is derived purely from
 `parsePipelineFlowTree` (new node fields: `condition`, `isDefault`, `isErrorPath`,
 `branch`, `resourceRef`) — still 100% deterministic from YAML.
 
