@@ -670,7 +670,9 @@ output:
     const { nodes } = parsePipelineFlowTree(yaml);
     const { rfEdges } = computeTreeLayout(nodes);
     // The branch group feeds its inner processor via a branch (treeEdge) connection.
-    expect(rfEdges.find((e) => e.type === 'treeEdge' && e.source === 'proc-0' && e.target === 'proc-0-processors-p0')).toBeDefined();
+    expect(
+      rfEdges.find((e) => e.type === 'treeEdge' && e.source === 'proc-0' && e.target === 'proc-0-processors-p0')
+    ).toBeDefined();
     // And the main path still flows generate → branch → drop.
     const main = rfEdges.filter((e) => e.type === 'sectionEdge');
     expect(main.find((e) => e.source === 'input-0' && e.target === 'proc-0')).toBeDefined();
@@ -904,7 +906,12 @@ describe('computeFlowLayout', () => {
   });
 
   it('adds INPUT/PROCESSORS/OUTPUT section labels in the compact vertical lane only', () => {
-    const verticalLabels = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(), 'vertical', true)
+    const verticalLabels = computeFlowLayout(
+      parsePipelineFlowTree(BRANCHING_PIPELINE).nodes,
+      new Set(),
+      'vertical',
+      true
+    )
       .rfNodes.filter((n) => n.type === 'flowSectionLabel')
       .map((n) => (n.data as { label?: string }).label);
     expect(verticalLabels).toEqual(['INPUT', 'PROCESSORS', 'OUTPUT']);
@@ -1013,6 +1020,25 @@ cache_resources:
     // proc-2 is the `try` container.
     const tryEntry = edges().find((e) => e.id.startsWith('entry-proc-2'));
     expect((tryEntry?.data as { tone?: string }).tone).toBe('primary');
+  });
+
+  it('gives nested components a path-based editTarget addressing their exact YAML location', () => {
+    const { nodes } = parsePipelineFlowTree(ENRICHMENT);
+    const byId = (id: string) => nodes.find((n) => n.id === id);
+    // http inside the first branch.
+    expect(byId('proc-1-processors-p0')?.editTarget).toEqual({
+      kind: 'path',
+      path: ['pipeline', 'processors', 1, 'branch', 'processors', 0],
+      componentType: 'processor',
+    });
+    // An output inside the switch is editable as an output at its case path.
+    expect(byId('output-switch-0')?.editTarget).toEqual({
+      kind: 'path',
+      path: ['output', 'switch', 'cases', 0, 'output'],
+      componentType: 'output',
+    });
+    // Top-level processors keep the convenience index target.
+    expect(byId('proc-0')?.editTarget).toEqual({ kind: 'processor', index: 0 });
   });
 
   it('draws dashed reference edges from a component to the resource it uses', () => {

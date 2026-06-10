@@ -77,7 +77,23 @@ type BranchContext = {
   parentId: string;
   idPrefix: string;
   depth: number;
+  // YAML path to the component object this context represents (e.g. the switch
+  // processor at ['pipeline','processors',1]). Used to give nested components a
+  // path-based editTarget so they're editable in the same dialog.
+  path: (string | number)[];
 };
+
+// A nested component is editable at its YAML path; its schema type follows the
+// section it lives in (processors are 'processor', broker inputs are 'input', …).
+const SECTION_COMPONENT_TYPE = {
+  input: 'input',
+  processor: 'processor',
+  output: 'output',
+} as const;
+
+function pathEditTarget(section: 'input' | 'processor' | 'output', path: (string | number)[]): EditTarget {
+  return { kind: 'path', path, componentType: SECTION_COMPONENT_TYPE[section] };
+}
 
 type GroupSpec = {
   groupId: string;
@@ -87,6 +103,21 @@ type GroupSpec = {
 };
 
 type GroupChildSpec = { name: string; condition?: string; isDefault?: boolean; isErrorPath?: boolean };
+
+// YAML path to the i-th child of a multi-input/output component, so nested
+// broker/switch/fallback/sequence members are individually editable.
+function multiChildPath(section: 'input' | 'output', groupLabel: string, i: number): (string | number)[] {
+  if (section === 'input') {
+    return ['input', groupLabel, 'inputs', i];
+  }
+  if (groupLabel === 'switch') {
+    return ['output', 'switch', 'cases', i, 'output'];
+  }
+  if (groupLabel === 'fallback') {
+    return ['output', 'fallback', i];
+  }
+  return ['output', 'broker', 'outputs', i];
+}
 
 function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): PipelineFlowNode[] {
   return [
@@ -110,6 +141,7 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         condition: child.condition,
         isDefault: child.isDefault,
         isErrorPath: child.isErrorPath,
+        editTarget: pathEditTarget(spec.section, multiChildPath(spec.section, spec.groupLabel, i)),
       })
     ),
   ];
@@ -281,6 +313,7 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     section: ctx.section,
     parentId: ctx.parentId,
     resourceRef: extractResourceRef(componentValue),
+    editTarget: pathEditTarget(ctx.section, ctx.path),
   };
 }
 
@@ -299,6 +332,7 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
     childFlow: PARALLEL_GROUP_COMPONENTS.has(name) ? 'parallel' : 'sequential',
     // `catch` runs only when an upstream processor errored — a dead-letter handler.
     isErrorPath: name === 'catch' ? true : undefined,
+    editTarget: pathEditTarget(ctx.section, ctx.path),
   };
 }
 
@@ -329,7 +363,12 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       isDefault: hasCheck ? undefined : true,
       isErrorPath: isErroredCheck(check) ? true : undefined,
     });
-    pushProcessorChildren(nodes, caseProcs, { ...ctx, parentId: caseId, idPrefix: caseId });
+    pushProcessorChildren(nodes, caseProcs, {
+      ...ctx,
+      parentId: caseId,
+      idPrefix: caseId,
+      path: [...ctx.path, ci, 'processors'],
+    });
   }
   return nodes;
 }
@@ -361,12 +400,18 @@ function parseWorkflowStages(fieldValue: unknown, ctx: BranchContext): PipelineF
       collapsible: true,
       childFlow: 'sequential',
     });
-    pushProcessorChildren(nodes, stageProcs, { ...ctx, parentId: stageId, idPrefix: stageId });
+    pushProcessorChildren(nodes, stageProcs, {
+      ...ctx,
+      parentId: stageId,
+      idPrefix: stageId,
+      path: [...ctx.path, 'stages', stageName, 'processors'],
+    });
   }
   return nodes;
 }
 
 function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, unknown>[], ctx: BranchContext): void {
+  // ctx.path is the processors array; each child component sits at [...path, index].
   for (const [pi, proc] of procs.entries()) {
     const procName = firstKey(proc);
     if (procName) {
@@ -376,6 +421,7 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, 
           parentId: ctx.parentId,
           idPrefix: `${ctx.idPrefix}-p${pi}`,
           depth: ctx.depth + 1,
+          path: [...ctx.path, pi],
         })
       );
     }
@@ -399,6 +445,7 @@ function parseWrappedProcessor(fieldValue: unknown, ctx: BranchContext, key: str
         ...ctx,
         idPrefix: `${ctx.idPrefix}-${key}-inner`,
         depth: ctx.depth + 1,
+        path: [...ctx.path, innerKey],
       });
     }
   }
@@ -408,17 +455,22 @@ function parseWrappedProcessor(fieldValue: unknown, ctx: BranchContext, key: str
 const PROCESSORS_FIELD_KEYS = new Set(['while', 'branch', 'group_by', 'group_by_value']);
 
 function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
+  // ctx.path is the inner config; the field value lives at [...ctx.path, key].
   if (key === 'switch' && Array.isArray(fieldValue)) {
-    return parseSwitchCases(fieldValue, ctx);
+    return parseSwitchCases(fieldValue, { ...ctx, path: [...ctx.path, key] });
   }
   if (key === 'workflow') {
-    return parseWorkflowStages(fieldValue, ctx);
+    return parseWorkflowStages(fieldValue, { ...ctx, path: [...ctx.path, key] });
   }
   if (PROCESSORS_FIELD_KEYS.has(key) && fieldValue && typeof fieldValue === 'object') {
     const innerProcs = extractProcessorArray((fieldValue as Record<string, unknown>).processors);
     if (innerProcs) {
       const nodes: PipelineFlowNode[] = [];
-      pushProcessorChildren(nodes, innerProcs, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}` });
+      pushProcessorChildren(nodes, innerProcs, {
+        ...ctx,
+        idPrefix: `${ctx.idPrefix}-${key}`,
+        path: [...ctx.path, key, 'processors'],
+      });
       return nodes;
     }
     return [];
@@ -426,22 +478,27 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
   const procArray = extractProcessorArray(fieldValue);
   if (procArray) {
     const nodes: PipelineFlowNode[] = [];
-    pushProcessorChildren(nodes, procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}` });
+    pushProcessorChildren(nodes, procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}`, path: [...ctx.path, key] });
     return nodes;
   }
   if (key === 'cached' || key === 'retry') {
-    return parseWrappedProcessor(fieldValue, ctx, key);
+    return parseWrappedProcessor(fieldValue, { ...ctx, path: [...ctx.path, key] }, key);
   }
   return [];
 }
 
-function parseBranchingKeys(config: Record<string, unknown>, ctx: BranchContext): PipelineFlowNode[] {
+function parseBranchingKeys(
+  config: Record<string, unknown>,
+  ctx: BranchContext,
+  componentName: string
+): PipelineFlowNode[] {
   const branchingKeys = Object.keys(config).filter((k) => BRANCHING_FIELDS.has(k));
   if (branchingKeys.length === 0) {
     return [];
   }
-  // Children of the group node use ctx.idPrefix as their parentId
-  const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix };
+  // Children parent off the group node; the branching keys live inside the named
+  // config, so descend the YAML path into that component name.
+  const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix, path: [...ctx.path, componentName] };
   return branchingKeys.flatMap((key) => parseBranchingField(key, config[key], childCtx));
 }
 
@@ -450,8 +507,10 @@ function parseDirectArrayBranching(
   componentValue: unknown[],
   ctx: BranchContext
 ): PipelineFlowNode[] {
+  // The component's value array lives at [...ctx.path, componentName].
+  const valuePath = [...ctx.path, componentName];
   if (componentName === 'switch') {
-    const caseNodes = parseSwitchCases(componentValue, ctx);
+    const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
     if (caseNodes.length > 0) {
       return [makeGroup(componentName, ctx), ...caseNodes];
     }
@@ -461,7 +520,7 @@ function parseDirectArrayBranching(
   const procArray = extractProcessorArray(componentValue);
   if (procArray && procArray.length > 0) {
     const nodes: PipelineFlowNode[] = [makeGroup(componentName, ctx)];
-    pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix });
+    pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix, path: valuePath });
     return nodes;
   }
   return [makeLeaf(componentName, ctx)];
@@ -481,7 +540,7 @@ function parseComponentWithBranching(
   }
 
   const config = componentValue as Record<string, unknown>;
-  const childNodes = parseBranchingKeys(config, ctx);
+  const childNodes = parseBranchingKeys(config, ctx, componentName);
   if (childNodes.length === 0) {
     return [makeLeaf(componentName, ctx, componentValue)];
   }
@@ -516,7 +575,13 @@ function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: s
       return [];
     }
     const labelText = extractLabel(proc);
-    const ctx: BranchContext = { section: 'processor', parentId: sectionId, idPrefix: `proc-${i}`, depth: 0 };
+    const ctx: BranchContext = {
+      section: 'processor',
+      parentId: sectionId,
+      idPrefix: `proc-${i}`,
+      depth: 0,
+      path: ['pipeline', 'processors', i],
+    };
     const nodes = parseComponentWithBranching(name, proc[name], ctx);
     // The first node is the top-level processor; mark it editable by array index.
     if (nodes.length > 0) {

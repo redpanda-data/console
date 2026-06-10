@@ -5,7 +5,7 @@ import { Document, isSeq, parseDocument, parse as parseYaml, stringify as yamlSt
 
 import { schemaToConfig } from './schema';
 import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
-import type { ConnectComponentSpec, ConnectConfigObject, RawFieldSpec } from '../types/schema';
+import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 // ============================================================================
 // Shared pure YAML helpers (moved from yaml-parsing.ts)
@@ -976,12 +976,18 @@ export function generateYamlFromWizardData(
 
 export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
 
-/** Addresses a top-level, visually editable component in the config. */
+/**
+ * Addresses a visually editable component in the config. The first kinds are
+ * top-level conveniences (with tailored prune-on-delete); `path` addresses any
+ * component — including ones nested inside branch/switch/try/broker — by its exact
+ * YAML location, carrying the component type so the right schema can be loaded.
+ */
 export type EditTarget =
   | { kind: 'input' }
   | { kind: 'output' }
   | { kind: 'processor'; index: number }
-  | { kind: 'resource'; resourceKey: ResourceArrayKey; index: number };
+  | { kind: 'resource'; resourceKey: ResourceArrayKey; index: number }
+  | { kind: 'path'; path: (string | number)[]; componentType: ConnectComponentType };
 
 function targetPath(target: EditTarget): (string | number)[] {
   switch (target.kind) {
@@ -991,6 +997,8 @@ function targetPath(target: EditTarget): (string | number)[] {
       return ['output'];
     case 'processor':
       return ['pipeline', 'processors', target.index];
+    case 'path':
+      return target.path;
     default:
       return [target.resourceKey, target.index];
   }
@@ -1017,6 +1025,16 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
     }
   } else if (target.kind === 'resource' && isEmptySeq(doc.getIn([target.resourceKey]))) {
     doc.delete(target.resourceKey);
+  } else if (target.kind === 'path') {
+    // Removing a nested component: if its containing array is now empty, drop the
+    // array key too (e.g. an emptied branch's `processors`) so it doesn't linger.
+    const last = target.path.at(-1);
+    if (typeof last === 'number') {
+      const arrayPath = target.path.slice(0, -1);
+      if (arrayPath.length > 0 && isEmptySeq(doc.getIn(arrayPath))) {
+        doc.deleteIn(arrayPath);
+      }
+    }
   }
 }
 

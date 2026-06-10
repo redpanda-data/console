@@ -118,6 +118,28 @@ Supporting polish:
 `parsePipelineFlowTree` (new node fields: `condition`, `isDefault`, `isErrorPath`,
 `branch`, `resourceRef`) — still 100% deterministic from YAML.
 
+### Editing experience
+
+- **Every node is editable, including nested ones.** Beyond the top-level
+  input/output/processor/resource targets, the parser threads the YAML **path**
+  through branch/switch/try/catch/for_each/broker and assigns each nested component
+  a `{ kind:'path', path, componentType }` editTarget. So the `http` inside a
+  `branch`, an output inside a `switch` case, etc. all get an edit (and remove)
+  button and open the **same** dialog. `getComponentAt`/`setComponentAt`/
+  `removeComponentAt` resolve a path target directly (nested delete prunes an
+  emptied `processors` array). `componentType` follows the section so the right
+  schema loads (processors → processor, broker inputs → input, …).
+- **The form shows the full schema, recursively.** `node-config-form.tsx` renders
+  required → optional → advanced, with **defaults shown as hints**, descriptions,
+  enum selects, bool switches, scalar **arrays** (one value per line), and nested
+  **object groups** (`tls`, `batching`, `sasl`, …) as collapsible sub-sections that
+  recurse through the same renderer. Assembly is path-based (`setInObj`/`deleteInObj`):
+  it starts from a clone of the existing config so unrendered complex settings are
+  preserved, writes only non-empty/changed values (keeping the YAML minimal), and
+  drops emptied objects. Genuinely complex leaves (object arrays, maps, 2-D arrays,
+  nested component configs, unknown keys) still round-trip via a scoped raw-YAML
+  fallback.
+
 Shared node IDs: both the canvas and the mini sidebar diagram derive from the same
 `parsePipelineFlowTree` output, so node IDs line up across views.
 

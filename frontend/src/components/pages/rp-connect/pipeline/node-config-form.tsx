@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
+import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
@@ -37,23 +38,88 @@ function hasOptions(spec: RawFieldSpec): boolean {
   return (spec.annotatedOptions?.length ?? 0) > 0;
 }
 
-/** Fields we render as form controls; everything else goes to the raw fallback. */
+// A single editable value: a primitive (string/int/float/bool) or an enum select.
 function isScalarField(spec: RawFieldSpec): boolean {
   return Boolean(spec.name) && spec.kind === 'scalar' && (SCALAR_TYPES.has(spec.type) || hasOptions(spec));
 }
 
-function initialFieldValue(spec: RawFieldSpec, current: unknown): string | boolean {
+// A list of primitives (e.g. `topics: [a, b]`), edited as one-per-line text.
+function isScalarArray(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && spec.kind === 'array' && SCALAR_TYPES.has(spec.type) && !hasOptions(spec);
+}
+
+// A nested object with its own fields (e.g. `tls`, `batching`) — rendered as a
+// collapsible sub-section whose children recurse through the same renderer.
+function isObjectGroup(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
+}
+
+// Everything else (object arrays, maps, 2d arrays, nested component configs, and
+// unknown keys) round-trips through the raw-YAML fallback.
+function isFormField(spec: RawFieldSpec): boolean {
+  return isScalarField(spec) || isScalarArray(spec) || isObjectGroup(spec);
+}
+
+// ---- plain-object path helpers (the config we mutate is plain JSON) -----------
+
+function getInObj(obj: Record<string, unknown>, path: string[]): unknown {
+  let cur: unknown = obj;
+  for (const key of path) {
+    if (!cur || typeof cur !== 'object') {
+      return;
+    }
+    cur = (cur as Record<string, unknown>)[key];
+  }
+  return cur;
+}
+
+function setInObj(obj: Record<string, unknown>, path: string[], value: unknown): void {
+  let cur = obj;
+  for (const key of path.slice(0, -1)) {
+    if (!cur[key] || typeof cur[key] !== 'object' || Array.isArray(cur[key])) {
+      cur[key] = {};
+    }
+    cur = cur[key] as Record<string, unknown>;
+  }
+  cur[path.at(-1) as string] = value;
+}
+
+function deleteInObj(obj: Record<string, unknown>, path: string[]): void {
+  const parent = path.slice(0, -1).reduce<Record<string, unknown> | undefined>((cur, key) => {
+    const next = cur?.[key];
+    return next && typeof next === 'object' ? (next as Record<string, unknown>) : undefined;
+  }, obj);
+  if (parent) {
+    delete parent[path.at(-1) as string];
+  }
+}
+
+// Drop objects that became empty after clearing their fields, so the YAML stays tidy.
+function pruneEmptyObjects(obj: Record<string, unknown>): void {
+  for (const [key, val] of Object.entries(obj)) {
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      pruneEmptyObjects(val as Record<string, unknown>);
+      if (Object.keys(val).length === 0) {
+        delete obj[key];
+      }
+    }
+  }
+}
+
+// ---- value coercion -----------------------------------------------------------
+
+function initialScalar(spec: RawFieldSpec, current: unknown): string | boolean {
   const isMissing = current === undefined || current === null;
   if (spec.type === 'bool') {
     return isMissing ? spec.defaultValue === 'true' : Boolean(current);
   }
   if (isMissing) {
-    return spec.defaultValue ?? '';
+    return '';
   }
   return String(current);
 }
 
-function coerceFieldValue(spec: RawFieldSpec, raw: string | boolean): string | number | boolean {
+function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | number | boolean {
   if (spec.type === 'bool') {
     return Boolean(raw);
   }
@@ -68,9 +134,48 @@ function coerceFieldValue(spec: RawFieldSpec, raw: string | boolean): string | n
   return String(raw);
 }
 
-type FormValues = { label: string; raw: string; fields: Record<string, string | boolean> };
+function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l !== '');
+  if (spec.type === 'int' || spec.type === 'float') {
+    return lines.map(Number).filter((n) => !Number.isNaN(n));
+  }
+  return lines;
+}
 
-// Seed the raw-fallback section's nested settings, ignoring invalid YAML.
+// ---- flattening the schema into addressable leaves ----------------------------
+
+type Leaf = { spec: RawFieldSpec; path: string[]; key: string };
+
+/** All scalar + scalar-array leaves (recursing into object groups), keyed by path. */
+function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: Leaf[]; arrays: Leaf[] } {
+  const scalars: Leaf[] = [];
+  const arrays: Leaf[] = [];
+  for (const f of fields) {
+    const path = [...base, f.name];
+    const leaf: Leaf = { spec: f, path, key: path.join('/') };
+    if (isScalarField(f)) {
+      scalars.push(leaf);
+    } else if (isScalarArray(f)) {
+      arrays.push(leaf);
+    } else if (isObjectGroup(f)) {
+      const nested = collectLeaves(f.children ?? [], path);
+      scalars.push(...nested.scalars);
+      arrays.push(...nested.arrays);
+    }
+  }
+  return { scalars, arrays };
+}
+
+type FormValues = {
+  label: string;
+  raw: string;
+  fields: Record<string, string | boolean>;
+  arrays: Record<string, string>;
+};
+
 function parseRawSection(showRaw: boolean, raw: string): Record<string, unknown> {
   if (!(showRaw && raw.trim())) {
     return {};
@@ -83,58 +188,105 @@ function parseRawSection(showRaw: boolean, raw: string): Record<string, unknown>
   }
 }
 
-// Assemble the component entry (`{ [label], [name]: config }`) from form values.
-function buildComponentEntry(
-  componentName: string,
-  scalarFields: RawFieldSpec[],
-  showRaw: boolean,
-  data: FormValues
-): Record<string, unknown> {
-  const innerConfig: Record<string, unknown> = parseRawSection(showRaw, data.raw);
-  for (const f of scalarFields) {
-    const coerced = coerceFieldValue(f, data.fields[f.name]);
-    if (f.type === 'bool') {
-      innerConfig[f.name] = coerced;
-    } else if (coerced !== '') {
-      innerConfig[f.name] = coerced;
+// Which form fields the user actually edited (react-hook-form dirty state).
+type DirtyState = { fields?: Record<string, unknown>; arrays?: Record<string, unknown>; raw?: unknown };
+
+type BuildArgs = {
+  componentName: string;
+  inner: Record<string, unknown>;
+  leaves: { scalars: Leaf[]; arrays: Leaf[] };
+  rawKeys: string[];
+  showRaw: boolean;
+  data: FormValues;
+  dirty: DirtyState;
+};
+
+function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data: FormValues, dirty: DirtyState): void {
+  for (const { spec, path, key } of scalars) {
+    if (!dirty.fields?.[key]) {
+      continue;
+    }
+    const coerced = coerceScalar(spec, data.fields[key]);
+    if (spec.type === 'bool' || coerced !== '') {
+      setInObj(config, path, coerced);
+    } else {
+      deleteInObj(config, path);
     }
   }
+}
+
+function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: FormValues, dirty: DirtyState): void {
+  for (const { spec, path, key } of arrays) {
+    if (!dirty.arrays?.[key]) {
+      continue;
+    }
+    const items = coerceArrayItems(spec, data.arrays[key] ?? '');
+    if (items.length > 0) {
+      setInObj(config, path, items);
+    } else {
+      deleteInObj(config, path);
+    }
+  }
+}
+
+// Assemble the component entry. Start from the existing config so anything we don't
+// render — and anything the user didn't touch — round-trips byte-for-byte (no
+// silent re-coercion of values like `count: 1000$`). Then overlay only the fields
+// the user actually changed: the raw-YAML section, and each edited scalar/array.
+function buildComponentEntry({
+  componentName,
+  inner,
+  leaves,
+  rawKeys,
+  showRaw,
+  data,
+  dirty,
+}: BuildArgs): Record<string, unknown> {
+  const config: Record<string, unknown> = structuredClone(inner);
+  if (showRaw && dirty.raw) {
+    for (const key of rawKeys) {
+      delete config[key];
+    }
+    Object.assign(config, parseRawSection(showRaw, data.raw));
+  }
+
+  applyScalarEdits(config, leaves.scalars, data, dirty);
+  applyArrayEdits(config, leaves.arrays, data, dirty);
+  pruneEmptyObjects(config);
+
   const next: Record<string, unknown> = {};
   if (data.label.trim()) {
     next.label = data.label.trim();
   }
-  next[componentName] = innerConfig;
+  next[componentName] = config;
   return next;
 }
 
-type NodeConfigFormProps = {
-  spec: ConnectComponentSpec;
-  componentName: string;
-  /** The full component entry, e.g. `{ label, kafka: {...} }`. */
-  value: Record<string, unknown>;
-  onSubmit: (next: Record<string, unknown>) => void;
-  onCancel: () => void;
-};
+// ---- field rendering ----------------------------------------------------------
 
-const FieldRow = ({ spec, children }: { spec: RawFieldSpec; children: React.ReactNode }) => (
-  <div className="flex flex-col gap-1.5">
-    <div className="flex items-center gap-2">
-      <Label className="font-medium text-sm">{spec.name}</Label>
-      {spec.optional ? null : (
-        <span className="text-destructive text-xs" title="Required">
-          *
-        </span>
-      )}
-      {spec.type && spec.type !== 'string' ? <span className="text-muted-foreground text-xs">{spec.type}</span> : null}
-    </div>
-    {children}
-    {spec.description ? (
-      <Text className="text-muted-foreground" variant="bodySmall">
-        {spec.description}
-      </Text>
+const FieldLabel = ({ spec }: { spec: RawFieldSpec }) => (
+  <div className="flex items-center gap-2">
+    <Label className="font-medium text-sm">{spec.name}</Label>
+    {spec.optional ? null : (
+      <span className="text-destructive text-xs" title="Required">
+        *
+      </span>
+    )}
+    {spec.type && spec.type !== 'string' ? <span className="text-muted-foreground text-xs">{spec.type}</span> : null}
+    {spec.defaultValue ? (
+      <span className="text-muted-foreground text-xs">
+        default: <span className="font-mono">{spec.defaultValue}</span>
+      </span>
     ) : null}
   </div>
 );
+
+const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
+  spec.description ? (
+    <Text className="text-muted-foreground" variant="bodySmall">
+      {spec.description}
+    </Text>
+  ) : null;
 
 const ScalarControl = ({
   spec,
@@ -143,7 +295,6 @@ const ScalarControl = ({
 }: {
   spec: RawFieldSpec;
   value: string | boolean;
-  // RHF's field.onChange accepts an event or a raw value.
   onChange: (value: unknown) => void;
 }) => {
   if (spec.type === 'bool') {
@@ -165,29 +316,132 @@ const ScalarControl = ({
       </Select>
     );
   }
+  // Numeric fields use a text input with a numeric inputMode rather than
+  // type="number": a number input blanks out any value the browser can't parse
+  // (e.g. a config like `count: 1000$`), hiding the real value. Text always shows
+  // it — including malformed values — so typos are visible and fixable.
+  const numericMode = spec.type === 'int' ? 'numeric' : 'decimal';
   return (
     <Input
+      inputMode={spec.type === 'int' || spec.type === 'float' ? numericMode : undefined}
       onChange={onChange}
       placeholder={spec.defaultValue || undefined}
-      type={spec.type === 'int' || spec.type === 'float' ? 'number' : 'text'}
+      type="text"
       value={String(value ?? '')}
     />
   );
 };
 
-const ScalarField = ({ spec, control }: { spec: RawFieldSpec; control: Control<FormValues> }) => {
-  const name = `fields.${spec.name}` as FieldPath<FormValues>;
+const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => (
+  <Controller
+    control={control}
+    name={`fields.${leaf.key}` as FieldPath<FormValues>}
+    render={({ field }) => (
+      <div className="flex flex-col gap-1.5">
+        <FieldLabel spec={leaf.spec} />
+        <ScalarControl onChange={field.onChange} spec={leaf.spec} value={field.value as string | boolean} />
+        <FieldDescription spec={leaf.spec} />
+      </div>
+    )}
+  />
+);
+
+const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => (
+  <Controller
+    control={control}
+    name={`arrays.${leaf.key}` as FieldPath<FormValues>}
+    render={({ field }) => (
+      <div className="flex flex-col gap-1.5">
+        <FieldLabel spec={leaf.spec} />
+        <Textarea
+          className="font-mono text-sm"
+          onChange={field.onChange}
+          placeholder="One value per line"
+          rows={3}
+          value={String(field.value ?? '')}
+        />
+        <FieldDescription spec={leaf.spec} />
+      </div>
+    )}
+  />
+);
+
+const FieldGroup = ({
+  label,
+  defaultOpen = true,
+  children,
+}: {
+  label: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) => (
+  <Collapsible className="rounded-md border border-border/60" defaultOpen={defaultOpen}>
+    <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
+      <Text variant="bodyStrongMedium">{label}</Text>
+      <ChevronDown
+        className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
+      />
+    </CollapsibleTrigger>
+    {/* No height animation: the Dialog animates its own height; animating the panel
+        too makes the two stagger. Open/close instantly. */}
+    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3" transition={{ duration: 0 }}>
+      {children}
+    </CollapsibleContent>
+  </Collapsible>
+);
+
+// Render one field: a scalar, a scalar list, or a nested object sub-section
+// (recursing through its children). Complex fields are skipped (handled by raw).
+const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string[]; control: Control<FormValues> }) => {
+  const here = [...path, spec.name];
+  if (isScalarField(spec)) {
+    return <ScalarField control={control} leaf={{ spec, path: here, key: here.join('/') }} />;
+  }
+  if (isScalarArray(spec)) {
+    return <ArrayField control={control} leaf={{ spec, path: here, key: here.join('/') }} />;
+  }
+  if (isObjectGroup(spec)) {
+    return (
+      <FieldGroup defaultOpen={!(spec.optional || spec.advanced)} label={spec.name}>
+        <SchemaFields control={control} fields={spec.children ?? []} path={here} />
+      </FieldGroup>
+    );
+  }
+  return null;
+};
+
+// Render a list of fields, required ones first, then optional, then advanced.
+const SchemaFields = ({
+  fields,
+  path,
+  control,
+}: {
+  fields: RawFieldSpec[];
+  path: string[];
+  control: Control<FormValues>;
+}) => {
+  const formFields = fields.filter(isFormField);
+  const ordered = [
+    ...formFields.filter((f) => !(f.optional || f.advanced)),
+    ...formFields.filter((f) => f.optional && !f.advanced),
+    ...formFields.filter((f) => f.advanced),
+  ];
   return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FieldRow spec={spec}>
-          <ScalarControl onChange={field.onChange} spec={spec} value={field.value as string | boolean} />
-        </FieldRow>
-      )}
-    />
+    <>
+      {ordered.map((f) => (
+        <SchemaField control={control} key={f.name} path={path} spec={f} />
+      ))}
+    </>
   );
+};
+
+type NodeConfigFormProps = {
+  spec: ConnectComponentSpec;
+  componentName: string;
+  /** The full component entry, e.g. `{ label, kafka: {...} }`. */
+  value: Record<string, unknown>;
+  onSubmit: (next: Record<string, unknown>) => void;
+  onCancel: () => void;
 };
 
 export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel }: NodeConfigFormProps) {
@@ -197,27 +451,41 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
       ? (value[componentName] as Record<string, unknown>)
       : {};
 
-  const scalarFields = fields.filter(isScalarField);
-  const scalarNames = new Set(scalarFields.map((f) => f.name));
-  const required = scalarFields.filter((f) => !(f.optional || f.advanced));
-  const optional = scalarFields.filter((f) => f.optional && !f.advanced);
-  const advanced = scalarFields.filter((f) => f.advanced);
+  const topFields = fields.filter(isFormField);
+  const required = topFields.filter((f) => !(f.optional || f.advanced));
+  const optional = topFields.filter((f) => f.optional && !f.advanced);
+  const advanced = topFields.filter((f) => f.advanced);
 
-  // Anything the form doesn't render (nested objects/arrays/maps, unknown keys)
-  // is preserved and editable through a raw YAML fallback section.
-  const rawObject = Object.fromEntries(Object.entries(inner).filter(([key]) => !scalarNames.has(key)));
-  const complexFieldCount = fields.length - scalarFields.length;
-  const showRaw = Object.keys(rawObject).length > 0 || complexFieldCount > 0;
+  // Leaves drive form defaults + assembly; complex schema fields and any unknown
+  // existing keys go to the raw-YAML fallback.
+  const leaves = collectLeaves(fields);
+  const knownTopKeys = new Set(fields.filter(isFormField).map((f) => f.name));
+  const complexSchemaKeys = fields.filter((f) => f.name && !isFormField(f)).map((f) => f.name);
+  const unknownKeys = Object.keys(inner).filter((k) => !knownTopKeys.has(k));
+  const rawKeys = [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
+  const showRaw = rawKeys.length > 0;
+  const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
 
-  const { control, handleSubmit } = useForm<FormValues>({
+  const { control, handleSubmit, formState } = useForm<FormValues>({
     defaultValues: {
       label: typeof value.label === 'string' ? value.label : '',
-      raw: Object.keys(rawObject).length > 0 ? yamlStringify(rawObject) : '',
-      fields: Object.fromEntries(scalarFields.map((f) => [f.name, initialFieldValue(f, inner[f.name])])),
+      raw: showRaw ? yamlStringify(rawObject) : '',
+      fields: Object.fromEntries(leaves.scalars.map((l) => [l.key, initialScalar(l.spec, getInObj(inner, l.path))])),
+      arrays: Object.fromEntries(
+        leaves.arrays.map((l) => {
+          const v = getInObj(inner, l.path);
+          return [l.key, Array.isArray(v) ? v.join('\n') : ''];
+        })
+      ),
     },
   });
 
-  const submit = handleSubmit((data) => onSubmit(buildComponentEntry(componentName, scalarFields, showRaw, data)));
+  // Read dirtyFields during render so react-hook-form subscribes to (and keeps
+  // updating) it — otherwise it stays empty and every field looks untouched.
+  const { dirtyFields } = formState;
+  const submit = handleSubmit((data) =>
+    onSubmit(buildComponentEntry({ componentName, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
+  );
 
   return (
     <>
@@ -238,13 +506,13 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
         </div>
 
         {required.map((f) => (
-          <ScalarField control={control} key={f.name} spec={f} />
+          <SchemaField control={control} key={f.name} path={[]} spec={f} />
         ))}
 
         {optional.length > 0 ? (
           <FieldGroup label="Optional">
             {optional.map((f) => (
-              <ScalarField control={control} key={f.name} spec={f} />
+              <SchemaField control={control} key={f.name} path={[]} spec={f} />
             ))}
           </FieldGroup>
         ) : null}
@@ -252,13 +520,13 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
         {advanced.length > 0 ? (
           <FieldGroup defaultOpen={false} label="Advanced">
             {advanced.map((f) => (
-              <ScalarField control={control} key={f.name} spec={f} />
+              <SchemaField control={control} key={f.name} path={[]} spec={f} />
             ))}
           </FieldGroup>
         ) : null}
 
         {showRaw ? (
-          <FieldGroup defaultOpen={Object.keys(rawObject).length > 0} label="Other settings (YAML)">
+          <FieldGroup defaultOpen={false} label="Other settings (YAML)">
             <Controller
               control={control}
               name="raw"
@@ -288,27 +556,3 @@ export function NodeConfigForm({ spec, componentName, value, onSubmit, onCancel 
     </>
   );
 }
-
-const FieldGroup = ({
-  label,
-  defaultOpen = true,
-  children,
-}: {
-  label: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) => (
-  <Collapsible className="rounded-md border border-border/60" defaultOpen={defaultOpen}>
-    <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
-      <Text variant="bodyStrongMedium">{label}</Text>
-      <ChevronDown
-        className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
-      />
-    </CollapsibleTrigger>
-    {/* No height animation: the Dialog animates its own height, so animating the
-        panel too makes the two stagger. Open/close instantly here. */}
-    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3" transition={{ duration: 0 }}>
-      {children}
-    </CollapsibleContent>
-  </Collapsible>
-);

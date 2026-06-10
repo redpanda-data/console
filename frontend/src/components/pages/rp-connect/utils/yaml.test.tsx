@@ -1606,6 +1606,45 @@ output:
     });
   });
 
+  describe('path edit targets (nested components)', () => {
+    const nestedYaml = `pipeline:
+  processors:
+    - branch:
+        request_map: 'root = this'
+        processors:
+          - http:
+              url: http://old
+        result_map: 'root.x = this'
+output:
+  drop: {}`;
+    const httpTarget: EditTarget = {
+      kind: 'path',
+      path: ['pipeline', 'processors', 0, 'branch', 'processors', 0],
+      componentType: 'processor',
+    };
+
+    test('reads a nested component by path', () => {
+      expect(getComponentAt(nestedYaml, httpTarget)).toEqual({ http: { url: 'http://old' } });
+    });
+
+    test('replaces a nested component in place, leaving siblings intact', () => {
+      const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
+      expect(next).not.toBeNull();
+      expect(getComponentAt(next as string, httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
+      // The branch's request_map/result_map are untouched.
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
+      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+    });
+
+    test('removing the last nested child prunes its now-empty processors array', () => {
+      const next = removeComponentAt(nestedYaml, httpTarget);
+      expect(next).not.toBeNull();
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
+      expect(parsed.pipeline.processors[0].branch).not.toHaveProperty('processors');
+      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+    });
+  });
+
   describe('insertProcessorAt', () => {
     test('inserts at the given index', () => {
       const next = insertProcessorAt(pipelineYaml, 1, { mapping: 'root = inserted' });

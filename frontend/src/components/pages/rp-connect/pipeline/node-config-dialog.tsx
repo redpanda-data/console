@@ -27,11 +27,12 @@ import { NodeConfigForm } from './node-config-form';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { type EditTarget, firstKey, getComponentAt, setComponentAt } from '../utils/yaml';
 
-const TARGET_LABEL: Record<EditTarget['kind'], string> = {
+const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
   input: 'Input',
   output: 'Output',
   processor: 'Processor',
-  resource: 'Resource',
+  cache: 'Cache',
+  rate_limit: 'Rate limit',
 };
 
 function targetComponentType(target: EditTarget): ConnectComponentType {
@@ -42,9 +43,18 @@ function targetComponentType(target: EditTarget): ConnectComponentType {
       return 'output';
     case 'processor':
       return 'processor';
+    case 'path':
+      return target.componentType;
     default:
       return target.resourceKey === 'cache_resources' ? 'cache' : 'rate_limit';
   }
+}
+
+function targetLabel(target: EditTarget): string {
+  if (target.kind === 'resource') {
+    return 'Resource';
+  }
+  return COMPONENT_TYPE_LABEL[targetComponentType(target)] ?? 'Component';
 }
 
 type NodeConfigDialogProps = {
@@ -90,7 +100,7 @@ export function NodeConfigDialog({
   const useFormEditor = !readOnly && Boolean(component && componentName && (spec?.config?.children?.length ?? 0) > 0);
 
   const title = target
-    ? `${readOnly ? '' : 'Edit '}${TARGET_LABEL[target.kind]}${componentName ? `: ${componentName}` : ''}`
+    ? `${readOnly ? '' : 'Edit '}${targetLabel(target)}${componentName ? `: ${componentName}` : ''}`
     : '';
 
   const handleFormSubmit = (next: Record<string, unknown>) => {
