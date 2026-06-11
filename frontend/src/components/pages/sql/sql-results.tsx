@@ -17,7 +17,6 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
@@ -38,7 +37,11 @@ import {
   Type,
   Waves,
 } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
+import DataGrid, { type Column } from 'react-data-grid';
+
+import 'react-data-grid/lib/styles.css';
+import './sql-results.css';
 
 import type {
   BridgeInfo,
@@ -59,8 +62,6 @@ export type SqlResultsProps = {
   /** Admin entry point for the add-topic wizard. */
   onAddTable?: () => void;
 };
-
-const PAGE_SIZE = 100;
 
 const fmtNum = (n: number) => n.toLocaleString('en-US');
 const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
@@ -251,30 +252,65 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Stable React keys: rows are stable object references from the run, so a
-// WeakMap gives each a consistent id across pagination without an index key.
+// Stable grid keys: rows are stable object references from the run, so a
+// WeakMap gives each a consistent id for rowKeyGetter without an index key.
 function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
   const map = new WeakMap<ResultRow, number>();
   rows.forEach((r, i) => map.set(r, i));
   return map;
 }
 
-// Sticky header/rownum cells need their own borders, so the table drops
-// collapsed borders (border-separate) and each cell paints its border-b.
-const HEAD_STICKY = 'sticky top-0 h-auto border-border border-b bg-muted py-2 align-bottom';
-const CELL_BASE = 'border-border-subtle border-b py-[7px] font-mono text-foreground text-xs';
-const ROWNUM = 'sticky left-0 w-[1%] font-mono text-disabled text-xs [user-select:none]';
+// Key for the synthetic row-number column; double underscores avoid
+// colliding with a real result column of the same name.
+const ROWNUM_KEY = '__rownum__';
 
-// Keyed by run.token from SqlResults, so a new run remounts the grid and
-// resets pagination without an effect. Rows render in server order;
-// ordering is the query's job (ORDER BY), not the grid's.
+function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
+  const rowNum: Column<ResultRow> = {
+    key: ROWNUM_KEY,
+    name: '',
+    frozen: true,
+    resizable: false,
+    width: 'max-content',
+    renderHeaderCell: () => <span className="font-mono text-disabled text-xs">#</span>,
+    renderCell: ({ rowIdx }) => rowIdx + 1,
+    cellClass: 'text-right font-mono text-disabled text-xs [user-select:none]',
+  };
+  const dataCols = cols.map((c): Column<ResultRow> => {
+    const alignRight = c.kind === 'num';
+    return {
+      key: c.name,
+      name: c.name,
+      width: 'max-content',
+      minWidth: 96,
+      renderHeaderCell: () => (
+        <span
+          className={cn(
+            'flex h-full flex-col justify-center gap-[3px] font-sans leading-none',
+            alignRight ? 'items-end' : 'items-start'
+          )}
+        >
+          <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
+          <span className="inline-flex items-center gap-1 font-normal text-caption-sm text-muted-foreground uppercase tracking-wide">
+            <TypeIcon isArray={c.isArray} kind={c.kind} /> {c.short}
+          </span>
+        </span>
+      ),
+      renderCell: ({ row }) => <CellContent kind={c.kind} v={row[c.name]} />,
+      cellClass: cn('font-mono text-xs', alignRight && 'text-right'),
+      headerCellClass: alignRight ? 'text-right' : undefined,
+    };
+  });
+  return [rowNum, ...dataCols];
+}
+
+// Keyed by run.token from SqlResults, so a new run resets the grid's internal
+// state (scroll position, resized column widths) by remounting. Rows render
+// in server order; ordering is the query's job (ORDER BY), not the grid's.
 function SuccessGrid({ run }: { run: QueryRunSuccess }) {
-  const [shown, setShown] = useState(PAGE_SIZE);
-
   const cols = run.columns;
   const bridge = run.bridge;
 
-  const visible = run.rows.slice(0, shown);
+  const columns = buildColumns(cols);
   const rowKeys = buildRowKeys(run.rows);
 
   return (
@@ -317,58 +353,17 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
 
       {bridge && <BridgeTimeline bridge={bridge} />}
 
-      <Table className="border-separate border-spacing-0" fill variant="simple">
-        <TableHeader>
-          <TableRow>
-            <TableHead align="right" className={cn(HEAD_STICKY, ROWNUM, 'left-0 z-[3] whitespace-nowrap')}>
-              #
-            </TableHead>
-            {cols.map((c) => {
-              const alignRight = c.kind === 'num';
-              return (
-                <TableHead align={alignRight ? 'right' : 'left'} className={cn(HEAD_STICKY, 'z-[2]')} key={c.name}>
-                  <span className={cn('flex flex-col gap-[3px]', alignRight ? 'items-end' : 'items-start')}>
-                    <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
-                    <span className="inline-flex items-center gap-1 text-caption-sm text-muted-foreground uppercase tracking-wide">
-                      <TypeIcon isArray={c.isArray} kind={c.kind} /> {c.short}
-                    </span>
-                  </span>
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        </TableHeader>
-        <TableBody className="[&_tr:hover]:bg-accent-subtle">
-          {visible.map((r, i) => (
-            // Zebra stripe: plain card surface with a faint subtle-bg stripe on
-            // alternate rows. The header is a distinct shade (lighter grey in
-            // dark) so the first row never blends into it.
-            <TableRow className={i % 2 === 1 ? 'bg-background-subtle' : 'bg-card'} key={rowKeys.get(r) ?? i}>
-              {/* Sticky row-number column inherits the row surface so the
-                  stripe carries across and occludes scrolled cells. */}
-              <TableCell align="right" className={cn(CELL_BASE, ROWNUM, 'bg-inherit text-disabled')}>
-                {i + 1}
-              </TableCell>
-              {cols.map((c) => (
-                <TableCell align={c.kind === 'num' ? 'right' : 'left'} className={CELL_BASE} key={c.name}>
-                  <CellContent kind={c.kind} v={r[c.name]} />
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <div className="flex flex-shrink-0 items-center justify-between border-border border-t bg-card px-4 py-2">
-        <Text className="text-muted-foreground text-xs [font-variant-numeric:tabular-nums]">
-          Showing {fmtNum(visible.length)} of {fmtNum(run.totalRows)} rows
-        </Text>
-        {shown < run.rows.length && (
-          <Button onClick={() => setShown((s) => s + PAGE_SIZE)} size="xs" variant="secondary-outline">
-            Load 100 more
-          </Button>
-        )}
-      </div>
+      {/* Virtualized grid: rdg renders only visible rows, so the full result
+          set is handed over with no client-side pagination. */}
+      <DataGrid
+        className="sql-results-grid"
+        columns={columns}
+        headerRowHeight={52}
+        rowClass={(_, i) => (i % 2 === 1 ? 'sql-results-row-alt' : undefined)}
+        rowHeight={30}
+        rowKeyGetter={(r) => rowKeys.get(r) ?? -1}
+        rows={run.rows}
+      />
     </div>
   );
 }
