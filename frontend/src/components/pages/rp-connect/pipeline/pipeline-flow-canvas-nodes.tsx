@@ -94,7 +94,7 @@ const SECTION_ACCENT: Record<string, string> = {
 // The routing semantics of a node, shown as a chip on its card: `if <check>` for a
 // condition, `default` for the catch-all, `on error` for error handlers (catch) —
 // red for any error / dead-letter route.
-const BranchConditionChip = ({ data }: { data: FlowCardData }) => {
+const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
   }
@@ -113,10 +113,11 @@ const BranchConditionChip = ({ data }: { data: FlowCardData }) => {
   return (
     <span
       className={cn(
-        'inline-flex max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
+        'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
         tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
         tone === 'muted' && 'border-border bg-muted/50 text-muted-foreground',
-        tone === 'condition' && 'border-blue-500/40 bg-blue-500/5 text-blue-600'
+        tone === 'condition' && 'border-blue-500/40 bg-blue-500/5 text-blue-600',
+        className
       )}
       title={text}
     >
@@ -439,14 +440,16 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
 const ContainerTitleText = ({ data, accent }: { data: FlowCardData; accent?: string }) => {
   if (data.compact) {
     return (
-      <Text as="span" className="min-w-0 truncate font-medium text-sm" title={data.label}>
+      <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
         {data.label}
       </Text>
     );
   }
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   return (
-    <span className="flex min-w-0 flex-col">
+    // flex-1 + a minimum width: the title claims leftover space and never gets
+    // crushed to a sliver by a long condition chip (the chip truncates instead).
+    <span className="flex min-w-12 flex-1 flex-col">
       <Text
         as="span"
         className="text-[10px] uppercase leading-none tracking-wide"
@@ -501,15 +504,15 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
             name={data.label as ComponentName}
           />
           <ContainerTitleText accent={accent} data={data} />
-          <LabelBadge label={data.labelText} />
-          <BranchConditionChip data={data} />
+          <LabelBadge className="max-w-[35%]" label={data.labelText} />
+          <BranchConditionChip className="max-w-[45%]" data={data} />
           <LintBadge errors={data.lintErrors} />
           {/* Collapse toggle is a separate control so it doesn't also select the node.
               Generous hit area (28px) so collapsing/expanding is easy to target. */}
           {data.collapsible ? (
             <button
               aria-label={data.collapsed ? 'Expand' : 'Collapse'}
-              className="nodrag nopan -my-1 ml-auto flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-subtle transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="nodrag nopan -my-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-subtle outline-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               onClick={(e) => {
                 e.stopPropagation();
                 data.onToggle?.();

@@ -1468,14 +1468,45 @@ function laneOffset(index: number, count: number, dims: FlowDims): number {
   return 14 + index * step;
 }
 
+// Crossing-free fan lanes ("nested parentheses"): cases split by whether their
+// connector row sits above or below the centre port. Within each half the case
+// farthest from the port hugs the container edge and nearer cases nest deeper —
+// the staircase look above the port, mirrored below it. The two halves' runs
+// never share a y-range, so they safely reuse the same lane offsets.
+function fanLanes(node: PipelineFlowNode, children: SizedNode[], dims: FlowDims): number[] {
+  const insets = containerInsets(node, dims);
+  const innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
+  const centerY = (dims.headerH + (dims.headerH + innerH + 2 * dims.pad)) / 2;
+
+  let top = dims.headerH + dims.pad;
+  const rows = children.map((child) => {
+    const rowY = top + FLOW_SPINE_HANDLE_TOP;
+    top += child.h + insets.gap;
+    return rowY;
+  });
+
+  const above = rows.map((y, i) => ({ y, i })).filter((row) => row.y < centerY);
+  const below = rows.map((y, i) => ({ y, i })).filter((row) => row.y >= centerY);
+  above.sort((a, b) => a.y - b.y); // farthest above first
+  below.sort((a, b) => b.y - a.y); // farthest below first
+
+  const lanes = new Array<number>(children.length);
+  for (const [rank, row] of above.entries()) {
+    lanes[row.i] = laneOffset(rank, above.length, dims);
+  }
+  for (const [rank, row] of below.entries()) {
+    lanes[row.i] = laneOffset(rank, below.length, dims);
+  }
+  return lanes;
+}
+
 // Fan-out to each alternative — and, for reconverging processor fans, fan-in back
 // from each branch to the container's right port (output fans terminate at their
 // sinks, so they draw no fan-in). The routing condition is rendered as a chip on
 // each receiving card, so the edges stay clean unlabeled lines (red dashed for
 // error branches); each branch routes down its own lane so siblings never overlap.
 function emitParallelFanEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
-  // Lanes cascade with the case order (the first case hugs the container edge) —
-  // a tidy staircase on the fan-out, mirrored identically on the fan-in.
+  const lanes = fanLanes(node, children, ctx.dims);
   for (const [i, child] of children.entries()) {
     ctx.rfEdges.push(
       linkEdge({
@@ -1486,7 +1517,7 @@ function emitParallelFanEdges(node: PipelineFlowNode, children: SizedNode[], ctx
         targetHandle: 'l',
         tone: child.node.isErrorPath ? 'error' : 'primary',
         dashed: child.node.isErrorPath,
-        laneFromSource: laneOffset(i, children.length, ctx.dims),
+        laneFromSource: lanes[i],
         portDot: 'source',
       })
     );
@@ -1504,7 +1535,7 @@ function emitParallelFanEdges(node: PipelineFlowNode, children: SizedNode[], ctx
         targetHandle: 'gt',
         tone: child.node.isErrorPath ? 'error' : 'primary',
         dashed: child.node.isErrorPath,
-        laneFromTarget: laneOffset(i, children.length, ctx.dims),
+        laneFromTarget: lanes[i],
         portDot: 'target',
       })
     );
@@ -1583,6 +1614,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
   }
 
   if (node.section === 'input') {
+    const lanes = fanLanes(node, children, ctx.dims);
     for (const [i, child] of children.entries()) {
       ctx.rfEdges.push(
         linkEdge({
@@ -1592,7 +1624,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
           sourceHandle: 'r',
           targetHandle: 'gt',
           tone: 'primary',
-          laneFromTarget: laneOffset(i, children.length, ctx.dims),
+          laneFromTarget: lanes[i],
           portDot: 'target',
         })
       );

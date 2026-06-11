@@ -108,11 +108,13 @@ Supporting polish:
   the children area** (`portY`, computed from the container height, passed to
   `ContainerHandles`) so branches radiate level with the children — copy/merge come
   out horizontal and switch branches diverge immediately rather than running
-  parallel down a gutter. Lanes **cascade with the case order** (the first case
-  hugs the container edge, each later case steps one lane deeper) — a tidy
-  staircase on the fan-out, mirrored identically on the fan-in. A resource whose
-  referencing node is collapsed away also **aligns under the visible ancestor**
-  (`resourceLaneX` walks up to the collapsed box), matching the edge re-anchoring.
+  parallel down a gutter. Lanes nest **like parentheses around the centre port**
+  (`fanLanes`): cases above the port keep the staircase (outermost hugs the
+  border, nearer cases nest deeper) and cases below mirror it; the halves never
+  share a y-range so they reuse lane offsets — provably crossing-free, on both
+  the fan-out and fan-in sides. A resource whose referencing node is collapsed
+  away also **aligns under the visible ancestor** (`resourceLaneX` walks up to
+  the collapsed box), matching the edge re-anchoring.
 - **No on-edge text labels.** Routing conditions are chips on cards and the edge
   vocabulary lives in the legend; the only edge labels are the short branch
   `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.

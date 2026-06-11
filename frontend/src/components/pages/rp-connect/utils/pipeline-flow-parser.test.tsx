@@ -1111,28 +1111,34 @@ output:
     expect(layout.rfEdges.some((e) => e.id.startsWith('fanin-output-switch'))).toBe(false);
   });
 
-  it('cascades fan lanes with the case order, mirrored on the fan-in side', () => {
-    // The first case hugs the container edge and each later case steps one lane
-    // deeper — a tidy staircase on the fan-out, mirrored identically on the fan-in.
-    const threeCases = `pipeline:
+  it('nests fan lanes like parentheses around the centre port (crossing-free)', () => {
+    // Cases above the port keep the staircase (outermost hugs the border, nearer
+    // cases nest deeper); cases below mirror it. The halves never share a y-range,
+    // so they reuse the same lane offsets — provably no sibling crossings.
+    const fourCases = `pipeline:
   processors:
     - switch:
         - check: a == 1
           processors: [{ mapping: 'root = this' }]
         - check: a == 2
           processors: [{ mapping: 'root = this' }]
+        - check: a == 3
+          processors: [{ mapping: 'root = this' }]
         - processors: [{ mapping: 'root = this' }]
 output:
   drop: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(threeCases).nodes);
+    const layout = computeFlowLayout(parsePipelineFlowTree(fourCases).nodes);
     const lane = (id: string) =>
       (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromSource?: number }).laneFromSource ?? 0;
+    // Above half: staircase inward; below half mirrors it.
     expect(lane('fanout-proc-0-case-1')).toBeLessThan(lane('fanout-proc-0-case-2'));
-    expect(lane('fanout-proc-0-case-2')).toBeLessThan(lane('fanout-proc-0-case-3'));
+    expect(lane('fanout-proc-0-case-4')).toBeLessThan(lane('fanout-proc-0-case-3'));
+    expect(lane('fanout-proc-0-case-1')).toBe(lane('fanout-proc-0-case-4'));
+    // Fan-in mirrors the same lanes.
     const inLane = (id: string) =>
       (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromTarget?: number }).laneFromTarget ?? 0;
+    expect(inLane('fanin-proc-0-case-1')).toBe(lane('fanout-proc-0-case-1'));
     expect(inLane('fanin-proc-0-case-1')).toBeLessThan(inLane('fanin-proc-0-case-2'));
-    expect(inLane('fanin-proc-0-case-2')).toBeLessThan(inLane('fanin-proc-0-case-3'));
   });
 
   it('routes reference edges through the clear channel beside their column', () => {
