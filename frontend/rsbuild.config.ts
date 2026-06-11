@@ -139,6 +139,9 @@ export default defineConfig({
   },
   performance: {
     buildCache: process.env.NODE_ENV === 'development',
+    // Drop debug logging from production bundles; keep console.error for
+    // production diagnostics.
+    removeConsole: ['log', 'warn'],
   },
   output: {
     distPath: {
