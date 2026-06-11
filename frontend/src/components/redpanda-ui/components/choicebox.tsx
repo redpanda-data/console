@@ -99,6 +99,8 @@ export const ChoiceboxItemIndicator = ({
     <AnimatePresence>
       <motion.div
         animate={{ opacity: 1, scale: 1 }}
+        // flex blockifies the svg so it escapes inline baseline alignment, which otherwise sinks the dot ~1px below the ring's center
+        className="flex items-center justify-center"
         data-slot="radio-group-indicator-circle"
         exit={{ opacity: 0, scale: 0 }}
         initial={{ opacity: 0, scale: 0 }}
