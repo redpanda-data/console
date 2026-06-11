@@ -543,12 +543,14 @@ export class ShadowlinkPage {
       const { exec } = await import('node:child_process');
       const { promisify } = await import('node:util');
       const { readFileSync, existsSync } = await import('node:fs');
-      const { resolve } = await import('node:path');
+      const { dirname, resolve } = await import('node:path');
+      const { fileURLToPath } = await import('node:url');
       const execAsync = promisify(exec);
 
       // Read state file to get destination container ID
       // Try both console-enterprise and enterprise naming conventions
-      const testsDir = resolve(__dirname, '../..');
+      // ESM-safe __dirname equivalent (frontend/package.json sets "type": "module").
+      const testsDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
       const possibleStateFiles = [
         resolve(testsDir, '.testcontainers-state-console-enterprise.json'),
         resolve(testsDir, '.testcontainers-state-enterprise.json'),
