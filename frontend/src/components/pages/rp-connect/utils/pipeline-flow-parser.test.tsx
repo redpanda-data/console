@@ -450,6 +450,9 @@ input:
     const { nodes } = parsePipelineFlowTree(yaml);
     const leaf = nodes.find((n) => n.kind === 'leaf' && n.section === 'input' && n.label !== 'none');
     expect(leaf?.topics).toEqual(['orders', 'events']);
+    // …and the topics reach the laid-out card data, where they render as chips.
+    const card = computeFlowLayout(nodes).rfNodes.find((n) => n.id === leaf?.id);
+    expect((card?.data as { topics?: string[] }).topics).toEqual(['orders', 'events']);
   });
 
   it('extracts labels in leaf nodes', () => {
@@ -1281,6 +1284,37 @@ describe('summarizeComponent', () => {
     expect(meta).toEqual([
       { label: 'alpha', value: '1' },
       { label: 'beta', value: 'two' },
+    ]);
+  });
+
+  it('omits topic(s) from meta — they render as chips instead', () => {
+    expect(summarizeComponent('redpanda', { topics: ['orders'], consumer_group: 'g1' })).toEqual([
+      { label: 'group', value: 'g1' },
+    ]);
+    expect(summarizeComponent('redpanda', { topic: 'orders' })).toEqual([]);
+  });
+
+  it('surfaces role-appropriate fields across input/processor/output/resource', () => {
+    expect(summarizeComponent('aws_s3', { bucket: 'b', prefix: 'p/', region: 'us' })).toEqual([
+      { label: 'bucket', value: 'b' },
+      { label: 'prefix', value: 'p/' },
+    ]);
+    expect(summarizeComponent('sql_insert', { driver: 'postgres', table: 'events' })).toEqual([
+      { label: 'driver', value: 'postgres' },
+      { label: 'table', value: 'events' },
+    ]);
+    // rate_limit `local` engine — count is the key fact.
+    expect(summarizeComponent('local', { count: 1000, interval: '1s' })).toEqual([
+      { label: 'count', value: '1000' },
+      { label: 'interval', value: '1s' },
+    ]);
+  });
+
+  it('shortens verbose keys and prefers identifying fields in the fallback', () => {
+    expect(summarizeComponent('kafka_franz', { consumer_group: 'g' })).toEqual([{ label: 'group', value: 'g' }]);
+    // Unknown component: salient-named fields win over a leading boolean.
+    expect(summarizeComponent('mystery_conn', { enabled: true, host: 'h1', retries: 3 })).toEqual([
+      { label: 'host', value: 'h1' },
     ]);
   });
 });

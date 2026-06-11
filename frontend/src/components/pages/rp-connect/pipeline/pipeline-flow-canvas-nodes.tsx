@@ -216,13 +216,38 @@ const ContainerHandles = ({ gsTop, gtTop }: { gsTop?: number; gtTop?: number }) 
   </>
 );
 
+// Kafka/Redpanda topics rendered as scannable chips — the single most useful fact
+// for a source or sink. Capped so a long topic list doesn't blow out the card.
+const TOPIC_CHIP_LIMIT = 4;
+const TopicChips = ({ topics }: { topics?: string[] }) => {
+  if (!topics?.length) {
+    return null;
+  }
+  const shown = topics.slice(0, TOPIC_CHIP_LIMIT);
+  const extra = topics.length - shown.length;
+  return (
+    <div className="flex items-baseline gap-1.5 text-xs">
+      <span className="shrink-0 text-muted-foreground">{topics.length === 1 ? 'topic' : 'topics'}</span>
+      <span className="flex min-w-0 flex-wrap gap-1">
+        {shown.map((topic) => (
+          <Badge className="max-w-full" key={topic} size="sm" title={topic} variant="neutral-inverted">
+            <span className="truncate font-mono">{topic}</span>
+          </Badge>
+        ))}
+        {extra > 0 ? <span className="self-center text-[10px] text-muted-foreground">+{extra}</span> : null}
+      </span>
+    </div>
+  );
+};
+
 const MetaRows = ({ data }: { data: FlowCardData }) => {
   const hasContent = data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl;
   if (!hasContent) {
     return null;
   }
   return (
-    <div className="flex flex-col gap-1 border-border/60 border-t px-3 py-2">
+    <div className="flex flex-col gap-1.5 border-border/60 border-t px-3 py-2">
+      <TopicChips topics={data.topics} />
       {data.meta?.map((entry) => (
         <div className="flex items-baseline gap-1.5 text-xs" key={`${entry.label}-${entry.value}`}>
           <span className="shrink-0 text-muted-foreground">{entry.label}</span>
