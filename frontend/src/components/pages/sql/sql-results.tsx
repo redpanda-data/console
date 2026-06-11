@@ -10,6 +10,8 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Activity,
@@ -158,6 +160,43 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
 
 function cellText(v: CellValue): string {
   return v === null || v === undefined ? '' : String(v);
+}
+
+// Cells are clamped to this width; values long enough to truncate at it
+// (~45 mono-xs chars) open the full value in a popover on click.
+const CELL_MAX_W = 'max-w-[320px]';
+const CELL_CLAMP_CHARS = 45;
+
+function CellContent({ v, kind }: { v: CellValue; kind: ColumnKind }) {
+  if (kind === 'bool' && typeof v === 'boolean') {
+    return <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>;
+  }
+  if (v === null || v === undefined) {
+    return <span className="text-disabled italic">NULL</span>;
+  }
+  const s = String(v);
+  if (s.length <= CELL_CLAMP_CHARS) {
+    return <span className={cn('block truncate', CELL_MAX_W)}>{s}</span>;
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            'block cursor-pointer truncate text-left underline decoration-dotted underline-offset-2',
+            CELL_MAX_W
+          )}
+          title="Show full value"
+          type="button"
+        >
+          {s}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="max-h-72 max-w-[480px] overflow-auto p-3">
+        <Text className="whitespace-pre-wrap break-all font-mono text-xs">{s}</Text>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
@@ -370,13 +409,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                       )}
                       key={c.name}
                     >
-                      {c.kind === 'bool' && typeof v === 'boolean' ? (
-                        <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>
-                      ) : v === null || v === undefined ? (
-                        <span className="text-disabled italic">NULL</span>
-                      ) : (
-                        String(v)
-                      )}
+                      <CellContent kind={c.kind} v={v} />
                     </td>
                   );
                 })}
