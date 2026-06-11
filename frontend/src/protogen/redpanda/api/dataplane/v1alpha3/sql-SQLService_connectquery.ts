@@ -12,14 +12,19 @@ import { SQLService } from "./sql_pb";
 export const listCatalogs = SQLService.method.listCatalogs;
 
 /**
- * ListTables lists tables in a catalog.
+ * ListTables lists tables in a catalog. The catalog is identified by name;
+ * when catalogs with the same name exist in more than one namespace, tables
+ * from all of them are returned unless catalog_namespace narrows the scope.
  *
  * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.ListTables
  */
 export const listTables = SQLService.method.listTables;
 
 /**
- * DescribeTable returns metadata and column shape for a single table.
+ * DescribeTable returns metadata and column shape for a single table. The
+ * catalog is resolved by name; when catalogs with the same name exist in
+ * more than one namespace, the request must disambiguate via
+ * catalog_namespace or it fails with INVALID_ARGUMENT.
  *
  * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.DescribeTable
  */
