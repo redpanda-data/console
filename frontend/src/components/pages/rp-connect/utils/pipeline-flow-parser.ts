@@ -238,7 +238,7 @@ function parseInputNodes(
       { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
       childNames.map((name) => ({ name }))
     );
-    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' } };
+    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' }, labelText: extractLabel(inputObj) };
     return groupNodes;
   }
 
@@ -415,15 +415,19 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, 
   for (const [pi, proc] of procs.entries()) {
     const procName = firstKey(proc);
     if (procName) {
-      nodes.push(
-        ...parseComponentWithBranching(procName, proc[procName], {
-          ...ctx,
-          parentId: ctx.parentId,
-          idPrefix: `${ctx.idPrefix}-p${pi}`,
-          depth: ctx.depth + 1,
-          path: [...ctx.path, pi],
-        })
-      );
+      const childNodes = parseComponentWithBranching(procName, proc[procName], {
+        ...ctx,
+        parentId: ctx.parentId,
+        idPrefix: `${ctx.idPrefix}-p${pi}`,
+        depth: ctx.depth + 1,
+        path: [...ctx.path, pi],
+      });
+      // Surface a nested component's `label:` on its node (like top-level processors).
+      const labelText = extractLabel(proc);
+      if (childNodes.length > 0 && labelText) {
+        childNodes[0] = { ...childNodes[0], labelText };
+      }
+      nodes.push(...childNodes);
     }
   }
 }
@@ -667,7 +671,7 @@ function parseOutputNodes(
       { groupId: `output-${outputKey}`, groupLabel: outputKey, section: 'output', sectionId },
       children
     );
-    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'output' } };
+    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'output' }, labelText: extractLabel(outputObj) };
     return groupNodes;
   }
 

@@ -905,6 +905,22 @@ describe('computeFlowLayout', () => {
     expect(byId('proc-0')?.data.meta).toEqual([{ label: 'message', value: 'hi' }]);
   });
 
+  it('surfaces the `label:` on nested and container nodes, not just top-level leaves', () => {
+    const labelled = `pipeline:
+  processors:
+    - label: top_branch
+      branch:
+        processors:
+          - label: enrich_http
+            http: { url: http://x }
+output:
+  drop: {}`;
+    const laidOut = computeFlowLayout(parsePipelineFlowTree(labelled).nodes).rfNodes;
+    const nodeData = (id: string) => laidOut.find((n) => n.id === id)?.data as { labelText?: string } | undefined;
+    expect(nodeData('proc-0')?.labelText).toBe('top_branch'); // container
+    expect(nodeData('proc-0-processors-p0')?.labelText).toBe('enrich_http'); // nested leaf
+  });
+
   it('adds INPUT/PROCESSORS/OUTPUT section labels in the compact vertical lane only', () => {
     const verticalLabels = computeFlowLayout(
       parsePipelineFlowTree(BRANCHING_PIPELINE).nodes,

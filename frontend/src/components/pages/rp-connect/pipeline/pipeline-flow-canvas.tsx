@@ -41,6 +41,8 @@ type CanvasCallbacks = {
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
   lintErrorsByNode?: Map<string, string[]>;
+  flashNodeIds?: ReadonlySet<string>;
+  flashToken?: number;
 };
 
 // Wire interactivity into a layout node's data: collapse toggle, selection
@@ -58,6 +60,10 @@ function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   const lintErrors = cb.lintErrorsByNode?.get(node.id);
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
+  }
+  if (cb.flashNodeIds?.has(node.id)) {
+    data.flash = true;
+    data.flashToken = cb.flashToken;
   }
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
@@ -129,6 +135,9 @@ type PipelineFlowCanvasProps = {
   selectedNodeId?: string;
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
+  /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
+  flashNodeIds?: ReadonlySet<string>;
+  flashToken?: number;
   /** Select a node by id + its edit target (clicking a node). */
   onSelectNode?: (nodeId: string, target: EditTarget) => void;
   /** Clear the selection (clicking empty canvas). */
@@ -147,6 +156,8 @@ export function PipelineFlowCanvas({
   simple,
   selectedNodeId,
   lintErrorsByNode,
+  flashNodeIds,
+  flashToken,
   onSelectNode,
   onClearSelection,
   onInsert,
@@ -182,6 +193,8 @@ export function PipelineFlowCanvas({
       toggleCollapse,
       selectedNodeId,
       lintErrorsByNode,
+      flashNodeIds,
+      flashToken,
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
 
@@ -230,6 +243,8 @@ export function PipelineFlowCanvas({
     toggleCollapse,
     selectedNodeId,
     lintErrorsByNode,
+    flashNodeIds,
+    flashToken,
     onInsert,
     onAddConnector,
     onAddTopic,

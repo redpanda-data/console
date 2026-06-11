@@ -25,6 +25,7 @@ import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertCircle, Box, ChevronDown, ChevronRight, PlusIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
@@ -144,6 +145,10 @@ export type FlowCardData = {
   editTarget?: EditTarget;
   /** Highlighted because it's the node selected in the inspector. */
   selected?: boolean;
+  /** Briefly pulse this node (e.g. after an undo/redo touched it). */
+  flash?: boolean;
+  /** Changes on each flash so the pulse animation replays. */
+  flashToken?: number;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
   // Injected by the canvas (edit mode only).
@@ -318,6 +323,7 @@ const CompactCard = ({ data }: { data: FlowCardData }) => (
     <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
       {data.label}
     </Text>
+    <LabelBadge className="max-w-[45%]" label={data.labelText} />
   </div>
 );
 
@@ -333,6 +339,21 @@ function cardRing(data: FlowCardData): string {
   return data.selected ? SELECTED_RING : '';
 }
 
+// A brief double-pulse ring overlay drawn on a node after an undo/redo touched it.
+// Uses the Redpanda `brand` (orange-red) token — a transient "this just changed"
+// highlight, distinct from selection (primary) and errors (destructive). Keyed by
+// `token` so re-flashing the same node replays the animation.
+const FlashPulse = ({ token }: { token?: number }) => (
+  <motion.span
+    animate={{ opacity: [0, 1, 0.3, 1, 0] }}
+    aria-hidden
+    className="pointer-events-none absolute inset-0 z-20 rounded-lg ring-2 ring-brand"
+    initial={{ opacity: 0 }}
+    key={token}
+    transition={{ duration: 1.2, ease: 'easeOut', times: [0, 0.15, 0.5, 0.7, 1] }}
+  />
+);
+
 // A small red chip showing the count of lint problems on a node; the messages are
 // the native tooltip (and shown in full in the inspector).
 const LintBadge = ({ errors }: { errors?: string[] }) =>
@@ -344,6 +365,14 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
       <AlertCircle className="size-3" />
       {errors.length}
     </span>
+  ) : null;
+
+// The component's `label:` — shown on every node (leaf, container, sidebar) when set.
+const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
+  label ? (
+    <Badge className={cn('min-w-0 max-w-full shrink-0', className)} size="sm" title={label} variant="info-inverted">
+      <span className="truncate">{label}</span>
+    </Badge>
   ) : null;
 
 // A leaf component card. The whole card is the click target (selection is handled
@@ -358,7 +387,6 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         selectable && 'cursor-pointer',
         cardRing(data)
       )}
-      style={accent ? { borderLeftColor: accent, borderLeftWidth: 3 } : undefined}
     >
       <div className="flex items-center gap-1.5 px-3 pt-2 pb-0.5">
         <Text
@@ -380,9 +408,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
       </div>
       {data.labelText ? (
         <div className="px-3 pb-2">
-          <Badge className="max-w-full" size="sm" variant="info-inverted">
-            <span className="truncate">{data.labelText}</span>
-          </Badge>
+          <LabelBadge label={data.labelText} />
         </div>
       ) : null}
       <MetaRows data={data} />
@@ -408,6 +434,7 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
     <div className="group relative" ref={ref} style={{ width }}>
       <NodeHandles />
       {card}
+      {data.flash ? <FlashPulse token={data.flashToken} /> : null}
     </div>
   );
 };
@@ -456,12 +483,12 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
     // spine between cards and containers.)
     <div className="group relative h-full w-full" ref={ref}>
       <ContainerHandles gsCenter={data.fanOut} gtCenter={data.fanIn} portY={data.portY} />
+      {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
           'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm',
           cardRing(data)
         )}
-        style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
       >
         <div
           className={cn(
@@ -476,6 +503,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
             name={data.label as ComponentName}
           />
           <ContainerTitleText accent={accent} data={data} />
+          <LabelBadge label={data.labelText} />
           <BranchConditionChip data={data} />
           <LintBadge errors={data.lintErrors} />
           {/* Collapse toggle is a separate control so it doesn't also select the node. */}

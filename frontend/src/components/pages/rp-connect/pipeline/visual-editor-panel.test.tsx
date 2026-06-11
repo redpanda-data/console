@@ -169,6 +169,40 @@ describe('VisualEditorPanel', () => {
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled();
   });
 
+  test('undo reverts an applied change and redo re-applies it', async () => {
+    const user = userEvent.setup();
+    function Harness() {
+      const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
+      return (
+        <VisualEditorPanel
+          componentList={{} as ComponentList}
+          components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+          mode="edit"
+          onYamlChange={setYaml}
+          yamlContent={yaml}
+        />
+      );
+    }
+    render(<Harness />);
+
+    // Nothing to undo yet.
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+
+    await user.click(screen.getByText('select-cache-resource'));
+    const ttl = await screen.findByDisplayValue('5m');
+    await user.clear(ttl);
+    await user.type(ttl, '10m');
+    await user.click(screen.getByRole('button', { name: 'Apply changes' }));
+    expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
+
+    // Undo restores the previous value; redo re-applies the edit.
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(await screen.findByDisplayValue('5m')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
+  });
+
   test('surfaces a lint problem for the selected node in the inspector', async () => {
     const user = userEvent.setup();
     // Line 2 (`generate:`) is inside the input node's YAML range.
