@@ -15,6 +15,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
+import { Database } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
@@ -248,6 +249,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: ScaleIcon,
     group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
+  },
+  {
+    path: '/sql',
+    title: 'SQL',
+    icon: Database,
+    group: SidebarSection.STREAMING,
+    visibilityCheck: routeVisibility(() => isFeatureFlagEnabled('enableSqlInConsole')),
   },
   {
     path: '/connect-clusters',

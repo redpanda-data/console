@@ -1,0 +1,26 @@
+/* react-data-grid theming for the SQL results grid.
+   rdg's stylesheet is unlayered, so Tailwind's layered utilities cannot
+   override the custom properties rdg declares on .rdg — these rules must
+   be unlayered too, and more specific than rdg's own selectors. */
+.rdg.sql-results-grid {
+  --rdg-font-size: 12px;
+  --rdg-color: var(--color-foreground);
+  --rdg-border-color: var(--color-border-subtle);
+  --rdg-background-color: var(--color-card);
+  --rdg-header-background-color: var(--color-muted);
+  --rdg-row-hover-background-color: var(--color-accent-subtle);
+  --rdg-selection-color: var(--color-action-primary);
+  border: none;
+  block-size: auto;
+  flex: 1;
+  min-block-size: 0;
+}
+
+.sql-results-grid .rdg-cell {
+  padding-inline: 16px;
+}
+
+/* Zebra stripe, applied per row via rowClass. */
+.sql-results-grid .sql-results-row-alt {
+  --rdg-background-color: var(--color-background-subtle);
+}

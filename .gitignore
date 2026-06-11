@@ -6,6 +6,7 @@ fixname.sh
 # IDEs
 **/.vscode
 **/.idea
+**/.cursor
 **/*.code-workspace
 
 # Helper Scripts
@@ -17,7 +18,14 @@ requests.txt
 .prettierrc
 
 # Local build tools installed via Taskfiles
-build
+/build
+/configs
 
-.cursor
+# Go workspace (local dev only)
+go.work
+go.work.sum
+
+# Claude Code local state
+.claude/worktrees/
+.claude/settings.local.json
 .claude/worktrees/
