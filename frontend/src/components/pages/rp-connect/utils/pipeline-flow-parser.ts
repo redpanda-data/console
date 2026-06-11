@@ -306,6 +306,7 @@ function isErroredCheck(check: unknown): boolean {
 }
 
 function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): PipelineFlowNode {
+  const meta = summarizeComponent(name, componentValue);
   return {
     id: ctx.idPrefix,
     kind: 'leaf',
@@ -313,6 +314,10 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     section: ctx.section,
     parentId: ctx.parentId,
     resourceRef: extractResourceRef(componentValue),
+    // Surface key config on nested leaves too (http inside try/branch/switch, etc.),
+    // just like top-level processors.
+    ...(meta.length > 0 ? { meta } : {}),
+    ...(extractTopics(componentValue) ? { topics: extractTopics(componentValue) } : {}),
     editTarget: pathEditTarget(ctx.section, ctx.path),
   };
 }

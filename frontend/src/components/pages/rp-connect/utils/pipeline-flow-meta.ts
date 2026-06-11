@@ -29,7 +29,35 @@ const LABEL_OVERRIDES: Record<string, string> = {
   result_map: 'result',
   result_codec: 'codec',
   max_in_flight: 'in flight',
+  server_address: 'server',
+  collection_name: 'collection',
+  queue_name: 'queue',
+  table_name: 'table',
+  channel_id: 'channel',
+  channel_prefix: 'channel',
+  error_message: 'error',
 };
+
+// Field names that are never useful as an at-a-glance summary — credentials and
+// generic infra knobs — so the fallback never surfaces them for an unmapped
+// component (it would otherwise grab e.g. `api_key` just because it comes first).
+const NOISE_FIELDS = new Set([
+  'api_key',
+  'apikey',
+  'password',
+  'secret',
+  'secret_key',
+  'secret_access_key',
+  'access_key_id',
+  'token',
+  'credentials',
+  'private_key',
+  'tls',
+  'region',
+  'enabled',
+  'client_id',
+  'client_secret',
+]);
 
 function truncate(value: string, max = MAX_VALUE_LEN): string {
   const trimmed = value.replace(/\s+/g, ' ').trim();
@@ -84,7 +112,47 @@ const PREFERRED_FIELDS: Record<string, string[]> = {
   redis_streams: ['url'],
   mongodb: ['database', 'collection', 'operation'],
   elasticsearch: ['index', 'urls'],
+  opensearch: ['index', 'urls'],
+  cassandra: ['query'],
+  // AI / ML — chat, embeddings, image, transcription (the model is the key fact)
+  openai_chat_completion: ['model'],
+  openai_embeddings: ['model'],
+  openai_image_generation: ['model'],
+  openai_speech: ['model'],
+  openai_transcription: ['model'],
+  aws_bedrock_chat: ['model'],
+  aws_bedrock_embeddings: ['model'],
+  gcp_vertex_ai_chat: ['model'],
+  gcp_vertex_ai_embeddings: ['model'],
+  ollama_chat: ['model', 'server_address'],
+  ollama_embeddings: ['model', 'server_address'],
+  cohere_chat: ['model'],
+  cohere_embeddings: ['model'],
+  // Vector stores (RAG)
+  qdrant: ['collection_name'],
+  pinecone: ['index', 'operation'],
+  // More cloud sources / sinks
+  aws_kinesis: ['stream'],
+  aws_kinesis_firehose: ['stream'],
+  aws_dynamodb: ['table'],
+  gcp_bigquery: ['dataset', 'table'],
+  gcp_bigquery_select: ['table', 'columns'],
+  pulsar: ['url'],
+  snowflake_streaming: ['table', 'channel_prefix'],
+  websocket: ['url'],
+  socket: ['address', 'network'],
+  socket_server: ['address', 'network'],
+  sftp: ['address', 'paths'],
+  azure_queue_storage: ['queue_name'],
+  azure_cosmosdb: ['container', 'database'],
+  azure_table_storage: ['table_name'],
+  splunk_hec: ['url'],
+  discord: ['channel_id'],
   // Processors
+  grok: ['expressions'],
+  xml: ['operator'],
+  parse_log: ['format'],
+  sql: ['driver', 'query'],
   log: ['level', 'message'],
   cache: ['resource', 'operator', 'key'],
   rate_limit: ['resource'],
@@ -116,6 +184,7 @@ const PREFERRED_FIELDS: Record<string, string[]> = {
 // When no preferred field matches, prefer scalar fields with these "identifying"
 // names before falling back to whatever scalar comes first.
 const SALIENT_FIELD_NAMES = [
+  'model',
   'url',
   'urls',
   'address',
@@ -124,6 +193,9 @@ const SALIENT_FIELD_NAMES = [
   'endpoint',
   'uri',
   'dsn',
+  'stream',
+  'dataset',
+  'collection_name',
   'subject',
   'channel',
   'queue',
@@ -185,7 +257,7 @@ function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
     if (meta.length >= 2) {
       break;
     }
-    if (key === 'label' || TOPIC_FIELDS.has(key) || typeof value === 'boolean') {
+    if (key === 'label' || TOPIC_FIELDS.has(key) || NOISE_FIELDS.has(key) || typeof value === 'boolean') {
       continue;
     }
     pushField(meta, record, key);

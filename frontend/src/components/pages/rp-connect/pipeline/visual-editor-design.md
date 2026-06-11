@@ -49,14 +49,19 @@ The dedicated, full-canvas visual editor has shipped (behind the flag):
   `pipeline-flow-meta.ts`), with hover Edit/Remove/Docs and a `+` insertion
   affordance on the spine.
 - **Role-aware card meta** (`pipeline-flow-meta.ts`): a curated per-connector
-  field map (~40 components across input/processor/output/resource — e.g. kafka
-  `consumer_group`, s3 `bucket`/`prefix`, sql `driver`/`table`, http `url`/`verb`,
-  cache `resource`/`operator`/`key`, rate-limit `count`/`interval`) picks 1–3
-  concise rows; unknown components fall back to identifying-named scalars
-  (url/host/path/table/…) before any scalar. Verbose keys are shortened
-  (`consumer_group`→`group`, `default_ttl`→`ttl`). **Topics render as chips**
-  (the top fact for a Kafka source/sink) and are never duplicated as a meta row.
-  Containers stay header-only — their children are the content.
+  field map (~70 components across input/processor/output/resource) picks 1–3
+  concise rows showing each node's identifying fact — kafka `consumer_group`,
+  s3 `bucket`/`prefix`, sql `driver`/`table`, http `url`/`verb`, cache
+  `resource`/`operator`/`key`, rate-limit `count`/`interval`, **AI** chat/embedding
+  connectors → `model`, **vector** stores (qdrant/pinecone) → `collection`/`index`,
+  cloud sinks (kinesis `stream`, bigquery `dataset`/`table`, dynamodb `table`).
+  Unknown components fall back to identifying-named scalars
+  (`model`/`url`/`host`/`stream`/`table`/…) before any scalar, and a noise
+  skip-list keeps **credentials and infra knobs** (`api_key`, `password`,
+  `token`, `region`, `tls`, …) off the card entirely. Verbose keys are shortened
+  (`consumer_group`→`group`, `collection_name`→`collection`). **Topics render as
+  chips** and are never duplicated as a meta row. Containers stay header-only —
+  their children are the content.
 - **Form-based per-node editor** (`node-config-form.tsx`): renders the component
   schema's scalar fields (required first, optional with defaults, advanced
   collapsed, enums as selects, bools as switches), with a raw-YAML fallback for

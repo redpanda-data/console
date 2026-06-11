@@ -455,6 +455,21 @@ input:
     expect((card?.data as { topics?: string[] }).topics).toEqual(['orders', 'events']);
   });
 
+  it('summarizes nested leaves too (a processor inside a container shows its config)', () => {
+    const yaml = `pipeline:
+  processors:
+    - try:
+        - http: { url: 'http://api/enrich', verb: POST }
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const http = nodes.find((n) => n.label === 'http');
+    expect(http?.meta).toEqual([
+      { label: 'url', value: 'http://api/enrich' },
+      { label: 'verb', value: 'POST' },
+    ]);
+  });
+
   it('extracts labels in leaf nodes', () => {
     const yaml = `
 input:
@@ -1113,8 +1128,8 @@ output:
     // Output cases terminate at their sinks — no fan-in.
     expect(layout.rfEdges.some((e) => e.id.startsWith('fanin-output-switch'))).toBe(false);
     // Fan-in lines terminate in the container's port socket — no stacked arrowheads.
-    for (const edge of layout.rfEdges.filter((e) => e.id.startsWith('fanin-'))) {
-      expect(edge.markerEnd).toBeUndefined();
+    for (const faninEdge of layout.rfEdges.filter((e) => e.id.startsWith('fanin-'))) {
+      expect(faninEdge.markerEnd).toBeUndefined();
     }
     // Fan-out keeps its arrowhead at each child.
     expect(layout.rfEdges.find((e) => e.id === 'fanout-proc-0-case-1')?.markerEnd).toBeDefined();
@@ -1343,5 +1358,27 @@ describe('summarizeComponent', () => {
     expect(summarizeComponent('mystery_conn', { enabled: true, host: 'h1', retries: 3 })).toEqual([
       { label: 'host', value: 'h1' },
     ]);
+  });
+
+  it('surfaces the model for AI components and the key field for vector / cloud sinks', () => {
+    expect(summarizeComponent('openai_chat_completion', { model: 'gpt-4o', api_key: 'sk-xyz' })).toEqual([
+      { label: 'model', value: 'gpt-4o' },
+    ]);
+    expect(summarizeComponent('qdrant', { collection_name: 'docs', grpc_host: 'x' })).toEqual([
+      { label: 'collection', value: 'docs' },
+    ]);
+    expect(summarizeComponent('gcp_bigquery', { dataset: 'analytics', table: 'events' })).toEqual([
+      { label: 'dataset', value: 'analytics' },
+      { label: 'table', value: 'events' },
+    ]);
+  });
+
+  it('never surfaces credentials or generic infra knobs as fallback meta', () => {
+    // An unmapped component: `model` (salient) wins; api_key / region are skipped.
+    expect(summarizeComponent('mystery_ai', { model: 'foo', api_key: 'secret', region: 'us' })).toEqual([
+      { label: 'model', value: 'foo' },
+    ]);
+    // All-noise config yields nothing rather than leaking a secret-ish field name.
+    expect(summarizeComponent('mystery_creds', { api_key: 'x', region: 'us', tls: true })).toEqual([]);
   });
 });
