@@ -9,12 +9,29 @@
  * by the Apache License, Version 2.0
  */
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import {
+  Choicebox,
+  ChoiceboxItem,
+  ChoiceboxItemContent,
+  ChoiceboxItemHeader,
+  ChoiceboxItemIndicator,
+  ChoiceboxItemSubtitle,
+  ChoiceboxItemTitle,
+} from 'components/redpanda-ui/components/choicebox';
+import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Progress } from 'components/redpanda-ui/components/progress';
+import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
+import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { z } from 'zod';
 
 export type WizardTopic = {
   name: string;
@@ -31,200 +48,95 @@ export type SqlWizardProps = {
   error?: string;
 };
 
-const TABLE_NAME_RE = /^[a-z_][a-z0-9_]*$/;
+const CATALOG_NAME = 'default_redpanda_catalog';
 const STEPS = ['Choose a topic', 'Name the table'] as const;
+const TABLE_NAME_RE = /^[a-z_][a-z0-9_]*$/;
 
-function createSQL(tableName: string, topic: string): string {
-  return `CREATE TABLE default_redpanda_catalog=>${tableName || 'my_table'}\n  WITH (topic='${topic || 'topic_name'}');`;
+const formSchema = z.object({
+  tableName: z
+    .string()
+    .min(1, 'Table name is required.')
+    .regex(TABLE_NAME_RE, 'Use lowercase letters, numbers and underscores; must start with a letter or underscore.'),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+/** Turn a topic name into a valid default table name (topic names may contain dots or dashes). */
+function suggestTableName(topicName: string): string {
+  const slug = topicName.toLowerCase().replaceAll(/[^a-z0-9_]/g, '_');
+  return TABLE_NAME_RE.test(slug) ? slug : `_${slug}`;
+}
+
+function createTableSql(tableName: string, topic: string): string {
+  return `CREATE TABLE ${CATALOG_NAME}=>${tableName || 'my_table'}\n  WITH (topic='${topic}');`;
+}
+
+function describeTopic(topic: WizardTopic): string {
+  const partitions = typeof topic.partitions === 'number' ? `${topic.partitions} partitions` : 'topic';
+  return topic.format ? `${partitions} · ${topic.format}` : partitions;
 }
 
 export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlWizardProps) {
   const [step, setStep] = useState(0);
-  const [topic, setTopic] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [touched, setTouched] = useState(false);
-  const [search, setSearch] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState<WizardTopic | null>(null);
 
-  const chosen = topics.find((t) => t.name === topic);
-  const tableName = name || topic || '';
-  const nameError = touched && step === 1 && !TABLE_NAME_RE.test(tableName);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    mode: 'onTouched',
+    defaultValues: { tableName: '' },
+  });
 
-  const q = search.trim().toLowerCase();
-  const visibleTopics = q ? topics.filter((t) => t.name.toLowerCase().includes(q)) : topics;
-
-  const pickTopic = (t: WizardTopic) => {
-    setTopic(t.name);
-    if (!name) {
-      setName(t.name);
-    }
-  };
-
-  const next = () => {
-    if (step === 0 && !topic) {
+  const selectTopic = (topicName: string) => {
+    const topic = topics.find((t) => t.name === topicName);
+    if (!topic) {
       return;
     }
-    setStep(1);
+    // Prefill the table name unless the user already typed their own.
+    const currentName = form.getValues('tableName');
+    if (!currentName || (selectedTopic && currentName === suggestTableName(selectedTopic.name))) {
+      form.setValue('tableName', suggestTableName(topic.name));
+    }
+    setSelectedTopic(topic);
   };
 
-  const finish = () => {
-    setTouched(true);
-    if (!(topic && TABLE_NAME_RE.test(tableName))) {
-      return;
+  const submit = form.handleSubmit(({ tableName }) => {
+    if (selectedTopic) {
+      onCreate({ topic: selectedTopic.name, tableName });
     }
-    onCreate({ topic, tableName });
-  };
+  });
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-card">
-      <div className="flex items-center justify-between border-border-subtle border-b px-[18px] py-3 font-semibold text-sm text-strong">
-        <span className="inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap [&_svg]:text-action-primary">
+      <header className="flex items-center justify-between border-border-subtle border-b px-4 py-2">
+        <span className="inline-flex items-center gap-2 font-semibold text-sm text-strong [&_svg]:text-action-primary">
           <Plus size={16} /> Add a topic to SQL
         </span>
-        <button
-          aria-label="Close"
-          className="inline-flex cursor-pointer items-center justify-center rounded-md border-0 bg-transparent p-1 text-muted-foreground hover:bg-muted hover:text-strong"
-          onClick={onClose}
-          type="button"
-        >
-          <X size={16} />
-        </button>
-      </div>
+        <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
+          <X />
+        </Button>
+      </header>
 
-      <div className="flex min-h-0 flex-1 flex-col p-0" data-variant="inline">
-        <div className="mx-auto w-full max-w-[720px] px-[22px] pt-4 pb-1">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="mx-auto w-full max-w-[720px] px-6 pt-4 pb-1">
           <span className="font-semibold text-action-primary text-xs uppercase tracking-wider">
             Step {step + 1} of {STEPS.length}
           </span>
           <span className="mt-1 mb-2 block font-display font-semibold text-base text-strong">{STEPS[step]}</span>
-          <div className="h-1 overflow-hidden rounded-full bg-muted">
-            <span
-              className="block h-full rounded-full bg-action-primary transition-[width] duration-[220ms] ease-out"
-              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-            />
-          </div>
+          <Progress
+            className="h-1 bg-muted [&_[data-slot=progress-indicator]]:bg-action-primary"
+            value={((step + 1) / STEPS.length) * 100}
+          />
         </div>
 
-        <div className="mx-auto min-h-0 w-full max-w-[720px] flex-1 overflow-y-auto px-[22px] py-4">
-          {step === 0 && (
-            <div>
-              <p className="mt-0 mr-0 mb-[14px] ml-0 text-muted-foreground text-sm leading-normal [&_code]:font-mono">
-                Pick a Redpanda topic to expose as a SQL table. Tables are created in{' '}
-                <code>default_redpanda_catalog</code> — the catalog for Redpanda topics.
-              </p>
-              <Input
-                className="mb-3"
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search topics"
-                value={search}
-              />
-              <div className="flex flex-col gap-2">
-                {visibleTopics.map((t) => (
-                  <button
-                    className={cn(
-                      'flex w-full cursor-pointer items-center gap-3 rounded-md border border-border bg-card px-[14px] py-3 text-left font-sans',
-                      'hover:border-border-strong hover:bg-muted',
-                      'data-[selected]:border-2 data-[selected]:border-secondary data-[selected]:px-[13px] data-[selected]:py-[11px]'
-                    )}
-                    data-selected={topic === t.name || undefined}
-                    key={t.name}
-                    onClick={() => pickTopic(t)}
-                    type="button"
-                  >
-                    <span
-                      className={cn(
-                        'inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-input',
-                        topic === t.name && 'border-secondary'
-                      )}
-                    >
-                      {topic === t.name && <span className="h-[9px] w-[9px] rounded-full bg-secondary" />}
-                    </span>
-                    <Layers className="flex-shrink-0 text-action-primary" size={15} />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="font-mono font-semibold text-sm text-strong">{t.name}</span>
-                      <span className="mt-px text-muted-foreground text-xs">
-                        {typeof t.partitions === 'number' ? `${t.partitions} partitions` : 'topic'}
-                        {t.format ? ` · ${t.format}` : ''}
-                      </span>
-                    </span>
-                    {t.iceberg && (
-                      <span
-                        className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-full bg-info-subtle px-[7px] py-0.5 font-semibold text-caption-sm text-info [&_svg]:text-current"
-                        title="Iceberg tiering enabled"
-                      >
-                        <GitMerge size={11} />
-                        Iceberg
-                      </span>
-                    )}
-                  </button>
-                ))}
-                {visibleTopics.length === 0 && (
-                  <div className="text-muted-foreground text-sm leading-normal">No topics found.</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {step === 1 && (
-            <div>
-              <div className="mb-4">
-                <span className="mb-1.5 block font-semibold text-sm text-strong">Catalog</span>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-sm text-strong [&_svg]:text-muted-foreground">
-                  <Layers size={14} /> default_redpanda_catalog{' '}
-                  <span className="ml-auto font-sans text-muted-foreground text-xs">fixed for Redpanda topics</span>
-                </div>
-              </div>
-              <div className="mb-4">
-                <span className="mb-1.5 block font-semibold text-sm text-strong">Source topic</span>
-                <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-sm text-strong [&_svg]:text-muted-foreground">
-                  <GitBranch size={14} /> {topic}
-                  {chosen?.iceberg && (
-                    <span className="ml-auto inline-flex items-center gap-1 font-sans text-info text-xs [&_svg]:text-current">
-                      <GitMerge size={11} /> Iceberg-tiered
-                    </span>
-                  )}
-                </div>
-              </div>
-              {chosen?.iceberg && (
-                <div className="mb-4 flex items-start gap-[9px] rounded-md border border-info bg-info-subtle px-[13px] py-[11px] text-foreground text-xs leading-normal [&_code]:font-mono [&_svg]:mt-px [&_svg]:flex-shrink-0 [&_svg]:text-info">
-                  <GitMerge size={15} />
-                  <span>
-                    This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes
-                    the live topic with its Iceberg table so results stay realtime despite the flush lag.
-                  </span>
-                </div>
-              )}
-              <div className="mb-4">
-                <label className="mb-1.5 block font-semibold text-sm text-strong" htmlFor="wz-table-name">
-                  Table name
-                </label>
-                <Input
-                  className={cn(nameError && 'border-destructive')}
-                  id="wz-table-name"
-                  onBlur={() => setTouched(true)}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="cars"
-                  value={name}
-                />
-                {nameError ? (
-                  <span className="mt-1.5 block text-destructive text-xs">
-                    Use lowercase letters, numbers and underscores; must start with a letter or underscore.
-                  </span>
-                ) : (
-                  <span className="mt-1.5 block text-muted-foreground text-xs">
-                    How the table appears in the catalog and your queries.
-                  </span>
-                )}
-              </div>
-              <div className="mb-4">
-                <span className="mb-1.5 block font-semibold text-sm text-strong">This will run</span>
-                <DynamicCodeBlock code={createSQL(tableName, topic ?? '')} lang="sql" />
-              </div>
-              {error && <div className="mt-1.5 block text-destructive text-xs">{error}</div>}
-            </div>
+        <div className="mx-auto min-h-0 w-full max-w-[720px] flex-1 overflow-y-auto px-6 py-4">
+          {step === 0 || !selectedTopic ? (
+            <TopicStep onSelect={selectTopic} selectedTopicName={selectedTopic?.name} topics={topics} />
+          ) : (
+            <TableNameStep error={error} form={form} topic={selectedTopic} />
           )}
         </div>
 
-        <div className="mx-auto flex w-full max-w-[720px] flex-shrink-0 items-center justify-between border-border-subtle border-t px-[22px] py-[14px]">
+        <footer className="mx-auto flex w-full max-w-[720px] shrink-0 items-center justify-between border-border-subtle border-t px-6 py-3.5">
           <Button onClick={onClose} size="md" variant="secondary-ghost">
             Cancel
           </Button>
@@ -235,17 +147,147 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
               </Button>
             )}
             {step === 0 ? (
-              <Button disabled={!topic} onClick={next} size="md" variant="primary">
+              <Button disabled={!selectedTopic} onClick={() => setStep(1)} size="md" variant="primary">
                 Continue
               </Button>
             ) : (
-              <Button disabled={isCreating} onClick={finish} size="md" variant="primary">
-                <Plus size={15} /> {isCreating ? 'Creating…' : 'Create table'}
+              <Button isLoading={isCreating} onClick={submit} size="md" variant="primary">
+                <Plus size={15} /> Create table
               </Button>
             )}
           </div>
-        </div>
+        </footer>
       </div>
     </div>
+  );
+}
+
+type TopicStepProps = {
+  topics: WizardTopic[];
+  selectedTopicName: string | undefined;
+  onSelect: (topicName: string) => void;
+};
+
+function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
+  const [search, setSearch] = useState('');
+
+  const query = search.trim().toLowerCase();
+  const visibleTopics = query ? topics.filter((t) => t.name.toLowerCase().includes(query)) : topics;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Text className="text-muted-foreground text-sm">
+        Pick a Redpanda topic to expose as a SQL table. Tables are created in <InlineCode>{CATALOG_NAME}</InlineCode> —
+        the catalog for Redpanda topics.
+      </Text>
+      <Input onChange={(e) => setSearch(e.target.value)} placeholder="Search topics" value={search} />
+      {visibleTopics.length === 0 ? (
+        <Text className="text-muted-foreground text-sm">No topics found.</Text>
+      ) : (
+        <Choicebox
+          aria-label="Topics"
+          className="gap-2"
+          onValueChange={(value) => onSelect(value as string)}
+          value={selectedTopicName ?? ''}
+        >
+          {visibleTopics.map((topic) => (
+            <ChoiceboxItem className="items-center gap-3 p-3" key={topic.name} size="full" value={topic.name}>
+              <ChoiceboxItemContent>
+                <ChoiceboxItemIndicator />
+              </ChoiceboxItemContent>
+              <ChoiceboxItemHeader>
+                <ChoiceboxItemTitle className="gap-2 font-mono text-sm">
+                  <Layers className="shrink-0 text-action-primary" size={15} />
+                  {topic.name}
+                </ChoiceboxItemTitle>
+                <ChoiceboxItemSubtitle>{describeTopic(topic)}</ChoiceboxItemSubtitle>
+              </ChoiceboxItemHeader>
+              {topic.iceberg && <IcebergBadge />}
+            </ChoiceboxItem>
+          ))}
+        </Choicebox>
+      )}
+    </div>
+  );
+}
+
+type TableNameStepProps = {
+  topic: WizardTopic;
+  form: UseFormReturn<FormValues>;
+  error?: string;
+};
+
+function TableNameStep({ topic, form, error }: TableNameStepProps) {
+  const tableName = useWatch({ control: form.control, name: 'tableName' });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SummaryRow label="Catalog">
+        <Layers size={14} /> {CATALOG_NAME}
+        <span className="ml-auto font-sans text-muted-foreground text-xs">fixed for Redpanda topics</span>
+      </SummaryRow>
+
+      <SummaryRow label="Source topic">
+        <GitBranch size={14} /> {topic.name}
+        {topic.iceberg && (
+          <span className="ml-auto">
+            <IcebergBadge />
+          </span>
+        )}
+      </SummaryRow>
+
+      {topic.iceberg && (
+        <Alert className="border-info bg-info-subtle [&>svg]:text-info" icon={<GitMerge size={15} />}>
+          <AlertDescription className="text-foreground text-xs">
+            This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes the live
+            topic with its Iceberg table so results stay realtime despite the flush lag.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Controller
+        control={form.control}
+        name="tableName"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="sql-wizard-table-name">Table name</FieldLabel>
+            <Input {...field} aria-invalid={fieldState.invalid} id="sql-wizard-table-name" placeholder="cars" />
+            <FieldDescription>How the table appears in the catalog and your queries.</FieldDescription>
+            {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-strong">This will run</Label>
+        <SyncCodeBlock className="my-0" code={createTableSql(tableName, topic.name)} keepBackground lang="sql" />
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
+
+function SummaryRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label className="text-strong">{label}</Label>
+      <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 font-mono text-sm text-strong [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function IcebergBadge() {
+  return (
+    <Badge size="sm" title="Iceberg tiering enabled" variant="info-inverted">
+      <GitMerge size={11} />
+      Iceberg
+    </Badge>
   );
 }
