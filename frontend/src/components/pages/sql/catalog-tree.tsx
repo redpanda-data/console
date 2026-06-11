@@ -9,25 +9,31 @@
  * by the Apache License, Version 2.0
  */
 
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Input, InputStart } from 'components/redpanda-ui/components/input';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Box,
+  Braces,
+  Brackets,
   Calendar,
   ChevronDown,
   ChevronRight,
   GitBranch,
-  GitMerge,
   Hash,
   Layers,
   Lock,
+  Table as LucideTable,
   Play,
   Plus,
   Search,
-  Table as TableIcon,
   ToggleLeft,
   Type,
 } from 'lucide-react';
-import { useState } from 'react';
+import { createContext, type KeyboardEvent, type ReactNode, useContext, useState } from 'react';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 
 import {
@@ -36,6 +42,8 @@ import {
   type ColumnDef,
   type ColumnKind,
   columnKindForPgType,
+  isArrayPgType,
+  type Namespace,
   type SqlRole,
   shortPgType,
   type TableRef,
@@ -64,43 +72,83 @@ const COL_KIND_ICON: Record<ColumnKind, typeof Hash> = {
   str: Type,
   bool: ToggleLeft,
   time: Calendar,
+  json: Braces,
 };
 
 // Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
 // subtle hover background. Used by namespace rows and the "Add a topic" row.
 const ROW_BASE =
-  'flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left text-sm text-strong hover:bg-accent-subtle';
+  'flex w-full cursor-pointer items-center gap-1.5 rounded border-0 bg-transparent px-2 py-1.5 text-left text-sm text-strong hover:bg-accent-subtle';
 
 // Truncating label that fills the remaining row width.
 const LABEL = 'flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap';
 
+// Tree-wide state and callbacks, provided once by CatalogTree so the node
+// components stay lean instead of threading a dozen props per level.
+type CatalogTreeContextValue = {
+  role: SqlRole;
+  query: string;
+  activeTableId?: string | null;
+  /** Expand state per node id. Undefined => default open (`!== false`). */
+  open: Record<string, boolean>;
+  /** Expand state per table id. Undefined => closed. */
+  openTables: Record<string, boolean>;
+  /** Pagination window per namespace id. */
+  shown: Record<string, number>;
+  toggle: (id: string) => void;
+  toggleTable: (id: string) => void;
+  loadMore: (namespaceId: string) => void;
+  onQueryTable: (catalog: Catalog, table: TableRef) => void;
+  onAddTable?: () => void;
+};
+
+const CatalogTreeContext = createContext<CatalogTreeContextValue | null>(null);
+
+function useCatalogTree(): CatalogTreeContextValue {
+  const ctx = useContext(CatalogTreeContext);
+  if (!ctx) {
+    throw new Error('useCatalogTree must be used within CatalogTree');
+  }
+  return ctx;
+}
+
 function engineMark(engine: CatalogEngine) {
   if (engine === 'redpanda') {
     return (
-      <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-primary-subtle text-primary">
+      <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-primary-subtle text-primary">
         <Layers size={13} />
       </span>
     );
   }
   return (
-    <span className="inline-flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center rounded bg-info-subtle text-info">
+    <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-info-subtle text-info">
       <Box size={13} />
     </span>
   );
 }
 
-function Spinner() {
+function LoadingRow({ label }: { label: string }) {
   return (
-    <span
-      aria-hidden="true"
-      className="inline-block h-[13px] w-[13px] flex-shrink-0 animate-spin rounded-full border-2 border-muted border-t-action-primary"
-    />
+    <div className="flex items-center gap-1.75 px-4 py-1.5">
+      <Spinner className="size-3.5 shrink-0 text-muted-foreground" />
+      <Text as="span" className="text-muted-foreground" variant="bodySmall">
+        {label}
+      </Text>
+    </div>
+  );
+}
+
+function EmptyNote({ children }: { children: ReactNode }) {
+  return (
+    <Text className="px-4 py-1.5 text-disabled" variant="bodySmall">
+      {children}
+    </Text>
   );
 }
 
 // Merge tables seeded on the namespace with tables fetched from ListTables for
 // the catalog. Fetched tables win; seeded names fill in before the fetch lands.
-function tablesForNamespace(namespace: { name: string; tables: TableRef[] }, fetched: TableRef[]): TableRef[] {
+function tablesForNamespace(namespace: Namespace, fetched: TableRef[]): TableRef[] {
   const byId = new Map<string, TableRef>();
   for (const t of namespace.tables) {
     byId.set(t.id, t);
@@ -113,6 +161,59 @@ function tablesForNamespace(namespace: { name: string; tables: TableRef[] }, fet
   return [...byId.values()];
 }
 
+// Roving keyboard navigation for the tree, per the WAI-ARIA tree pattern:
+// Up/Down move between visible rows, Home/End jump, Right expands (or moves
+// into) a node, Left collapses. Operates on the rendered treeitem buttons so
+// it always matches what's visible.
+function handleTreeKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  const handled = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+  if (!handled.includes(e.key)) {
+    return;
+  }
+  const current = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="treeitem"]');
+  if (!current) {
+    return;
+  }
+  const rows = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="treeitem"]:not(:disabled)'));
+  const idx = rows.indexOf(current);
+  if (idx === -1) {
+    return;
+  }
+  e.preventDefault();
+
+  const focusRow = (i: number) => rows[i]?.focus();
+  const expanded = current.getAttribute('aria-expanded');
+
+  switch (e.key) {
+    case 'ArrowDown':
+      focusRow(idx + 1);
+      break;
+    case 'ArrowUp':
+      focusRow(idx - 1);
+      break;
+    case 'Home':
+      focusRow(0);
+      break;
+    case 'End':
+      focusRow(rows.length - 1);
+      break;
+    case 'ArrowRight':
+      if (expanded === 'false') {
+        current.click();
+      } else {
+        focusRow(idx + 1);
+      }
+      break;
+    case 'ArrowLeft':
+      if (expanded === 'true') {
+        current.click();
+      }
+      break;
+    default:
+      break;
+  }
+}
+
 type ColumnListProps = {
   catalogName: string;
   tableName: string;
@@ -122,44 +223,38 @@ type ColumnListProps = {
 function ColumnList({ catalogName, tableName }: ColumnListProps) {
   const { data, isLoading } = useDescribeTableQuery({ catalog: catalogName, name: tableName });
 
-  if (isLoading) {
-    return (
-      <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-        <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-muted-foreground text-xs">
-          <Spinner />
-          <span>Loading columns…</span>
-        </div>
-      </div>
-    );
-  }
-
   const columns: ColumnDef[] = (data?.columns ?? []).map((c) => ({
     name: c.name,
     type: c.type,
     kind: columnKindForPgType(c.type),
     short: shortPgType(c.type),
+    isArray: isArrayPgType(c.type),
   }));
 
-  if (columns.length === 0) {
-    return (
-      <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-        <div className="px-[16px] py-[6px] text-disabled text-xs">No columns</div>
-      </div>
-    );
+  let content: ReactNode;
+  if (isLoading) {
+    content = <LoadingRow label="Loading columns…" />;
+  } else if (columns.length === 0) {
+    content = <EmptyNote>No columns</EmptyNote>;
+  } else {
+    content = columns.map((col) => {
+      const KindIcon = COL_KIND_ICON[col.kind];
+      return (
+        <div className="flex items-center gap-1.75 px-2 py-0.75 text-foreground text-xs" key={col.name}>
+          <span className="inline-flex shrink-0 items-center gap-px text-muted-foreground">
+            {col.isArray && <Brackets size={11} />}
+            <KindIcon size={11} />
+          </span>
+          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">{col.name}</span>
+          <span className="font-mono text-caption-sm text-muted-foreground tracking-wide">{col.short}</span>
+        </div>
+      );
+    });
   }
 
   return (
-    <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-      {columns.map((col) => {
-        const KindIcon = COL_KIND_ICON[col.kind];
-        return (
-          <div className="flex items-center gap-[7px] px-[8px] py-[3px] text-foreground text-xs" key={col.name}>
-            <KindIcon className="flex-shrink-0 text-muted-foreground" size={11} />
-            <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">{col.name}</span>
-            <span className="font-mono text-caption-sm text-muted-foreground tracking-wide">{col.short}</span>
-          </div>
-        );
-      })}
+    <div className="mb-0.5 ml-6.5 border-border-subtle border-l pl-2" role="group">
+      {content}
     </div>
   );
 }
@@ -167,14 +262,13 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
 type TableRowProps = {
   catalog: Catalog;
   table: TableRef;
-  isOpen: boolean;
-  isActive: boolean;
-  onToggle: () => void;
-  onQueryTable: (catalog: Catalog, table: TableRef) => void;
 };
 
-function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: TableRowProps) {
+function TableRow({ catalog, table }: TableRowProps) {
+  const { activeTableId, openTables, toggleTable, onQueryTable } = useCatalogTree();
   const allowed = table.allowed !== false;
+  const isOpen = Boolean(openTables[table.id]);
+  const isActive = activeTableId === table.id;
   const isIceberg = catalog.engine === 'iceberg' || table.iceberg === true;
   // A Redpanda-catalog table is Iceberg-tiered when its backing topic has
   // `redpanda.iceberg.mode` enabled (read from the Kafka topic config).
@@ -186,7 +280,7 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
 
   // The table icon picks up the Iceberg blue when the table is Iceberg-backed or
   // tiered, the disabled grey when locked, else the action-primary accent.
-  const tableIcoClass = cn('flex-shrink-0 text-action-primary', {
+  const tableIcoClass = cn('shrink-0 text-action-primary', {
     'text-info': (isIceberg || tiered) && allowed,
     'text-disabled': !allowed,
   });
@@ -194,46 +288,52 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
   return (
     <div>
       <div
-        className={cn('group flex w-full items-center rounded', isActive && 'bg-selected')}
+        className={cn('group flex w-full items-center rounded pr-1', isActive && 'bg-selected')}
         data-active={isActive || undefined}
         data-locked={!allowed || undefined}
         data-tiered={tiered || undefined}
       >
         <button
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-sans text-sm text-strong disabled:cursor-default disabled:text-disabled"
+          aria-expanded={allowed ? isOpen : undefined}
+          aria-level={3}
+          aria-selected={isActive}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-sm text-strong disabled:cursor-default disabled:text-disabled"
           disabled={!allowed}
-          onClick={() => allowed && onToggle()}
+          onClick={() => toggleTable(table.id)}
+          role="treeitem"
           type="button"
         >
-          <Chevron className="flex-shrink-0 text-disabled" size={13} />
-          <TableIcon className={tableIcoClass} size={13} />
+          <Chevron className="shrink-0 text-disabled" size={13} />
+          <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
           {isIceberg && (
-            <span className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-sm bg-info-subtle py-[1px] pr-[5px] pl-[4px] font-bold text-caption-sm text-info uppercase tracking-wide">
-              <Box size={9} />
+            <Badge className="uppercase tracking-wide" size="sm" variant="info-inverted">
               Iceberg
-            </span>
+            </Badge>
           )}
           {tiered && (
-            <span
-              className="inline-flex flex-shrink-0 items-center gap-[3px] rounded-sm bg-info-subtle py-[1px] pr-[5px] pl-[4px] font-bold text-caption-sm text-info uppercase tracking-wide"
+            <Badge
+              className="uppercase tracking-wide"
+              size="sm"
               title="Iceberg-tiered · bridge queried"
+              variant="info-inverted"
             >
-              <GitMerge size={9} />
               Iceberg
-            </span>
+            </Badge>
           )}
-          {!allowed && <Lock className="ml-[2px] text-disabled" size={12} />}
+          {!allowed && <Lock className="ml-0.5 text-disabled" size={12} />}
         </button>
         {allowed && (
-          <button
-            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-accent group-hover:opacity-100"
+          <Button
+            className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
             onClick={() => onQueryTable(catalog, table)}
+            size="icon-xs"
             title="Query this table"
             type="button"
+            variant="ghost"
           >
-            <Play size={13} />
-          </button>
+            <Play />
+          </Button>
         )}
       </div>
       {isOpen && allowed && <ColumnList catalogName={catalog.name} tableName={table.name} />}
@@ -243,37 +343,16 @@ function TableRow({ catalog, table, isOpen, isActive, onToggle, onQueryTable }: 
 
 type NamespaceNodeProps = {
   catalog: Catalog;
-  namespace: Catalog['namespaces'][number];
+  namespace: Namespace;
   fetchedTables: TableRef[];
   isLoading: boolean;
-  query: string;
-  isOpen: boolean;
-  shownCount: number;
-  openTables: Record<string, boolean>;
-  activeTableId?: string | null;
-  onAddTable?: () => void;
-  onToggleNamespace: () => void;
-  onToggleTable: (id: string) => void;
-  onLoadMore: () => void;
-  onQueryTable: (catalog: Catalog, table: TableRef) => void;
 };
 
-function NamespaceNode({
-  catalog,
-  namespace,
-  fetchedTables,
-  isLoading,
-  query,
-  isOpen,
-  shownCount,
-  openTables,
-  activeTableId,
-  onAddTable,
-  onToggleNamespace,
-  onToggleTable,
-  onLoadMore,
-  onQueryTable,
-}: NamespaceNodeProps) {
+function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: NamespaceNodeProps) {
+  const { query, open, shown, toggle, loadMore, onAddTable } = useCatalogTree();
+  const isOpen = open[namespace.id] !== false;
+  const shownCount = shown[namespace.id] ?? CAT_LIMIT;
+
   const allTables = tablesForNamespace(namespace, fetchedTables);
   const q = query.trim().toLowerCase();
   const matched = q ? allTables.filter((t) => t.name.toLowerCase().includes(q)) : allTables;
@@ -296,56 +375,54 @@ function NamespaceNode({
   const NsChevron = isOpen ? ChevronDown : ChevronRight;
 
   return (
-    <div className="ml-[10px]">
-      <button className={cn(ROW_BASE, 'font-medium text-foreground')} onClick={onToggleNamespace} type="button">
-        <NsChevron className="flex-shrink-0 text-disabled" size={14} />
+    <div className="ml-2.5">
+      <button
+        aria-expanded={isOpen}
+        aria-level={2}
+        className={cn(ROW_BASE, 'font-medium text-foreground')}
+        onClick={() => toggle(namespace.id)}
+        role="treeitem"
+        type="button"
+      >
+        <NsChevron className="shrink-0 text-disabled" size={14} />
         <GitBranch className="text-muted-foreground" size={13} />
         <span className={LABEL}>{namespace.name}</span>
-        <span className="rounded-full bg-muted px-[7px] py-[1px] text-muted-foreground text-xs">{countLabel}</span>
+        <Badge className="rounded-full text-muted-foreground" size="sm" variant="neutral-inverted">
+          {countLabel}
+        </Badge>
       </button>
       {isOpen && (
-        <div className="ml-[10px]">
-          {isLoading && allTables.length === 0 && (
-            <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-muted-foreground text-xs">
-              <Spinner />
-              <span>Loading tables…</span>
-            </div>
-          )}
+        <div className="ml-2.5" role="group">
+          {isLoading && allTables.length === 0 && <LoadingRow label="Loading tables…" />}
           {visible.map((t) => (
-            <TableRow
-              catalog={catalog}
-              isActive={activeTableId === t.id}
-              isOpen={Boolean(openTables[t.id])}
-              key={t.id}
-              onQueryTable={onQueryTable}
-              onToggle={() => onToggleTable(t.id)}
-              table={t}
-            />
+            <TableRow catalog={catalog} key={t.id} table={t} />
           ))}
-          {!isLoading && matched.length === 0 && (
-            <div className="px-[16px] py-[6px] text-disabled text-xs">No tables</div>
-          )}
+          {!isLoading && matched.length === 0 && <EmptyNote>No tables</EmptyNote>}
           {paginate && remaining > 0 && (
-            <button
-              className="mt-[2px] flex w-full cursor-pointer items-center gap-[7px] rounded border-0 bg-transparent px-[8px] py-[7px] text-left font-medium font-sans text-action-primary text-xs hover:bg-accent"
-              onClick={onLoadMore}
+            <Button
+              className="w-full justify-start px-2"
+              onClick={() => loadMore(namespace.id)}
+              size="sm"
               title="Load more tables"
               type="button"
+              variant="ghost"
             >
-              <ChevronDown className="flex-shrink-0 text-action-primary" size={12} />
+              <ChevronDown />
               <span>Load more · {remaining} remaining</span>
-            </button>
+            </Button>
           )}
           {showAddTopic && (
-            <button
-              className="flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left font-medium font-sans text-action-primary text-sm hover:bg-accent"
+            <Button
+              className="w-full justify-start px-2"
               onClick={onAddTable}
+              size="sm"
               title="Create a SQL table from a Redpanda topic"
               type="button"
+              variant="ghost"
             >
-              <Plus className="ml-[19px] flex-shrink-0 text-action-primary" size={13} />
-              <span className={cn(LABEL, 'text-action-primary')}>Add a topic</span>
-            </button>
+              <Plus className="ml-4.75" />
+              <span className={LABEL}>Add a topic</span>
+            </Button>
           )}
         </div>
       )}
@@ -353,37 +430,10 @@ function NamespaceNode({
   );
 }
 
-type CatalogNodeProps = {
-  catalog: Catalog;
-  query: string;
-  role: SqlRole;
-  activeTableId?: string | null;
-  open: Record<string, boolean>;
-  shown: Record<string, number>;
-  openTables: Record<string, boolean>;
-  onToggle: (id: string) => void;
-  onToggleTable: (id: string) => void;
-  onLoadMore: (namespaceId: string) => void;
-  onQueryTable: (catalog: Catalog, table: TableRef) => void;
-  onAddTable?: () => void;
-};
-
 // One catalog subtree. Owns the per-catalog ListTables fetch, gated on the
 // catalog (or an active search) being expanded.
-function CatalogNode({
-  catalog,
-  query,
-  role,
-  activeTableId,
-  open,
-  shown,
-  openTables,
-  onToggle,
-  onToggleTable,
-  onLoadMore,
-  onQueryTable,
-  onAddTable,
-}: CatalogNodeProps) {
+function CatalogNode({ catalog }: { catalog: Catalog }) {
+  const { role, query, open, toggle, onAddTable } = useCatalogTree();
   const isCatalogOpen = open[catalog.name] !== false;
   const enabled = isCatalogOpen || query.trim().length > 0;
   const { data, isLoading } = useListTablesQuery({ catalog: catalog.name }, { enabled });
@@ -401,112 +451,105 @@ function CatalogNode({
 
   return (
     <div>
-      <div className="group flex w-full items-center rounded">
+      <div className="group flex w-full items-center rounded pr-1">
         <button
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[8px] py-[6px] font-sans font-semibold text-sm text-strong"
-          onClick={() => onToggle(catalog.name)}
+          aria-expanded={isCatalogOpen}
+          aria-level={1}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans font-semibold text-sm text-strong"
+          onClick={() => toggle(catalog.name)}
+          role="treeitem"
           type="button"
         >
-          <CatChevron className="flex-shrink-0 text-disabled" size={14} />
+          <CatChevron className="shrink-0 text-disabled" size={14} />
           {engineMark(catalog.engine)}
           <span className={LABEL}>{catalog.displayLabel || catalog.name}</span>
         </button>
         {showAdd && (
-          <button
-            className="mr-[4px] inline-flex h-[26px] w-[26px] flex-shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-action-primary opacity-0 hover:bg-accent group-hover:opacity-100"
+          <Button
+            className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
             onClick={onAddTable}
+            size="icon-xs"
             title="Add a topic to this catalog"
             type="button"
+            variant="ghost"
           >
-            <Plus size={15} />
-          </button>
+            <Plus />
+          </Button>
         )}
       </div>
-      {isCatalogOpen &&
-        catalog.namespaces.map((ns) => (
-          <NamespaceNode
-            activeTableId={activeTableId}
-            catalog={catalog}
-            fetchedTables={fetchedTables}
-            isLoading={isLoading}
-            isOpen={open[ns.id] !== false}
-            key={ns.id}
-            namespace={ns}
-            onAddTable={onAddTable}
-            onLoadMore={() => onLoadMore(ns.id)}
-            onQueryTable={onQueryTable}
-            onToggleNamespace={() => onToggle(ns.id)}
-            onToggleTable={onToggleTable}
-            openTables={openTables}
-            query={query}
-            shownCount={shown[ns.id] ?? CAT_LIMIT}
-          />
-        ))}
+      {isCatalogOpen && (
+        <div role="group">
+          {catalog.namespaces.map((ns) => (
+            <NamespaceNode
+              catalog={catalog}
+              fetchedTables={fetchedTables}
+              isLoading={isLoading}
+              key={ns.id}
+              namespace={ns}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryTable, onAddTable }: CatalogTreeProps) {
   // Expand/collapse state per node id. Undefined => default open for catalogs
-  // and namespaces (see `!== false` checks below).
+  // and namespaces (see `!== false` checks in the nodes).
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [openTables, setOpenTables] = useState<Record<string, boolean>>({});
   const [shown, setShown] = useState<Record<string, number>>({});
   const [query, setQuery] = useState('');
 
-  const toggle = (id: string) => setOpen((s) => ({ ...s, [id]: !(s[id] ?? true) }));
-  const toggleTable = (id: string) => setOpenTables((s) => ({ ...s, [id]: !s[id] }));
-  const loadMore = (namespaceId: string) =>
-    setShown((s) => ({ ...s, [namespaceId]: (s[namespaceId] ?? CAT_LIMIT) + CAT_LIMIT }));
+  const context: CatalogTreeContextValue = {
+    role,
+    query,
+    activeTableId,
+    open,
+    openTables,
+    shown,
+    toggle: (id) => setOpen((s) => ({ ...s, [id]: !(s[id] ?? true) })),
+    toggleTable: (id) => setOpenTables((s) => ({ ...s, [id]: !s[id] })),
+    loadMore: (namespaceId) => setShown((s) => ({ ...s, [namespaceId]: (s[namespaceId] ?? CAT_LIMIT) + CAT_LIMIT })),
+    onQueryTable,
+    onAddTable,
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between px-[14px] pt-[14px] pb-[8px]">
-        <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Catalogs</span>
+      <div className="flex items-center justify-between px-3.5 pt-3.5 pb-2">
+        <Text as="span" className="text-muted-foreground uppercase tracking-wider" variant="labelStrongXSmall">
+          Catalogs
+        </Text>
         {role === 'admin' && (
-          <span className="text-caption-sm text-disabled uppercase tracking-wider">Redpanda only</span>
+          <Text as="span" className="text-disabled uppercase tracking-wider" variant="captionSmall">
+            Redpanda only
+          </Text>
         )}
       </div>
-      <div className="px-[12px] pb-[10px]">
-        <div className="flex items-center">
-          <Search className="mr-[6px] flex-shrink-0 text-muted-foreground" size={15} />
-          <input
-            className="flex-1 border-0 bg-transparent text-sm outline-none"
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tables"
-            value={query}
-          />
-        </div>
+      <div className="px-3 pb-2.5">
+        <Input onChange={(e) => setQuery(e.target.value)} placeholder="Search tables" size="sm" value={query}>
+          <InputStart>
+            <Search className="text-muted-foreground" size={15} />
+          </InputStart>
+        </Input>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-[8px] pb-[8px]">
-        {isLoading && catalogs.length === 0 && (
-          <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-muted-foreground text-xs">
-            <Spinner />
-            <span>Loading catalogs…</span>
-          </div>
-        )}
-        {!isLoading && catalogs.length === 0 && (
-          <div className="px-[16px] py-[6px] text-disabled text-xs">No catalogs</div>
-        )}
-        {catalogs.map((catalog) => (
-          <CatalogNode
-            activeTableId={activeTableId}
-            catalog={catalog}
-            key={catalog.name}
-            onAddTable={onAddTable}
-            onLoadMore={loadMore}
-            onQueryTable={onQueryTable}
-            onToggle={toggle}
-            onToggleTable={toggleTable}
-            open={open}
-            openTables={openTables}
-            query={query}
-            role={role}
-            shown={shown}
-          />
-        ))}
-      </div>
+      <CatalogTreeContext.Provider value={context}>
+        <div
+          aria-label="Catalogs"
+          className="flex-1 overflow-y-auto px-2 pb-2"
+          onKeyDown={handleTreeKeyDown}
+          role="tree"
+        >
+          {isLoading && catalogs.length === 0 && <LoadingRow label="Loading catalogs…" />}
+          {!isLoading && catalogs.length === 0 && <EmptyNote>No catalogs</EmptyNote>}
+          {catalogs.map((catalog) => (
+            <CatalogNode catalog={catalog} key={catalog.name} />
+          ))}
+        </div>
+      </CatalogTreeContext.Provider>
     </div>
   );
 }
