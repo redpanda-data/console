@@ -52,6 +52,17 @@ vi.mock('components/ui/yaml/yaml-editor', () => ({
   ),
 }));
 
+// Controllable secrets-store contents for the missing-secrets banner tests.
+let mockSecretsData: { secrets: { id: string }[] } | undefined;
+vi.mock('react-query/api/secret', () => ({
+  useListSecretsQuery: () => ({ data: mockSecretsData }),
+}));
+
+vi.mock('../onboarding/add-secrets-dialog', () => ({
+  AddSecretsDialog: (props: { isOpen: boolean; missingSecrets: string[] }) =>
+    props.isOpen ? <div data-testid="add-secrets-dialog">{props.missingSecrets.join(',')}</div> : null,
+}));
+
 const sampleYaml = `input:
   generate:
     mapping: 'root = {}'
@@ -82,6 +93,7 @@ const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]>
 describe('VisualEditorPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSecretsData = undefined;
   });
 
   test('passes the pipeline YAML to the canvas', () => {
@@ -211,7 +223,62 @@ describe('VisualEditorPanel', () => {
     await user.click(screen.getByText('select-input'));
 
     expect(await screen.findByText('invalid input config')).toBeInTheDocument();
-    expect(screen.getByText('1 problem')).toBeInTheDocument();
+    // Shown in the inspector's error panel (and counted in the floating problems chip).
+    expect(screen.getAllByText('1 problem').length).toBeGreaterThan(0);
+  });
+
+  test('the problems chip lists lint hints and clicking one selects the offending node', async () => {
+    const user = userEvent.setup();
+    // Line 2 (`generate:`) maps to the input node.
+    renderPanel({ lintHints: [{ line: 2, column: 1, hint: 'invalid input config', lintType: 'config' }] as never });
+
+    await user.click(screen.getByTestId('pipeline-problems-chip'));
+    const list = screen.getByTestId('pipeline-problems-list');
+    expect(list).toHaveTextContent('invalid input config');
+
+    // Clicking the problem selects the node — its config opens in the inspector.
+    await user.click(screen.getByText('invalid input config'));
+    expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('generate');
+    expect(screen.queryByTestId('pipeline-problems-list')).not.toBeInTheDocument();
+  });
+
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect secret reference, not a JS template
+  const yamlWithSecretRef = 'input:\n  redpanda:\n    sasl:\n      - password: ${secrets.KAFKA_PASSWORD}\n';
+
+  test('warns about referenced secrets missing from the store and opens the add-secrets flow', async () => {
+    const user = userEvent.setup();
+    mockSecretsData = { secrets: [{ id: 'EXISTS' }] };
+    renderPanel({ yamlContent: yamlWithSecretRef });
+
+    const banner = await screen.findByTestId('missing-secrets-banner');
+    expect(banner).toHaveTextContent('Missing secret: KAFKA_PASSWORD');
+
+    await user.click(banner);
+    expect(screen.getByTestId('add-secrets-dialog')).toHaveTextContent('KAFKA_PASSWORD');
+  });
+
+  test('does not warn about secrets that exist, or in view mode', () => {
+    mockSecretsData = { secrets: [{ id: 'KAFKA_PASSWORD' }] };
+    renderPanel({ yamlContent: yamlWithSecretRef });
+    expect(screen.queryByTestId('missing-secrets-banner')).not.toBeInTheDocument();
+  });
+
+  test('Escape clears the selection and Delete removes the selected node', async () => {
+    const user = userEvent.setup();
+    const { onYamlChange } = renderPanel();
+
+    // Escape → back to the empty state.
+    await user.click(screen.getByText('select-input'));
+    await screen.findByTestId('node-yaml');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
+
+    // Delete → removes the selected processor from the YAML.
+    await user.click(screen.getByText('select-proc0'));
+    await screen.findByTestId('node-yaml');
+    await user.keyboard('{Delete}');
+    expect(onYamlChange).toHaveBeenCalledTimes(1);
+    expect(onYamlChange.mock.calls[0][0]).not.toContain('message: hi');
   });
 
   test('view mode inspector is read-only — no apply or remove actions', async () => {

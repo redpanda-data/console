@@ -106,6 +106,16 @@ describe('NodeConfigForm — full schema', () => {
     renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '1000$' } } });
     await user.click(screen.getByText('batching'));
     expect(screen.getByDisplayValue('1000$')).toBeInTheDocument();
+    // …and flags it inline as not a valid integer.
+    expect(screen.getByText('Not a valid integer')).toBeInTheDocument();
+  });
+
+  test('does not flag secret/env interpolations in numeric fields', async () => {
+    const user = userEvent.setup();
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
+    renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '${secrets.BATCH_COUNT}' } } });
+    await user.click(screen.getByText('batching'));
+    expect(screen.queryByText('Not a valid integer')).not.toBeInTheDocument();
   });
 
   test('does not render nested-component fields; surfaces a hint and preserves them on apply', async () => {

@@ -12,15 +12,19 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Redo2, Undo2 } from 'lucide-react';
+import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { KeyRound, Redo2, Undo2 } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { isMacOS } from 'utils/platform';
 
 import { NodeInspector } from './node-inspector';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { TemplateGalleryCta } from './template-cta';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
+import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
@@ -80,13 +84,21 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
   </span>
 );
 
-// Classify a keydown as undo/redo, ignoring presses inside a text field or the
-// Monaco YAML editor (which have their own undo).
-function undoRedoIntent(e: KeyboardEvent): 'undo' | 'redo' | null {
-  if (!(e.metaKey || e.ctrlKey)) {
+// Classify a canvas keydown, ignoring presses inside a text field or the Monaco
+// YAML editor (which have their own undo / editing semantics).
+type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete';
+
+function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
+  if ((e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
     return null;
   }
-  if ((e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
+  if (e.key === 'Escape') {
+    return 'deselect';
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    return 'delete';
+  }
+  if (!(e.metaKey || e.ctrlKey)) {
     return null;
   }
   const key = e.key.toLowerCase();
@@ -213,33 +225,14 @@ export function VisualEditorPanel({
 
   const { undo, redo, canUndo, canRedo } = useEditHistory(yamlContent, onYamlChange, handleNavigate);
 
-  // ⌘Z / ⌘⇧Z (and Ctrl+Y) undo/redo, except while typing in a field or YAML editor.
-  useEffect(() => {
-    if (!isEditing) {
-      return;
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      const intent = undoRedoIntent(e);
-      if (!intent) {
-        return;
-      }
-      e.preventDefault();
-      if (intent === 'redo') {
-        redo();
-      } else {
-        undo();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEditing, undo, redo]);
+  const flowNodes = useMemo(() => parsePipelineFlowTree(yamlContent).nodes, [yamlContent]);
 
   // A freshly-started pipeline (only section labels / `none` placeholders) gets the
   // floating "Start from a template" entry point.
-  const isPipelineEmpty = useMemo(() => {
-    const { nodes } = parsePipelineFlowTree(yamlContent);
-    return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
-  }, [yamlContent]);
+  const isPipelineEmpty = useMemo(
+    () => !flowNodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none')),
+    [flowNodes]
+  );
 
   // Associate server lint hints with the nodes they belong to, so they show in
   // context (a badge on the node, full messages in the inspector).
@@ -255,6 +248,68 @@ export function VisualEditorPanel({
     return messages;
   }, [lintByNode]);
 
+  // A flat problems list for the floating overview: hints that map to a node are
+  // clickable (select the node); the rest are listed inert.
+  const problems = useMemo<PipelineProblem[]>(() => {
+    const all = lintHints ?? [];
+    if (all.length === 0) {
+      return [];
+    }
+    const nodesById = new Map(flowNodes.map((n) => [n.id, n]));
+    const mapped = new Set<LintHint>();
+    const list: PipelineProblem[] = [];
+    for (const [nodeId, hints] of lintByNode) {
+      const node = nodesById.get(nodeId);
+      for (const hint of hints) {
+        mapped.add(hint);
+        list.push({
+          key: `${nodeId}-${hint.line}-${hint.hint}`,
+          message: hint.hint,
+          line: hint.line || undefined,
+          nodeId,
+          nodeLabel: node?.label,
+          target: node?.editTarget,
+        });
+      }
+    }
+    for (const hint of all) {
+      if (!mapped.has(hint)) {
+        list.push({ key: `unmapped-${hint.line}-${hint.hint}`, message: hint.hint, line: hint.line || undefined });
+      }
+    }
+    return list;
+  }, [lintHints, lintByNode, flowNodes]);
+
+  // Secrets referenced as ${secrets.X} that don't exist yet — surfaced as a banner
+  // with a quick-add flow, so a pasted/templated config is easy to complete.
+  const { data: secretsResponse } = useListSecretsQuery({}, { enabled: isEditing });
+  const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
+  const existingSecrets = useMemo(
+    () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '').filter(Boolean) : []),
+    [secretsResponse]
+  );
+  const missingSecrets = useMemo(() => {
+    // Only warn once the secrets list has actually loaded.
+    if (!(isEditing && secretsResponse)) {
+      return [];
+    }
+    const referenced = getUniqueSecretNames(extractSecretReferences(yamlContent));
+    const existingSet = new Set(existingSecrets);
+    return referenced.filter((name) => !existingSet.has(name));
+  }, [isEditing, secretsResponse, yamlContent, existingSecrets]);
+
+  // Renaming a missing secret to an existing one from the dialog rewrites the
+  // references in the pipeline YAML (the visual lane has no text editor to patch).
+  const handleRenameSecretReferences = useCallback(
+    (oldName: string, newName: string) => {
+      const updated = yamlContent.replaceAll(`\${secrets.${oldName}}`, `\${secrets.${newName}}`);
+      if (updated !== yamlContent) {
+        onYamlChange(updated);
+      }
+    },
+    [yamlContent, onYamlChange]
+  );
+
   const handleDeleteNode = useCallback(
     (target: EditTarget) => {
       const next = removeComponentAt(yamlContent, target);
@@ -265,6 +320,40 @@ export function VisualEditorPanel({
     },
     [yamlContent, onYamlChange]
   );
+
+  // Canvas keyboard: ⌘Z/⌘⇧Z undo/redo, Escape deselects, Delete/Backspace removes
+  // the selected node — all ignored while typing in a field or the YAML editor.
+  useEffect(() => {
+    const handlers: Record<CanvasKeyAction, (e: KeyboardEvent) => void> = {
+      deselect: () => setSelected(null),
+      delete: (e) => {
+        if (isEditing && selected) {
+          e.preventDefault();
+          handleDeleteNode(selected.target);
+        }
+      },
+      undo: (e) => {
+        if (isEditing) {
+          e.preventDefault();
+          undo();
+        }
+      },
+      redo: (e) => {
+        if (isEditing) {
+          e.preventDefault();
+          redo();
+        }
+      },
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      const action = canvasKeyAction(e);
+      if (action) {
+        handlers[action](e);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isEditing, undo, redo, selected, handleDeleteNode]);
 
   const handleInsertSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -325,6 +414,21 @@ export function VisualEditorPanel({
             </div>
           </TooltipProvider>
         ) : null}
+        <PipelineProblemsPanel onSelectProblem={(id, target) => setSelected({ id, target })} problems={problems} />
+        {missingSecrets.length > 0 ? (
+          <button
+            className="absolute top-3 left-1/2 z-10 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-md border border-warning/50 bg-background/90 px-2.5 py-1.5 font-medium text-warning text-xs shadow-sm backdrop-blur-sm transition-colors hover:bg-warning-subtle"
+            data-testid="missing-secrets-banner"
+            onClick={() => setIsSecretsDialogOpen(true)}
+            type="button"
+          >
+            <KeyRound className="size-3.5" />
+            {missingSecrets.length === 1
+              ? `Missing secret: ${missingSecrets[0]}`
+              : `${missingSecrets.length} missing secrets`}
+            <span className="underline underline-offset-2">Add</span>
+          </button>
+        ) : null}
         {onBrowseTemplates ? (
           <TemplateGalleryCta
             className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
@@ -359,6 +463,15 @@ export function VisualEditorPanel({
         onCloseAddConnector={() => setInsertIndex(null)}
         searchPlaceholder="Search processors, caches, rate limits…"
         title="Insert a step"
+      />
+
+      <AddSecretsDialog
+        existingSecrets={existingSecrets}
+        isOpen={isSecretsDialogOpen}
+        missingSecrets={missingSecrets}
+        onClose={() => setIsSecretsDialogOpen(false)}
+        onSecretsCreated={() => setIsSecretsDialogOpen(false)}
+        onUpdateEditorContent={handleRenameSecretReferences}
       />
     </div>
   );

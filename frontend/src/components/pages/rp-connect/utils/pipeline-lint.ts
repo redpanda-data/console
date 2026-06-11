@@ -48,6 +48,36 @@ function nodeLineRanges(yaml: string): NodeRange[] {
  * that don't fall inside any node (e.g. top-level keys) are left unmapped — they
  * still appear in the YAML lint list.
  */
+/**
+ * Merge save-error lint hints with the live lint query's hints, dropping
+ * duplicates. After a failed save the same problem arrives from both sources
+ * (the error details and the re-lint of the unchanged YAML) under different
+ * keys — without deduping it renders twice on every surface. The error-derived
+ * copy wins: it carries the lint name as `lintType`, shown as a heading.
+ */
+export function mergeLintHints(
+  errorHints: Record<string, LintHint>,
+  queryHints: readonly LintHint[]
+): Record<string, LintHint> {
+  const merged: Record<string, LintHint> = {};
+  const seen = new Set<string>();
+  const signature = (h: LintHint) => `${h.line}:${h.column}:${h.hint}`;
+
+  for (const [key, hint] of Object.entries(errorHints)) {
+    if (!seen.has(signature(hint))) {
+      seen.add(signature(hint));
+      merged[`error_${key}`] = hint;
+    }
+  }
+  for (const [idx, hint] of queryHints.entries()) {
+    if (!seen.has(signature(hint))) {
+      seen.add(signature(hint));
+      merged[`lint_hint_${idx}`] = hint;
+    }
+  }
+  return merged;
+}
+
 // The smallest node range that contains `line` (most specific enclosing node).
 function enclosingNodeId(line: number, ranges: NodeRange[]): string | undefined {
   let best: NodeRange | undefined;

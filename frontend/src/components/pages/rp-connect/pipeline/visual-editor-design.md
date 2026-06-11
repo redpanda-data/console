@@ -126,6 +126,23 @@ enter/exit animation) appears pinned to the bottom — in the **sidebar visualiz
 (full-width) and on the **full visual editor** (centered). It opens the
 `TemplateGalleryDialog` and animates away once the pipeline gets real content.
 
+### Flow completeness (problems, secrets, keyboard, saving)
+
+- **Problems overview.** A floating "N problems" chip (top-right of the canvas,
+  `pipeline-problems-panel.tsx`) expands into the full lint list; clicking a
+  problem **selects the offending node** (inspector opens on it). Hints that don't
+  map to a node are listed inert.
+- **Missing secrets.** The Visual lane detects `${secrets.X}` references missing
+  from the secrets store (`useListSecretsQuery` + `secret-detection` utils) and
+  shows a warning banner (top-center); it opens the shared `AddSecretsDialog`
+  (create new / rename to an existing secret — rename rewrites the YAML refs).
+- **⌘S / Ctrl+S saves** in edit/create mode (page-level, both lanes), instead of
+  the browser save dialog.
+- **Canvas keyboard.** Escape deselects; Delete/Backspace removes the selected
+  node; ⌘Z/⌘⇧Z undo/redo — all ignored while typing in a field or Monaco.
+- **Inline numeric validation.** Int/float form fields flag unparseable literals
+  ("Not a valid integer") — `${…}` interpolations are exempt (legitimate anywhere).
+
 ### Lint feedback & unsaved state
 
 - **In-context lint.** Server lint hints are line/column-based; `mapLintHintsToNodes`

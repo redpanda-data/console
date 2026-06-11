@@ -12,7 +12,7 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { describe, expect, it } from 'vitest';
 
-import { mapLintHintsToNodes } from './pipeline-lint';
+import { mapLintHintsToNodes, mergeLintHints } from './pipeline-lint';
 
 const hint = (line: number, msg: string): LintHint => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
 
@@ -63,5 +63,34 @@ describe('mapLintHintsToNodes', () => {
     expect(mapLintHintsToNodes(yaml, [hint(1, 'top-level')]).size).toBe(0);
     expect(mapLintHintsToNodes('{{{', [hint(1, 'x')]).size).toBe(0);
     expect(mapLintHintsToNodes('', [hint(1, 'x')]).size).toBe(0);
+  });
+});
+
+describe('mergeLintHints', () => {
+  const named = (line: number, msg: string, lintType: string): LintHint =>
+    ({ line, column: 1, hint: msg, lintType }) as LintHint;
+
+  it('drops a query hint that duplicates a save-error hint, keeping the named copy', () => {
+    const errorHints = { LINTBADLABEL: named(21, "invalid label 'fd fdas'", 'LINTBADLABEL') };
+    const queryHints = [hint(21, "invalid label 'fd fdas'"), hint(54, 'another problem')];
+
+    const merged = mergeLintHints(errorHints, queryHints);
+
+    expect(Object.keys(merged)).toHaveLength(2);
+    // The deduped survivor carries the lint name (shown as the heading).
+    const values = Object.values(merged);
+    expect(values.find((h) => h.line === 21)?.lintType).toBe('LINTBADLABEL');
+    expect(values.find((h) => h.line === 54)?.hint).toBe('another problem');
+  });
+
+  it('keeps hints with the same message on different lines as distinct problems', () => {
+    const errorHints = { LINTBADLABEL: named(21, 'invalid label', 'LINTBADLABEL') };
+    const merged = mergeLintHints(errorHints, [hint(54, 'invalid label')]);
+    expect(Object.keys(merged)).toHaveLength(2);
+  });
+
+  it('dedupes repeats within a single source too', () => {
+    const merged = mergeLintHints({}, [hint(3, 'same'), hint(3, 'same')]);
+    expect(Object.keys(merged)).toHaveLength(1);
   });
 });

@@ -351,17 +351,44 @@ const ScalarControl = ({
   );
 };
 
+const INT_VALUE_RE = /^-?\d+$/;
+
+// A non-blocking validity hint for numeric fields. Values containing `${…}` are
+// interpolations (env vars, secrets, Bloblang) — legitimate in any field — so only
+// plainly malformed literals are flagged.
+function numericHint(spec: RawFieldSpec, value: string | boolean): string | null {
+  const text = String(value ?? '').trim();
+  if (text === '' || typeof value === 'boolean' || text.includes('${')) {
+    return null;
+  }
+  if (spec.type === 'int' && !INT_VALUE_RE.test(text)) {
+    return 'Not a valid integer';
+  }
+  if (spec.type === 'float' && Number.isNaN(Number(text))) {
+    return 'Not a valid number';
+  }
+  return null;
+}
+
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => (
   <Controller
     control={control}
     name={`fields.${leaf.key}` as FieldPath<FormValues>}
-    render={({ field }) => (
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel spec={leaf.spec} />
-        <ScalarControl onChange={field.onChange} spec={leaf.spec} value={field.value as string | boolean} />
-        <FieldDescription spec={leaf.spec} />
-      </div>
-    )}
+    render={({ field }) => {
+      const hint = numericHint(leaf.spec, field.value as string | boolean);
+      return (
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel spec={leaf.spec} />
+          <ScalarControl onChange={field.onChange} spec={leaf.spec} value={field.value as string | boolean} />
+          {hint ? (
+            <Text className="text-destructive" variant="bodySmall">
+              {hint}
+            </Text>
+          ) : null}
+          <FieldDescription spec={leaf.spec} />
+        </div>
+      );
+    }}
   />
 );
 

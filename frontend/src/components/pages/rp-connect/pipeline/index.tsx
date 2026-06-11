@@ -109,6 +109,7 @@ import type {
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import { mergeLintHints } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -231,18 +232,12 @@ function usePipelineLint(yamlContent: string, errorLintHints: Record<string, Lin
     enabled,
   });
 
-  const lintHints = useMemo(() => {
-    const merged: Record<string, LintHint> = {};
-    for (const [key, hint] of Object.entries(errorLintHints)) {
-      merged[`error_${key}`] = hint;
-    }
-    if (lintResponse) {
-      for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
-        merged[`lint_hint_${idx}`] = hint;
-      }
-    }
-    return merged;
-  }, [errorLintHints, lintResponse]);
+  // Deduped merge: after a failed save the same problem arrives from both the
+  // error details and the re-lint of the unchanged YAML.
+  const lintHints = useMemo(
+    () => mergeLintHints(errorLintHints, lintResponse?.lintHints ?? []),
+    [errorLintHints, lintResponse]
+  );
 
   return { lintHints, isLintPending };
 }
@@ -881,6 +876,24 @@ function PipelinePageContent() {
   useEffect(() => {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
+
+  // ⌘S / Ctrl+S saves the pipeline (instead of the browser's save-page dialog) —
+  // works from both the YAML and Visual lanes.
+  useEffect(() => {
+    if (mode === 'view') {
+      return;
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!isSaving) {
+          handleSave();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mode, isSaving, handleSave]);
 
   // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
   useEffect(

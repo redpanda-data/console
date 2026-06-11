@@ -379,6 +379,28 @@ describe('PipelinePage', () => {
 
   // ── Creating a pipeline ─────────────────────────────────────────────
 
+  it('Cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn().mockReturnValue(
+      create(ConsoleCreatePipelineResponseSchema, {
+        response: create(CreatePipelineResponseSchema, {
+          pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
+        }),
+      })
+    );
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    await setPipelineNameViaDialog(user, 'my-pipeline');
+    fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  generate: {}' } });
+
+    fireEvent.keyDown(window, { key: 's', metaKey: true });
+
+    await waitFor(() => {
+      expect(createPipelineMock).toHaveBeenCalled();
+    });
+  });
+
   it('saving a new pipeline sends the name and YAML config to the backend', async () => {
     const user = userEvent.setup();
     const createPipelineMock = vi.fn().mockReturnValue(
