@@ -503,18 +503,19 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
           <LabelBadge label={data.labelText} />
           <BranchConditionChip data={data} />
           <LintBadge errors={data.lintErrors} />
-          {/* Collapse toggle is a separate control so it doesn't also select the node. */}
+          {/* Collapse toggle is a separate control so it doesn't also select the node.
+              Generous hit area (28px) so collapsing/expanding is easy to target. */}
           {data.collapsible ? (
             <button
               aria-label={data.collapsed ? 'Expand' : 'Collapse'}
-              className="nodrag nopan ml-auto shrink-0 cursor-pointer rounded p-0.5 text-subtle transition-colors hover:bg-muted/60"
+              className="nodrag nopan -my-1 ml-auto flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-subtle transition-colors hover:bg-muted/60 hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 data.onToggle?.();
               }}
               type="button"
             >
-              {data.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+              {data.collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
             </button>
           ) : null}
           {data.collapsed && data.childCount ? <CountDot count={data.childCount} size="sm" variant="disabled" /> : null}
@@ -573,7 +574,65 @@ type FlowLinkData = {
   /** Selection context: unrelated edges fade, connected ones render full strength. */
   dimmed?: boolean;
   emphasized?: boolean;
+  /** Orthogonal cable route (reference edges): drop → channel → bus → target. */
+  route?: { channelX: number; busY: number };
 };
+
+// An orthogonal polyline through `points` with rounded corners.
+function orthogonalRoundedPath(points: [number, number][], radius = 8): string {
+  const pts = points.filter(([x, y], i) => i === 0 || x !== points[i - 1][0] || y !== points[i - 1][1]);
+  if (pts.length < 2) {
+    return '';
+  }
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i += 1) {
+    const [px, py] = pts[i - 1];
+    const [cx, cy] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    const inLen = Math.abs(cx - px) + Math.abs(cy - py);
+    const outLen = Math.abs(nx - cx) + Math.abs(ny - cy);
+    const r = Math.min(radius, inLen / 2, outLen / 2);
+    const inX = cx - Math.sign(cx - px) * r;
+    const inY = cy - Math.sign(cy - py) * r;
+    const outX = cx + Math.sign(nx - cx) * r;
+    const outY = cy + Math.sign(ny - cy) * r;
+    d += ` L ${inX} ${inY} Q ${cx} ${cy} ${outX} ${outY}`;
+  }
+  const [lx, ly] = pts.at(-1) as [number, number];
+  return `${d} L ${lx} ${ly}`;
+}
+
+// Stroke styling from edge data. Emphasized muted (reference) edges switch to the
+// primary colour so the highlighted resource link is unmistakable, not just a
+// darker gray; emphasized edges also draw slightly thicker.
+function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
+  const tone = d?.tone ?? 'muted';
+  const baseWidth = tone === 'muted' ? 1.5 : 2;
+  return {
+    stroke: d?.emphasized && tone === 'muted' ? LINK_STROKE.primary : LINK_STROKE[tone],
+    strokeWidth: d?.emphasized ? baseWidth + 0.75 : baseWidth,
+    strokeDasharray: d?.dashed ? '5 4' : undefined,
+    opacity: d?.dimmed ? 0.25 : 1,
+  };
+}
+
+type EdgeCoords = { sx: number; sy: number; tx: number; ty: number };
+
+// The cable route for a reference edge: a short drop out of the node, across to
+// the clear channel beside its top-level column, down the channel, along the bus
+// above the resource lane, then into the resource — avoiding the nodes stacked
+// below the source.
+function referenceRoutePath(route: { channelX: number; busY: number }, { sx, sy, tx, ty }: EdgeCoords): string {
+  const drop = sy + 14;
+  return orthogonalRoundedPath([
+    [sx, sy],
+    [sx, drop],
+    [route.channelX, drop],
+    [route.channelX, route.busY],
+    [tx, route.busY],
+    [tx, ty],
+  ]);
+}
 
 const LINK_STROKE: Record<LinkTone, string> = {
   primary: 'var(--color-primary)',
@@ -609,6 +668,7 @@ export function FlowLinkEdge({
   data,
 }: EdgeProps) {
   const d = data as FlowLinkData | undefined;
+  const tone = d?.tone ?? 'muted';
   // Place the vertical bend in this edge's own lane so fanned siblings don't share
   // (and overlap on) a single trunk.
   let centerX: number | undefined;
@@ -617,7 +677,7 @@ export function FlowLinkEdge({
   } else if (d?.laneFromTarget !== undefined) {
     centerX = targetX - d.laneFromTarget;
   }
-  const [path, labelX, labelY] = getSmoothStepPath({
+  const [smoothPath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -627,20 +687,12 @@ export function FlowLinkEdge({
     borderRadius: 8,
     ...(centerX === undefined ? {} : { centerX }),
   });
-  const tone = d?.tone ?? 'muted';
-  const baseWidth = tone === 'muted' ? 1.5 : 2;
+  const path = d?.route
+    ? referenceRoutePath(d.route, { sx: sourceX, sy: sourceY, tx: targetX, ty: targetY })
+    : smoothPath;
   return (
     <>
-      <BaseEdge
-        markerEnd={markerEnd}
-        path={path}
-        style={{
-          stroke: LINK_STROKE[tone],
-          strokeWidth: d?.emphasized ? baseWidth + 0.5 : baseWidth,
-          strokeDasharray: d?.dashed ? '5 4' : undefined,
-          opacity: d?.dimmed ? 0.25 : 1,
-        }}
-      />
+      <BaseEdge markerEnd={markerEnd} path={path} style={linkStyle(d)} />
       {d?.portDot ? (
         <PortDot
           dimmed={d.dimmed}

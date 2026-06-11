@@ -114,10 +114,20 @@ Supporting polish:
   `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
 - **Cable management on dense graphs** (`decorateEdges` in the canvas):
   resource-reference (`uses`) edges are always drawn but **faint** (~25%),
-  rendering full-strength when either endpoint is **selected or hovered** —
-  hover a `cache` to see its resource, select a resource to see everyone using
-  it. While a node is selected its edges render full-strength and **unrelated
-  edges fade**, so the selected node's wiring stands out.
+  rendering full-strength **in the primary colour** when either endpoint is
+  **selected or hovered** — hover a `cache` to see its resource, select a
+  resource to see everyone using it. Selection/hover scope includes a
+  container's **whole subtree**, so selecting a branch keeps its internal
+  chains/copy/merge lit while unrelated edges fade.
+- **Channel routing for reference edges.** Each `uses` edge exits its node with a
+  short drop, runs across to the **clear channel beside its top-level column**
+  (mid-`colGap`, staggered when shared), down the channel, along a **bus** above
+  the resource lane, then into the resource (`referenceRoute` in the parser →
+  `orthogonalRoundedPath` in the edge) — never dropping through the nodes
+  stacked below the source.
+- **Collapse re-anchoring.** A reference whose source is hidden inside a
+  collapsed container re-anchors to the **nearest visible ancestor**
+  (`visibleAnchor`), so resources never dangle disconnected while collapsed.
 - **Container ports sit level with the child rows.** `containerPortYs` anchors a
   branch's `gs` (copy) at the **first child's connector row** and its `gt` (merge)
   at the **last child's row** — those edges are clean horizontal lines in the

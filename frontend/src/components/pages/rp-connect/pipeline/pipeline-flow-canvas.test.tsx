@@ -23,26 +23,34 @@ const edges: Edge[] = [
 const refData = (decorated: Edge[]) =>
   decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean };
 
+const scope = (...ids: string[]) => new Set(ids);
+
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
     // Always present, but dimmed by default — a hint, not clutter.
     expect(refData(decorateEdges(edges, {}))).toMatchObject({ dimmed: true });
 
     // Selecting (or hovering) either endpoint renders the edge full-strength.
-    expect(refData(decorateEdges(edges, { selectedNodeId: 'a' }))).toMatchObject({ dimmed: false, emphasized: true });
-    expect(refData(decorateEdges(edges, { hoveredNodeId: 'a' }))).toMatchObject({ dimmed: false, emphasized: true });
+    expect(refData(decorateEdges(edges, { selectedScope: scope('a') }))).toMatchObject({
+      dimmed: false,
+      emphasized: true,
+    });
+    expect(refData(decorateEdges(edges, { hoveredScope: scope('a') }))).toMatchObject({
+      dimmed: false,
+      emphasized: true,
+    });
 
     // Selecting the resource itself reveals who uses it.
-    expect(refData(decorateEdges(edges, { selectedNodeId: 'resource-0' }))).toMatchObject({ emphasized: true });
+    expect(refData(decorateEdges(edges, { selectedScope: scope('resource-0') }))).toMatchObject({ emphasized: true });
   });
 
   it('hover alone does not dim unrelated edges (only selection does)', () => {
-    const hovered = decorateEdges(edges, { hoveredNodeId: 'a' });
+    const hovered = decorateEdges(edges, { hoveredScope: scope('a') });
     expect((hovered.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean }).dimmed).toBeUndefined();
   });
 
   it('dims unrelated edges and emphasizes connected ones while a node is selected', () => {
-    const decorated = decorateEdges(edges, { selectedNodeId: 'a' });
+    const decorated = decorateEdges(edges, { selectedScope: scope('a') });
     const spine = decorated.find((e) => e.id === 'spine-a-b')?.data as { dimmed?: boolean; emphasized?: boolean };
     const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
     expect(spine.emphasized).toBe(true);
@@ -52,6 +60,15 @@ describe('decorateEdges', () => {
     // No selection → no dimming anywhere.
     const plain = decorateEdges(edges, {});
     expect((plain.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean }).dimmed).toBeUndefined();
+  });
+
+  it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
+    // Selecting the container 'a' whose subtree includes 'b' and 'c': the fan edge
+    // between its children must stay full-strength, not dim as "unrelated".
+    const decorated = decorateEdges(edges, { selectedScope: scope('a', 'b', 'c') });
+    const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
+    expect(fanout.emphasized).toBe(true);
+    expect(fanout.dimmed).toBe(false);
   });
 
   it('wires the insert handler onto spine edges with their processor index', () => {

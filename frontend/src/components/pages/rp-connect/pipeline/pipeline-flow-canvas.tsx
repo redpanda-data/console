@@ -124,8 +124,10 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
 }
 
 type DecorateEdgeOptions = {
-  selectedNodeId?: string;
-  hoveredNodeId?: string;
+  /** The selected node and all of its descendants (a container's whole subtree). */
+  selectedScope?: ReadonlySet<string>;
+  /** The hovered node and its descendants. */
+  hoveredScope?: ReadonlySet<string>;
   onInsert?: (processorIndex: number) => void;
 };
 
@@ -134,12 +136,13 @@ type DecorateEdgeOptions = {
  * - resource-reference edges are always present but faint, rendering full-strength
  *   when one of their endpoints is selected or hovered (hover a cache to see its
  *   resource; select a resource to see everyone using it);
- * - while a node is selected, its edges render full-strength and unrelated edges
- *   fade, so the selected node's wiring stands out in a dense graph;
+ * - while a node is selected, its edges — including everything inside a selected
+ *   container — render full-strength and unrelated edges fade, so the selected
+ *   node's complete wiring stands out in a dense graph;
  * - spine edges get their insert (+) handler.
  */
-export function decorateEdges(edges: Edge[], { selectedNodeId, hoveredNodeId, onInsert }: DecorateEdgeOptions): Edge[] {
-  const activeNodeId = selectedNodeId ?? hoveredNodeId;
+export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onInsert }: DecorateEdgeOptions): Edge[] {
+  const activeScope = selectedScope ?? hoveredScope;
   return edges.map((edge) => {
     let next = edge;
     if (onInsert && next.type === 'flowSpine') {
@@ -152,12 +155,11 @@ export function decorateEdges(edges: Edge[], { selectedNodeId, hoveredNodeId, on
       };
     }
     if (next.id.startsWith('ref-')) {
-      const touchesActive =
-        activeNodeId !== undefined && (next.source === activeNodeId || next.target === activeNodeId);
+      const touchesActive = activeScope !== undefined && (activeScope.has(next.source) || activeScope.has(next.target));
       return { ...next, data: { ...next.data, dimmed: !touchesActive, emphasized: touchesActive } };
     }
-    if (selectedNodeId !== undefined) {
-      const touchesSelection = next.source === selectedNodeId || next.target === selectedNodeId;
+    if (selectedScope !== undefined) {
+      const touchesSelection = selectedScope.has(next.source) || selectedScope.has(next.target);
       return { ...next, data: { ...next.data, dimmed: !touchesSelection, emphasized: touchesSelection } };
     }
     return next;
@@ -279,13 +281,47 @@ export function PipelineFlowCanvas({
     onAddSasl,
   ]);
 
+  // A node's "scope" — itself plus all descendants — so selecting/hovering a
+  // container keeps its internal wiring (chains, copy/merge, fan edges) lit.
+  const scopeOf = useCallback(
+    (id: string | undefined): ReadonlySet<string> | undefined => {
+      if (id === undefined) {
+        return;
+      }
+      const childrenByParent = new Map<string | undefined, string[]>();
+      for (const node of nodes) {
+        const siblings = childrenByParent.get(node.parentId);
+        if (siblings) {
+          siblings.push(node.id);
+        } else {
+          childrenByParent.set(node.parentId, [node.id]);
+        }
+      }
+      const scope = new Set([id]);
+      const queue = [id];
+      while (queue.length > 0) {
+        for (const child of childrenByParent.get(queue.pop() as string) ?? []) {
+          scope.add(child);
+          queue.push(child);
+        }
+      }
+      return scope;
+    },
+    [nodes]
+  );
+
   // Hover only restyles edges, in its own (cheap) memo: the node objects above stay
   // referentially stable, so the DOM under the cursor is never rebuilt mid-hover —
   // rebuilding it fired mouseleave/mouseenter in a loop, flickering the cursor and
   // eating clicks (worst on nested nodes, whose boundaries fire extra enter/leave).
   const rfEdges = useMemo(
-    () => decorateEdges(layoutEdges, { selectedNodeId, hoveredNodeId, onInsert }),
-    [layoutEdges, selectedNodeId, hoveredNodeId, onInsert]
+    () =>
+      decorateEdges(layoutEdges, {
+        selectedScope: scopeOf(selectedNodeId),
+        hoveredScope: scopeOf(hoveredNodeId),
+        onInsert,
+      }),
+    [layoutEdges, scopeOf, selectedNodeId, hoveredNodeId, onInsert]
   );
 
   if (rfNodes.length === 0) {

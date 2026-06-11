@@ -1427,6 +1427,9 @@ function linkEdge(params: {
   laneFromTarget?: number;
   // Which end meets a container boundary — drawn as a small port socket there.
   portDot?: 'source' | 'target';
+  // Orthogonal cable route (reference edges): down → over to a clear channel →
+  // down the channel → along the bus → into the target.
+  route?: { channelX: number; busY: number };
 }): Edge {
   return {
     id: params.id,
@@ -1443,6 +1446,7 @@ function linkEdge(params: {
       laneFromSource: params.laneFromSource,
       laneFromTarget: params.laneFromTarget,
       portDot: params.portDot,
+      route: params.route,
     },
     markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
   };
@@ -1574,38 +1578,85 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
   chainChildren(children, ctx);
 }
 
+type ReferenceEdgeContext = {
+  placedIds: Set<string>;
+  /** Each node's parent, for re-anchoring hidden sources to a visible ancestor. */
+  parentById: Map<string, string | undefined>;
+  /** Right edge (absolute x) of the top-level column each node belongs to. */
+  columnRightById: Map<string, number>;
+  /** y of the horizontal "bus" the reference cables run along, above the lane. */
+  busY: number;
+  /** Half the gap between top-level columns — the clear routing channel. */
+  channelInset: number;
+};
+
+// Re-anchor a hidden source (inside a collapsed container) to its nearest visible
+// ancestor, so the reference stays connected while collapsed.
+function visibleAnchor(nodeId: string, refCtx: ReferenceEdgeContext): string | undefined {
+  let current: string | undefined = nodeId;
+  while (current !== undefined && !refCtx.placedIds.has(current)) {
+    current = refCtx.parentById.get(current);
+  }
+  return current;
+}
+
+// The cable route for one reference edge, staggered so edges sharing a channel
+// don't overlap on the vertical run.
+function referenceRoute(
+  sourceId: string,
+  refCtx: ReferenceEdgeContext,
+  channelUse: Map<number, number>
+): { channelX: number; busY: number } | undefined {
+  const columnRight = refCtx.columnRightById.get(sourceId);
+  if (columnRight === undefined) {
+    return;
+  }
+  const uses = channelUse.get(columnRight) ?? 0;
+  channelUse.set(columnRight, uses + 1);
+  return { channelX: columnRight + refCtx.channelInset + uses * 10, busY: refCtx.busY };
+}
+
 // Dashed edges from a component to the resource it references (cache/rate_limit
 // `resource:`). Matched by the resource's label. Skipped in the compact lane.
-function buildReferenceEdges(nodes: PipelineFlowNode[], placedIds: Set<string>): Edge[] {
+// Cable management: each edge exits its node, runs through the clear channel to
+// the right of its top-level column, along a bus above the resource lane, then
+// into the resource — never dropping through the nodes stacked below the source.
+function buildReferenceEdges(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeContext): Edge[] {
   const resourceByLabel = new Map<string, string>();
   for (const node of nodes) {
     if (node.section === 'resource' && node.labelText) {
       resourceByLabel.set(node.labelText, node.id);
     }
   }
-  const edges: Edge[] = [];
+  const channelUse = new Map<number, number>();
+  const edgesById = new Map<string, Edge>();
+
   for (const node of nodes) {
-    if (!node.resourceRef) {
+    const targetId = node.resourceRef ? resourceByLabel.get(node.resourceRef) : undefined;
+    if (!(targetId && refCtx.placedIds.has(targetId))) {
       continue;
     }
-    const targetId = resourceByLabel.get(node.resourceRef);
-    if (!(targetId && placedIds.has(node.id) && placedIds.has(targetId))) {
+    const sourceId = visibleAnchor(node.id, refCtx);
+    const id = `ref-${sourceId}-${targetId}`;
+    if (sourceId === undefined || edgesById.has(id)) {
       continue;
     }
     // No label — the legend documents the dashed muted line as "uses resource".
-    edges.push(
+    edgesById.set(
+      id,
       linkEdge({
-        id: `ref-${node.id}-${targetId}`,
-        source: node.id,
+        id,
+        source: sourceId,
         target: targetId,
         sourceHandle: 'b',
         targetHandle: 't',
         tone: 'muted',
         dashed: true,
+        route: referenceRoute(sourceId, refCtx, channelUse),
       })
     );
   }
-  return edges;
+  return [...edgesById.values()];
 }
 
 export type FlowOrientation = 'horizontal' | 'vertical';
@@ -1649,7 +1700,7 @@ export function computeFlowLayout(
 
   const ctx: EmitContext = { rfNodes: [], rfEdges: [], childrenMap, dims, compact };
 
-  const { mainExtent, maxCross } = placeTopLevelSteps(sized, isVertical, ctx);
+  const { mainExtent, maxCross, columns } = placeTopLevelSteps(sized, isVertical, ctx);
   ctx.rfEdges.push(...buildSpineEdges(mainSequence, isVertical));
   // The resource lane sits past the main flow along the cross axis: below the row
   // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
@@ -1657,10 +1708,31 @@ export function computeFlowLayout(
   const { resources, resourceRight } = placeResourceLane({ nodes, childrenMap, isVertical, laneStart, ctx });
 
   // Resource-reference edges (cache/rate_limit → resource). Skipped in the compact
-  // lane to keep it clean, and only between nodes that were actually placed.
+  // lane to keep it clean.
   if (!compact) {
     const placedIds = new Set(ctx.rfNodes.map((n) => n.id));
-    ctx.rfEdges.push(...buildReferenceEdges(nodes, placedIds));
+    // Every node maps to the right edge of its top-level column — the clear gap
+    // beside it is the cable channel its reference edges route through.
+    const columnRightById = new Map<string, number>();
+    for (const column of columns) {
+      const queue = [column.id];
+      while (queue.length > 0) {
+        const id = queue.pop() as string;
+        columnRightById.set(id, column.right);
+        for (const child of childrenMap.get(id) ?? []) {
+          queue.push(child.id);
+        }
+      }
+    }
+    ctx.rfEdges.push(
+      ...buildReferenceEdges(nodes, {
+        placedIds,
+        parentById: new Map(nodes.map((n) => [n.id, n.parentId])),
+        columnRightById,
+        busY: laneStart - 24,
+        channelInset: dims.colGap / 2,
+      })
+    );
   }
 
   return {
@@ -1676,10 +1748,11 @@ function placeTopLevelSteps(
   sized: SizedNode[],
   isVertical: boolean,
   ctx: EmitContext
-): { mainExtent: number; maxCross: number } {
+): { mainExtent: number; maxCross: number; columns: { id: string; right: number }[] } {
   let cursor = 0;
   let maxCross = 0;
   let prevSection: PipelineFlowNode['section'];
+  const columns: { id: string; right: number }[] = [];
   // Steps are separated by the main-axis gap (colGap) in both orientations; the
   // tighter stackGap is reserved for children inside a container.
   const gap = ctx.dims.colGap;
@@ -1699,10 +1772,13 @@ function placeTopLevelSteps(
     }
     prevSection = section;
     emitFlowNode(step, undefined, isVertical ? { x: 0, y: cursor } : { x: cursor, y: 0 }, ctx);
+    if (!isVertical) {
+      columns.push({ id: step.node.id, right: cursor + step.w });
+    }
     cursor += (isVertical ? step.h : step.w) + gap;
     maxCross = Math.max(maxCross, isVertical ? step.w : step.h);
   }
-  return { mainExtent: cursor - gap, maxCross };
+  return { mainExtent: cursor - gap, maxCross, columns };
 }
 
 // Absolute x of a placed node (sum its position up the parent chain), or undefined

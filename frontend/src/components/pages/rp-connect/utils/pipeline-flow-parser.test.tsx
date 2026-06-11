@@ -1090,6 +1090,38 @@ cache_resources:
     expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
   });
 
+  it('routes reference edges through the clear channel beside their column', () => {
+    const route = (data('ref-proc-0-resource-cache_resources-0') as { route?: { channelX: number; busY: number } })
+      ?.route;
+    // The cable exits into the gap to the right of its top-level column and runs
+    // along a bus above the resource lane — never through the nodes below it.
+    expect(route?.channelX).toBeGreaterThan(0);
+    expect(route?.busY).toBeGreaterThan(0);
+  });
+
+  it('re-anchors a hidden reference source to its collapsed container', () => {
+    const nested = `pipeline:
+  processors:
+    - branch:
+        processors:
+          - cache: { resource: dedupe_cache, operator: add }
+output:
+  drop: {}
+cache_resources:
+  - label: dedupe_cache
+    redis: { url: x }`;
+    const { nodes } = parsePipelineFlowTree(nested);
+
+    // Expanded: the reference comes from the nested cache itself.
+    const open = computeFlowLayout(nodes);
+    expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
+
+    // Collapsed: the cache is hidden, so the reference re-anchors to the branch —
+    // the resource stays visibly connected instead of dangling.
+    const closed = computeFlowLayout(nodes, new Set(['proc-0']));
+    expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
+  });
+
   it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {
     const compact = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes, new Set(), 'vertical', true).rfEdges;
     // The minimal sidebar overview draws only the spine + nested sequential chains.
