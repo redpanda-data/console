@@ -26,6 +26,7 @@ func TestSQL_SetDefaults(t *testing.T) {
 	if c.TLS.RefreshInterval == 0 {
 		t.Error("expected TLS defaults to be applied")
 	}
+	require.Equal(t, 100, c.MaxConnections)
 }
 
 func TestSQL_Validate(t *testing.T) {
@@ -45,7 +46,21 @@ func TestSQL_Validate(t *testing.T) {
 		},
 		{
 			name: "enabled with url is valid",
-			cfg:  SQL{Enabled: true, URL: "rpsql:5432"},
+			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 100},
+		},
+		{
+			name:    "zero maxConnections is invalid",
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432"},
+			wantErr: true,
+		},
+		{
+			name:    "negative maxConnections is invalid",
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: -1},
+			wantErr: true,
+		},
+		{
+			name: "custom maxConnections is valid",
+			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 250},
 		},
 		{
 			name: "impersonateUser with static bearer is invalid",
@@ -70,6 +85,7 @@ func TestSQL_Validate(t *testing.T) {
 			cfg: SQL{
 				Enabled:        true,
 				URL:            "rpsql:5432",
+				MaxConnections: 100,
 				Authentication: HTTPAuthentication{ImpersonateUser: true},
 			},
 		},
