@@ -125,7 +125,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
   if (isLoading) {
     return (
       <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-        <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-xs text-muted-foreground">
+        <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-muted-foreground text-xs">
           <Spinner />
           <span>Loading columns…</span>
         </div>
@@ -143,7 +143,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
   if (columns.length === 0) {
     return (
       <div className="mb-[2px] ml-[26px] border-border-subtle border-l pl-[8px]">
-        <div className="px-[16px] py-[6px] text-xs text-disabled">No columns</div>
+        <div className="px-[16px] py-[6px] text-disabled text-xs">No columns</div>
       </div>
     );
   }
@@ -153,7 +153,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
       {columns.map((col) => {
         const KindIcon = COL_KIND_ICON[col.kind];
         return (
-          <div className="flex items-center gap-[7px] px-[8px] py-[3px] text-xs text-foreground" key={col.name}>
+          <div className="flex items-center gap-[7px] px-[8px] py-[3px] text-foreground text-xs" key={col.name}>
             <KindIcon className="flex-shrink-0 text-muted-foreground" size={11} />
             <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">{col.name}</span>
             <span className="font-mono text-caption-sm text-muted-foreground tracking-wide">{col.short}</span>
@@ -301,12 +301,12 @@ function NamespaceNode({
         <NsChevron className="flex-shrink-0 text-disabled" size={14} />
         <GitBranch className="text-muted-foreground" size={13} />
         <span className={LABEL}>{namespace.name}</span>
-        <span className="rounded-full bg-muted px-[7px] py-[1px] text-xs text-muted-foreground">{countLabel}</span>
+        <span className="rounded-full bg-muted px-[7px] py-[1px] text-muted-foreground text-xs">{countLabel}</span>
       </button>
       {isOpen && (
         <div className="ml-[10px]">
           {isLoading && allTables.length === 0 && (
-            <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-xs text-muted-foreground">
+            <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-muted-foreground text-xs">
               <Spinner />
               <span>Loading tables…</span>
             </div>
@@ -323,11 +323,11 @@ function NamespaceNode({
             />
           ))}
           {!isLoading && matched.length === 0 && (
-            <div className="px-[16px] py-[6px] text-xs text-disabled">No tables</div>
+            <div className="px-[16px] py-[6px] text-disabled text-xs">No tables</div>
           )}
           {paginate && remaining > 0 && (
             <button
-              className="mt-[2px] flex w-full cursor-pointer items-center gap-[7px] rounded border-0 bg-transparent px-[8px] py-[7px] text-left font-sans font-medium text-xs text-action-primary hover:bg-accent"
+              className="mt-[2px] flex w-full cursor-pointer items-center gap-[7px] rounded border-0 bg-transparent px-[8px] py-[7px] text-left font-medium font-sans text-action-primary text-xs hover:bg-accent"
               onClick={onLoadMore}
               title="Load more tables"
               type="button"
@@ -338,7 +338,7 @@ function NamespaceNode({
           )}
           {showAddTopic && (
             <button
-              className="flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left font-sans font-medium text-sm text-action-primary hover:bg-accent"
+              className="flex w-full cursor-pointer items-center gap-[6px] rounded border-0 bg-transparent px-[8px] py-[6px] text-left font-medium font-sans text-action-primary text-sm hover:bg-accent"
               onClick={onAddTable}
               title="Create a SQL table from a Redpanda topic"
               type="button"
@@ -462,7 +462,7 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between px-[14px] pt-[14px] pb-[8px]">
-        <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">Catalogs</span>
+        <span className="font-semibold text-muted-foreground text-xs uppercase tracking-wider">Catalogs</span>
         {role === 'admin' && (
           <span className="text-caption-sm text-disabled uppercase tracking-wider">Redpanda only</span>
         )}
@@ -481,13 +481,13 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
 
       <div className="flex-1 overflow-y-auto px-[8px] pb-[8px]">
         {isLoading && catalogs.length === 0 && (
-          <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-xs text-muted-foreground">
+          <div className="flex items-center gap-[7px] px-[16px] py-[6px] text-muted-foreground text-xs">
             <Spinner />
             <span>Loading catalogs…</span>
           </div>
         )}
         {!isLoading && catalogs.length === 0 && (
-          <div className="px-[16px] py-[6px] text-xs text-disabled">No catalogs</div>
+          <div className="px-[16px] py-[6px] text-disabled text-xs">No catalogs</div>
         )}
         {catalogs.map((catalog) => (
           <CatalogNode

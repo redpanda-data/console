@@ -81,12 +81,12 @@ function TypeIcon({ kind, size = 11 }: { kind: ColumnKind; size?: number }) {
 function BridgeBar({ bridge }: { bridge: BridgeInfo }) {
   return (
     <>
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-[3px] font-semibold text-xs text-accent-foreground [&_svg]:text-current">
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-2.5 py-[3px] font-semibold text-accent-foreground text-xs [&_svg]:text-current">
         <GitMerge size={15} strokeWidth={1.85} /> Bridge query
       </span>
       {bridge.totalLag > 0 && (
         <span
-          className={cn(RES_STAT, 'whitespace-nowrap font-mono text-xs text-muted-foreground')}
+          className={cn(RES_STAT, 'whitespace-nowrap font-mono text-muted-foreground text-xs')}
           title="Iceberg lag at query time"
         >
           <Waves size={13} /> Iceberg {offStr(bridge.totalLag)} behind{' '}
@@ -135,14 +135,12 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
               </span>
             </div>
             {/* .res-bridge-tl-live: live-tail segment with the 45deg hatch overlay. */}
-            <div
-              className="relative w-[26%] overflow-hidden rounded-r-md border border-success border-l-0 bg-background-success-subtle after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-success-subtle)_5px,var(--color-success-subtle)_10px)]"
-            />
+            <div className="relative w-[26%] overflow-hidden rounded-r-md border border-success border-l-0 bg-background-success-subtle after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-success-subtle)_5px,var(--color-success-subtle)_10px)]" />
           </>
         )}
       </div>
       {!caught && (
-        <div className="mt-6 text-xs text-muted-foreground leading-snug">
+        <div className="mt-6 text-muted-foreground text-xs leading-snug">
           Live tail covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
           <span className="whitespace-nowrap font-semibold text-success before:mr-1 before:inline-block before:h-[7px] before:w-[7px] before:rounded-full before:bg-success before:align-baseline before:content-['']">
             {fmtNum(bridge.translationLag)} pending translation
@@ -298,7 +296,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
           <thead>
             <tr>
               {/* .res-rownum (th): sticky row-number header, above body rownum cells. */}
-              <th className="sticky top-0 left-0 z-[3] w-[1%] whitespace-nowrap border-border border-b bg-muted px-4 py-2 text-right align-bottom font-mono text-xs text-disabled [user-select:none]">
+              <th className="sticky top-0 left-0 z-[3] w-[1%] whitespace-nowrap border-border border-b bg-muted px-4 py-2 text-right align-bottom font-mono text-disabled text-xs [user-select:none]">
                 #
               </th>
               {cols.map((c) => {
@@ -320,7 +318,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                       type="button"
                     >
                       <span className={cn('flex items-center gap-1.5', alignRight && 'flex-row-reverse')}>
-                        <span className="font-mono font-semibold text-xs text-strong">{c.name}</span>
+                        <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
                         <span
                           className={cn(
                             'inline-flex h-[13px] w-[13px]',
@@ -359,7 +357,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
               >
                 {/* .res-rownum (td): sticky row-number column; inherits the row
                     surface so the stripe carries across and occludes scroll. */}
-                <td className="sticky left-0 w-[1%] whitespace-nowrap border-border-subtle border-b bg-inherit px-4 py-[7px] text-right font-mono text-xs text-disabled [user-select:none]">
+                <td className="sticky left-0 w-[1%] whitespace-nowrap border-border-subtle border-b bg-inherit px-4 py-[7px] text-right font-mono text-disabled text-xs [user-select:none]">
                   {i + 1}
                 </td>
                 {cols.map((c) => {
@@ -367,15 +365,13 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                   return (
                     <td
                       className={cn(
-                        'whitespace-nowrap border-border-subtle border-b px-4 py-[7px] font-mono text-xs text-foreground',
+                        'whitespace-nowrap border-border-subtle border-b px-4 py-[7px] font-mono text-foreground text-xs',
                         c.kind === 'num' && 'text-right'
                       )}
                       key={c.name}
                     >
                       {c.kind === 'bool' && typeof v === 'boolean' ? (
-                        <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>
-                          {String(v)}
-                        </span>
+                        <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>
                       ) : v === null || v === undefined ? (
                         <span className="text-disabled italic">NULL</span>
                       ) : (
@@ -391,7 +387,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
       </div>
 
       <div className="flex flex-shrink-0 items-center justify-between border-border border-t bg-card px-4 py-2">
-        <span className="text-xs text-muted-foreground [font-variant-numeric:tabular-nums]">
+        <span className="text-muted-foreground text-xs [font-variant-numeric:tabular-nums]">
           Showing {fmtNum(visible.length)} of {fmtNum(run.totalRows)} rows
         </span>
         {shown < sorted.length && (
@@ -413,13 +409,13 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
             <Terminal size={20} />
           </div>
           <div className="mb-1.5 font-semibold text-sm text-strong">Run a query to see results</div>
-          <div className="mx-auto max-w-[420px] text-sm text-muted-foreground leading-normal">
+          <div className="mx-auto max-w-[420px] text-muted-foreground text-sm leading-normal">
             Write a <code className="rounded bg-muted px-[5px] py-px font-mono">SELECT</code> against a table in the
             catalog, then press{' '}
-            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-xs text-strong">
+            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-strong text-xs">
               ⌘
             </span>
-            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-xs text-strong">
+            <span className="mx-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 font-mono text-strong text-xs">
               ↵
             </span>{' '}
             or hit Run.
@@ -453,11 +449,11 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
           <CircleX size={18} />
           <div>
             <div className="font-semibold text-sm text-strong">{run.title}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground leading-normal">{run.message}</div>
+            <div className="mt-0.5 text-muted-foreground text-xs leading-normal">{run.message}</div>
           </div>
         </div>
         {run.hint && (
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3 text-muted-foreground text-sm">
             {run.hint}
             {run.hintAction && role === 'admin' && (
               <Button onClick={onAddTable} size="sm" variant="primary">

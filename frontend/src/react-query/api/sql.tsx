@@ -12,6 +12,8 @@
 import { create } from '@bufbuild/protobuf';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { GetTopicConfigurationsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { getTopicConfigurations } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   type DescribeTableRequest,
   DescribeTableRequestSchema,
@@ -26,8 +28,6 @@ import {
   listCatalogs,
   listTables,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql-SQLService_connectquery';
-import { GetTopicConfigurationsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { getTopicConfigurations } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -94,7 +94,9 @@ export const useInvalidateSqlCatalog = () => {
   const queryClient = useQueryClient();
   return () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: createConnectQueryKey({ schema: listCatalogs, cardinality: 'finite' }) }),
+      queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({ schema: listCatalogs, cardinality: 'finite' }),
+      }),
       queryClient.invalidateQueries({ queryKey: createConnectQueryKey({ schema: listTables, cardinality: 'finite' }) }),
     ]);
 };
