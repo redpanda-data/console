@@ -741,6 +741,9 @@ export function FlowLinkEdge({
     targetY,
     targetPosition,
     borderRadius: 8,
+    // Smaller than the tightest fan lane (14px) so a lane close to the port can't
+    // force the default 20px approach stub to jog the line left then back right.
+    offset: 8,
     ...(centerX === undefined ? {} : { centerX }),
   });
   const path = d?.route

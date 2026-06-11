@@ -144,10 +144,15 @@ Supporting polish:
   fans (broker/switch/fallback outputs) terminate at their sinks and draw none.
 - **Channel routing for reference edges.** Each `uses` edge exits its node with a
   short drop, runs across to the **clear channel beside its top-level column**
-  (mid-`colGap`, staggered when shared), down the channel, along a **bus** above
-  the resource lane, then into the resource (`referenceRoute` in the parser →
-  `orthogonalRoundedPath` in the edge) — never dropping through the nodes
-  stacked below the source.
+  (mid-`colGap`, staggered when shared), down the channel, along **its own
+  horizontal bus lane** (each reference edge gets a distinct lane in the band
+  between the flow and the resource lane, so cables never overlap), then into the
+  resource (`buildReferenceEdges` → `orthogonalRoundedPath`) — never dropping
+  through the nodes stacked below the source.
+- **Fan-in / merge terminate in the port socket, not an arrowhead.** Any edge
+  whose container end is a port (`portDot: 'target'` — fan-in, branch merge) omits
+  its arrowhead: several fan-in lines into one port would otherwise stack
+  arrowheads on the socket. Fan-out / entry / reference edges keep their arrow.
 - **Collapse re-anchoring.** A reference whose source is hidden inside a
   collapsed container re-anchors to the **nearest visible ancestor**
   (`visibleAnchor`), so resources never dangle disconnected while collapsed.

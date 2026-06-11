@@ -1112,6 +1112,33 @@ output:
     expect(layout.rfEdges.find((e) => e.id === 'fanin-proc-0-case-1')?.data).toMatchObject({ portDot: 'target' });
     // Output cases terminate at their sinks — no fan-in.
     expect(layout.rfEdges.some((e) => e.id.startsWith('fanin-output-switch'))).toBe(false);
+    // Fan-in lines terminate in the container's port socket — no stacked arrowheads.
+    for (const edge of layout.rfEdges.filter((e) => e.id.startsWith('fanin-'))) {
+      expect(edge.markerEnd).toBeUndefined();
+    }
+    // Fan-out keeps its arrowhead at each child.
+    expect(layout.rfEdges.find((e) => e.id === 'fanout-proc-0-case-1')?.markerEnd).toBeDefined();
+  });
+
+  it('gives each reference edge its own bus lane so cables never overlap', () => {
+    const twoResources = `pipeline:
+  processors:
+    - rate_limit: { resource: lim }
+    - cache: { resource: c, operator: get }
+output:
+  drop: {}
+rate_limit_resources:
+  - label: lim
+    local: { count: 1, interval: 1s }
+cache_resources:
+  - label: c
+    memcached: { addresses: ['m:11211'] }`;
+    const refEdges = computeFlowLayout(parsePipelineFlowTree(twoResources).nodes).rfEdges.filter((e) =>
+      e.id.startsWith('ref-')
+    );
+    const busYs = refEdges.map((e) => (e.data as { route?: { busY: number } }).route?.busY);
+    expect(busYs).toHaveLength(2);
+    expect(new Set(busYs).size).toBe(busYs.length); // distinct lanes
   });
 
   it('nests fan lanes like parentheses around the centre port (crossing-free)', () => {

@@ -1456,7 +1456,13 @@ function linkEdge(params: {
       portDot: params.portDot,
       route: params.route,
     },
-    markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
+    // An edge terminating at a container port (merge / fan-in) ends in the port
+    // socket, not an arrowhead — several fan-in lines into one port would otherwise
+    // stack arrowheads at the socket. Fan-out / entry / references keep the arrow.
+    markerEnd:
+      params.portDot === 'target'
+        ? undefined
+        : { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
   };
 }
 
@@ -1650,8 +1656,11 @@ type ReferenceEdgeContext = {
   parentById: Map<string, string | undefined>;
   /** Right edge (absolute x) of the top-level column each node belongs to. */
   columnRightById: Map<string, number>;
-  /** y of the horizontal "bus" the reference cables run along, above the lane. */
-  busY: number;
+  /** Bus band (between the flow and the resource lane) the cables run along: each
+      reference edge gets its own horizontal lane in [busTopY, busBaseY] so their
+      runs never overlap. busBaseY is nearest the resources. */
+  busBaseY: number;
+  busTopY: number;
   /** Half the gap between top-level columns — the clear routing channel. */
   channelInset: number;
 };
@@ -1666,63 +1675,71 @@ function visibleAnchor(nodeId: string, refCtx: ReferenceEdgeContext): string | u
   return current;
 }
 
-// The cable route for one reference edge, staggered so edges sharing a channel
-// don't overlap on the vertical run.
-function referenceRoute(
-  sourceId: string,
-  refCtx: ReferenceEdgeContext,
-  channelUse: Map<number, number>
-): { channelX: number; busY: number } | undefined {
-  const columnRight = refCtx.columnRightById.get(sourceId);
-  if (columnRight === undefined) {
-    return;
-  }
-  const uses = channelUse.get(columnRight) ?? 0;
-  channelUse.set(columnRight, uses + 1);
-  return { channelX: columnRight + refCtx.channelInset + uses * 10, busY: refCtx.busY };
-}
+type ResolvedReference = { id: string; sourceId: string; targetId: string; columnRight?: number };
 
-// Dashed edges from a component to the resource it references (cache/rate_limit
-// `resource:`). Matched by the resource's label. Skipped in the compact lane.
-// Cable management: each edge exits its node, runs through the clear channel to
-// the right of its top-level column, along a bus above the resource lane, then
-// into the resource — never dropping through the nodes stacked below the source.
-function buildReferenceEdges(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeContext): Edge[] {
+// Resolve + dedupe the references to draw: each `resource:` whose resource is
+// placed, re-anchored to the source's nearest visible ancestor when collapsed.
+function resolveReferences(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeContext): ResolvedReference[] {
   const resourceByLabel = new Map<string, string>();
   for (const node of nodes) {
     if (node.section === 'resource' && node.labelText) {
       resourceByLabel.set(node.labelText, node.id);
     }
   }
-  const channelUse = new Map<number, number>();
-  const edgesById = new Map<string, Edge>();
-
+  const resolved: ResolvedReference[] = [];
+  const seen = new Set<string>();
   for (const node of nodes) {
     const targetId = node.resourceRef ? resourceByLabel.get(node.resourceRef) : undefined;
     if (!(targetId && refCtx.placedIds.has(targetId))) {
       continue;
     }
     const sourceId = visibleAnchor(node.id, refCtx);
-    const id = `ref-${sourceId}-${targetId}`;
-    if (sourceId === undefined || edgesById.has(id)) {
+    if (sourceId === undefined) {
       continue;
     }
-    // No label — the legend documents the dashed muted line as "uses resource".
-    edgesById.set(
-      id,
-      linkEdge({
-        id,
-        source: sourceId,
-        target: targetId,
-        sourceHandle: 'b',
-        targetHandle: 't',
-        tone: 'muted',
-        dashed: true,
-        route: referenceRoute(sourceId, refCtx, channelUse),
-      })
-    );
+    const id = `ref-${sourceId}-${targetId}`;
+    if (seen.has(id)) {
+      continue;
+    }
+    seen.add(id);
+    resolved.push({ id, sourceId, targetId, columnRight: refCtx.columnRightById.get(sourceId) });
   }
-  return [...edgesById.values()];
+  return resolved;
+}
+
+// Dashed edges from a component to the resource it references (cache/rate_limit
+// `resource:`). Matched by the resource's label. Skipped in the compact lane.
+// Cable management: each edge exits its node, runs through the clear channel to
+// the right of its top-level column, then along its OWN horizontal bus lane to
+// the resource — never dropping through the nodes below it, never overlapping a
+// sibling cable's run.
+function buildReferenceEdges(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeContext): Edge[] {
+  const resolved = resolveReferences(nodes, refCtx);
+  const channelUse = new Map<number, number>();
+  // Each edge gets a distinct bus lane within [busTopY, busBaseY].
+  const span = refCtx.busBaseY - refCtx.busTopY;
+  const step = resolved.length > 1 ? Math.min(10, span / (resolved.length - 1)) : 0;
+
+  return resolved.map((ref, i) => {
+    const busY = refCtx.busBaseY - i * step;
+    let route: { channelX: number; busY: number } | undefined;
+    if (ref.columnRight !== undefined) {
+      const uses = channelUse.get(ref.columnRight) ?? 0;
+      channelUse.set(ref.columnRight, uses + 1);
+      route = { channelX: ref.columnRight + refCtx.channelInset + uses * 10, busY };
+    }
+    // No label — the legend documents the dashed muted line as "uses resource".
+    return linkEdge({
+      id: ref.id,
+      source: ref.sourceId,
+      target: ref.targetId,
+      sourceHandle: 'b',
+      targetHandle: 't',
+      tone: 'muted',
+      dashed: true,
+      route,
+    });
+  });
 }
 
 export type FlowOrientation = 'horizontal' | 'vertical';
@@ -1795,7 +1812,9 @@ export function computeFlowLayout(
         placedIds,
         parentById: new Map(nodes.map((n) => [n.id, n.parentId])),
         columnRightById,
-        busY: laneStart - 24,
+        // Spread the bus lanes through the gap between the flow and the lane.
+        busBaseY: laneStart - 12,
+        busTopY: maxCross + 12,
         channelInset: dims.colGap / 2,
       })
     );
