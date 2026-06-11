@@ -18,10 +18,17 @@ const tableVariants = cva(
         md: '[&_table]:text-sm',
         lg: '[&_table]:text-base',
       },
+      // Fill a flex-column parent and own the scrolling. Sticky header/column
+      // cells inside the table stick to this container instead of the page.
+      fill: {
+        true: 'min-h-0 flex-1 overflow-auto rounded-none',
+        false: '',
+      },
     },
     defaultVariants: {
       variant: 'standard',
       size: 'md',
+      fill: false,
     },
   }
 );
@@ -82,9 +89,9 @@ const tableCellVariants = cva(
 
 interface TableProps extends React.ComponentProps<'table'>, VariantProps<typeof tableVariants>, SharedProps {}
 
-function Table({ className, variant, size, testId, ...props }: TableProps) {
+function Table({ className, variant, size, fill, testId, ...props }: TableProps) {
   return (
-    <div className={cn(tableVariants({ variant, size }))} data-slot="table-container" data-testid={testId}>
+    <div className={cn(tableVariants({ variant, size, fill }))} data-slot="table-container" data-testid={testId}>
       <table className={cn('w-full caption-bottom', className)} data-slot="table" {...props} />
     </div>
   );
