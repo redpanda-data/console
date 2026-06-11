@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useState } from 'react';
 import { render, screen } from 'test-utils';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -20,6 +21,14 @@ vi.mock('./pipeline-flow-canvas', () => ({
       </button>
       <button onClick={() => props.onSelectNode?.('proc-0', { kind: 'processor', index: 0 })} type="button">
         select-proc0
+      </button>
+      <button
+        onClick={() =>
+          props.onSelectNode?.('resource-0', { kind: 'resource', resourceKey: 'cache_resources', index: 0 })
+        }
+        type="button"
+      >
+        select-cache-resource
       </button>
       <button onClick={() => props.onInsert?.(1)} type="button">
         insert-end
@@ -53,6 +62,8 @@ pipeline:
 output:
   drop: {}`;
 
+const EMPTY_STATE_TEXT = /select a node/i;
+
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
   const onYamlChange = vi.fn();
   render(
@@ -80,7 +91,7 @@ describe('VisualEditorPanel', () => {
 
   test('the inspector shows an empty state until a node is selected', () => {
     renderPanel();
-    expect(screen.getByText(/select a node/i)).toBeInTheDocument();
+    expect(screen.getByText(EMPTY_STATE_TEXT)).toBeInTheDocument();
     expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
   });
 
@@ -123,6 +134,39 @@ describe('VisualEditorPanel', () => {
 
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     expect(onYamlChange.mock.calls[0][0]).toContain('cache_resources');
+  });
+
+  test('applying a schema-form change commits it to the YAML and resets the inspector', async () => {
+    const user = userEvent.setup();
+    // Stateful host so the applied YAML flows back into the panel (re-keying the form).
+    function Harness() {
+      const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
+      return (
+        <VisualEditorPanel
+          componentList={{} as ComponentList}
+          components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+          mode="edit"
+          onYamlChange={setYaml}
+          yamlContent={yaml}
+        />
+      );
+    }
+    render(<Harness />);
+
+    await user.click(screen.getByText('select-cache-resource'));
+    const ttl = await screen.findByDisplayValue('5m');
+
+    await user.clear(ttl);
+    await user.type(ttl, '10m');
+    const apply = screen.getByRole('button', { name: 'Apply changes' });
+    expect(apply).toBeEnabled();
+
+    await user.click(apply);
+
+    // The change is committed (10m now shown) and the form re-initialized, so Apply
+    // is disabled again (nothing pending).
+    expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled();
   });
 
   test('view mode inspector is read-only — no apply or remove actions', async () => {

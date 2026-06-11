@@ -54,10 +54,29 @@ function isObjectGroup(spec: RawFieldSpec): boolean {
   return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
 }
 
-// Everything else (object arrays, maps, 2d arrays, nested component configs, and
-// unknown keys) round-trips through the raw-YAML fallback.
+// A field whose value is itself a nested component (a processor sub-pipeline, an
+// input/output, …). These are their own nodes in the graph and are edited by
+// selecting them on the canvas — never inline here. They're preserved untouched.
+const COMPONENT_FIELD_TYPES = new Set([
+  'input',
+  'output',
+  'processor',
+  'cache',
+  'rate_limit',
+  'buffer',
+  'metrics',
+  'tracer',
+  'scanner',
+]);
+function isComponentField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type);
+}
+
+// Fields rendered as form controls. Nested components are excluded (edited on the
+// canvas); other complex fields (object arrays, maps, 2d arrays, unknown keys) fall
+// back to the raw-YAML section.
 function isFormField(spec: RawFieldSpec): boolean {
-  return isScalarField(spec) || isScalarArray(spec) || isObjectGroup(spec);
+  return !isComponentField(spec) && (isScalarField(spec) || isScalarArray(spec) || isObjectGroup(spec));
 }
 
 // ---- plain-object path helpers (the config we mutate is plain JSON) -----------
@@ -455,13 +474,16 @@ export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConf
   const required = topFields.filter((f) => !(f.optional || f.advanced));
   const optional = topFields.filter((f) => f.optional && !f.advanced);
   const advanced = topFields.filter((f) => f.advanced);
+  // Nested-component fields are edited on the canvas; surface a hint, never a control.
+  const componentFields = fields.filter(isComponentField);
 
-  // Leaves drive form defaults + assembly; complex schema fields and any unknown
-  // existing keys go to the raw-YAML fallback.
+  // Leaves drive form defaults + assembly. Complex (non-component) schema fields and
+  // any unknown keys go to the raw-YAML fallback; nested-component fields are neither
+  // shown nor put in raw — they're preserved untouched (the form starts from a clone).
   const leaves = collectLeaves(fields);
-  const knownTopKeys = new Set(fields.filter(isFormField).map((f) => f.name));
-  const complexSchemaKeys = fields.filter((f) => f.name && !isFormField(f)).map((f) => f.name);
-  const unknownKeys = Object.keys(inner).filter((k) => !knownTopKeys.has(k));
+  const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
+  const complexSchemaKeys = fields.filter((f) => f.name && !(isFormField(f) || isComponentField(f))).map((f) => f.name);
+  const unknownKeys = Object.keys(inner).filter((k) => !schemaKeys.has(k));
   const rawKeys = [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
   const showRaw = rawKeys.length > 0;
   const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
@@ -523,6 +545,16 @@ export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConf
               <SchemaField control={control} key={f.name} path={[]} spec={f} />
             ))}
           </FieldGroup>
+        ) : null}
+
+        {componentFields.length > 0 ? (
+          <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
+            <Text className="text-muted-foreground" variant="bodySmall">
+              {componentFields.map((f) => f.name).join(', ')}{' '}
+              {componentFields.length === 1 ? 'is a nested component' : 'are nested components'} — select{' '}
+              {componentFields.length === 1 ? 'it' : 'them'} on the canvas to edit.
+            </Text>
+          </div>
         ) : null}
 
         {showRaw ? (

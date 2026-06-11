@@ -108,7 +108,10 @@ export function NodeInspector({ target, yaml, components, onApply, onDelete, rea
           return (
             <NodeConfigForm
               componentName={componentName}
-              key={target.kind === 'path' ? target.path.join('/') : JSON.stringify(target)}
+              // Re-key on the component's current value so that after Apply (the YAML
+              // changes) the form re-initializes from the saved config — clearing the
+              // dirty state so "Apply changes" disables and the edit is committed.
+              key={JSON.stringify(component)}
               onApply={handleApply}
               spec={spec}
               value={component}

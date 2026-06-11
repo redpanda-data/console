@@ -25,6 +25,7 @@ function renderForm(value: Record<string, unknown>, onApply = vi.fn()) {
 }
 
 const applyButton = () => screen.getByRole('button', { name: 'Apply changes' });
+const NESTED_COMPONENT_HINT = /processors is a nested component/i;
 
 describe('NodeConfigForm — full schema', () => {
   test('renders required scalar fields, a scalar-array field, and nested object groups', async () => {
@@ -83,7 +84,12 @@ describe('NodeConfigForm — full schema', () => {
     const user = userEvent.setup();
     // `metadata` is not in the schema; `count: 1000$` is a malformed int — both must survive.
     const onApply = renderForm({
-      kafka: { topic: 'orig', addresses: ['a:9092'], metadata: { include_patterns: ['.*'] }, batching: { count: '1000$' } },
+      kafka: {
+        topic: 'orig',
+        addresses: ['a:9092'],
+        metadata: { include_patterns: ['.*'] },
+        batching: { count: '1000$' },
+      },
     });
 
     await user.type(screen.getByDisplayValue('orig'), '-2');
@@ -100,6 +106,40 @@ describe('NodeConfigForm — full schema', () => {
     renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '1000$' } } });
     await user.click(screen.getByText('batching'));
     expect(screen.getByDisplayValue('1000$')).toBeInTheDocument();
+  });
+
+  test('does not render nested-component fields; surfaces a hint and preserves them on apply', async () => {
+    const user = userEvent.setup();
+    // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.
+    const branchSpec = {
+      config: {
+        children: [
+          { name: 'request_map', type: 'string', kind: 'scalar', optional: false },
+          { name: 'processors', type: 'processor', kind: 'array', optional: false },
+        ],
+      },
+    } as unknown as ConnectComponentSpec;
+    const onApply = vi.fn();
+    render(
+      <NodeConfigForm
+        componentName="branch"
+        onApply={onApply}
+        spec={branchSpec}
+        value={{ branch: { request_map: 'root = this', processors: [{ http: { url: 'http://x' } }] } }}
+      />
+    );
+
+    // The scalar is a control; the nested component is NOT — it's a hint instead.
+    expect(screen.getByText('request_map')).toBeInTheDocument();
+    expect(screen.getByText(NESTED_COMPONENT_HINT)).toBeInTheDocument();
+
+    await user.type(screen.getByDisplayValue('root = this'), '!');
+    await user.click(applyButton());
+
+    const next = onApply.mock.calls[0][0] as { branch: Record<string, unknown> };
+    // The sub-pipeline survives untouched; the scalar edit is written.
+    expect(next.branch.processors).toEqual([{ http: { url: 'http://x' } }]);
+    expect(next.branch.request_map).toBe('root = this!');
   });
 
   test('round-trips a scalar array edited as one-per-line text', async () => {
