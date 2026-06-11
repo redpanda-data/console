@@ -45,7 +45,6 @@ import {
   isArrayPgType,
   type Namespace,
   type SqlRole,
-  shortPgType,
   type TableRef,
 } from './sql-types';
 
@@ -227,7 +226,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
     name: c.name,
     type: c.type,
     kind: columnKindForPgType(c.type),
-    short: shortPgType(c.type),
+    short: c.type.toLowerCase(),
     isArray: isArrayPgType(c.type),
   }));
 
