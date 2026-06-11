@@ -30,7 +30,7 @@ import { useEffect, useRef } from 'react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { FLOW_CARD_WIDTH, FLOW_COMPACT_CARD_WIDTH } from '../utils/pipeline-flow-parser';
+import { FLOW_CARD_WIDTH, FLOW_COMPACT_CARD_WIDTH, FLOW_SPINE_HANDLE_TOP } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
@@ -39,7 +39,7 @@ const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h
 // horizontal line. The top/bottom handles are anchored a fixed distance from the
 // left so vertically-stacked cards of differing widths connect along a straight
 // vertical line (no diagonal connectors).
-const SPINE_HANDLE_TOP = 36;
+const SPINE_HANDLE_TOP = FLOW_SPINE_HANDLE_TOP;
 const SPINE_HANDLE_LEFT = 18;
 
 // React Flow drives panning/dragging from native listeners on ancestor elements:
@@ -91,14 +91,19 @@ const SECTION_ACCENT: Record<string, string> = {
   resource: 'var(--color-orange-500)',
 };
 
-// The routing condition that selects a branch, shown as a chip on the receiving
-// card: `if <check>` for a condition, `default` for the catch-all, red for an
-// error / dead-letter route.
+// The routing semantics of a node, shown as a chip on its card: `if <check>` for a
+// condition, `default` for the catch-all, `on error` for error handlers (catch) —
+// red for any error / dead-letter route.
 const BranchConditionChip = ({ data }: { data: FlowCardData }) => {
-  if (!(data.condition || data.isDefault)) {
+  if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
   }
-  const text = data.condition ? `if ${data.condition}` : 'default';
+  let text = 'on error';
+  if (data.condition) {
+    text = `if ${data.condition}`;
+  } else if (data.isDefault) {
+    text = 'default';
+  }
   let tone: 'error' | 'muted' | 'condition' = 'condition';
   if (data.isErrorPath) {
     tone = 'error';
@@ -125,11 +130,11 @@ export type FlowCardData = {
   section?: string;
   /** Compact rendering for the sidebar (smaller, no kind badge or metadata). */
   compact?: boolean;
-  /** Center the gs/gt routing port (fan-out / fan-in / branch containers). */
-  fanOut?: boolean;
-  fanIn?: boolean;
-  /** Y (px) of the children-area centre, where fanning ports anchor. */
-  portY?: number;
+  /** Y (px) anchors of the container routing ports: `gs` (entry/copy/fan-out)
+      and `gt` (merge/fan-in). Level with a child's connector row for sequential
+      flows, the children-area centre for fans. */
+  portOutY?: number;
+  portInY?: number;
   collapsible?: boolean;
   collapsed?: boolean;
   childCount?: number;
@@ -186,40 +191,29 @@ const NodeHandles = () => (
 
 // Internal ports on a container so flow visibly threads through it: `gs` emits the
 // entry / copy / fan-out edges into the children; `gt` receives the merge-back /
-// fan-in edges. A fanning side is centered vertically so its branches radiate from
-// the middle of the box (clean divergence); a non-fanning side stays at the header
-// so a sequential entry drops naturally into the first child.
+// fan-in edges. The layout computes their exact y so sequential entry/copy/merge
+// lines run level with the first/last child's connector row (clear of the header
+// and its icon) and fan trunks anchor at the children-area centre.
 const HEADER_PORT_TOP = 22;
-const ContainerHandles = ({
-  gsCenter,
-  gtCenter,
-  portY,
-}: {
-  gsCenter?: boolean;
-  gtCenter?: boolean;
-  portY?: number;
-}) => {
-  const centerTop = portY ?? '50%';
-  return (
-    <>
-      <NodeHandles />
-      <Handle
-        className={invisibleHandle}
-        id="gs"
-        position={Position.Right}
-        style={{ left: 0, top: gsCenter ? centerTop : HEADER_PORT_TOP }}
-        type="source"
-      />
-      <Handle
-        className={invisibleHandle}
-        id="gt"
-        position={Position.Left}
-        style={{ right: 0, left: 'auto', top: gtCenter ? centerTop : HEADER_PORT_TOP }}
-        type="target"
-      />
-    </>
-  );
-};
+const ContainerHandles = ({ gsTop, gtTop }: { gsTop?: number; gtTop?: number }) => (
+  <>
+    <NodeHandles />
+    <Handle
+      className={invisibleHandle}
+      id="gs"
+      position={Position.Right}
+      style={{ left: 0, top: gsTop ?? HEADER_PORT_TOP }}
+      type="source"
+    />
+    <Handle
+      className={invisibleHandle}
+      id="gt"
+      position={Position.Left}
+      style={{ right: 0, left: 'auto', top: gtTop ?? HEADER_PORT_TOP }}
+      type="target"
+    />
+  </>
+);
 
 const MetaRows = ({ data }: { data: FlowCardData }) => {
   const hasContent = data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl;
@@ -482,7 +476,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
     // the bordered box below would shift them by the border/accent width and angle the
     // spine between cards and containers.)
     <div className="group relative h-full w-full" ref={ref}>
-      <ContainerHandles gsCenter={data.fanOut} gtCenter={data.fanIn} portY={data.portY} />
+      <ContainerHandles gsTop={data.portOutY} gtTop={data.portInY} />
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
@@ -541,9 +535,14 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
   // The spine runs along a single row, so a straight line reads cleanest.
   const [path, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
   const onInsert = (data as { onInsert?: () => void } | undefined)?.onInsert;
+  const dimmed = (data as { dimmed?: boolean } | undefined)?.dimmed;
   return (
     <>
-      <BaseEdge markerEnd={markerEnd} path={path} style={{ stroke: 'var(--color-primary)', strokeWidth: 2 }} />
+      <BaseEdge
+        markerEnd={markerEnd}
+        path={path}
+        style={{ stroke: 'var(--color-primary)', strokeWidth: 2, opacity: dimmed ? 0.25 : 1 }}
+      />
       {onInsert ? (
         <EdgeLabelRenderer>
           <button
@@ -569,6 +568,11 @@ type FlowLinkData = {
   dashed?: boolean;
   laneFromSource?: number;
   laneFromTarget?: number;
+  /** Draw a small "port" socket at the container end so the line visibly plugs in. */
+  portDot?: 'source' | 'target';
+  /** Selection context: unrelated edges fade, connected ones render full strength. */
+  dimmed?: boolean;
+  emphasized?: boolean;
 };
 
 const LINK_STROKE: Record<LinkTone, string> = {
@@ -576,6 +580,20 @@ const LINK_STROKE: Record<LinkTone, string> = {
   muted: 'var(--color-border)',
   error: 'var(--color-destructive)',
 };
+
+// The container-side endpoint of an entry/copy/merge/fan edge, drawn as a small
+// socket so the line visibly plugs into the container instead of trailing off it.
+const PortDot = ({ x, y, tone, dimmed }: { x: number; y: number; tone: LinkTone; dimmed?: boolean }) => (
+  <circle
+    cx={x}
+    cy={y}
+    fill="var(--color-background)"
+    opacity={dimmed ? 0.25 : 1}
+    r={3.5}
+    stroke={LINK_STROKE[tone]}
+    strokeWidth={1.5}
+  />
+);
 
 // Every non-spine edge: container entry/chain, fan-out (with a routing-condition
 // label), branch copy/merge (dashed), error/DLQ paths (red dashed), and resource
@@ -610,6 +628,7 @@ export function FlowLinkEdge({
     ...(centerX === undefined ? {} : { centerX }),
   });
   const tone = d?.tone ?? 'muted';
+  const baseWidth = tone === 'muted' ? 1.5 : 2;
   return (
     <>
       <BaseEdge
@@ -617,27 +636,38 @@ export function FlowLinkEdge({
         path={path}
         style={{
           stroke: LINK_STROKE[tone],
-          strokeWidth: tone === 'muted' ? 1.5 : 2,
+          strokeWidth: d?.emphasized ? baseWidth + 0.5 : baseWidth,
           strokeDasharray: d?.dashed ? '5 4' : undefined,
+          opacity: d?.dimmed ? 0.25 : 1,
         }}
       />
-      {d?.label ? (
-        <EdgeLabelRenderer>
-          <div
-            className={cn(
-              'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-medium text-[10px] shadow-sm',
-              tone === 'error' ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground'
-            )}
-            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY + (d.labelOffsetY ?? 0)}px)` }}
-            title={d.label}
-          >
-            {d.label}
-          </div>
-        </EdgeLabelRenderer>
+      {d?.portDot ? (
+        <PortDot
+          dimmed={d.dimmed}
+          tone={tone}
+          x={d.portDot === 'source' ? sourceX : targetX}
+          y={d.portDot === 'source' ? sourceY : targetY}
+        />
       ) : null}
+      {d?.label ? <LinkLabel d={d} tone={tone} x={labelX} y={labelY + (d.labelOffsetY ?? 0)} /> : null}
     </>
   );
 }
+
+const LinkLabel = ({ d, tone, x, y }: { d: FlowLinkData; tone: LinkTone; x: number; y: number }) => (
+  <EdgeLabelRenderer>
+    <div
+      className={cn(
+        'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-medium text-[10px] shadow-sm',
+        tone === 'error' ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground'
+      )}
+      style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`, opacity: d.dimmed ? 0.25 : 1 }}
+      title={d.label}
+    >
+      {d.label}
+    </div>
+  </EdgeLabelRenderer>
+);
 
 export const flowNodeTypes = {
   flowCard: FlowCardNode,

@@ -112,6 +112,28 @@ Supporting polish:
 - **No on-edge text labels.** Routing conditions are chips on cards and the edge
   vocabulary lives in the legend; the only edge labels are the short branch
   `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
+- **Cable management on dense graphs** (`decorateEdges` in the canvas):
+  resource-reference (`uses`) edges are always drawn but **faint** (~25%),
+  rendering full-strength when either endpoint is **selected or hovered** —
+  hover a `cache` to see its resource, select a resource to see everyone using
+  it. While a node is selected its edges render full-strength and **unrelated
+  edges fade**, so the selected node's wiring stands out.
+- **Container ports sit level with the child rows.** `containerPortYs` anchors a
+  branch's `gs` (copy) at the **first child's connector row** and its `gt` (merge)
+  at the **last child's row** — those edges are clean horizontal lines in the
+  child's own row, never elbowing through the header or its icon. Fanning
+  containers (switch/parallel/broker) keep a children-area **centre trunk** that
+  the lanes radiate from. `FLOW_SPINE_HANDLE_TOP` is the single source of truth
+  for the connector-row offset (canvas imports it).
+- **No entry edges on sequential containers.** Containment already shows the flow
+  (the spine arrives at the box itself) and the narrow sequential inset would
+  render an entry edge as an unreadable stub. The semantics live on the card:
+  `catch` shows a red **"on error"** chip (joining the `if <check>` / `default`
+  chip vocabulary); chain edges show internal order.
+- **Port sockets.** Entry/copy/merge/fan-out/fan-in edges draw a small circle at
+  the exact point they meet the container boundary (`portDot` on the edge data,
+  rendered by `FlowLinkEdge` at the true endpoint) — NiFi-style ports, so the
+  lines visibly plug into containers instead of trailing off their borders.
 - **Conditions as chips, not floating labels.** A branch's routing condition is a
   chip on the receiving card (`if <check>` / `default`, red for error routes) via
   `BranchConditionChip`, so fan-out edges stay clean unlabeled lines. All of this is derived purely from

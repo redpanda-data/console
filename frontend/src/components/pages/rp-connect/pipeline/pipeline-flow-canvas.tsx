@@ -123,6 +123,47 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
   );
 }
 
+type DecorateEdgeOptions = {
+  selectedNodeId?: string;
+  hoveredNodeId?: string;
+  onInsert?: (processorIndex: number) => void;
+};
+
+/**
+ * Per-render edge decoration ("cable management"):
+ * - resource-reference edges are always present but faint, rendering full-strength
+ *   when one of their endpoints is selected or hovered (hover a cache to see its
+ *   resource; select a resource to see everyone using it);
+ * - while a node is selected, its edges render full-strength and unrelated edges
+ *   fade, so the selected node's wiring stands out in a dense graph;
+ * - spine edges get their insert (+) handler.
+ */
+export function decorateEdges(edges: Edge[], { selectedNodeId, hoveredNodeId, onInsert }: DecorateEdgeOptions): Edge[] {
+  const activeNodeId = selectedNodeId ?? hoveredNodeId;
+  return edges.map((edge) => {
+    let next = edge;
+    if (onInsert && next.type === 'flowSpine') {
+      next = {
+        ...next,
+        data: {
+          ...next.data,
+          onInsert: () => onInsert((next.data as { insertIndex?: number })?.insertIndex ?? 0),
+        },
+      };
+    }
+    if (next.id.startsWith('ref-')) {
+      const touchesActive =
+        activeNodeId !== undefined && (next.source === activeNodeId || next.target === activeNodeId);
+      return { ...next, data: { ...next.data, dimmed: !touchesActive, emphasized: touchesActive } };
+    }
+    if (selectedNodeId !== undefined) {
+      const touchesSelection = next.source === selectedNodeId || next.target === selectedNodeId;
+      return { ...next, data: { ...next.data, dimmed: !touchesSelection, emphasized: touchesSelection } };
+    }
+    return next;
+  });
+}
+
 type PipelineFlowCanvasProps = {
   configYaml: string;
   /** Main-axis direction: 'horizontal' for the Visual lane, 'vertical' for the compact sidebar. */
@@ -166,6 +207,8 @@ export function PipelineFlowCanvas({
   onAddSasl,
 }: PipelineFlowCanvasProps) {
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
+  // Hovering a node lights up its (otherwise faint) resource-reference edges.
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
 
   const { nodes, error } = useMemo(() => parsePipelineFlowTree(debouncedYaml), [debouncedYaml]);
@@ -182,7 +225,7 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  const { rfNodes, rfEdges, translateExtent, contentHeight, legend } = useMemo(() => {
+  const { rfNodes, layoutEdges, translateExtent, contentHeight, legend } = useMemo(() => {
     const layout = computeFlowLayout(nodes, collapsedIds, orientation, simple);
 
     const callbacks: CanvasCallbacks = {
@@ -197,20 +240,6 @@ export function PipelineFlowCanvas({
       flashToken,
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
-
-    const injectedEdges = onInsert
-      ? layout.rfEdges.map((edge: Edge) =>
-          edge.type === 'flowSpine'
-            ? {
-                ...edge,
-                data: {
-                  ...edge.data,
-                  onInsert: () => onInsert((edge.data as { insertIndex?: number })?.insertIndex ?? 0),
-                },
-              }
-            : edge
-        )
-      : layout.rfEdges;
 
     // The compact sidebar scrolls vertically and should hug the content (just a
     // little breathing room); the full canvas allows generous panning room.
@@ -230,7 +259,7 @@ export function PipelineFlowCanvas({
 
     return {
       rfNodes: injectedNodes,
-      rfEdges: injectedEdges,
+      layoutEdges: layout.rfEdges,
       translateExtent: extent,
       contentHeight: layout.height,
       legend: legendFlags,
@@ -245,11 +274,19 @@ export function PipelineFlowCanvas({
     lintErrorsByNode,
     flashNodeIds,
     flashToken,
-    onInsert,
     onAddConnector,
     onAddTopic,
     onAddSasl,
   ]);
+
+  // Hover only restyles edges, in its own (cheap) memo: the node objects above stay
+  // referentially stable, so the DOM under the cursor is never rebuilt mid-hover —
+  // rebuilding it fired mouseleave/mouseenter in a loop, flickering the cursor and
+  // eating clicks (worst on nested nodes, whose boundaries fire extra enter/leave).
+  const rfEdges = useMemo(
+    () => decorateEdges(layoutEdges, { selectedNodeId, hoveredNodeId, onInsert }),
+    [layoutEdges, selectedNodeId, hoveredNodeId, onInsert]
+  );
 
   if (rfNodes.length === 0) {
     return (
@@ -287,6 +324,13 @@ export function PipelineFlowCanvas({
                     onSelectNode?.(node.id, target);
                   }
                 }
+          }
+          onNodeMouseEnter={simple ? undefined : (_, node) => setHoveredNodeId(node.id)}
+          // Only clear when leaving the node we're tracking: crossing into a nested
+          // child fires enter(child) then leave(parent), which must not wipe the
+          // child's hover.
+          onNodeMouseLeave={
+            simple ? undefined : (_, node) => setHoveredNodeId((prev) => (prev === node.id ? undefined : prev))
           }
           onPaneClick={simple ? undefined : () => onClearSelection?.()}
           panOnDrag={!simple}

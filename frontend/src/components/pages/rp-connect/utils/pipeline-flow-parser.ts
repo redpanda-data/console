@@ -1284,17 +1284,49 @@ function routingData(node: PipelineFlowNode, compact: boolean) {
   };
 }
 
-// Center the routing port (gs/gt) so fanned branches diverge from the middle of the
-// box instead of running parallel down a gutter from the header.
-function fanData(node: PipelineFlowNode) {
-  if (node.kind !== 'group') {
+/**
+ * Where the spine/side handles sit below a card's top edge (the connector row).
+ * The canvas anchors its left/right handles here; the parser uses it to place
+ * container ports level with a child's connector row, so entry/copy/merge edges
+ * run as clean horizontal lines.
+ */
+export const FLOW_SPINE_HANDLE_TOP = 36;
+
+// Vertical anchors for a container's routing ports (relative to the container top).
+// Fanning sides anchor at the children-area centre — a trunk the fan lanes radiate
+// from. A branch's copy anchors level with the FIRST child's connector row and its
+// merge-back with the LAST child's, so those edges are horizontal lines in the
+// child's own row instead of elbowing through the header (and over its icon).
+// Plain sequential containers draw no entry edge, so they need no ports.
+function containerPortYs(
+  node: PipelineFlowNode,
+  children: SizedNode[],
+  h: number,
+  dims: FlowDims
+): { portOutY?: number; portInY?: number } {
+  if (node.kind !== 'group' || children.length === 0) {
     return {};
   }
-  const sides = fanSides(node);
-  return {
-    ...(sides.out ? { fanOut: true } : {}),
-    ...(sides.in ? { fanIn: true } : {}),
-  };
+  const center = (dims.headerH + h) / 2;
+
+  if (node.branch) {
+    const gap = containerInsets(node, dims).gap;
+    let lastChildTop = dims.headerH + dims.pad;
+    for (const child of children.slice(0, -1)) {
+      lastChildTop += child.h + gap;
+    }
+    return {
+      portOutY: dims.headerH + dims.pad + FLOW_SPINE_HANDLE_TOP,
+      portInY: lastChildTop + FLOW_SPINE_HANDLE_TOP,
+    };
+  }
+  if (node.section === 'input') {
+    return { portInY: center };
+  }
+  if (node.childFlow === 'parallel') {
+    return { portOutY: center };
+  }
+  return {};
 }
 
 function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean) {
@@ -1302,7 +1334,6 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     label: node.label,
     collapsible: node.collapsible ?? false,
     collapsed,
-    ...fanData(node),
     ...(compact ? { compact: true } : {}),
     ...(node.section ? { section: node.section } : {}),
     ...(node.labelText ? { labelText: node.labelText } : {}),
@@ -1339,11 +1370,7 @@ function emitFlowNode(
   const isContainer = node.kind === 'group';
   const childCount = collapsed ? countDescendants(node.id, ctx.childrenMap) : 0;
 
-  // Anchor the fanning ports at the vertical centre of the *children area* (below
-  // the header) so copy/merge/fan-out edges leave/enter level with the children
-  // rather than offset by the header — keeping them horizontal, not diagonal.
-  const sides = isContainer ? fanSides(node) : { out: false, in: false };
-  const portY = children.length > 0 && (sides.out || sides.in) ? (ctx.dims.headerH + h) / 2 : undefined;
+  const ports = containerPortYs(node, children, h, ctx.dims);
 
   ctx.rfNodes.push({
     id: node.id,
@@ -1354,7 +1381,11 @@ function emitFlowNode(
     style: isContainer
       ? { width: w, height: h, pointerEvents: 'all', transition: 'transform 200ms ease' }
       : { pointerEvents: 'all', transition: 'transform 200ms ease' },
-    data: { ...makeFlowNodeData(node, collapsed, childCount, ctx.compact), ...(portY === undefined ? {} : { portY }) },
+    data: {
+      ...makeFlowNodeData(node, collapsed, childCount, ctx.compact),
+      ...(ports.portOutY === undefined ? {} : { portOutY: ports.portOutY }),
+      ...(ports.portInY === undefined ? {} : { portInY: ports.portInY }),
+    },
   });
 
   const insets = containerInsets(node, ctx.dims);
@@ -1394,6 +1425,8 @@ function linkEdge(params: {
   // the target for fan-in.
   laneFromSource?: number;
   laneFromTarget?: number;
+  // Which end meets a container boundary — drawn as a small port socket there.
+  portDot?: 'source' | 'target';
 }): Edge {
   return {
     id: params.id,
@@ -1409,6 +1442,7 @@ function linkEdge(params: {
       dashed: params.dashed ?? false,
       laneFromSource: params.laneFromSource,
       laneFromTarget: params.laneFromTarget,
+      portDot: params.portDot,
     },
     markerEnd: { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
   };
@@ -1472,6 +1506,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
         dashed: true,
         label: label('copy'),
         labelOffsetY: -18,
+        portDot: 'source',
       })
     );
     chainChildren(children, ctx);
@@ -1486,6 +1521,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
         dashed: true,
         label: label('merge'),
         labelOffsetY: -18,
+        portDot: 'target',
       })
     );
     return;
@@ -1502,6 +1538,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
           targetHandle: 'gt',
           tone: 'primary',
           laneFromTarget: laneOffset(children.length - 1 - i, children.length, ctx.dims),
+          portDot: 'target',
         })
       );
     }
@@ -1523,24 +1560,17 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
           tone: child.node.isErrorPath ? 'error' : 'primary',
           dashed: child.node.isErrorPath,
           laneFromSource: laneOffset(i, children.length, ctx.dims),
+          portDot: 'source',
         })
       );
     }
     return;
   }
 
-  // Sequential sub-pipeline.
-  ctx.rfEdges.push(
-    linkEdge({
-      id: `entry-${node.id}`,
-      source: node.id,
-      target: first,
-      sourceHandle: 'gs',
-      targetHandle: 'l',
-      tone: node.isErrorPath ? 'error' : 'primary',
-      dashed: node.isErrorPath,
-    })
-  );
+  // Sequential sub-pipeline: containment already shows flow entering (the spine
+  // arrives at the box itself), so no separate entry edge — with the narrow
+  // sequential inset it renders as an unreadable stub. The semantics live on the
+  // card instead (e.g. catch's "on error" chip); chain edges show internal order.
   chainChildren(children, ctx);
 }
 

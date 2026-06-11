@@ -1027,15 +1027,17 @@ cache_resources:
     expect(nodeData('output-switch-1')).toMatchObject({ isDefault: true });
   });
 
-  it('styles a catch handler as an error path', () => {
-    const catchEntry = edges().find((e) => e.id.startsWith('entry-') && e.id.includes('proc-3'));
-    expect((catchEntry?.data as { tone?: string }).tone).toBe('error');
+  it('marks a catch handler as an error path on its card (chip), not via an entry edge', () => {
+    const nodes = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
+    // proc-3 is the `catch` container — its card carries the "on error" semantics.
+    const catchData = nodes.find((n) => n.id === 'proc-3')?.data as Record<string, unknown>;
+    expect(catchData.isErrorPath).toBe(true);
   });
 
-  it('threads a plain sequential container with an entry edge (no error styling)', () => {
-    // proc-2 is the `try` container.
-    const tryEntry = edges().find((e) => e.id.startsWith('entry-proc-2'));
-    expect((tryEntry?.data as { tone?: string }).tone).toBe('primary');
+  it('draws no entry edges for sequential containers — containment shows the flow', () => {
+    // The spine enters the box itself; an inner entry edge would render as an
+    // unreadable stub in the narrow sequential inset.
+    expect(edges().some((e) => e.id.startsWith('entry-'))).toBe(false);
   });
 
   it('gives nested components a path-based editTarget addressing their exact YAML location', () => {
@@ -1055,6 +1057,31 @@ cache_resources:
     });
     // Top-level processors keep the convenience index target.
     expect(byId('proc-0')?.editTarget).toEqual({ kind: 'processor', index: 0 });
+  });
+
+  it('anchors branch ports level with the first/last child row, fans at the centre', () => {
+    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    const nodeData = (id: string) =>
+      layout.rfNodes.find((n) => n.id === id)?.data as {
+        portOutY?: number;
+        portInY?: number;
+      };
+    // branch (one child): copy leaves and merge returns level with the child's
+    // connector row (headerH 48 + pad 16 + handle 36) — clean horizontal lines
+    // that never cross the container header or its icon.
+    expect(nodeData('proc-1')).toMatchObject({ portOutY: 100, portInY: 100 });
+    // The output switch fans out from the children-area centre (a trunk).
+    const switchNode = layout.rfNodes.find((n) => n.id === 'output-switch');
+    const switchH = (switchNode?.style as { height?: number })?.height ?? 0;
+    expect(nodeData('output-switch')?.portOutY).toBe((48 + switchH) / 2);
+  });
+
+  it('marks the container end of copy/merge/fan edges with a port socket', () => {
+    // The container-side endpoint is drawn as a visible port dot so the line
+    // doesn't appear to trail off into the container border.
+    expect(data('copy-proc-1')).toMatchObject({ portDot: 'source' });
+    expect(data('merge-proc-1')).toMatchObject({ portDot: 'target' });
+    expect(data('fanout-output-switch-0')).toMatchObject({ portDot: 'source' });
   });
 
   it('draws dashed reference edges from a component to the resource it uses', () => {
