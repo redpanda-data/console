@@ -36,6 +36,7 @@ import {
   type CellValue,
   type ColumnDef,
   columnKindForPgType,
+  isArrayPgType,
   type QueryRun,
   type ResultRow,
   type SqlIdentifier,
@@ -280,6 +281,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
             type: c.type,
             kind: columnKindForPgType(c.type),
             short: shortPgType(c.type),
+            isArray: isArrayPgType(c.type),
           }));
           const rows: ResultRow[] = res.rows.map((r) => {
             const row: ResultRow = {};
@@ -289,7 +291,8 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
                 return;
               }
               let cell: CellValue = v.nullValue ? null : (v.value ?? null);
-              if (cell !== null && col.kind === 'bool') {
+              // Arrays keep their raw string form — only scalar bools coerce.
+              if (cell !== null && col.kind === 'bool' && !col.isArray) {
                 cell = cell === 'true' || cell === 't';
               }
               row[col.name] = cell;
