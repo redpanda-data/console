@@ -66,16 +66,18 @@ export type TableRef = {
 
 // Logical kind derived from the Postgres type name, used for icons, alignment,
 // sorting and cell rendering.
-export type ColumnKind = 'num' | 'str' | 'bool' | 'time';
+export type ColumnKind = 'num' | 'str' | 'bool' | 'time' | 'json';
 
 export type ColumnDef = {
   name: string;
   /** Raw Postgres type name as reported by the driver (e.g. "INT8", "TEXT"). */
   type: string;
-  /** Derived display kind. */
+  /** Derived display kind. For arrays this is the element kind. */
   kind: ColumnKind;
   /** Short label shown under the column name (e.g. "int", "text"). */
   short: string;
+  /** True for array types (e.g. "TEXT[]", "_INT4", "ARRAY<STRING>"). */
+  isArray?: boolean;
 };
 
 // A single result cell. `null` is SQL NULL; everything else is the raw string
@@ -130,9 +132,32 @@ export type SqlIdentifier = {
   kind: 'catalog' | 'table' | 'column' | 'keyword';
 };
 
-// Maps a Postgres type name to a display kind. Conservative defaults: anything
-// unrecognized is treated as a string.
+// Unwraps one level of array syntax — "TEXT[]", "_TEXT" (pg wire naming), or
+// "ARRAY<TEXT>"/"LIST<TEXT>" (Iceberg) — returning the element type, or null
+// when the type is not an array.
+export function arrayElementPgType(pgType: string): string | null {
+  const t = pgType.trim();
+  if (t.endsWith('[]')) {
+    return t.slice(0, -2);
+  }
+  if (t.startsWith('_')) {
+    return t.slice(1);
+  }
+  const wrapped = /^(?:ARRAY|LIST)\s*<(.+)>$/i.exec(t);
+  return wrapped ? wrapped[1] : null;
+}
+
+export function isArrayPgType(pgType: string): boolean {
+  return arrayElementPgType(pgType) !== null;
+}
+
+// Maps a Postgres type name to a display kind. Arrays map to their element
+// kind. Conservative defaults: anything unrecognized is treated as a string.
 export function columnKindForPgType(pgType: string): ColumnKind {
+  const element = arrayElementPgType(pgType);
+  if (element !== null) {
+    return columnKindForPgType(element);
+  }
   const t = pgType.toUpperCase();
   if (/(INT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/.test(t)) {
     return 'num';
@@ -142,6 +167,9 @@ export function columnKindForPgType(pgType: string): ColumnKind {
   }
   if (/(TIMESTAMP|DATE|TIME|INTERVAL)/.test(t)) {
     return 'time';
+  }
+  if (t.includes('JSON')) {
+    return 'json';
   }
   return 'str';
 }

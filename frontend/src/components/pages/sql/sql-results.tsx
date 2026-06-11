@@ -18,6 +18,8 @@ import {
   ArrowDown,
   ArrowUp,
   Box,
+  Braces,
+  Brackets,
   Calendar,
   ChevronsUpDown,
   CircleX,
@@ -33,7 +35,7 @@ import {
   Type,
   Waves,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import type {
   BridgeInfo,
@@ -66,17 +68,33 @@ const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
 const RES_STAT =
   'inline-flex items-center gap-1.5 text-xs text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
 
-function TypeIcon({ kind, size = 11 }: { kind: ColumnKind; size?: number }) {
+function TypeIcon({ kind, isArray, size = 11 }: { kind: ColumnKind; isArray?: boolean; size?: number }) {
+  let icon: ReactNode;
   switch (kind) {
     case 'num':
-      return <Hash size={size} />;
+      icon = <Hash size={size} />;
+      break;
     case 'bool':
-      return <ToggleLeft size={size} />;
+      icon = <ToggleLeft size={size} />;
+      break;
     case 'time':
-      return <Calendar size={size} />;
+      icon = <Calendar size={size} />;
+      break;
+    case 'json':
+      icon = <Braces size={size} />;
+      break;
     default:
-      return <Type size={size} />;
+      icon = <Type size={size} />;
   }
+  if (!isArray) {
+    return icon;
+  }
+  return (
+    <span className="inline-flex items-center gap-[1px]">
+      <Brackets size={size} />
+      {icon}
+    </span>
+  );
 }
 
 // Inline chip + Iceberg-lag snapshot shown in the summary bar for bridge queries.
@@ -225,6 +243,46 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function sortRows(rows: ResultRow[], cols: ColumnDef[], sort: SortState): ResultRow[] {
+  if (!sort.col) {
+    return rows;
+  }
+  const sortCol = sort.col;
+  const col = cols.find((c) => c.name === sortCol);
+  if (!col) {
+    return rows;
+  }
+  const numeric = col.kind === 'num';
+  const key = (r: ResultRow): number | string | boolean => {
+    const v = r[sortCol];
+    if (numeric) {
+      return Number.parseFloat(cellText(v));
+    }
+    return v === null || v === undefined ? '' : v;
+  };
+  const arr = [...rows];
+  arr.sort((a, b) => {
+    const x = key(a);
+    const y = key(b);
+    if (x < y) {
+      return sort.dir === 'asc' ? -1 : 1;
+    }
+    if (x > y) {
+      return sort.dir === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+  return arr;
+}
+
+// Stable React keys: rows are stable object references from the run, so a
+// WeakMap gives each a consistent id across sorts/pagination without an index key.
+function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
+  const map = new WeakMap<ResultRow, number>();
+  rows.forEach((r, i) => map.set(r, i));
+  return map;
+}
+
 function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   const [sort, setSort] = useState<SortState>({ col: null, dir: null });
   const [shown, setShown] = useState(PAGE_SIZE);
@@ -238,47 +296,10 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   const cols = run.columns;
   const bridge = run.bridge;
 
-  const sorted = useMemo(() => {
-    if (!sort.col) {
-      return run.rows;
-    }
-    const sortCol = sort.col;
-    const col = cols.find((c) => c.name === sortCol);
-    if (!col) {
-      return run.rows;
-    }
-    const numeric = col.kind === 'num';
-    const key = (r: ResultRow): number | string | boolean => {
-      const v = r[sortCol];
-      if (numeric) {
-        return Number.parseFloat(cellText(v));
-      }
-      return v === null || v === undefined ? '' : v;
-    };
-    const arr = [...run.rows];
-    arr.sort((a, b) => {
-      const x = key(a);
-      const y = key(b);
-      if (x < y) {
-        return sort.dir === 'asc' ? -1 : 1;
-      }
-      if (x > y) {
-        return sort.dir === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-    return arr;
-  }, [sort, run.rows, cols]);
-
+  // Derived values — the React Compiler memoizes these against rows/cols/sort.
+  const sorted = sortRows(run.rows, cols, sort);
   const visible = sorted.slice(0, shown);
-
-  // Stable React keys: rows are stable object references from the run, so a
-  // WeakMap gives each a consistent id across sorts/pagination without an index key.
-  const rowKeys = useMemo(() => {
-    const map = new WeakMap<ResultRow, number>();
-    run.rows.forEach((r, i) => map.set(r, i));
-    return map;
-  }, [run.rows]);
+  const rowKeys = buildRowKeys(run.rows);
 
   const cycleSort = (name: string) => {
     setSort((s) => {
@@ -374,7 +395,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                         </span>
                       </span>
                       <span className="inline-flex items-center gap-1 text-caption-sm text-muted-foreground uppercase tracking-wide">
-                        <TypeIcon kind={c.kind} /> {c.short}
+                        <TypeIcon isArray={c.isArray} kind={c.kind} /> {c.short}
                       </span>
                     </button>
                   </th>
