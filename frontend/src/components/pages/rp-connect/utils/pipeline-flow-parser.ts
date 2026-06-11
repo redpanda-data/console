@@ -1216,12 +1216,19 @@ type SizedNode = {
 //   left  — the `gs` source side (entry / copy / fan-out)
 //   right — the `gt` target side (merge-back / fan-in)
 //   gap   — vertical spacing between children
+// A parallel processor container (switch/parallel/workflow): its alternatives
+// reconverge — data flows back out and continues — unlike output fans, which
+// terminate at their sinks.
+function reconverges(node: PipelineFlowNode): boolean {
+  return node.childFlow === 'parallel' && node.section === 'processor' && !node.branch;
+}
+
 // Which sides of a container carry routed edges: `out` is the `gs` source side
 // (entry / copy / fan-out), `in` is the `gt` target side (merge-back / fan-in).
 function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   return {
     out: Boolean(node.branch) || (node.childFlow === 'parallel' && node.section !== 'input'),
-    in: Boolean(node.branch) || node.section === 'input',
+    in: Boolean(node.branch) || node.section === 'input' || reconverges(node),
   };
 }
 
@@ -1324,7 +1331,8 @@ function containerPortYs(
     return { portInY: center };
   }
   if (node.childFlow === 'parallel') {
-    return { portOutY: center };
+    // Reconverging processor fans also collect their branches on the right.
+    return { portOutY: center, ...(reconverges(node) ? { portInY: center } : {}) };
   }
   return {};
 }
@@ -1460,6 +1468,74 @@ function laneOffset(index: number, count: number, dims: FlowDims): number {
   return 14 + index * step;
 }
 
+// Lane ranks that make a fan nest without crossings: the farther a child's
+// connector row is from the container's centre port, the closer its lane hugs the
+// container edge (rank 0 = innermost lane offset = nearest the border). A nearer
+// child's vertical run then sits deeper inside, where the farther children's
+// horizontal segments never reach it.
+function fanLaneRanks(node: PipelineFlowNode, children: SizedNode[], dims: FlowDims): number[] {
+  const insets = containerInsets(node, dims);
+  const innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
+  const containerH = dims.headerH + innerH + 2 * dims.pad;
+  const centerY = (dims.headerH + containerH) / 2;
+
+  let top = dims.headerH + dims.pad;
+  const distances = children.map((child) => {
+    const rowY = top + FLOW_SPINE_HANDLE_TOP;
+    top += child.h + insets.gap;
+    return Math.abs(rowY - centerY);
+  });
+  const byDistanceDesc = distances.map((distance, index) => ({ distance, index }));
+  byDistanceDesc.sort((a, b) => b.distance - a.distance);
+  const ranks = new Array<number>(children.length);
+  for (const [rank, entry] of byDistanceDesc.entries()) {
+    ranks[entry.index] = rank;
+  }
+  return ranks;
+}
+
+// Fan-out to each alternative — and, for reconverging processor fans, fan-in back
+// from each branch to the container's right port (output fans terminate at their
+// sinks, so they draw no fan-in). The routing condition is rendered as a chip on
+// each receiving card, so the edges stay clean unlabeled lines (red dashed for
+// error branches); each branch routes down its own lane so siblings never overlap.
+function emitParallelFanEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
+  const ranks = fanLaneRanks(node, children, ctx.dims);
+  for (const [i, child] of children.entries()) {
+    ctx.rfEdges.push(
+      linkEdge({
+        id: `fanout-${child.node.id}`,
+        source: node.id,
+        target: child.node.id,
+        sourceHandle: 'gs',
+        targetHandle: 'l',
+        tone: child.node.isErrorPath ? 'error' : 'primary',
+        dashed: child.node.isErrorPath,
+        laneFromSource: laneOffset(ranks[i], children.length, ctx.dims),
+        portDot: 'source',
+      })
+    );
+  }
+  if (!reconverges(node)) {
+    return;
+  }
+  for (const [i, child] of children.entries()) {
+    ctx.rfEdges.push(
+      linkEdge({
+        id: `fanin-${child.node.id}`,
+        source: child.node.id,
+        target: node.id,
+        sourceHandle: 'r',
+        targetHandle: 'gt',
+        tone: child.node.isErrorPath ? 'error' : 'primary',
+        dashed: child.node.isErrorPath,
+        laneFromTarget: laneOffset(ranks[i], children.length, ctx.dims),
+        portDot: 'target',
+      })
+    );
+  }
+}
+
 function chainChildren(children: SizedNode[], ctx: EmitContext): void {
   for (let i = 0; i < children.length - 1; i += 1) {
     ctx.rfEdges.push(
@@ -1532,6 +1608,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
   }
 
   if (node.section === 'input') {
+    const ranks = fanLaneRanks(node, children, ctx.dims);
     for (const [i, child] of children.entries()) {
       ctx.rfEdges.push(
         linkEdge({
@@ -1541,7 +1618,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
           sourceHandle: 'r',
           targetHandle: 'gt',
           tone: 'primary',
-          laneFromTarget: laneOffset(children.length - 1 - i, children.length, ctx.dims),
+          laneFromTarget: laneOffset(ranks[i], children.length, ctx.dims),
           portDot: 'target',
         })
       );
@@ -1550,24 +1627,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
   }
 
   if (node.childFlow === 'parallel') {
-    // The routing condition is rendered as a chip on each receiving card, so the
-    // fan-out edge stays a clean unlabeled line (red dashed for error branches).
-    // Each branch routes down its own lane so siblings never overlap.
-    for (const [i, child] of children.entries()) {
-      ctx.rfEdges.push(
-        linkEdge({
-          id: `fanout-${child.node.id}`,
-          source: node.id,
-          target: child.node.id,
-          sourceHandle: 'gs',
-          targetHandle: 'l',
-          tone: child.node.isErrorPath ? 'error' : 'primary',
-          dashed: child.node.isErrorPath,
-          laneFromSource: laneOffset(i, children.length, ctx.dims),
-          portDot: 'source',
-        })
-      );
-    }
+    emitParallelFanEdges(node, children, ctx);
     return;
   }
 

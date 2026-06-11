@@ -574,6 +574,8 @@ type FlowLinkData = {
   /** Selection context: unrelated edges fade, connected ones render full strength. */
   dimmed?: boolean;
   emphasized?: boolean;
+  /** Idle reference edges: readable hint, softer than full strength. */
+  faint?: boolean;
   /** Orthogonal cable route (reference edges): drop → channel → bus → target. */
   route?: { channelX: number; busY: number };
 };
@@ -608,11 +610,17 @@ function orthogonalRoundedPath(points: [number, number][], radius = 8): string {
 function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
   const tone = d?.tone ?? 'muted';
   const baseWidth = tone === 'muted' ? 1.5 : 2;
+  let opacity = 1;
+  if (d?.dimmed) {
+    opacity = 0.25;
+  } else if (d?.faint) {
+    opacity = 0.55;
+  }
   return {
     stroke: d?.emphasized && tone === 'muted' ? LINK_STROKE.primary : LINK_STROKE[tone],
     strokeWidth: d?.emphasized ? baseWidth + 0.75 : baseWidth,
     strokeDasharray: d?.dashed ? '5 4' : undefined,
-    opacity: d?.dimmed ? 0.25 : 1,
+    opacity,
   };
 }
 

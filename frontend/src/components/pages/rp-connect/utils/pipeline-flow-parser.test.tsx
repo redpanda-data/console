@@ -1090,6 +1090,54 @@ cache_resources:
     expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
   });
 
+  it('reconverges processor fans (fan-in per case) but not output fans (sinks terminate)', () => {
+    const withProcessorSwitch = `pipeline:
+  processors:
+    - switch:
+        - check: a == 1
+          processors: [{ mapping: 'root = this' }]
+        - processors: [{ log: { message: hi } }]
+output:
+  switch:
+    cases:
+      - check: errored()
+        output: { redpanda: { topic: dlq } }
+      - output: { drop: {} }`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(withProcessorSwitch).nodes);
+    // Each processor case fans out AND back in — the data continues to the next step.
+    expect(layout.rfEdges.filter((e) => e.id.startsWith('fanin-proc-0-case-'))).toHaveLength(2);
+    expect(layout.rfEdges.find((e) => e.id === 'fanin-proc-0-case-1')?.data).toMatchObject({ portDot: 'target' });
+    // Output cases terminate at their sinks — no fan-in.
+    expect(layout.rfEdges.some((e) => e.id.startsWith('fanin-output-switch'))).toBe(false);
+  });
+
+  it('nests fan lanes by distance from the centre port so siblings never cross', () => {
+    // Four equal cases: outer cases (1 & 4) are farthest from the centre port and
+    // must hug the container edge (smaller lane); inner cases (2 & 3) take deeper
+    // lanes — the nesting that guarantees no fan-line crossings.
+    const fourCases = `pipeline:
+  processors:
+    - switch:
+        - check: a == 1
+          processors: [{ mapping: 'root = this' }]
+        - check: a == 2
+          processors: [{ mapping: 'root = this' }]
+        - check: a == 3
+          processors: [{ mapping: 'root = this' }]
+        - processors: [{ mapping: 'root = this' }]
+output:
+  drop: {}`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(fourCases).nodes);
+    const lane = (id: string) =>
+      (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromSource?: number }).laneFromSource ?? 0;
+    expect(lane('fanout-proc-0-case-1')).toBeLessThan(lane('fanout-proc-0-case-2'));
+    expect(lane('fanout-proc-0-case-4')).toBeLessThan(lane('fanout-proc-0-case-3'));
+    // Fan-in mirrors the same ranks.
+    const inLane = (id: string) =>
+      (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromTarget?: number }).laneFromTarget ?? 0;
+    expect(inLane('fanin-proc-0-case-1')).toBeLessThan(inLane('fanin-proc-0-case-2'));
+  });
+
   it('routes reference edges through the clear channel beside their column', () => {
     const route = (data('ref-proc-0-resource-cache_resources-0') as { route?: { channelX: number; busY: number } })
       ?.route;

@@ -108,17 +108,25 @@ Supporting polish:
   the children area** (`portY`, computed from the container height, passed to
   `ContainerHandles`) so branches radiate level with the children — copy/merge come
   out horizontal and switch branches diverge immediately rather than running
-  parallel down a gutter.
+  parallel down a gutter. Lanes are **ranked by distance from the centre port**
+  (`fanLaneRanks`): the farthest case hugs the container edge, the nearest takes
+  the deepest lane — the nesting that guarantees sibling fan lines never cross,
+  on both the fan-out and fan-in sides.
 - **No on-edge text labels.** Routing conditions are chips on cards and the edge
   vocabulary lives in the legend; the only edge labels are the short branch
   `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
 - **Cable management on dense graphs** (`decorateEdges` in the canvas):
-  resource-reference (`uses`) edges are always drawn but **faint** (~25%),
-  rendering full-strength **in the primary colour** when either endpoint is
-  **selected or hovered** — hover a `cache` to see its resource, select a
-  resource to see everyone using it. Selection/hover scope includes a
+  resource-reference (`uses`) edges idle at a readable **faint** level (~55%),
+  render full-strength **in the primary colour** when either endpoint is
+  **selected or hovered**, and dim to ~25% only when an unrelated node is
+  selected (like every other edge). Selection/hover scope includes a
   container's **whole subtree**, so selecting a branch keeps its internal
   chains/copy/merge lit while unrelated edges fade.
+- **Processor fans reconverge.** A parallel *processor* container
+  (switch/parallel/workflow) draws fan-in edges from each alternative back to
+  its right port — data flows back out and continues to the next step — with
+  the same per-branch lanes, tones, and port sockets as the fan-out. *Output*
+  fans (broker/switch/fallback outputs) terminate at their sinks and draw none.
 - **Channel routing for reference edges.** Each `uses` edge exits its node with a
   short drop, runs across to the **clear channel beside its top-level column**
   (mid-`colGap`, staggered when shared), down the channel, along a **bus** above

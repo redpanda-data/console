@@ -156,7 +156,17 @@ export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onIn
     }
     if (next.id.startsWith('ref-')) {
       const touchesActive = activeScope !== undefined && (activeScope.has(next.source) || activeScope.has(next.target));
-      return { ...next, data: { ...next.data, dimmed: !touchesActive, emphasized: touchesActive } };
+      // Idle refs are "faint" (readable hint); they fully dim only when something
+      // else is selected, like every other unrelated edge.
+      return {
+        ...next,
+        data: {
+          ...next.data,
+          emphasized: touchesActive,
+          dimmed: !touchesActive && selectedScope !== undefined,
+          faint: !touchesActive && selectedScope === undefined,
+        },
+      };
     }
     if (selectedScope !== undefined) {
       const touchesSelection = selectedScope.has(next.source) || selectedScope.has(next.target);

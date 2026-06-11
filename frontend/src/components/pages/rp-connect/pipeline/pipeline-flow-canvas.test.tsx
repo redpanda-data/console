@@ -27,8 +27,10 @@ const scope = (...ids: string[]) => new Set(ids);
 
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
-    // Always present, but dimmed by default — a hint, not clutter.
-    expect(refData(decorateEdges(edges, {}))).toMatchObject({ dimmed: true });
+    // Always present at a readable "faint" level — a hint, not clutter — and only
+    // fully dimmed when an unrelated node is selected (like every other edge).
+    expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true, dimmed: false });
+    expect(refData(decorateEdges(edges, { selectedScope: scope('b') }))).toMatchObject({ dimmed: true, faint: false });
 
     // Selecting (or hovering) either endpoint renders the edge full-strength.
     expect(refData(decorateEdges(edges, { selectedScope: scope('a') }))).toMatchObject({
