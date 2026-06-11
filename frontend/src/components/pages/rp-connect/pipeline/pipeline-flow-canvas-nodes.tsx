@@ -492,9 +492,12 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       >
         <div
           className={cn(
-            'flex items-center gap-2 rounded-t-lg border-border/60 border-b bg-card/80',
+            'flex items-center gap-2 bg-card/80',
             selectable && 'cursor-pointer',
-            data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2'
+            data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2',
+            // Collapsed: the header is the whole card, so fill + centre it (no divider)
+            // so the spine arrows align with its middle. Expanded: header on top.
+            data.collapsed ? 'h-full rounded-lg' : 'rounded-t-lg border-border/60 border-b'
           )}
         >
           <ConnectorLogo

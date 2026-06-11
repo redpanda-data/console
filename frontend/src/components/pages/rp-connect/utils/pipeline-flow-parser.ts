@@ -1122,6 +1122,10 @@ type FlowDims = {
   leafBaseH: number;
   metaRowH: number; // 0 in compact (meta hidden)
   headerH: number;
+  // Height of a collapsed container card. Taller than the header so the spine
+  // (anchored ~SPINE_HANDLE_TOP from the top) lands near its vertical centre and
+  // the connecting arrows look aligned.
+  collapsedH: number;
   pad: number;
   stackGap: number;
   colGap: number;
@@ -1139,6 +1143,7 @@ const FULL_DIMS: FlowDims = {
   leafBaseH: 56,
   metaRowH: 22,
   headerH: 48,
+  collapsedH: 72,
   pad: 16,
   stackGap: 18,
   colGap: 72,
@@ -1151,6 +1156,7 @@ const COMPACT_DIMS: FlowDims = {
   leafBaseH: 32,
   metaRowH: 0,
   headerH: 32,
+  collapsedH: 32,
   pad: 8,
   stackGap: 10,
   colGap: 26,
@@ -1244,7 +1250,12 @@ function measureFlowNode(
   const collapsed = collapsedIds.has(node.id);
   const kids = node.kind === 'group' && !collapsed ? childrenOf(node.id) : [];
   if (kids.length === 0) {
-    const h = node.kind === 'group' ? dims.headerH : leafCardHeight(node, dims);
+    // A collapsed group is a standalone card sized so the spine hits its centre;
+    // an empty group keeps the bare header height; leaves are content-sized.
+    let h = leafCardHeight(node, dims);
+    if (node.kind === 'group') {
+      h = collapsed ? dims.collapsedH : dims.headerH;
+    }
     return { node, w: dims.cardW, h, collapsed, children: [] };
   }
   const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds, dims));
