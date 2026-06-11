@@ -35,9 +35,14 @@ const (
 type SQLServiceClient interface {
 	// ListCatalogs lists all catalogs visible to the caller.
 	ListCatalogs(ctx context.Context, in *ListCatalogsRequest, opts ...grpc.CallOption) (*ListCatalogsResponse, error)
-	// ListTables lists tables in a catalog.
+	// ListTables lists tables in a catalog. The catalog is identified by name;
+	// when catalogs with the same name exist in more than one namespace, tables
+	// from all of them are returned unless catalog_namespace narrows the scope.
 	ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error)
-	// DescribeTable returns metadata and column shape for a single table.
+	// DescribeTable returns metadata and column shape for a single table. The
+	// catalog is resolved by name; when catalogs with the same name exist in
+	// more than one namespace, the request must disambiguate via
+	// catalog_namespace or it fails with INVALID_ARGUMENT.
 	DescribeTable(ctx context.Context, in *DescribeTableRequest, opts ...grpc.CallOption) (*DescribeTableResponse, error)
 	// ExecuteQuery runs a single SQL statement. Rows returned are capped
 	// server-side; `truncated` indicates the cap fired.
@@ -101,9 +106,14 @@ func (c *sQLServiceClient) ExecuteQuery(ctx context.Context, in *ExecuteQueryReq
 type SQLServiceServer interface {
 	// ListCatalogs lists all catalogs visible to the caller.
 	ListCatalogs(context.Context, *ListCatalogsRequest) (*ListCatalogsResponse, error)
-	// ListTables lists tables in a catalog.
+	// ListTables lists tables in a catalog. The catalog is identified by name;
+	// when catalogs with the same name exist in more than one namespace, tables
+	// from all of them are returned unless catalog_namespace narrows the scope.
 	ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error)
-	// DescribeTable returns metadata and column shape for a single table.
+	// DescribeTable returns metadata and column shape for a single table. The
+	// catalog is resolved by name; when catalogs with the same name exist in
+	// more than one namespace, the request must disambiguate via
+	// catalog_namespace or it fails with INVALID_ARGUMENT.
 	DescribeTable(context.Context, *DescribeTableRequest) (*DescribeTableResponse, error)
 	// ExecuteQuery runs a single SQL statement. Rows returned are capped
 	// server-side; `truncated` indicates the cap fired.
