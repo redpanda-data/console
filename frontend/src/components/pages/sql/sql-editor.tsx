@@ -24,7 +24,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-import { formatSQL } from './sql';
 import type { SqlIdentifier, SqlRole } from './sql-types';
 
 // Imperative handle exposed to the workspace so the catalog tree can open a
@@ -210,6 +209,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
   // Latest identifiers, read by the (once-registered) completion provider.
   const identifiersRef = useRef(identifiers);
   const completionDisposable = useRef<{ dispose: () => void } | null>(null);
+  const formattingDisposable = useRef<{ dispose: () => void } | null>(null);
   // Latest run callback, bound into the Cmd/Ctrl+Enter command (registered once).
   const runRef = useRef<() => void>(() => undefined);
 
@@ -219,8 +219,14 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
     identifiersRef.current = identifiers;
   }, [identifiers]);
 
-  // Dispose the completion provider when the editor unmounts.
-  useEffect(() => () => completionDisposable.current?.dispose(), []);
+  // Dispose the language providers when the editor unmounts.
+  useEffect(
+    () => () => {
+      completionDisposable.current?.dispose();
+      formattingDisposable.current?.dispose();
+    },
+    []
+  );
 
   useImperativeHandle(
     ref,
@@ -346,6 +352,30 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
         },
       });
     }
+
+    // Back the editor's native Format Document action (Shift+Alt+F) with
+    // sql-formatter (Monaco ships no SQL formatter), so formatting runs
+    // through Monaco and preserves cursor + undo. Dynamically imported to
+    // keep it out of the initial bundle; postgresql is the closest dialect
+    // to Oxla.
+    if (!formattingDisposable.current) {
+      formattingDisposable.current = monaco.languages.registerDocumentFormattingEditProvider('sql', {
+        provideDocumentFormattingEdits: async (model) => {
+          const { format } = await import('sql-formatter');
+          try {
+            return [
+              {
+                range: model.getFullModelRange(),
+                text: format(model.getValue(), { language: 'postgresql', keywordCase: 'upper' }),
+              },
+            ];
+          } catch {
+            // Unparseable SQL (mid-edit) — leave the text untouched.
+            return [];
+          }
+        },
+      });
+    }
   }, []);
 
   const addTab = () => {
@@ -459,7 +489,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
             ) : null}
           </div>
           <Button
-            onClick={() => updateSql(formatSQL(active.sql))}
+            onClick={() => void editorRef.current?.getAction('editor.action.formatDocument')?.run()}
             size="sm"
             title="Format SQL"
             variant="secondary-ghost"

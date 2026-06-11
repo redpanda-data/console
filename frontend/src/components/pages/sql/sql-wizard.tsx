@@ -10,12 +10,11 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Input } from 'components/redpanda-ui/components/input';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
 import { useState } from 'react';
-
-import { highlightSQL } from './sql';
 
 export type WizardTopic = {
   name: string;
@@ -218,13 +217,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
               </div>
               <div className="mb-4">
                 <span className="mb-1.5 block font-semibold text-sm text-strong">This will run</span>
-                <div className="overflow-x-auto rounded-md bg-background-inverse-base px-4 py-[14px]">
-                  <pre
-                    className="m-0 font-mono text-xs leading-relaxed"
-                    // biome-ignore lint/security/noDangerouslySetInnerHtml: highlightSQL HTML-escapes all token text
-                    dangerouslySetInnerHTML={{ __html: highlightSQL(createSQL(tableName, topic ?? '')) }}
-                  />
-                </div>
+                <DynamicCodeBlock code={createSQL(tableName, topic ?? '')} lang="sql" />
               </div>
               {error && <div className="mt-1.5 block text-destructive text-xs">{error}</div>}
             </div>
