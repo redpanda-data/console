@@ -9,22 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-// Shared types for the SQL workspace. UI-facing view models are derived from the
-// generated proto messages where possible so the leaf components and the data
-// layer agree on shape.
+// Shared types for the SQL workspace, so the leaf components (catalog tree,
+// editor, results) and the data layer in sql-workspace agree on shape without
+// importing from each other.
 
-import type {
-  Catalog as ProtoCatalog,
-  Column as ProtoColumn,
-  Table as ProtoTable,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-
-// Re-export the proto messages under the names the children import.
-export type { ProtoCatalog, ProtoTable, ProtoColumn };
-
-// A catalog as displayed in the tree. `displayLabel` is the human label
-// (e.g. "Redpanda Catalog") while `name` is the SQL identifier used in queries
-// (e.g. "default_redpanda_catalog").
 export type Catalog = {
   /** SQL identifier, e.g. `default_redpanda_catalog`. */
   name: string;
@@ -37,7 +25,6 @@ export type Catalog = {
 
 export type CatalogEngine = 'redpanda' | 'iceberg';
 
-// A namespace groups tables within a catalog.
 export type Namespace = {
   name: string;
   /** Stable id used for expand/collapse + pagination state. */
@@ -45,7 +32,6 @@ export type Namespace = {
   tables: TableRef[];
 };
 
-// A table reference as displayed in the tree.
 export type TableRef = {
   /** Stable id, typically `<catalog>.<namespace>.<name>`. */
   id: string;
@@ -74,7 +60,7 @@ export type ColumnDef = {
   type: string;
   /** Derived display kind. For arrays this is the element kind. */
   kind: ColumnKind;
-  /** Short label shown under the column name (e.g. "int", "text"). */
+  /** Short label shown under the column name — the type name lower-cased. */
   short: string;
   /** True for array types (e.g. "TEXT[]", "_INT4", "ARRAY<STRING>"). */
   isArray?: boolean;
@@ -84,7 +70,7 @@ export type ColumnDef = {
 // (or coerced boolean) for display.
 export type CellValue = string | boolean | null;
 
-// A result row keyed by column name (matches the prototype's grid model).
+// A result row keyed by column name.
 export type ResultRow = Record<string, CellValue>;
 
 // Iceberg-lag snapshot for a bridge query. Offset-based, captured at query time.
@@ -95,10 +81,9 @@ export type BridgeInfo = {
   totalLag: number;
 };
 
-// Discriminated union describing the lifecycle of a single query run.
-export type QueryRunIdle = { state: 'idle' };
-export type QueryRunRunning = { state: 'running'; token: number };
-export type QueryRunError = {
+type QueryRunIdle = { state: 'idle' };
+type QueryRunRunning = { state: 'running'; token: number };
+type QueryRunError = {
   state: 'error';
   token: number;
   title: string;
@@ -123,7 +108,7 @@ export type QueryRunSuccess = {
 
 export type QueryRun = QueryRunIdle | QueryRunRunning | QueryRunError | QueryRunSuccess;
 
-// The caller's effective role in the workspace. Drives admin-only affordances.
+// Drives admin-only affordances (e.g. the "Add a topic" CTA).
 export type SqlRole = 'admin' | 'viewer';
 
 // Autocomplete identifier surfaced to the editor.
@@ -172,9 +157,4 @@ export function columnKindForPgType(pgType: string): ColumnKind {
     return 'json';
   }
   return 'str';
-}
-
-// Short, lower-case label for a Postgres type name (best-effort).
-export function shortPgType(pgType: string): string {
-  return pgType.toLowerCase();
 }

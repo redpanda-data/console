@@ -41,7 +41,6 @@ import {
   type ResultRow,
   type SqlIdentifier,
   type SqlRole,
-  shortPgType,
   type TableRef,
 } from './sql-types';
 import { SqlWizard, type WizardTopic } from './sql-wizard';
@@ -280,7 +279,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
             name: c.name,
             type: c.type,
             kind: columnKindForPgType(c.type),
-            short: shortPgType(c.type),
+            short: c.type.toLowerCase(),
             isArray: isArrayPgType(c.type),
           }));
           const rows: ResultRow[] = res.rows.map((r) => {
