@@ -1111,31 +1111,28 @@ output:
     expect(layout.rfEdges.some((e) => e.id.startsWith('fanin-output-switch'))).toBe(false);
   });
 
-  it('nests fan lanes by distance from the centre port so siblings never cross', () => {
-    // Four equal cases: outer cases (1 & 4) are farthest from the centre port and
-    // must hug the container edge (smaller lane); inner cases (2 & 3) take deeper
-    // lanes — the nesting that guarantees no fan-line crossings.
-    const fourCases = `pipeline:
+  it('cascades fan lanes with the case order, mirrored on the fan-in side', () => {
+    // The first case hugs the container edge and each later case steps one lane
+    // deeper — a tidy staircase on the fan-out, mirrored identically on the fan-in.
+    const threeCases = `pipeline:
   processors:
     - switch:
         - check: a == 1
           processors: [{ mapping: 'root = this' }]
         - check: a == 2
           processors: [{ mapping: 'root = this' }]
-        - check: a == 3
-          processors: [{ mapping: 'root = this' }]
         - processors: [{ mapping: 'root = this' }]
 output:
   drop: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(fourCases).nodes);
+    const layout = computeFlowLayout(parsePipelineFlowTree(threeCases).nodes);
     const lane = (id: string) =>
       (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromSource?: number }).laneFromSource ?? 0;
     expect(lane('fanout-proc-0-case-1')).toBeLessThan(lane('fanout-proc-0-case-2'));
-    expect(lane('fanout-proc-0-case-4')).toBeLessThan(lane('fanout-proc-0-case-3'));
-    // Fan-in mirrors the same ranks.
+    expect(lane('fanout-proc-0-case-2')).toBeLessThan(lane('fanout-proc-0-case-3'));
     const inLane = (id: string) =>
       (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromTarget?: number }).laneFromTarget ?? 0;
     expect(inLane('fanin-proc-0-case-1')).toBeLessThan(inLane('fanin-proc-0-case-2'));
+    expect(inLane('fanin-proc-0-case-2')).toBeLessThan(inLane('fanin-proc-0-case-3'));
   });
 
   it('routes reference edges through the clear channel beside their column', () => {
@@ -1168,6 +1165,12 @@ cache_resources:
     // the resource stays visibly connected instead of dangling.
     const closed = computeFlowLayout(nodes, new Set(['proc-0']));
     expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
+
+    // And the resource stays aligned under the collapsed branch (its visible
+    // anchor) instead of snapping back to the far-left default slot.
+    const branchX = closed.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
+    const resourceX = closed.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -1;
+    expect(resourceX).toBe(branchX);
   });
 
   it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {

@@ -321,8 +321,9 @@ const CompactCard = ({ data }: { data: FlowCardData }) => (
   </div>
 );
 
-// The selection ring shown on the node the inspector is editing.
-const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
+// The selection ring shown on the node the inspector is editing — Redpanda brand
+// orange-red, so the highlight stands apart from the blue data-flow lines.
+const SELECTED_RING = 'ring-2 ring-brand ring-offset-1 ring-offset-background';
 // An error ring for nodes with lint problems (takes precedence over selection).
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
 
@@ -535,14 +536,18 @@ const FlowSectionLabel = ({ data }: { data: { label?: string } }) => (
 export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, data }: EdgeProps) {
   // The spine runs along a single row, so a straight line reads cleanest.
   const [path, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
-  const onInsert = (data as { onInsert?: () => void } | undefined)?.onInsert;
-  const dimmed = (data as { dimmed?: boolean } | undefined)?.dimmed;
+  const d = data as { onInsert?: () => void; dimmed?: boolean; emphasized?: boolean } | undefined;
+  const onInsert = d?.onInsert;
   return (
     <>
       <BaseEdge
         markerEnd={markerEnd}
         path={path}
-        style={{ stroke: 'var(--color-primary)', strokeWidth: 2, opacity: dimmed ? 0.25 : 1 }}
+        style={{
+          stroke: d?.emphasized ? 'var(--color-brand)' : 'var(--color-primary)',
+          strokeWidth: d?.emphasized ? 2.5 : 2,
+          opacity: d?.dimmed ? 0.25 : 1,
+        }}
       />
       {onInsert ? (
         <EdgeLabelRenderer>
@@ -604,9 +609,24 @@ function orthogonalRoundedPath(points: [number, number][], radius = 8): string {
   return `${d} L ${lx} ${ly}`;
 }
 
-// Stroke styling from edge data. Emphasized muted (reference) edges switch to the
-// primary colour so the highlighted resource link is unmistakable, not just a
-// darker gray; emphasized edges also draw slightly thicker.
+const BRAND_STROKE = 'var(--color-brand)';
+
+// The line colour for an edge's current state: highlighted (selection/hover)
+// edges render in the brand orange-red — matching the selection ring and standing
+// apart from the blue flow lines — except error edges, whose red semantics win.
+// Idle reference edges use the darker muted-foreground so they stay readable.
+function strokeFor(d: FlowLinkData | undefined): string {
+  const tone = d?.tone ?? 'muted';
+  if (d?.emphasized && tone !== 'error') {
+    return BRAND_STROKE;
+  }
+  if (d?.faint) {
+    return 'var(--color-muted-foreground)';
+  }
+  return LINK_STROKE[tone];
+}
+
+// Stroke styling from edge data; emphasized edges also draw slightly thicker.
 function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
   const tone = d?.tone ?? 'muted';
   const baseWidth = tone === 'muted' ? 1.5 : 2;
@@ -614,10 +634,10 @@ function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
   if (d?.dimmed) {
     opacity = 0.25;
   } else if (d?.faint) {
-    opacity = 0.55;
+    opacity = 0.6;
   }
   return {
-    stroke: d?.emphasized && tone === 'muted' ? LINK_STROKE.primary : LINK_STROKE[tone],
+    stroke: strokeFor(d),
     strokeWidth: d?.emphasized ? baseWidth + 0.75 : baseWidth,
     strokeDasharray: d?.dashed ? '5 4' : undefined,
     opacity,
@@ -650,14 +670,14 @@ const LINK_STROKE: Record<LinkTone, string> = {
 
 // The container-side endpoint of an entry/copy/merge/fan edge, drawn as a small
 // socket so the line visibly plugs into the container instead of trailing off it.
-const PortDot = ({ x, y, tone, dimmed }: { x: number; y: number; tone: LinkTone; dimmed?: boolean }) => (
+const PortDot = ({ x, y, color, dimmed }: { x: number; y: number; color: string; dimmed?: boolean }) => (
   <circle
     cx={x}
     cy={y}
     fill="var(--color-background)"
     opacity={dimmed ? 0.25 : 1}
     r={3.5}
-    stroke={LINK_STROKE[tone]}
+    stroke={color}
     strokeWidth={1.5}
   />
 );
@@ -703,8 +723,8 @@ export function FlowLinkEdge({
       <BaseEdge markerEnd={markerEnd} path={path} style={linkStyle(d)} />
       {d?.portDot ? (
         <PortDot
+          color={strokeFor(d)}
           dimmed={d.dimmed}
-          tone={tone}
           x={d.portDot === 'source' ? sourceX : targetX}
           y={d.portDot === 'source' ? sourceY : targetY}
         />

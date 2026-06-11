@@ -115,7 +115,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
       ) : null}
       {flags.reference ? (
         <div className="flex items-center gap-2">
-          <LegendSwatch color="var(--color-border)" dashed />
+          <LegendSwatch color="var(--color-muted-foreground)" dashed />
           Uses resource
         </div>
       ) : null}
@@ -141,6 +141,32 @@ type DecorateEdgeOptions = {
  *   node's complete wiring stands out in a dense graph;
  * - spine edges get their insert (+) handler.
  */
+// Highlighted edges render in the brand colour; recolour the arrowhead to match
+// (error edges keep their red markers — those semantics win over the highlight).
+function withHighlightMarker(edge: Edge): Edge {
+  const tone = (edge.data as { tone?: string } | undefined)?.tone;
+  if (tone === 'error' || typeof edge.markerEnd !== 'object' || !edge.markerEnd) {
+    return edge;
+  }
+  return { ...edge, markerEnd: { ...edge.markerEnd, color: 'var(--color-brand)' } };
+}
+
+// Idle refs are "faint" (readable hint); they fully dim only when something else
+// is selected, like every other unrelated edge; an active endpoint highlights them.
+function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined, hasSelection: boolean): Edge {
+  const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
+  const next = {
+    ...edge,
+    data: {
+      ...edge.data,
+      emphasized: touchesActive,
+      dimmed: !touchesActive && hasSelection,
+      faint: !(touchesActive || hasSelection),
+    },
+  };
+  return touchesActive ? withHighlightMarker(next) : next;
+}
+
 export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onInsert }: DecorateEdgeOptions): Edge[] {
   const activeScope = selectedScope ?? hoveredScope;
   return edges.map((edge) => {
@@ -155,22 +181,12 @@ export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onIn
       };
     }
     if (next.id.startsWith('ref-')) {
-      const touchesActive = activeScope !== undefined && (activeScope.has(next.source) || activeScope.has(next.target));
-      // Idle refs are "faint" (readable hint); they fully dim only when something
-      // else is selected, like every other unrelated edge.
-      return {
-        ...next,
-        data: {
-          ...next.data,
-          emphasized: touchesActive,
-          dimmed: !touchesActive && selectedScope !== undefined,
-          faint: !touchesActive && selectedScope === undefined,
-        },
-      };
+      return decorateReferenceEdge(next, activeScope, selectedScope !== undefined);
     }
     if (selectedScope !== undefined) {
       const touchesSelection = selectedScope.has(next.source) || selectedScope.has(next.target);
-      return { ...next, data: { ...next.data, dimmed: !touchesSelection, emphasized: touchesSelection } };
+      next = { ...next, data: { ...next.data, dimmed: !touchesSelection, emphasized: touchesSelection } };
+      return touchesSelection ? withHighlightMarker(next) : next;
     }
     return next;
   });

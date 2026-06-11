@@ -108,20 +108,24 @@ Supporting polish:
   the children area** (`portY`, computed from the container height, passed to
   `ContainerHandles`) so branches radiate level with the children — copy/merge come
   out horizontal and switch branches diverge immediately rather than running
-  parallel down a gutter. Lanes are **ranked by distance from the centre port**
-  (`fanLaneRanks`): the farthest case hugs the container edge, the nearest takes
-  the deepest lane — the nesting that guarantees sibling fan lines never cross,
-  on both the fan-out and fan-in sides.
+  parallel down a gutter. Lanes **cascade with the case order** (the first case
+  hugs the container edge, each later case steps one lane deeper) — a tidy
+  staircase on the fan-out, mirrored identically on the fan-in. A resource whose
+  referencing node is collapsed away also **aligns under the visible ancestor**
+  (`resourceLaneX` walks up to the collapsed box), matching the edge re-anchoring.
 - **No on-edge text labels.** Routing conditions are chips on cards and the edge
   vocabulary lives in the legend; the only edge labels are the short branch
   `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
 - **Cable management on dense graphs** (`decorateEdges` in the canvas):
-  resource-reference (`uses`) edges idle at a readable **faint** level (~55%),
-  render full-strength **in the primary colour** when either endpoint is
-  **selected or hovered**, and dim to ~25% only when an unrelated node is
+  resource-reference (`uses`) edges idle at a readable faint level
+  (muted-foreground @ ~60%), and dim to ~25% only when an unrelated node is
   selected (like every other edge). Selection/hover scope includes a
   container's **whole subtree**, so selecting a branch keeps its internal
   chains/copy/merge lit while unrelated edges fade.
+- **The highlight family is brand orange-red.** The selection ring, the selected
+  node's connected lines, their arrowheads, and port sockets all render in the
+  Redpanda `brand` colour (`strokeFor`/`withHighlightMarker`) so the highlight
+  stands apart from the blue data-flow lines — error edges keep their red.
 - **Processor fans reconverge.** A parallel *processor* container
   (switch/parallel/workflow) draws fan-in edges from each alternative back to
   its right port — data flows back out and continues to the next step — with
