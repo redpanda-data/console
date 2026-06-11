@@ -29,6 +29,7 @@ import { ChevronDown } from 'lucide-react';
 import { type Control, Controller, type FieldPath, useForm } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
+import { ScrollShadow } from './scroll-shadow';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 const SCALAR_TYPES = new Set(['string', 'int', 'float', 'bool']);
@@ -488,7 +489,7 @@ export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConf
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
+      <ScrollShadow contentClassName="space-y-4 px-4 py-4">
         <div className="flex flex-col gap-1.5">
           <Label className="font-medium text-sm">label</Label>
           <Controller
@@ -542,7 +543,7 @@ export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConf
             />
           </FieldGroup>
         ) : null}
-      </div>
+      </ScrollShadow>
 
       <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
         {isDirty ? (

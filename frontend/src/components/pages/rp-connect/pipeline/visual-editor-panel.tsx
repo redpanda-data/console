@@ -135,16 +135,20 @@ export function VisualEditorPanel({
         />
       </div>
 
-      {/* Always-present inspector rail (Figma-style): the selected node's config. */}
-      <aside className="flex w-96 shrink-0 flex-col overflow-hidden border-border border-l bg-background">
-        <NodeInspector
-          components={components}
-          onApply={onYamlChange}
-          onDelete={isEditing ? handleDeleteNode : undefined}
-          readOnly={!isEditing}
-          target={selected?.target ?? null}
-          yaml={yamlContent}
-        />
+      {/* Always-present inspector rail (Figma-style): the selected node's config.
+          The content is absolutely positioned so the rail never grows the editor
+          region to fit its content — it stays the canvas height and scrolls. */}
+      <aside className="relative w-96 shrink-0 border-border border-l bg-background">
+        <div className="absolute inset-0 flex flex-col overflow-hidden">
+          <NodeInspector
+            components={components}
+            onApply={onYamlChange}
+            onDelete={isEditing ? handleDeleteNode : undefined}
+            readOnly={!isEditing}
+            target={selected?.target ?? null}
+            yaml={yamlContent}
+          />
+        </div>
       </aside>
 
       <AddConnectorDialog
