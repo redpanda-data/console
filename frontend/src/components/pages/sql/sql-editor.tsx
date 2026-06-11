@@ -11,18 +11,21 @@
 
 import KowlEditor, { type IStandaloneCodeEditor, type Monaco } from 'components/misc/kowl-editor';
 import { Button } from 'components/redpanda-ui/components/button';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { FileText, History, Play, Plus, Terminal, Wand2, X } from 'lucide-react';
 import {
   forwardRef,
   type MouseEvent,
-  useCallback,
-  useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
+import { isMacOS } from 'utils/platform';
 
 import type { SqlIdentifier, SqlRole } from './sql-types';
 
@@ -193,6 +196,61 @@ function completionKind(monaco: Monaco, kind: SqlIdentifier['kind']) {
   }
 }
 
+// Monaco language providers are global per language, not per editor, so they
+// are registered once for the app's lifetime and read the mounted editor's
+// identifiers through this module-level slot (synced on every render below).
+let activeIdentifiers: SqlIdentifier[] = [];
+let sqlProvidersRegistered = false;
+
+function registerSqlProviders(monaco: Monaco) {
+  if (sqlProvidersRegistered) {
+    return;
+  }
+  sqlProvidersRegistered = true;
+
+  monaco.languages.registerCompletionItemProvider('sql', {
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+      const suggestions = activeIdentifiers.map((it) => ({
+        label: it.label,
+        kind: completionKind(monaco, it.kind),
+        insertText: it.label,
+        detail: it.kind,
+        range,
+      }));
+      return { suggestions };
+    },
+  });
+
+  // Back the editor's native Format Document action (Shift+Alt+F) with
+  // sql-formatter (Monaco ships no SQL formatter), so formatting runs
+  // through Monaco and preserves cursor + undo. Dynamically imported to
+  // keep it out of the initial bundle; postgresql is the closest dialect
+  // to Oxla.
+  monaco.languages.registerDocumentFormattingEditProvider('sql', {
+    provideDocumentFormattingEdits: async (model) => {
+      const { format } = await import('sql-formatter');
+      try {
+        return [
+          {
+            range: model.getFullModelRange(),
+            text: format(model.getValue(), { language: 'postgresql', keywordCase: 'upper' }),
+          },
+        ];
+      } catch {
+        // Unparseable SQL (mid-edit) — leave the text untouched.
+        return [];
+      }
+    },
+  });
+}
+
 export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function SqlEditor(
   { onRun, identifiers, initialQuery },
   ref
@@ -206,27 +264,10 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
   const isDark = useIsDarkMode();
 
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
-  // Latest identifiers, read by the (once-registered) completion provider.
-  const identifiersRef = useRef(identifiers);
-  const completionDisposable = useRef<{ dispose: () => void } | null>(null);
-  const formattingDisposable = useRef<{ dispose: () => void } | null>(null);
   // Latest run callback, bound into the Cmd/Ctrl+Enter command (registered once).
   const runRef = useRef<() => void>(() => undefined);
 
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
-
-  useEffect(() => {
-    identifiersRef.current = identifiers;
-  }, [identifiers]);
-
-  // Dispose the language providers when the editor unmounts.
-  useEffect(
-    () => () => {
-      completionDisposable.current?.dispose();
-      formattingDisposable.current?.dispose();
-    },
-    []
-  );
 
   useImperativeHandle(
     ref,
@@ -241,30 +282,24 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
     []
   );
 
-  const updateSql = useCallback(
-    (sql: string) => {
-      setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, sql } : t)));
-    },
-    [activeId]
-  );
+  const updateSql = (sql: string) => {
+    setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, sql } : t)));
+  };
 
-  const runText = useCallback(
-    (text: string, mode: RunMode) => {
-      const trimmed = text.trim();
-      if (!trimmed) {
-        return;
-      }
-      const entry: HistoryEntry = { sql: trimmed, at: Date.now() };
-      const nh = [entry, ...history.filter((h) => h.sql !== entry.sql)].slice(0, 40);
-      setHistory(nh);
-      saveHistory(nh);
-      onRun(trimmed, mode);
-    },
-    [history, onRun]
-  );
+  const runText = (text: string, mode: RunMode) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return;
+    }
+    const entry: HistoryEntry = { sql: trimmed, at: Date.now() };
+    const nh = [entry, ...history.filter((h) => h.sql !== entry.sql)].slice(0, 40);
+    setHistory(nh);
+    saveHistory(nh);
+    onRun(trimmed, mode);
+  };
 
   // Run the current selection if any, else the whole tab.
-  const doRun = useCallback(() => {
+  const doRun = () => {
     const editor = editorRef.current;
     const sel = editor?.getSelection();
     const model = editor?.getModel();
@@ -273,22 +308,26 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
       return;
     }
     runText(active.sql, 'all');
-  }, [active.sql, runText]);
+  };
 
-  useEffect(() => {
+  // The Cmd/Ctrl+Enter command and the global completion provider are
+  // registered once, so they read fresh state through this render-synced
+  // ref/slot (the useLatest pattern — see react-best-practices rules).
+  useLayoutEffect(() => {
     runRef.current = doRun;
-  }, [doRun]);
+    activeIdentifiers = identifiers;
+  });
 
-  const runSelection = useCallback(() => {
+  const runSelection = () => {
     const editor = editorRef.current;
     const sel = editor?.getSelection();
     const model = editor?.getModel();
     if (editor && sel && model && !sel.isEmpty()) {
       runText(model.getValueInRange(sel), 'selection');
     }
-  }, [runText]);
+  };
 
-  const handleBeforeMount = useCallback((monaco: Monaco) => {
+  const handleBeforeMount = (monaco: Monaco) => {
     const css = getComputedStyle(document.documentElement);
 
     // Light: transparent surface so the editor shows the (light) container, with
@@ -323,60 +362,16 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
         'editorLineNumber.activeForeground': toMonacoHex(css.getPropertyValue('--color-grey-400'), '#919295'),
       },
     });
-  }, []);
+  };
 
-  const handleMount = useCallback((editor: IStandaloneCodeEditor, monaco: Monaco) => {
+  const handleMount = (editor: IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
 
     editor.onDidChangeCursorSelection((e) => setHasSel(!e.selection.isEmpty()));
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => runRef.current());
 
-    if (!completionDisposable.current) {
-      completionDisposable.current = monaco.languages.registerCompletionItemProvider('sql', {
-        provideCompletionItems: (model, position) => {
-          const word = model.getWordUntilPosition(position);
-          const range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-          };
-          const suggestions = identifiersRef.current.map((it) => ({
-            label: it.label,
-            kind: completionKind(monaco, it.kind),
-            insertText: it.label,
-            detail: it.kind,
-            range,
-          }));
-          return { suggestions };
-        },
-      });
-    }
-
-    // Back the editor's native Format Document action (Shift+Alt+F) with
-    // sql-formatter (Monaco ships no SQL formatter), so formatting runs
-    // through Monaco and preserves cursor + undo. Dynamically imported to
-    // keep it out of the initial bundle; postgresql is the closest dialect
-    // to Oxla.
-    if (!formattingDisposable.current) {
-      formattingDisposable.current = monaco.languages.registerDocumentFormattingEditProvider('sql', {
-        provideDocumentFormattingEdits: async (model) => {
-          const { format } = await import('sql-formatter');
-          try {
-            return [
-              {
-                range: model.getFullModelRange(),
-                text: format(model.getValue(), { language: 'postgresql', keywordCase: 'upper' }),
-              },
-            ];
-          } catch {
-            // Unparseable SQL (mid-edit) — leave the text untouched.
-            return [];
-          }
-        },
-      });
-    }
-  }, []);
+    registerSqlProviders(monaco);
+  };
 
   const addTab = () => {
     const id = nextId.current++;
@@ -403,124 +398,85 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-background">
-      <div className="flex shrink-0 items-center gap-2 border-b pr-[10px]">
-        <div className="flex min-w-0 flex-1 items-stretch overflow-x-auto">
-          {tabs.map((t) => (
-            <div
-              className={cn(
-                'relative flex items-center gap-1 whitespace-nowrap border-border-subtle border-r pr-[10px] pl-[14px] text-muted-foreground text-xs',
-                'hover:bg-muted hover:text-strong [&_svg]:text-muted-foreground',
-                'data-[active]:bg-background data-[active]:font-semibold data-[active]:text-strong',
-                "data-[active]:after:absolute data-[active]:after:inset-x-0 data-[active]:after:-bottom-px data-[active]:after:h-0.5 data-[active]:after:bg-action-primary data-[active]:after:content-['']"
-              )}
-              data-active={t.id === activeId || undefined}
-              key={t.id}
-            >
-              <button
-                className="flex cursor-pointer items-center gap-[7px] whitespace-nowrap border-0 bg-transparent py-[9px] text-inherit"
-                onClick={() => setActiveId(t.id)}
-                type="button"
+      <div className="flex shrink-0 items-stretch">
+        <Tabs className="min-w-0 flex-1" onValueChange={(v) => setActiveId(Number(v))} value={String(active.id)}>
+          <TabsList className="overflow-x-auto" variant="underline">
+            {tabs.map((t) => (
+              <TabsTrigger
+                className="w-auto shrink-0 gap-1.5 px-3 text-xs"
+                key={t.id}
+                render={<div />}
+                value={String(t.id)}
+                variant="underline"
               >
                 <FileText size={13} />
                 <span>{t.name}</span>
-              </button>
-              <button
-                aria-label={`Close ${t.name}`}
-                className="inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-muted-foreground hover:bg-muted hover:text-strong"
-                onClick={(e) => closeTab(t.id, e)}
-                type="button"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-          <button
-            className="inline-flex w-[30px] shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent text-muted-foreground hover:text-strong"
-            onClick={addTab}
-            title="New query"
-            type="button"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5 py-[7px]">
-          <div className="relative inline-flex items-center">
-            <Button
-              onClick={() => setHistOpen((v) => !v)}
-              size="sm"
-              title="Query history (this browser)"
-              variant="secondary-ghost"
-            >
-              <History size={15} /> History
+                <Button
+                  aria-label={`Close ${t.name}`}
+                  onClick={(e) => closeTab(t.id, e)}
+                  size="icon-xs"
+                  variant="secondary-ghost"
+                >
+                  <X />
+                </Button>
+              </TabsTrigger>
+            ))}
+            <Button aria-label="New query" onClick={addTab} size="icon-sm" title="New query" variant="secondary-ghost">
+              <Plus />
             </Button>
-            {histOpen ? (
-              <>
-                <button
-                  aria-label="Close history"
-                  className="fixed inset-0 z-30 cursor-default border-0 bg-transparent"
-                  onClick={() => setHistOpen(false)}
-                  type="button"
-                />
-                <div className="absolute top-[calc(100%+6px)] right-0 z-[31] max-h-[360px] w-[360px] overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
-                  <div className="px-2 py-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                    Recent queries · this browser
-                  </div>
-                  {history.length === 0 ? (
-                    <div className="p-2.5 text-muted-foreground text-sm">No queries yet</div>
-                  ) : null}
-                  {history.map((h, i) => (
-                    <button
-                      className="flex w-full cursor-pointer items-center gap-2 rounded border-0 bg-transparent px-2 py-1.5 text-left text-strong text-xs hover:bg-accent-subtle [&_svg]:shrink-0 [&_svg]:text-muted-foreground"
-                      key={`${h.at}-${i}`}
-                      onClick={() => {
-                        updateSql(h.sql);
-                        setHistOpen(false);
-                      }}
-                      type="button"
-                    >
-                      <Terminal size={14} />
-                      <span className="overflow-hidden text-ellipsis whitespace-nowrap font-mono">
-                        {h.sql.replace(/\s+/g, ' ').slice(0, 60)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : null}
-          </div>
+          </TabsList>
+        </Tabs>
+        <div className="flex shrink-0 items-center gap-1.5 border-b pr-2">
+          <Popover onOpenChange={setHistOpen} open={histOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
+                <History /> History
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto p-1">
+              <Text className="px-2 py-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
+                Recent queries · this browser
+              </Text>
+              {history.length === 0 ? <Text className="p-2 text-muted-foreground text-sm">No queries yet</Text> : null}
+              {history.map((h, i) => (
+                <Button
+                  className="w-full justify-start"
+                  key={`${h.at}-${i}`}
+                  onClick={() => {
+                    updateSql(h.sql);
+                    setHistOpen(false);
+                  }}
+                  size="sm"
+                  variant="secondary-ghost"
+                >
+                  <Terminal />
+                  <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
           <Button
             onClick={() => void editorRef.current?.getAction('editor.action.formatDocument')?.run()}
             size="sm"
             title="Format SQL"
             variant="secondary-ghost"
           >
-            <Wand2 size={15} /> Format
+            <Wand2 /> Format
           </Button>
-          <div className="flex items-center gap-1.5">
-            <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="secondary-outline">
-              Run selection
-            </Button>
-            <Button
-              className="!bg-surface-primary !text-white hover:!bg-surface-primary-hover"
-              onClick={doRun}
-              size="sm"
-              variant="primary"
-            >
-              <Play size={14} /> Run
-              <span className="ml-0.5 inline-flex gap-0.5">
-                <span className="inline-flex min-w-[18px] items-center justify-center rounded-sm bg-white/[0.18] px-1 py-px font-mono font-semibold text-white text-xs leading-none">
-                  ⌘
-                </span>
-                <span className="inline-flex min-w-[18px] items-center justify-center rounded-sm bg-white/[0.18] px-1 py-px font-mono font-semibold text-white text-xs leading-none">
-                  ↵
-                </span>
-              </span>
-            </Button>
-          </div>
+          <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="secondary-outline">
+            Run selection
+          </Button>
+          <Button onClick={doRun} size="sm" variant="secondary">
+            <Play /> Run
+            <KbdGroup>
+              <Kbd size="xs">{isMacOS() ? '⌘' : 'Ctrl'}</Kbd>
+              <Kbd size="xs">↵</Kbd>
+            </KbdGroup>
+          </Button>
         </div>
       </div>
 
-      <div className="[&_.kowlEditor]:!rounded-none [&_.kowlEditor]:!border-0 flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background [&_.kowlEditor]:min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
         <KowlEditor
           beforeMount={handleBeforeMount}
           height="100%"
@@ -531,6 +487,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
           theme={isDark ? SQL_THEME_DARK : SQL_THEME_LIGHT}
           value={active.sql}
           width="100%"
+          wrapperProps={{ className: 'min-w-0 flex-1' }}
         />
       </div>
     </div>
