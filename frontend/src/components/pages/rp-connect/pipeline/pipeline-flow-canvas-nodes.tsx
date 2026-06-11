@@ -772,12 +772,20 @@ export function FlowLinkEdge({
   );
 }
 
+// Tone-matched label styling so copy/merge/error tags read clearly against the
+// stacked (and progressively darker) nested-container backgrounds: a solid pill,
+// a tinted border, and text in the edge's own colour rather than low-contrast gray.
+const LINK_LABEL_STYLE: Record<LinkTone, string> = {
+  primary: 'border-primary/40 text-primary',
+  error: 'border-destructive/40 text-destructive',
+  muted: 'border-border text-foreground',
+};
 const LinkLabel = ({ d, tone, x, y }: { d: FlowLinkData; tone: LinkTone; x: number; y: number }) => (
   <EdgeLabelRenderer>
     <div
       className={cn(
-        'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-medium text-[10px] shadow-sm',
-        tone === 'error' ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground'
+        'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide shadow-sm',
+        LINK_LABEL_STYLE[tone]
       )}
       style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`, opacity: d.dimmed ? 0.25 : 1 }}
       title={d.label}
