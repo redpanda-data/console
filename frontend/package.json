@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "proxy": "http://localhost:9090",
   "homepage": ".",
   "engines": {
@@ -43,7 +44,7 @@
     "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
     "doctor": "bunx react-doctor . -y --fail-on error",
     "quality:gate": "bun run lint && bun run doctor && bun run type:check && bun run build && bun run test:unit && bun run test:integration",
-    "analyze": "RSDOCTOR=true npm run build",
+    "analyze": "RSDOCTOR=true bun run build",
     "prepare": "lefthook install"
   },
   "dependencies": {
@@ -78,7 +79,6 @@
     "@shikijs/langs": "^3.23.0",
     "@shikijs/themes": "^3.23.0",
     "@stepperize/react": "^5.1.9",
-    "@tailwindcss/postcss": "^4.2.4",
     "@tanstack/react-form": "^1.12.3",
     "@tanstack/react-query": "^5.90.7",
     "@tanstack/react-router": "^1.170.7",
@@ -151,15 +151,15 @@
     "@module-federation/rsbuild-plugin": "^2.3.2",
     "@playwright/test": "^1.57.0",
     "@rollup/plugin-yaml": "^4.1.2",
-    "@rsbuild/core": "^1.7.5",
-    "@rsbuild/plugin-babel": "^1.1.2",
-    "@rsbuild/plugin-node-polyfill": "^1.4.4",
-    "@rsbuild/plugin-react": "^1.4.6",
-    "@rsbuild/plugin-sass": "^1.5.1",
-    "@rsbuild/plugin-svgr": "^1.3.1",
-    "@rsbuild/plugin-yaml": "^1.0.4",
-    "@rsdoctor/rspack-plugin": "^1.5.8",
-    "@rspack/cli": "^1.7.5",
+    "@rsbuild/core": "2.0.11",
+    "@rsbuild/plugin-babel": "1.2.1",
+    "@rsbuild/plugin-node-polyfill": "1.4.5",
+    "@rsbuild/plugin-react": "2.0.1",
+    "@rsbuild/plugin-sass": "1.5.3",
+    "@rsbuild/plugin-svgr": "2.0.3",
+    "@rsbuild/plugin-tailwindcss": "2.0.1",
+    "@rsbuild/plugin-yaml": "1.0.5",
+    "@rsdoctor/rspack-plugin": "1.5.12",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-router-devtools": "^1.158.0",
@@ -182,6 +182,7 @@
     "@vitest/coverage-v8": "^4.1.4",
     "@vitest/ui": "^4.1.4",
     "babel-plugin-react-compiler": "^1.0.0",
+    "baseline-browser-mapping": "2.10.33",
     "happy-dom": "^20.8.9",
     "lefthook": "^2.0.12",
     "node-fetch": "^3.3.2",
@@ -199,6 +200,10 @@
   },
   "overrides": {
     "dompurify": "^3.4.0",
-    "prismjs": "^1.30.0"
+    "prismjs": "^1.30.0",
+    "baseline-browser-mapping": "2.10.33"
+  },
+  "resolutions": {
+    "baseline-browser-mapping": "2.10.33"
   }
 }

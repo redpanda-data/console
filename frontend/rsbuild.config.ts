@@ -5,6 +5,7 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
+import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
@@ -57,6 +58,7 @@ export default defineConfig({
     }),
     pluginSvgr({ mixedImport: true }),
     pluginSass(),
+    pluginTailwindcss(),
     pluginYaml(),
     pluginModuleFederation({
       ...moduleFederationConfig,
@@ -90,28 +92,41 @@ export default defineConfig({
       origin: ['http://localhost:3000', 'http://localhost:9090'],
       credentials: true,
     },
-    proxy: [
+    proxy: {
       // AIGW v2 API - proxy to new AI Gateway management API (LLMProviderService, ModelService)
       ...(process.env.AIGW_URL
-        ? [
-            {
-              context: ['/.aigw/api'],
+        ? {
+            '/.aigw/api': {
               target: process.env.AIGW_URL,
               changeOrigin: true,
               secure: false,
               logLevel: 'debug',
               pathRewrite: { '^/\\.aigw/api': '' },
             },
-          ]
-        : []),
+          }
+        : {}),
       // All other APIs - proxy to Console backend
-      {
-        context: ['/api', '/redpanda.api', '/auth', '/logout'],
+      '/api': {
         target: process.env.PROXY_TARGET || 'http://localhost:9090',
         changeOrigin: !!process.env.PROXY_TARGET,
         secure: process.env.PROXY_TARGET ? false : undefined,
       },
-    ],
+      '/redpanda.api': {
+        target: process.env.PROXY_TARGET || 'http://localhost:9090',
+        changeOrigin: !!process.env.PROXY_TARGET,
+        secure: process.env.PROXY_TARGET ? false : undefined,
+      },
+      '/auth': {
+        target: process.env.PROXY_TARGET || 'http://localhost:9090',
+        changeOrigin: !!process.env.PROXY_TARGET,
+        secure: process.env.PROXY_TARGET ? false : undefined,
+      },
+      '/logout': {
+        target: process.env.PROXY_TARGET || 'http://localhost:9090',
+        changeOrigin: !!process.env.PROXY_TARGET,
+        secure: process.env.PROXY_TARGET ? false : undefined,
+      },
+    },
   },
   source: {
     define: {
@@ -123,7 +138,7 @@ export default defineConfig({
     },
   },
   performance: {
-    buildCache: false,
+    buildCache: process.env.NODE_ENV === 'development',
   },
   output: {
     distPath: {
@@ -133,8 +148,10 @@ export default defineConfig({
   tools: {
     rspack: (config, { appendPlugins }) => {
       config.lazyCompilation = false;
-      config.experiments ||= {
+      config.experiments = {
+        ...config.experiments,
         lazyBarrel: false,
+        nativeWatcher: true,
       };
       config.resolve ||= {};
       config.resolve.alias ||= {};
