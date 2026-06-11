@@ -93,7 +93,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
 
       <div className="flex min-h-0 flex-1 flex-col p-0" data-variant="inline">
         <div className="mx-auto w-full max-w-[720px] px-[22px] pt-4 pb-1">
-          <span className="font-semibold text-xs text-action-primary uppercase tracking-wider">
+          <span className="font-semibold text-action-primary text-xs uppercase tracking-wider">
             Step {step + 1} of {STEPS.length}
           </span>
           <span className="mt-1 mb-2 block font-display font-semibold text-base text-strong">{STEPS[step]}</span>
@@ -108,7 +108,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
         <div className="mx-auto min-h-0 w-full max-w-[720px] flex-1 overflow-y-auto px-[22px] py-4">
           {step === 0 && (
             <div>
-              <p className="mt-0 mr-0 mb-[14px] ml-0 text-sm text-muted-foreground leading-normal [&_code]:font-mono">
+              <p className="mt-0 mr-0 mb-[14px] ml-0 text-muted-foreground text-sm leading-normal [&_code]:font-mono">
                 Pick a Redpanda topic to expose as a SQL table. Tables are created in{' '}
                 <code>default_redpanda_catalog</code> — the catalog for Redpanda topics.
               </p>
@@ -142,7 +142,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                     <Layers className="flex-shrink-0 text-action-primary" size={15} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="font-mono font-semibold text-sm text-strong">{t.name}</span>
-                      <span className="mt-px text-xs text-muted-foreground">
+                      <span className="mt-px text-muted-foreground text-xs">
                         {typeof t.partitions === 'number' ? `${t.partitions} partitions` : 'topic'}
                         {t.format ? ` · ${t.format}` : ''}
                       </span>
@@ -159,7 +159,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                   </button>
                 ))}
                 {visibleTopics.length === 0 && (
-                  <div className="text-sm text-muted-foreground leading-normal">No topics found.</div>
+                  <div className="text-muted-foreground text-sm leading-normal">No topics found.</div>
                 )}
               </div>
             </div>
@@ -171,7 +171,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                 <span className="mb-1.5 block font-semibold text-sm text-strong">Catalog</span>
                 <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-sm text-strong [&_svg]:text-muted-foreground">
                   <Layers size={14} /> default_redpanda_catalog{' '}
-                  <span className="ml-auto font-sans text-xs text-muted-foreground">fixed for Redpanda topics</span>
+                  <span className="ml-auto font-sans text-muted-foreground text-xs">fixed for Redpanda topics</span>
                 </div>
               </div>
               <div className="mb-4">
@@ -179,14 +179,14 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                 <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-[9px] font-mono text-sm text-strong [&_svg]:text-muted-foreground">
                   <GitBranch size={14} /> {topic}
                   {chosen?.iceberg && (
-                    <span className="ml-auto inline-flex items-center gap-1 font-sans text-xs text-info [&_svg]:text-current">
+                    <span className="ml-auto inline-flex items-center gap-1 font-sans text-info text-xs [&_svg]:text-current">
                       <GitMerge size={11} /> Iceberg-tiered
                     </span>
                   )}
                 </div>
               </div>
               {chosen?.iceberg && (
-                <div className="mb-4 flex items-start gap-[9px] rounded-md border border-info bg-info-subtle px-[13px] py-[11px] text-xs text-foreground leading-normal [&_code]:font-mono [&_svg]:mt-px [&_svg]:flex-shrink-0 [&_svg]:text-info">
+                <div className="mb-4 flex items-start gap-[9px] rounded-md border border-info bg-info-subtle px-[13px] py-[11px] text-foreground text-xs leading-normal [&_code]:font-mono [&_svg]:mt-px [&_svg]:flex-shrink-0 [&_svg]:text-info">
                   <GitMerge size={15} />
                   <span>
                     This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes
@@ -207,11 +207,11 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                   value={name}
                 />
                 {nameError ? (
-                  <span className="mt-1.5 block text-xs text-destructive">
+                  <span className="mt-1.5 block text-destructive text-xs">
                     Use lowercase letters, numbers and underscores; must start with a letter or underscore.
                   </span>
                 ) : (
-                  <span className="mt-1.5 block text-xs text-muted-foreground">
+                  <span className="mt-1.5 block text-muted-foreground text-xs">
                     How the table appears in the catalog and your queries.
                   </span>
                 )}
@@ -226,7 +226,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                   />
                 </div>
               </div>
-              {error && <div className="mt-1.5 block text-xs text-destructive">{error}</div>}
+              {error && <div className="mt-1.5 block text-destructive text-xs">{error}</div>}
             </div>
           )}
         </div>

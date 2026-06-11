@@ -378,7 +378,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
           {tabs.map((t) => (
             <div
               className={cn(
-                'relative flex items-center gap-1 whitespace-nowrap border-border-subtle border-r pr-[10px] pl-[14px] text-xs text-muted-foreground',
+                'relative flex items-center gap-1 whitespace-nowrap border-border-subtle border-r pr-[10px] pl-[14px] text-muted-foreground text-xs',
                 'hover:bg-muted hover:text-strong [&_svg]:text-muted-foreground',
                 'data-[active]:bg-background data-[active]:font-semibold data-[active]:text-strong',
                 "data-[active]:after:absolute data-[active]:after:inset-x-0 data-[active]:after:-bottom-px data-[active]:after:h-0.5 data-[active]:after:bg-action-primary data-[active]:after:content-['']"
@@ -432,15 +432,15 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
                   type="button"
                 />
                 <div className="absolute top-[calc(100%+6px)] right-0 z-[31] max-h-[360px] w-[360px] overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
-                  <div className="px-2 py-1.5 font-semibold text-xs text-muted-foreground uppercase tracking-wider">
+                  <div className="px-2 py-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
                     Recent queries · this browser
                   </div>
                   {history.length === 0 ? (
-                    <div className="p-2.5 text-sm text-muted-foreground">No queries yet</div>
+                    <div className="p-2.5 text-muted-foreground text-sm">No queries yet</div>
                   ) : null}
                   {history.map((h, i) => (
                     <button
-                      className="flex w-full cursor-pointer items-center gap-2 rounded border-0 bg-transparent px-2 py-1.5 text-left text-xs text-strong hover:bg-accent-subtle [&_svg]:shrink-0 [&_svg]:text-muted-foreground"
+                      className="flex w-full cursor-pointer items-center gap-2 rounded border-0 bg-transparent px-2 py-1.5 text-left text-strong text-xs hover:bg-accent-subtle [&_svg]:shrink-0 [&_svg]:text-muted-foreground"
                       key={`${h.at}-${i}`}
                       onClick={() => {
                         updateSql(h.sql);
@@ -478,10 +478,10 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
             >
               <Play size={14} /> Run
               <span className="ml-0.5 inline-flex gap-0.5">
-                <span className="inline-flex min-w-[18px] items-center justify-center rounded-sm bg-white/[0.18] px-1 py-px font-mono font-semibold text-xs text-white leading-none">
+                <span className="inline-flex min-w-[18px] items-center justify-center rounded-sm bg-white/[0.18] px-1 py-px font-mono font-semibold text-white text-xs leading-none">
                   ⌘
                 </span>
-                <span className="inline-flex min-w-[18px] items-center justify-center rounded-sm bg-white/[0.18] px-1 py-px font-mono font-semibold text-xs text-white leading-none">
+                <span className="inline-flex min-w-[18px] items-center justify-center rounded-sm bg-white/[0.18] px-1 py-px font-mono font-semibold text-white text-xs leading-none">
                   ↵
                 </span>
               </span>

@@ -14,8 +14,8 @@
  * Provides sidebar item generation and visibility management.
  */
 
-import { Database } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Database } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
