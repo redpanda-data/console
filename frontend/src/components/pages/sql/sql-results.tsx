@@ -260,9 +260,10 @@ function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
   return map;
 }
 
-// Key for the synthetic row-number column; double underscores avoid
-// colliding with a real result column of the same name.
+// Keys for synthetic columns; double underscores avoid colliding with a
+// real result column of the same name.
 const ROWNUM_KEY = '__rownum__';
+const FILLER_KEY = '__filler__';
 
 function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
   const rowNum: Column<ResultRow> = {
@@ -300,7 +301,17 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       headerCellClass: alignRight ? 'text-right' : undefined,
     };
   });
-  return [rowNum, ...dataCols];
+  // Absorbs leftover width when the columns don't fill the panel, so the
+  // header surface, zebra stripes and row hover extend edge to edge.
+  const filler: Column<ResultRow> = {
+    key: FILLER_KEY,
+    name: '',
+    width: '1fr',
+    minWidth: 0,
+    resizable: false,
+    renderCell: () => null,
+  };
+  return [rowNum, ...dataCols, filler];
 }
 
 // Keyed by run.token from SqlResults, so a new run resets the grid's internal
