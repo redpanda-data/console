@@ -597,6 +597,25 @@ describe('PipelinePage', () => {
     });
   });
 
+  it('offers a "Start from a template" entry in the sidebar visualizer while the pipeline is empty', async () => {
+    mockUsePipelineMode.mockReturnValue({ mode: 'create' });
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enablePipelineDiagrams' || flag === 'enableRpcnTemplateGallery'
+    );
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // Empty pipeline → the template gallery entry is offered.
+    expect(await screen.findByTestId('browse-templates-cta')).toBeInTheDocument();
+
+    // Once the pipeline has real content, the entry animates away.
+    fireEvent.change(screen.getByTestId('yaml-editor'), {
+      target: { value: 'input:\n  generate:\n    mapping: root = {}' },
+    });
+    await waitFor(() => expect(screen.queryByTestId('browse-templates-cta')).not.toBeInTheDocument());
+  });
+
   it('view page exposes Monitor and YAML lanes; YAML shows the config read-only', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });

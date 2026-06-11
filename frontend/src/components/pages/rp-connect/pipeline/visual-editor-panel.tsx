@@ -9,13 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { NodeInspector } from './node-inspector';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { TemplateGalleryCta } from './template-cta';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
   appendResource,
   buildInsertableComponent,
@@ -66,10 +70,14 @@ type VisualEditorPanelProps = {
   components: ConnectComponentSpec[];
   /** Raw component list for the connector picker. */
   componentList: ComponentList;
+  /** Server lint hints, surfaced in context on the nodes they map to. */
+  lintHints?: LintHint[];
   /** Reused page flows (edit mode only): add input/output placeholders, redpanda setup hints. */
   onAddConnector?: (type: ConnectComponentType | 'resource') => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
+  /** Open the template gallery (edit mode); shows a floating entry point when empty. */
+  onBrowseTemplates?: () => void;
 };
 
 /**
@@ -84,13 +92,36 @@ export function VisualEditorPanel({
   onYamlChange,
   components,
   componentList,
+  lintHints,
   onAddConnector,
   onAddTopic,
   onAddSasl,
+  onBrowseTemplates,
 }: VisualEditorPanelProps) {
   const isEditing = mode !== 'view';
   const [selected, setSelected] = useState<{ id: string; target: EditTarget } | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
+
+  // A freshly-started pipeline (only section labels / `none` placeholders) gets the
+  // floating "Start from a template" entry point.
+  const isPipelineEmpty = useMemo(() => {
+    const { nodes } = parsePipelineFlowTree(yamlContent);
+    return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
+  }, [yamlContent]);
+
+  // Associate server lint hints with the nodes they belong to, so they show in
+  // context (a badge on the node, full messages in the inspector).
+  const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
+  const lintMessagesByNode = useMemo(() => {
+    const messages = new Map<string, string[]>();
+    for (const [id, hints] of lintByNode) {
+      messages.set(
+        id,
+        hints.map((h) => h.hint)
+      );
+    }
+    return messages;
+  }, [lintByNode]);
 
   const handleDeleteNode = useCallback(
     (target: EditTarget) => {
@@ -120,9 +151,10 @@ export function VisualEditorPanel({
 
   return (
     <div className="flex h-full w-full">
-      <div className="min-w-0 flex-1">
+      <div className="relative min-w-0 flex-1">
         <PipelineFlowCanvas
           configYaml={yamlContent}
+          lintErrorsByNode={lintMessagesByNode}
           onAddConnector={
             isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
           }
@@ -133,6 +165,13 @@ export function VisualEditorPanel({
           onSelectNode={(id, target) => setSelected({ id, target })}
           selectedNodeId={selected?.id}
         />
+        {onBrowseTemplates ? (
+          <TemplateGalleryCta
+            className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
+            onBrowseTemplates={onBrowseTemplates}
+            show={isEditing && isPipelineEmpty}
+          />
+        ) : null}
       </div>
 
       {/* Always-present inspector rail (Figma-style): the selected node's config.
@@ -142,6 +181,7 @@ export function VisualEditorPanel({
         <div className="absolute inset-0 flex flex-col overflow-hidden">
           <NodeInspector
             components={components}
+            lintHints={selected ? lintByNode.get(selected.id) : undefined}
             onApply={onYamlChange}
             onDelete={isEditing ? handleDeleteNode : undefined}
             readOnly={!isEditing}

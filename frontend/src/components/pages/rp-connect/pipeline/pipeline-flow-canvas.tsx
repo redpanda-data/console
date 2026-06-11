@@ -40,6 +40,7 @@ type CanvasCallbacks = {
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
+  lintErrorsByNode?: Map<string, string[]>;
 };
 
 // Wire interactivity into a layout node's data: collapse toggle, selection
@@ -53,6 +54,10 @@ function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   }
   if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
     data.selected = true;
+  }
+  const lintErrors = cb.lintErrorsByNode?.get(node.id);
+  if (lintErrors?.length) {
+    data.lintErrors = lintErrors;
   }
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
@@ -122,6 +127,8 @@ type PipelineFlowCanvasProps = {
   simple?: boolean;
   /** Currently selected node id (highlighted on the canvas). */
   selectedNodeId?: string;
+  /** Lint messages mapped to node ids — badged in place on the canvas. */
+  lintErrorsByNode?: Map<string, string[]>;
   /** Select a node by id + its edit target (clicking a node). */
   onSelectNode?: (nodeId: string, target: EditTarget) => void;
   /** Clear the selection (clicking empty canvas). */
@@ -139,6 +146,7 @@ export function PipelineFlowCanvas({
   hideControls,
   simple,
   selectedNodeId,
+  lintErrorsByNode,
   onSelectNode,
   onClearSelection,
   onInsert,
@@ -173,6 +181,7 @@ export function PipelineFlowCanvas({
       collapsedIds,
       toggleCollapse,
       selectedNodeId,
+      lintErrorsByNode,
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
 
@@ -220,6 +229,7 @@ export function PipelineFlowCanvas({
     simple,
     toggleCollapse,
     selectedNodeId,
+    lintErrorsByNode,
     onInsert,
     onAddConnector,
     onAddTopic,

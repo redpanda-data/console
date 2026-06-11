@@ -269,6 +269,7 @@ export function PipelineEditHeader({
   onSave,
   onEditSettings,
   isSaving,
+  hasUnsavedChanges,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   mode: 'edit' | 'create';
@@ -277,6 +278,7 @@ export function PipelineEditHeader({
   onSave: () => void;
   onEditSettings: () => void;
   isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
@@ -307,6 +309,15 @@ export function PipelineEditHeader({
             >
               Docs
             </Button>
+            {hasUnsavedChanges ? (
+              <span
+                className="flex items-center gap-1.5 text-muted-foreground text-sm"
+                title="You have unsaved changes"
+              >
+                <span aria-hidden className="size-2 rounded-full bg-amber-500" />
+                Unsaved changes
+              </span>
+            ) : null}
             <Button disabled={isSaving} onClick={onSave}>
               Save
               {isSaving ? <Spinner /> : null}

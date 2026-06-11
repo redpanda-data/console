@@ -169,6 +169,17 @@ describe('VisualEditorPanel', () => {
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled();
   });
 
+  test('surfaces a lint problem for the selected node in the inspector', async () => {
+    const user = userEvent.setup();
+    // Line 2 (`generate:`) is inside the input node's YAML range.
+    renderPanel({ lintHints: [{ line: 2, column: 1, hint: 'invalid input config', lintType: 'config' }] as never });
+
+    await user.click(screen.getByText('select-input'));
+
+    expect(await screen.findByText('invalid input config')).toBeInTheDocument();
+    expect(screen.getByText('1 problem')).toBeInTheDocument();
+  });
+
   test('view mode inspector is read-only — no apply or remove actions', async () => {
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel({ mode: 'view' });

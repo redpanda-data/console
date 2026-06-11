@@ -9,11 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { BookOpenIcon, Box, MousePointerSquareDashed, Trash2 } from 'lucide-react';
+import {
+  AlertCircle,
+  BookOpenIcon,
+  Box,
+  type LucideIcon,
+  MousePointerClick,
+  MousePointerSquareDashed,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -57,6 +67,8 @@ type NodeInspectorProps = {
   onDelete?: (target: EditTarget) => void;
   /** Read-only inspection (view lane): show config without editing. */
   readOnly?: boolean;
+  /** Lint problems that map to the selected node. */
+  lintHints?: LintHint[];
 };
 
 /**
@@ -64,7 +76,15 @@ type NodeInspectorProps = {
  * schema-driven form (editable components) or scoped YAML (read-only / unknown
  * schema). Edits are written back into the canonical pipeline YAML at `target`.
  */
-export function NodeInspector({ target, yaml, components, onApply, onDelete, readOnly }: NodeInspectorProps) {
+export function NodeInspector({
+  target,
+  yaml,
+  components,
+  onApply,
+  onDelete,
+  readOnly,
+  lintHints,
+}: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   const componentName = component ? firstKey(component) : undefined;
 
@@ -77,7 +97,7 @@ export function NodeInspector({ target, yaml, components, onApply, onDelete, rea
   }, [components, target, componentName]);
 
   if (!(target && component && componentName)) {
-    return <InspectorEmptyState />;
+    return <InspectorEmptyState readOnly={readOnly} />;
   }
 
   const kind = targetComponentType(target);
@@ -100,6 +120,7 @@ export function NodeInspector({ target, yaml, components, onApply, onDelete, rea
         kindLabel={kindLabel}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
       />
+      {lintHints && lintHints.length > 0 ? <InspectorLintErrors hints={lintHints} /> : null}
       {(() => {
         if (readOnly) {
           return <ReadOnlyComponent component={component} />;
@@ -124,12 +145,54 @@ export function NodeInspector({ target, yaml, components, onApply, onDelete, rea
   );
 }
 
-const InspectorEmptyState = () => (
-  <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-    <MousePointerSquareDashed className="size-8 text-muted-foreground/60" />
-    <Text className="text-muted-foreground" variant="bodySmall">
-      Select a node on the canvas to view and edit its configuration.
+// Lint problems for the selected node, shown in context above its config.
+const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
+  <div className="shrink-0 border-destructive/30 border-b bg-destructive/5 px-4 py-3">
+    <div className="mb-1 flex items-center gap-1.5 text-destructive">
+      <AlertCircle className="size-4 shrink-0" />
+      <Text as="span" className="text-destructive" variant="bodyStrongMedium">
+        {hints.length === 1 ? '1 problem' : `${hints.length} problems`}
+      </Text>
+    </div>
+    <ul className="flex flex-col gap-1">
+      {hints.map((hint, i) => (
+        <li className="text-destructive text-xs" key={`${hint.line}-${hint.column}-${i}`}>
+          {hint.hint}
+          {hint.line > 0 ? <span className="text-destructive/70"> (line {hint.line})</span> : null}
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+const EmptyHint = ({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) => (
+  <li className="flex items-center gap-2.5">
+    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+      <Icon className="size-3.5" />
+    </span>
+    <Text as="span" className="text-muted-foreground" variant="bodySmall">
+      {children}
     </Text>
+  </li>
+);
+
+const InspectorEmptyState = ({ readOnly }: { readOnly?: boolean }) => (
+  <div className="flex h-full flex-col items-center justify-center gap-5 px-6 text-center">
+    <div className="flex size-14 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+      <MousePointerSquareDashed className="size-7" />
+    </div>
+    <div className="flex max-w-[16rem] flex-col gap-1">
+      <Text variant="bodyStrongMedium">No node selected</Text>
+      <Text className="text-muted-foreground" variant="bodySmall">
+        {readOnly
+          ? 'Select a node on the canvas to inspect its configuration.'
+          : 'Select a node on the canvas to view and edit its configuration.'}
+      </Text>
+    </div>
+    <ul className="flex flex-col gap-2.5 text-left">
+      <EmptyHint icon={MousePointerClick}>Click any node to {readOnly ? 'inspect' : 'edit'} it</EmptyHint>
+      {readOnly ? null : <EmptyHint icon={Plus}>Use the + on a connector line to insert a step</EmptyHint>}
+    </ul>
   </div>
 );
 

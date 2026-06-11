@@ -87,6 +87,7 @@ import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
+import { TemplateGalleryCta } from './template-cta';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { useSlashCommand } from './use-slash-command';
 import { VisualEditorPanel } from './visual-editor-panel';
@@ -107,6 +108,7 @@ import type {
   UserStepRef,
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
+import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -640,6 +642,15 @@ function EditorPanel({
   );
 }
 
+// A freshly-started pipeline has no real components yet — only section labels and
+// `none` placeholders. Mirrors the old mini-diagram's "empty" check.
+function useIsPipelineEmpty(yamlContent: string): boolean {
+  return useMemo(() => {
+    const { nodes } = parsePipelineFlowTree(yamlContent);
+    return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
+  }, [yamlContent]);
+}
+
 function SidebarPanel({
   mode,
   yamlContent,
@@ -647,6 +658,7 @@ function SidebarPanel({
   onAddConnector,
   onAddTopic,
   onAddSasl,
+  onBrowseTemplates,
   onOpenCommandMenu,
 }: {
   mode: string;
@@ -655,24 +667,32 @@ function SidebarPanel({
   onAddConnector: (type: ConnectComponentType | 'resource') => void;
   onAddTopic: (section: string, componentName: string) => void;
   onAddSasl: (section: string, componentName: string) => void;
+  onBrowseTemplates?: () => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
 }) {
   // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
+  const isEmpty = useIsPipelineEmpty(yamlContent);
+  const showTemplateCta = canEdit && Boolean(onBrowseTemplates) && isEmpty;
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        {isPipelineDiagramsEnabled ? (
-          <PipelineFlowCanvas
-            configYaml={yamlContent}
-            onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
-            onAddSasl={canEdit ? onAddSasl : undefined}
-            onAddTopic={canEdit ? onAddTopic : undefined}
-            orientation="vertical"
-            simple
-          />
-        ) : null}
+      {/* Visualizer region (relative) so the template entry point can float pinned
+          at its bottom with an enter/exit animation, like the old mini-diagram. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto overflow-x-hidden">
+          {isPipelineDiagramsEnabled ? (
+            <PipelineFlowCanvas
+              configYaml={yamlContent}
+              onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
+              onAddSasl={canEdit ? onAddSasl : undefined}
+              onAddTopic={canEdit ? onAddTopic : undefined}
+              orientation="vertical"
+              simple
+            />
+          ) : null}
+        </div>
+        {onBrowseTemplates ? <TemplateGalleryCta onBrowseTemplates={onBrowseTemplates} show={showTemplateCta} /> : null}
       </div>
       {mode !== 'view' && (
         <>
@@ -991,6 +1011,7 @@ function PipelinePageContent() {
       {mode !== 'view' ? (
         <PipelineEditHeader
           form={form}
+          hasUnsavedChanges={hasUnsavedChanges}
           isSaving={isSaving}
           mode={mode as 'create' | 'edit'}
           onBack={handleCancel}
@@ -1039,6 +1060,7 @@ function PipelinePageContent() {
             onAddConnector={(type) => setAddConnectorType(type)}
             onAddSasl={handleAddSasl}
             onAddTopic={handleAddTopic}
+            onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
             onOpenCommandMenu={handleCommandMenuOpen}
             yamlContent={yamlContent}
           />
@@ -1052,6 +1074,7 @@ function PipelinePageContent() {
             <VisualEditorPanel
               componentList={componentListResponse?.components ?? ({} as ComponentList)}
               components={components}
+              lintHints={Object.values(lintHints)}
               mode="view"
               onYamlChange={setYamlContent}
               yamlContent={pipeline.configYaml}
@@ -1061,10 +1084,12 @@ function PipelinePageContent() {
             <VisualEditorPanel
               componentList={componentListResponse?.components ?? ({} as ComponentList)}
               components={components}
+              lintHints={Object.values(lintHints)}
               mode={mode}
               onAddConnector={(type) => setAddConnectorType(type)}
               onAddSasl={handleAddSasl}
               onAddTopic={handleAddTopic}
+              onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
               onYamlChange={setYamlContent}
               yamlContent={yamlContent}
             />

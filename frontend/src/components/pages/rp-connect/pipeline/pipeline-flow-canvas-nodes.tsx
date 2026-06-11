@@ -24,7 +24,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Box, ChevronDown, ChevronRight, PlusIcon } from 'lucide-react';
+import { AlertCircle, Box, ChevronDown, ChevronRight, PlusIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
@@ -144,6 +144,8 @@ export type FlowCardData = {
   editTarget?: EditTarget;
   /** Highlighted because it's the node selected in the inspector. */
   selected?: boolean;
+  /** Lint messages from the server that map to this node's config. */
+  lintErrors?: string[];
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
   onAddConnector?: (section: string) => void;
@@ -321,6 +323,28 @@ const CompactCard = ({ data }: { data: FlowCardData }) => (
 
 // The selection ring shown on the node the inspector is editing.
 const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
+// An error ring for nodes with lint problems (takes precedence over selection).
+const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
+
+function cardRing(data: FlowCardData): string {
+  if (data.lintErrors?.length) {
+    return ERROR_RING;
+  }
+  return data.selected ? SELECTED_RING : '';
+}
+
+// A small red chip showing the count of lint problems on a node; the messages are
+// the native tooltip (and shown in full in the inspector).
+const LintBadge = ({ errors }: { errors?: string[] }) =>
+  errors && errors.length > 0 ? (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-[10px] text-destructive"
+      title={errors.join('\n')}
+    >
+      <AlertCircle className="size-3" />
+      {errors.length}
+    </span>
+  ) : null;
 
 // A leaf component card. The whole card is the click target (selection is handled
 // by React Flow's onNodeClick); editing happens in the inspector rail.
@@ -332,7 +356,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
       className={cn(
         'overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
         selectable && 'cursor-pointer',
-        data.selected && SELECTED_RING
+        cardRing(data)
       )}
       style={accent ? { borderLeftColor: accent, borderLeftWidth: 3 } : undefined}
     >
@@ -346,6 +370,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
           {kindLabel}
         </Text>
         <BranchConditionChip data={data} />
+        <LintBadge errors={data.lintErrors} />
       </div>
       <div className="flex w-full items-center gap-2 px-3 pb-2 text-left">
         <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
@@ -434,7 +459,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       <div
         className={cn(
           'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm',
-          data.selected && SELECTED_RING
+          cardRing(data)
         )}
         style={accent ? { borderLeftColor: accent, borderLeftWidth: 3, borderLeftStyle: 'solid' } : undefined}
       >
@@ -452,6 +477,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
           />
           <ContainerTitleText accent={accent} data={data} />
           <BranchConditionChip data={data} />
+          <LintBadge errors={data.lintErrors} />
           {/* Collapse toggle is a separate control so it doesn't also select the node. */}
           {data.collapsible ? (
             <button

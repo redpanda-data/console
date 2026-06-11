@@ -118,6 +118,27 @@ Supporting polish:
 `parsePipelineFlowTree` (new node fields: `condition`, `isDefault`, `isErrorPath`,
 `branch`, `resourceRef`) — still 100% deterministic from YAML.
 
+### Template gallery entry point
+
+When the pipeline is empty (only section labels / `none` placeholders) and editing,
+a floating **"Start from a template"** card (`template-cta.tsx`, `motion/react`
+enter/exit animation) appears pinned to the bottom — in the **sidebar visualizer**
+(full-width) and on the **full visual editor** (centered). It opens the
+`TemplateGalleryDialog` and animates away once the pipeline gets real content.
+
+### Lint feedback & unsaved state
+
+- **In-context lint.** Server lint hints are line/column-based; `mapLintHintsToNodes`
+  (`utils/pipeline-lint.ts`) parses the YAML with a `LineCounter`, computes each
+  editable node's YAML line range (via its edit-target path), and attaches each hint
+  to the **most specific** node whose range contains the hint's line. Nodes with
+  problems get a red ring + an alert badge (count, messages on hover) on the canvas,
+  and the inspector shows the full messages (with line numbers) for the selected
+  node. Hints that don't fall inside a node still appear in the YAML lint list.
+- **Unsaved indicator.** `PipelineEditHeader` shows an amber "Unsaved changes" dot
+  next to Save whenever `hasUnsavedChanges` (form dirty or YAML differs from the
+  loaded config) — so applying a node edit in the rail makes the pending save obvious.
+
 ### Editing experience
 
 - **Figma-style inspector rail (not modals).** The Visual lane is a flex row:

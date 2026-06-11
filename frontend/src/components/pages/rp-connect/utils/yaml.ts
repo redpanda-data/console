@@ -989,7 +989,8 @@ export type EditTarget =
   | { kind: 'resource'; resourceKey: ResourceArrayKey; index: number }
   | { kind: 'path'; path: (string | number)[]; componentType: ConnectComponentType };
 
-function targetPath(target: EditTarget): (string | number)[] {
+/** The YAML path (for `getIn`/`setIn`) of an edit target's component object. */
+export function editTargetPath(target: EditTarget): (string | number)[] {
   switch (target.kind) {
     case 'input':
       return ['input'];
@@ -1041,7 +1042,7 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
 /** Read the component object at an edit target as plain JS (for the edit dialog). */
 export function getComponentAt(yaml: string, target: EditTarget): Record<string, unknown> | undefined {
   try {
-    const node = parseDocument(yaml).getIn(targetPath(target)) as { toJSON?: () => unknown } | undefined;
+    const node = parseDocument(yaml).getIn(editTargetPath(target)) as { toJSON?: () => unknown } | undefined;
     const obj = node?.toJSON?.();
     return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
   } catch {
@@ -1057,7 +1058,7 @@ export function setComponentAt(
 ): string | null {
   try {
     const doc = parseDocument(yaml);
-    doc.setIn(targetPath(target), componentObject);
+    doc.setIn(editTargetPath(target), componentObject);
     return doc.toString();
   } catch {
     return null;
@@ -1068,7 +1069,7 @@ export function setComponentAt(
 export function removeComponentAt(yaml: string, target: EditTarget): string | null {
   try {
     const doc = parseDocument(yaml);
-    doc.deleteIn(targetPath(target));
+    doc.deleteIn(editTargetPath(target));
     pruneEmptyContainers(doc, target);
     return doc.toString();
   } catch {
