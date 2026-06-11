@@ -19,7 +19,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes } from './pipeline-flow-canvas-nodes';
@@ -43,12 +43,14 @@ type CanvasCallbacks = {
   lintErrorsByNode?: Map<string, string[]>;
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
+  /** Node ids present on the previous render — anything new is "appearing". */
+  previousIds: ReadonlySet<string>;
 };
 
 // Wire interactivity into a layout node's data: collapse toggle, selection
 // highlight, and the add-connector / redpanda setup-hint handlers. Editing now
 // happens in the inspector rail (selection), not via a per-node button.
-function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
+export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   const data = { ...node.data } as FlowCardData;
   if (data.collapsible) {
     data.collapsed = cb.collapsedIds.has(node.id);
@@ -73,6 +75,18 @@ function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   }
   if (data.missingSasl && cb.onAddSasl) {
     data.onAddSasl = cb.onAddSasl;
+  }
+  // A node that wasn't here last render (e.g. a child revealed by expanding its
+  // container) should appear in place — not slide in from the canvas origin. Drop
+  // the transform transition so it snaps to its spot, and let the card itself fade
+  // + grow in (see `appeared`), so it reads as emerging from the expanded section.
+  if (!cb.previousIds.has(node.id)) {
+    data.appeared = true;
+    return {
+      ...node,
+      data,
+      style: { ...(node.style as Record<string, unknown>), transition: undefined },
+    };
   }
   return { ...node, data };
 }
@@ -237,6 +251,9 @@ export function PipelineFlowCanvas({
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
   // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
+  // Node ids committed on the previous render — anything new this render is
+  // "appearing" and skips the reposition transition (so it doesn't fly from origin).
+  const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
 
   const { nodes, error } = useMemo(() => parsePipelineFlowTree(debouncedYaml), [debouncedYaml]);
@@ -266,6 +283,7 @@ export function PipelineFlowCanvas({
       lintErrorsByNode,
       flashNodeIds,
       flashToken,
+      previousIds: previousIdsRef.current,
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
 
@@ -306,6 +324,12 @@ export function PipelineFlowCanvas({
     onAddTopic,
     onAddSasl,
   ]);
+
+  // Record the committed node ids so the next render can tell which nodes are new
+  // (and should appear in place rather than transition in from the origin).
+  useEffect(() => {
+    previousIdsRef.current = new Set(rfNodes.map((node) => node.id));
+  }, [rfNodes]);
 
   // A node's "scope" — itself plus all descendants — so selecting/hovering a
   // container keeps its internal wiring (chains, copy/merge, fan edges) lit.

@@ -153,6 +153,14 @@ Supporting polish:
   whose container end is a port (`portDot: 'target'` — fan-in, branch merge) omits
   its arrowhead: several fan-in lines into one port would otherwise stack
   arrowheads on the socket. Fan-out / entry / reference edges keep their arrow.
+- **Expand/collapse appearance.** Nodes carry a `transform 200ms` transition so
+  they glide when neighbours shift. A node that's *new this render* (a child
+  revealed by expanding its container) would otherwise slide in from the canvas
+  origin, so the canvas tracks the previous render's node ids (`previousIds`):
+  appearing nodes drop the transform transition (snap to their spot) and the card
+  body plays a `fade-in zoom-in-95` enter — applied to the card, never the React
+  Flow node wrapper whose `transform` drives positioning — so they grow in place
+  from the expanded section.
 - **Collapse re-anchoring.** A reference whose source is hidden inside a
   collapsed container re-anchors to the **nearest visible ancestor**
   (`visibleAnchor`), so resources never dangle disconnected while collapsed.

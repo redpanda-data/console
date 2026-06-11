@@ -34,6 +34,10 @@ import { FLOW_CARD_WIDTH, FLOW_COMPACT_CARD_WIDTH, FLOW_SPINE_HANDLE_TOP } from 
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
+// A node revealed this render (e.g. by expanding its container) fades + grows in.
+// Applied to the card body (never the React Flow node wrapper, whose `transform`
+// drives positioning and would fight a scale/translate enter animation).
+const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 // Anchor the spine (left/right) handles a fixed distance below the card top —
 // roughly the title row — so cards of differing heights connect along a
 // horizontal line. The top/bottom handles are anchored a fixed distance from the
@@ -155,6 +159,9 @@ export type FlowCardData = {
   flash?: boolean;
   /** Changes on each flash so the pulse animation replays. */
   flashToken?: number;
+  /** Newly added this render (e.g. revealed by expanding a container) — fades and
+      grows in place rather than sliding from the canvas origin. */
+  appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
   // Injected by the canvas (edit mode only).
@@ -452,7 +459,7 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   })();
 
   return (
-    <div className="group relative" ref={ref} style={{ width }}>
+    <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width }}>
       <NodeHandles />
       {card}
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
@@ -504,7 +511,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
     // measured from the node's outer edge — identical to leaf cards. (Putting them on
     // the bordered box below would shift them by the border/accent width and angle the
     // spine between cards and containers.)
-    <div className="group relative h-full w-full" ref={ref}>
+    <div className={cn('group relative h-full w-full', data.appeared && APPEAR_ANIM)} ref={ref}>
       <ContainerHandles gsTop={data.portOutY} gtTop={data.portInY} />
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div

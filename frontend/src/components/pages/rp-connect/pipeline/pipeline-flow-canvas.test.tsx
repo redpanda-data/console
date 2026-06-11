@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Edge } from '@xyflow/react';
+import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { decorateEdges } from './pipeline-flow-canvas';
+import { decorateEdges, injectNodeData } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowSpine', data: { insertIndex: 1 } },
@@ -79,5 +79,29 @@ describe('decorateEdges', () => {
     const spineData = decorated.find((e) => e.type === 'flowSpine')?.data as { onInsert?: () => void };
     spineData.onInsert?.();
     expect(onInsert).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('injectNodeData — appearance', () => {
+  const node: Node = {
+    id: 'child-1',
+    position: { x: 0, y: 0 },
+    data: { label: 'http' },
+    style: { transition: 'transform 200ms ease' },
+  };
+  const base = { collapsedIds: new Set<string>(), toggleCollapse: () => undefined };
+
+  it('marks a node new this render as appeared and drops its reposition transition', () => {
+    // Empty previousIds → the node is appearing (e.g. revealed by expanding).
+    const injected = injectNodeData(node, { ...base, previousIds: new Set() });
+    expect((injected.data as { appeared?: boolean }).appeared).toBe(true);
+    // No transform transition, so it snaps to its spot instead of flying from origin.
+    expect((injected.style as { transition?: string }).transition).toBeUndefined();
+  });
+
+  it('leaves an existing node untouched (smooth reposition transition kept)', () => {
+    const injected = injectNodeData(node, { ...base, previousIds: new Set(['child-1']) });
+    expect((injected.data as { appeared?: boolean }).appeared).toBeUndefined();
+    expect((injected.style as { transition?: string }).transition).toBe('transform 200ms ease');
   });
 });
