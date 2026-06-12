@@ -10,18 +10,14 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State, AIAgentSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { describe, expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-react';
 
-import {
-  getRouteComponent,
-  mockConnectQuery,
-  mockRouterForBrowserTest,
-  ScreenshotFrame,
-} from '../../../../__tests__/browser-test-utils';
+import { getRouteComponent, ScreenshotFrame } from '../../../../__tests__/browser-test-utils';
 
 // Hoisted mocks — `vi.mock` factories run before module imports, so any state
 // they reference must be declared via `vi.hoisted()` to survive hoisting.
@@ -38,8 +34,18 @@ const mocks = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock('@tanstack/react-router', () => mockRouterForBrowserTest());
-vi.mock('@connectrpc/connect-query', () => mockConnectQuery());
+// vi.mock factories are hoisted above imports, so they must not close over
+// top-level bindings — resolve the helpers via dynamic import inside the
+// factory instead. The closure variant crashes the browser-mode mocker under
+// CI ("error when mocking a module"), killing the page and hanging the run.
+vi.mock('@tanstack/react-router', async () => {
+  const { mockRouterForBrowserTest } = await import('../../../../__tests__/browser-test-utils');
+  return mockRouterForBrowserTest();
+});
+vi.mock('@connectrpc/connect-query', async () => {
+  const { mockConnectQuery } = await import('../../../../__tests__/browser-test-utils');
+  return mockConnectQuery();
+});
 
 vi.mock('config', () => ({
   config: { jwt: 'test-jwt-token', controlplaneUrl: 'http://localhost:9090' },
@@ -48,13 +54,12 @@ vi.mock('config', () => ({
   addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
 }));
 
-vi.mock('state/ui-state', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('state/ui-state')>();
-  return {
-    ...actual,
-    uiState: { pageTitle: '', pageBreadcrumbs: [] },
-  };
-});
+// Plain factory on purpose: importOriginal would evaluate the real ui-state
+// module, whose transitive import graph is large enough to stall browser-mode
+// module loading until the run times out.
+vi.mock('state/ui-state', () => ({
+  uiState: { pageTitle: '', pageBreadcrumbs: [] },
+}));
 
 vi.mock('react-query/api/ai-agent', () => ({
   useListAIAgentsQuery: () => mocks.listAIAgents(),
@@ -63,15 +68,15 @@ vi.mock('react-query/api/ai-agent', () => ({
   useStopAIAgentMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
-vi.mock('react-query/api/remote-mcp', () => ({
-  useListMCPServersQuery: () => mocks.listMCPServers(),
+vi.mock('react-query/api/aigw/mcp-servers', () => ({
+  useListAigwMCPServersQuery: () => mocks.listMCPServers(),
 }));
 
 vi.mock('react-query/api/secret', () => ({
   useDeleteSecretMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
-const { AIAgentsListPage } = await import('./ai-agent-list-page');
+import { AIAgentsListPage } from './ai-agent-list-page';
 
 // Route-component extraction guard — exercises getRouteComponent for parity
 // with the ADP UI browser-test pattern.
@@ -137,9 +142,11 @@ describe('AIAgentsListPage — browser visual regression', () => {
     });
 
     render(
-      <ScreenshotFrame width={1280}>
-        <AIAgentsListPage />
-      </ScreenshotFrame>
+      <QueryClientProvider client={new QueryClient()}>
+        <ScreenshotFrame width={1280}>
+          <AIAgentsListPage />
+        </ScreenshotFrame>
+      </QueryClientProvider>
     );
 
     await expect.element(page.getByText('Customer Support Agent')).toBeVisible();

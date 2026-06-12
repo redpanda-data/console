@@ -27,10 +27,15 @@ export function mockRouterForBrowserTest() {
   };
 }
 
-export function mockConnectQuery() {
+export async function mockConnectQuery() {
+  /** Spread the real module so every re-export (TransportProvider, hooks, ...) stays available; only the RPC entry points are stubbed. */
+  const actual = await vi.importActual<typeof import('@connectrpc/connect-query')>('@connectrpc/connect-query');
   return {
+    ...actual,
     callUnaryMethod: vi.fn(),
     createConnectQueryKey: vi.fn(() => ['mock-key']),
+    useMutation: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false })),
+    useQuery: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
   };
 }
 
