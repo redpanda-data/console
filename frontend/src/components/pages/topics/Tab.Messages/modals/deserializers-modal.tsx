@@ -9,23 +9,26 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Box,
-  Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Label } from 'components/redpanda-ui/components/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
 import type { FC } from 'react';
 
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { Label } from '../../../../../utils/tsx-utils';
-import { SingleSelect } from '../../../../misc/select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -61,47 +64,67 @@ export const DeserializersModal: FC<{
   setKeyDeserializer,
   setValueDeserializer,
 }) => (
-  <Modal
-    isOpen={getShowDialog()}
-    onClose={() => {
-      setShowDialog(false);
-    }}
-  >
-    <ModalOverlay />
-    <ModalContent minW="xl">
-      <ModalHeader>Deserialize</ModalHeader>
-      <ModalCloseButton />
-      <ModalBody display="flex" flexDirection="column" gap={4}>
-        <Text>
-          Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.
-        </Text>
-        <Box>
-          <Label text="Key Deserializer">
-            <SingleSelect<PayloadEncoding>
-              onChange={setKeyDeserializer}
-              options={payloadEncodingPairs}
-              value={keyDeserializer}
-            />
-          </Label>
-        </Box>
-        <Label text="Value Deserializer">
-          <SingleSelect<PayloadEncoding>
-            onChange={setValueDeserializer}
-            options={payloadEncodingPairs}
-            value={valueDeserializer}
-          />
-        </Label>
-      </ModalBody>
-      <ModalFooter gap={2}>
-        <Button
-          colorScheme="red"
-          onClick={() => {
-            setShowDialog(false);
-          }}
-        >
+  <Dialog onOpenChange={setShowDialog} open={getShowDialog()}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Deserialize</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <p>Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.</p>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="key-deserializer">Key Deserializer</Label>
+          <Select
+            onValueChange={(val) => setKeyDeserializer(Number(val) as PayloadEncoding)}
+            value={
+              payloadEncodingPairs.some((p) => p.value === keyDeserializer)
+                ? String(keyDeserializer)
+                : String(payloadEncodingPairs[0].value)
+            }
+          >
+            <SelectTrigger id="key-deserializer">
+              <SelectValue>
+                {(value: unknown) => payloadEncodingPairs.find((p) => String(p.value) === String(value))?.label}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {payloadEncodingPairs.map((pair) => (
+                <SelectItem key={pair.value} value={String(pair.value)}>
+                  {pair.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="value-deserializer">Value Deserializer</Label>
+          <Select
+            onValueChange={(val) => setValueDeserializer(Number(val) as PayloadEncoding)}
+            value={
+              payloadEncodingPairs.some((p) => p.value === valueDeserializer)
+                ? String(valueDeserializer)
+                : String(payloadEncodingPairs[0].value)
+            }
+          >
+            <SelectTrigger id="value-deserializer">
+              <SelectValue>
+                {(value: unknown) => payloadEncodingPairs.find((p) => String(p.value) === String(value))?.label}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {payloadEncodingPairs.map((pair) => (
+                <SelectItem key={pair.value} value={String(pair.value)}>
+                  {pair.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </DialogBody>
+      <DialogFooter>
+        <Button onClick={() => setShowDialog(false)} variant="secondary">
           Close
         </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 );
