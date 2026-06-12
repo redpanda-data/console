@@ -40,6 +40,12 @@ export default defineConfig({
   ],
   resolve: { alias: sharedAliases, preserveSymlinks: true },
   optimizeDeps: {
+    // Scan every browser spec up front so Vite pre-bundles their full dep
+    // graph at startup. Without this, the optimizer discovers new deps while
+    // workers are mid-run, re-optimizes, invalidates in-flight imports, and
+    // the cold launch hangs until the job timeout (the documented reason
+    // baseline generation never completed).
+    entries: ['vitest.browser.setup.ts', 'src/**/*.browser.test.tsx'],
     include: [
       '@bufbuild/protobuf',
       '@connectrpc/connect',

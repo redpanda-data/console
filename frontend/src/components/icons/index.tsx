@@ -16,11 +16,11 @@
 
 // Social media icons - simple-icons
 // biome-ignore lint/performance/noBarrelFile: Intentional central icon system as per project architecture
-export {
-  SiGithub as GitHubIcon, // FaGithub
-  SiSlack as SlackIcon, // FaSlack
-  SiX as TwitterIcon, // FaTwitter (Twitter rebranded to X)
-} from '@icons-pack/react-simple-icons';
+// Deep per-icon imports: the package barrel re-exports ~3000 icons (59MB),
+// which dev-mode bundlers pre-bundle whole — crashing browser-mode vitest.
+export { default as GitHubIcon } from '@icons-pack/react-simple-icons/icons/SiGithub.mjs'; // FaGithub
+export { default as SlackIcon } from '@icons-pack/react-simple-icons/icons/SiSlack.mjs'; // FaSlack
+export { default as TwitterIcon } from '@icons-pack/react-simple-icons/icons/SiX.mjs'; // FaTwitter (Twitter rebranded to X)
 
 // LinkedIn removed from both lucide-react (v1.x) and @icons-pack/react-simple-icons
 // (trademark). Inline SVG preserves the brand mark while staying dependency-free.
