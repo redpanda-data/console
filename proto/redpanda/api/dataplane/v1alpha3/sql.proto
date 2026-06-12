@@ -138,7 +138,7 @@ enum CatalogType {
 
 message Catalog {
   string name = 1;
-  string namespace_name = 2;
+  string namespace = 2;
   CatalogType type = 3;
 }
 
@@ -148,18 +148,17 @@ message Catalog {
 message Table {
   reserved 1;
   reserved "database_name";
-  // Namespace of the catalog that owns this table. Namespaces attach to
-  // catalogs (connections), not to tables; tables of same-named catalogs in
-  // different namespaces are distinguished by this field.
-  string namespace_name = 2;
-  string name = 3;
-  optional string connection_name = 4;
-  optional string topic_name = 5;
-  optional string subject_name = 6;
+  string name = 2;
+  // Namespaces attach to catalogs, not to tables; tables of
+  // same-named catalogs in different namespaces are distinguished by this field.
+  string catalog_namespace = 3;
+  optional string catalog = 4;
+  optional string topic = 5;
+  optional string subject = 6;
   optional string lookup_policy = 7;
   optional string error_handling_policy = 8;
   optional string struct_mapping_policy = 9;
-  optional string output_schema_full_message_name = 10;
+  optional string output_schema_full_message = 10;
 }
 
 // Column descriptor for a table or query result.

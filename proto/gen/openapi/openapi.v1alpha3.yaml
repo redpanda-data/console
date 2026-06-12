@@ -379,7 +379,7 @@ components:
       properties:
         name:
           type: string
-        namespace_name:
+        namespace:
           type: string
         type:
           $ref: '#/components/schemas/CatalogType'
@@ -1952,8 +1952,13 @@ components:
         fields (connection_name, topic_name, *_policy) are only populated for
         Kafka-backed tables.
       properties:
-        connection_name:
+        catalog:
           nullable: true
+          type: string
+        catalog_namespace:
+          description: |-
+            Namespaces attach to catalogs, not to tables; tables of
+            same-named catalogs in different namespaces are distinguished by this field.
           type: string
         error_handling_policy:
           nullable: true
@@ -1963,22 +1968,16 @@ components:
           type: string
         name:
           type: string
-        namespace_name:
-          description: |-
-            Namespace of the catalog that owns this table. Namespaces attach to
-            catalogs (connections), not to tables; tables of same-named catalogs in
-            different namespaces are distinguished by this field.
-          type: string
-        output_schema_full_message_name:
+        output_schema_full_message:
           nullable: true
           type: string
         struct_mapping_policy:
           nullable: true
           type: string
-        subject_name:
+        subject:
           nullable: true
           type: string
-        topic_name:
+        topic:
           nullable: true
           type: string
       type: object
