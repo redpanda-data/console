@@ -215,7 +215,7 @@ const AclsTabContent: FC = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
-                          aria-label="Delete ACL"
+                          aria-label={`Delete ACL for ${record.principalName}`}
                           className="deleteButton"
                           onClick={() => {}}
                           size="icon-sm"
