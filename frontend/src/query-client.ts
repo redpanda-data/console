@@ -1,6 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient } from '@tanstack/react-query';
-import { DEFAULT_QUERY_STALE_TIME } from 'react-query/react-query.utils';
+import { DEFAULT_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 
 function isConnectError(error: Error | ConnectError): error is ConnectError {
   return error instanceof ConnectError;
@@ -9,7 +9,7 @@ function isConnectError(error: Error | ConnectError): error is ConnectError {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: DEFAULT_QUERY_STALE_TIME,
+      staleTime: DEFAULT_CACHE_STALE_TIME,
       retry: (failureCount, error) => {
         if (failureCount > 3) {
           return false;
