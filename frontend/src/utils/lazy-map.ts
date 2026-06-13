@@ -17,7 +17,7 @@ export class LazyMap<K, V> extends Map<K, V> {
    * @param defaultCreate factory for missing values.
    * @param maxSize when set, the map behaves as a bounded LRU cache: accessing a key marks it
    *   most-recently-used and inserting beyond `maxSize` evicts the least-recently-used entry.
-   *   Unbounded when omitted (original behaviour).
+   *   Recency is refreshed by `get()` only — `has()` does not bump it. Unbounded when omitted.
    */
   constructor(defaultCreate: (key: K) => V, maxSize?: number) {
     super();
