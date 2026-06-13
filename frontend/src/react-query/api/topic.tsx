@@ -14,7 +14,12 @@ import {
   TopicService,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
-import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
+import {
+  MAX_PAGE_SIZE,
+  type MessageInit,
+  type QueryOptions,
+  TOPIC_CONFIG_STALE_TIME,
+} from 'react-query/react-query.utils';
 import { toast } from 'sonner';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -63,6 +68,12 @@ export const useLegacyListTopicsQuery = (
         method: 'GET',
         headers,
       });
+
+      // window.fetch does not reject on 4xx/5xx, so guard explicitly — otherwise an error
+      // body parses as a "successful" empty result and the topics page silently shows 0 topics.
+      if (!response.ok) {
+        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
+      }
 
       return response.json();
     },
@@ -150,7 +161,7 @@ export const useTopicConfigQuery = (topicName: string, enabled = true) => {
       return api.topicConfig.get(topicName) || null;
     },
     enabled: enabled && !!topicName,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: TOPIC_CONFIG_STALE_TIME,
     retry: (failureCount, error) => {
       // Don't retry on authorization errors
       if (error && typeof error === 'object' && 'statusText' in error) {
