@@ -18,13 +18,13 @@ const noop = () => {};
 
 describe('CreateACL - principal field composability', () => {
   describe('default principal field (no renderPrincipal)', () => {
-    test('shows the principal type selector when principalType is provided without renderPrincipal', () => {
+    test('shows the principal type selector when principalType is provided without renderPrincipal', async () => {
       renderWithFileRoutes(<CreateACL edit={false} onCancel={noop} principalType={PrincipalTypeUser} />);
 
-      expect(screen.getByTestId('shared-principal-type-select')).toBeInTheDocument();
+      expect(await screen.findByTestId('shared-principal-type-select')).toBeInTheDocument();
     });
 
-    test('disables the principal type selector when edit is true', () => {
+    test('disables the principal type selector when edit is true', async () => {
       renderWithFileRoutes(
         <CreateACL
           edit={true}
@@ -34,12 +34,12 @@ describe('CreateACL - principal field composability', () => {
         />
       );
 
-      expect(screen.getByTestId('shared-principal-type-select')).toBeDisabled();
+      expect(await screen.findByTestId('shared-principal-type-select')).toBeDisabled();
     });
   });
 
   describe('custom principal field (renderPrincipal)', () => {
-    test('hides the default selector and shows custom content when renderPrincipal is provided', () => {
+    test('hides the default selector and shows custom content when renderPrincipal is provided', async () => {
       renderWithFileRoutes(
         <CreateACL
           edit={false}
@@ -54,12 +54,12 @@ describe('CreateACL - principal field composability', () => {
         />
       );
 
+      expect(await screen.findByTestId('custom-principal-field')).toBeInTheDocument();
       expect(screen.queryByTestId('shared-principal-type-select')).not.toBeInTheDocument();
-      expect(screen.getByTestId('custom-principal-field')).toBeInTheDocument();
       expect(screen.getByText('Role name')).toBeInTheDocument();
     });
 
-    test('passes correct value to renderPrincipal', () => {
+    test('passes correct value to renderPrincipal', async () => {
       renderWithFileRoutes(
         <CreateACL
           edit={false}
@@ -69,10 +69,10 @@ describe('CreateACL - principal field composability', () => {
         />
       );
 
-      expect(screen.getByTestId('principal-value')).toHaveTextContent('RedpandaRole:');
+      expect(await screen.findByTestId('principal-value')).toHaveTextContent('RedpandaRole:');
     });
 
-    test('passes disabled=true when edit is true', () => {
+    test('passes disabled=true when edit is true', async () => {
       renderWithFileRoutes(
         <CreateACL
           edit={true}
@@ -85,7 +85,7 @@ describe('CreateACL - principal field composability', () => {
         />
       );
 
-      expect(screen.getByTestId('disabled-state')).toHaveTextContent('disabled');
+      expect(await screen.findByTestId('disabled-state')).toHaveTextContent('disabled');
     });
   });
 });
