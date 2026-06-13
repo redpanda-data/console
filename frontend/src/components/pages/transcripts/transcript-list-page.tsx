@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -17,8 +18,10 @@ import { Heading, Link, Text } from 'components/redpanda-ui/components/typograph
 import { parseAsArrayOf, parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import {
   type AttributeFilter,
+  AttributeFilterSchema,
   AttributeOperator,
   type ListTracesRequest_Filter,
+  ListTracesRequest_FilterSchema,
   type TraceSummary,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC } from 'react';
@@ -214,50 +217,53 @@ const buildApiFilter = ({
 
   // LLM filter → attribute filter with IN operator
   if (activePresets.includes('llm')) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: 'gen_ai.operation.name',
-      operator: AttributeOperator.IN,
-      value: '',
-      values: ['chat', 'text_completion'],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: 'gen_ai.operation.name',
+        operator: AttributeOperator.IN,
+        value: '',
+        values: ['chat', 'text_completion'],
+      })
+    );
   }
 
   // Tool filter → attribute filter
   if (activePresets.includes('tool')) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: 'gen_ai.operation.name',
-      operator: AttributeOperator.EQUALS,
-      value: 'execute_tool',
-      values: [],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: 'gen_ai.operation.name',
+        operator: AttributeOperator.EQUALS,
+        value: 'execute_tool',
+        values: [],
+      })
+    );
   }
 
   // Agent filter → attribute filter
   if (activePresets.includes('agent')) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: 'gen_ai.operation.name',
-      operator: AttributeOperator.EQUALS,
-      value: 'invoke_agent',
-      values: [],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: 'gen_ai.operation.name',
+        operator: AttributeOperator.EQUALS,
+        value: 'invoke_agent',
+        values: [],
+      })
+    );
   }
 
   // Add user-defined attribute filters
   for (const f of urlAttrFilters) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: f.key,
-      operator: f.op === 'equals' ? AttributeOperator.EQUALS : AttributeOperator.NOT_EQUALS,
-      value: f.value,
-      values: [],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: f.key,
+        operator: f.op === 'equals' ? AttributeOperator.EQUALS : AttributeOperator.NOT_EQUALS,
+        value: f.value,
+        values: [],
+      })
+    );
   }
 
-  return {
-    $typeName: 'redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter',
+  return create(ListTracesRequest_FilterSchema, {
     startTime: startTimestamp,
     endTime: endTimestamp,
     attributeFilters,
@@ -268,7 +274,7 @@ const buildApiFilter = ({
     serviceNames: serviceNames.length > 0 ? serviceNames : [],
     // Span ID filter - not exposed in UI yet, but required by proto
     spanIds: [],
-  };
+  });
 };
 
 type TranscriptListPageProps = {
