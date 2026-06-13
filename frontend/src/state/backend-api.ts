@@ -177,6 +177,13 @@ import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
+/**
+ * Bounded LRU cap for the module-level REST `cache` below. Without it the cache retained one
+ * CacheEntry (a full parsed REST body) per distinct URL for the life of the tab. 500 keeps a
+ * generous working set; least-recently-used URLs are evicted and simply re-fetched on next use.
+ */
+const REST_CACHE_MAX_ENTRIES = 500;
+
 const { toast } = createStandaloneToast({
   theme: redpandaTheme,
   defaultOptions: redpandaToastOptions.defaultOptions,
@@ -289,7 +296,7 @@ function processVersionInfo(headers: Headers) {
 
 const _activeRequests: CacheEntry[] = [];
 
-const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
+const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u), REST_CACHE_MAX_ENTRIES);
 class CacheEntry {
   url: string;
 
