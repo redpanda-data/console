@@ -750,7 +750,11 @@ export const PipelineListPage = () => {
               <Text>
                 Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
                 different data systems.{' '}
-                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" rel="noopener noreferrer" target="_blank">
+                <Link
+                  href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
                   Learn more
                 </Link>
               </Text>

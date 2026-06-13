@@ -131,15 +131,27 @@ const RpConnectPipelinesCreateContent = () => {
       <div className="my-2">
         <UIText>
           For help creating your pipeline, see our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" rel="noopener noreferrer" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             quickstart
           </UILink>
           ,{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" rel="noopener noreferrer" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             library of examples
           </UILink>
           , and{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" rel="noopener noreferrer" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             connector catalog
           </UILink>
           .

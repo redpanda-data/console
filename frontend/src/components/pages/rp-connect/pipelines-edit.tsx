@@ -147,15 +147,27 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
       <div className="my-2">
         <UIText>
           For help editing your pipeline, see our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" rel="noopener noreferrer" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             quickstart documentation
           </UILink>
           , our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" rel="noopener noreferrer" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             library of examples
           </UILink>
           , or our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" rel="noopener noreferrer" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             connector catalog
           </UILink>
           .
