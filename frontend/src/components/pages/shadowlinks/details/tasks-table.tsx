@@ -75,7 +75,14 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
         <CardTitle>Tasks</CardTitle>
         {Boolean(onRefresh) && (
           <CardAction>
-            <Button data-testid="refresh-tasks-button" onClick={onRefresh} size="icon" type="button" variant="ghost">
+            <Button
+              aria-label="Refresh tasks"
+              data-testid="refresh-tasks-button"
+              onClick={onRefresh}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
               <RefreshCw className="h-5 w-5" />
             </Button>
           </CardAction>

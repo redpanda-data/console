@@ -229,11 +229,17 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                 />
               </div>
               {Boolean(topicNameFilter) && (
-                <Button onClick={() => onTopicNameFilterChange?.('')} size="sm" variant="ghost">
+                <Button
+                  aria-label="Clear filter"
+                  onClick={() => onTopicNameFilterChange?.('')}
+                  size="sm"
+                  variant="ghost"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               )}
               <Button
+                aria-label="Refresh topics"
                 data-testid="refresh-topics-button"
                 disabled={isFetching}
                 onClick={onRefresh}
