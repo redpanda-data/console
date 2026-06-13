@@ -41,7 +41,7 @@ vi.mock('../../config', () => ({
   },
 }));
 
-import { useLogSearch } from './logs';
+import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 
 function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   return {
@@ -227,5 +227,19 @@ describe('useLogSearch history mode', () => {
 
     expect(result.current.messages[0].offset).toBe(3);
     expect(result.current.messages[2].offset).toBe(1);
+  });
+});
+
+describe('liveReducer flushMessages cap', () => {
+  test('caps the live buffer to MAX_LIVE_LOG_MESSAGES, keeping the newest entries', () => {
+    const batch = Array.from({ length: MAX_LIVE_LOG_MESSAGES + 10 }, (_, i) => makeMessage(i));
+
+    const next = liveReducer(LIVE_INITIAL_STATE, { type: 'flushMessages', msgs: batch });
+
+    expect(next.messages).toHaveLength(MAX_LIVE_LOG_MESSAGES);
+    // Newest-first: msgs are reversed on flush, so the highest offset is at the front.
+    expect(next.messages[0].offset).toBe(MAX_LIVE_LOG_MESSAGES + 9);
+    // Oldest entries are dropped by the sliding window.
+    expect(next.messages.some((m) => m.offset === 0)).toBe(false);
   });
 });

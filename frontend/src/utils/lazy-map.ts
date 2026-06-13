@@ -11,10 +11,18 @@
 
 export class LazyMap<K, V> extends Map<K, V> {
   private readonly defaultCreate: (key: K) => V;
+  private readonly maxSize?: number;
 
-  constructor(defaultCreate: (key: K) => V) {
+  /**
+   * @param defaultCreate factory for missing values.
+   * @param maxSize when set, the map behaves as a bounded LRU cache: accessing a key marks it
+   *   most-recently-used and inserting beyond `maxSize` evicts the least-recently-used entry.
+   *   Recency is refreshed by `get()` only — `has()` does not bump it. Unbounded when omitted.
+   */
+  constructor(defaultCreate: (key: K) => V, maxSize?: number) {
     super();
     this.defaultCreate = defaultCreate;
+    this.maxSize = maxSize;
   }
 
   /**
@@ -23,14 +31,33 @@ export class LazyMap<K, V> extends Map<K, V> {
    * @param create An optional `create` method to use instead of `defaultCreate` to create missing values
    */
   get(key: K, createFn?: (k: K) => V): V {
-    let v = super.get(key);
-    if (v !== undefined) {
-      return v;
+    const existing = super.get(key);
+    if (existing !== undefined) {
+      if (this.maxSize !== undefined) {
+        // Mark as most-recently-used so it survives eviction.
+        super.delete(key);
+        super.set(key, existing);
+      }
+      return existing;
     }
 
-    v = this.handleMiss(key, createFn);
-    this.set(key, v);
-    return v;
+    const created = this.handleMiss(key, createFn);
+    this.set(key, created);
+    this.evictOldest();
+    return created;
+  }
+
+  private evictOldest(): void {
+    if (this.maxSize === undefined) {
+      return;
+    }
+    while (this.size > this.maxSize) {
+      const oldestKey = this.keys().next().value;
+      if (oldestKey === undefined) {
+        return;
+      }
+      this.delete(oldestKey);
+    }
   }
 
   private handleMiss(key: K, createFn?: (k: K) => V): V {
