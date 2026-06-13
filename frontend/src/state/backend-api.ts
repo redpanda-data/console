@@ -2701,6 +2701,13 @@ export const transformsApi = new Proxy<ReturnType<typeof _transformsCreator>>(
  */
 const LIVE_TAIL_MAX_MESSAGES = 50_000;
 
+/**
+ * Slack above `LIVE_TAIL_MAX_MESSAGES` before a trim runs, so the O(n) `splice` happens once per
+ * ~slack messages instead of on every message past the cap (which would be hottest exactly on the
+ * high-volume streams this guards). The memory ceiling stays cap + slack.
+ */
+const LIVE_TAIL_TRIM_SLACK = 1024;
+
 export function createMessageSearch() {
   const notify = () => useApiStore.setState((s: any) => ({ _msgSearchVersion: (s._msgSearchVersion ?? 0) + 1 }));
   const messageSearch = {
@@ -2842,8 +2849,10 @@ export function createMessageSearch() {
                 const m = convertListMessageData(res.controlMessage.value);
                 this.messages.push(m);
                 // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream
-                // on a high-volume topic cannot grow the heap without limit.
-                if (isLiveTail) {
+                // on a high-volume topic cannot grow the heap without limit. Only trim once the
+                // buffer drifts a slack margin past the cap, so the O(n) splice is amortized to
+                // roughly once per LIVE_TAIL_TRIM_SLACK messages instead of running on every one.
+                if (isLiveTail && this.messages.length > LIVE_TAIL_MAX_MESSAGES + LIVE_TAIL_TRIM_SLACK) {
                   trimToLast(this.messages, LIVE_TAIL_MAX_MESSAGES);
                 }
                 break;
