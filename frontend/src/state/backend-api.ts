@@ -165,7 +165,7 @@ import type {
   KnowledgeBaseCreate,
   KnowledgeBaseUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { boundedAppend, pruneMapToKeys, trimToLast } from '../utils/bounded-array';
+import { appendWithSlackCap, boundedAppend, pruneMapToKeys } from '../utils/bounded-array';
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
@@ -2847,13 +2847,13 @@ export function createMessageSearch() {
                 break;
               case 'data': {
                 const m = convertListMessageData(res.controlMessage.value);
-                this.messages.push(m);
-                // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream
-                // on a high-volume topic cannot grow the heap without limit. Only trim once the
-                // buffer drifts a slack margin past the cap, so the O(n) splice is amortized to
-                // roughly once per LIVE_TAIL_TRIM_SLACK messages instead of running on every one.
-                if (isLiveTail && this.messages.length > LIVE_TAIL_MAX_MESSAGES + LIVE_TAIL_TRIM_SLACK) {
-                  trimToLast(this.messages, LIVE_TAIL_MAX_MESSAGES);
+                // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream on
+                // a high-volume topic cannot grow the heap without limit. appendWithSlackCap
+                // amortizes the O(n) trim to ~once per LIVE_TAIL_TRIM_SLACK messages.
+                if (isLiveTail) {
+                  appendWithSlackCap(this.messages, m, LIVE_TAIL_MAX_MESSAGES, LIVE_TAIL_TRIM_SLACK);
+                } else {
+                  this.messages.push(m);
                 }
                 break;
               }

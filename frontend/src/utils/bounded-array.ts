@@ -33,6 +33,19 @@ export function trimToLast<T>(buffer: T[], max: number): void {
 }
 
 /**
+ * Push `item` onto `buffer`, trimming to the last `max` entries only once the buffer drifts more
+ * than `slack` past `max`. The sliding-window ceiling stays `max + slack`, but the O(n) splice is
+ * amortized to roughly once per `slack` items instead of running on every push past the cap —
+ * important on hot append paths (e.g. a high-volume live-tail stream).
+ */
+export function appendWithSlackCap<T>(buffer: T[], item: T, max: number, slack: number): void {
+  buffer.push(item);
+  if (buffer.length > max + slack) {
+    trimToLast(buffer, max);
+  }
+}
+
+/**
  * Return a NEW map containing only the entries whose key is in `validKeys`.
  *
  * For entity caches keyed by a name (topics, schema subjects, …) that would otherwise retain
