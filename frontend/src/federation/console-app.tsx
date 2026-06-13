@@ -35,6 +35,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { protobufRegistry } from 'protobuf-registry';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 
 import { FederatedProviders } from './federated-providers';
 import { TokenManager } from './token-manager';
@@ -139,7 +140,7 @@ function createFederatedQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: LONG_LIVED_CACHE_STALE_TIME,
         retry: 1,
       },
     },

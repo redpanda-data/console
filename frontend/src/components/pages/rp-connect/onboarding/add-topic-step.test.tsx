@@ -115,6 +115,7 @@ describe('AddTopicStep', () => {
     mockFetch.mockReset();
     // Default: return empty topic list
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse([])),
     });
   });
@@ -122,6 +123,7 @@ describe('AddTopicStep', () => {
   it('existing topic returns name via triggerSubmit', async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
     });
 
@@ -284,6 +286,7 @@ describe('AddTopicStep', () => {
 
   it('selectionMode=existing shows combobox', async () => {
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
     });
     const transport = createTransport();
@@ -297,6 +300,7 @@ describe('AddTopicStep', () => {
   it('existing topic alert shown in create mode when name matches', async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
     });
     const transport = createTransport();
@@ -356,6 +360,7 @@ describe('AddTopicStep', () => {
 
   it('selectionMode=both renders toggle group', async () => {
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['t1'])),
     });
     const transport = createTransport();
