@@ -168,6 +168,7 @@ import type {
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
+import { boundedAppend, trimToLast } from '../utils/bounded-array';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
 import { ObjToKv } from '../utils/tsx-utils';
@@ -2667,6 +2668,13 @@ export const transformsApi = new Proxy<ReturnType<typeof _transformsCreator>>(
   }
 );
 
+/**
+ * Sliding-window cap for the live-tail / filtered message buffer (`messageSearch.messages`).
+ * Those streams append for up to 30 minutes; on a high-volume topic the array would otherwise
+ * grow unbounded for the whole window — the dominant long-lived-tab retention vector.
+ */
+const LIVE_TAIL_MAX_MESSAGES = 50_000;
+
 export function createMessageSearch() {
   const notify = () => useApiStore.setState((s: any) => ({ _msgSearchVersion: (s._msgSearchVersion ?? 0) + 1 }));
   const messageSearch = {
@@ -2756,8 +2764,12 @@ export function createMessageSearch() {
 
       // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
       // from 30s to 30 minutes before ending the request gracefully.
+      // The same condition marks a live-tail/filtered stream, which appends for the whole window
+      // and so needs the sliding-window cap below (normal pagination never enters this branch).
+      const isLiveTail =
+        searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null;
       let timeoutMs = 30 * 1000;
-      if (searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null) {
+      if (isLiveTail) {
         const minuteMs = 60 * 1000;
         timeoutMs = 30 * minuteMs;
       }
@@ -2804,6 +2816,11 @@ export function createMessageSearch() {
               case 'data': {
                 const m = convertListMessageData(res.controlMessage.value);
                 this.messages.push(m);
+                // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream
+                // on a high-volume topic cannot grow the heap without limit.
+                if (isLiveTail) {
+                  trimToLast(this.messages, LIVE_TAIL_MAX_MESSAGES);
+                }
                 break;
               }
               default:
@@ -3049,8 +3066,18 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
   return obj as T;
 }
 
+/**
+ * Cap on retained API errors. `addError` is called from ~20 legacy refresh paths; on a
+ * long-lived tab with auto-refresh enabled and a persistently failing endpoint the array
+ * would otherwise grow without bound (each entry retains a stack + the Response body).
+ * The error UI only ever surfaces the most recent entries, so a ring buffer loses nothing.
+ */
+const MAX_TRACKED_ERRORS = 50;
+
 function addError(err: Error) {
-  useApiStore.setState((s: any) => ({ errors: [...s.errors, err] }));
+  useApiStore.setState((s: ReturnType<typeof _apiCreator>) => ({
+    errors: boundedAppend(s.errors, err, MAX_TRACKED_ERRORS),
+  }));
 }
 
 /** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
