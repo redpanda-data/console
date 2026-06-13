@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { screen, waitFor } from 'test-utils';
+import { act, screen } from 'test-utils';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = vi.hoisted(() => ({
@@ -108,15 +108,21 @@ describe('GroupDetails - unconsumed partitions', () => {
   });
 
   afterEach(() => {
-    useApiStore.setState({ consumerGroups: new Map(), consumerGroupAcls: new Map() });
+    // This afterEach runs before the harness's RTL cleanup() (vitest hooks are
+    // LIFO), so the GroupDetails tree is still mounted and its PageComponent
+    // store subscription fires forceUpdate() on this reset. Wrap the store
+    // mutation in act() so that re-render is flushed inside act().
+    act(() => {
+      useApiStore.setState({ consumerGroups: new Map(), consumerGroupAcls: new Map() });
+    });
   });
 
   test('edit button is enabled for consumed partition and disabled for unconsumed partitions', async () => {
     renderGroupDetails();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('partition-edit-0')).toBeInTheDocument();
-    });
+    // findBy* polls inside act(), flushing the class component's async
+    // refreshData updates and the GroupState Popover's deferred effects.
+    expect(await screen.findByTestId('partition-edit-0')).toBeInTheDocument();
 
     // Partition 0 has a committed offset → edit button renders as <button>
     expect(screen.getByTestId('partition-edit-0').tagName).toBe('BUTTON');
@@ -129,9 +135,9 @@ describe('GroupDetails - unconsumed partitions', () => {
   test('unconsumed partitions render "—" for group offset and lag', async () => {
     renderGroupDetails();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('partition-edit-1')).toBeInTheDocument();
-    });
+    // findBy* polls inside act(), flushing the class component's async
+    // refreshData updates and the GroupState Popover's deferred effects.
+    expect(await screen.findByTestId('partition-edit-1')).toBeInTheDocument();
 
     // Each unconsumed partition (1 and 2) shows "—" for both group offset and lag = 4 dashes minimum
     const dashes = screen.getAllByText('—');

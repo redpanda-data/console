@@ -646,17 +646,17 @@ export function LabelTooltip(p: {
 
 export type ButtonProps = Omit<RpButtonProps, 'disabled' | 'isDisabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
-  if (!p.disabledReason) {
-    return <RpButton {...p} />;
+  // Destructure disabledReason OUT of the spread in BOTH branches: leaving the key (even with a
+  // falsy value) lets RpButton forward it to its DOM element, which React warns about as an
+  // unknown attribute.
+  const { disabledReason, ...btnProps } = p;
+  if (!disabledReason) {
+    return <RpButton {...btnProps} />;
   }
 
-  const reason = p.disabledReason;
-  const btnProps = { ...p };
-  btnProps.disabledReason = undefined;
-
   return (
-    <Tooltip hasArrow label={reason} placement="top">
-      <RpButton {...btnProps} className={`${p.className ?? ''} disabled`} isDisabled onClick={undefined} />
+    <Tooltip hasArrow label={disabledReason} placement="top">
+      <RpButton {...btnProps} className={`${btnProps.className ?? ''} disabled`} isDisabled onClick={undefined} />
     </Tooltip>
   );
 }
