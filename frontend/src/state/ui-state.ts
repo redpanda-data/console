@@ -19,7 +19,9 @@ import { boundedAppend } from '../utils/bounded-array';
 /**
  * Cap on retained per-topic settings. The array grows by one entry per distinct topic ever
  * visited and is persisted (as a full blob) by the settings store, so a session that browses
- * many topics would grow heap and storage without bound. Oldest-visited entries drop first.
+ * many topics would grow heap and storage without bound. Oldest-added entries drop first (FIFO;
+ * re-visits don't refresh position). The persisted zustand store has its own cap in
+ * stores/topic-settings-store.ts.
  */
 const MAX_PER_TOPIC_SETTINGS = 200;
 
