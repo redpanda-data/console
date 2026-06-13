@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { boundedAppend, trimToLast } from './bounded-array';
+import { boundedAppend, pruneMapToKeys, trimToLast } from './bounded-array';
 
 describe('boundedAppend', () => {
   test('appends an item when under the cap', () => {
@@ -30,5 +30,33 @@ describe('trimToLast', () => {
     const buffer = [1, 2];
     trimToLast(buffer, 5);
     expect(buffer).toEqual([1, 2]);
+  });
+});
+
+describe('pruneMapToKeys', () => {
+  test('keeps only entries whose key is in validKeys', () => {
+    const map = new Map([
+      ['a', 1],
+      ['b', 2],
+      ['c', 3],
+    ]);
+    const result = pruneMapToKeys(map, new Set(['a', 'c']));
+    expect([...result.entries()]).toEqual([
+      ['a', 1],
+      ['c', 3],
+    ]);
+  });
+
+  test('returns an empty map when no keys are valid', () => {
+    expect(pruneMapToKeys(new Map([['a', 1]]), new Set<string>()).size).toBe(0);
+  });
+
+  test('does not mutate the input map', () => {
+    const map = new Map([
+      ['a', 1],
+      ['b', 2],
+    ]);
+    pruneMapToKeys(map, new Set(['a']));
+    expect(map.size).toBe(2);
   });
 });

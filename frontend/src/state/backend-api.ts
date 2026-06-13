@@ -168,7 +168,7 @@ import type {
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
-import { boundedAppend, trimToLast } from '../utils/bounded-array';
+import { boundedAppend, pruneMapToKeys, trimToLast } from '../utils/bounded-array';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
 import { ObjToKv } from '../utils/tsx-utils';
@@ -665,7 +665,26 @@ const _apiCreator = (set: any, get: any) => ({
                         */
         }
       }
-      set({ topics: v?.topics });
+      const topics = v?.topics;
+      if (topics) {
+        // Prune topic-keyed caches to the current topic set so entries for deleted topics (or a
+        // previous cluster after a remount) don't accumulate for the life of the tab. Pruning to
+        // the live set never drops a topic that still exists, so nothing needs re-fetching.
+        const validTopicNames = new Set(topics.map((t) => t.topicName));
+        set((s: ReturnType<typeof _apiCreator>) => ({
+          topics,
+          topicConfig: pruneMapToKeys(s.topicConfig, validTopicNames),
+          topicDocumentation: pruneMapToKeys(s.topicDocumentation, validTopicNames),
+          topicPermissions: pruneMapToKeys(s.topicPermissions, validTopicNames),
+          topicPartitions: pruneMapToKeys(s.topicPartitions, validTopicNames),
+          topicPartitionErrors: pruneMapToKeys(s.topicPartitionErrors, validTopicNames),
+          topicWatermarksErrors: pruneMapToKeys(s.topicWatermarksErrors, validTopicNames),
+          topicConsumers: pruneMapToKeys(s.topicConsumers, validTopicNames),
+          topicAcls: pruneMapToKeys(s.topicAcls, validTopicNames),
+        }));
+      } else {
+        set({ topics });
+      }
     }, addError);
   },
 

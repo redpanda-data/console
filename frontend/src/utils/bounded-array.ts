@@ -31,3 +31,20 @@ export function trimToLast<T>(buffer: T[], max: number): void {
     buffer.splice(0, buffer.length - max);
   }
 }
+
+/**
+ * Return a NEW map containing only the entries whose key is in `validKeys`.
+ *
+ * For entity caches keyed by a name (topics, schema subjects, …) that would otherwise retain
+ * entries for entities that no longer exist (deleted, or a different cluster after a remount).
+ * Pruning to the current set never drops a live entity, so callers re-fetch nothing.
+ */
+export function pruneMapToKeys<V>(map: ReadonlyMap<string, V>, validKeys: ReadonlySet<string>): Map<string, V> {
+  const next = new Map<string, V>();
+  for (const [key, value] of map) {
+    if (validKeys.has(key)) {
+      next.set(key, value);
+    }
+  }
+  return next;
+}
