@@ -346,7 +346,7 @@ export const ConnectTiles = memo(
                     that drive real-time analytics and actionable business insights. Integrate data across systems with
                     hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
                     pipelines.{' '}
-                    <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                    <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
                       Learn more
                     </Link>
                   </Text>
