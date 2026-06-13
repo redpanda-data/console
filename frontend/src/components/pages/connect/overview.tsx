@@ -163,7 +163,7 @@ class KafkaConnectOverview extends PageComponent<{
               {this.props.isKafkaConnectEnabled
                 ? 'Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors.'
                 : 'Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.'}{' '}
-              <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+              <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
                 Learn more
               </Link>
             </Text>
@@ -179,7 +179,11 @@ class KafkaConnectOverview extends PageComponent<{
             <Text>
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
-              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
+              <Link
+                href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Learn more.
               </Link>
             </Text>
