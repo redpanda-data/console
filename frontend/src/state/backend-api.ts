@@ -165,10 +165,10 @@ import type {
   KnowledgeBaseCreate,
   KnowledgeBaseUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { boundedAppend, pruneMapToKeys, trimToLast } from '../utils/bounded-array';
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
-import { boundedAppend, pruneMapToKeys, trimToLast } from '../utils/bounded-array';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
 import { ObjToKv } from '../utils/tsx-utils';
@@ -2792,8 +2792,7 @@ export function createMessageSearch() {
       // from 30s to 30 minutes before ending the request gracefully.
       // The same condition marks a live-tail/filtered stream, which appends for the whole window
       // and so needs the sliding-window cap below (normal pagination never enters this branch).
-      const isLiveTail =
-        searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null;
+      const isLiveTail = searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null;
       let timeoutMs = 30 * 1000;
       if (isLiveTail) {
         const minuteMs = 60 * 1000;

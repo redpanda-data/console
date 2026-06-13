@@ -12,9 +12,9 @@
 import type React from 'react';
 import { create } from 'zustand';
 
-import { boundedAppend } from '../utils/bounded-array';
 import { api } from './backend-api';
 import { createTopicDetailsSettings, type TopicDetailsSettings as TopicSettings, useUISettingsStore } from './ui';
+import { boundedAppend } from '../utils/bounded-array';
 
 /**
  * Cap on retained per-topic settings. The array grows by one entry per distinct topic ever
