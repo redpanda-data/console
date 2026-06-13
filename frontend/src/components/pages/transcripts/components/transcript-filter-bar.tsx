@@ -427,7 +427,14 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
         </Select>
 
         {/* Refresh button */}
-        <Button className="h-8 w-8" disabled={isLoading} onClick={onRefresh} size="icon" variant="outline">
+        <Button
+          aria-label="Refresh"
+          className="h-8 w-8"
+          disabled={isLoading}
+          onClick={onRefresh}
+          size="icon"
+          variant="outline"
+        >
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
