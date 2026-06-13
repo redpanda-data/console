@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
+import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
 import { config as appConfig } from '../../config';
@@ -209,7 +209,7 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
       });
     },
     enabled: opts.enabled,
-    staleTime: 0,
+    staleTime: NO_LIVED_CACHE_STALE_TIME,
     gcTime: 5 * ONE_MINUTE,
     refetchOnWindowFocus: false,
   });
