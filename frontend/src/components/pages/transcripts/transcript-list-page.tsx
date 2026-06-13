@@ -221,7 +221,6 @@ const buildApiFilter = ({
       create(AttributeFilterSchema, {
         key: 'gen_ai.operation.name',
         operator: AttributeOperator.IN,
-        value: '',
         values: ['chat', 'text_completion'],
       })
     );
@@ -234,7 +233,6 @@ const buildApiFilter = ({
         key: 'gen_ai.operation.name',
         operator: AttributeOperator.EQUALS,
         value: 'execute_tool',
-        values: [],
       })
     );
   }
@@ -246,7 +244,6 @@ const buildApiFilter = ({
         key: 'gen_ai.operation.name',
         operator: AttributeOperator.EQUALS,
         value: 'invoke_agent',
-        values: [],
       })
     );
   }
@@ -258,7 +255,6 @@ const buildApiFilter = ({
         key: f.key,
         operator: f.op === 'equals' ? AttributeOperator.EQUALS : AttributeOperator.NOT_EQUALS,
         value: f.value,
-        values: [],
       })
     );
   }
