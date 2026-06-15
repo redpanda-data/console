@@ -129,26 +129,30 @@ type SimpleAcl = {
 };
 // Used by ACLs tab and Permissions List tab in the security section.
 export const useListACLAsPrincipalGroups = () =>
-  useQuery(listACLs, {} as ListACLsRequest, {
-    select: (response) => {
-      const groupsAcl = response.resources.reduce((acc, r) => {
-        for (const a of r.acls) {
-          if (!acc.has(`${a.principal}:${a.host}`)) {
-            const [principalType, principalName] = (a.principal ?? '').split(':');
-            acc.set(`${a.principal}:${a.host}`, {
-              host: a.host,
-              principal: a.principal,
-              principalType,
-              principalName: principalName || '',
-              hasAcl: true,
-            });
+  useQuery(
+    listACLs,
+    {},
+    {
+      select: (response) => {
+        const groupsAcl = response.resources.reduce((acc, r) => {
+          for (const a of r.acls) {
+            if (!acc.has(`${a.principal}:${a.host}`)) {
+              const [principalType, principalName] = (a.principal ?? '').split(':');
+              acc.set(`${a.principal}:${a.host}`, {
+                host: a.host,
+                principal: a.principal,
+                principalType,
+                principalName: principalName || '',
+                hasAcl: true,
+              });
+            }
           }
-        }
-        return acc;
-      }, new Map<string, SimpleAcl>());
-      return groupsAcl.values().toArray();
-    },
-  });
+          return acc;
+        }, new Map<string, SimpleAcl>());
+        return groupsAcl.values().toArray();
+      },
+    }
+  );
 
 // New ACL implementation
 

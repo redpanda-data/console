@@ -14,11 +14,7 @@ import { useMemo } from 'react';
 import { useStore } from 'zustand';
 
 import { usePrincipalList } from './use-principal-list';
-import {
-  ACL_PermissionType,
-  ACL_ResourceType,
-  type ListACLsRequest,
-} from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
+import { ACL_PermissionType, ACL_ResourceType } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { getACLOperation } from '../../../../react-query/api/acl';
 import { type RolePrincipal, useRolesStore } from '../../../../state/backend-api';
@@ -58,7 +54,7 @@ const RESOURCE_TYPE_LABELS: Partial<Record<ACL_ResourceType, string>> = {
 };
 
 export function useUserPermissions(userName: string) {
-  const { data: allAclsData, isLoading } = useQuery(listACLs, {} as ListACLsRequest);
+  const { data: allAclsData, isLoading } = useQuery(listACLs, {});
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
 
   const permissions = useMemo(() => {
@@ -111,7 +107,7 @@ export function usePrincipalPermissions() {
     isLoading: isAclsLoading,
     isError: isAclsError,
     error: aclsError,
-  } = useQuery(listACLs, {} as ListACLsRequest);
+  } = useQuery(listACLs, {});
 
   const { principals, isUsersError, usersError } = usePrincipalList();
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
