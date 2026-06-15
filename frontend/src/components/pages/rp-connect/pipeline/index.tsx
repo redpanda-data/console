@@ -1018,8 +1018,6 @@ function PipelinePageContent() {
   return (
     // overflow-x-clip guards against stray horizontal overflow (clip, not hidden, to keep overflow-y visible).
     <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
-      {/* Page top divider. Negative margin cancels the layout's pt-8. */}
-      <div className="-mt-8 border-divider-default border-b" />
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
           onBack={handleCancel}
