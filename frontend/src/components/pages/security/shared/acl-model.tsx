@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import {
   ACL_Operation,
@@ -5,6 +6,7 @@ import {
   ACL_ResourcePatternType,
   ACL_ResourceType,
   type CreateACLRequest,
+  CreateACLRequestSchema,
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { ReactNode } from 'react';
@@ -522,45 +524,48 @@ export function getIdFromCreateACLRequest(request: CreateACLRequest): string {
 // Convert rules to CreateACLRequest array for API calls
 export function convertRulesToCreateACLRequests(rules: Rule[], principal: string, host: string): CreateACLRequest[] {
   return rules.reduce((acc, r) => {
-    const baseRule: Pick<CreateACLRequest, 'resourcePatternType' | '$typeName' | 'resourceName'> = {
+    const baseRule = {
       resourcePatternType:
         r.selectorType === 'any' ? ACL_ResourcePatternType.LITERAL : getGRPCResourcePatternType(r.selectorType),
-      $typeName: 'redpanda.api.dataplane.v1.CreateACLRequest',
       resourceName: getResourceNameValue(r),
     };
     if (r.mode === ModeAllowAll) {
-      const a: CreateACLRequest = {
-        ...baseRule,
-        host,
-        principal,
-        resourceType: getGRPCResourceType(r.resourceType),
-        operation: ACL_Operation.ALL,
-        permissionType: ACL_PermissionType.ALLOW,
-      };
-      acc.push(a);
+      acc.push(
+        create(CreateACLRequestSchema, {
+          ...baseRule,
+          host,
+          principal,
+          resourceType: getGRPCResourceType(r.resourceType),
+          operation: ACL_Operation.ALL,
+          permissionType: ACL_PermissionType.ALLOW,
+        })
+      );
     }
     if (r.mode === ModeDenyAll) {
-      const a: CreateACLRequest = {
-        ...baseRule,
-        host,
-        principal,
-        resourceType: getGRPCResourceType(r.resourceType),
-        operation: ACL_Operation.ALL,
-        permissionType: ACL_PermissionType.DENY,
-      };
-      acc.push(a);
+      acc.push(
+        create(CreateACLRequestSchema, {
+          ...baseRule,
+          host,
+          principal,
+          resourceType: getGRPCResourceType(r.resourceType),
+          operation: ACL_Operation.ALL,
+          permissionType: ACL_PermissionType.DENY,
+        })
+      );
     }
     if (r.mode === ModeCustom) {
       const customResults = Object.entries(r.operations).reduce((operations, [op, opValue]) => {
         if (opValue !== OperationTypeNotSet) {
-          operations.push({
-            ...baseRule,
-            host,
-            principal,
-            resourceType: getGRPCResourceType(r.resourceType),
-            operation: getGRPCOperationType(op),
-            permissionType: getGRPCPermissionType(opValue),
-          });
+          operations.push(
+            create(CreateACLRequestSchema, {
+              ...baseRule,
+              host,
+              principal,
+              resourceType: getGRPCResourceType(r.resourceType),
+              operation: getGRPCOperationType(op),
+              permissionType: getGRPCPermissionType(opValue),
+            })
+          );
         }
         return operations;
       }, [] as CreateACLRequest[]);
