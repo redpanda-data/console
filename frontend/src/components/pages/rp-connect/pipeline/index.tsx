@@ -984,7 +984,7 @@ function PipelinePageContent() {
       ) : null}
       {mode === 'view' && !pipeline ? (
         <div className="flex items-center gap-2">
-          <Button className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+          <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
           <Skeleton variant="text" width="md" />
