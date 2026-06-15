@@ -11,14 +11,9 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { firstKeyword, SQL_KEYWORDS } from './sql';
+import { firstKeyword } from './sql';
 
 describe('sql helpers', () => {
-  test('SQL_KEYWORDS comes from Monaco built-in definition', () => {
-    expect(SQL_KEYWORDS.length).toBeGreaterThan(300);
-    expect(SQL_KEYWORDS).toContain('SELECT');
-  });
-
   test('firstKeyword skips comments and uppercases', () => {
     expect(firstKeyword('select * from t')).toBe('SELECT');
     expect(firstKeyword('-- a comment\nselect * from t')).toBe('SELECT');

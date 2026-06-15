@@ -15,7 +15,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Database } from 'lucide-react';
 import { CatalogType, ExecuteQueryRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
   useExecuteQueryMutation,
@@ -27,7 +27,7 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 
 import { CatalogTree } from './catalog-tree';
-import { firstKeyword, SQL_KEYWORDS } from './sql';
+import { firstKeyword } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -39,37 +39,12 @@ import {
   isArrayPgType,
   type QueryRun,
   type ResultRow,
-  type SqlIdentifier,
   type SqlRole,
   type TableRef,
 } from './sql-types';
 import { SqlWizard, type WizardTopic } from './sql-wizard';
 
 const INITIAL_QUERY = 'SELECT name, type\nFROM system.catalogs\nORDER BY name;';
-
-// Build autocomplete identifiers from the loaded catalog set + SQL keywords.
-function buildIdentifiers(catalogs: Catalog[]): SqlIdentifier[] {
-  const out: SqlIdentifier[] = [];
-  const seenCols = new Set<string>();
-  for (const c of catalogs) {
-    out.push({ label: c.name, kind: 'catalog' });
-    for (const ns of c.namespaces) {
-      for (const t of ns.tables) {
-        out.push({ label: t.name, kind: 'table' });
-        for (const col of t.columns ?? []) {
-          if (!seenCols.has(col.name)) {
-            seenCols.add(col.name);
-            out.push({ label: col.name, kind: 'column' });
-          }
-        }
-      }
-    }
-  }
-  for (const k of SQL_KEYWORDS) {
-    out.push({ label: k, kind: 'keyword' });
-  }
-  return out;
-}
 
 let RUN_TOKEN = 0;
 
@@ -90,6 +65,113 @@ const queriedBridgeTopic = (sql: string): string | null => {
   return sql.match(BRIDGE_TABLE_RE)?.[1] ?? null;
 };
 
+// Renders the workspace as a fixed overlay filling the area right of the
+// cluster sidebar, below the page header. This gives a true full-width,
+// full-height editor WITHOUT mutating any shared cloud-ui layout nodes — so it
+// never leaves residue on other pages (e.g. Overview) when you navigate away.
+// Works in both standalone console and embedded cloud-ui. Returns teardown.
+function setupOverlayLayout(el: HTMLDivElement): () => void {
+  // Natural (in-flow) top sits just below the page header. Measured once
+  // while still in flow; horizontal resizes don't change it.
+  const naturalTop = el.getBoundingClientRect().top;
+
+  const findRegionLeft = () => {
+    // The content region is the INNERMOST ancestor that spans to the
+    // viewport's right edge — i.e. the main column right of the sidebar.
+    // (Outer ancestors like the sidebar wrapper also reach the right edge but
+    // start at x=0 and would put the editor under the sidebar.)
+    let node = el.parentElement;
+    while (node && node !== document.body) {
+      const r = node.getBoundingClientRect();
+      if (Math.abs(r.right - window.innerWidth) <= 2 && r.width > 200) {
+        return r.left;
+      }
+      node = node.parentElement;
+    }
+    return el.getBoundingClientRect().left;
+  };
+
+  const layout = () => {
+    const left = findRegionLeft();
+    el.style.position = 'fixed';
+    el.style.top = `${naturalTop}px`;
+    el.style.left = `${left}px`;
+    el.style.right = '0px';
+    el.style.bottom = '0px';
+    el.style.height = 'auto';
+    el.style.borderTop = '1px solid var(--color-border)';
+  };
+
+  // The overlay is fixed, but the host page (cloud-ui chrome when embedded)
+  // still scrolls behind it — dragging the host page header up/down/sideways
+  // while the pinned editor stays put. Lock every scrollable ancestor (plus
+  // the document scroller) so nothing behind the overlay can scroll, keeping
+  // the host header static. No-op in standalone console, where nothing scrolls.
+  const locked: Array<{ node: HTMLElement; overflow: string }> = [];
+  const lock = (node: HTMLElement) => {
+    locked.push({ node, overflow: node.style.overflow });
+    node.style.overflow = 'hidden';
+  };
+  const lockAll = () => {
+    let node: HTMLElement | null = el.parentElement;
+    while (node && node !== document.body) {
+      const c = getComputedStyle(node);
+      const scrollable = /(auto|scroll)/.test(c.overflowY + c.overflowX);
+      if (scrollable && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
+        lock(node);
+      }
+      node = node.parentElement;
+    }
+    const scroller = (document.scrollingElement ?? document.documentElement) as HTMLElement;
+    lock(scroller);
+    if (document.body) {
+      lock(document.body);
+    }
+  };
+  const unlockAll = () => {
+    for (const { node, overflow } of locked) {
+      node.style.overflow = overflow;
+    }
+    locked.length = 0;
+  };
+
+  // When embedded, the host keeps Console MOUNTED but display:none while on
+  // its own routes (e.g. /overview) — unmount cleanup never runs there, which
+  // would strand the scroll locks on a page that needs to scroll. Hold the
+  // locks only while actually on screen: display:none collapses the overlay
+  // to 0x0, which fires the ResizeObserver, and we release until shown again.
+  const isVisible = () => el.getClientRects().length > 0;
+  let active = false;
+  const sync = () => {
+    if (isVisible() && !active) {
+      layout();
+      lockAll();
+      active = true;
+    } else if (!isVisible() && active) {
+      unlockAll();
+      active = false;
+    }
+  };
+  sync();
+  const visibilityObserver = new ResizeObserver(sync);
+  visibilityObserver.observe(el);
+
+  const onWindowResize = () => {
+    if (active) {
+      layout();
+    }
+  };
+  window.addEventListener('resize', onWindowResize);
+
+  return () => {
+    visibilityObserver.disconnect();
+    window.removeEventListener('resize', onWindowResize);
+    if (active) {
+      unlockAll();
+    }
+  };
+}
+
 export type SqlWorkspaceProps = {
   /** Effective role of the caller. Defaults to viewer. */
   role?: SqlRole;
@@ -106,83 +188,13 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
   // snapshot, and reflects the lag at that query's time.
   const [bridgeRunAt, setBridgeRunAt] = useState<number | null>(null);
   const editorRef = useRef<SqlEditorHandle>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  // Render the workspace as a fixed overlay filling the area right of the
-  // cluster sidebar, below the page header. This gives a true full-width,
-  // full-height editor WITHOUT mutating any shared cloud-ui layout nodes —
-  // so it never leaves residue on other pages (e.g. Overview) when you
-  // navigate away. Works in both standalone console and embedded cloud-ui.
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) {
-      return;
-    }
-    // Natural (in-flow) top sits just below the page header. Measured once
-    // while still in flow; horizontal resizes don't change it.
-    const naturalTop = el.getBoundingClientRect().top;
-
-    const findRegionLeft = () => {
-      // The content region is the INNERMOST ancestor that spans to the
-      // viewport's right edge — i.e. the main column right of the sidebar.
-      // (Outer ancestors like the sidebar wrapper also reach the right edge but
-      // start at x=0 and would put the editor under the sidebar.)
-      let node = el.parentElement;
-      while (node && node !== document.body) {
-        const r = node.getBoundingClientRect();
-        if (Math.abs(r.right - window.innerWidth) <= 2 && r.width > 200) {
-          return r.left;
-        }
-        node = node.parentElement;
-      }
-      return el.getBoundingClientRect().left;
-    };
-
-    const layout = () => {
-      const left = findRegionLeft();
-      el.style.position = 'fixed';
-      el.style.top = `${naturalTop}px`;
-      el.style.left = `${left}px`;
-      el.style.right = '0px';
-      el.style.bottom = '0px';
-      el.style.height = 'auto';
-      el.style.borderTop = '1px solid var(--color-border)';
-    };
-
-    layout();
-    window.addEventListener('resize', layout);
-
-    // The overlay is fixed, but the host page (cloud-ui chrome when embedded)
-    // still scrolls behind it — dragging the host page header up/down/sideways
-    // while the pinned editor stays put. Lock every scrollable ancestor (plus
-    // the document scroller) so nothing behind the overlay can scroll, keeping
-    // the host header static. No-op in standalone console, where nothing scrolls.
-    const locked: Array<{ node: HTMLElement; overflow: string }> = [];
-    const lock = (node: HTMLElement) => {
-      locked.push({ node, overflow: node.style.overflow });
-      node.style.overflow = 'hidden';
-    };
-    let node: HTMLElement | null = el.parentElement;
-    while (node && node !== document.body) {
-      const c = getComputedStyle(node);
-      const scrollable = /(auto|scroll)/.test(c.overflowY + c.overflowX);
-      if (scrollable && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
-        lock(node);
-      }
-      node = node.parentElement;
-    }
-    const scroller = (document.scrollingElement ?? document.documentElement) as HTMLElement;
-    lock(scroller);
-    if (document.body) {
-      lock(document.body);
-    }
-
-    return () => {
-      window.removeEventListener('resize', layout);
-      for (const { node: n, overflow } of locked) {
-        n.style.overflow = overflow;
-      }
-    };
+  const overlayCleanup = useRef<(() => void) | null>(null);
+  // Callback ref (no effect): React calls it with the node on mount and null
+  // on unmount, which maps 1:1 onto the overlay's setup/teardown. Must be
+  // identity-stable, or React would detach/reattach the overlay every render.
+  const attachOverlay = useCallback((el: HTMLDivElement | null) => {
+    overlayCleanup.current?.();
+    overlayCleanup.current = el ? setupOverlayLayout(el) : null;
   }, []);
 
   const { data: catalogsData, isLoading } = useListCatalogsQuery();
@@ -200,8 +212,6 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
       namespaces: c.namespaceName ? [{ id: `${c.name}.${c.namespaceName}`, name: c.namespaceName, tables: [] }] : [],
     }));
   }, [catalogsData]);
-
-  const identifiers = useMemo(() => buildIdentifiers(catalogs), [catalogs]);
 
   // Bridge-query lag for the queried topic, read from the ObservabilityService
   // (per-topic named queries) — decoupled from ExecuteQuery. A non-Iceberg topic
@@ -356,6 +366,41 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
     [topicsData, takenTopics]
   );
 
+  // Catalogs enriched with the Redpanda-catalog tables already fetched for the
+  // wizard above, so editor autocomplete can resolve table references — the
+  // bare catalog list seeds namespaces with empty `tables`.
+  const completionCatalogs = useMemo<Catalog[]>(
+    () =>
+      catalogs.map((catalog) => {
+        if (catalog.name !== redpandaCatalogName) {
+          return catalog;
+        }
+        const tablesByNamespace = new Map<string, TableRef[]>();
+        for (const t of redpandaTablesData?.tables ?? []) {
+          const list = tablesByNamespace.get(t.namespaceName) ?? [];
+          list.push({
+            id: `${catalog.name}.${t.namespaceName}.${t.name}`,
+            name: t.name,
+            namespaceName: t.namespaceName,
+            catalogName: catalog.name,
+            topicName: t.topicName,
+          });
+          tablesByNamespace.set(t.namespaceName, list);
+        }
+        const namespaces = catalog.namespaces.map((ns) => ({
+          ...ns,
+          tables: tablesByNamespace.get(ns.name) ?? ns.tables,
+        }));
+        for (const [name, tables] of tablesByNamespace) {
+          if (!namespaces.some((ns) => ns.name === name)) {
+            namespaces.push({ id: `${catalog.name}.${name}`, name, tables });
+          }
+        }
+        return { ...catalog, namespaces };
+      }),
+    [catalogs, redpandaCatalogName, redpandaTablesData]
+  );
+
   const openWizard = useCallback(() => {
     setWizardError(undefined);
     setWizardOpen(true);
@@ -389,7 +434,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
       // (grey-700/600/800), so re-point the border tokens to those registry grey
       // scale values for this surface in dark mode only. Light mode is untouched.
       className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
-      ref={rootRef}
+      ref={attachOverlay}
     >
       <div className="flex h-[52px] shrink-0 items-center gap-3 border-b bg-background px-6">
         <div className="flex items-center gap-2 font-semibold text-sm text-strong tracking-heading [&_svg]:text-action-primary">
@@ -429,7 +474,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
                 minSize={15}
               >
                 <SqlEditor
-                  identifiers={identifiers}
+                  catalogs={completionCatalogs}
                   initialQuery={INITIAL_QUERY}
                   onRun={(sql) => doRun(sql)}
                   ref={editorRef}

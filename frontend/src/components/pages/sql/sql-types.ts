@@ -111,12 +111,6 @@ export type QueryRun = QueryRunIdle | QueryRunRunning | QueryRunError | QueryRun
 // Drives admin-only affordances (e.g. the "Add a topic" CTA).
 export type SqlRole = 'admin' | 'viewer';
 
-// Autocomplete identifier surfaced to the editor.
-export type SqlIdentifier = {
-  label: string;
-  kind: 'catalog' | 'table' | 'column' | 'keyword';
-};
-
 // Unwraps one level of array syntax — "TEXT[]", "_TEXT" (pg wire naming), or
 // "ARRAY<TEXT>"/"LIST<TEXT>" (Iceberg) — returning the element type, or null
 // when the type is not an array.

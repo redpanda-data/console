@@ -71,7 +71,7 @@ export const useDescribeTableQuery = (input?: MessageInit<DescribeTableRequest>,
   });
 };
 
-// Oxla's SHOW TABLES has no per-table Iceberg flag; the authoritative signal
+// RP SQL's SHOW TABLES has no per-table Iceberg flag; the authoritative signal
 // is the backing Kafka topic's `redpanda.iceberg.mode` config. Returns whether
 // the topic is Iceberg-tiered so the catalog tree can show the label.
 export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOptions) => {

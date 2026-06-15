@@ -15,8 +15,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SqlEditor } from './sql-editor';
 import type { SqlRole } from './sql-types';
 
-// Monaco doesn't run in jsdom; the editor surface is exercised manually/e2e.
-vi.mock('components/misc/kowl-editor', () => ({
+// CodeMirror's layout/measure loop doesn't run in jsdom; the editor surface is
+// exercised manually/e2e.
+vi.mock('@uiw/react-codemirror', () => ({
   default: ({ value }: { value: string }) => <div data-testid="editor">{value}</div>,
 }));
 
@@ -27,7 +28,7 @@ const QUERY_2_TAB = /Query 2/;
 const RUN_BUTTON = /Run (Ctrl|⌘)/;
 
 const renderEditor = (onRun = vi.fn()) => {
-  render(<SqlEditor identifiers={[]} initialQuery="SELECT 1;" onRun={onRun} role={ADMIN} />);
+  render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} role={ADMIN} />);
   return onRun;
 };
 

@@ -9,16 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-// SQL helpers for the query workspace. Highlighting (editor: Monarch, wizard
-// preview: shiki via DynamicCodeBlock) and formatting (sql-formatter via a
-// DocumentFormattingEditProvider) are handled by the libraries directly.
-
-import { language as monacoSql } from 'monaco-editor/esm/vs/basic-languages/sql/sql';
-
-// Autocomplete vocabulary, from Monaco's built-in SQL Monarch definition — the
-// same list the editor highlights. Broader than what Oxla accepts; unsupported
-// statements fail server-side with a query error.
-export const SQL_KEYWORDS: readonly string[] = monacoSql.keywords;
+// SQL helpers for the query workspace. Highlighting (editor: CodeMirror's
+// Lezer SQL grammar, wizard preview: shiki via DynamicCodeBlock), keyword
+// completion (lang-sql's PostgreSQL dialect) and formatting (sql-formatter)
+// are handled by the libraries directly.
 
 const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/)*/;
 

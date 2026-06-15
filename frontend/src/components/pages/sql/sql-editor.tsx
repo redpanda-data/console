@@ -9,7 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import KowlEditor, { type IStandaloneCodeEditor, type Monaco } from 'components/misc/kowl-editor';
+import {
+  acceptCompletion,
+  type CompletionContext,
+  type CompletionResult,
+  startCompletion,
+} from '@codemirror/autocomplete';
+import { PostgreSQL, type SQLNamespace, sql } from '@codemirror/lang-sql';
+import { HighlightStyle, indentUnit, syntaxHighlighting, syntaxTree } from '@codemirror/language';
+import { EditorState, type Extension, Prec } from '@codemirror/state';
+import { EditorView, keymap } from '@codemirror/view';
+import { tags } from '@lezer/highlight';
+import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
@@ -21,13 +32,15 @@ import {
   type MouseEvent,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
 import { isMacOS } from 'utils/platform';
+import { z } from 'zod';
 
-import type { SqlIdentifier, SqlRole } from './sql-types';
+import type { Catalog, SqlRole, TableRef } from './sql-types';
 
 // Imperative handle exposed to the workspace so the catalog tree can open a
 // query in a new editor tab (mirrors the prototype's editorRef).
@@ -41,8 +54,8 @@ export type RunMode = 'all' | 'selection';
 export type SqlEditorProps = {
   /** Run a statement. `mode` distinguishes whole-tab vs. selection runs. */
   onRun: (sql: string, mode: RunMode) => void;
-  /** Autocomplete identifiers (catalog/table/column names + SQL keywords). */
-  identifiers: SqlIdentifier[];
+  /** Loaded catalog tree; drives schema-aware autocomplete. */
+  catalogs: Catalog[];
   /** Effective role; gates admin-only affordances. */
   role: SqlRole;
   /** SQL to seed the first tab with. */
@@ -51,21 +64,20 @@ export type SqlEditorProps = {
 
 const HISTORY_KEY = 'rp_sql_history_v1';
 
-type HistoryEntry = { sql: string; at: number };
+const HistoryEntrySchema = z.object({ sql: z.string(), at: z.number() });
 
-function isHistoryEntry(v: unknown): v is HistoryEntry {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    typeof (v as HistoryEntry).sql === 'string' &&
-    typeof (v as HistoryEntry).at === 'number'
-  );
-}
+type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 
 function loadHistory(): HistoryEntry[] {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
-    return Array.isArray(raw) ? raw.filter(isHistoryEntry) : [];
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw.flatMap((entry) => {
+      const parsed = HistoryEntrySchema.safeParse(entry);
+      return parsed.success ? [parsed.data] : [];
+    });
   } catch {
     return [];
   }
@@ -82,34 +94,12 @@ function saveHistory(list: HistoryEntry[]): void {
 type Tab = { id: number; name: string; sql: string };
 
 const DEFAULT_QUERY =
-  'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog.cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
+  'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
 
-// Monaco editor options tuned to match the SQL Studio surface. KowlEditor merges
-// these over its own defaults.
-const EDITOR_OPTIONS = {
-  fontSize: 13,
-  fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
-  lineHeight: 21,
-  minimap: { enabled: false },
-  scrollBeyondLastLine: false,
-  padding: { top: 12, bottom: 12 },
-  tabSize: 2,
-  insertSpaces: true,
-  renderLineHighlight: 'line',
-  automaticLayout: true,
-  wordWrap: 'off',
-  lineNumbersMinChars: 3,
-  overviewRulerLanes: 0,
-  fixedOverflowWidgets: true,
-  scrollbar: { alwaysConsumeMouseWheel: false },
-} as const;
-
-const SQL_THEME_LIGHT = 'rp-sql-light';
-const SQL_THEME_DARK = 'rp-sql-dark';
-
-// Tracks the registry `.dark` class on the document root so the Monaco editor
-// (not a Tailwind component) switches theme in lockstep with the rest of the
-// surface. Uses useSyncExternalStore — no effect — per project style.
+// Tracks the registry `.dark` class on the document root so the editor (whose
+// highlight palette is built from theme-invariant color scales, not Tailwind
+// classes) switches theme in lockstep with the rest of the surface. Uses
+// useSyncExternalStore — no effect — per project style.
 function subscribeToColorMode(onStoreChange: () => void): () => void {
   const observer = new MutationObserver(onStoreChange);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -124,135 +114,202 @@ function useIsDarkMode(): boolean {
   return useSyncExternalStore(subscribeToColorMode, getIsDarkSnapshot, () => false);
 }
 
-// Monaco's defineTheme only accepts #RRGGBB / #RRGGBBAA. CSS custom properties
-// can resolve to shorthand (#000), so expand to a full hex before handing it to
-// Monaco; otherwise it throws "Illegal value for token color".
-const SHORT_HEX_RE = /^#([0-9a-f])([0-9a-f])([0-9a-f])([0-9a-f])?$/i;
-const FULL_HEX_RE = /^#([0-9a-f]{6}|[0-9a-f]{8})$/i;
-function toMonacoHex(value: string, fallback: string): string {
-  const v = value.trim();
-  const short = SHORT_HEX_RE.exec(v);
-  if (short) {
-    const [, r, g, b, a] = short;
-    return `#${r}${r}${g}${g}${b}${b}${a ? `${a}${a}` : ''}`;
-  }
-  return FULL_HEX_RE.test(v) ? v : fallback;
+// Editor chrome tuned to match the SQL Studio surface: transparent editor and
+// gutter so the surrounding `bg-background` container shows through, with
+// muted gutter line numbers. CodeMirror themes are plain CSS, so registry
+// custom properties can be referenced directly and stay live.
+function editorChrome(mode: 'light' | 'dark'): Extension {
+  const gutter = mode === 'dark' ? 'var(--color-grey-600)' : 'var(--color-grey-400)';
+  const gutterActive = mode === 'dark' ? 'var(--color-grey-400)' : 'var(--color-grey-600)';
+  return EditorView.theme(
+    {
+      '&': { backgroundColor: 'transparent', height: '100%', fontSize: '13px' },
+      '&.cm-focused': { outline: 'none' },
+      '.cm-scroller': {
+        fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+        lineHeight: '21px',
+      },
+      '.cm-content': { padding: '12px 0' },
+      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: gutter },
+      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: gutterActive },
+      '.cm-activeLine': {
+        backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+      },
+    },
+    { dark: mode === 'dark' }
+  );
 }
 
-// Resolve a registry color scale (e.g. --color-purple-300) to the bare
-// `rrggbb` Monaco wants for token rule foregrounds (no leading #).
-function ruleColor(css: CSSStyleDeclaration, name: string, fallback: string): string {
-  return toMonacoHex(css.getPropertyValue(name), fallback).replace('#', '').slice(0, 6);
-}
-
-// SQL syntax palette, mapped from the design's `.sql-*` token classes. Monaco's
-// SQL grammar emits `keyword`, `predefined` (built-in functions), `string`,
-// `number`, `comment`, `operator`, `delimiter` and `identifier` token types.
-function sqlTokenRules(css: CSSStyleDeclaration, mode: 'light' | 'dark') {
+// SQL syntax palette, mapped from the design's `.sql-*` token classes onto the
+// Lezer highlight tags the SQL grammar emits (keywords, built-ins, strings,
+// numbers, comments, operators/punctuation and identifiers).
+function sqlHighlight(mode: 'light' | 'dark'): Extension {
   const c =
     mode === 'dark'
       ? {
-          keyword: ruleColor(css, '--color-purple-300', '#d6bbfb'),
-          fn: ruleColor(css, '--color-indigo-300', '#a4bcfd'),
-          str: ruleColor(css, '--color-green-300', '#68d391'),
-          num: ruleColor(css, '--color-orange-300', '#faaf7b'),
-          comment: ruleColor(css, '--color-grey-400', '#919295'),
-          punct: ruleColor(css, '--color-grey-500', '#79797d'),
-          id: ruleColor(css, '--color-grey-100', '#dcdcde'),
+          keyword: 'var(--color-purple-300)',
+          fn: 'var(--color-indigo-300)',
+          str: 'var(--color-green-300)',
+          num: 'var(--color-orange-300)',
+          comment: 'var(--color-grey-400)',
+          punct: 'var(--color-grey-500)',
+          id: 'var(--color-grey-100)',
         }
       : {
-          keyword: ruleColor(css, '--color-purple-700', '#6941c6'),
-          fn: ruleColor(css, '--color-indigo-600', '#444ce7'),
-          str: ruleColor(css, '--color-green-700', '#276749'),
-          num: ruleColor(css, '--color-orange-700', '#f77923'),
-          comment: ruleColor(css, '--color-grey-600', '#606164'),
-          punct: ruleColor(css, '--color-grey-500', '#79797d'),
-          id: ruleColor(css, '--color-grey-900', '#181818'),
+          keyword: 'var(--color-purple-700)',
+          fn: 'var(--color-indigo-600)',
+          str: 'var(--color-green-700)',
+          num: 'var(--color-orange-700)',
+          comment: 'var(--color-grey-600)',
+          punct: 'var(--color-grey-500)',
+          id: 'var(--color-grey-900)',
         };
-  return [
-    { token: 'keyword', foreground: c.keyword, fontStyle: 'bold' },
-    { token: 'predefined', foreground: c.fn },
-    { token: 'string', foreground: c.str },
-    { token: 'number', foreground: c.num },
-    { token: 'comment', foreground: c.comment, fontStyle: 'italic' },
-    { token: 'operator', foreground: c.punct },
-    { token: 'delimiter', foreground: c.punct },
-    { token: 'identifier', foreground: c.id },
-  ];
+  return syntaxHighlighting(
+    HighlightStyle.define([
+      { tag: tags.keyword, color: c.keyword, fontWeight: 'bold' },
+      { tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName], color: c.fn },
+      { tag: [tags.string, tags.special(tags.string)], color: c.str },
+      { tag: tags.number, color: c.num },
+      { tag: tags.comment, color: c.comment, fontStyle: 'italic' },
+      {
+        tag: [tags.operator, tags.punctuation, tags.separator, tags.paren, tags.brace, tags.squareBracket],
+        color: c.punct,
+      },
+      { tag: tags.name, color: c.id },
+    ])
+  );
 }
 
-// Maps our identifier kind to a Monaco completion-item kind (drives the glyph).
-function completionKind(monaco: Monaco, kind: SqlIdentifier['kind']) {
-  const K = monaco.languages.CompletionItemKind;
-  switch (kind) {
-    case 'catalog':
-      return K.Module;
-    case 'table':
-      return K.Class;
-    case 'column':
-      return K.Field;
-    default:
-      return K.Keyword;
+const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight('light')];
+const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight('dark')];
+
+function tableNamespace(table: TableRef): SQLNamespace {
+  return {
+    self: { label: table.name, type: 'class' },
+    children: (table.columns ?? []).map((col) => ({ label: col.name, type: 'property', detail: col.short })),
+  };
+}
+
+// Builds the lang-sql completion schema from the loaded catalog tree: bare
+// table names → columns. Tables are deliberately NOT nested under their
+// catalog — Redpanda SQL (Oxla) addresses catalog tables with arrow notation
+// (`catalog=>table`), which catalogArrowSource below handles; dot-style
+// nesting would advertise syntax the server rejects. Bare entries still give
+// alias/column resolution (`FROM default_redpanda_catalog=>cars c` → `c.`).
+function buildSchema(catalogs: Catalog[]): SQLNamespace {
+  const root: Record<string, SQLNamespace> = {};
+  for (const catalog of catalogs) {
+    for (const ns of catalog.namespaces) {
+      for (const table of ns.tables) {
+        if (!(table.name in root)) {
+          root[table.name] = tableNamespace(table);
+        }
+      }
+    }
   }
+  return root;
 }
 
-// Monaco language providers are global per language, not per editor, so they
-// are registered once for the app's lifetime and read the mounted editor's
-// identifiers through this module-level slot (synced on every render below).
-let activeIdentifiers: SqlIdentifier[] = [];
-let sqlProvidersRegistered = false;
+// Matches an identifier followed by `=>` or `.` and a partial table name,
+// anchored at the cursor: [, name, gap1, separator, gap2, quote, partial].
+const CATALOG_REF_RE = /([A-Za-z_][\w$]*)(\s*)(=>|\.)(\s*)("?)([\w$]*)$/;
 
-function registerSqlProviders(monaco: Monaco) {
-  if (sqlProvidersRegistered) {
+// Completion source for Redpanda SQL's catalog arrow notation. The generic
+// schema completion can't model `catalog=>table`, so this source:
+// - offers catalog names (boosted right after FROM/JOIN); applying one
+//   inserts `catalog=>` and immediately reopens completion for its tables
+// - offers the catalog's tables after `catalog=>` — and after a typed
+//   `catalog.`, rewriting the dot to `=>` so users land on valid syntax
+function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
+  return (context) => {
+    const nodeName = syntaxTree(context.state).resolveInner(context.pos, -1).name;
+    if (/Comment|String/.test(nodeName)) {
+      return null;
+    }
+    const line = context.state.doc.lineAt(context.pos);
+    const before = line.text.slice(0, context.pos - line.from);
+
+    const ref = CATALOG_REF_RE.exec(before);
+    const cleanStart = ref ? !/[\w$".]/.test(before[ref.index - 1] ?? '') : false;
+    const catalog = ref && cleanStart ? catalogs.find((c) => c.name === ref[1]) : undefined;
+    if (ref && catalog) {
+      const [, , gap1, separator, gap2, quote, partial] = ref;
+      const separatorFrom = context.pos - partial.length - quote.length - gap2.length - separator.length;
+      return {
+        from: context.pos - partial.length,
+        options: catalog.namespaces
+          .flatMap((ns) => ns.tables)
+          .map((table) => ({
+            label: table.name,
+            type: 'class',
+            boost: 50,
+            // Replace from the separator so a typed `.` (and any stray
+            // whitespace around it) is rewritten to `=>`.
+            apply: (view: EditorView, _completion: unknown, _from: number, to: number) => {
+              view.dispatch({
+                changes: { from: separatorFrom - gap1.length, to, insert: `=>${table.name}` },
+              });
+            },
+          })),
+        validFor: /^[\w$]*$/,
+      };
+    }
+
+    const word = context.matchBefore(/[\w$]+/);
+    if (!(word || context.explicit)) {
+      return null;
+    }
+    // Skip when completing a dotted member (schema completion's territory).
+    const wordFrom = word ? word.from : context.pos;
+    if (before[wordFrom - line.from - 1] === '.') {
+      return null;
+    }
+    const afterFromClause = /\b(?:from|join)\s+["\w$]*$/i.test(before);
+    return {
+      from: wordFrom,
+      options: catalogs.map((c) => ({
+        label: c.name,
+        detail: '=>',
+        type: 'namespace',
+        boost: afterFromClause ? 60 : 0,
+        // Insert the arrow with the name and chain straight into the
+        // table list.
+        apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
+          view.dispatch({
+            changes: { from, to, insert: `${c.name}=>` },
+            selection: { anchor: from + c.name.length + 2 },
+          });
+          startCompletion(view);
+        },
+      })),
+      validFor: /^[\w$]*$/,
+    };
+  };
+}
+
+// Reformats the whole document through sql-formatter (dynamically imported to
+// keep it out of the initial bundle; postgresql is the closest dialect to
+// Oxla) as a single transaction, so undo restores the pre-format text.
+async function formatDocument(view: EditorView): Promise<void> {
+  const { format } = await import('sql-formatter');
+  const current = view.state.doc.toString();
+  let next: string;
+  try {
+    next = format(current, { language: 'postgresql', keywordCase: 'upper' });
+  } catch {
+    // Unparseable SQL (mid-edit) — leave the text untouched.
     return;
   }
-  sqlProvidersRegistered = true;
-
-  monaco.languages.registerCompletionItemProvider('sql', {
-    provideCompletionItems: (model, position) => {
-      const word = model.getWordUntilPosition(position);
-      const range = {
-        startLineNumber: position.lineNumber,
-        endLineNumber: position.lineNumber,
-        startColumn: word.startColumn,
-        endColumn: word.endColumn,
-      };
-      const suggestions = activeIdentifiers.map((it) => ({
-        label: it.label,
-        kind: completionKind(monaco, it.kind),
-        insertText: it.label,
-        detail: it.kind,
-        range,
-      }));
-      return { suggestions };
-    },
-  });
-
-  // Back the editor's native Format Document action (Shift+Alt+F) with
-  // sql-formatter (Monaco ships no SQL formatter), so formatting runs
-  // through Monaco and preserves cursor + undo. Dynamically imported to
-  // keep it out of the initial bundle; postgresql is the closest dialect
-  // to Oxla.
-  monaco.languages.registerDocumentFormattingEditProvider('sql', {
-    provideDocumentFormattingEdits: async (model) => {
-      const { format } = await import('sql-formatter');
-      try {
-        return [
-          {
-            range: model.getFullModelRange(),
-            text: format(model.getValue(), { language: 'postgresql', keywordCase: 'upper' }),
-          },
-        ];
-      } catch {
-        // Unparseable SQL (mid-edit) — leave the text untouched.
-        return [];
-      }
-    },
-  });
+  if (next !== current) {
+    view.dispatch({
+      changes: { from: 0, to: current.length, insert: next },
+      selection: { anchor: Math.min(view.state.selection.main.head, next.length) },
+    });
+  }
 }
 
 export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function SqlEditor(
-  { onRun, identifiers, initialQuery },
+  { onRun, catalogs, initialQuery },
   ref
 ) {
   const [tabs, setTabs] = useState<Tab[]>([{ id: 1, name: 'Query 1', sql: initialQuery ?? DEFAULT_QUERY }]);
@@ -263,8 +320,9 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
   const [hasSel, setHasSel] = useState(false);
   const isDark = useIsDarkMode();
 
-  const editorRef = useRef<IStandaloneCodeEditor | null>(null);
-  // Latest run callback, bound into the Cmd/Ctrl+Enter command (registered once).
+  const editorRef = useRef<ReactCodeMirrorRef | null>(null);
+  // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
+  // catalog/theme change, not per render).
   const runRef = useRef<() => void>(() => undefined);
 
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
@@ -276,7 +334,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
         const id = nextId.current++;
         setTabs((prev) => [...prev, { id, name: name ?? `Query ${id}`, sql }]);
         setActiveId(id);
-        requestAnimationFrame(() => editorRef.current?.focus());
+        requestAnimationFrame(() => editorRef.current?.view?.focus());
       },
     }),
     []
@@ -300,78 +358,67 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
 
   // Run the current selection if any, else the whole tab.
   const doRun = () => {
-    const editor = editorRef.current;
-    const sel = editor?.getSelection();
-    const model = editor?.getModel();
-    if (editor && sel && model && !sel.isEmpty()) {
-      runText(model.getValueInRange(sel), 'selection');
+    const state = editorRef.current?.view?.state;
+    const sel = state?.selection.main;
+    if (state && sel && !sel.empty) {
+      runText(state.sliceDoc(sel.from, sel.to), 'selection');
       return;
     }
     runText(active.sql, 'all');
   };
 
-  // The Cmd/Ctrl+Enter command and the global completion provider are
-  // registered once, so they read fresh state through this render-synced
-  // ref/slot (the useLatest pattern — see react-best-practices rules).
+  // The Cmd/Ctrl+Enter keymap is part of the extensions array (rebuilt only on
+  // catalog/theme changes), so it reads fresh state through this render-synced
+  // ref (the useLatest pattern — see react-best-practices rules).
   useLayoutEffect(() => {
     runRef.current = doRun;
-    activeIdentifiers = identifiers;
   });
 
   const runSelection = () => {
-    const editor = editorRef.current;
-    const sel = editor?.getSelection();
-    const model = editor?.getModel();
-    if (editor && sel && model && !sel.isEmpty()) {
-      runText(model.getValueInRange(sel), 'selection');
+    const state = editorRef.current?.view?.state;
+    const sel = state?.selection.main;
+    if (state && sel && !sel.empty) {
+      runText(state.sliceDoc(sel.from, sel.to), 'selection');
     }
   };
 
-  const handleBeforeMount = (monaco: Monaco) => {
-    const css = getComputedStyle(document.documentElement);
-
-    // Light: transparent surface so the editor shows the (light) container, with
-    // the design's syntax palette and muted gutter line numbers.
-    monaco.editor.defineTheme(SQL_THEME_LIGHT, {
-      base: 'vs',
-      inherit: true,
-      rules: sqlTokenRules(css, 'light'),
-      colors: {
-        'editor.background': '#00000000',
-        'editorGutter.background': '#00000000',
-        'editorLineNumber.foreground': toMonacoHex(css.getPropertyValue('--color-grey-400'), '#919295'),
-        'editorLineNumber.activeForeground': toMonacoHex(css.getPropertyValue('--color-grey-600'), '#606164'),
-      },
-    });
-    // Dark: vs-dark's default surface (#1e1e1e) and blue token palette don't
-    // match the design. Keep the editor + gutter transparent (like the light
-    // theme) so the surrounding `bg-background` container shows through and the
-    // editor always matches the page surface — `--color-background` can't be
-    // resolved here because beforeMount may run while the document is still in
-    // light mode, which would bake the wrong (light) value into the dark theme.
-    // Token foregrounds use theme-invariant color scales, so they're safe.
-    monaco.editor.defineTheme(SQL_THEME_DARK, {
-      base: 'vs-dark',
-      inherit: true,
-      rules: sqlTokenRules(css, 'dark'),
-      colors: {
-        'editor.background': '#00000000',
-        'editorGutter.background': '#00000000',
-        'editor.foreground': toMonacoHex(css.getPropertyValue('--color-grey-100'), '#dcdcde'),
-        'editorLineNumber.foreground': toMonacoHex(css.getPropertyValue('--color-grey-600'), '#606164'),
-        'editorLineNumber.activeForeground': toMonacoHex(css.getPropertyValue('--color-grey-400'), '#919295'),
-      },
-    });
-  };
-
-  const handleMount = (editor: IStandaloneCodeEditor, monaco: Monaco) => {
-    editorRef.current = editor;
-
-    editor.onDidChangeCursorSelection((e) => setHasSel(!e.selection.isEmpty()));
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => runRef.current());
-
-    registerSqlProviders(monaco);
-  };
+  const extensions = useMemo(() => {
+    const sqlSupport = sql({ dialect: PostgreSQL, schema: buildSchema(catalogs), upperCaseKeywords: true });
+    return [
+      // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
+      Prec.highest(
+        keymap.of([
+          {
+            key: 'Mod-Enter',
+            run: () => {
+              runRef.current();
+              return true;
+            },
+          },
+          // Tab accepts an open completion (Monaco muscle memory); falls
+          // through to the default Tab behavior when no popup is open.
+          { key: 'Tab', run: acceptCompletion },
+          {
+            key: 'Shift-Alt-f',
+            run: (view) => {
+              void formatDocument(view);
+              return true;
+            },
+          },
+        ])
+      ),
+      sqlSupport,
+      sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
+      isDark ? DARK_THEME : LIGHT_THEME,
+      EditorView.updateListener.of((update) => {
+        if (update.selectionSet) {
+          setHasSel(!update.state.selection.main.empty);
+        }
+      }),
+      indentUnit.of('  '),
+      EditorState.tabSize.of(2),
+    ];
+  }, [catalogs, isDark]);
 
   const addTab = () => {
     const id = nextId.current++;
@@ -456,7 +503,12 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
             </PopoverContent>
           </Popover>
           <Button
-            onClick={() => void editorRef.current?.getAction('editor.action.formatDocument')?.run()}
+            onClick={() => {
+              const view = editorRef.current?.view;
+              if (view) {
+                void formatDocument(view);
+              }
+            }}
             size="sm"
             title="Format SQL"
             variant="secondary-ghost"
@@ -477,17 +529,15 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(function Sq
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
-        <KowlEditor
-          beforeMount={handleBeforeMount}
+        <CodeMirror
+          basicSetup={{ foldGutter: false }}
+          className="h-full min-w-0 flex-1"
+          extensions={extensions}
           height="100%"
-          language="sql"
-          onChange={(value) => updateSql(value ?? '')}
-          onMount={handleMount}
-          options={EDITOR_OPTIONS}
-          theme={isDark ? SQL_THEME_DARK : SQL_THEME_LIGHT}
+          onChange={updateSql}
+          ref={editorRef}
+          theme="none"
           value={active.sql}
-          width="100%"
-          wrapperProps={{ className: 'min-w-0 flex-1' }}
         />
       </div>
     </div>
