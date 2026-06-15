@@ -545,6 +545,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                             <TanStackRouterLink
                               className="text-blue-800"
                               params={{ userName: existingUserSelected.name }}
+                              rel="noopener noreferrer"
                               target="_blank"
                               to="/security/users/$userName/details"
                             >
@@ -693,6 +694,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                     <Text variant="small">
                                       You will need to configure{' '}
                                       <TanStackRouterLink
+                                        rel="noopener noreferrer"
                                         target="_blank"
                                         to={
                                           isFeatureFlagEnabled('enableNewSecurityPage')
