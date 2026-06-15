@@ -13,7 +13,6 @@ import { useQuery } from '@connectrpc/connect-query';
 import { useNavigate } from '@tanstack/react-router';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
 
-import type { ListACLsRequest } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -43,7 +42,7 @@ export const UserRoleTags = ({
       filter: {
         principal: `${principalType}:${userName}`,
       },
-    } as ListACLsRequest,
+    },
     {
       enabled: !!userName,
       select: (response) => response.resources.length > 0,

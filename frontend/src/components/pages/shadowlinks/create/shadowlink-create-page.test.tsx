@@ -12,6 +12,7 @@
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -112,11 +113,19 @@ const performCreateAction = async (
       const nameInput = scr.getByPlaceholderText('my-shadow-link');
       // Value-only — tests assert submitted payload shape, not keystroke behaviour.
       fireEvent.input(nameInput, { target: { value: action.value } });
+      // mode: 'onChange' kicks off the async zodResolver, which re-renders the
+      // form fields once it settles. Await that settle so it lands inside act().
+      await waitFor(() => {
+        expect((nameInput as HTMLInputElement).value).toBe(action.value);
+      });
       break;
     }
     case 'fillBootstrapServer': {
       const serverInput = scr.getByTestId(`bootstrap-server-input-${action.index}`);
       fireEvent.input(serverInput, { target: { value: action.value } });
+      await waitFor(() => {
+        expect((serverInput as HTMLInputElement).value).toBe(action.value);
+      });
       break;
     }
     case 'addBootstrapServer':
@@ -125,11 +134,17 @@ const performCreateAction = async (
     case 'fillScramUsername': {
       const usernameInput = scr.getByTestId('scram-username-input');
       fireEvent.input(usernameInput, { target: { value: action.value } });
+      await waitFor(() => {
+        expect((usernameInput as HTMLInputElement).value).toBe(action.value);
+      });
       break;
     }
     case 'fillScramPassword': {
       const passwordInput = scr.getByTestId('scram-password-input');
       fireEvent.input(passwordInput, { target: { value: action.value } });
+      await waitFor(() => {
+        expect((passwordInput as HTMLInputElement).value).toBe(action.value);
+      });
       break;
     }
     case 'enableTLS':
@@ -461,6 +476,15 @@ describe('ShadowLinkCreatePage', () => {
 
     // Run custom verification function
     verify(createRequest, expect);
+
+    // The submit succeeds asynchronously: after mutateAsync resolves, the
+    // onSuccess callback fires toast.success and navigate(). Those land as a
+    // late RHF/router re-render of the still-mounted form fields. Await the
+    // settled side effect so any final update is flushed inside act() before
+    // the test ends.
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    });
   });
 });
 

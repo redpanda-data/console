@@ -24,6 +24,11 @@ type SQL struct {
 
 	Authentication HTTPAuthentication `yaml:"authentication"`
 	TLS            TLS                `yaml:"tls"`
+
+	// MaxConnections is the global cap on physical connections Console holds
+	// against Redpanda SQL across all connection pools, guarding the engine's
+	// shared max_connections budget. Default: 100.
+	MaxConnections int `yaml:"maxConnections"`
 }
 
 // RegisterFlags registers flags for sensitive SQL authentication inputs.
@@ -35,6 +40,9 @@ func (c *SQL) RegisterFlags(f *flag.FlagSet) {
 func (c *SQL) SetDefaults() {
 	c.Enabled = false
 	c.TLS.SetDefaults()
+	if c.MaxConnections == 0 {
+		c.MaxConnections = 100
+	}
 }
 
 // Validate the SQL configuration.
@@ -56,6 +64,10 @@ func (c *SQL) Validate() error {
 	isAuthSet := c.Authentication.BearerToken != "" || c.Authentication.BasicAuth.Username != "" || c.Authentication.BasicAuth.Password != ""
 	if c.Authentication.ImpersonateUser && isAuthSet {
 		return errors.New("sql authentication cannot set impersonateUser together with static basic/bearer credentials")
+	}
+
+	if c.MaxConnections <= 0 {
+		return fmt.Errorf("sql.maxConnections must be positive, got %d", c.MaxConnections)
 	}
 
 	return nil

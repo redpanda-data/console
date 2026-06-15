@@ -251,7 +251,7 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button asChild className="deleteButton" size="icon-sm" variant="ghost">
-            <button type="button">
+            <button aria-label={`Open actions for ${user.name}`} type="button">
               <MoreHorizontalIcon className="h-4 w-4" />
             </button>
           </Button>

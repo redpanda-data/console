@@ -14,6 +14,16 @@ import { create } from 'zustand';
 
 import { api } from './backend-api';
 import { createTopicDetailsSettings, type TopicDetailsSettings as TopicSettings, useUISettingsStore } from './ui';
+import { boundedAppend } from '../utils/bounded-array';
+
+/**
+ * Cap on retained per-topic settings. The array grows by one entry per distinct topic ever
+ * visited and is persisted (as a full blob) by the settings store, so a session that browses
+ * many topics would grow heap and storage without bound. Oldest-added entries drop first (FIFO;
+ * re-visits don't refresh position). The persisted zustand store has its own cap in
+ * stores/topic-settings-store.ts.
+ */
+const MAX_PER_TOPIC_SETTINGS = 200;
 
 export type BreadcrumbOptions = {
   canBeTruncated?: boolean;
@@ -175,7 +185,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
       if (!uiSettings.perTopicSettings.find((s) => s.topicName === topicName)) {
         const topicSettings = createTopicDetailsSettings(topicName);
         useUISettingsStore.getState().updateSettings({
-          perTopicSettings: [...uiSettings.perTopicSettings, topicSettings],
+          perTopicSettings: boundedAppend(uiSettings.perTopicSettings, topicSettings, MAX_PER_TOPIC_SETTINGS),
         });
       }
     }

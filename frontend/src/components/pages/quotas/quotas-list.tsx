@@ -107,7 +107,7 @@ const QuotasList = () => {
           <Section>
             <Result
               extra={
-                <Link href="https://docs.redpanda.com/docs/manage/console/" target="_blank">
+                <Link href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
                   <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
                 </Link>
               }

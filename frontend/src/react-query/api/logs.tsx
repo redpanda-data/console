@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
+import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
 import { config as appConfig } from '../../config';
@@ -33,6 +33,13 @@ const HISTORY_MAX_RESULTS = 1000;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
 const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
+/**
+ * Sliding-window cap for the live-tail log buffer. A live stream runs for up to 30 minutes
+ * and `flushMessages` prepends every batch with no limit, so without a cap the reducer's
+ * `messages` array would grow unbounded for the whole window on a long-lived/backgrounded tab.
+ * Newest-first means the most recent entries are kept.
+ */
+export const MAX_LIVE_LOG_MESSAGES = 5000;
 
 type UseLogSearchOptions = {
   pipelineId: string;
@@ -209,7 +216,7 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
       });
     },
     enabled: opts.enabled,
-    staleTime: 0,
+    staleTime: NO_LIVED_CACHE_STALE_TIME,
     gcTime: 5 * ONE_MINUTE,
     refetchOnWindowFocus: false,
   });
@@ -237,20 +244,26 @@ type LiveAction =
   | { type: 'done' }
   | { type: 'noClient' };
 
-const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null, progress: ZERO_PROGRESS };
+export const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null, progress: ZERO_PROGRESS };
 
-function liveReducer(state: LiveState, action: LiveAction): LiveState {
+export function liveReducer(state: LiveState, action: LiveAction): LiveState {
   switch (action.type) {
     case 'reset':
       return LIVE_INITIAL_STATE;
     case 'start':
       return { messages: [], phase: 'Searching...', error: null, progress: ZERO_PROGRESS };
-    case 'flushMessages':
+    case 'flushMessages': {
       if (action.msgs.length === 0) {
         return state;
       }
-      // Newest message first.
-      return { ...state, messages: [...action.msgs.toReversed(), ...state.messages] };
+      // Newest message first; cap to a sliding window so a 30-minute live tail cannot grow
+      // the reducer buffer without bound on a long-lived tab.
+      const messages = [...action.msgs.toReversed(), ...state.messages];
+      return {
+        ...state,
+        messages: messages.length > MAX_LIVE_LOG_MESSAGES ? messages.slice(0, MAX_LIVE_LOG_MESSAGES) : messages,
+      };
+    }
     case 'setPhase':
       return { ...state, phase: action.phase };
     case 'setProgress':

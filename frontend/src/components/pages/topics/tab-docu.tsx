@@ -42,8 +42,6 @@ const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
 function sanitizeUrl(uri: string): string {
   const baseTransformed = baseUriTransformer(uri);
-  // biome-ignore lint/suspicious/noConsole: intentional console usage
-  console.log('baseTransformed', baseTransformed);
   if (baseTransformed !== uri) {
     return baseTransformed;
   }

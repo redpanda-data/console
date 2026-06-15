@@ -480,16 +480,30 @@ function YamlViewPanel({
   // Top/bottom shadows from Monaco's scroll position (useScrollShadow needs a native
   // scroll container; Monaco virtualizes, so onDidScrollChange is the only signal).
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
+  // Listener disposables from the editor mount, torn down on unmount (effect below). Without
+  // this the sync closures (which capture the editor) keep the editor + listener graph alive
+  // per mount of the view page.
+  const scrollSyncSubscriptions = useRef<ReturnType<editor.IStandaloneCodeEditor['onDidScrollChange']>[]>([]);
   const handleMount = useCallback((instance: editor.IStandaloneCodeEditor) => {
     const sync = () => {
       const scrollTop = instance.getScrollTop();
       const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
       setOverflow({ top: scrollTop > 1, bottom: scrollTop < maxY - 1 });
     };
-    instance.onDidScrollChange(sync);
-    instance.onDidContentSizeChange(sync);
-    instance.onDidLayoutChange(sync);
+    scrollSyncSubscriptions.current = [
+      instance.onDidScrollChange(sync),
+      instance.onDidContentSizeChange(sync),
+      instance.onDidLayoutChange(sync),
+    ];
     sync();
+  }, []);
+  useEffect(function disposeScrollSyncListeners() {
+    return () => {
+      for (const subscription of scrollSyncSubscriptions.current) {
+        subscription.dispose();
+      }
+      scrollSyncSubscriptions.current = [];
+    };
   }, []);
 
   const edge =
@@ -1015,7 +1029,7 @@ function PipelinePageContent() {
       ) : null}
       {mode === 'view' && !pipeline ? (
         <div className="flex items-center gap-2">
-          <Button className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+          <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
           <Skeleton variant="text" width="md" />
