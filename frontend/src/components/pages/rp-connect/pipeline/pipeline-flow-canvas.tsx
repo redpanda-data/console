@@ -155,29 +155,22 @@ type DecorateEdgeOptions = {
  *   node's complete wiring stands out in a dense graph;
  * - spine edges get their insert (+) handler.
  */
-// Highlighted edges render in the brand colour; recolour the arrowhead to match
+// Highlighted edges render in `primary`; recolour the arrowhead to match
 // (error edges keep their red markers — those semantics win over the highlight).
 function withHighlightMarker(edge: Edge): Edge {
   const tone = (edge.data as { tone?: string } | undefined)?.tone;
   if (tone === 'error' || typeof edge.markerEnd !== 'object' || !edge.markerEnd) {
     return edge;
   }
-  return { ...edge, markerEnd: { ...edge.markerEnd, color: 'var(--color-brand)' } };
+  return { ...edge, markerEnd: { ...edge.markerEnd, color: 'var(--color-primary)' } };
 }
 
-// Idle refs are "faint" (readable hint); they fully dim only when something else
-// is selected, like every other unrelated edge; an active endpoint highlights them.
-function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined, hasSelection: boolean): Edge {
+// Reference edges are context lines (dashed, muted), so they never fully dim —
+// even when an unrelated node is selected they stay at the readable "faint" tier
+// (muted but visible). An active endpoint highlights them; otherwise faint.
+function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined): Edge {
   const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
-  const next = {
-    ...edge,
-    data: {
-      ...edge.data,
-      emphasized: touchesActive,
-      dimmed: !touchesActive && hasSelection,
-      faint: !(touchesActive || hasSelection),
-    },
-  };
+  const next = { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
   return touchesActive ? withHighlightMarker(next) : next;
 }
 
@@ -195,7 +188,7 @@ export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onIn
       };
     }
     if (next.id.startsWith('ref-')) {
-      return decorateReferenceEdge(next, activeScope, selectedScope !== undefined);
+      return decorateReferenceEdge(next, activeScope);
     }
     if (selectedScope !== undefined) {
       const touchesSelection = selectedScope.has(next.source) || selectedScope.has(next.target);
@@ -204,6 +197,20 @@ export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onIn
     }
     return next;
   });
+}
+
+/**
+ * Resolve what a click on `node` selects: the node itself if it's editable, else
+ * its nearest selectable ancestor. Structural sub-nodes (switch cases, workflow
+ * stages) have no `editTarget`, so clicking one selects the parent switch/workflow.
+ */
+export function selectionTargetForNode(node: Node, nodes: Node[]): { id: string; target: EditTarget } | null {
+  let current: Node | undefined = node;
+  while (current && !(current.data as FlowCardData).editTarget) {
+    current = current.parentId ? nodes.find((n) => n.id === current?.parentId) : undefined;
+  }
+  const target = current && (current.data as FlowCardData).editTarget;
+  return current && target ? { id: current.id, target } : null;
 }
 
 type PipelineFlowCanvasProps = {
@@ -405,9 +412,12 @@ export function PipelineFlowCanvas({
             simple
               ? undefined
               : (_, node) => {
-                  const target = (node.data as FlowCardData).editTarget;
-                  if (target) {
-                    onSelectNode?.(node.id, target);
+                  // Structural sub-nodes (switch cases, workflow stages) have no
+                  // editTarget of their own — clicking one selects the nearest
+                  // selectable ancestor (the parent switch / workflow).
+                  const selection = selectionTargetForNode(node, rfNodes);
+                  if (selection) {
+                    onSelectNode?.(selection.id, selection.target);
                   }
                 }
           }

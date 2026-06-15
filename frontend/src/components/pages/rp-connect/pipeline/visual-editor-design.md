@@ -132,6 +132,12 @@ Supporting polish:
 - **No on-edge text labels.** Routing conditions are chips on cards and the edge
   vocabulary lives in the legend; the only edge labels are the short branch
   `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
+- **Switch cases render condition-forward.** A `switch` case is a structural
+  wrapper (`isCase`, no `editTarget`) — it renders as a "CASE N" eyebrow above its
+  routing condition on a full-width mono line (`CaseTitle`), not as a generic
+  "PROCESSOR + cube" card with a cramped condition chip. Clicking a case (or any
+  structural sub-node like a workflow stage) selects its nearest selectable
+  ancestor — the parent switch — via `selectionTargetForNode` walking up `parentId`.
 - **Cable management on dense graphs** (`decorateEdges` in the canvas):
   resource-reference (`uses`) edges idle at a readable faint level
   (muted-foreground @ ~60%), and dim to ~25% only when an unrelated node is

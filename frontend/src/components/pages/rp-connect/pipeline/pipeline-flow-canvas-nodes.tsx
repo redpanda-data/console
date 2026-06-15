@@ -152,6 +152,8 @@ export type FlowCardData = {
   condition?: string;
   isDefault?: boolean;
   isErrorPath?: boolean;
+  // A `switch` case wrapper — rendered as a condition-forward "case" card.
+  isCase?: boolean;
   editTarget?: EditTarget;
   /** Highlighted because it's the node selected in the inspector. */
   selected?: boolean;
@@ -343,20 +345,24 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-// A small one-row pill used in the compact sidebar (logo + name, no badge/meta).
+// A compact sidebar card: logo + name, with the label (e.g. a resource's label)
+// on its own row beneath so neither it nor the name gets truncated against the other.
 const CompactCard = ({ data }: { data: FlowCardData }) => (
-  <div className="group flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md">
-    <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
-    <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
-      {data.label}
-    </Text>
-    <LabelBadge className="max-w-[45%]" label={data.labelText} />
+  <div className="group flex flex-col gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="flex items-center gap-2">
+      <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
+      <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
+        {data.label}
+      </Text>
+    </div>
+    {data.labelText ? <LabelBadge className="max-w-full self-start" label={data.labelText} /> : null}
   </div>
 );
 
-// The selection ring shown on the node the inspector is editing — Redpanda brand
-// orange-red, so the highlight stands apart from the blue data-flow lines.
-const SELECTED_RING = 'ring-2 ring-brand ring-offset-1 ring-offset-background';
+// The selection ring shown on the node the inspector is editing. Uses `primary`
+// (the conventional "selected" colour); the selected node still reads clearly
+// because its wiring is emphasized while every unrelated edge dims.
+const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
 // An error ring for nodes with lint problems (takes precedence over selection).
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
 
@@ -496,6 +502,60 @@ const ContainerTitleText = ({ data, accent }: { data: FlowCardData; accent?: str
   );
 };
 
+// A switch case's title: a "CASE N" eyebrow above its routing condition, which
+// gets a full-width line (mono) instead of a cramped chip. Cases are structural
+// (no connector logo) — this also signals they aren't editable components.
+const CaseTitle = ({ data }: { data: FlowCardData }) => {
+  const isError = data.isErrorPath;
+  return (
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <Text
+        as="span"
+        className={cn(
+          'text-[10px] uppercase leading-none tracking-wide',
+          isError ? 'text-destructive' : 'text-muted-foreground'
+        )}
+      >
+        {data.label}
+      </Text>
+      {data.condition ? (
+        <span
+          className={cn(
+            'min-w-0 truncate font-medium font-mono text-xs',
+            isError ? 'text-destructive' : 'text-foreground'
+          )}
+          title={data.condition}
+        >
+          {data.condition}
+        </span>
+      ) : (
+        <span className="text-muted-foreground text-xs italic">default · fallback</span>
+      )}
+    </span>
+  );
+};
+
+// The leading content of a container header: a switch case shows its condition
+// front-and-centre (no connector logo); every other container shows logo + kind /
+// name + label + condition chip.
+const ContainerHeaderTitle = ({ data, accent }: { data: FlowCardData; accent?: string }) => {
+  if (data.isCase) {
+    return <CaseTitle data={data} />;
+  }
+  return (
+    <>
+      <ConnectorLogo
+        className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
+        fallback={Box}
+        name={data.label as ComponentName}
+      />
+      <ContainerTitleText accent={accent} data={data} />
+      <LabelBadge className="max-w-[35%]" label={data.labelText} />
+      <BranchConditionChip className="max-w-[45%]" data={data} />
+    </>
+  );
+};
+
 // A container processor (branch/switch/parallel/…) or multi-input broker: a titled
 // box that visually encloses its children. React Flow renders the child nodes
 // inside the body; this component only draws the chrome (title bar + border).
@@ -530,14 +590,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
             data.collapsed ? 'h-full rounded-lg' : 'rounded-t-lg border-border/60 border-b'
           )}
         >
-          <ConnectorLogo
-            className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
-            fallback={Box}
-            name={data.label as ComponentName}
-          />
-          <ContainerTitleText accent={accent} data={data} />
-          <LabelBadge className="max-w-[35%]" label={data.labelText} />
-          <BranchConditionChip className="max-w-[45%]" data={data} />
+          <ContainerHeaderTitle accent={accent} data={data} />
           <LintBadge errors={data.lintErrors} />
           {/* Collapse toggle is a separate control so it doesn't also select the node.
               Generous hit area (28px) so collapsing/expanding is easy to target. */}
@@ -579,8 +632,8 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
         markerEnd={markerEnd}
         path={path}
         style={{
-          stroke: d?.emphasized ? 'var(--color-brand)' : 'var(--color-primary)',
-          strokeWidth: d?.emphasized ? 2.5 : 2,
+          stroke: 'var(--color-primary)',
+          strokeWidth: d?.emphasized ? 2.5 : 1.5,
           opacity: d?.dimmed ? 0.25 : 1,
         }}
       />
@@ -644,16 +697,15 @@ function orthogonalRoundedPath(points: [number, number][], radius = 8): string {
   return `${d} L ${lx} ${ly}`;
 }
 
-const BRAND_STROKE = 'var(--color-brand)';
+const HIGHLIGHT_STROKE = 'var(--color-primary)';
 
-// The line colour for an edge's current state: highlighted (selection/hover)
-// edges render in the brand orange-red — matching the selection ring and standing
-// apart from the blue flow lines — except error edges, whose red semantics win.
-// Idle reference edges use the darker muted-foreground so they stay readable.
+// The line colour for an edge's current state: highlighted (selection/hover) edges
+// render in `primary` to match the selection ring — except error edges, whose red
+// semantics win. Idle reference edges use the darker muted-foreground for legibility.
 function strokeFor(d: FlowLinkData | undefined): string {
   const tone = d?.tone ?? 'muted';
   if (d?.emphasized && tone !== 'error') {
-    return BRAND_STROKE;
+    return HIGHLIGHT_STROKE;
   }
   if (d?.faint) {
     return 'var(--color-muted-foreground)';
@@ -661,10 +713,11 @@ function strokeFor(d: FlowLinkData | undefined): string {
   return LINK_STROKE[tone];
 }
 
-// Stroke styling from edge data; emphasized edges also draw slightly thicker.
+// Stroke styling from edge data. Idle edges are kept light; an emphasized
+// (selected/hovered) edge jumps to a clearly heavier weight so it stands out.
 function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
   const tone = d?.tone ?? 'muted';
-  const baseWidth = tone === 'muted' ? 1.5 : 2;
+  const baseWidth = tone === 'muted' ? 1.25 : 1.5;
   let opacity = 1;
   if (d?.dimmed) {
     opacity = 0.25;
@@ -673,7 +726,7 @@ function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
   }
   return {
     stroke: strokeFor(d),
-    strokeWidth: d?.emphasized ? baseWidth + 0.75 : baseWidth,
+    strokeWidth: d?.emphasized ? baseWidth + 1 : baseWidth,
     strokeDasharray: d?.dashed ? '5 4' : undefined,
     opacity,
   };

@@ -968,6 +968,16 @@ output:
     expect((input?.position.y ?? 0) < (output?.position.y ?? 0)).toBe(true);
   });
 
+  it('gives a labeled compact card its own row for the label (reserves the extra height)', () => {
+    const compactHeight = (yaml: string) =>
+      computeFlowLayout(parsePipelineFlowTree(yaml).nodes, new Set(), 'vertical', true).height;
+    const withLabel = compactHeight('input:\n  kafka_franz:\n    topics: [t]\n  label: my_in');
+    const without = compactHeight('input:\n  kafka_franz:\n    topics: [t]');
+    // The label sits on its own row beneath the name rather than being truncated
+    // against it — so the compact card is exactly one row taller.
+    expect(withLabel).toBe(without + 22);
+  });
+
   it('keeps a collapsed group as a container (with a toggle) and hides its children', () => {
     const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(['proc-1']));
     const branch = layout.rfNodes.find((n) => n.id === 'proc-1');
@@ -1106,6 +1116,28 @@ cache_resources:
     // Unlabeled — the legend documents the muted dashed line as "uses resource".
     expect(data('ref-proc-0-resource-cache_resources-0')).toMatchObject({ tone: 'muted', dashed: true });
     expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
+  });
+
+  it('marks switch cases as structural (isCase, no editTarget) so clicks select the parent switch', () => {
+    const withSwitch = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.region == "eu"'
+          processors: [{ mapping: 'root = this' }]
+        - processors: [{ mapping: 'root = this' }]
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(withSwitch);
+    const case1 = nodes.find((n) => n.id === 'proc-0-case-1');
+    // The case is a structural wrapper: flagged isCase, carrying its condition, and
+    // deliberately NOT independently selectable (no editTarget — the canvas walks up
+    // to the parent switch on click).
+    expect(case1).toMatchObject({ isCase: true, condition: 'this.region == "eu"', parentId: 'proc-0' });
+    expect(case1?.editTarget).toBeUndefined();
+    // The default case carries no condition.
+    expect(nodes.find((n) => n.id === 'proc-0-case-2')).toMatchObject({ isCase: true, isDefault: true });
+    // The parent switch IS selectable.
+    expect(nodes.find((n) => n.id === 'proc-0')?.editTarget).toBeDefined();
   });
 
   it('reconverges processor fans (fan-in per case) but not output fans (sinks terminate)', () => {

@@ -12,7 +12,7 @@
 import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { decorateEdges, injectNodeData } from './pipeline-flow-canvas';
+import { decorateEdges, injectNodeData, selectionTargetForNode } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowSpine', data: { insertIndex: 1 } },
@@ -21,24 +21,25 @@ const edges: Edge[] = [
 ];
 
 const refData = (decorated: Edge[]) =>
-  decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean };
+  decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean; faint?: boolean };
 
 const scope = (...ids: string[]) => new Set(ids);
 
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
-    // Always present at a readable "faint" level — a hint, not clutter — and only
-    // fully dimmed when an unrelated node is selected (like every other edge).
-    expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true, dimmed: false });
-    expect(refData(decorateEdges(edges, { selectedScope: scope('b') }))).toMatchObject({ dimmed: true, faint: false });
+    // Always present at a readable "faint" level — a hint, not clutter. Reference
+    // edges never fully dim: even when an unrelated node is selected they stay
+    // faint (muted but visible) rather than vanishing like dimmed flow edges.
+    expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true });
+    expect(refData(decorateEdges(edges, { selectedScope: scope('b') }))).toMatchObject({ faint: true });
 
     // Selecting (or hovering) either endpoint renders the edge full-strength.
     expect(refData(decorateEdges(edges, { selectedScope: scope('a') }))).toMatchObject({
-      dimmed: false,
+      faint: false,
       emphasized: true,
     });
     expect(refData(decorateEdges(edges, { hoveredScope: scope('a') }))).toMatchObject({
-      dimmed: false,
+      faint: false,
       emphasized: true,
     });
 
@@ -79,6 +80,39 @@ describe('decorateEdges', () => {
     const spineData = decorated.find((e) => e.type === 'flowSpine')?.data as { onInsert?: () => void };
     spineData.onInsert?.();
     expect(onInsert).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('selectionTargetForNode', () => {
+  const switchNode: Node = {
+    id: 'proc-0',
+    position: { x: 0, y: 0 },
+    data: { label: 'switch', editTarget: { kind: 'processor', index: 0 } },
+  };
+  const caseNode: Node = {
+    id: 'proc-0-case-1',
+    parentId: 'proc-0',
+    position: { x: 0, y: 0 },
+    data: { label: 'case 1', isCase: true }, // no editTarget
+  };
+
+  it('selects an editable node directly', () => {
+    expect(selectionTargetForNode(switchNode, [switchNode, caseNode])).toEqual({
+      id: 'proc-0',
+      target: { kind: 'processor', index: 0 },
+    });
+  });
+
+  it('walks up from a structural case to select its parent switch', () => {
+    expect(selectionTargetForNode(caseNode, [switchNode, caseNode])).toEqual({
+      id: 'proc-0',
+      target: { kind: 'processor', index: 0 },
+    });
+  });
+
+  it('returns null when no ancestor is selectable', () => {
+    const orphan: Node = { id: 'x', position: { x: 0, y: 0 }, data: { label: 'x' } };
+    expect(selectionTargetForNode(orphan, [orphan])).toBeNull();
   });
 });
 

@@ -70,6 +70,10 @@ export type PipelineFlowNode = {
   // Label of a resource this component references (cache/rate_limit `resource`), used
   // to draw a dashed reference edge to the matching resource node.
   resourceRef?: string;
+  // A `switch` case wrapper — a structural sub-node (not an editable component). It
+  // renders as a condition-forward "case" card and, when clicked, selects its
+  // parent switch rather than itself.
+  isCase?: boolean;
 };
 
 type BranchContext = {
@@ -367,6 +371,8 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       condition: hasCheck ? (check as string) : undefined,
       isDefault: hasCheck ? undefined : true,
       isErrorPath: isErroredCheck(check) ? true : undefined,
+      // A structural sub-node: no editTarget (clicking selects the parent switch).
+      isCase: true,
     });
     pushProcessorChildren(nodes, caseProcs, {
       ...ctx,
@@ -997,7 +1003,7 @@ function buildTreeFlowEdges(nodes: PipelineFlowNode[], hiddenIds: Set<string>): 
       target: to,
       type: 'treeEdge',
       hidden: isHidden(from, to),
-      markerEnd: { type: MarkerType.Arrow, width: 16, height: 16, color: 'var(--color-border)' },
+      markerEnd: { type: MarkerType.Arrow, width: 12, height: 12, color: 'var(--color-border)' },
     });
   }
 
@@ -1188,10 +1194,14 @@ const FLOW_SECTION_LABEL_INDENT = 30;
 // leaf. The height is 2× the spine-handle offset (SPINE_HANDLE_TOP = 36) so the
 // connecting arrow lands on the card's vertical center rather than near its bottom.
 const FLOW_PLACEHOLDER_LEAF_H = 72;
+// Extra height for the label's own row on a compact-lane card.
+const FLOW_COMPACT_LABEL_ROW_H = 22;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   if (dims.metaRowH === 0) {
-    return dims.leafBaseH;
+    // Compact lane hides meta, but a label (e.g. a resource's label) still gets its
+    // own row so it isn't squeezed onto — and truncated against — the name.
+    return dims.leafBaseH + (node.labelText ? FLOW_COMPACT_LABEL_ROW_H : 0);
   }
   if (node.label === 'none') {
     return FLOW_PLACEHOLDER_LEAF_H;
@@ -1354,6 +1364,7 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.meta && node.meta.length > 0 ? { meta: node.meta } : {}),
     ...(node.missingTopic ? { missingTopic: true } : {}),
     ...(node.missingSasl ? { missingSasl: true } : {}),
+    ...(node.isCase ? { isCase: true } : {}),
     ...(node.editTarget ? { editTarget: node.editTarget } : {}),
     ...(childCount > 0 ? { childCount } : {}),
     ...routingData(node, compact),
@@ -1467,7 +1478,7 @@ function linkEdge(params: {
     markerEnd:
       params.portDot === 'target'
         ? undefined
-        : { type: MarkerType.ArrowClosed, width: 13, height: 13, color: LINK_TONE_COLOR[params.tone] },
+        : { type: MarkerType.ArrowClosed, width: 10, height: 10, color: LINK_TONE_COLOR[params.tone] },
   };
 }
 
@@ -1766,7 +1777,7 @@ function buildSpineEdges(mainSequence: PipelineFlowNode[], isVertical: boolean):
       targetHandle: isVertical ? 't' : 'l',
       type: 'flowSpine',
       data: { insertIndex: processorsSeen },
-      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: 'var(--color-primary)' },
+      markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--color-primary)' },
     });
   }
   return edges;
