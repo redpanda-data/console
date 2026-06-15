@@ -98,6 +98,11 @@ const CONFIG_CATEGORIES = [
   { name: 'Replication', blurb: 'Durability and in-sync replica requirements.' },
   { name: 'Tiered Storage', blurb: 'Offloading topic data to object storage.' },
   { name: 'Write Caching', blurb: 'Write acknowledgement and caching behavior.' },
+  { name: 'Iceberg', blurb: 'Apache Iceberg table integration for this topic.' },
+  { name: 'Schema Registry and Validation', blurb: 'Schema ID validation for keys and values.' },
+  { name: 'Message Handling', blurb: 'Message size, timestamps, and conversion behavior.' },
+  { name: 'Compression', blurb: 'Message compression behavior.' },
+  { name: 'Storage Internals', blurb: 'Low-level segment and index storage settings.' },
   { name: 'Other', blurb: 'Additional topic configuration.' },
 ] as const;
 
@@ -121,15 +126,20 @@ const ConfigEditorForm: FC<{
     }
     return entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom';
   })();
+  const defaultConfigSynonym = getDefaultConfigSynonym(editedEntry);
   const explicitCustomValue =
     editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '';
-  // For enum-style configs (boolean/select), fall back to the first option when there's
-  // no value so the dropdown shows a concrete choice instead of an empty box.
-  const defaultCustomValue = explicitCustomValue || getFirstSelectOption(editedEntry) || '';
+  // Seed Custom from the resolved/inherited value (explicit override → current effective
+  // value → inherited default) so opening Custom and saving without touching the control
+  // doesn't silently overwrite a non-default BOOLEAN/SELECT value. Only fall back to the
+  // first enum option when nothing is resolved, so the dropdown still shows a concrete choice.
+  const resolvedValue = explicitCustomValue || editedEntry.value || defaultConfigSynonym?.value || '';
+  const defaultCustomValue = resolvedValue || getFirstSelectOption(editedEntry) || '';
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { isSubmitting },
   } = useForm<Inputs>({
     defaultValues: {
@@ -192,18 +202,13 @@ const ConfigEditorForm: FC<{
 
   const valueType = useWatch({ control, name: 'valueType' });
 
-  const defaultConfigSynonym = getDefaultConfigSynonym(editedEntry);
-
-  const handleReset = async () => {
-    setGlobalError(null);
-    try {
-      await api.changeTopicConfig(targetTopic, [{ key: editedEntry.name, op: 'DELETE', value: undefined }]);
-      toast.success(`Config ${editedEntry.name} reset to default`);
-      onSuccess();
-      onClose();
-    } catch (err) {
-      setGlobalError(err instanceof Error ? err.message : String(err));
-    }
+  // Route "Reset to default" through the normal submit path (which DELETEs for the
+  // 'default' value type) instead of firing an out-of-band DELETE. This shares the
+  // single pending/disabled state with Save/Cancel, so reset can't race a concurrent
+  // Save and the buttons disable together while the mutation is in flight.
+  const handleReset = () => {
+    setValue('valueType', 'default');
+    void handleSubmit(onSubmit)();
   };
 
   return (
@@ -269,11 +274,12 @@ const ConfigEditorForm: FC<{
           </DialogBody>
           <DialogFooter>
             {editedEntry.isExplicitlySet ? (
-              <Button className="mr-auto" onClick={handleReset} type="button" variant="ghost">
+              <Button className="mr-auto" disabled={isSubmitting} onClick={handleReset} type="button" variant="ghost">
                 Reset to default
               </Button>
             ) : null}
             <Button
+              disabled={isSubmitting}
               onClick={() => {
                 onClose();
               }}
@@ -311,7 +317,10 @@ const ConfigurationEditorLegacy: FC<ConfigurationEditorProps> = (props) => {
 
   let entries = props.entries;
   if (configFilter) {
-    entries = entries.filter((x) => x.name.includes(configFilter) || (x.value ?? '').includes(configFilter));
+    // Match name/documentation only — never config values. `configFilter` is URL-backed,
+    // so matching `x.value` would leak sensitive/internal values into browser history and
+    // shareable links.
+    entries = entries.filter((x) => x.name.includes(configFilter) || (x.documentation ?? '').includes(configFilter));
   }
 
   const entryOrder = {

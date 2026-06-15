@@ -15,23 +15,18 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  type Updater,
   useReactTable,
 } from '@tanstack/react-table';
 import { AlertTriangle } from 'lucide-react';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 
 import '../../../utils/array-extensions';
 
-import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
+import { useUrlTableState } from '../../../hooks/use-url-table-state';
 import { useApiStoreHook } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import { Badge } from '../../redpanda-ui/components/badge';
@@ -45,40 +40,13 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
   const clusterHealth = useApiStoreHook((s) => s.clusterHealth);
 
-  const [pageIndex, setPageIndex] = useQueryState('partitionPage', parseAsInteger.withDefault(0));
-
-  const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicPartitionsList.pageSize = val;
-      },
-      getDefaultValue: () => uiSettings.topicPartitionsList.pageSize,
-    },
-    'partitionPageSize',
-    parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE)
-  );
-
-  const [sortId, setSortId] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicPartitionsList.sortId = val;
-      },
-      getDefaultValue: () => uiSettings.topicPartitionsList.sortId,
-    },
-    'partitionSortId',
-    parseAsString.withDefault('')
-  );
-
-  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicPartitionsList.sortDesc = val;
-      },
-      getDefaultValue: () => uiSettings.topicPartitionsList.sortDesc,
-    },
-    'partitionSortDesc',
-    parseAsBoolean.withDefault(false)
-  );
+  // Kept above the early returns so the hook order stays stable; clamping no-ops until partitions load.
+  const { sorting, pagination, onSortingChange, onPaginationChange } = useUrlTableState({
+    keyPrefix: 'partition',
+    settings: uiSettings.topicPartitionsList,
+    rowCount: Array.isArray(partitions) ? partitions.length : 0,
+    enabled: Array.isArray(partitions),
+  });
 
   if (partitions === undefined) {
     return DefaultSkeleton;
@@ -94,27 +62,6 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const underReplicatedPartitions = (clusterHealth?.underReplicatedPartitions ?? []).find(
     ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
-
-  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
-  const pagination: PaginationState = { pageIndex, pageSize };
-
-  const handleSortingChange = (updater: Updater<SortingState>) => {
-    const next = typeof updater === 'function' ? updater(sorting) : updater;
-    if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
-    } else {
-      setSortId('');
-      setSortDesc(false);
-    }
-    void setPageIndex(0);
-  };
-
-  const handlePaginationChange = (updater: Updater<PaginationState>) => {
-    const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
-  };
 
   const columns: ColumnDef<Partition>[] = [
     {
@@ -160,8 +107,8 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
     data: partitions,
     columns,
     state: { sorting, pagination },
-    onSortingChange: handleSortingChange,
-    onPaginationChange: handlePaginationChange,
+    onSortingChange,
+    onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -218,7 +165,7 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex" type="button">
+        <button aria-label="Show partition error details" className="inline-flex" type="button">
           <AlertTriangle className="h-5 w-5 text-orange-500" />
         </button>
       </PopoverTrigger>

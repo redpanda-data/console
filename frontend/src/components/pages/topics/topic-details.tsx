@@ -361,7 +361,9 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
 
     const loc = appGlobal.location;
     loc.hash = String(activeKey);
-    appGlobal.historyReplace(`${loc.pathname}#${loc.hash}`);
+    // Preserve the search string so URL-backed tab state (e.g. Configuration's
+    // configFilter/configScope) survives switching tabs and coming back.
+    appGlobal.historyReplace(`${loc.pathname}${loc.searchStr}#${loc.hash}`);
 
     refreshTopicData(topicName, false);
   };

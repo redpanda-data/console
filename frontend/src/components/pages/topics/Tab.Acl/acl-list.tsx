@@ -15,14 +15,10 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  type Updater,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 
-import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
+import { useUrlTableState } from '../../../../hooks/use-url-table-state';
 import type {
   AclRule,
   AclStrOperation,
@@ -33,7 +29,6 @@ import type {
 } from '../../../../state/rest-interfaces';
 import { uiSettings } from '../../../../state/ui';
 import { toJson } from '../../../../utils/json-utils';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../../../constants';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { DataTableColumnHeader, DataTablePagination } from '../../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
@@ -95,68 +90,18 @@ const columns: ColumnDef<AclFlatResource>[] = [
 const AclList = ({ acl }: { acl: Acls }) => {
   const resources = flatResourceList(acl);
 
-  const [pageIndex, setPageIndex] = useQueryState('aclPage', parseAsInteger.withDefault(0));
-
-  const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicAclList.pageSize = val;
-      },
-      getDefaultValue: () => uiSettings.topicAclList.pageSize,
-    },
-    'aclPageSize',
-    parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE)
-  );
-
-  const [sortId, setSortId] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicAclList.sortId = val;
-      },
-      getDefaultValue: () => uiSettings.topicAclList.sortId,
-    },
-    'aclSortId',
-    parseAsString.withDefault('')
-  );
-
-  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicAclList.sortDesc = val;
-      },
-      getDefaultValue: () => uiSettings.topicAclList.sortDesc,
-    },
-    'aclSortDesc',
-    parseAsBoolean.withDefault(false)
-  );
-
-  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
-  const pagination: PaginationState = { pageIndex, pageSize };
-
-  const handleSortingChange = (updater: Updater<SortingState>) => {
-    const next = typeof updater === 'function' ? updater(sorting) : updater;
-    if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
-    } else {
-      setSortId('');
-      setSortDesc(false);
-    }
-    void setPageIndex(0);
-  };
-
-  const handlePaginationChange = (updater: Updater<PaginationState>) => {
-    const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
-  };
+  const { sorting, pagination, onSortingChange, onPaginationChange } = useUrlTableState({
+    keyPrefix: 'acl',
+    settings: uiSettings.topicAclList,
+    rowCount: resources.length,
+  });
 
   const table = useReactTable({
     data: resources,
     columns,
     state: { sorting, pagination },
-    onSortingChange: handleSortingChange,
-    onPaginationChange: handlePaginationChange,
+    onSortingChange,
+    onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

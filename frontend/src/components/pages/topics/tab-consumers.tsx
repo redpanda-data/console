@@ -16,20 +16,15 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  type Updater,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import { type FC, useEffect } from 'react';
 
-import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
+import { useUrlTableState } from '../../../hooks/use-url-table-state';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { Topic, TopicConsumer } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 
@@ -44,61 +39,12 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
   const isLoading = rawConsumers === undefined;
   const consumers = rawConsumers ?? [];
 
-  const [pageIndex, setPageIndex] = useQueryState('consumerPage', parseAsInteger.withDefault(0));
-
-  const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicConsumersList.pageSize = val;
-      },
-      getDefaultValue: () => uiSettings.topicConsumersList.pageSize,
-    },
-    'consumerPageSize',
-    parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE)
-  );
-
-  const [sortId, setSortId] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicConsumersList.sortId = val;
-      },
-      getDefaultValue: () => uiSettings.topicConsumersList.sortId,
-    },
-    'consumerSortId',
-    parseAsString.withDefault('')
-  );
-
-  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicConsumersList.sortDesc = val;
-      },
-      getDefaultValue: () => uiSettings.topicConsumersList.sortDesc,
-    },
-    'consumerSortDesc',
-    parseAsBoolean.withDefault(false)
-  );
-
-  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
-  const pagination: PaginationState = { pageIndex, pageSize };
-
-  const handleSortingChange = (updater: Updater<SortingState>) => {
-    const next = typeof updater === 'function' ? updater(sorting) : updater;
-    if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
-    } else {
-      setSortId('');
-      setSortDesc(false);
-    }
-    void setPageIndex(0);
-  };
-
-  const handlePaginationChange = (updater: Updater<PaginationState>) => {
-    const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
-  };
+  const { sorting, pagination, onSortingChange, onPaginationChange } = useUrlTableState({
+    keyPrefix: 'consumer',
+    settings: uiSettings.topicConsumersList,
+    rowCount: consumers.length,
+    enabled: !isLoading,
+  });
 
   const columns: ColumnDef<TopicConsumer>[] = [
     {
@@ -125,8 +71,8 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
     data: consumers,
     columns,
     state: { sorting, pagination },
-    onSortingChange: handleSortingChange,
-    onPaginationChange: handlePaginationChange,
+    onSortingChange,
+    onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
