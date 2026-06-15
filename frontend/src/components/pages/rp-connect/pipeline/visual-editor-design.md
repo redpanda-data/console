@@ -270,8 +270,12 @@ enter/exit animation) appears pinned to the bottom — in the **sidebar visualiz
 Shared node IDs: both the canvas and the mini sidebar diagram derive from the same
 `parsePipelineFlowTree` output, so node IDs line up across views.
 
-**Mini sidebar lane**: renders the **same `PipelineFlowCanvas`** as the Visual tab
-but in a `simple` + `orientation="vertical"` mode — a compact, static overview:
+**Mini sidebar lane**: gated behind `enableRpcnVisualEditor` (with
+`enablePipelineDiagrams` as the outer gate). When the visual-editor flag is **on**
+it renders the refreshed `PipelineFlowCanvas`; when **off** it falls back to the
+original `PipelineFlowDiagram` mini-diagram (master behavior). The new lane renders
+the **same `PipelineFlowCanvas`** as the Visual tab but in a `simple` +
+`orientation="vertical"` mode — a compact, static overview:
 - `simple`: no background dots, no zoom, no free pan, no controls — locked at
   zoom 1, **top-aligned**, with vertical scroll only for tall pipelines.
 - `compact`: smaller one-row cards (no kind badge / metadata), tighter spacing

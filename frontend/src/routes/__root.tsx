@@ -31,6 +31,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
+import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
 export type RouterContext = {
@@ -53,7 +54,7 @@ function RootLayout() {
         </ErrorBoundary>
       </NuqsAdapter>
 
-      {process.env.NODE_ENV === 'development' && (
+      {IsDev && (
         <>
           <TanStackRouterDevtools position="bottom-right" />
           <DebugHelper />

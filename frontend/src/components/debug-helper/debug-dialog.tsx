@@ -720,7 +720,7 @@ function OverviewTab() {
           <KbdGroup>
             <Kbd size="xs">⌃/⌘</Kbd>
             <Kbd size="xs">⇧</Kbd>
-            <Kbd size="xs">D</Kbd>
+            <Kbd size="xs">U</Kbd>
           </KbdGroup>
         </span>
       </DebugSection>
@@ -816,7 +816,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <KbdGroup>
               <Kbd size="xs">⌃/⌘</Kbd>
               <Kbd size="xs">⇧</Kbd>
-              <Kbd size="xs">D</Kbd>
+              <Kbd size="xs">U</Kbd>
             </KbdGroup>
           </span>
           <Button onClick={close} size="sm" variant="secondary-ghost">
@@ -832,13 +832,15 @@ export function DebugHelper() {
   const [open, setOpen] = useState(false);
 
   useHotKey({
-    key: 'd',
+    key: 'u',
     modifiers: ['meta', 'shift'],
     enabled: Boolean(IsDev),
     onTrigger: () => setOpen((v) => !v),
   });
 
+  console.log('DebugHelper rendered; isDev=%s', IsDev);
   if (!IsDev) {
+    console.log('RENDERBUT IS DEV FALSE');
     return null;
   }
 

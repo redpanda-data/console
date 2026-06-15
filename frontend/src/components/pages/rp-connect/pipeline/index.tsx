@@ -85,6 +85,7 @@ import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { TemplateGalleryCta } from './template-cta';
@@ -664,6 +665,7 @@ function SidebarPanel({
   mode,
   yamlContent,
   isPipelineDiagramsEnabled,
+  isVisualEditorEnabled,
   onAddConnector,
   onAddTopic,
   onAddSasl,
@@ -673,6 +675,7 @@ function SidebarPanel({
   mode: string;
   yamlContent: string;
   isPipelineDiagramsEnabled: boolean;
+  isVisualEditorEnabled: boolean;
   onAddConnector: (type: ConnectComponentType | 'resource') => void;
   onAddTopic: (section: string, componentName: string) => void;
   onAddSasl: (section: string, componentName: string) => void;
@@ -682,7 +685,21 @@ function SidebarPanel({
   // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
   const isEmpty = useIsPipelineEmpty(yamlContent);
-  const showTemplateCta = canEdit && Boolean(onBrowseTemplates) && isEmpty;
+  // The refreshed side-lane (new flow canvas) ships behind the visual-editor flag;
+  // with it off we fall back to the original `PipelineFlowDiagram` mini-diagram.
+  const showNewLane = isPipelineDiagramsEnabled && isVisualEditorEnabled;
+  const showOldLane = isPipelineDiagramsEnabled && !isVisualEditorEnabled;
+  const showTemplateCta = showNewLane && canEdit && Boolean(onBrowseTemplates) && isEmpty;
+  // The old mini-diagram renders its own template entry point internally; the new
+  // lane uses the floating CTA below instead.
+  const oldDiagramHandlers = canEdit
+    ? {
+        onAddConnector: (type: string) => onAddConnector(type as ConnectComponentType),
+        onAddSasl,
+        onAddTopic,
+        onBrowseTemplates,
+      }
+    : {};
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
@@ -690,7 +707,7 @@ function SidebarPanel({
           at its bottom with an enter/exit animation, like the old mini-diagram. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto overflow-x-hidden">
-          {isPipelineDiagramsEnabled ? (
+          {showNewLane ? (
             <PipelineFlowCanvas
               configYaml={yamlContent}
               onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
@@ -700,8 +717,13 @@ function SidebarPanel({
               simple
             />
           ) : null}
+          {showOldLane ? (
+            <PipelineFlowDiagram configYaml={yamlContent} hideZoomControls {...oldDiagramHandlers} />
+          ) : null}
         </div>
-        {onBrowseTemplates ? <TemplateGalleryCta onBrowseTemplates={onBrowseTemplates} show={showTemplateCta} /> : null}
+        {showNewLane && onBrowseTemplates ? (
+          <TemplateGalleryCta onBrowseTemplates={onBrowseTemplates} show={showTemplateCta} />
+        ) : null}
       </div>
       {mode !== 'view' && (
         <>
@@ -1081,6 +1103,7 @@ function PipelinePageContent() {
         {showSidebar ? (
           <SidebarPanel
             isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
+            isVisualEditorEnabled={isVisualEditorEnabled}
             mode={mode}
             onAddConnector={(type) => setAddConnectorType(type)}
             onAddSasl={handleAddSasl}

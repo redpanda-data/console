@@ -608,7 +608,9 @@ describe('PipelinePage', () => {
 
   it('hydrates the sidebar flow canvas with pipeline configYaml in view mode', async () => {
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enablePipelineDiagrams' || flag === 'enableRpcnVisualEditor'
+    );
     mockIsEmbedded.mockReturnValue(true);
 
     render(<PipelinePage />, { transport: createTransport() });
@@ -619,14 +621,32 @@ describe('PipelinePage', () => {
     });
   });
 
+  it('falls back to the original flow diagram side-lane when the visual editor flag is off', async () => {
+    // Diagrams on, but the refreshed visual-editor lane off → the old mini-diagram.
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    await waitFor(() => expect(screen.getByTestId('flow-diagram')).toBeInTheDocument());
+    expect(screen.queryByTestId('flow-canvas')).not.toBeInTheDocument();
+  });
+
   it('offers a "Start from a template" entry in the sidebar visualizer while the pipeline is empty', async () => {
+    const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'create' });
     mockIsFeatureFlagEnabled.mockImplementation(
-      (flag: string) => flag === 'enablePipelineDiagrams' || flag === 'enableRpcnTemplateGallery'
+      (flag: string) =>
+        flag === 'enablePipelineDiagrams' || flag === 'enableRpcnVisualEditor' || flag === 'enableRpcnTemplateGallery'
     );
     mockIsEmbedded.mockReturnValue(true);
 
     render(<PipelinePage />, { transport: createTransport() });
+
+    // The visual editor defaults to the Visual lane; the sidebar (with its template
+    // CTA) lives alongside the YAML lane, so switch there first.
+    await user.click(await screen.findByRole('tab', { name: 'YAML' }));
 
     // Empty pipeline → the template gallery entry is offered.
     expect(await screen.findByTestId('browse-templates-cta')).toBeInTheDocument();
