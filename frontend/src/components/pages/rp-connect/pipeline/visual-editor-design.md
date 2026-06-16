@@ -107,9 +107,13 @@ Supporting polish:
   resource's x is aligned to the (absolute) x of its referencing component, then a
   left→right sweep de-overlaps the lane — so a `uses` edge is a short drop, not a
   full-canvas traversal (`resourceLaneX`/`absoluteX`).
-- **Section colour accents.** Cards/containers carry a left accent + tinted kind
-  label by role (input green, processor blue, output purple, resource orange) so
-  sources/transforms/sinks/resources read apart at a glance (`SECTION_ACCENT`).
+- **Section colour accents.** A card/container's role (input green, processor blue,
+  output purple, resource orange — `SECTION_ACCENT`) reads from a **tinted title band**
+  (`headerTintStyle`, a faint wash of the role colour over the card behind the kind
+  label / logo / name) plus the colour-matched kind label, with the body left clean.
+  No left bar or full colour border, so the role cue never competes with the selection
+  (primary) / error (destructive) rings. The connector logo sits in an elevated tile
+  (`LogoTile`) on the band.
 - **Adaptive edge legend.** The full canvas shows a small bottom-left legend that
   lists only the edge kinds actually present (flow / copy-merge / error / uses).
 - **Roomy container routing.** A container reserves a wider routing gutter

@@ -91,8 +91,8 @@ const SECTION_LABEL: Record<string, string> = {
   resource: 'Resource',
 };
 
-// A colored left accent gives each role a quick visual identity: sources, transforms,
-// sinks, and shared resources read apart at a glance.
+// Each role gets a quick visual identity from its colour: sources, transforms, sinks,
+// and shared resources read apart at a glance.
 export const SECTION_ACCENT: Record<string, string> = {
   input: 'var(--color-green-500)',
   processor: 'var(--color-blue-500)',
@@ -104,24 +104,23 @@ export function sectionAccent(section?: string): string | undefined {
   return section ? SECTION_ACCENT[section] : undefined;
 }
 
-// The role accent shown as a solid bar down a card's left edge. Cards keep their
-// neutral border; only the left side takes the role colour, so the role reads at a
-// glance without recolouring the whole card.
-function accentBarStyle(accent?: string): React.CSSProperties | undefined {
-  return accent ? { borderLeftStyle: 'solid', borderLeftWidth: 3, borderLeftColor: accent } : undefined;
+// The role colour lives in a tinted title band rather than a border: a faint wash over
+// the card surface behind the kind label / logo / name, with the body left clean. This
+// reads as a clear role identity without recolouring the whole card or competing with
+// the selection / error rings. Opaque (mixed over the card colour) so it layers
+// correctly on both leaf cards and container headers.
+function headerTintStyle(accent?: string): React.CSSProperties | undefined {
+  return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
 }
 
-// A faint wash of the role colour behind the connector logo, so the icon sits in a
-// small tinted chip that echoes the accent bar.
-function accentChipStyle(accent?: string): React.CSSProperties | undefined {
-  return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)` } : undefined;
-}
-
-// The connector logo in a small rounded chip tinted with the role accent.
-const LogoChip = ({ name, accent, compact }: { name: string; accent?: string; compact?: boolean }) => (
+// The connector logo in a small elevated tile, so the icon sits cleanly on the tinted
+// header band.
+const LogoTile = ({ name, compact }: { name: string; compact?: boolean }) => (
   <span
-    className={cn('flex shrink-0 items-center justify-center rounded-md', compact ? 'size-6' : 'size-7')}
-    style={accentChipStyle(accent)}
+    className={cn(
+      'flex shrink-0 items-center justify-center rounded-md border border-border/60 bg-background',
+      compact ? 'size-6' : 'size-7'
+    )}
   >
     <ConnectorLogo className={compact ? 'size-4' : 'size-5'} fallback={Box} name={name as ComponentName} />
   </span>
@@ -287,7 +286,7 @@ const MetaRows = ({ data }: { data: FlowCardData }) => {
     return null;
   }
   return (
-    <div className="flex flex-col gap-1.5 border-border/60 border-t px-3 py-2">
+    <div className="flex flex-col gap-1.5 px-3 py-2">
       <TopicChips topics={data.topics} />
       {data.meta?.map((entry) => (
         <div className="flex items-baseline gap-1.5 text-xs" key={`${entry.label}-${entry.value}`}>
@@ -379,23 +378,17 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
 
 // A compact sidebar card: logo + name, with the label (e.g. a resource's label)
 // on its own row beneath so neither it nor the name gets truncated against the other.
-const CompactCard = ({ data }: { data: FlowCardData }) => {
-  const accent = sectionAccent(data.section);
-  return (
-    <div
-      className="group flex flex-col gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md"
-      style={accent ? { borderLeftStyle: 'solid', borderLeftWidth: 2, borderLeftColor: accent } : undefined}
-    >
-      <div className="flex items-center gap-2">
-        <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
-        <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
-          {data.label}
-        </Text>
-      </div>
-      {data.labelText ? <LabelBadge className="max-w-full self-start" label={data.labelText} /> : null}
+const CompactCard = ({ data }: { data: FlowCardData }) => (
+  <div className="group flex flex-col gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="flex items-center gap-2">
+      <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
+      <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
+        {data.label}
+      </Text>
     </div>
-  );
-};
+    {data.labelText ? <LabelBadge className="max-w-full self-start" label={data.labelText} /> : null}
+  </div>
+);
 
 // The selection ring shown on the node the inspector is editing. Uses `primary`
 // (the conventional "selected" colour); the selected node still reads clearly
@@ -459,28 +452,35 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         selectable && 'cursor-pointer',
         cardRing(data)
       )}
-      style={accentBarStyle(accent)}
     >
-      <div className="flex items-center gap-1.5 px-3 pt-2 pb-0.5">
-        <Text
-          as="span"
-          className="shrink-0 uppercase tracking-wide"
-          style={accent ? { color: accent } : undefined}
-          variant="captionStrongMedium"
-        >
-          {kindLabel}
-        </Text>
-        <BranchConditionChip data={data} />
-        <LintBadge errors={data.lintErrors} />
-      </div>
-      <div className="flex w-full items-center gap-2 px-3 pb-2 text-left">
-        <LogoChip accent={accent} name={data.label} />
-        <Text as="span" className="min-w-0 flex-1 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
-          {data.label}
-        </Text>
+      {/* Tinted title band carries the role colour; the body below stays clean. */}
+      <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
+        <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
+          <Text
+            as="span"
+            className="shrink-0 uppercase tracking-wide"
+            style={accent ? { color: accent } : undefined}
+            variant="captionStrongMedium"
+          >
+            {kindLabel}
+          </Text>
+          <BranchConditionChip data={data} />
+          <LintBadge errors={data.lintErrors} />
+        </div>
+        <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
+          <LogoTile name={data.label} />
+          <Text
+            as="span"
+            className="min-w-0 flex-1 truncate font-semibold"
+            title={data.label}
+            variant="bodyStrongMedium"
+          >
+            {data.label}
+          </Text>
+        </div>
       </div>
       {data.labelText ? (
-        <div className="px-3 pb-2">
+        <div className="px-3 pt-2">
           <LabelBadge label={data.labelText} />
         </div>
       ) : null}
@@ -583,7 +583,7 @@ const ContainerHeaderTitle = ({ data, accent }: { data: FlowCardData; accent?: s
   }
   return (
     <>
-      <LogoChip accent={accent} compact={data.compact} name={data.label} />
+      <LogoTile compact={data.compact} name={data.label} />
       <ContainerTitleText accent={accent} data={data} />
       <LabelBadge className="max-w-[35%]" label={data.labelText} />
       <BranchConditionChip className="max-w-[45%]" data={data} />
@@ -614,17 +614,19 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
           'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm',
           cardRing(data)
         )}
-        style={accentBarStyle(accent)}
       >
         <div
           className={cn(
-            'flex items-center gap-2 bg-card/80',
+            'flex items-center gap-2',
             selectable && 'cursor-pointer',
             data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2',
             // Collapsed: the header is the whole card, so fill + centre it (no divider)
             // so the spine arrows align with its middle. Expanded: header on top.
             data.collapsed ? 'h-full rounded-lg' : 'rounded-t-lg border-border/60 border-b'
           )}
+          // Tinted title band (role colour) over the card surface; falls back to a
+          // plain card header when the section has no accent.
+          style={headerTintStyle(accent) ?? { backgroundColor: 'var(--color-card)' }}
         >
           <ContainerHeaderTitle accent={accent} data={data} />
           <LintBadge errors={data.lintErrors} />
