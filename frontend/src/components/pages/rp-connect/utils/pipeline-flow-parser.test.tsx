@@ -1183,10 +1183,10 @@ cache_resources:
     const refEdges = computeFlowLayout(parsePipelineFlowTree(twoResources).nodes).rfEdges.filter((e) =>
       e.id.startsWith('ref-')
     );
-    const lanes = refEdges.map((e) => (e.data as { laneCenterY?: number }).laneCenterY);
-    expect(lanes).toHaveLength(2);
-    expect(lanes.every((y) => typeof y === 'number')).toBe(true);
-    expect(new Set(lanes).size).toBe(lanes.length); // distinct bend lanes
+    const busYs = refEdges.map((e) => (e.data as { route?: { busY: number } }).route?.busY);
+    expect(busYs).toHaveLength(2);
+    expect(busYs.every((y) => typeof y === 'number')).toBe(true);
+    expect(new Set(busYs).size).toBe(busYs.length); // distinct bus lanes
   });
 
   it('nests fan lanes like parentheses around the centre port (crossing-free)', () => {
@@ -1219,20 +1219,20 @@ output:
     expect(inLane('fanin-proc-0-case-1')).toBeLessThan(inLane('fanin-proc-0-case-2'));
   });
 
-  it('drops the reference cable straight down (bottom→top) and bends in its own lane', () => {
-    // The cable plugs out of the source's bottom into the resource's top via a smooth
-    // step, bending in a lane between the flow and the resource lane — so a resource
-    // laid out under its source renders as a straight vertical drop, not a detour.
+  it('routes the reference cable bottom→top through a channel and bus lane', () => {
+    // The cable plugs out of the source's bottom into the resource's top, dropping
+    // through a clear channel beside its column then along its own bus lane below the
+    // flow — both positive, so it never crosses the cards around or below the source.
     const refEdge = edge('ref-proc-0-resource-cache_resources-0');
     expect(refEdge?.sourceHandle).toBe('b');
     expect(refEdge?.targetHandle).toBe('t');
-    const laneY = (refEdge?.data as { laneCenterY?: number }).laneCenterY;
-    expect(laneY).toBeGreaterThan(0);
+    const route = (refEdge?.data as { route?: { channelX: number; busY: number } }).route;
+    expect(route?.channelX).toBeGreaterThan(0);
+    expect(route?.busY).toBeGreaterThan(0);
   });
 
-  it('lays a referenced resource under its source so the cable is a straight drop', () => {
-    // dedupe_cache lays out at the same x as its referencing cache (proc-0); with the
-    // smooth-step router that means a clean vertical line (no horizontal excursion).
+  it('lays a referenced resource under its column so the cable stays short', () => {
+    // dedupe_cache lays out at the same x as its referencing processor's column.
     const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
     const procX = layout.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
     const resourceX = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -2;
@@ -1240,7 +1240,7 @@ output:
     expect(resourceX).toBe(procX);
   });
 
-  it('anchors a reference at its top-level column so the cable never crosses the cards inside it', () => {
+  it('connects a reference to the exact node, re-anchoring to a visible ancestor when collapsed', () => {
     const nested = `pipeline:
   processors:
     - branch:
@@ -1253,19 +1253,17 @@ cache_resources:
     redis: { url: x }`;
     const { nodes } = parsePipelineFlowTree(nested);
 
-    // Expanded: the cache is nested in the branch, but the cable attaches to the
-    // top-level branch column — its bottom is in the clear band below the flow, so
-    // the drop never crosses the cards stacked inside the branch.
+    // Expanded: the cable attaches to the actual nested cache that uses the resource
+    // (not the outer branch). The channel + bus route keeps it clear of other cards.
     const open = computeFlowLayout(nodes);
-    expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
+    expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
 
-    // Collapsed: the branch (and its cache) is a single card; the cable still attaches
-    // to it, so the resource stays visibly connected.
+    // Collapsed: the cache is hidden, so the cable re-anchors to its nearest visible
+    // ancestor — the branch — and the resource stays connected.
     const closed = computeFlowLayout(nodes, new Set(['proc-0']));
     expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
 
-    // The resource lays out directly under the branch column (a straight drop), both
-    // expanded and collapsed.
+    // The resource lays out under the branch column either way (short, clean cable).
     for (const layout of [open, closed]) {
       const branchX = layout.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
       const resourceX = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -2;

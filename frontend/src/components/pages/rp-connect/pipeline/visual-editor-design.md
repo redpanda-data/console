@@ -153,14 +153,16 @@ Supporting polish:
   its right port — data flows back out and continues to the next step — with
   the same per-branch lanes, tones, and port sockets as the fan-out. *Output*
   fans (broker/switch/fallback outputs) terminate at their sinks and draw none.
-- **Straight-when-possible reference cables.** Each `uses` edge plugs out of its
-  source's bottom into the resource's top with a **smooth step** (`buildReferenceEdges`,
-  `sourceHandle: 'b'` → `targetHandle: 't'`). Because a referenced resource lays out
-  at the same x as its source (`resourceLaneX`), the cable is a **clean vertical
-  drop**; an offset resource gets a single rounded jog. Each cable bends in **its own
-  horizontal lane** (`laneCenterY`, a distinct lane in the band between the flow and
-  the resource lane) so concurrent runs never overlap — the lane is ignored when the
-  endpoints already line up, keeping aligned cables perfectly straight.
+- **Channel-routed reference cables (no card crossings).** Each `uses` edge plugs
+  out of its source's bottom (`buildReferenceEdges`, `sourceHandle: 'b'` →
+  `targetHandle: 't'`), slips into the **clear channel beside its top-level column**
+  (`referenceChannelX` picks the side facing the resource, mid-`colGap`, staggered
+  when shared), drops down the channel to **its own horizontal bus lane** below the
+  flow (a distinct `busY` per cable so runs never overlap), then runs to the resource
+  and into its top (`referenceRoutePath`). Because the channel and bus are always in
+  clear space, the cable connects to the exact node yet never crosses the cards
+  around or below it. The resource lays out under that column (`resourceLaneX`), so
+  the bus run stays short.
 - **Fan-in / merge terminate in the port socket, not an arrowhead.** Any edge
   whose container end is a port (`portDot: 'target'` — fan-in, branch merge) omits
   its arrowhead: several fan-in lines into one port would otherwise stack
@@ -173,11 +175,12 @@ Supporting polish:
   body plays a `fade-in zoom-in-95` enter — applied to the card, never the React
   Flow node wrapper whose `transform` drives positioning — so they grow in place
   from the expanded section.
-- **Top-level reference anchoring.** A `uses` cable attaches to its source's
-  **top-level column** (`topLevelAnchor`), not the nested node — the column's bottom
-  sits in the clear band below the flow, so the cable drops straight down without ever
-  crossing the cards stacked inside the column. If an ancestor is collapsed, it falls
-  back to the deepest visible ancestor, so resources never dangle while collapsed.
+- **Reference anchoring + collapse re-anchoring.** A `uses` cable attaches to the
+  **actual referencing node** (`visibleAnchor`) so it points at the exact component
+  using the resource. When that node is hidden inside a collapsed container it
+  re-anchors to its **nearest visible ancestor**, so resources never dangle while
+  collapsed. (The cable still routes via the column channel/bus above, so attaching
+  to a deeply-nested node never makes it cross other cards.)
 - **Container ports sit level with the child rows.** `containerPortYs` anchors a
   branch's `gs` (copy) at the **first child's connector row** and its `gt` (merge)
   at the **last child's row** — those edges are clean horizontal lines in the

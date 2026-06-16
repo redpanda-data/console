@@ -87,7 +87,7 @@ const NodeRow = ({ node, depth, maps, collapsedIds, toggle, selectedId, onSelect
         )}
         <button
           className={cn(
-            'group flex min-w-0 flex-1 items-center gap-1.5 rounded-md border-transparent border-l-2 py-1 pr-2 pl-1.5 text-left text-sm transition-colors',
+            'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border-transparent border-l-2 py-1 pr-2 pl-1.5 text-left text-sm transition-colors',
             selected ? 'bg-primary/10 text-foreground' : 'text-foreground hover:bg-muted/50'
           )}
           onClick={() => onSelect(node.id, editableAncestorId(node, maps))}
@@ -128,7 +128,7 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
     <span aria-hidden className="w-5 shrink-0" />
     <button
-      className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border border-dashed py-1 pr-2 pl-1.5 text-left text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
+      className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-border border-dashed py-1 pr-2 pl-1.5 text-left text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
       onClick={() => onAdd(section)}
       type="button"
     >

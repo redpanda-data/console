@@ -707,9 +707,6 @@ type FlowLinkData = {
   dashed?: boolean;
   laneFromSource?: number;
   laneFromTarget?: number;
-  /** Y of the horizontal bend for a vertical (top↔bottom) edge — a per-cable lane
-      so reference runs don't stack. Ignored when the endpoints line up vertically. */
-  laneCenterY?: number;
   /** Draw a small "port" socket at the container end so the line visibly plugs in. */
   portDot?: 'source' | 'target';
   /** Selection context: unrelated edges fade, connected ones render full strength. */
@@ -717,7 +714,53 @@ type FlowLinkData = {
   emphasized?: boolean;
   /** Idle reference edges: readable hint, softer than full strength. */
   faint?: boolean;
+  /** Orthogonal cable route (reference edges): drop → channel beside the column →
+      down the channel → along the bus below the flow → into the resource. */
+  route?: { channelX: number; busY: number };
 };
+
+// An orthogonal polyline through `points` with rounded corners.
+function orthogonalRoundedPath(points: [number, number][], radius = 8): string {
+  const pts = points.filter(([x, y], i) => i === 0 || x !== points[i - 1][0] || y !== points[i - 1][1]);
+  if (pts.length < 2) {
+    return '';
+  }
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i += 1) {
+    const [px, py] = pts[i - 1];
+    const [cx, cy] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    const inLen = Math.abs(cx - px) + Math.abs(cy - py);
+    const outLen = Math.abs(nx - cx) + Math.abs(ny - cy);
+    const r = Math.min(radius, inLen / 2, outLen / 2);
+    const inX = cx - Math.sign(cx - px) * r;
+    const inY = cy - Math.sign(cy - py) * r;
+    const outX = cx + Math.sign(nx - cx) * r;
+    const outY = cy + Math.sign(ny - cy) * r;
+    d += ` L ${inX} ${inY} Q ${cx} ${cy} ${outX} ${outY}`;
+  }
+  const [lx, ly] = pts.at(-1) as [number, number];
+  return `${d} L ${lx} ${ly}`;
+}
+
+// The cable route for a reference edge: a short drop out of the node, across to the
+// clear channel beside its top-level column, down the channel, along the bus below
+// the flow, then into the resource — never crossing the cards around or below it.
+function referenceRoutePath(
+  route: { channelX: number; busY: number },
+  coords: { sx: number; sy: number; tx: number; ty: number }
+): string {
+  const { sx, sy, tx, ty } = coords;
+  const drop = sy + 14;
+  return orthogonalRoundedPath([
+    [sx, sy],
+    [sx, drop],
+    [route.channelX, drop],
+    [route.channelX, route.busY],
+    [tx, route.busY],
+    [tx, ty],
+  ]);
+}
 
 const HIGHLIGHT_STROKE = 'var(--color-primary)';
 
@@ -789,17 +832,15 @@ export function FlowLinkEdge({
 }: EdgeProps) {
   const d = data as FlowLinkData | undefined;
   const tone = d?.tone ?? 'muted';
-  // Place the bend in this edge's own lane so siblings don't share (and overlap on) a
-  // single trunk: a horizontal lane (centerX) for fan-out/fan-in, a vertical lane
-  // (centerY) for reference cables. Both are ignored by getSmoothStepPath when the
-  // endpoints already line up on that axis, so an aligned cable stays a straight line.
+  // Place the vertical bend in this edge's own lane so fanned siblings don't share
+  // (and overlap on) a single trunk.
   let centerX: number | undefined;
   if (d?.laneFromSource !== undefined) {
     centerX = sourceX + d.laneFromSource;
   } else if (d?.laneFromTarget !== undefined) {
     centerX = targetX - d.laneFromTarget;
   }
-  const [path, labelX, labelY] = getSmoothStepPath({
+  const [smoothPath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -811,8 +852,12 @@ export function FlowLinkEdge({
     // force the default 20px approach stub to jog the line left then back right.
     offset: 8,
     ...(centerX === undefined ? {} : { centerX }),
-    ...(d?.laneCenterY === undefined ? {} : { centerY: d.laneCenterY }),
   });
+  // Reference cables follow an explicit orthogonal route (channel + bus); everything
+  // else is a smooth step.
+  const path = d?.route
+    ? referenceRoutePath(d.route, { sx: sourceX, sy: sourceY, tx: targetX, ty: targetY })
+    : smoothPath;
   return (
     <>
       <BaseEdge markerEnd={markerEnd} path={path} style={linkStyle(d)} />
