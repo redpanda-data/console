@@ -1681,6 +1681,9 @@ const MIN_CHANNEL_X = 8;
 // Spacing between resource cards in the lane — tighter than a flow colGap so a
 // cluster of resources (common when a container is collapsed) doesn't spread far.
 const RESOURCE_GAP = 28;
+// Horizontal offset between cables leaving the same source, so they drop as distinct
+// parallel lines rather than overlapping on one.
+const REFERENCE_DROP_STAGGER = 12;
 
 // The visible node a reference cable attaches to: the referencing node itself, or —
 // when it's hidden inside a collapsed container — its nearest visible ancestor, so the
@@ -1786,6 +1789,9 @@ function computeReferenceCables(
   const cables: ReferenceCable[] = [];
   const desiredResourceLeft = new Map<string, number>();
   const channelUse = new Map<string, number>();
+  // How many cables already leave a given source, so several cables out of the same
+  // node run as parallel drops instead of stacking on one line.
+  const sourceUse = new Map<string, number>();
   const seen = new Set<string>();
 
   for (const node of nodes) {
@@ -1803,11 +1809,14 @@ function computeReferenceCables(
     }
     seen.add(id);
 
+    const order = sourceUse.get(sourceId) ?? 0;
+    sourceUse.set(sourceId, order + 1);
     const handleX = (box(sourceId)?.left ?? 0) + FLOW_SPINE_HANDLE_LEFT;
     let channelX: number;
-    if (dropClear(sourceId, handleX)) {
-      // Clear straight down — drop at the node's own x (no detour).
-      channelX = handleX;
+    if (dropClear(sourceId, handleX + order * REFERENCE_DROP_STAGGER)) {
+      // Clear straight down — drop at the node's own x (offset per sibling cable so
+      // several cables out of one node don't share a single line).
+      channelX = handleX + order * REFERENCE_DROP_STAGGER;
     } else {
       const colLeft = columnLeftById.get(sourceId) ?? handleX;
       const colRight = columnRightById.get(sourceId) ?? handleX;

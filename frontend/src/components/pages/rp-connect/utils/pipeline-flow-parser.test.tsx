@@ -1189,6 +1189,34 @@ cache_resources:
     expect(new Set(busYs).size).toBe(busYs.length); // distinct bus lanes
   });
 
+  it('drops cables from the same source as distinct parallel lines', () => {
+    // A branch holding two resource users; collapsed, both cables re-anchor to the
+    // branch — they must leave it at staggered x's, not stacked on one line.
+    const shared = `pipeline:
+  processors:
+    - branch:
+        processors:
+          - cache: { resource: c, operator: get }
+          - rate_limit: { resource: lim }
+output:
+  drop: {}
+cache_resources:
+  - label: c
+    memcached: { addresses: ['m:11211'] }
+rate_limit_resources:
+  - label: lim
+    local: { count: 1, interval: 1s }`;
+    const refEdges = computeFlowLayout(parsePipelineFlowTree(shared).nodes, new Set(['proc-0'])).rfEdges.filter((e) =>
+      e.id.startsWith('ref-')
+    );
+    // Both re-anchor to the collapsed branch (same source).
+    expect(refEdges).toHaveLength(2);
+    expect(new Set(refEdges.map((e) => e.source))).toEqual(new Set(['proc-0']));
+    // …but drop through distinct channels so the lines don't overlap.
+    const channelXs = refEdges.map((e) => (e.data as { route?: { channelX: number } }).route?.channelX);
+    expect(new Set(channelXs).size).toBe(channelXs.length);
+  });
+
   it('nests fan lanes like parentheses around the centre port (crossing-free)', () => {
     // Cases above the port keep the staircase (outermost hugs the border, nearer
     // cases nest deeper); cases below mirror it. The halves never share a y-range,

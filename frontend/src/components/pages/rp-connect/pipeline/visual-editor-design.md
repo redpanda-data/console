@@ -162,9 +162,11 @@ Supporting polish:
   Each resource is then placed **directly under its cable's channel** (`resourceLaneX`
   consumes `desiredResourceLeft`), so the cable lands as a **straight vertical drop**
   with the horizontal bus run collapsed to zero — only resources displaced by the
-  de-overlap sweep (tight `RESOURCE_GAP`) need a short bus jog. The actual edge
-  (`pushReferenceEdges` → `referenceRoutePath`, `sourceHandle: 'b'` →
-  `targetHandle: 't'`) routes drop → channel → its own `busY` lane → resource top.
+  de-overlap sweep (tight `RESOURCE_GAP`) need a short bus jog. Several cables out of
+  the **same** node are offset (`REFERENCE_DROP_STAGGER`) so they leave it as distinct
+  parallel lines rather than stacking on one. The actual edge (`pushReferenceEdges` →
+  `referenceRoutePath`, `sourceHandle: 'b'` → `targetHandle: 't'`) routes drop →
+  channel → its own `busY` lane → resource top.
 - **Fan-in / merge terminate in the port socket, not an arrowhead.** Any edge
   whose container end is a port (`portDot: 'target'` — fan-in, branch merge) omits
   its arrowhead: several fan-in lines into one port would otherwise stack
