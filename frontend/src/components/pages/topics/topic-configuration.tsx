@@ -33,7 +33,7 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Pencil as EditIcon, Info as InfoIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -417,8 +417,25 @@ const ConfigurationEditorGrouped: FC<ConfigurationEditorProps> = (props) => {
   const { configFilter = '', configScope = 'all' } = useSearch({ from: '/topics/$topicName/' });
   const scope = configScope;
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
+
+  // The sections render in their own scroll container; clicking a sidebar category
+  // scrolls to its section *within this panel* (not by filtering, and without
+  // scrolling the whole page).
+  const sectionsContainerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  const scrollToCategory = (name: string) => {
+    const container = sectionsContainerRef.current;
+    const section = sectionRefs.current[name];
+    if (!(container && section)) {
+      return;
+    }
+    const top = section.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    container.scrollTo({ top, behavior: 'smooth' });
+    setActiveCategory(name);
+  };
 
   const topic = props.targetTopic;
   const hasEditPermissions = topic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
@@ -457,9 +474,33 @@ const ConfigurationEditorGrouped: FC<ConfigurationEditorProps> = (props) => {
     [props.entries]
   );
 
-  // The sidebar acts as a category filter: when a category is selected, only its
-  // section is shown. Clicking the active category again clears the filter.
-  const visibleSections = selectedCategory ? sections.filter((s) => s.name === selectedCategory) : sections;
+  // Scroll-spy: highlight the sidebar category whose section is at the top of the
+  // scroll container as the user scrolls. Re-attaches whenever the rendered section
+  // set changes so the observer always tracks the current section elements.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on section set change
+  useEffect(() => {
+    const container = sectionsContainerRef.current;
+    if (!container) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (observed) => {
+        const topmost = observed
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (topmost) {
+          setActiveCategory(topmost.target.getAttribute('data-category'));
+        }
+      },
+      { root: container, rootMargin: '0px 0px -70% 0px', threshold: 0 }
+    );
+    for (const el of Object.values(sectionRefs.current)) {
+      if (el) {
+        observer.observe(el);
+      }
+    }
+    return () => observer.disconnect();
+  }, [sections]);
 
   return (
     <div className="grid grid-cols-[240px_1fr] gap-6" data-testid="config-group-table">
@@ -475,15 +516,15 @@ const ConfigurationEditorGrouped: FC<ConfigurationEditorProps> = (props) => {
       <aside className="sticky top-4 self-start">
         <nav aria-label="Configuration categories" className="flex flex-col gap-1">
           {sidebarCategories.map((c) => {
-            const active = c.name === selectedCategory;
+            const active = c.name === activeCategory;
             return (
               <button
-                aria-pressed={active}
+                aria-current={active ? 'true' : undefined}
                 className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
                   active ? 'bg-muted font-medium' : 'hover:bg-muted/50'
                 }`}
                 key={c.name}
-                onClick={() => setSelectedCategory((prev) => (prev === c.name ? null : c.name))}
+                onClick={() => scrollToCategory(c.name)}
                 type="button"
               >
                 <span className="min-w-0 truncate">{c.name}</span>
@@ -502,7 +543,7 @@ const ConfigurationEditorGrouped: FC<ConfigurationEditorProps> = (props) => {
         </nav>
       </aside>
 
-      <div className="flex min-w-0 flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-[240px] flex-1">
             <InputGroup>
@@ -545,32 +586,41 @@ const ConfigurationEditorGrouped: FC<ConfigurationEditorProps> = (props) => {
           </ToggleGroup>
         </div>
 
-        {visibleSections.length === 0 ? (
-          <Empty>
-            <EmptyDescription>No configuration entries match your filters</EmptyDescription>
-          </Empty>
-        ) : (
-          visibleSections.map((s) => (
-            <section aria-labelledby={`config-section-${s.name}`} key={s.name}>
-              <div className="mb-3 flex flex-col">
-                <h3 className="font-semibold text-lg" id={`config-section-${s.name}`}>
-                  {s.name}
-                </h3>
-                <p className="text-muted-foreground text-sm">{s.blurb}</p>
-              </div>
-              <div className="divide-y rounded-lg border">
-                {s.rows.map((entry) => (
-                  <ConfigRow
-                    entry={entry}
-                    hasEditPermissions={hasEditPermissions}
-                    key={entry.name}
-                    onEditEntry={setEditedEntry}
-                  />
-                ))}
-              </div>
-            </section>
-          ))
-        )}
+        <div className="flex max-h-[calc(100vh-16rem)] flex-col gap-6 overflow-y-auto pr-1" ref={sectionsContainerRef}>
+          {sections.length === 0 ? (
+            <Empty>
+              <EmptyDescription>No configuration entries match your filters</EmptyDescription>
+            </Empty>
+          ) : (
+            sections.map((s) => (
+              <section
+                aria-labelledby={`config-section-${s.name}`}
+                data-category={s.name}
+                key={s.name}
+                ref={(el) => {
+                  sectionRefs.current[s.name] = el;
+                }}
+              >
+                <div className="mb-3 flex flex-col">
+                  <h3 className="font-semibold text-lg" id={`config-section-${s.name}`}>
+                    {s.name}
+                  </h3>
+                  <p className="text-muted-foreground text-sm">{s.blurb}</p>
+                </div>
+                <div className="divide-y rounded-lg border">
+                  {s.rows.map((entry) => (
+                    <ConfigRow
+                      entry={entry}
+                      hasEditPermissions={hasEditPermissions}
+                      key={entry.name}
+                      onEditEntry={setEditedEntry}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
