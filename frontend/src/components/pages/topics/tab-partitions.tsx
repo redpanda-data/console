@@ -30,6 +30,7 @@ import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-uti
 import { BrokerList } from '../../misc/broker-list';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import { Badge } from '../../redpanda-ui/components/badge';
+import { Button } from '../../redpanda-ui/components/button';
 import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
 import { Popover, PopoverContent, PopoverTrigger } from '../../redpanda-ui/components/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
@@ -165,9 +166,9 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button aria-label="Show partition error details" className="inline-flex" type="button">
-          <AlertTriangle className="h-5 w-5 text-orange-500" />
-        </button>
+        <Button aria-label="Show partition error details" size="icon-sm" type="button" variant="ghost">
+          <AlertTriangle className="text-orange-500" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="max-w-[500px]" side="right">
         <p className="mb-2 font-medium">Partition Error</p>
