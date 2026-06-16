@@ -23,6 +23,7 @@ import { ErrorDisplay } from '../components/misc/error-display';
 import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
 import { RouterSync } from '../components/misc/router-sync';
+import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -99,12 +100,18 @@ function FederatedAppContent() {
       <AppPageHeader />
 
       <ErrorDisplay>
-        <Outlet />
+        <div className="pt-8">
+          <Outlet />
+        </div>
       </ErrorDisplay>
 
       <AppFooter />
 
       <ErrorModalsRenderer />
+
+      {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
+          surface Console's toasts; mirror __root.tsx's AppContent. */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
