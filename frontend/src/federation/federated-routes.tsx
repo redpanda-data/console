@@ -14,6 +14,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
+import { DebugHelper } from '../components/debug-helper/debug-dialog';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
 import { LicenseNotification } from '../components/license/license-notification';
@@ -74,6 +75,8 @@ function FederatedRootLayout() {
             <FederatedAppContent />
           </RequireAuth>
         </ErrorBoundary>
+        {/* Cmd+Shift+D debug dialog — mirrors __root.tsx; dev-only. */}
+        {process.env.NODE_ENV === 'development' && <DebugHelper />}
       </NuqsAdapter>
     </>
   );
