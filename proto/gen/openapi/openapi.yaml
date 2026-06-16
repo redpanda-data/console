@@ -1869,9 +1869,14 @@ components:
       type: object
     ListTopicsResponse.Topic:
       properties:
+        cleanup_policy:
+          description: Cleanup policy of the topic (e.g. `delete`, `compact`).
+          type: string
         internal:
           description: Whether topic is internal only.
           type: boolean
+        log_dir_summary:
+          $ref: '#/components/schemas/LogDirSummary'
         name:
           description: Topic name.
           type: string
@@ -1940,6 +1945,26 @@ components:
           type: string
         message:
           description: The localized error message in the above locale.
+          type: string
+      type: object
+    LogDirSummary:
+      description: |-
+        LogDirSummary summarizes the log directory / size information for a topic.
+        Because each broker reports the data it owns, results may be partial.
+      properties:
+        hint:
+          description: |-
+            Descriptive message explaining why the size could not be fetched, or that
+            it might be an estimate because one or more replicas did not respond.
+          type: string
+        replica_errors:
+          description: Errors reported by individual brokers while describing their log dirs.
+          items:
+            $ref: '#/components/schemas/ReplicaError'
+          type: array
+        total_size_bytes:
+          description: Total size in bytes the topic occupies across all its log dirs.
+          format: int64
           type: string
       type: object
     MCPServer:
@@ -2576,6 +2601,17 @@ components:
             format: int32
             type: integer
           type: array
+      type: object
+    ReplicaError:
+      description: ReplicaError is an errored response for describing a broker's log dirs.
+      properties:
+        broker_id:
+          description: Broker ID that returned the error.
+          format: int32
+          type: integer
+        error:
+          description: Error message describing why this broker's log dirs could not be retrieved.
+          type: string
       type: object
     Request:
       properties:

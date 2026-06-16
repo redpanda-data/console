@@ -135,6 +135,24 @@ message ListTopicsRequest {
 
 message ListTopicsResponse {
   message Topic {
+    // LogDirSummary summarizes the log directory / size information for a topic.
+    // Because each broker reports the data it owns, results may be partial.
+    message LogDirSummary {
+      // ReplicaError is an errored response for describing a broker's log dirs.
+      message ReplicaError {
+        // Broker ID that returned the error.
+        int32 broker_id = 1;
+        // Error message describing why this broker's log dirs could not be retrieved.
+        string error = 2;
+      }
+      // Total size in bytes the topic occupies across all its log dirs.
+      int64 total_size_bytes = 1;
+      // Descriptive message explaining why the size could not be fetched, or that
+      // it might be an estimate because one or more replicas did not respond.
+      string hint = 2;
+      // Errors reported by individual brokers while describing their log dirs.
+      repeated ReplicaError replica_errors = 3;
+    }
     // Topic name.
     string name = 1;
     // Whether topic is internal only.
@@ -143,6 +161,10 @@ message ListTopicsResponse {
     int32 partition_count = 3;
     // Topic replication factor.
     int32 replication_factor = 4;
+    // Cleanup policy of the topic (e.g. `delete`, `compact`).
+    string cleanup_policy = 5;
+    // Log directory size summary for the topic.
+    LogDirSummary log_dir_summary = 6;
   }
   repeated ListTopicsResponse.Topic topics = 1;
   string next_page_token = 2;

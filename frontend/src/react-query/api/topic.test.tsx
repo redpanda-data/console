@@ -9,51 +9,53 @@
  * by the Apache License, Version 2.0
  */
 
+import { createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
-import { config } from 'config';
+import { TopicService } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { connectQueryWrapper } from 'test-utils';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { useLegacyListTopicsQuery } from './topic';
+import { useListTopicsQuery } from './topic';
 
 // Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
 
-const jsonResponse = (body: unknown, init?: ResponseInit) =>
-  new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
-    ...init,
+const topicsTransport = (
+  topics: Array<{ name: string; internal?: boolean; partitionCount?: number; replicationFactor?: number }>
+) =>
+  createRouterTransport(({ service }) => {
+    service(TopicService, {
+      listTopics: () => ({ topics, nextPageToken: '' }),
+    });
   });
 
-describe('useLegacyListTopicsQuery', () => {
+describe('useListTopicsQuery', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
-    // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
-    // so without an explicit response.ok check the query settles as a success and the
-    // error UI never renders — the user sees 0 topics instead of an auth failure.
-    vi.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeInstanceOf(Error);
-  });
-
-  test('returns topics on a successful response', async () => {
-    vi.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ topics: [{ topicName: 'orders', isInternal: false }] }, { status: 200 })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
+  test('returns topics from the gRPC ListTopics endpoint', async () => {
+    const { wrapper } = connectQueryWrapper(NO_RETRY, topicsTransport([{ name: 'orders', internal: false }]));
+    const { result } = renderHook(() => useListTopicsQuery(), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
+    expect(result.current.data.topics?.map((t) => t.name)).toEqual(['orders']);
+  });
+
+  test('filters out internal topics when hideInternalTopics is set', async () => {
+    const { wrapper } = connectQueryWrapper(
+      NO_RETRY,
+      topicsTransport([
+        { name: 'orders', internal: false },
+        { name: '_internal', internal: true },
+        { name: '_schemas', internal: false },
+      ])
+    );
+    const { result } = renderHook(() => useListTopicsQuery(undefined, undefined, { hideInternalTopics: true }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data.topics?.map((t) => t.name)).toEqual(['orders']);
   });
 });

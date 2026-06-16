@@ -13,7 +13,6 @@ import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Modal
 import { AlertIcon } from 'components/icons';
 import React, { type PropsWithChildren, useState } from 'react';
 
-import type { TopicLogDirSummary } from '../../state/rest-interfaces';
 import { uiState } from '../../state/ui-state';
 import env, { IsDev } from '../../utils/env';
 import { ZeroSizeWrapper } from '../../utils/tsx-utils';
@@ -122,14 +121,16 @@ export const UpdatePopup = () => {
   );
 };
 
-export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
+// Accepts both the REST `TopicLogDirSummary` (totalSizeBytes: number) and the gRPC log dir summary
+// (totalSizeBytes: bigint), so it can render the size column for either data source.
+export function renderLogDirSummary(summary: { totalSizeBytes: number | bigint; hint?: string | null }): JSX.Element {
   if (!summary.hint) {
-    return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>;
+    return <>{prettyBytesOrNA(Number(summary.totalSizeBytes))}</>;
   }
 
   return (
     <>
-      {prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} position="left" />
+      {prettyBytesOrNA(Number(summary.totalSizeBytes))} <WarningToolip content={summary.hint} position="left" />
     </>
   );
 }

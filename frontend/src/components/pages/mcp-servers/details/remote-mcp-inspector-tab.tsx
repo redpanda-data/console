@@ -42,7 +42,7 @@ import {
   useListMCPServerTools,
   useStreamMCPServerToolMutation,
 } from 'react-query/api/remote-mcp';
-import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useCreateTopicMutation, useListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
@@ -197,7 +197,7 @@ export const RemoteMCPInspectorTab = () => {
     mcpServer: mcpServerData?.mcpServer,
   });
 
-  const { data: topicsData, refetch: refetchTopics } = useLegacyListTopicsQuery(undefined, {
+  const { data: topicsData, refetch: refetchTopics } = useListTopicsQuery(undefined, undefined, {
     hideInternalTopics: true,
   });
   const { mutateAsync: createTopic } = useCreateTopicMutation();
@@ -262,7 +262,7 @@ export const RemoteMCPInspectorTab = () => {
           Array.isArray(topicsData.topics)
         ) {
           // Validate that the topic_name exists in the available topics
-          const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
+          const topicExists = topicsData.topics.some((topic: { name: string }) => topic.name === value);
           if (!topicExists) {
             errors[requiredField] = `Topic '${value}' does not exist. Select a valid topic name or create a new one.`;
             continue;
@@ -293,7 +293,7 @@ export const RemoteMCPInspectorTab = () => {
       (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) ===
         MCPServer_Tool_ComponentType.OUTPUT
     ) {
-      const availableTopic = topicsData.topics[0].topicName;
+      const availableTopic = topicsData.topics[0].name;
       const params = toolParameters as { topic_name?: string; messages?: Array<{ topic_name?: string }> };
 
       // Check if topic_name needs to be set - auto-select for messages without topic_name
@@ -549,8 +549,8 @@ export const RemoteMCPInspectorTab = () => {
                                     {
                                       fieldName: 'topic_name',
                                       options: topicsData.topics.map((topic) => ({
-                                        value: topic.topicName,
-                                        label: topic.topicName,
+                                        value: topic.name,
+                                        label: topic.name,
                                       })),
                                       placeholder: 'Select a topic or create a new one...',
                                       onCreateOption: async (

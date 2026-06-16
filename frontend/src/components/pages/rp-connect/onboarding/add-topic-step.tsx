@@ -26,8 +26,7 @@ import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicServic
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
+import { useListTopicsQuery } from 'react-query/api/topic';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
@@ -77,10 +76,8 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
   ) => {
     const queryClient = useQueryClient();
 
-    const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+    const { data: topicList } = useListTopicsQuery(create(ListTopicsRequestSchema, {}), undefined, {
       hideInternalTopics: true,
-      staleTime: LONG_LIVED_CACHE_STALE_TIME,
-      refetchOnWindowFocus: false,
     });
 
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -88,10 +85,10 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     const topicOptions = useMemo(
       () =>
         topicList?.topics
-          ?.filter((topic) => !(hideInternal && topic.topicName.startsWith('__')))
+          ?.filter((topic) => !(hideInternal && topic.name.startsWith('__')))
           .map((topic) => ({
-            value: topic.topicName,
-            label: topic.topicName,
+            value: topic.name,
+            label: topic.name,
           })) ?? [],
       [topicList, hideInternal]
     );
@@ -156,12 +153,12 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       if (!watchedTopicName) {
         return;
       }
-      return topicList?.topics?.find((topic) => topic.topicName === watchedTopicName);
+      return topicList?.topics?.find((topic) => topic.name === watchedTopicName);
     }, [watchedTopicName, topicList]);
 
     const { data: topicConfig } = useTopicConfigQuery(
-      existingTopicSelected?.topicName || '',
-      !isFalsy(existingTopicSelected?.topicName)
+      existingTopicSelected?.name || '',
+      !isFalsy(existingTopicSelected?.name)
     );
 
     useEffect(() => {
@@ -169,13 +166,20 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
         return;
       }
       if (topicConfig && !topicConfig.error) {
-        const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
+        const allTopicValues = parseTopicConfigFromExisting(
+          {
+            topicName: existingTopicSelected.name,
+            partitionCount: existingTopicSelected.partitionCount,
+            replicationFactor: existingTopicSelected.replicationFactor,
+          },
+          topicConfig
+        );
         // Override the form-level `keepDirtyValues: true` default — when a user
         // selects an existing topic, its config must fully replace any partial
         // input they've made.
         form.reset(allTopicValues, { keepDefaultValues: false, keepDirtyValues: false });
       } else {
-        form.setValue('topicName', existingTopicSelected.topicName, {
+        form.setValue('topicName', existingTopicSelected.name, {
           shouldDirty: false,
         });
       }

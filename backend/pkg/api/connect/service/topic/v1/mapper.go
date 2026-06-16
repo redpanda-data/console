@@ -15,6 +15,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	common "github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
+	"github.com/redpanda-data/console/backend/pkg/console"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
@@ -170,30 +171,35 @@ func (k *mapper) updateTopicConfigsToKafka(req *v1.UpdateTopicConfigurationsRequ
 	return &kafkaReq, nil
 }
 
-func (k *mapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) []*v1.ListTopicsResponse_Topic {
-	topics := make([]*v1.ListTopicsResponse_Topic, len(metadata.Topics))
-	for i, topicMetadata := range metadata.Topics {
-		topics[i] = k.kafkaTopicMetadataToProto(topicMetadata)
+func (k *mapper) topicsOverviewToProto(topics []*console.TopicSummary) []*v1.ListTopicsResponse_Topic {
+	protoTopics := make([]*v1.ListTopicsResponse_Topic, len(topics))
+	for i, topic := range topics {
+		protoTopics[i] = k.topicSummaryToProto(topic)
 	}
 
-	return topics
+	return protoTopics
 }
 
-func (*mapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataResponseTopic) *v1.ListTopicsResponse_Topic {
-	// We iterate through all partitions to figure out the replication factor,
-	// in case we get an error for the first partitions
-	replicationFactor := -1
-	for _, partition := range topicMetadata.Partitions {
-		if len(partition.Replicas) > replicationFactor {
-			replicationFactor = len(partition.Replicas)
+func (*mapper) topicSummaryToProto(topic *console.TopicSummary) *v1.ListTopicsResponse_Topic {
+	replicaErrors := make([]*v1.ListTopicsResponse_Topic_LogDirSummary_ReplicaError, len(topic.LogDirSummary.ReplicaErrors))
+	for i, replicaErr := range topic.LogDirSummary.ReplicaErrors {
+		replicaErrors[i] = &v1.ListTopicsResponse_Topic_LogDirSummary_ReplicaError{
+			BrokerId: replicaErr.BrokerID,
+			Error:    replicaErr.Error,
 		}
 	}
 
 	return &v1.ListTopicsResponse_Topic{
-		Name:              *topicMetadata.Topic,
-		Internal:          topicMetadata.IsInternal,
-		PartitionCount:    int32(len(topicMetadata.Partitions)),
-		ReplicationFactor: int32(replicationFactor),
+		Name:              topic.TopicName,
+		Internal:          topic.IsInternal,
+		PartitionCount:    int32(topic.PartitionCount),
+		ReplicationFactor: int32(topic.ReplicationFactor),
+		CleanupPolicy:     topic.CleanupPolicy,
+		LogDirSummary: &v1.ListTopicsResponse_Topic_LogDirSummary{
+			TotalSizeBytes: topic.LogDirSummary.TotalSizeBytes,
+			Hint:           topic.LogDirSummary.Hint,
+			ReplicaErrors:  replicaErrors,
+		},
 	}
 }
 

@@ -67,12 +67,15 @@ func (s *APISuite) TestListTopics_v1() {
 		require.NoError(err)
 		assert.GreaterOrEqual(len(listTopicsRes.Msg.GetTopics()), len(createdTopics))
 
-		// 2. Ensure that we can find all of our previously created topics
+		// 2. Ensure that we can find all of our previously created topics, and that the
+		// enriched fields (cleanup policy + log dir summary) are populated for them.
 		toFind := maps.Clone(createdTopics)
 		for _, topic := range listTopicsRes.Msg.GetTopics() {
 			if _, exists := toFind[topic.Name]; !exists {
 				continue
 			}
+			assert.NotEmptyf(topic.GetCleanupPolicy(), "expected cleanup policy to be set for topic %q", topic.Name)
+			assert.NotNilf(topic.GetLogDirSummary(), "expected log dir summary to be set for topic %q", topic.Name)
 			delete(toFind, topic.Name)
 			if len(toFind) == 0 {
 				break

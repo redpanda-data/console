@@ -22,7 +22,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
-	"github.com/twmb/franz-go/pkg/kmsg"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -46,8 +45,10 @@ type Service struct {
 // ListTopics lists all Kafka topics with their most important metadata.
 func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTopicsRequest]) (*connect.Response[v1.ListTopicsResponse], error) {
 	s.defaulter.applyListTopicsRequest(req.Msg)
-	kafkaReq := kmsg.NewMetadataRequest()
-	kafkaRes, err := s.consoleSvc.GetMetadata(ctx, &kafkaReq)
+
+	// Use the rich topics overview (the same source that powers the REST /topics endpoint) so that
+	// the gRPC response includes cleanup policy and log-dir size in addition to the basic metadata.
+	topicsOverview, err := s.consoleSvc.GetTopicsOverview(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
@@ -56,18 +57,18 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 		)
 	}
 
+	topics := s.mapper.topicsOverviewToProto(topicsOverview)
+
 	// Filter topics if a filter is set
 	if req.Msg.Filter != nil && req.Msg.Filter.NameContains != "" {
-		filteredTopics := make([]kmsg.MetadataResponseTopic, 0, len(kafkaRes.Topics))
-		for _, topic := range kafkaRes.Topics {
-			if strings.Contains(*topic.Topic, req.Msg.Filter.NameContains) {
+		filteredTopics := make([]*v1.ListTopicsResponse_Topic, 0, len(topics))
+		for _, topic := range topics {
+			if strings.Contains(topic.GetName(), req.Msg.Filter.NameContains) {
 				filteredTopics = append(filteredTopics, topic)
 			}
 		}
-		kafkaRes.Topics = filteredTopics
+		topics = filteredTopics
 	}
-
-	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
 
 	// Add pagination
 	var nextPageToken string

@@ -6,7 +6,6 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
-import { config } from 'config';
 import {
   type ListTopicsRequest,
   ListTopicsRequestSchema,
@@ -21,7 +20,7 @@ import {
   TOPIC_CONFIG_CACHE_STALE_TIME,
 } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
-import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
+import type { TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { api } from '../../state/backend-api';
@@ -30,69 +29,6 @@ type ListTopicsExtraOptions = {
   hideInternalTopics?: boolean;
 };
 
-/**
- * We need to use legacy API to list topics for now
- * because of authorization that is only possible with Console v3 and above.
- * TODO: Remove once Console v3 is released.
- */
-export const useLegacyListTopicsQuery = (
-  input?: MessageInit<ListTopicsRequest>,
-  {
-    hideInternalTopics = false,
-    staleTime,
-    refetchOnWindowFocus,
-  }: ListTopicsExtraOptions & { staleTime?: number; refetchOnWindowFocus?: boolean } = {}
-) => {
-  const listTopicsRequest = create(ListTopicsRequestSchema, {
-    pageSize: MAX_PAGE_SIZE,
-    pageToken: '',
-    ...input,
-  });
-
-  const infiniteQueryKey = createConnectQueryKey({
-    schema: listTopics,
-    input: listTopicsRequest,
-    cardinality: 'infinite',
-  });
-
-  const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
-    queryKey: infiniteQueryKey,
-    queryFn: async () => {
-      // Add JWT Bearer token if available (same as REST and gRPC calls)
-      const headers: HeadersInit = {};
-      if (config.jwt) {
-        headers.Authorization = `Bearer ${config.jwt}`;
-      }
-
-      const response = await config.fetch(`${config.restBasePath}/topics`, {
-        method: 'GET',
-        headers,
-      });
-
-      // config.fetch wraps window.fetch, which does not reject on 4xx/5xx — guard explicitly, or an
-      // error body parses as a "successful" empty result and the topics page silently shows 0 topics.
-      if (!response.ok) {
-        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    staleTime,
-    refetchOnWindowFocus,
-  });
-
-  const allRetrievedTopics = legacyListTopicsResult?.data?.topics;
-
-  const topics = hideInternalTopics
-    ? allRetrievedTopics?.filter((topic) => !(topic.isInternal || topic.topicName.startsWith('_')))
-    : allRetrievedTopics;
-
-  return { ...legacyListTopicsResult, data: { topics } };
-};
-
-/**
- * WARNING: Only use once Console v3 is released.
- */
 export const useListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
   options?: QueryOptions<GenMessage<ListTopicsRequest>, ListTopicsResponse>,
