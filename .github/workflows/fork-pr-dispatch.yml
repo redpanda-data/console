@@ -31,7 +31,7 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const payload = {
@@ -52,7 +52,7 @@ jobs:
       - name: Set pending enterprise CI status
         env:
           HEAD_SHA: ${{ steps.payload.outputs.sha }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ env.ACTIONS_BOT_TOKEN }}
           script: |

@@ -33,7 +33,7 @@ jobs:
             ,sdlc/prod/github/actions_bot_token
           parse-json-secrets: true
       - name: Set success enterprise CI status
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ env.ACTIONS_BOT_TOKEN }}
           script: |
