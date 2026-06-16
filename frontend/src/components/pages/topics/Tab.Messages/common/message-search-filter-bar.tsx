@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { SettingsIcon } from 'components/icons';
+import { CloseIcon, SettingsIcon } from 'components/icons';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import type { FC } from 'react';
 
 import type { FilterEntry } from '../../../../../state/ui';
@@ -24,38 +25,44 @@ type MessageSearchFilterBarProps = {
 export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filters, onEdit, onToggle, onRemove }) => {
   return (
     <div className="col-span-full flex justify-between" data-testid="message-filter-bar">
-      <div className="inline-flex flex-wrap gap-x-2 gap-y-0.5" style={{ width: 'calc(100% - 200px)' }}>
+      <div className="inline-flex flex-wrap items-center gap-2">
         {/* Existing Tags List  */}
         {filters?.map((e) => (
           <div
-            className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
+            className={cn(
+              'inline-flex select-none items-center rounded-md border bg-card text-sm shadow-sm',
+              !e.isActive && 'bg-muted text-muted-foreground'
+            )}
             data-testid={`message-filter-tag-${e.id}`}
             key={e.id}
-            style={{ userSelect: 'none' }}
           >
-            <SettingsIcon
+            <button
+              aria-label="Edit filter"
+              className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-edit-${e.id}`}
               onClick={() => {
                 onEdit(e);
               }}
-              size={14}
-            />
+              type="button"
+            >
+              <SettingsIcon size={14} />
+            </button>
             <button
-              className="mx-2 inline-flex h-full items-center border-x px-1.5"
+              className={cn('border-x px-2 py-1 transition-colors hover:bg-accent', !e.isActive && 'line-through')}
               data-testid={`message-filter-toggle-${e.id}`}
               onClick={() => onToggle(e.id)}
-              style={{ textDecoration: e.isActive ? '' : 'line-through' }}
               type="button"
             >
               {e.name || e.code || 'New Filter'}
             </button>
             <button
-              className="m-0 px-1 opacity-100"
+              aria-label="Remove filter"
+              className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-remove-${e.id}`}
               onClick={() => onRemove(e.id)}
               type="button"
             >
-              ×
+              <CloseIcon size={14} />
             </button>
           </div>
         ))}
