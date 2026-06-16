@@ -30,7 +30,12 @@ import { useEffect, useRef } from 'react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { FLOW_CARD_WIDTH, FLOW_COMPACT_CARD_WIDTH, FLOW_SPINE_HANDLE_TOP } from '../utils/pipeline-flow-parser';
+import {
+  FLOW_CARD_WIDTH,
+  FLOW_COMPACT_CARD_WIDTH,
+  FLOW_SPINE_HANDLE_LEFT,
+  FLOW_SPINE_HANDLE_TOP,
+} from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
@@ -44,7 +49,7 @@ const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 // left so vertically-stacked cards of differing widths connect along a straight
 // vertical line (no diagonal connectors).
 const SPINE_HANDLE_TOP = FLOW_SPINE_HANDLE_TOP;
-const SPINE_HANDLE_LEFT = 18;
+const SPINE_HANDLE_LEFT = FLOW_SPINE_HANDLE_LEFT;
 
 // React Flow drives panning/dragging from native listeners on ancestor elements:
 // d3-zoom pans on `mousedown`/`touchstart`, d3-drag uses `pointerdown`. React's

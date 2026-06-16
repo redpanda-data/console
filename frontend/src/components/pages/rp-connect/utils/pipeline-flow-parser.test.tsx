@@ -1253,22 +1253,25 @@ cache_resources:
     redis: { url: x }`;
     const { nodes } = parsePipelineFlowTree(nested);
 
+    // The resource is placed exactly under each cable's drop, so the cable lands
+    // straight: its channelX equals the resource's top-handle x (left + handle offset).
+    const HANDLE = 18;
+    const channelX = (layout: ReturnType<typeof computeFlowLayout>) =>
+      (layout.rfEdges.find((e) => e.id.startsWith('ref-'))?.data as { route?: { channelX: number } }).route?.channelX;
+    const resourceLeft = (layout: ReturnType<typeof computeFlowLayout>) =>
+      layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -1;
+
     // Expanded: the cable attaches to the actual nested cache that uses the resource
-    // (not the outer branch). The channel + bus route keeps it clear of other cards.
+    // (not the outer branch), and lands straight into the resource below it.
     const open = computeFlowLayout(nodes);
     expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
+    expect(channelX(open)).toBe(resourceLeft(open) + HANDLE);
 
     // Collapsed: the cache is hidden, so the cable re-anchors to its nearest visible
-    // ancestor — the branch — and the resource stays connected.
+    // ancestor — the branch — and still lands straight into its resource.
     const closed = computeFlowLayout(nodes, new Set(['proc-0']));
     expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
-
-    // The resource lays out under the branch column either way (short, clean cable).
-    for (const layout of [open, closed]) {
-      const branchX = layout.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
-      const resourceX = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -2;
-      expect(resourceX).toBe(branchX);
-    }
+    expect(channelX(closed)).toBe(resourceLeft(closed) + HANDLE);
   });
 
   it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {

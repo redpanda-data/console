@@ -1314,6 +1314,10 @@ function routingData(node: PipelineFlowNode, compact: boolean) {
  */
 export const FLOW_SPINE_HANDLE_TOP = 36;
 
+/** Where the top/bottom handles sit from a card's left edge — the x a vertical
+ *  spine/reference cable plugs into. Must match the node component's handle offset. */
+export const FLOW_SPINE_HANDLE_LEFT = 18;
+
 // Vertical anchors for a container's routing ports (relative to the container top).
 // Fanning sides anchor at the children-area centre — a trunk the fan lanes radiate
 // from. A branch's copy anchors level with the FIRST child's connector row and its
@@ -1671,83 +1675,125 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
   chainChildren(children, ctx);
 }
 
-type ReferenceEdgeContext = {
-  placedIds: Set<string>;
-  /** Each node's parent, for re-anchoring a hidden source to a visible ancestor. */
-  parentById: Map<string, string | undefined>;
-  /** Left/right edge (absolute x) of the top-level column each node belongs to — the
-      clear gaps beside it are the channels the cable drops through. */
-  columnLeftById: Map<string, number>;
-  columnRightById: Map<string, number>;
-  /** Absolute x of each placed top-level node (resources included), so a cable can
-      pick the column side facing its resource. */
-  xById: Map<string, number>;
-  /** Bus band (between the flow and the resource lane) the cables run along: each
-      reference gets its own horizontal lane in [busTopY, busBaseY] so runs never
-      overlap. busBaseY is nearest the resources. */
-  busBaseY: number;
-  busTopY: number;
-  /** Half the gap between top-level columns — the clear routing channel. */
-  channelInset: number;
-};
+// The minimum positive x a routing channel may sit at, so the left-most column's
+// left channel never lands at (or past) the canvas edge.
+const MIN_CHANNEL_X = 8;
+// Spacing between resource cards in the lane — tighter than a flow colGap so a
+// cluster of resources (common when a container is collapsed) doesn't spread far.
+const RESOURCE_GAP = 28;
 
-// The visible node a reference cable should attach to: the referencing node itself,
-// or — when it's hidden inside a collapsed container — its nearest visible ancestor,
-// so the resource stays connected to whatever is actually on screen.
-function visibleAnchor(nodeId: string, refCtx: ReferenceEdgeContext): string | undefined {
+// The visible node a reference cable attaches to: the referencing node itself, or —
+// when it's hidden inside a collapsed container — its nearest visible ancestor, so the
+// resource stays connected to whatever is actually on screen.
+function visibleAnchor(
+  nodeId: string,
+  placedIds: Set<string>,
+  parentById: Map<string, string | undefined>
+): string | undefined {
   let current: string | undefined = nodeId;
-  while (current !== undefined && !refCtx.placedIds.has(current)) {
-    current = refCtx.parentById.get(current);
+  while (current !== undefined && !placedIds.has(current)) {
+    current = parentById.get(current);
   }
   return current;
 }
 
-type TopLevelLookup = {
-  parentById: Map<string, string | undefined>;
-  sectionIds: Set<string>;
-  placedIds: Set<string>;
-};
+// One resource-reference cable: the visible node it attaches to and the x of the
+// clear vertical channel it drops through to reach the resource lane.
+type ReferenceCable = { id: string; sourceId: string; targetId: string; channelX: number };
 
-// The top-level step (column) containing a node — the ancestor whose parent is a
-// section. Stops at the deepest placed ancestor when one above it is collapsed.
-function topLevelAnchor(nodeId: string, lookup: TopLevelLookup): string | undefined {
-  let current: string | undefined = nodeId;
-  while (current !== undefined) {
-    const parent = lookup.parentById.get(current);
-    if (parent === undefined || lookup.sectionIds.has(parent) || !lookup.placedIds.has(parent)) {
-      break;
+/**
+ * Compute every reference cable's geometry up front, so resources can be placed
+ * exactly where their cable lands (a straight drop, no horizontal bus run):
+ *   - a TOP-LEVEL source drops straight down at its own x — the space below a
+ *     column is always clear (columns sit side-by-side), so no detour is needed;
+ *   - a NESTED source drops through the clear gap just outside its column, on the
+ *     side nearer the node, so it never crosses the cards stacked inside the column.
+ * Returns the cables plus, per resource, the x to place it at (channel − handle).
+ */
+type Box = { id: string; left: number; top: number; right: number; bottom: number };
+
+function computeReferenceCables(
+  nodes: PipelineFlowNode[],
+  ctx: EmitContext,
+  columns: { id: string; left: number; right: number }[]
+): { cables: ReferenceCable[]; desiredResourceLeft: Map<string, number> } {
+  // Absolute bounding box of every placed node (positions are relative to the parent
+  // container), used both to find a node's drop x and to test whether the space
+  // straight below it is clear.
+  const rel = new Map(
+    ctx.rfNodes.map((n) => [
+      n.id,
+      {
+        x: n.position.x,
+        y: n.position.y,
+        parentId: n.parentId,
+        w: (n.initialWidth as number | undefined) ?? ctx.dims.cardW,
+        h: (n.initialHeight as number | undefined) ?? 0,
+      },
+    ])
+  );
+  const box = (id: string): Box | undefined => {
+    let cur = rel.get(id);
+    if (!cur) {
+      return;
     }
-    current = parent;
+    const { w, h } = cur;
+    let left = 0;
+    let top = 0;
+    while (cur) {
+      left += cur.x;
+      top += cur.y;
+      cur = cur.parentId ? rel.get(cur.parentId) : undefined;
+    }
+    return { id, left, top, right: left + w, bottom: top + h };
+  };
+  const boxes = [...rel.keys()].map((id) => box(id)).filter((b): b is Box => b !== undefined);
+
+  const placedIds = new Set(rel.keys());
+  const parentById = new Map(nodes.map((n) => [n.id, n.parentId]));
+  // Every node maps to the left/right edges of its top-level column.
+  const columnLeftById = new Map<string, number>();
+  const columnRightById = new Map<string, number>();
+  for (const column of columns) {
+    const queue = [column.id];
+    while (queue.length > 0) {
+      const id = queue.pop() as string;
+      columnLeftById.set(id, column.left);
+      columnRightById.set(id, column.right);
+      for (const child of ctx.childrenMap.get(id) ?? []) {
+        queue.push(child.id);
+      }
+    }
   }
-  return current !== undefined && lookup.placedIds.has(current) ? current : undefined;
-}
-
-type ResolvedReference = {
-  id: string;
-  sourceId: string;
-  targetId: string;
-  columnLeft?: number;
-  columnRight?: number;
-  targetX?: number;
-};
-
-// Resolve + dedupe the references to draw: each `resource:` whose resource is placed,
-// attached to the referencing node (or its nearest visible ancestor when collapsed).
-function resolveReferences(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeContext): ResolvedReference[] {
   const resourceByLabel = new Map<string, string>();
   for (const node of nodes) {
     if (node.section === 'resource' && node.labelText) {
       resourceByLabel.set(node.labelText, node.id);
     }
   }
-  const resolved: ResolvedReference[] = [];
+
+  // A straight drop at x below the source is clear unless another card sits below the
+  // source's bottom and spans x (cards in the same column stacked under it).
+  const dropClear = (sourceId: string, x: number): boolean => {
+    const src = box(sourceId);
+    if (!src) {
+      return true;
+    }
+    return !boxes.some((b) => b.id !== sourceId && b.top >= src.bottom - 1 && b.left - 4 <= x && x <= b.right + 4);
+  };
+
+  const inset = ctx.dims.colGap / 2;
+  const cables: ReferenceCable[] = [];
+  const desiredResourceLeft = new Map<string, number>();
+  const channelUse = new Map<string, number>();
   const seen = new Set<string>();
+
   for (const node of nodes) {
     const targetId = node.resourceRef ? resourceByLabel.get(node.resourceRef) : undefined;
-    if (!(targetId && refCtx.placedIds.has(targetId))) {
+    if (!targetId) {
       continue;
     }
-    const sourceId = visibleAnchor(node.id, refCtx);
+    const sourceId = visibleAnchor(node.id, placedIds, parentById);
     if (sourceId === undefined) {
       continue;
     }
@@ -1756,68 +1802,62 @@ function resolveReferences(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeConte
       continue;
     }
     seen.add(id);
-    resolved.push({
-      id,
-      sourceId,
-      targetId,
-      columnLeft: refCtx.columnLeftById.get(sourceId),
-      columnRight: refCtx.columnRightById.get(sourceId),
-      targetX: refCtx.xById.get(targetId),
-    });
+
+    const handleX = (box(sourceId)?.left ?? 0) + FLOW_SPINE_HANDLE_LEFT;
+    let channelX: number;
+    if (dropClear(sourceId, handleX)) {
+      // Clear straight down — drop at the node's own x (no detour).
+      channelX = handleX;
+    } else {
+      const colLeft = columnLeftById.get(sourceId) ?? handleX;
+      const colRight = columnRightById.get(sourceId) ?? handleX;
+      const leftCh = colLeft - inset;
+      const rightCh = colRight + inset;
+      // Exit toward whichever side is nearer the node (shorter jog), staggering
+      // cables that share a side so their drops don't overlap.
+      const side: 'left' | 'right' = handleX - leftCh <= rightCh - handleX ? 'left' : 'right';
+      const uses = channelUse.get(`${colLeft}-${side}`) ?? 0;
+      channelUse.set(`${colLeft}-${side}`, uses + 1);
+      channelX = Math.max(MIN_CHANNEL_X, side === 'left' ? leftCh - uses * 12 : rightCh + uses * 12);
+    }
+    cables.push({ id, sourceId, targetId, channelX });
+    // Place the resource under the cable's channel so the drop lands straight; if a
+    // resource has several users, its first cable sets the position (others bus in).
+    if (!desiredResourceLeft.has(targetId)) {
+      desiredResourceLeft.set(targetId, channelX - FLOW_SPINE_HANDLE_LEFT);
+    }
   }
-  return resolved;
+  return { cables, desiredResourceLeft };
 }
 
-// The minimum positive x a routing channel may sit at, so the left-most column's
-// left channel never lands at (or past) the canvas edge.
-const MIN_CHANNEL_X = 8;
-
-// The x of the vertical channel a cable drops through: the gap beside the source's
-// top-level column on the side facing its resource — so the cable leaves the column
-// cleanly (never crossing the cards stacked inside it) and never doubles back.
-function referenceChannelX(ref: ResolvedReference, inset: number, channelUse: Map<string, number>): number | undefined {
-  if (ref.columnLeft === undefined || ref.columnRight === undefined) {
-    return;
-  }
-  const leftX = ref.columnLeft - inset;
-  const rightX = ref.columnRight + inset;
-  const tx = ref.targetX ?? ref.columnLeft;
-  const side: 'left' | 'right' = Math.abs(tx - leftX) <= Math.abs(tx - rightX) ? 'left' : 'right';
-  const key = `${ref.columnLeft}-${side}`;
-  const uses = channelUse.get(key) ?? 0;
-  channelUse.set(key, uses + 1);
-  const channelX = side === 'left' ? leftX - uses * 10 : rightX + uses * 10;
-  return Math.max(MIN_CHANNEL_X, channelX);
-}
-
-// Dashed edges from a component to the resource it references (cache/rate_limit
-// `resource:`). Matched by the resource's label. Skipped in the compact lane.
-// Cable management: each cable exits the referencing node, slips into the clear
-// channel beside its top-level column, drops to its own horizontal bus lane below
-// the flow, then runs to the resource — so it connects to the exact node yet never
-// crosses the cards stacked around or below it.
-function buildReferenceEdges(nodes: PipelineFlowNode[], refCtx: ReferenceEdgeContext): Edge[] {
-  const resolved = resolveReferences(nodes, refCtx);
-  const channelUse = new Map<string, number>();
-  // Each edge gets a distinct bus lane within [busTopY, busBaseY].
-  const span = refCtx.busBaseY - refCtx.busTopY;
-  const step = resolved.length > 1 ? Math.min(10, span / (resolved.length - 1)) : 0;
-
-  return resolved.map((ref, i) => {
-    const busY = refCtx.busBaseY - i * step;
-    const channelX = referenceChannelX(ref, refCtx.channelInset, channelUse);
-    const route = channelX === undefined ? undefined : { channelX, busY };
+// Dashed cables from a component to the resource it references (cache/rate_limit
+// `resource:`). Each drops out of the node's bottom, down its channel into its own
+// bus lane below the flow, then into the resource's top — connecting to the exact
+// node without ever crossing the cards around or below it. With the resource placed
+// at the channel x (see computeReferenceCables) the bus run is usually zero, so the
+// cable is a straight drop (top-level) or a single clean jog (nested).
+function pushReferenceEdges(
+  ctx: EmitContext,
+  cables: ReferenceCable[],
+  bounds: { laneStart: number; maxCross: number }
+): void {
+  const busBaseY = bounds.laneStart - 12;
+  const busTopY = bounds.maxCross + 12;
+  const step = cables.length > 1 ? Math.min(10, (busBaseY - busTopY) / (cables.length - 1)) : 0;
+  cables.forEach((cable, i) => {
     // No label — the legend documents the dashed muted line as "uses resource".
-    return linkEdge({
-      id: ref.id,
-      source: ref.sourceId,
-      target: ref.targetId,
-      sourceHandle: 'b',
-      targetHandle: 't',
-      tone: 'muted',
-      dashed: true,
-      route,
-    });
+    ctx.rfEdges.push(
+      linkEdge({
+        id: cable.id,
+        source: cable.sourceId,
+        target: cable.targetId,
+        sourceHandle: 'b',
+        targetHandle: 't',
+        tone: 'muted',
+        dashed: true,
+        route: { channelX: cable.channelX, busY: busBaseY - i * step },
+      })
+    );
   });
 }
 
@@ -1846,55 +1886,6 @@ function buildSpineEdges(mainSequence: PipelineFlowNode[], isVertical: boolean):
   return edges;
 }
 
-// Wire the resource-reference edges (cache/rate_limit → resource) into the layout:
-// route each reference through the clear channel beside its column, then along its
-// own bus lane below the flow into the resource (connects to the exact node, no
-// crossings).
-function pushReferenceEdges(
-  nodes: PipelineFlowNode[],
-  ctx: EmitContext,
-  columns: { id: string; left: number; right: number }[],
-  bounds: { laneStart: number; maxCross: number }
-): void {
-  const placedIds = new Set(ctx.rfNodes.map((n) => n.id));
-  // Map every node to the left/right edges of its top-level column — the clear gaps
-  // beside it are the channels its cable drops through.
-  const columnLeftById = new Map<string, number>();
-  const columnRightById = new Map<string, number>();
-  for (const column of columns) {
-    const queue = [column.id];
-    while (queue.length > 0) {
-      const id = queue.pop() as string;
-      columnLeftById.set(id, column.left);
-      columnRightById.set(id, column.right);
-      for (const child of ctx.childrenMap.get(id) ?? []) {
-        queue.push(child.id);
-      }
-    }
-  }
-  // Absolute x of every top-level node (resources included) — a cable uses its
-  // resource's x to pick which column side to drop down.
-  const xById = new Map<string, number>();
-  for (const node of ctx.rfNodes) {
-    if (!node.parentId) {
-      xById.set(node.id, node.position.x);
-    }
-  }
-  ctx.rfEdges.push(
-    ...buildReferenceEdges(nodes, {
-      placedIds,
-      parentById: new Map(nodes.map((n) => [n.id, n.parentId])),
-      columnLeftById,
-      columnRightById,
-      xById,
-      // Spread the bus lanes through the gap between the flow and the resource lane.
-      busBaseY: bounds.laneStart - 12,
-      busTopY: bounds.maxCross + 12,
-      channelInset: ctx.dims.colGap / 2,
-    })
-  );
-}
-
 export function computeFlowLayout(
   nodes: PipelineFlowNode[],
   collapsedIds: ReadonlySet<string> = new Set(),
@@ -1916,12 +1907,26 @@ export function computeFlowLayout(
   // The resource lane sits past the main flow along the cross axis: below the row
   // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
   const laneStart = (isVertical ? mainExtent : maxCross) + 2 * dims.stackGap + 24;
-  const { resources, resourceRight } = placeResourceLane({ nodes, childrenMap, isVertical, laneStart, ctx });
 
-  // Resource-reference edges (cache/rate_limit → resource). Skipped in the compact
-  // lane to keep it clean.
+  // Resource-reference cables (cache/rate_limit → resource). Skipped in the compact
+  // lane to keep it clean. Geometry is computed first so each resource can be placed
+  // directly under its cable's drop, making the cable a straight (or single-jog) line.
+  const { cables, desiredResourceLeft } =
+    isVertical || compact
+      ? { cables: [] as ReferenceCable[], desiredResourceLeft: new Map<string, number>() }
+      : computeReferenceCables(nodes, ctx, columns);
+
+  const { resources, resourceRight } = placeResourceLane({
+    nodes,
+    childrenMap,
+    isVertical,
+    laneStart,
+    ctx,
+    desiredResourceLeft,
+  });
+
   if (!compact) {
-    pushReferenceEdges(nodes, ctx, columns, { laneStart, maxCross });
+    pushReferenceEdges(ctx, cables, { laneStart, maxCross });
   }
 
   return {
@@ -1970,43 +1975,21 @@ function placeTopLevelSteps(
   return { mainExtent: cursor - gap, maxCross, columns };
 }
 
-// Absolute x of a placed node (sum its position up the parent chain), or undefined
-// if it (or an ancestor) was not placed — e.g. hidden inside a collapsed container.
-function absoluteX(id: string, placed: Map<string, { x: number; parentId?: string }>): number | undefined {
-  let cur = placed.get(id);
-  if (!cur) {
-    return;
-  }
-  let x = 0;
-  while (cur) {
-    x += cur.x;
-    cur = cur.parentId ? placed.get(cur.parentId) : undefined;
-  }
-  return x;
-}
-
-// In horizontal layout, place each resource directly under the top-level column that
-// references it, so its cable is a straight vertical drop; unreferenced resources fall
-// back to left-to-right order. A left→right sweep then de-overlaps the cards.
+// In horizontal layout, place each resource at the x its cable drops into (computed
+// in computeReferenceCables) so the cable lands straight; unreferenced resources fall
+// back to left-to-right order. A left→right sweep then de-overlaps the cards with a
+// tight gap so clusters don't spread far.
 function resourceLaneX(
   resources: PipelineFlowNode[],
-  nodes: PipelineFlowNode[],
+  desiredLeft: Map<string, number>,
   ctx: EmitContext
 ): Map<string, number> {
-  const placed = new Map(ctx.rfNodes.map((n) => [n.id, { x: n.position.x, parentId: n.parentId }]));
-  const parentById = new Map(nodes.map((n) => [n.id, n.parentId]));
-  const placedIds = new Set(placed.keys());
-  const sectionIds = new Set(nodes.filter((n) => n.kind === 'section').map((n) => n.id));
-  const desired = resources.map((resource, i) => {
-    const ref = resource.labelText ? nodes.find((n) => n.resourceRef === resource.labelText) : undefined;
-    // Place under the referencing node's top-level column so the cable's bus run
-    // (which arrives beside that column) is short.
-    const anchorId = ref ? topLevelAnchor(ref.id, { parentById, sectionIds, placedIds }) : undefined;
-    const refX = anchorId === undefined ? undefined : absoluteX(anchorId, placed);
-    return { id: resource.id, x: refX ?? i * (ctx.dims.cardW + ctx.dims.colGap) };
-  });
+  const step = ctx.dims.cardW + RESOURCE_GAP;
+  const desired = resources.map((resource, i) => ({
+    id: resource.id,
+    x: desiredLeft.get(resource.id) ?? i * step,
+  }));
   desired.sort((a, b) => a.x - b.x);
-  const step = ctx.dims.cardW + ctx.dims.colGap;
   const out = new Map<string, number>();
   let prevX = Number.NEGATIVE_INFINITY;
   for (const d of desired) {
@@ -2024,15 +2007,17 @@ function placeResourceLane({
   isVertical,
   laneStart,
   ctx,
+  desiredResourceLeft,
 }: {
   nodes: PipelineFlowNode[];
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
   isVertical: boolean;
   laneStart: number;
   ctx: EmitContext;
+  desiredResourceLeft: Map<string, number>;
 }): { resources: PipelineFlowNode[]; resourceRight: number } {
   const resources = sectionChildren(nodes, childrenMap, 'resource');
-  const laneX = isVertical ? null : resourceLaneX(resources, nodes, ctx);
+  const laneX = isVertical ? null : resourceLaneX(resources, desiredResourceLeft, ctx);
   let stackY = laneStart;
   let resourceRight = 0;
   for (const [i, resource] of resources.entries()) {
