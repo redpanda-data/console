@@ -33,7 +33,7 @@ jobs:
           git checkout -b "changelog/${{ steps.tag.outputs.name }}"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
