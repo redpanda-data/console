@@ -39,7 +39,7 @@ jobs:
 
       - name: Cache Claude Code
         id: cache-claude
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: claude-code-${{ runner.os }}
