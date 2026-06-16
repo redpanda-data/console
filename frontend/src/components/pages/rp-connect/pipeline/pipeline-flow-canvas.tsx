@@ -14,13 +14,14 @@ import {
   BackgroundVariant,
   Controls,
   type Edge,
-  MiniMap,
   type Node,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
+  useStore,
 } from '@xyflow/react';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
@@ -29,40 +30,162 @@ import { computeFlowLayout, type FlowOrientation, parsePipelineFlowTree } from '
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
-// How far past the diagram bounds the canvas may be panned, and the zoom range.
+// How far past the diagram the canvas may be panned, so a node near the edge can be
+// brought to the middle to inspect it comfortably.
 const PAN_PADDING = 240;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
+
+// Bounding box of the diagram's top-level nodes (children sit inside their parents, so
+// the top-level boxes cover everything; resource cards can sit at negative x, so we
+// measure rather than assume the content starts at the origin).
+function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: number; maxY: number } {
+  let minX = 0;
+  let minY = 0;
+  let maxX = 0;
+  let maxY = 0;
+  let seen = false;
+  for (const node of nodes) {
+    if (node.parentId) {
+      continue;
+    }
+    const w = (node.initialWidth ?? node.width ?? 0) as number;
+    const h = (node.initialHeight ?? node.height ?? 0) as number;
+    const right = node.position.x + w;
+    const bottom = node.position.y + h;
+    if (seen) {
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxX = Math.max(maxX, right);
+      maxY = Math.max(maxY, bottom);
+    } else {
+      minX = node.position.x;
+      minY = node.position.y;
+      maxX = right;
+      maxY = bottom;
+      seen = true;
+    }
+  }
+  return { minX, minY, maxX, maxY };
+}
 // The minimap only earns its space once a pipeline is large enough to need
 // navigating; trivial graphs fit on screen and the minimap is just clutter.
 const MINIMAP_MIN_NODES = 8;
+const MINIMAP_WIDTH = 132;
+const MINIMAP_HEIGHT = 84;
+const MINIMAP_PAD = 6;
+// The frame's 1px border (border-box) shrinks the svg's drawing area on each side.
+const MINIMAP_BORDER = 1;
 
-// Tint each minimap blip with its node's role accent so the overview stays legible
-// at thumbnail size; structural marks (section labels) drop out so only the actual
-// components show — a simple, uncluttered overview.
+// Tint each minimap blip with its node's role accent; structural marks (section
+// labels) drop out so only the actual components show — a simple, uncluttered overview.
 function miniMapNodeColor(node: Node): string {
   return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
 }
 
-// A simple rounded blip per node. We render the fill via inline `style` (not the SVG
-// `fill` attribute, which doesn't evaluate the `var(--color-…)` accent) and floor the
-// size so content-sized cards — whose width/height React Flow hasn't measured yet —
-// still show as a visible dot. Sectionless marks (color 'transparent') drop out.
-type MiniMapBlipProps = { x: number; y: number; width: number; height: number; color?: string; borderRadius: number };
-function MiniMapBlip({ x, y, width, height, color, borderRadius }: MiniMapBlipProps) {
-  if (!color || color === 'transparent') {
-    return null;
-  }
+/**
+ * A compact overview minimap. Unlike React Flow's built-in `MiniMap` (whose bounds
+ * grow to include the live viewport, so they bloat when you pan into the surrounding
+ * padding), this draws the **content** at a fixed scale and shows the viewport as a
+ * rectangle clipped to the frame. So the canvas can be panned generously past the
+ * nodes while the minimap stays tight to the diagram. Click/drag re-centres the view.
+ */
+function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
+  const transform = useStore((s) => s.transform);
+  const paneWidth = useStore((s) => s.width);
+  const paneHeight = useStore((s) => s.height);
+  const { setCenter } = useReactFlow();
+  const draggingRef = useRef(false);
+
+  // The svg fills the frame's content box — i.e. the frame minus its 1px border on
+  // each side — so nothing the svg draws is clipped by the border.
+  const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
+  const mapH = MINIMAP_HEIGHT - 2 * MINIMAP_BORDER;
+
+  const bounds = useMemo(() => contentBounds(nodes), [nodes]);
+  const contentW = Math.max(bounds.maxX - bounds.minX, 1);
+  const contentH = Math.max(bounds.maxY - bounds.minY, 1);
+  const innerW = mapW - 2 * MINIMAP_PAD;
+  const innerH = mapH - 2 * MINIMAP_PAD;
+  const scale = Math.min(innerW / contentW, innerH / contentH);
+  // Centre the content within the frame.
+  const offsetX = MINIMAP_PAD + (innerW - contentW * scale) / 2 - bounds.minX * scale;
+  const offsetY = MINIMAP_PAD + (innerH - contentH * scale) / 2 - bounds.minY * scale;
+
+  const [tx, ty, zoom] = transform;
+  // The viewport in minimap coordinates, clamped to the drawing area (with a 1px inset
+  // for the stroke) so its border is always fully visible even when the view extends
+  // past the content into the surrounding pan padding.
+  const inset = 1;
+  const left = Math.max((-tx / zoom) * scale + offsetX, inset);
+  const top = Math.max((-ty / zoom) * scale + offsetY, inset);
+  const right = Math.min((-tx / zoom + paneWidth / zoom) * scale + offsetX, mapW - inset);
+  const bottom = Math.min((-ty / zoom + paneHeight / zoom) * scale + offsetY, mapH - inset);
+  const view = { x: left, y: top, w: Math.max(right - left, 0), h: Math.max(bottom - top, 0) };
+
+  const panToEvent = (e: ReactPointerEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const fx = (e.clientX - rect.left - offsetX) / scale;
+    const fy = (e.clientY - rect.top - offsetY) / scale;
+    setCenter(fx, fy, { zoom, duration: 0 });
+  };
+
   return (
-    <rect
-      height={Math.max(height, 18)}
-      rx={borderRadius}
-      ry={borderRadius}
-      style={{ fill: color }}
-      width={Math.max(width, 18)}
-      x={x}
-      y={y}
-    />
+    <div
+      className="nodrag nopan absolute z-10 overflow-hidden rounded-md border border-border bg-card shadow-sm"
+      style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT, right: 52, bottom: 12 }}
+    >
+      <svg
+        className="block cursor-pointer"
+        height={mapH}
+        onPointerDown={(e) => {
+          draggingRef.current = true;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          panToEvent(e);
+        }}
+        onPointerMove={(e) => {
+          if (draggingRef.current) {
+            panToEvent(e);
+          }
+        }}
+        onPointerUp={(e) => {
+          draggingRef.current = false;
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }}
+        role="presentation"
+        width={mapW}
+      >
+        {nodes.map((node) => {
+          const color = miniMapNodeColor(node);
+          if (node.parentId || color === 'transparent') {
+            return null;
+          }
+          const w = ((node.initialWidth ?? node.width ?? 0) as number) * scale;
+          const h = ((node.initialHeight ?? node.height ?? 0) as number) * scale;
+          return (
+            <rect
+              height={Math.max(h, 2)}
+              key={node.id}
+              rx={1.5}
+              style={{ fill: color, opacity: 0.85 }}
+              width={Math.max(w, 2)}
+              x={node.position.x * scale + offsetX}
+              y={node.position.y * scale + offsetY}
+            />
+          );
+        })}
+        <rect
+          fill="color-mix(in srgb, var(--color-primary) 12%, transparent)"
+          height={view.h}
+          rx={2}
+          stroke="var(--color-primary)"
+          strokeWidth={1.5}
+          width={view.w}
+          x={view.x}
+          y={view.y}
+        />
+      </svg>
+    </div>
   );
 }
 
@@ -327,12 +450,14 @@ export function PipelineFlowCanvas({
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
 
-    // The compact sidebar scrolls vertically and should hug the content (just a
-    // little breathing room); the full canvas allows generous panning room.
-    const pad = simple ? 16 : PAN_PADDING;
+    // Allow panning a generous margin past the content (measured, since resources can
+    // sit at negative x) so an edge node can be brought to the middle; the compact
+    // sidebar hugs its content. The minimap stays tight to the content regardless.
+    const margin = simple ? 16 : PAN_PADDING;
+    const bounds = contentBounds(layout.rfNodes);
     const extent: [[number, number], [number, number]] = [
-      [-pad, -pad],
-      [layout.width + pad, layout.height + pad],
+      [bounds.minX - margin, bounds.minY - margin],
+      [bounds.maxX + margin, bounds.maxY + margin],
     ];
 
     // Which edge vocabularies appear — drives an adaptive legend (only shows the
@@ -481,21 +606,7 @@ export function PipelineFlowCanvas({
               showInteractive={false}
             />
           )}
-          {simple || rfNodes.length <= MINIMAP_MIN_NODES ? null : (
-            <MiniMap
-              bgColor="var(--color-card)"
-              className="!m-0 overflow-hidden rounded-md border border-border shadow-sm"
-              maskColor="color-mix(in srgb, var(--color-muted) 55%, transparent)"
-              nodeBorderRadius={3}
-              nodeColor={miniMapNodeColor}
-              nodeComponent={MiniMapBlip}
-              pannable
-              // Sit just left of the bottom-right zoom controls, compact.
-              position="bottom-right"
-              style={{ width: 132, height: 84, right: 52, bottom: 12 }}
-              zoomable
-            />
-          )}
+          {simple || rfNodes.length <= MINIMAP_MIN_NODES ? null : <PipelineMiniMap nodes={rfNodes} />}
         </ReactFlow>
       </ReactFlowProvider>
       {simple ? null : <FlowLegend flags={legend} />}
