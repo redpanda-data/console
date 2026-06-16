@@ -36,8 +36,6 @@
     "sha.js": "^2.4.12",
     "prismjs": "^1.30.0",
     "path-to-regexp": "1.9.0",
-    "@remix-run/node": "^2.17.4",
-    "@remix-run/router": "^1.23.2",
     "yaml": "^2.8.3",
     "postcss": "^8.5.14",
     "undici": "^6.25.0"
@@ -55,7 +53,7 @@
     "@primer/octicons-react": "^17",
     "@redpanda-data/ui": "^4.2.0",
     "@tailwindcss/postcss": "^4.3.0",
-    "@tanstack/react-form": "1.1.2",
+    "@tanstack/react-form": "1.10.0",
     "@tanstack/react-query": "^5.69.0",
     "array-move": "^4",
     "chakra-react-select": "5.0.4",

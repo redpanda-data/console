@@ -32,6 +32,6 @@ type PrefixFromDepth<T extends string | number, TDepth extends any[]> = TDepth['
 
 export type PrefixObjectAccessor<T extends object, TDepth extends any[]> = {
   [K in keyof T]-?: K extends string | number
-    ? PrefixFromDepth<K, TDepth> | `${PrefixFromDepth<K, TDepth>}${DeepKeys<T[K], [TDepth]>}`
+    ? PrefixFromDepth<K, TDepth> | `${PrefixFromDepth<K, TDepth>}${DeepKeys<T[K]>}`
     : never;
 }[keyof T];
