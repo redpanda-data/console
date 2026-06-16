@@ -22,7 +22,7 @@ jobs:
     env:
       CI: "true"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
