@@ -1,19 +1,17 @@
-import {
-  SiApachekafka,
-  SiApacheparquet,
-  SiApachepulsar,
-  SiClickhouse,
-  SiCockroachlabs,
-  SiDgraph,
-  SiJaeger,
-  SiMqtt,
-  SiNeo4j,
-  SiOllama,
-  SiOpenai,
-  SiSalesforce,
-  SiSplunk,
-  SiTrino,
-} from '@icons-pack/react-simple-icons';
+import SiApachekafka from '@icons-pack/react-simple-icons/icons/SiApachekafka.mjs';
+import SiApacheparquet from '@icons-pack/react-simple-icons/icons/SiApacheparquet.mjs';
+import SiApachepulsar from '@icons-pack/react-simple-icons/icons/SiApachepulsar.mjs';
+import SiClickhouse from '@icons-pack/react-simple-icons/icons/SiClickhouse.mjs';
+import SiCockroachlabs from '@icons-pack/react-simple-icons/icons/SiCockroachlabs.mjs';
+import SiDgraph from '@icons-pack/react-simple-icons/icons/SiDgraph.mjs';
+import SiJaeger from '@icons-pack/react-simple-icons/icons/SiJaeger.mjs';
+import SiMqtt from '@icons-pack/react-simple-icons/icons/SiMqtt.mjs';
+import SiNeo4j from '@icons-pack/react-simple-icons/icons/SiNeo4j.mjs';
+import SiOllama from '@icons-pack/react-simple-icons/icons/SiOllama.mjs';
+import SiOpenai from '@icons-pack/react-simple-icons/icons/SiOpenai.mjs';
+import SiSalesforce from '@icons-pack/react-simple-icons/icons/SiSalesforce.mjs';
+import SiSplunk from '@icons-pack/react-simple-icons/icons/SiSplunk.mjs';
+import SiTrino from '@icons-pack/react-simple-icons/icons/SiTrino.mjs';
 import { RedpandaUILetterIcon } from 'components/redpanda-ui/components/icons';
 import {
   Activity,

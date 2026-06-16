@@ -253,7 +253,6 @@ function DropdownMenuContent({
                 }
           }
           key="dropdown-menu-content"
-          style={{ willChange: 'opacity, transform' }}
           transition={keepMounted ? undefined : transition}
           {...props}
         >

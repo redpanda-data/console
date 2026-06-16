@@ -1,3 +1,13 @@
+/* =============================================================================
+   TAILWIND CSS V4 THEME CONFIGURATION
+   
+   Structure:
+   1. @theme {} - All design tokens (colors with light mode defaults)
+   2. @custom-variant - Dark mode selector configuration
+   3. .dark {} - Dark mode overrides only
+   4. @layer base {} - Global styles and defaults
+   ============================================================================= */
+
 @theme {
   /* ===================================================================
      TYPOGRAPHY TOKENS
@@ -707,17 +717,17 @@
 
 .dark {
   /* Core Semantic */
-  --color-background: var(--color-grey-900);
+  --color-background: var(--color-grey-black);
   --color-foreground: var(--color-grey-200);
-  --color-card: var(--color-grey-800);
+  --color-card: var(--color-grey-900);
   --color-card-foreground: var(--color-grey-200);
-  --color-popover: var(--color-grey-800);
+  --color-popover: var(--color-grey-900);
   --color-popover-foreground: var(--color-grey-200);
 
   /* Background - Basic (Dark Mode) */
-  --color-background-strong: var(--color-grey-700);
-  --color-background-base: var(--color-grey-800);
-  --color-background-subtle: var(--color-grey-900);
+  --color-background-strong: var(--color-grey-800);
+  --color-background-base: var(--color-grey-black);
+  --color-background-subtle: var(--color-grey-black);
 
   /* Background - Inverse (Dark Mode) */
   --color-background-inverse-subtle: var(--color-grey-400);
@@ -758,10 +768,10 @@
   --color-inverse-disabled: var(--color-grey-600);
 
   /* Background Variants */
-  --color-page: var(--color-grey-900);
-  --color-surface: var(--color-grey-800);
-  --color-surface-subtle: var(--color-grey-800);
-  --color-surface-strong: var(--color-grey-700);
+  --color-page: var(--color-grey-black);
+  --color-surface: var(--color-grey-900);
+  --color-surface-subtle: var(--color-grey-900);
+  --color-surface-strong: var(--color-grey-800);
 
   /* Primary */
   --color-primary: var(--color-indigo-500);
@@ -774,7 +784,7 @@
   --color-secondary-subtle: var(--color-dark-blue-alpha-200);
 
   /* Muted */
-  --color-muted: var(--color-grey-800);
+  --color-muted: var(--color-grey-900);
   --color-muted-foreground: var(--color-grey-400);
 
   /* Accent (translucent indigo surface - light foreground for dark mode) */
@@ -811,9 +821,9 @@
   --color-informative-foreground: var(--color-blue-900);
 
   /* Border, Input, Ring */
-  --color-border-subtle: var(--color-grey-600);
+  --color-border-subtle: var(--color-grey-800);
   --color-border: var(--color-grey-700);
-  --color-border-strong: var(--color-grey-800);
+  --color-border-strong: var(--color-grey-600);
   --color-input: var(--color-grey-600);
   --color-ring: var(--color-grey-white);
 

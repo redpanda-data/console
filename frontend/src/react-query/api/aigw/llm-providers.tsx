@@ -7,9 +7,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import type { ConnectError } from '@connectrpc/connect';
-import { useQuery } from '@connectrpc/connect-query';
-import type { UseQueryResult } from '@tanstack/react-query';
 import { useAigwTransport } from 'hooks/use-aigw-transport';
 import {
   type ListLLMProvidersRequest,
@@ -17,13 +14,18 @@ import {
   type ListLLMProvidersResponse,
 } from 'protogen/redpanda/api/adp/v1alpha1/llm_provider_pb';
 import { listLLMProviders } from 'protogen/redpanda/api/adp/v1alpha1/llm_provider-LLMProviderService_connectquery';
+import { useMemo } from 'react';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
-
-const AIGW_DEFAULT_PAGE_SIZE = 50;
+import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 
 /**
  * Hook to list LLM Providers using the AI Gateway v2 API.
  * Lists available LLM providers (OpenAI, Anthropic, Google, Bedrock, etc.)
+ *
+ * The server pages results (default 50, created_at desc), so this walks
+ * next_page_token until exhausted — a single-page read silently hides every
+ * provider older than the newest page. page_size stays unset: the server
+ * owns that policy.
  *
  * @note This hook uses the aigw v2 transport - requires /.aigw/api/ proxy configuration
  *
@@ -35,17 +37,30 @@ const AIGW_DEFAULT_PAGE_SIZE = 50;
 export const useListLLMProvidersQuery = (
   input?: MessageInit<ListLLMProvidersRequest>,
   options?: QueryOptions<GenMessage<ListLLMProvidersRequest>, ListLLMProvidersResponse>
-): UseQueryResult<ListLLMProvidersResponse, ConnectError> => {
+) => {
   const transport = useAigwTransport();
 
   const request = create(ListLLMProvidersRequestSchema, {
-    pageToken: input?.pageToken ?? '',
-    pageSize: input?.pageSize ?? AIGW_DEFAULT_PAGE_SIZE,
+    pageToken: '',
     ...(input?.filter && { filter: input.filter }),
-  });
+  }) as ListLLMProvidersRequest & Required<Pick<ListLLMProvidersRequest, 'pageToken'>>;
 
-  return useQuery(listLLMProviders, request, {
+  const result = useInfiniteQueryWithAllPages(listLLMProviders, request, {
     enabled: options?.enabled,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
     transport,
   });
+
+  const llmProviders = useMemo(
+    () => result.data?.pages.flatMap((page) => page?.llmProviders ?? []) ?? [],
+    [result.data]
+  );
+
+  const data = useMemo(() => ({ llmProviders }), [llmProviders]);
+
+  return {
+    ...result,
+    data,
+  };
 };

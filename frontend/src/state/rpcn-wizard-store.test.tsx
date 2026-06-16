@@ -18,29 +18,27 @@ import { act, renderHook } from '@testing-library/react';
 
 import {
   CONNECT_WIZARD_CONNECTOR_KEY,
-  onboardingWizardStore,
-  useOnboardingTopicDataStore,
-  useOnboardingUserDataStore,
-  useOnboardingWizardDataStore,
-  useResetOnboardingWizardStore,
-} from './onboarding-wizard-store';
+  rpcnWizardStore,
+  useResetRpcnWizardStore,
+  useRpcnWizardStore,
+} from './rpcn-wizard-store';
 import type { OnboardingWizardFormData } from '../components/pages/rp-connect/types/wizard';
 
-describe('Onboarding Wizard Store', () => {
+describe('RPCN Wizard Store', () => {
   beforeEach(() => {
     sessionStorage.clear();
   });
 
-  describe('useOnboardingWizardDataStore', () => {
+  describe('connection data & persistence', () => {
     test('should initialize with empty state', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       expect(result.current.input).toBeUndefined();
       expect(result.current.output).toBeUndefined();
     });
 
     test('should set wizard data', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       const wizardData: Partial<OnboardingWizardFormData> = {
         input: {
@@ -57,7 +55,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should merge wizard data on multiple sets', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setWizardData({
@@ -76,7 +74,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should reset wizard data completely', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setWizardData({
@@ -97,7 +95,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should preserve action methods after reset', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
@@ -118,7 +116,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should persist wizard data to sessionStorage', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       const wizardData: Partial<OnboardingWizardFormData> = {
         input: { connectionName: 'redpanda', connectionType: 'input' },
@@ -136,7 +134,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should clear sessionStorage on reset', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
@@ -156,13 +154,13 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should initialize with hasHydrated as false', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       expect(result.current.hasHydrated).toBe(false);
     });
 
     test('should reset hasHydrated to false on reset', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       // Simulate hydration complete
       act(() => {
@@ -186,7 +184,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should NOT persist hasHydrated to sessionStorage', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
@@ -204,7 +202,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should allow setting hasHydrated', () => {
-      const { result } = renderHook(() => useOnboardingWizardDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       expect(result.current.hasHydrated).toBe(false);
 
@@ -216,15 +214,15 @@ describe('Onboarding Wizard Store', () => {
     });
   });
 
-  describe('useOnboardingTopicDataStore', () => {
+  describe('topic data', () => {
     test('should initialize with empty state', () => {
-      const { result } = renderHook(() => useOnboardingTopicDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       expect(result.current.topicName).toBeUndefined();
     });
 
     test('should set topic data', () => {
-      const { result } = renderHook(() => useOnboardingTopicDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setTopicData({ topicName: 'my-topic' });
@@ -234,7 +232,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should reset topic data completely', () => {
-      const { result } = renderHook(() => useOnboardingTopicDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setTopicData({ topicName: 'my-topic' });
@@ -250,7 +248,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should NOT persist to sessionStorage', () => {
-      const { result } = renderHook(() => useOnboardingTopicDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setTopicData({ topicName: 'my-topic' });
@@ -263,7 +261,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should preserve action methods after reset', () => {
-      const { result } = renderHook(() => useOnboardingTopicDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setTopicData({ topicName: 'topic-1' });
@@ -284,16 +282,16 @@ describe('Onboarding Wizard Store', () => {
     });
   });
 
-  describe('useOnboardingUserDataStore', () => {
+  describe('user data', () => {
     test('should initialize with empty state', () => {
-      const { result } = renderHook(() => useOnboardingUserDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       expect(result.current.username).toBeUndefined();
       expect(result.current.saslMechanism).toBeUndefined();
     });
 
     test('should set user data', () => {
-      const { result } = renderHook(() => useOnboardingUserDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setUserData({
@@ -307,7 +305,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should reset user data completely', () => {
-      const { result } = renderHook(() => useOnboardingUserDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setUserData({
@@ -327,7 +325,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should NOT persist to sessionStorage', () => {
-      const { result } = renderHook(() => useOnboardingUserDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setUserData({ username: 'test-user' });
@@ -340,7 +338,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should preserve action methods after reset', () => {
-      const { result } = renderHook(() => useOnboardingUserDataStore());
+      const { result } = renderHook(() => useRpcnWizardStore());
 
       act(() => {
         result.current.setUserData({ username: 'user-1' });
@@ -361,12 +359,12 @@ describe('Onboarding Wizard Store', () => {
     });
   });
 
-  describe('useResetOnboardingWizardStore', () => {
+  describe('useResetRpcnWizardStore', () => {
     test('should reset all three stores', () => {
-      const wizardResult = renderHook(() => useOnboardingWizardDataStore()).result;
-      const topicResult = renderHook(() => useOnboardingTopicDataStore()).result;
-      const userResult = renderHook(() => useOnboardingUserDataStore()).result;
-      const { result: resetResult } = renderHook(() => useResetOnboardingWizardStore());
+      const wizardResult = renderHook(() => useRpcnWizardStore()).result;
+      const topicResult = renderHook(() => useRpcnWizardStore()).result;
+      const userResult = renderHook(() => useRpcnWizardStore()).result;
+      const { result: resetResult } = renderHook(() => useResetRpcnWizardStore());
 
       // Set data in all stores
       act(() => {
@@ -390,7 +388,7 @@ describe('Onboarding Wizard Store', () => {
     });
 
     test('should return stable callback reference', () => {
-      const { result, rerender } = renderHook(() => useResetOnboardingWizardStore());
+      const { result, rerender } = renderHook(() => useResetRpcnWizardStore());
 
       const firstCallback = result.current;
       rerender();
@@ -400,13 +398,13 @@ describe('Onboarding Wizard Store', () => {
     });
   });
 
-  describe('onboardingWizardStore (Imperative API)', () => {
+  describe('rpcnWizardStore (Imperative API)', () => {
     test('getWizardData should return only data fields', () => {
       act(() => {
-        onboardingWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        rpcnWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
       });
 
-      const data = onboardingWizardStore.getWizardData();
+      const data = rpcnWizardStore.getWizardData();
 
       expect(data.input).toBeDefined();
 
@@ -420,10 +418,10 @@ describe('Onboarding Wizard Store', () => {
 
     test('getTopicData should return only data fields', () => {
       act(() => {
-        onboardingWizardStore.setTopicData({ topicName: 'my-topic' });
+        rpcnWizardStore.setTopicData({ topicName: 'my-topic' });
       });
 
-      const data = onboardingWizardStore.getTopicData();
+      const data = rpcnWizardStore.getTopicData();
 
       expect(data.topicName).toBe('my-topic');
 
@@ -437,10 +435,10 @@ describe('Onboarding Wizard Store', () => {
 
     test('getUserData should return only data fields', () => {
       act(() => {
-        onboardingWizardStore.setUserData({ username: 'test-user' });
+        rpcnWizardStore.setUserData({ username: 'test-user' });
       });
 
-      const data = onboardingWizardStore.getUserData();
+      const data = rpcnWizardStore.getUserData();
 
       expect(data.username).toBe('test-user');
 
@@ -454,43 +452,43 @@ describe('Onboarding Wizard Store', () => {
 
     test('reset should clear all stores', () => {
       act(() => {
-        onboardingWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
-        onboardingWizardStore.setTopicData({ topicName: 'my-topic' });
-        onboardingWizardStore.setUserData({ username: 'test-user' });
+        rpcnWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        rpcnWizardStore.setTopicData({ topicName: 'my-topic' });
+        rpcnWizardStore.setUserData({ username: 'test-user' });
       });
 
-      expect(onboardingWizardStore.getWizardData().input).toBeDefined();
-      expect(onboardingWizardStore.getTopicData().topicName).toBe('my-topic');
-      expect(onboardingWizardStore.getUserData().username).toBe('test-user');
+      expect(rpcnWizardStore.getWizardData().input).toBeDefined();
+      expect(rpcnWizardStore.getTopicData().topicName).toBe('my-topic');
+      expect(rpcnWizardStore.getUserData().username).toBe('test-user');
 
       act(() => {
-        onboardingWizardStore.reset();
+        rpcnWizardStore.reset();
       });
 
-      expect(onboardingWizardStore.getWizardData().input).toBeUndefined();
-      expect(onboardingWizardStore.getTopicData().topicName).toBeUndefined();
-      expect(onboardingWizardStore.getUserData().username).toBeUndefined();
+      expect(rpcnWizardStore.getWizardData().input).toBeUndefined();
+      expect(rpcnWizardStore.getTopicData().topicName).toBeUndefined();
+      expect(rpcnWizardStore.getUserData().username).toBeUndefined();
     });
 
     test('hasHydrated should return hydration status', () => {
       // Initially false
-      expect(onboardingWizardStore.hasHydrated()).toBe(false);
+      expect(rpcnWizardStore.hasHydrated()).toBe(false);
 
       // Set to true
       act(() => {
-        useOnboardingWizardDataStore.getState().setHasHydrated(true);
+        useRpcnWizardStore.getState().setHasHydrated(true);
       });
 
-      expect(onboardingWizardStore.hasHydrated()).toBe(true);
+      expect(rpcnWizardStore.hasHydrated()).toBe(true);
     });
 
     test('getWizardData should NOT include hasHydrated in returned data', () => {
       act(() => {
-        onboardingWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
-        useOnboardingWizardDataStore.getState().setHasHydrated(true);
+        rpcnWizardStore.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        useRpcnWizardStore.getState().setHasHydrated(true);
       });
 
-      const data = onboardingWizardStore.getWizardData();
+      const data = rpcnWizardStore.getWizardData();
 
       expect(data.input).toBeDefined();
       expect(Object.hasOwn(data, 'hasHydrated')).toBe(false);

@@ -20,8 +20,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
@@ -34,7 +34,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
-import { Progress } from 'components/redpanda-ui/components/progress';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLogSearch } from '../../../react-query/api/logs';
@@ -42,15 +42,12 @@ import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/da
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { TimestampDisplay } from '../../../utils/tsx-utils';
 import { cullText, prettyBytes } from '../../../utils/utils';
-import { RefreshIcon } from 'components/icons';
+import { RefreshButton } from 'components/ui/refresh-button';
 import { ArrowDown, ArrowUp, InfoIcon } from 'lucide-react';
 
 const DEFAULT_PAGE_SIZE = 10;
 
-/**
- * TanStack Table assigns a default size of 150 to columns without an explicit `size`.
- * We use this to detect "unsized" columns and avoid applying a fixed width.
- */
+// TanStack default; used to detect "unsized" columns.
 const TANSTACK_DEFAULT_COLUMN_SIZE = 150;
 
 type LogPayload = {
@@ -70,6 +67,15 @@ function getLogPayload(msg: TopicMessage): LogPayload | null {
     return payload as LogPayload;
   }
   return null;
+}
+
+// Keep head + tail so long component paths stay compact (full path on hover).
+function abbreviateComponentPath(path: string): string {
+  const parts = path.split('.');
+  if (parts.length <= 3) {
+    return path;
+  }
+  return `${parts[0]}…${parts.slice(-2).join('.')}`;
 }
 
 type LogLevelVariant = 'destructive-inverted' | 'warning-inverted' | 'info-inverted' | 'neutral-inverted';
@@ -198,29 +204,34 @@ interface LogExplorerProps {
   pipeline: Pipeline;
   /** Pass `isServerless()` from config — controls whether pipelineId filtering uses server-side pushdown or client-side. */
   serverless?: boolean;
-  /** Whether to enable the live view. Defaults to false. */
   enableLiveView?: boolean;
-  /** Optional heading rendered inline in the header row, aligned with the controls and table. */
   title?: ReactNode;
 }
 
 export function LogExplorer({ pipeline, serverless, enableLiveView = false, title }: LogExplorerProps) {
   const [liveViewEnabled, setLiveViewEnabled] = useState(false);
-
-  // Sync live mode when the pipeline's enableLiveView prop changes (start/stop transitions).
-  // Skip mount — always start in history mode; only react to subsequent transitions.
-  const mountedRef = useRef(false);
-  useEffect(() => {
-    if (mountedRef.current) {
-      setLiveViewEnabled(enableLiveView);
-    }
-    mountedRef.current = true;
-  }, [enableLiveView]);
-
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedMessage, setSelectedMessage] = useState<TopicMessage | null>(null);
+
+  // Switching modes swaps the dataset, so reset page + sorting (a stale page index hides new logs).
+  const setLiveView = (enabled: boolean) => {
+    setLiveViewEnabled(enabled);
+    setPageIndex(0);
+    setSorting([]);
+  };
+
+  // Sync live mode on enableLiveView change, but not on mount — start in history.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (mountedRef.current) {
+      setLiveViewEnabled(enableLiveView);
+      setPageIndex(0);
+      setSorting([]);
+    }
+    mountedRef.current = true;
+  }, [enableLiveView]);
 
   const { messages, phase, error, progress, refresh } = useLogSearch({
     pipelineId: pipeline.id,
@@ -254,7 +265,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const messageTableColumns = useMemo<ColumnDef<TopicMessage>[]>(
     () => [
       {
-        header: 'Timestamp',
+        header: 'Time',
         accessorKey: 'timestamp',
         enableSorting: !liveViewEnabled,
         cell: ({
@@ -264,14 +275,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
         }) => {
           const d = new Date(timestamp);
           return (
-            <div className="flex flex-col leading-tight">
-              <span className="text-[11px] text-muted-foreground">{d.toLocaleDateString()}</span>
+            <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
+              <span className="text-xs text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
               <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
             </div>
           );
         },
-        minSize: 140,
-        size: 140,
+        minSize: 120,
+        size: 132,
       },
       {
         id: 'level',
@@ -291,12 +302,22 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
         enableSorting: !liveViewEnabled,
         cell: ({ row: { original } }) => {
           const path = getLogPayload(original)?.path;
-          return path ? (
-            <Text as="span" className="text-muted-foreground" variant="bodySmall">{path}</Text>
-          ) : null;
+          if (!path) {
+            return null;
+          }
+          return (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Text as="span" className="block truncate text-muted-foreground" variant="bodySmall">
+                  {abbreviateComponentPath(path)}
+                </Text>
+              </TooltipTrigger>
+              <TooltipContent>{path}</TooltipContent>
+            </Tooltip>
+          );
         },
-        minSize: 140,
-        size: 160,
+        minSize: 150,
+        size: 180,
       },
       {
         id: 'message',
@@ -355,6 +376,14 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const hasProgress = progress.bytesConsumed > 0 || progress.messagesConsumed > 0;
   const pipelineNotRunning = pipeline.state !== Pipeline_State.RUNNING;
 
+  // Clamp to the first page when filtering leaves the current page out of range.
+  useEffect(() => {
+    const pageCount = Math.ceil(filteredRowCount / pageSize);
+    if (pageCount > 0 && pageIndex > pageCount - 1) {
+      setPageIndex(0);
+    }
+  }, [filteredRowCount, pageSize, pageIndex]);
+
   return (
     <div className="flex min-h-0 flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
@@ -380,43 +409,29 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             <TooltipContent side="top" testId="log-live-tooltip-content">
               {liveViewEnabled
                 ? 'Showing new log messages as they arrive in real time.'
-                : 'Showing log messages from the last 5 hours. Toggle on to see live logs as they arrive.'}
+                : 'Showing the most recent log messages. Toggle on to see live logs as they arrive.'}
             </TooltipContent>
           </Tooltip>
           <Switch
             checked={liveViewEnabled}
-            // overriding size to make it more prominent, user feedback showed it was not discoverable
+            // Enlarged for discoverability (user feedback).
             className="h-5 w-9 **:data-[slot=switch-thumb]:size-4.5"
             data-testid="log-live-toggle"
             disabled={!enableLiveView}
             id="live-view-toggle"
             onCheckedChange={(checked) => {
-              setLiveViewEnabled(checked);
-              setSorting([]);
+              setLiveView(checked);
               if (checked) {
                 actions.removeAllFilters();
               }
             }}
           />
           </div>
-          <Button
-            data-testid="log-refresh-button"
-            disabled={isSearching}
-            onClick={refresh}
-            size="icon"
-            variant="ghost"
-          >
-            <RefreshIcon className={isSearching ? 'animate-spin' : ''} />
-          </Button>
+          <RefreshButton loading={isSearching} onClick={refresh} testId="log-refresh-button" />
         </div>
       </div>
 
       <div className="relative min-h-0">
-        {isSearching && hasProgress && (
-          <div className="absolute inset-x-0 top-0 z-10">
-            <Progress className="h-1 w-full rounded-none" testId="log-progress-bar" value={null} />
-          </div>
-        )}
         <div className="overflow-auto">
         <Table className="table-fixed" variant="simple">
           <TableHeader>
@@ -424,7 +439,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                    className={cn('px-3', header.column.getCanSort() && 'cursor-pointer select-none')}
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
@@ -474,16 +489,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                     <TableCell className="p-4" colSpan={table.getVisibleFlatColumns().length}>
                       <Alert data-testid="pipeline-stopped-banner" variant="info">
                         <AlertTitle>Pipeline is not running</AlertTitle>
-                        <AlertDescription>
-                          Live logs require a running pipeline.{' '}
-                          <button
-                            className="font-medium underline"
-                            onClick={() => setLiveViewEnabled(false)}
-                            type="button"
-                          >
+                        <AlertDescription className="flex flex-col items-start gap-2">
+                          Live logs require a running pipeline. Switch to recent logs to view historical logs.
+                          <Button onClick={() => setLiveView(false)} size="sm" variant="secondary-outline">
                             Switch to Recent Logs
-                          </button>{' '}
-                          to view historical logs.
+                          </Button>
                         </AlertDescription>
                       </Alert>
                     </TableCell>
@@ -497,7 +507,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                 } else if (liveViewEnabled) {
                   emptyText = 'Listening for new log messages… Switch to Recent Logs to view historical logs.';
                 } else {
-                  emptyText = 'No logs found in the last 5 hours for this pipeline.';
+                  emptyText = 'No logs found for this pipeline.';
                 }
                 return (
                   <TableRow>
@@ -510,30 +520,49 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                   </TableRow>
                 );
               }
-              return table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className="cursor-pointer"
-                  key={row.id}
-                  onClick={() => setSelectedMessage(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+              const rows = table.getRowModel().rows;
+              const placeholderColumns = table.getVisibleFlatColumns();
+              // Pad partial pages to a constant height (capped at DEFAULT_PAGE_SIZE) so it doesn't jump.
+              const placeholderCount = Math.max(0, Math.min(pageSize, DEFAULT_PAGE_SIZE) - rows.length);
+              return (
+                <>
+                  {rows.map((row) => (
+                    <TableRow className="cursor-pointer" key={row.id} onClick={() => setSelectedMessage(row.original)}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          className="px-3 py-2"
+                          key={cell.id}
+                          style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ));
+                  {Array.from({ length: placeholderCount }, (_, i) => (
+                    <TableRow aria-hidden className="pointer-events-none" key={`placeholder-${i}`}>
+                      {placeholderColumns.map((column, columnIndex) => (
+                        <TableCell className="px-3 py-2" key={column.id}>
+                          {/* Mirror the Time cell's two-line height. */}
+                          {columnIndex === 0 ? (
+                            <div className="flex flex-col leading-tight">
+                              <span className="text-xs">&nbsp;</span>
+                              <span className="text-sm">&nbsp;</span>
+                            </div>
+                          ) : null}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </>
+              );
             })()}
           </TableBody>
         </Table>
         </div>
       </div>
 
-      {/* Hide DataTablePagination's "X of N row(s) selected." — this table
-          doesn't expose row selection — while keeping its layout slot. */}
+      {/* Hide DataTablePagination's "X of N row(s) selected." (no row selection) while keeping its layout slot. */}
       {filteredRowCount > 0 && (
         <div className="[&>div>div:first-child]:invisible">
           <DataTablePagination table={table} />

@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { useOnboardingWizardDataStore, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
+import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 
 import { getConnectTemplate } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
@@ -41,12 +41,9 @@ export const handleStepResult = <T>(result: StepSubmissionResult<T> | undefined,
   return false;
 };
 
-/**
- * Regenerates YAML templates for components that require topic/user data
- * Used at ADD_TOPIC and ADD_USER steps to update YAML with new context
- */
+/** Regenerates YAML for components needing topic/user data, at the ADD_TOPIC and ADD_USER steps. */
 export const regenerateYamlForTopicUserComponents = (components: ConnectComponentSpec[]): void => {
-  const { setWizardData: _, ...wizardData } = useOnboardingWizardDataStore.getState();
+  const { setWizardData: _, ...wizardData } = useRpcnWizardStore.getState();
 
   const inputNeedsTopicUser =
     wizardData.input?.connectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(wizardData.input.connectionName);
@@ -54,7 +51,7 @@ export const regenerateYamlForTopicUserComponents = (components: ConnectComponen
     wizardData.output?.connectionName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(wizardData.output.connectionName);
 
   if (inputNeedsTopicUser || outputNeedsTopicUser) {
-    let yamlContent = useOnboardingYamlContentStore.getState().yamlContent || '';
+    let yamlContent = useRpcnWizardStore.getState().yamlContent || '';
 
     if (inputNeedsTopicUser && wizardData.input?.connectionName && wizardData.input?.connectionType) {
       yamlContent =
@@ -76,44 +73,27 @@ export const regenerateYamlForTopicUserComponents = (components: ConnectComponen
         }) || yamlContent;
     }
 
-    useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent });
+    useRpcnWizardStore.getState().setYamlContent({ yamlContent });
   }
 };
 
-/**
- * Checks if a field name is topic-related
- * Matches: 'topic' (outputs/cache) or 'topics' (inputs)
- */
+/** Matches 'topic' (outputs/cache) or 'topics' (inputs). */
 export const isTopicField = (fieldName: string): boolean => {
   const normalizedName = fieldName.toLowerCase();
   return normalizedName === 'topic' || normalizedName === 'topics';
 };
 
-/**
- * Checks if a field name is user/authentication-related
- * Matches: 'user' (kafka sasl) or 'username' (redpanda sasl)
- */
+/** Matches 'user' (kafka sasl) or 'username' (redpanda sasl). */
 export const isUserField = (fieldName: string): boolean => {
   const normalized = fieldName.toLowerCase();
   return normalized === 'user' || normalized === 'username';
 };
 
-/**
- * Checks if a field name is password-related
- * Matches: 'password' (nested in sasl object)
- */
 export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
 
-/**
- * Checks if a field name is consumer group-related
- * Matches: 'consumer_group' (kafka_franz input)
- */
 export const isConsumerGroupField = (fieldName: string): boolean => fieldName.toLowerCase() === 'consumer_group';
 
-/**
- * Checks if a field is schema_registry.url that should use REDPANDA_SCHEMA_REGISTRY_URL
- * Requires checking both field name and parent context
- */
+/** True for schema_registry.url, which should use REDPANDA_SCHEMA_REGISTRY_URL. */
 export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string): boolean => {
   const isUrl = fieldName.toLowerCase() === 'url';
   const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';

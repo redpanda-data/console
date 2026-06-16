@@ -9,6 +9,7 @@ import {
   renderOptionLabel,
   useFieldTestIds,
 } from './shared';
+import { useFieldContext } from '../../field';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../../select';
 import { useAutoForm } from '../context';
 import type { AutoFormFieldProps } from '../core-types';
@@ -16,8 +17,31 @@ import { type DataProviderOption, resolveDataProvider } from '../data-providers'
 import { UNSET_SELECT_VALUE } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
 
+function renderUnsetValue(required: boolean) {
+  return required ? null : 'Not set';
+}
+
+function renderStaticSelectedValue(value: unknown, options: ReturnType<typeof getFlatOptions>, required: boolean) {
+  if (value === UNSET_SELECT_VALUE || value === undefined || value === null || value === '') {
+    return renderUnsetValue(required);
+  }
+
+  const option = options.find((candidate) => candidate.value === String(value));
+  return option ? renderOptionLabel(option) : renderUnsetValue(required);
+}
+
+function renderProviderSelectedValue(value: unknown, options: DataProviderOption[], required: boolean) {
+  if (value === UNSET_SELECT_VALUE || value === undefined || value === null || value === '') {
+    return renderUnsetValue(required);
+  }
+
+  const option = options.find((candidate) => candidate.value === String(value));
+  return option ? <ProviderOptionLabel option={option} /> : String(value);
+}
+
 function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
+  const { errorId } = useFieldContext();
   const { dataProviders } = useAutoForm();
   const providerId = readDataProviderId(field);
   const provider = resolveDataProvider(dataProviders, providerId);
@@ -65,13 +89,17 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
       value={currentValue}
     >
       <SelectTrigger
+        aria-describedby={error ? errorId : undefined}
+        aria-invalid={Boolean(error)}
         aria-label={fieldLabel}
         className={error ? 'border-destructive' : ''}
         disabled={inputProps.disabled}
         id={id}
         testId={testIds.control}
       >
-        <SelectValue placeholder="Select an option" />
+        <SelectValue placeholder="Select an option">
+          {(value) => renderStaticSelectedValue(value, flatOptions, field.required)}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {field.required ? null : (
@@ -122,6 +150,7 @@ function SelectFieldFromProvider({
   provider: () => { options: DataProviderOption[]; isLoading?: boolean; error?: unknown };
   testIds: ReturnType<typeof useFieldTestIds>;
 }) {
+  const { errorId } = useFieldContext();
   const { options, isLoading, error: providerError } = provider();
 
   if (providerError) {
@@ -157,13 +186,17 @@ function SelectFieldFromProvider({
       value={currentValue}
     >
       <SelectTrigger
+        aria-describedby={error ? errorId : undefined}
+        aria-invalid={Boolean(error)}
         aria-label={fieldLabel}
         className={error ? 'border-destructive' : ''}
         disabled={inputProps.disabled || isLoading}
         id={id}
         testId={testIds.control}
       >
-        <SelectValue placeholder={isLoading ? 'Loading…' : 'Select an option'} />
+        <SelectValue placeholder={isLoading ? 'Loading…' : 'Select an option'}>
+          {(value) => renderProviderSelectedValue(value, options, field.required)}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {field.required ? null : (

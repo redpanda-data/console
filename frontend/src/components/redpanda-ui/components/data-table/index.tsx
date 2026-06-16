@@ -208,9 +208,16 @@ export function DataTableFacetedFilter<TData, TValue>({
 
 interface DataTablePaginationProps<TData> extends SharedProps {
   table: Table<TData>;
+  pageSizeOptions?: number[];
 }
 
-export function DataTablePagination<TData>({ table, testId }: DataTablePaginationProps<TData>) {
+const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 25, 30, 40, 50];
+
+export function DataTablePagination<TData>({
+  table,
+  testId,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+}: DataTablePaginationProps<TData>) {
   return (
     <div className="flex items-center justify-between px-2" data-testid={testId}>
       <div className="flex-1 text-muted-foreground text-sm">
@@ -229,7 +236,7 @@ export function DataTablePagination<TData>({ table, testId }: DataTablePaginatio
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 25, 30, 40, 50].map((pageSize) => (
+              {pageSizeOptions.map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}
                 </SelectItem>

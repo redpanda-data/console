@@ -16,7 +16,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-react';
 
-import { mockConnectQuery, mockRouterForBrowserTest, ScreenshotFrame } from '../../../../__tests__/browser-test-utils';
+import { ScreenshotFrame } from '../../../../__tests__/browser-test-utils';
 
 const RUN_TOOL_REGEX = /run tool/i;
 
@@ -54,15 +54,25 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@tanstack/react-router', () => ({
-  ...mockRouterForBrowserTest(),
-  getRouteApi: () => ({
-    useParams: () => ({ id: 'mcp-server-visual' }),
-    useRouteContext: ({ select }: { select: (ctx: Record<string, unknown>) => unknown }) =>
-      select({ gatewayUrl: 'http://localhost:8090' }),
-  }),
-}));
-vi.mock('@connectrpc/connect-query', () => mockConnectQuery());
+// vi.mock factories are hoisted above imports, so they must not close over
+// top-level bindings — resolve the helpers via dynamic import inside the
+// factory instead. The closure variant crashes the browser-mode mocker under
+// CI ("error when mocking a module"), killing the page and hanging the run.
+vi.mock('@tanstack/react-router', async () => {
+  const { mockRouterForBrowserTest } = await import('../../../../__tests__/browser-test-utils');
+  return {
+    ...mockRouterForBrowserTest(),
+    getRouteApi: () => ({
+      useParams: () => ({ id: 'mcp-server-visual' }),
+      useRouteContext: ({ select }: { select: (ctx: Record<string, unknown>) => unknown }) =>
+        select({ gatewayUrl: 'http://localhost:8090' }),
+    }),
+  };
+});
+vi.mock('@connectrpc/connect-query', async () => {
+  const { mockConnectQuery } = await import('../../../../__tests__/browser-test-utils');
+  return mockConnectQuery();
+});
 
 vi.mock('config', () => ({
   config: { jwt: 'test-jwt-token' },

@@ -220,6 +220,64 @@ describe('AIAgentsListPage', () => {
     expect(screen.getByText('gpt-3.5-turbo')).toBeVisible();
   });
 
+  test('should resolve MCP tools for servers beyond the first page of the aigw list', async () => {
+    const agent = create(AIAgentSchema, {
+      id: 'agent-1',
+      displayName: 'Test Agent 1',
+      description: 'Description 1',
+      state: AIAgent_State.RUNNING,
+      provider: {
+        provider: {
+          case: 'openai',
+          value: {
+            apiKey: 'secret-1',
+          },
+        },
+      },
+      model: 'gpt-4',
+      systemPrompt: 'You are helpful',
+      // The referenced server is NOT on the first page of the MCP list —
+      // the regression was a single-page read that made it invisible.
+      mcpServers: {
+        servicenow: { id: 'servicenow-knowledge' },
+      },
+      tags: {},
+    });
+
+    const listAIAgentsMock = vi
+      .fn()
+      .mockReturnValue(create(ListAIAgentsResponseSchema, { aiAgents: [agent], nextPageToken: '' }));
+
+    const listMCPServersMock = vi.fn((req: { pageToken: string }) => {
+      if (req.pageToken === '') {
+        return create(ListMCPServersResponseSchema, {
+          mcpServers: [create(MCPServerSchema, { name: 'recently-created-server', tools: [] })],
+          nextPageToken: 'page-2',
+        });
+      }
+      return create(ListMCPServersResponseSchema, {
+        mcpServers: [
+          create(MCPServerSchema, {
+            name: 'servicenow-knowledge',
+            tools: [{ name: 'kb-search', description: '', inputSchema: '' }],
+          }),
+        ],
+        nextPageToken: '',
+      });
+    });
+
+    const transport = createAIAgentsTransport({ listAIAgentsMock, listMCPServersMock });
+
+    renderWithFileRoutes(<AIAgentsListPage />, { transport });
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Agent 1')).toBeVisible();
+      expect(screen.getByText('kb-search')).toBeVisible();
+    });
+
+    expect(listMCPServersMock).toHaveBeenCalledTimes(2);
+  });
+
   test('should delete an AI agent from the list', async () => {
     const user = userEvent.setup();
 

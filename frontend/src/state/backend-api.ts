@@ -165,6 +165,7 @@ import type {
   KnowledgeBaseCreate,
   KnowledgeBaseUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { appendWithSlackCap, boundedAppend, pruneMapToKeys } from '../utils/bounded-array';
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
@@ -175,6 +176,13 @@ import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
+
+/**
+ * Bounded LRU cap for the module-level REST `cache` below. Without it the cache retained one
+ * CacheEntry (a full parsed REST body) per distinct URL for the life of the tab. 500 keeps a
+ * generous working set; least-recently-used URLs are evicted and simply re-fetched on next use.
+ */
+const REST_CACHE_MAX_ENTRIES = 500;
 
 const { toast } = createStandaloneToast({
   theme: redpandaTheme,
@@ -288,7 +296,7 @@ function processVersionInfo(headers: Headers) {
 
 const _activeRequests: CacheEntry[] = [];
 
-const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u));
+const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u), REST_CACHE_MAX_ENTRIES);
 class CacheEntry {
   url: string;
 
@@ -664,7 +672,26 @@ const _apiCreator = (set: any, get: any) => ({
                         */
         }
       }
-      set({ topics: v?.topics });
+      const topics = v?.topics;
+      if (topics) {
+        // Prune topic-keyed caches to the current topic set so entries for deleted topics (or a
+        // previous cluster after a remount) don't accumulate for the life of the tab. Pruning to
+        // the live set never drops a topic that still exists, so nothing needs re-fetching.
+        const validTopicNames = new Set(topics.map((t) => t.topicName));
+        set((s: ReturnType<typeof _apiCreator>) => ({
+          topics,
+          topicConfig: pruneMapToKeys(s.topicConfig, validTopicNames),
+          topicDocumentation: pruneMapToKeys(s.topicDocumentation, validTopicNames),
+          topicPermissions: pruneMapToKeys(s.topicPermissions, validTopicNames),
+          topicPartitions: pruneMapToKeys(s.topicPartitions, validTopicNames),
+          topicPartitionErrors: pruneMapToKeys(s.topicPartitionErrors, validTopicNames),
+          topicWatermarksErrors: pruneMapToKeys(s.topicWatermarksErrors, validTopicNames),
+          topicConsumers: pruneMapToKeys(s.topicConsumers, validTopicNames),
+          topicAcls: pruneMapToKeys(s.topicAcls, validTopicNames),
+        }));
+      } else {
+        set({ topics });
+      }
     }, addError);
   },
 
@@ -2667,6 +2694,20 @@ export const transformsApi = new Proxy<ReturnType<typeof _transformsCreator>>(
   }
 );
 
+/**
+ * Sliding-window cap for the live-tail / filtered message buffer (`messageSearch.messages`).
+ * Those streams append for up to 30 minutes; on a high-volume topic the array would otherwise
+ * grow unbounded for the whole window — the dominant long-lived-tab retention vector.
+ */
+const LIVE_TAIL_MAX_MESSAGES = 50_000;
+
+/**
+ * Slack above `LIVE_TAIL_MAX_MESSAGES` before a trim runs, so the O(n) `splice` happens once per
+ * ~slack messages instead of on every message past the cap (which would be hottest exactly on the
+ * high-volume streams this guards). The memory ceiling stays cap + slack.
+ */
+const LIVE_TAIL_TRIM_SLACK = 1024;
+
 export function createMessageSearch() {
   const notify = () => useApiStore.setState((s: any) => ({ _msgSearchVersion: (s._msgSearchVersion ?? 0) + 1 }));
   const messageSearch = {
@@ -2756,8 +2797,11 @@ export function createMessageSearch() {
 
       // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
       // from 30s to 30 minutes before ending the request gracefully.
+      // The same condition marks a live-tail/filtered stream, which appends for the whole window
+      // and so needs the sliding-window cap below (normal pagination never enters this branch).
+      const isLiveTail = searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null;
       let timeoutMs = 30 * 1000;
-      if (searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null) {
+      if (isLiveTail) {
         const minuteMs = 60 * 1000;
         timeoutMs = 30 * minuteMs;
       }
@@ -2803,7 +2847,14 @@ export function createMessageSearch() {
                 break;
               case 'data': {
                 const m = convertListMessageData(res.controlMessage.value);
-                this.messages.push(m);
+                // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream on
+                // a high-volume topic cannot grow the heap without limit. appendWithSlackCap
+                // amortizes the O(n) trim to ~once per LIVE_TAIL_TRIM_SLACK messages.
+                if (isLiveTail) {
+                  appendWithSlackCap(this.messages, m, LIVE_TAIL_MAX_MESSAGES, LIVE_TAIL_TRIM_SLACK);
+                } else {
+                  this.messages.push(m);
+                }
                 break;
               }
               default:
@@ -3049,8 +3100,18 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
   return obj as T;
 }
 
+/**
+ * Cap on retained API errors. `addError` is called from ~20 legacy refresh paths; on a
+ * long-lived tab with auto-refresh enabled and a persistently failing endpoint the array
+ * would otherwise grow without bound (each entry retains a stack + the Response body).
+ * The error UI only ever surfaces the most recent entries, so a ring buffer loses nothing.
+ */
+const MAX_TRACKED_ERRORS = 50;
+
 function addError(err: Error) {
-  useApiStore.setState((s: any) => ({ errors: [...s.errors, err] }));
+  useApiStore.setState((s: ReturnType<typeof _apiCreator>) => ({
+    errors: boundedAppend(s.errors, err, MAX_TRACKED_ERRORS),
+  }));
 }
 
 /** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */

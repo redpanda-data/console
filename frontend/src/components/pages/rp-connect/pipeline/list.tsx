@@ -65,7 +65,7 @@ import {
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
-import { useResetOnboardingWizardStore } from 'state/onboarding-wizard-store';
+import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { TabKafkaConnect } from '../../connect/overview';
@@ -500,7 +500,7 @@ const createColumns = ({
 
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
-  const resetOnboardingWizardStore = useResetOnboardingWizardStore();
+  const resetRpcnWizardStore = useResetRpcnWizardStore();
 
   const {
     data: pipelinesData,
@@ -621,15 +621,14 @@ const PipelineListPageContent = () => {
   });
 
   const handleCreateClick = useCallback(() => {
-    resetOnboardingWizardStore();
-    // enablePipelineDiagrams: skip wizard, go straight to pipeline editor
-    // otherwise: go through wizard (master behavior)
+    resetRpcnWizardStore();
+    // enablePipelineDiagrams skips the wizard and goes straight to the editor.
     if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
       navigate({ to: '/rp-connect/create', search: {} as never });
     } else {
       navigate({ to: '/rp-connect/wizard', search: { step: undefined, serverless: undefined } });
     }
-  }, [resetOnboardingWizardStore, navigate]);
+  }, [resetRpcnWizardStore, navigate]);
 
   if (isLoading) {
     return <PipelineListSkeleton />;
@@ -685,9 +684,7 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      {/* DataTablePagination's footer leads with "X of N row(s) selected." This table
-          doesn't expose row selection, so suppress that text while keeping its space
-          so the pagination controls stay right-aligned. */}
+      {/* Hide the pagination footer's "X of N selected" text (no row selection here) but keep its space so controls stay right-aligned. */}
       <div className="[&>div>div:first-child]:invisible">
         <DataTablePagination table={table} />
       </div>
@@ -701,7 +698,7 @@ const RedpandaConnectContent = () => (
       Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
       real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
       connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
-      <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+      <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
         Learn more
       </Link>
     </Text>
@@ -753,7 +750,11 @@ export const PipelineListPage = () => {
               <Text>
                 Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
                 different data systems.{' '}
-                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
+                <Link
+                  href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
                   Learn more
                 </Link>
               </Text>

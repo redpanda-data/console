@@ -109,14 +109,13 @@ export type TemplateFormSubmitPayload = {
   yaml: string;
 };
 
-// Lets the parent dialog read the current YAML on cancel without re-rendering.
+/** Lets the parent dialog read current YAML on cancel without re-rendering. */
 export type TemplateFormPanelHandle = {
   getCurrentYaml: () => string;
   isDirty: () => boolean;
 };
 
-// Parent request to overwrite a slot value. Bumping `requestId` re-triggers the
-// apply even when slotId/value are unchanged.
+/** Parent request to overwrite a slot value; bump `requestId` to re-trigger even when slotId/value are unchanged. */
 export type ApplySlotValueRequest = {
   slotId: string;
   value: string;
@@ -125,17 +124,14 @@ export type ApplySlotValueRequest = {
 
 export type TemplateFormPanelProps = {
   template: PipelineTemplate;
-  // Exposed so an out-of-tree submit button (e.g. in the dialog footer) can
-  // target the form via the `form` attribute.
+  // Lets an out-of-tree submit button target the form via the `form` attribute.
   formId: string;
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
-  // When set, secret slots delegate "Create secret" to the parent instead of
-  // opening a nested dialog.
+  // When set, secret slots delegate "Create secret" to the parent instead of a nested dialog.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
   // When set, topic slots delegate "Create topic" to the parent.
   onRequestCreateTopic?: (slotId: string) => void;
-  // Writes `value` into the named slot once per `requestId`, then acknowledges
-  // via `onSlotValueApplied`.
+  // Writes `value` into the named slot once per `requestId`, then calls `onSlotValueApplied`.
   applySlotValue?: ApplySlotValueRequest | null;
   onSlotValueApplied?: () => void;
 };
@@ -160,8 +156,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
       mode: 'onBlur',
     });
 
-    // Schema-driven defaults can arrive after mount. Reapply them once per
-    // template, but only while pristine so we never clobber user input.
+    // Schema-driven defaults can arrive after mount; reapply once per template, but only while pristine.
     const lastAppliedTemplateId = useRef<string | null>(null);
     useEffect(() => {
       if (!componentListResponse || lastAppliedTemplateId.current === template.id) {
@@ -174,8 +169,12 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     }, [componentListResponse, defaultValues, form, template.id]);
 
     const stitchCurrentYaml = (values: FormValues): string => {
-      const { [PIPELINE_NAME_FIELD]: _ignored, ...slotValues } = values;
-      return stitchTemplateYaml({ template, values: slotValues as Record<string, string> });
+      const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;
+      return stitchTemplateYaml({
+        template,
+        values: slotValues as Record<string, string>,
+        pipelineName: pipelineName?.trim() || template.defaultPipelineName,
+      });
     };
 
     useImperativeHandle(ref, () => ({

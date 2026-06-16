@@ -1,0 +1,33 @@
+input:
+  mongodb_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    url: ${slot.url}
+    database: ${slot.database}
+    collections:
+      - ${slot.collection}
+
+    # ── Change-stream behavior ──────────────────────────────────────────────
+    stream_snapshot: true                  # backfill existing documents first
+    checkpoint_cache: mongodb_cdc_checkpoint # cache resource storing the resume token (defined below)
+    # full_document: updateLookup          # uncomment to include the post-image
+    # checkpoint_limit: 1024
+    # batch_size: 0                        # 0 = driver default
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+
+cache_resources:
+  # Persists the change-stream resume token so restarts resume instead of re-snapshotting.
+  - label: mongodb_cdc_checkpoint
+    memory: {}                             # swap for file/redis to persist across restarts

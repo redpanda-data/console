@@ -11,8 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { useEffect, useReducer, useRef, useState } from 'react';
-import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
 import { config as appConfig } from '../../config';
@@ -27,17 +27,19 @@ import { sanitizeString } from '../../utils/filter-helper';
 import { convertListMessageData } from '../../utils/message-converters';
 import { encodeBase64 } from '../../utils/utils';
 
-// --- Constants ---
-
 const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
-const HISTORY_HOURS = 5;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
 const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
-
-// --- Types ---
+/**
+ * Sliding-window cap for the live-tail log buffer. A live stream runs for up to 30 minutes
+ * and `flushMessages` prepends every batch with no limit, so without a cap the reducer's
+ * `messages` array would grow unbounded for the whole window on a long-lived/backgrounded tab.
+ * Newest-first means the most recent entries are kept.
+ */
+export const MAX_LIVE_LOG_MESSAGES = 5000;
 
 type UseLogSearchOptions = {
   pipelineId: string;
@@ -59,8 +61,6 @@ type UseLogSearchReturn = {
   progress: SearchProgress;
   refresh: () => void;
 };
-
-// --- Helpers ---
 
 const LOG_HISTORY_KEY = (pipelineId: string) => ['log-history', pipelineId] as const;
 
@@ -88,10 +88,9 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     req.startTimestamp = 0n;
     req.maxResults = LIVE_MAX_RESULTS;
   } else {
-    const startTime = new Date();
-    startTime.setHours(startTime.getHours() - HISTORY_HOURS);
-    req.startOffset = BigInt(PartitionOffsetOrigin.Timestamp);
-    req.startTimestamp = BigInt(startTime.getTime());
+    // Start at high-water-mark - maxResults so we get the most recent N, not the oldest.
+    req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
+    req.startTimestamp = 0n;
     req.maxResults = HISTORY_MAX_RESULTS;
   }
 
@@ -99,15 +98,14 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
 }
 
 function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean): boolean {
-  // Server-side pushdown filter handles pipelineId matching for serverful clusters;
-  // serverless clusters need client-side filtering.
+  // Serverful clusters filter by pipelineId via server-side pushdown; serverless filters here.
   if (!serverless) {
     return true;
   }
   return msg.keyJson === pipelineId;
 }
 
-// --- History streaming (extracted for React Compiler compatibility) ---
+// History streaming (extracted for React Compiler compatibility).
 
 type HistoryStreamOpts = {
   pipelineId: string;
@@ -178,8 +176,6 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
   return opts.messagesRef.current ?? [];
 }
 
-// --- useLogHistory: React Query + ref/interval for incremental streaming ---
-
 const ZERO_PROGRESS: SearchProgress = { bytesConsumed: 0, messagesConsumed: 0 };
 
 function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled: boolean }) {
@@ -189,7 +185,7 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   const [progress, setProgress] = useState<SearchProgress>(ZERO_PROGRESS);
   const [phase, setPhase] = useState<string | null>(null);
 
-  // Flush ref to state every 200ms during streaming
+  // Flush ref to state on an interval while streaming.
   useEffect(() => {
     if (!phase) {
       return;
@@ -220,18 +216,16 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
       });
     },
     enabled: opts.enabled,
-    staleTime: 0,
+    staleTime: NO_LIVED_CACHE_STALE_TIME,
     gcTime: 5 * ONE_MINUTE,
     refetchOnWindowFocus: false,
   });
 
-  // While streaming, show incremental messages. Once resolved, show query data.
-  const messages = query.data ?? streamingMessages;
+  // Incremental messages while streaming, query data once resolved; newest-first to match live tail.
+  const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
   return { messages, phase, progress, error: query.error?.message ?? null, refetch: query.refetch };
 }
-
-// --- useLogLive: Standalone streaming hook for live tail ---
 
 type LiveState = {
   messages: TopicMessage[];
@@ -250,20 +244,26 @@ type LiveAction =
   | { type: 'done' }
   | { type: 'noClient' };
 
-const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null, progress: ZERO_PROGRESS };
+export const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null, progress: ZERO_PROGRESS };
 
-function liveReducer(state: LiveState, action: LiveAction): LiveState {
+export function liveReducer(state: LiveState, action: LiveAction): LiveState {
   switch (action.type) {
     case 'reset':
       return LIVE_INITIAL_STATE;
     case 'start':
       return { messages: [], phase: 'Searching...', error: null, progress: ZERO_PROGRESS };
-    case 'flushMessages':
+    case 'flushMessages': {
       if (action.msgs.length === 0) {
         return state;
       }
-      // Reverse so newest message is first (matches per-message prepend behavior)
-      return { ...state, messages: [...action.msgs.toReversed(), ...state.messages] };
+      // Newest message first; cap to a sliding window so a 30-minute live tail cannot grow
+      // the reducer buffer without bound on a long-lived tab.
+      const messages = [...action.msgs.toReversed(), ...state.messages];
+      return {
+        ...state,
+        messages: messages.length > MAX_LIVE_LOG_MESSAGES ? messages.slice(0, MAX_LIVE_LOG_MESSAGES) : messages,
+      };
+    }
     case 'setPhase':
       return { ...state, phase: action.phase };
     case 'setProgress':
@@ -369,7 +369,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
     };
   }, []);
 
-  // Flush pending messages to state every 200ms (matches useLogHistory's batching)
+  // Flush pending messages to state on an interval.
   useEffect(() => {
     if (!opts.enabled) {
       return;
@@ -424,8 +424,6 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
 
   return state;
 }
-
-// --- useLogSearch: Public composition hook ---
 
 export function useLogSearch({
   pipelineId,

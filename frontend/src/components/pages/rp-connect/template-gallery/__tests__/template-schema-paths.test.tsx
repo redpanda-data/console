@@ -14,24 +14,11 @@ import { describe, expect, test } from 'vitest';
 
 import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import { findComponentByName, resolveFieldByPath } from '../../utils/schema';
+import { KNOWN_MISSING_COMPONENTS } from '../known-missing-components';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 
-// Components that templates reference but are missing from the committed
-// snapshot — either renamed since capture, enterprise-only, or pending in the
-// next snapshot refresh. Listed here so the regression test still flags new
-// drift while these known gaps are tracked. Re-capture the snapshot and prune
-// this list as components land.
-const KNOWN_MISSING_COMPONENTS: ReadonlySet<string> = new Set([
-  'aws_dynamodb_stream',
-  'oracle_cdc',
-  'sql_server_cdc',
-  'iceberg',
-]);
-
-// Regression check against the committed Connect schema snapshot
-// (`src/assets/rp-connect-schema-full.json`). A renamed/removed field shows up
-// as a failing assertion here instead of silently dropping the schema-driven
-// description/required/default for that slot at runtime.
+// Asserts each slot's schemaField resolves against the committed schema snapshot, so a renamed/removed
+// field fails here instead of silently dropping that slot's schema-driven description/required/default at runtime.
 describe('PIPELINE_TEMPLATES schemaField paths resolve against the schema snapshot', () => {
   const componentList = schemaJson as unknown as ComponentList;
 

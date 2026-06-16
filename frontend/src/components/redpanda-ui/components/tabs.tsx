@@ -141,7 +141,7 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
     variant: {
       default: '',
       underline:
-        "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:bg-selected after:content-['']",
+        "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-selected after:content-['']",
     },
   },
   defaultVariants: {

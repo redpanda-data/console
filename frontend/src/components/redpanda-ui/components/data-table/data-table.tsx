@@ -56,12 +56,14 @@ type PaginationConfig =
       onPaginationChange?: OnChangeFn<PaginationState>;
       defaultPageSize?: number;
       pageCount?: number;
+      pageSizeOptions?: number[];
     }
   | {
       pagination: false;
       onPaginationChange?: never;
       defaultPageSize?: never;
       pageCount?: never;
+      pageSizeOptions?: never;
     };
 
 type SortingConfig =
@@ -170,6 +172,7 @@ export function DataTable<TData>({
   onPaginationChange: onPaginationChangeProp,
   defaultPageSize: defaultPageSizeProp,
   pageCount: pageCountProp,
+  pageSizeOptions: pageSizeOptionsProp,
   sorting: sortingProp,
   onSortingChange: onSortingChangeProp,
 }: DataTableProps<TData>) {
@@ -392,7 +395,7 @@ export function DataTable<TData>({
           <TableFooter className={classNames?.footer}>
             <TableRow>
               <TableCell className="p-0" colSpan={totalColumns}>
-                <DataTablePagination table={table} />
+                <DataTablePagination pageSizeOptions={pageSizeOptionsProp} table={table} />
               </TableCell>
             </TableRow>
           </TableFooter>

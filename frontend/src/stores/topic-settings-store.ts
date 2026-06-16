@@ -158,6 +158,15 @@ const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicS
 });
 
 /**
+ * Cap on retained per-topic settings. This persisted store appends one entry per distinct topic
+ * that gets any setting changed (sort, preview, …) and the persist middleware serializes the whole
+ * array, so a long session touching many topics would grow heap + storage without bound. Oldest-added
+ * entries are dropped first (FIFO; a dropped topic re-creates defaults on next access). Mirrors the
+ * cap on the `setCurrentTopicName` path in `state/ui-state.ts`.
+ */
+export const MAX_PER_TOPIC_SETTINGS = 200;
+
+/**
  * Subscribe to Zustand store changes and sync them to the legacy MobX uiSettings store.
  * This ensures that changes made via Zustand are persisted by MobX's autorun mechanism.
  */
@@ -449,3 +458,14 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 // This ensures that changes made via Zustand are also reflected in the legacy MobX store
 // and persisted by MobX's autorun mechanism
 useTopicSettingsStore.subscribe(syncPerTopicSettingsToMobX);
+
+// Enforce the perTopicSettings cap on every change. Registered after the MobX sync so that the
+// sync re-run (triggered by this trim's setState) ends up mirroring the trimmed array. The length
+// guard makes the re-entrant setState terminate immediately (the trimmed array is within the cap).
+useTopicSettingsStore.subscribe((state) => {
+  if (state.perTopicSettings.length > MAX_PER_TOPIC_SETTINGS) {
+    useTopicSettingsStore.setState({
+      perTopicSettings: state.perTopicSettings.slice(-MAX_PER_TOPIC_SETTINGS),
+    });
+  }
+});

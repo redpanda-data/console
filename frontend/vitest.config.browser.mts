@@ -1,4 +1,5 @@
 import yaml from '@rollup/plugin-yaml';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
 import envCompatible from 'vite-plugin-env-compatible';
@@ -23,12 +24,28 @@ const chromium = { browser: 'chromium', context: reducedMotion } as const;
 
 export default defineConfig({
   // Plugins beyond `react()` are console-local requirements:
+  //   - tailwindcss:    browser-mode Vitest serves CSS through Vite, which no longer
+  //                     finds a postcss.config (Tailwind moved to the rsbuild plugin,
+  //                     rsbuild builds only). Without it, globals.css loses every
+  //                     utility class and visual baselines capture unstyled markup.
   //   - envCompatible:  REACT_APP_* env var compatibility
   //   - tsconfigPaths:  resolve console's tsconfig path aliases (e.g. `components/…`)
   //   - yaml:           route module imports `.yaml` fixture files
-  plugins: [react(), envCompatible({ prefix: ENV_PREFIX }), tsconfigPaths({ ignoreConfigErrors: true }), yaml()],
+  plugins: [
+    tailwindcss(),
+    react(),
+    envCompatible({ prefix: ENV_PREFIX }),
+    tsconfigPaths({ ignoreConfigErrors: true }),
+    yaml(),
+  ],
   resolve: { alias: sharedAliases, preserveSymlinks: true },
   optimizeDeps: {
+    // Scan every browser spec up front so Vite pre-bundles their full dep
+    // graph at startup. Without this, the optimizer discovers new deps while
+    // workers are mid-run, re-optimizes, invalidates in-flight imports, and
+    // the cold launch hangs until the job timeout (the documented reason
+    // baseline generation never completed).
+    entries: ['vitest.browser.setup.ts', 'src/**/*.browser.test.tsx'],
     include: [
       '@bufbuild/protobuf',
       '@connectrpc/connect',

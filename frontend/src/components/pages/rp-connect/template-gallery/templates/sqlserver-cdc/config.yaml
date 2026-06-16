@@ -1,0 +1,27 @@
+input:
+  sql_server_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    dsn: ${slot.dsn}
+    tables:
+      - ${slot.includedTable}
+
+    # ── Snapshot of existing rows before streaming changes ──────────────────
+    stream_snapshot: true                  # capture current rows on first run
+
+    # ── Polling tuning ──────────────────────────────────────────────────────
+    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # poll_interval: 1s
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true

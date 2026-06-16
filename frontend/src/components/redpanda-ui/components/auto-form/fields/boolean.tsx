@@ -14,6 +14,13 @@ import type { FieldTypeDefinition } from '../registry';
 // BooleanFieldComponent — tri-state select (true / false / unset)
 // ---------------------------------------------------------------------------
 
+function renderBooleanSelectedValue(value: unknown) {
+  if (value === UNSET_SELECT_VALUE || value === undefined || value === null || value === '') {
+    return 'Not set';
+  }
+  return value === 'true' ? 'True' : 'False';
+}
+
 function BooleanFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
   const fieldLabel = getControlLabel(label, field);
@@ -37,7 +44,7 @@ function BooleanFieldComponent({ error, field, id, inputProps, label }: AutoForm
         id={id}
         testId={testIds.control}
       >
-        <SelectValue placeholder="Choose a value" />
+        <SelectValue placeholder="Choose a value">{renderBooleanSelectedValue}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem testId={testIds.option('not-set')} value={UNSET_SELECT_VALUE}>

@@ -290,9 +290,19 @@ export const Combobox = memo(
     );
 
     const handleEnterKey = useCallback(
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: creatable Enter requires open + closed branches
       (event: React.KeyboardEvent) => {
         if (!open) {
-          return; // Let Enter propagate to form when closed
+          // In creatable mode, prevent Enter from bubbling to a parent <form>
+          // and triggering submit while the user is committing a new option.
+          // Without this, typing a new value + Enter in a creatable combobox
+          // both commits AND submits the form.
+          if (creatable && canCreate) {
+            event.preventDefault();
+            event.stopPropagation();
+            handleCreatableSubmit();
+          }
+          return; // Otherwise let Enter propagate to form when closed
         }
         event.preventDefault();
         event.stopPropagation();

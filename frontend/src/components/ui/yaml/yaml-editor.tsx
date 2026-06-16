@@ -16,6 +16,8 @@ import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useEffect, useMemo, useRef } from 'react';
 
+import { normalizePastedWhitespace } from './whitespace';
+
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
   transparentBackground?: boolean;
@@ -62,8 +64,8 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   editContext: false,
 } as const;
 
-// Give each `anyOf` variant a title (its first property name) so monaco-yaml's
-// hover doesn't render `|| || ||` between empty alternatives.
+// Title each `anyOf` variant (first property name) so monaco-yaml's hover
+// doesn't render `|| || ||` between empty alternatives.
 export function annotateAnyOfTitles(node: unknown): void {
   if (!node || typeof node !== 'object') {
     return;
@@ -135,7 +137,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
     [schema],
   );
 
-  // Update Monaco YAML when schema changes after initial mount
+  // Re-apply options when schema changes after mount.
   useEffect(() => {
     if (!hasInitializedRef.current) {
       hasInitializedRef.current = true;
@@ -145,7 +147,6 @@ export const YamlEditor = (props: YamlEditorProps) => {
     yamlRef.current?.update(monacoYamlOptions);
   }, [monacoYamlOptions]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (yamlRef.current) {
@@ -173,6 +174,18 @@ export const YamlEditor = (props: YamlEditorProps) => {
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       onMount={(editorInstance) => {
+        // Normalize invisible spaces in the pasted range (see whitespace.ts).
+        editorInstance.onDidPaste((e) => {
+          const model = editorInstance.getModel();
+          if (!model) {
+            return;
+          }
+          const pasted = model.getValueInRange(e.range);
+          const normalized = normalizePastedWhitespace(pasted);
+          if (normalized !== pasted) {
+            editorInstance.executeEdits('normalize-pasted-whitespace', [{ range: e.range, text: normalized }]);
+          }
+        });
         onEditorMount?.(editorInstance);
       }}
       options={options}

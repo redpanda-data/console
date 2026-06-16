@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { getWizardConnectionData, useOnboardingYamlContentStore } from 'state/onboarding-wizard-store';
+import { getWizardConnectionData, useRpcnWizardStore } from 'state/rpcn-wizard-store';
 
 import { generateYamlFromWizardData } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
@@ -18,16 +18,10 @@ import type { ConnectComponentSpec } from '../types/schema';
 const DEFAULT_TIMEOUT_MS = 3000;
 
 /**
- * Resolves the initial YAML content for create mode and pushes it to the
- * consumer via `onResolved`. Handles two paths:
- *
- * 1. Serverless mode (?serverless=true): waits for the component list, then
- *    generates templates from the onboarding wizard's session data.
- *    Note: we don't gate on store hydration — getWizardConnectionData() reads
- *    sessionStorage directly as a fallback when the Zustand store hasn't hydrated
- *    (which happens on SPA navigation when the store was previously reset).
- * 2. Non-serverless create mode: restores previously-persisted YAML from the
- *    in-memory onboarding YAML store (survives same-session navigation).
+ * Resolves the create-mode initial YAML and pushes it via `onResolved`.
+ * - Serverless: waits for the component list, then generates from wizard session data.
+ *   getWizardConnectionData() reads sessionStorage directly, so no store-hydration gate is needed.
+ * - Non-serverless: restores persisted YAML from the in-memory onboarding store.
  */
 export function useCreateModeInitialYaml(opts: {
   enabled: boolean;
@@ -40,7 +34,7 @@ export function useCreateModeInitialYaml(opts: {
   isInitializing: boolean;
 } {
   const { enabled, isServerlessMode, components, isPipelineDiagramsEnabled, timeoutMs = DEFAULT_TIMEOUT_MS } = opts;
-  const persistedYamlContent = useOnboardingYamlContentStore((s) => s.yamlContent);
+  const persistedYamlContent = useRpcnWizardStore((s) => s.yamlContent);
   const onResolvedRef = useRef(opts.onResolved);
   onResolvedRef.current = opts.onResolved;
 
@@ -66,7 +60,7 @@ export function useCreateModeInitialYaml(opts: {
     const yaml = generateYamlFromWizardData(input, output, components);
 
     if (yaml && !isPipelineDiagramsEnabled) {
-      useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: yaml });
+      useRpcnWizardStore.getState().setYamlContent({ yamlContent: yaml });
     }
 
     if (yaml) {

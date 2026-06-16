@@ -4,7 +4,7 @@ import React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 const tableVariants = cva(
-  'relative w-full min-w-0 overflow-x-auto rounded-lg border border-base-200 border-solid bg-white p-0 shadow-shadow-elevated dark:border-base-800 dark:bg-base-900',
+  'relative w-full min-w-0 overflow-x-auto rounded-lg border border-border border-solid bg-card p-0 shadow-shadow-elevated',
   {
     variants: {
       variant: {
