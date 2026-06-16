@@ -43,7 +43,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Buf – lint, format & breaking
         uses: bufbuild/buf-action@v1
         with:
@@ -63,18 +63,18 @@ jobs:
     needs: validate  # Only run after validation passes
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: ${{ vars.RP_AWS_CRED_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
 
-      - uses: aws-actions/aws-secretsmanager-get-secrets@v2
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v3
         with:
           secret-ids: |
             ,sdlc/prod/github/buf_token
           parse-json-secrets: true
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Buf – push to registry
         uses: bufbuild/buf-action@v1
@@ -96,18 +96,18 @@ jobs:
       github.repository == 'redpanda-data/console'
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: ${{ vars.RP_AWS_CRED_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
 
-      - uses: aws-actions/aws-secretsmanager-get-secrets@v2
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v3
         with:
           secret-ids: |
             ,sdlc/prod/github/buf_token
           parse-json-secrets: true
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Buf – archive label (ignore if not found)
         uses: bufbuild/buf-action@v1
