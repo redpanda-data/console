@@ -15,11 +15,11 @@ import { LineCounter, parseDocument } from 'yaml';
 import { parsePipelineFlowTree } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
-type NodeRange = { id: string; start: number; end: number; span: number };
+export type NodeRange = { id: string; start: number; end: number; span: number };
 
 // Each editable node's [startLine, endLine] in the YAML, derived from its edit
 // target's YAML path. Lines are 1-based to match LintHint.line.
-function nodeLineRanges(yaml: string): NodeRange[] {
+export function nodeLineRanges(yaml: string): NodeRange[] {
   const lineCounter = new LineCounter();
   const doc = parseDocument(yaml, { lineCounter });
   const { nodes } = parsePipelineFlowTree(yaml);
@@ -79,7 +79,7 @@ export function mergeLintHints(
 }
 
 // The smallest node range that contains `line` (most specific enclosing node).
-function enclosingNodeId(line: number, ranges: NodeRange[]): string | undefined {
+export function enclosingNodeId(line: number, ranges: NodeRange[]): string | undefined {
   let best: NodeRange | undefined;
   for (const range of ranges) {
     if (line >= range.start && line <= range.end && (!best || range.span < best.span)) {

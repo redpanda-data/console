@@ -88,12 +88,39 @@ const SECTION_LABEL: Record<string, string> = {
 
 // A colored left accent gives each role a quick visual identity: sources, transforms,
 // sinks, and shared resources read apart at a glance.
-const SECTION_ACCENT: Record<string, string> = {
+export const SECTION_ACCENT: Record<string, string> = {
   input: 'var(--color-green-500)',
   processor: 'var(--color-blue-500)',
   output: 'var(--color-purple-500)',
   resource: 'var(--color-orange-500)',
 };
+
+export function sectionAccent(section?: string): string | undefined {
+  return section ? SECTION_ACCENT[section] : undefined;
+}
+
+// The role accent shown as a solid bar down a card's left edge. Cards keep their
+// neutral border; only the left side takes the role colour, so the role reads at a
+// glance without recolouring the whole card.
+function accentBarStyle(accent?: string): React.CSSProperties | undefined {
+  return accent ? { borderLeftStyle: 'solid', borderLeftWidth: 3, borderLeftColor: accent } : undefined;
+}
+
+// A faint wash of the role colour behind the connector logo, so the icon sits in a
+// small tinted chip that echoes the accent bar.
+function accentChipStyle(accent?: string): React.CSSProperties | undefined {
+  return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)` } : undefined;
+}
+
+// The connector logo in a small rounded chip tinted with the role accent.
+const LogoChip = ({ name, accent, compact }: { name: string; accent?: string; compact?: boolean }) => (
+  <span
+    className={cn('flex shrink-0 items-center justify-center rounded-md', compact ? 'size-6' : 'size-7')}
+    style={accentChipStyle(accent)}
+  >
+    <ConnectorLogo className={compact ? 'size-4' : 'size-5'} fallback={Box} name={name as ComponentName} />
+  </span>
+);
 
 // The routing semantics of a node, shown as a chip on its card: `if <check>` for a
 // condition, `default` for the catch-all, `on error` for error handlers (catch) —
@@ -347,17 +374,23 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
 
 // A compact sidebar card: logo + name, with the label (e.g. a resource's label)
 // on its own row beneath so neither it nor the name gets truncated against the other.
-const CompactCard = ({ data }: { data: FlowCardData }) => (
-  <div className="group flex flex-col gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md">
-    <div className="flex items-center gap-2">
-      <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
-      <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
-        {data.label}
-      </Text>
+const CompactCard = ({ data }: { data: FlowCardData }) => {
+  const accent = sectionAccent(data.section);
+  return (
+    <div
+      className="group flex flex-col gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-sm transition-shadow hover:shadow-md"
+      style={accent ? { borderLeftStyle: 'solid', borderLeftWidth: 2, borderLeftColor: accent } : undefined}
+    >
+      <div className="flex items-center gap-2">
+        <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={data.label as ComponentName} />
+        <Text as="span" className="min-w-0 flex-1 truncate font-medium text-sm" title={data.label}>
+          {data.label}
+        </Text>
+      </div>
+      {data.labelText ? <LabelBadge className="max-w-full self-start" label={data.labelText} /> : null}
     </div>
-    {data.labelText ? <LabelBadge className="max-w-full self-start" label={data.labelText} /> : null}
-  </div>
-);
+  );
+};
 
 // The selection ring shown on the node the inspector is editing. Uses `primary`
 // (the conventional "selected" colour); the selected node still reads clearly
@@ -421,6 +454,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         selectable && 'cursor-pointer',
         cardRing(data)
       )}
+      style={accentBarStyle(accent)}
     >
       <div className="flex items-center gap-1.5 px-3 pt-2 pb-0.5">
         <Text
@@ -435,7 +469,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         <LintBadge errors={data.lintErrors} />
       </div>
       <div className="flex w-full items-center gap-2 px-3 pb-2 text-left">
-        <ConnectorLogo className="size-5 shrink-0" fallback={Box} name={data.label as ComponentName} />
+        <LogoChip accent={accent} name={data.label} />
         <Text as="span" className="min-w-0 flex-1 truncate font-semibold" title={data.label} variant="bodyStrongMedium">
           {data.label}
         </Text>
@@ -544,11 +578,7 @@ const ContainerHeaderTitle = ({ data, accent }: { data: FlowCardData; accent?: s
   }
   return (
     <>
-      <ConnectorLogo
-        className={cn('shrink-0', data.compact ? 'size-4' : 'size-5')}
-        fallback={Box}
-        name={data.label as ComponentName}
-      />
+      <LogoChip accent={accent} compact={data.compact} name={data.label} />
       <ContainerTitleText accent={accent} data={data} />
       <LabelBadge className="max-w-[35%]" label={data.labelText} />
       <BranchConditionChip className="max-w-[45%]" data={data} />
@@ -579,6 +609,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
           'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm',
           cardRing(data)
         )}
+        style={accentBarStyle(accent)}
       >
         <div
           className={cn(
@@ -637,6 +668,20 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
           opacity: d?.dimmed ? 0.25 : 1,
         }}
       />
+      {/* Marching dots over the solid spine show which way data flows; quieted on
+          idle edges and dropped entirely on edges unrelated to the selection. */}
+      {d?.dimmed ? null : (
+        <path
+          className="pipeline-flow-dash"
+          d={path}
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeDasharray="1 9"
+          strokeLinecap="round"
+          strokeWidth={d?.emphasized ? 3 : 2}
+          style={{ opacity: d?.emphasized ? 0.85 : 0.5, pointerEvents: 'none' }}
+        />
+      )}
       {onInsert ? (
         <EdgeLabelRenderer>
           <button
@@ -662,6 +707,9 @@ type FlowLinkData = {
   dashed?: boolean;
   laneFromSource?: number;
   laneFromTarget?: number;
+  /** Y of the horizontal bend for a vertical (top↔bottom) edge — a per-cable lane
+      so reference runs don't stack. Ignored when the endpoints line up vertically. */
+  laneCenterY?: number;
   /** Draw a small "port" socket at the container end so the line visibly plugs in. */
   portDot?: 'source' | 'target';
   /** Selection context: unrelated edges fade, connected ones render full strength. */
@@ -669,33 +717,7 @@ type FlowLinkData = {
   emphasized?: boolean;
   /** Idle reference edges: readable hint, softer than full strength. */
   faint?: boolean;
-  /** Orthogonal cable route (reference edges): drop → channel → bus → target. */
-  route?: { channelX: number; busY: number };
 };
-
-// An orthogonal polyline through `points` with rounded corners.
-function orthogonalRoundedPath(points: [number, number][], radius = 8): string {
-  const pts = points.filter(([x, y], i) => i === 0 || x !== points[i - 1][0] || y !== points[i - 1][1]);
-  if (pts.length < 2) {
-    return '';
-  }
-  let d = `M ${pts[0][0]} ${pts[0][1]}`;
-  for (let i = 1; i < pts.length - 1; i += 1) {
-    const [px, py] = pts[i - 1];
-    const [cx, cy] = pts[i];
-    const [nx, ny] = pts[i + 1];
-    const inLen = Math.abs(cx - px) + Math.abs(cy - py);
-    const outLen = Math.abs(nx - cx) + Math.abs(ny - cy);
-    const r = Math.min(radius, inLen / 2, outLen / 2);
-    const inX = cx - Math.sign(cx - px) * r;
-    const inY = cy - Math.sign(cy - py) * r;
-    const outX = cx + Math.sign(nx - cx) * r;
-    const outY = cy + Math.sign(ny - cy) * r;
-    d += ` L ${inX} ${inY} Q ${cx} ${cy} ${outX} ${outY}`;
-  }
-  const [lx, ly] = pts.at(-1) as [number, number];
-  return `${d} L ${lx} ${ly}`;
-}
 
 const HIGHLIGHT_STROKE = 'var(--color-primary)';
 
@@ -730,24 +752,6 @@ function linkStyle(d: FlowLinkData | undefined): React.CSSProperties {
     strokeDasharray: d?.dashed ? '5 4' : undefined,
     opacity,
   };
-}
-
-type EdgeCoords = { sx: number; sy: number; tx: number; ty: number };
-
-// The cable route for a reference edge: a short drop out of the node, across to
-// the clear channel beside its top-level column, down the channel, along the bus
-// above the resource lane, then into the resource — avoiding the nodes stacked
-// below the source.
-function referenceRoutePath(route: { channelX: number; busY: number }, { sx, sy, tx, ty }: EdgeCoords): string {
-  const drop = sy + 14;
-  return orthogonalRoundedPath([
-    [sx, sy],
-    [sx, drop],
-    [route.channelX, drop],
-    [route.channelX, route.busY],
-    [tx, route.busY],
-    [tx, ty],
-  ]);
 }
 
 const LINK_STROKE: Record<LinkTone, string> = {
@@ -785,15 +789,17 @@ export function FlowLinkEdge({
 }: EdgeProps) {
   const d = data as FlowLinkData | undefined;
   const tone = d?.tone ?? 'muted';
-  // Place the vertical bend in this edge's own lane so fanned siblings don't share
-  // (and overlap on) a single trunk.
+  // Place the bend in this edge's own lane so siblings don't share (and overlap on) a
+  // single trunk: a horizontal lane (centerX) for fan-out/fan-in, a vertical lane
+  // (centerY) for reference cables. Both are ignored by getSmoothStepPath when the
+  // endpoints already line up on that axis, so an aligned cable stays a straight line.
   let centerX: number | undefined;
   if (d?.laneFromSource !== undefined) {
     centerX = sourceX + d.laneFromSource;
   } else if (d?.laneFromTarget !== undefined) {
     centerX = targetX - d.laneFromTarget;
   }
-  const [smoothPath, labelX, labelY] = getSmoothStepPath({
+  const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -805,10 +811,8 @@ export function FlowLinkEdge({
     // force the default 20px approach stub to jog the line left then back right.
     offset: 8,
     ...(centerX === undefined ? {} : { centerX }),
+    ...(d?.laneCenterY === undefined ? {} : { centerY: d.laneCenterY }),
   });
-  const path = d?.route
-    ? referenceRoutePath(d.route, { sx: sourceX, sy: sourceY, tx: targetX, ty: targetY })
-    : smoothPath;
   return (
     <>
       <BaseEdge markerEnd={markerEnd} path={path} style={linkStyle(d)} />

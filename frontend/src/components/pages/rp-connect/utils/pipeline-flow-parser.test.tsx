@@ -1183,9 +1183,10 @@ cache_resources:
     const refEdges = computeFlowLayout(parsePipelineFlowTree(twoResources).nodes).rfEdges.filter((e) =>
       e.id.startsWith('ref-')
     );
-    const busYs = refEdges.map((e) => (e.data as { route?: { busY: number } }).route?.busY);
-    expect(busYs).toHaveLength(2);
-    expect(new Set(busYs).size).toBe(busYs.length); // distinct lanes
+    const lanes = refEdges.map((e) => (e.data as { laneCenterY?: number }).laneCenterY);
+    expect(lanes).toHaveLength(2);
+    expect(lanes.every((y) => typeof y === 'number')).toBe(true);
+    expect(new Set(lanes).size).toBe(lanes.length); // distinct bend lanes
   });
 
   it('nests fan lanes like parentheses around the centre port (crossing-free)', () => {
@@ -1218,16 +1219,28 @@ output:
     expect(inLane('fanin-proc-0-case-1')).toBeLessThan(inLane('fanin-proc-0-case-2'));
   });
 
-  it('routes reference edges through the clear channel beside their column', () => {
-    const route = (data('ref-proc-0-resource-cache_resources-0') as { route?: { channelX: number; busY: number } })
-      ?.route;
-    // The cable exits into the gap to the right of its top-level column and runs
-    // along a bus above the resource lane — never through the nodes below it.
-    expect(route?.channelX).toBeGreaterThan(0);
-    expect(route?.busY).toBeGreaterThan(0);
+  it('drops the reference cable straight down (bottom→top) and bends in its own lane', () => {
+    // The cable plugs out of the source's bottom into the resource's top via a smooth
+    // step, bending in a lane between the flow and the resource lane — so a resource
+    // laid out under its source renders as a straight vertical drop, not a detour.
+    const refEdge = edge('ref-proc-0-resource-cache_resources-0');
+    expect(refEdge?.sourceHandle).toBe('b');
+    expect(refEdge?.targetHandle).toBe('t');
+    const laneY = (refEdge?.data as { laneCenterY?: number }).laneCenterY;
+    expect(laneY).toBeGreaterThan(0);
   });
 
-  it('re-anchors a hidden reference source to its collapsed container', () => {
+  it('lays a referenced resource under its source so the cable is a straight drop', () => {
+    // dedupe_cache lays out at the same x as its referencing cache (proc-0); with the
+    // smooth-step router that means a clean vertical line (no horizontal excursion).
+    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    const procX = layout.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
+    const resourceX = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -2;
+    expect(procX).toBeGreaterThan(0);
+    expect(resourceX).toBe(procX);
+  });
+
+  it('anchors a reference at its top-level column so the cable never crosses the cards inside it', () => {
     const nested = `pipeline:
   processors:
     - branch:
@@ -1240,20 +1253,24 @@ cache_resources:
     redis: { url: x }`;
     const { nodes } = parsePipelineFlowTree(nested);
 
-    // Expanded: the reference comes from the nested cache itself.
+    // Expanded: the cache is nested in the branch, but the cable attaches to the
+    // top-level branch column — its bottom is in the clear band below the flow, so
+    // the drop never crosses the cards stacked inside the branch.
     const open = computeFlowLayout(nodes);
-    expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
+    expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
 
-    // Collapsed: the cache is hidden, so the reference re-anchors to the branch —
-    // the resource stays visibly connected instead of dangling.
+    // Collapsed: the branch (and its cache) is a single card; the cable still attaches
+    // to it, so the resource stays visibly connected.
     const closed = computeFlowLayout(nodes, new Set(['proc-0']));
     expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
 
-    // And the resource stays aligned under the collapsed branch (its visible
-    // anchor) instead of snapping back to the far-left default slot.
-    const branchX = closed.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
-    const resourceX = closed.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -1;
-    expect(resourceX).toBe(branchX);
+    // The resource lays out directly under the branch column (a straight drop), both
+    // expanded and collapsed.
+    for (const layout of [open, closed]) {
+      const branchX = layout.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
+      const resourceX = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -2;
+      expect(resourceX).toBe(branchX);
+    }
   });
 
   it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {

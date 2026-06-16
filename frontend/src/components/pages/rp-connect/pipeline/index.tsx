@@ -84,9 +84,9 @@ import { z } from 'zod';
 import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
 import { PipelineCommandMenu } from './pipeline-command-menu';
-import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
+import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { TemplateGalleryCta } from './template-cta';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
@@ -110,7 +110,7 @@ import type {
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
-import { mergeLintHints } from '../utils/pipeline-lint';
+import { enclosingNodeId, mergeLintHints, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -685,10 +685,67 @@ function SidebarPanel({
   // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
   const isEmpty = useIsPipelineEmpty(yamlContent);
-  // The refreshed side-lane (new flow canvas) ships behind the visual-editor flag;
+  // The refreshed side-lane (structure outline) ships behind the visual-editor flag;
   // with it off we fall back to the original `PipelineFlowDiagram` mini-diagram.
   const showNewLane = isPipelineDiagramsEnabled && isVisualEditorEnabled;
   const showOldLane = isPipelineDiagramsEnabled && !isVisualEditorEnabled;
+
+  // Two-way sync between the outline and the YAML editor: clicking a node reveals +
+  // selects its lines, and moving the cursor in the editor highlights the node.
+  const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
+  const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
+  // Node → YAML line ranges, recomputed as the document changes.
+  const nodeRanges = useMemo(() => {
+    try {
+      return nodeLineRanges(yamlContent);
+    } catch {
+      return [];
+    }
+  }, [yamlContent]);
+  // Keep the latest ranges available to the (long-lived) cursor listener without
+  // re-subscribing on every keystroke.
+  const nodeRangesRef = useRef(nodeRanges);
+  nodeRangesRef.current = nodeRanges;
+
+  const revealNodeInEditor = useCallback(
+    (nodeId?: string) => {
+      const ed = editorInstance;
+      const range = nodeId ? nodeRanges.find((r) => r.id === nodeId) : undefined;
+      const model = ed?.getModel();
+      if (!(ed && range && model)) {
+        return;
+      }
+      const endLine = Math.min(range.end, model.getLineCount());
+      ed.setSelection({
+        startLineNumber: range.start,
+        startColumn: 1,
+        endLineNumber: endLine,
+        endColumn: model.getLineMaxColumn(endLine),
+      });
+      ed.revealLineInCenterIfOutsideViewport(range.start);
+      ed.focus();
+    },
+    [editorInstance, nodeRanges]
+  );
+
+  const handleSelectNode = useCallback(
+    (highlightId: string, editableId?: string) => {
+      setActiveNodeId(highlightId);
+      revealNodeInEditor(editableId);
+    },
+    [revealNodeInEditor]
+  );
+
+  // Editor cursor → highlight the most specific node enclosing the caret line.
+  useEffect(() => {
+    if (!editorInstance) {
+      return;
+    }
+    const sub = editorInstance.onDidChangeCursorPosition((e) => {
+      setActiveNodeId(enclosingNodeId(e.position.lineNumber, nodeRangesRef.current));
+    });
+    return () => sub.dispose();
+  }, [editorInstance]);
   const showTemplateCta = showNewLane && canEdit && Boolean(onBrowseTemplates) && isEmpty;
   // The old mini-diagram renders its own template entry point internally; the new
   // lane uses the floating CTA below instead.
@@ -708,13 +765,11 @@ function SidebarPanel({
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto overflow-x-hidden">
           {showNewLane ? (
-            <PipelineFlowCanvas
+            <PipelineStructureTree
               configYaml={yamlContent}
               onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
-              onAddSasl={canEdit ? onAddSasl : undefined}
-              onAddTopic={canEdit ? onAddTopic : undefined}
-              orientation="vertical"
-              simple
+              onSelectNode={handleSelectNode}
+              selectedNodeId={activeNodeId}
             />
           ) : null}
           {showOldLane ? (

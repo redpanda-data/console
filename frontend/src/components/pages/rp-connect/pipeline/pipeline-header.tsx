@@ -66,6 +66,24 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
+// Free-form prose reads poorly squeezed into the narrow key/value column, so the
+// description gets its own block: a quiet label above the text, which flows at a
+// comfortable reading measure and preserves the author's line breaks.
+const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
+  <div className="flex flex-col gap-0.5 text-sm">
+    <span className="text-muted-foreground">Description</span>
+    <p
+      className={cn(
+        'max-w-prose whitespace-pre-wrap break-words text-foreground leading-relaxed',
+        clamp && 'line-clamp-2'
+      )}
+      title={text}
+    >
+      {text}
+    </p>
+  </div>
+);
+
 const ComputeUnitsMeta = ({ units }: { units: number }) => (
   <span className="flex items-center gap-1.5">
     <span className="font-medium text-foreground">{units}</span>
@@ -248,13 +266,7 @@ export function PipelineViewHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? (
-          <DetailLine label="Description">
-            <p className="line-clamp-2 max-w-[66%] whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </DetailLine>
-        ) : null}
+        {description ? <DescriptionBlock clamp text={description} /> : null}
       </div>
     </header>
   );
@@ -332,13 +344,7 @@ export function PipelineEditHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? (
-          <DetailLine label="Description">
-            <p className="max-w-[66%] whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </DetailLine>
-        ) : null}
+        {description ? <DescriptionBlock text={description} /> : null}
         <Button className="mt-1" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
           Edit settings
         </Button>

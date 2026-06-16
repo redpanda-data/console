@@ -14,6 +14,7 @@ import {
   BackgroundVariant,
   Controls,
   type Edge,
+  MiniMap,
   type Node,
   ReactFlow,
   ReactFlowProvider,
@@ -22,7 +23,7 @@ import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
-import { flowEdgeTypes, flowNodeTypes } from './pipeline-flow-canvas-nodes';
+import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
 import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
 import { computeFlowLayout, type FlowOrientation, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
@@ -32,6 +33,38 @@ const PARSE_DEBOUNCE_MS = 300;
 const PAN_PADDING = 240;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
+// The minimap only earns its space once a pipeline is large enough to need
+// navigating; trivial graphs fit on screen and the minimap is just clutter.
+const MINIMAP_MIN_NODES = 8;
+
+// Tint each minimap blip with its node's role accent so the overview stays legible
+// at thumbnail size; structural marks (section labels) drop out so only the actual
+// components show — a simple, uncluttered overview.
+function miniMapNodeColor(node: Node): string {
+  return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
+}
+
+// A simple rounded blip per node. We render the fill via inline `style` (not the SVG
+// `fill` attribute, which doesn't evaluate the `var(--color-…)` accent) and floor the
+// size so content-sized cards — whose width/height React Flow hasn't measured yet —
+// still show as a visible dot. Sectionless marks (color 'transparent') drop out.
+type MiniMapBlipProps = { x: number; y: number; width: number; height: number; color?: string; borderRadius: number };
+function MiniMapBlip({ x, y, width, height, color, borderRadius }: MiniMapBlipProps) {
+  if (!color || color === 'transparent') {
+    return null;
+  }
+  return (
+    <rect
+      height={Math.max(height, 18)}
+      rx={borderRadius}
+      ry={borderRadius}
+      style={{ fill: color }}
+      width={Math.max(width, 18)}
+      x={x}
+      y={y}
+    />
+  );
+}
 
 type CanvasCallbacks = {
   onAddConnector?: (section: string) => void;
@@ -441,7 +474,28 @@ export function PipelineFlowCanvas({
           zoomOnScroll={false}
         >
           {simple ? null : <Background gap={20} size={1.5} variant={BackgroundVariant.Dots} />}
-          {hideControls || simple ? null : <Controls position="bottom-right" showInteractive={false} />}
+          {hideControls || simple ? null : (
+            <Controls
+              className="overflow-hidden rounded-md border border-border bg-background/90 shadow-sm backdrop-blur-sm"
+              position="bottom-right"
+              showInteractive={false}
+            />
+          )}
+          {simple || rfNodes.length <= MINIMAP_MIN_NODES ? null : (
+            <MiniMap
+              bgColor="var(--color-card)"
+              className="!m-0 overflow-hidden rounded-md border border-border shadow-sm"
+              maskColor="color-mix(in srgb, var(--color-muted) 55%, transparent)"
+              nodeBorderRadius={3}
+              nodeColor={miniMapNodeColor}
+              nodeComponent={MiniMapBlip}
+              pannable
+              // Sit just left of the bottom-right zoom controls, compact.
+              position="bottom-right"
+              style={{ width: 132, height: 84, right: 52, bottom: 12 }}
+              zoomable
+            />
+          )}
         </ReactFlow>
       </ReactFlowProvider>
       {simple ? null : <FlowLegend flags={legend} />}

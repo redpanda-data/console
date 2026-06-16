@@ -153,13 +153,14 @@ Supporting polish:
   its right port — data flows back out and continues to the next step — with
   the same per-branch lanes, tones, and port sockets as the fan-out. *Output*
   fans (broker/switch/fallback outputs) terminate at their sinks and draw none.
-- **Channel routing for reference edges.** Each `uses` edge exits its node with a
-  short drop, runs across to the **clear channel beside its top-level column**
-  (mid-`colGap`, staggered when shared), down the channel, along **its own
-  horizontal bus lane** (each reference edge gets a distinct lane in the band
-  between the flow and the resource lane, so cables never overlap), then into the
-  resource (`buildReferenceEdges` → `orthogonalRoundedPath`) — never dropping
-  through the nodes stacked below the source.
+- **Straight-when-possible reference cables.** Each `uses` edge plugs out of its
+  source's bottom into the resource's top with a **smooth step** (`buildReferenceEdges`,
+  `sourceHandle: 'b'` → `targetHandle: 't'`). Because a referenced resource lays out
+  at the same x as its source (`resourceLaneX`), the cable is a **clean vertical
+  drop**; an offset resource gets a single rounded jog. Each cable bends in **its own
+  horizontal lane** (`laneCenterY`, a distinct lane in the band between the flow and
+  the resource lane) so concurrent runs never overlap — the lane is ignored when the
+  endpoints already line up, keeping aligned cables perfectly straight.
 - **Fan-in / merge terminate in the port socket, not an arrowhead.** Any edge
   whose container end is a port (`portDot: 'target'` — fan-in, branch merge) omits
   its arrowhead: several fan-in lines into one port would otherwise stack
@@ -172,9 +173,11 @@ Supporting polish:
   body plays a `fade-in zoom-in-95` enter — applied to the card, never the React
   Flow node wrapper whose `transform` drives positioning — so they grow in place
   from the expanded section.
-- **Collapse re-anchoring.** A reference whose source is hidden inside a
-  collapsed container re-anchors to the **nearest visible ancestor**
-  (`visibleAnchor`), so resources never dangle disconnected while collapsed.
+- **Top-level reference anchoring.** A `uses` cable attaches to its source's
+  **top-level column** (`topLevelAnchor`), not the nested node — the column's bottom
+  sits in the clear band below the flow, so the cable drops straight down without ever
+  crossing the cards stacked inside the column. If an ancestor is collapsed, it falls
+  back to the deepest visible ancestor, so resources never dangle while collapsed.
 - **Container ports sit level with the child rows.** `containerPortYs` anchors a
   branch's `gs` (copy) at the **first child's connector row** and its `gt` (merge)
   at the **last child's row** — those edges are clean horizontal lines in the
