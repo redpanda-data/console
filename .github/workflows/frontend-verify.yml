@@ -82,7 +82,7 @@ jobs:
           REACT_APP_DEV_HINT=true
           bun run build
       - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-build
           path: frontend/build
@@ -103,7 +103,7 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run unit tests
         run: bun run test:unit
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: unit-test-results
@@ -129,7 +129,7 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run integration tests
         run: bun run test:integration -- --shard=${{ matrix.shard }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: integration-test-results-${{ matrix.shard }}
