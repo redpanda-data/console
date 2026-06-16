@@ -9,39 +9,44 @@
  * by the Apache License, Version 2.0
  */
 
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Alert,
-  AlertIcon,
-  Button,
-  Flex,
-  Input,
-  List,
-  ListItem,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Slider,
-  SliderFilledTrack,
-  SliderMark,
-  SliderThumb,
-  SliderTrack,
-  Spinner,
-  Text,
-  useToast,
-} from '@redpanda-data/ui';
+  Choicebox,
+  ChoiceboxItem,
+  ChoiceboxItemContent,
+  ChoiceboxItemDescription,
+  ChoiceboxItemHeader,
+  ChoiceboxItemIndicator,
+  ChoiceboxItemTitle,
+} from 'components/redpanda-ui/components/choicebox';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Slider } from 'components/redpanda-ui/components/slider';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-import styles from './DeleteRecordsModal.module.scss';
 import { api, useApiStoreHook } from '../../../../state/backend-api';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/rest-interfaces';
-import { RadioOptionGroup } from '../../../../utils/tsx-utils';
 import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlTimePicker } from '../../../misc/kowl-time-picker';
-import { SingleSelect } from '../../../misc/select';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -51,7 +56,7 @@ const DIGITS_ONLY_REGEX = /^\d*$/;
 
 function TrashIcon() {
   return (
-    <svg fill="none" height="67" width="66" xmlns="http://www.w3.org/2000/svg">
+    <svg className="shrink-0" fill="none" height="67" width="66" xmlns="http://www.w3.org/2000/svg">
       <title>Trash</title>
       <circle cx="33" cy="33.6" fill="#F53649" r="33" />
       <path
@@ -72,6 +77,44 @@ function TrashIcon() {
   );
 }
 
+function DeleteRecordsIntro({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-4">
+      <TrashIcon />
+      <Text variant="muted">{children}</Text>
+    </div>
+  );
+}
+
+function DeleteOption({
+  value,
+  title,
+  subTitle,
+  isSelected,
+  children,
+}: {
+  value: string;
+  title: string;
+  subTitle: string;
+  isSelected: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div>
+      <ChoiceboxItem value={value}>
+        <ChoiceboxItemHeader>
+          <ChoiceboxItemTitle>{title}</ChoiceboxItemTitle>
+          <ChoiceboxItemDescription>{subTitle}</ChoiceboxItemDescription>
+        </ChoiceboxItemHeader>
+        <ChoiceboxItemContent>
+          <ChoiceboxItemIndicator />
+        </ChoiceboxItemContent>
+      </ChoiceboxItem>
+      {isSelected && children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
 function SelectPartitionStep({
   selectedPartitionOption,
   onPartitionOptionSelected,
@@ -86,65 +129,53 @@ function SelectPartitionStep({
   partitions: number[];
 }): JSX.Element {
   return (
-    <>
-      <div className={styles.twoCol}>
-        <TrashIcon />
-        <p>
-          You are about to delete records in your topic. Choose on what partitions you want to delete records. In the
-          next step you can choose the new low water mark for your selected partitions.
-        </p>
-      </div>
-      <RadioOptionGroup<PartitionOption>
-        onChange={(v) => {
-          if (v === 'allPartitions') {
+    <div className="space-y-4">
+      <DeleteRecordsIntro>
+        You are about to delete records in your topic. Choose on what partitions you want to delete records. In the next
+        step you can choose the new low water mark for your selected partitions.
+      </DeleteRecordsIntro>
+      <Choicebox
+        onValueChange={(v) => {
+          const option = v as PartitionOption;
+          if (option === 'allPartitions') {
             onSpecificPartitionSelected(null);
           }
-          onPartitionOptionSelected(v);
+          onPartitionOptionSelected(option);
         }}
-        options={[
-          {
-            value: 'allPartitions',
-            title: 'All Partitions',
-            subTitle: 'Delete records until specified offset across all available partitions in this topic.',
-          },
-          {
-            value: 'specificPartition',
-            title: 'Specific Partition',
-            subTitle: 'Delete records within a specific partition in this topic only.',
-            content: (
-              // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
-              // fixes immediately self closing Select drop down after an option has already been selected
-              // biome-ignore lint/a11y/noStaticElementInteractions: event handlers needed for dropdown workaround
-              <div
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-                role="presentation"
-              >
-                <SingleSelect<number | undefined>
-                  onChange={onSpecificPartitionSelected as (v: number | undefined) => void}
-                  options={partitions.map((i) => ({
-                    label: `Partition ${i}`,
-                    value: i,
-                  }))}
-                  placeholder="Choose Partition…"
-                  value={specificPartition ?? undefined}
-                />
-              </div>
-            ),
-          },
-        ]}
-        showContent="onlyWhenSelected"
-        value={selectedPartitionOption}
-      />
-    </>
+        value={selectedPartitionOption ?? ''}
+      >
+        <DeleteOption
+          isSelected={selectedPartitionOption === 'allPartitions'}
+          subTitle="Delete records until specified offset across all available partitions in this topic."
+          title="All Partitions"
+          value="allPartitions"
+        />
+        <DeleteOption
+          isSelected={selectedPartitionOption === 'specificPartition'}
+          subTitle="Delete records within a specific partition in this topic only."
+          title="Specific Partition"
+          value="specificPartition"
+        >
+          <Select
+            onValueChange={(v) => onSpecificPartitionSelected(Number(v))}
+            value={specificPartition === null ? undefined : String(specificPartition)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose Partition…">
+                {(raw) => (raw === undefined || raw === '' ? 'Choose Partition…' : `Partition ${raw}`)}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {partitions.map((i) => (
+                <SelectItem key={i} value={String(i)}>
+                  Partition {i}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </DeleteOption>
+      </Choicebox>
+    </div>
   );
 }
 
@@ -168,69 +199,46 @@ const SelectOffsetStep = ({
   timestamp: number | null;
   onTimestampChanged: (v: number) => void;
 }) => {
-  const upperOption =
-    partitionInfo === 'allPartitions'
-      ? {
-          value: 'highWatermark' as OffsetOption,
-          title: 'High Watermark',
-          subTitle: 'Delete records until high watermark across all partitions in this topic.',
-        }
-      : {
-          value: 'manualOffset' as OffsetOption,
-          title: 'Manual Offset',
-          subTitle: `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
-          content: (
+  const isAllPartitions = partitionInfo === 'allPartitions';
+
+  return (
+    <div className="space-y-4">
+      <DeleteRecordsIntro>
+        Choose the new low offset for your selected partitions. Take note that this is a soft delete and that the actual
+        data may still be on the hard drive but not visible for any clients, even if they request the data.
+      </DeleteRecordsIntro>
+      <Choicebox onValueChange={(v) => selectValue(v as OffsetOption)} value={selectedValue ?? ''}>
+        {isAllPartitions ? (
+          <DeleteOption
+            isSelected={selectedValue === 'highWatermark'}
+            subTitle="Delete records until high watermark across all partitions in this topic."
+            title="High Watermark"
+            value="highWatermark"
+          />
+        ) : (
+          <DeleteOption
+            isSelected={selectedValue === 'manualOffset'}
+            subTitle={`Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`}
+            title="Manual Offset"
+            value="manualOffset"
+          >
             <ManualOffsetContent
               onOffsetSpecified={onOffsetSpecified}
               partitionInfo={partitionInfo}
               topicName={topicName}
             />
-          ),
-        };
-
-  return (
-    <>
-      <div className={styles.twoCol}>
-        <TrashIcon />
-        <p>
-          Choose the new low offset for your selected partitions. Take note that this is a soft delete and that the
-          actual data may still be on the hard drive but not visible for any clients, even if they request the data.
-        </p>
-      </div>
-      <RadioOptionGroup<OffsetOption>
-        onChange={selectValue}
-        options={[
-          upperOption,
-          {
-            value: 'timestamp',
-            title: 'Timestamp',
-            subTitle: 'Delete all records prior to the selected timestamp.',
-            content: (
-              // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
-              // fixes immediately self closing Select drop down after an option has already been selected
-              // biome-ignore lint/a11y/noStaticElementInteractions: event handlers needed for dropdown workaround
-              <div
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-                role="presentation"
-              >
-                <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp ?? 0} />
-              </div>
-            ),
-          },
-        ]}
-        showContent="onlyWhenSelected"
-        value={selectedValue}
-      />
-    </>
+          </DeleteOption>
+        )}
+        <DeleteOption
+          isSelected={selectedValue === 'timestamp'}
+          subTitle="Delete all records prior to the selected timestamp."
+          title="Timestamp"
+          value="timestamp"
+        >
+          <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp ?? 0} />
+        </DeleteOption>
+      </Choicebox>
+    </div>
   );
 };
 
@@ -260,32 +268,28 @@ const ManualOffsetContent = ({
     const waterMarksErrors = topicWatermarksErrors?.map(({ waterMarksError }) => (
       <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>
     ));
-    const message = (
-      <>
-        {partitionErrors && partitionErrors.length > 0 ? (
-          <>
-            <strong>Partition Errors:</strong>
-            <ul>{partitionErrors}</ul>
-          </>
-        ) : null}
-        {waterMarksErrors && waterMarksErrors.length > 0 ? (
-          <>
-            <strong>Watermarks Errors:</strong>
-            <ul>{waterMarksErrors}</ul>
-          </>
-        ) : null}
-      </>
-    );
     return (
-      <Alert status="error">
-        <AlertIcon />
-        {message}
+      <Alert variant="destructive">
+        <AlertDescription>
+          {partitionErrors && partitionErrors.length > 0 ? (
+            <>
+              <strong>Partition Errors:</strong>
+              <ul>{partitionErrors}</ul>
+            </>
+          ) : null}
+          {waterMarksErrors && waterMarksErrors.length > 0 ? (
+            <>
+              <strong>Watermarks Errors:</strong>
+              <ul>{waterMarksErrors}</ul>
+            </>
+          ) : null}
+        </AlertDescription>
       </Alert>
     );
   }
 
   if (!partitions) {
-    return <Spinner size="lg" />;
+    return <Spinner className="size-6" />;
   }
 
   const [, partitionId] = partitionInfo;
@@ -293,31 +297,29 @@ const ManualOffsetContent = ({
 
   if (!partition) {
     return (
-      <Alert status="error">
-        <AlertIcon />
-        {`Partition of topic ${topicName} with ID ${partitionId} not found!`}
+      <Alert variant="destructive">
+        <AlertDescription>{`Partition of topic ${topicName} with ID ${partitionId} not found!`}</AlertDescription>
       </Alert>
     );
   }
 
   const { marks, min, max } = getMarks(partition);
   return (
-    <Flex alignItems="center" gap={2}>
-      <Slider max={max} min={min} onChange={updateOffsetFromSlider} value={sliderValue}>
-        {marks
-          ? Object.entries(marks).map(([value, label]) => (
-              <SliderMark key={value} value={Number(value)}>
+    <div className="flex items-center gap-4">
+      <div className="flex-1">
+        <Slider max={max} min={min} onValueChange={([v]) => updateOffsetFromSlider(v)} value={sliderValue} />
+        {marks ? (
+          <div className="mt-1 flex justify-between">
+            {Object.values(marks).map((label) => (
+              <Text key={label} variant="captionMedium">
                 {label}
-              </SliderMark>
-            ))
-          : null}
-        <SliderTrack>
-          <SliderFilledTrack />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
+              </Text>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <Input
-        maxWidth={124}
+        className="max-w-[124px]"
         onBlur={() => {
           if (sliderValue < min) {
             updateOffsetFromSlider(min);
@@ -336,7 +338,7 @@ const ManualOffsetContent = ({
         }}
         value={sliderValue}
       />
-    </Flex>
+    </div>
   );
 };
 
@@ -393,8 +395,7 @@ type DeleteRecordsModalProps = {
 };
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
-  const { visible, topic, onCancel, onFinish, afterClose } = props;
-  const toast = useToast();
+  const { visible, topic, onCancel, onFinish } = props;
 
   useEffect(() => {
     if (topic?.topicName) {
@@ -441,10 +442,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
       setOkButtonLoading(false);
     } else {
       onFinish();
-      toast({
-        description: 'Records deleted',
-        status: 'success',
-      });
+      toast.success('Records deleted');
     }
   };
 
@@ -523,26 +521,45 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     return 'allPartitions';
   };
 
+  const okButtonLabel = (() => {
+    if (hasErrors) {
+      return 'Ok';
+    }
+    if (step === 1) {
+      return 'Choose End Offset';
+    }
+    return 'Delete Records';
+  })();
+
   return (
-    <Modal isOpen={visible} onClose={onCancel} onCloseComplete={afterClose}>
-      <ModalOverlay />
-      <ModalContent minW="2xl">
-        <ModalHeader>Delete records in topic</ModalHeader>
-        <ModalBody>
-          {Boolean(hasErrors) && (
-            <Alert mb={2} status="error">
-              <AlertIcon />
-              <Flex flexDirection="column" gap={4} p={2}>
-                <Text>Errors occurred while processing your request. Contact your Kafka administrator.</Text>
-                <List>
-                  {errors.map((e) => (
-                    <ListItem key={e}>{e}</ListItem>
-                  ))}
-                </List>
-              </Flex>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onCancel();
+        }
+      }}
+      open={visible}
+    >
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Delete records in topic</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          {hasErrors ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                <div className="flex flex-col gap-4">
+                  <Text>Errors occurred while processing your request. Contact your Kafka administrator.</Text>
+                  <List>
+                    {errors.map((e) => (
+                      <ListItem key={e}>{e}</ListItem>
+                    ))}
+                  </List>
+                </div>
+              </AlertDescription>
             </Alert>
-          )}
-          {!hasErrors && step === 1 && (
+          ) : null}
+          {!hasErrors && step === 1 ? (
             <SelectPartitionStep
               onPartitionOptionSelected={setPartitionOption}
               onPartitionSpecified={setSpecifiedPartition}
@@ -550,8 +567,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
               selectedPartitionOption={partitionOption}
               specificPartition={specifiedPartition}
             />
-          )}
-          {!hasErrors && step === 2 && partitionOption !== null && (
+          ) : null}
+          {!hasErrors && step === 2 && partitionOption !== null ? (
             <SelectOffsetStep
               offsetOption={offsetOption}
               onOffsetOptionSelected={setOffsetOption}
@@ -561,28 +578,19 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
               timestamp={timestamp}
               topicName={topic.topicName}
             />
-          )}
-        </ModalBody>
-        <ModalFooter gap={2}>
+          ) : null}
+        </DialogBody>
+        <DialogFooter>
           <Button
-            colorScheme={hasErrors ? 'gray' : 'red'}
-            isDisabled={isOkButtonDisabled()}
+            disabled={isOkButtonDisabled()}
             isLoading={okButtonLoading}
             onClick={onOk}
-            variant="solid"
+            variant={hasErrors ? 'secondary' : 'destructive'}
           >
-            {(() => {
-              if (hasErrors) {
-                return 'Ok';
-              }
-              if (step === 1) {
-                return 'Choose End Offset';
-              }
-              return 'Delete Records';
-            })()}
+            {okButtonLabel}
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
