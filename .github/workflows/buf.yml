@@ -47,6 +47,8 @@ jobs:
       - name: Buf – lint, format & breaking
         uses: bufbuild/buf-action@v1
         with:
+          # buf CLI version - keep in sync with BUF_VERSION in taskfiles/proto.yaml
+          version: 1.65.0
           lint: true
           format: true
           breaking: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Buf Skip Breaking') }}
@@ -79,6 +81,8 @@ jobs:
       - name: Buf – push to registry
         uses: bufbuild/buf-action@v1
         with:
+          # buf CLI version - keep in sync with BUF_VERSION in taskfiles/proto.yaml
+          version: 1.65.0
           # No validation - already done in validate job
           lint: false
           format: false
@@ -112,6 +116,8 @@ jobs:
       - name: Buf – archive label (ignore if not found)
         uses: bufbuild/buf-action@v1
         with:
+          # buf CLI version - keep in sync with BUF_VERSION in taskfiles/proto.yaml
+          version: 1.65.0
           # Only archive - no other operations
           push: true
           token: ${{ env.BUF_TOKEN }}
