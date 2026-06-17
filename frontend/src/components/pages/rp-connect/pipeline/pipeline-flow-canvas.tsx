@@ -73,9 +73,8 @@ function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: numbe
   }
   return { minX, minY, maxX, maxY };
 }
-// The minimap only earns its space once a pipeline is large enough to need
-// navigating; trivial graphs fit on screen and the minimap is just clutter.
-const MINIMAP_MIN_NODES = 8;
+// The minimap always shows in the full editor (it's hidden only in the compact
+// side-lane). It draws the content at a fixed scale, tight to the diagram.
 const MINIMAP_WIDTH = 132;
 const MINIMAP_HEIGHT = 84;
 const MINIMAP_PAD = 6;
@@ -619,7 +618,7 @@ export function PipelineFlowCanvas({
               showInteractive={false}
             />
           )}
-          {simple || rfNodes.length <= MINIMAP_MIN_NODES ? null : <PipelineMiniMap nodes={rfNodes} />}
+          {simple ? null : <PipelineMiniMap nodes={rfNodes} />}
         </ReactFlow>
       </ReactFlowProvider>
       {simple ? null : <FlowLegend flags={legend} />}

@@ -1381,6 +1381,61 @@ output:
     expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
   });
 
+  it('renders an empty broker output as a fillable group, not a dead-end leaf', () => {
+    const yaml = `output:
+  broker:
+    pattern: fan_out
+    outputs: []`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const broker = nodes.find((n) => n.section === 'output' && n.label === 'broker');
+    expect(broker).toMatchObject({ id: 'output-broker', kind: 'group', editTarget: { kind: 'output' } });
+    expect(broker?.insertSlot).toEqual({ containerPath: ['output', 'broker', 'outputs'], accepts: 'output' });
+    // No phantom child nodes for the empty array.
+    expect(nodes.filter((n) => n.parentId === 'output-broker')).toHaveLength(0);
+  });
+
+  it('gives an empty output switch an add-case slot accepting outputs', () => {
+    const yaml = `output:
+  switch:
+    cases: []`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const sw = nodes.find((n) => n.section === 'output' && n.label === 'switch');
+    expect(sw).toMatchObject({ id: 'output-switch', kind: 'group' });
+    expect(sw?.addChildSlot).toEqual({ containerPath: ['output', 'switch', 'cases'], section: 'output' });
+  });
+
+  it('gives an empty input broker (no inputs key yet) an insert slot', () => {
+    const yaml = `input:
+  broker: {}
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const broker = nodes.find((n) => n.section === 'input' && n.label === 'broker');
+    expect(broker).toMatchObject({ id: 'input-broker', kind: 'group' });
+    expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
+  });
+
+  it('gives empty processor containers (try, branch) insert slots', () => {
+    const yaml = `pipeline:
+  processors:
+    - try: []
+    - branch:
+        request_map: 'root = this'
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const tryNode = nodes.find((n) => n.kind === 'group' && n.label === 'try');
+    expect(tryNode?.insertSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 0, 'try'],
+      accepts: 'processor',
+    });
+    const branch = nodes.find((n) => n.kind === 'group' && n.label === 'branch');
+    expect(branch?.insertSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 1, 'branch', 'processors'],
+      accepts: 'processor',
+    });
+  });
+
   it('flags dangling resource references and counts resource usage', () => {
     const yaml = `pipeline:
   processors:

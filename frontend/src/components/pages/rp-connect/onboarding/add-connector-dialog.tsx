@@ -1,24 +1,8 @@
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from 'components/redpanda-ui/components/dialog';
-import { Link } from 'components/redpanda-ui/components/typography';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType } from '../types/schema';
-
-function getDocsUrl(connectorType?: ConnectComponentType | ConnectComponentType[]): string | null {
-  const type = Array.isArray(connectorType) ? connectorType[0] : connectorType;
-  if (!type) {
-    return null;
-  }
-  return `https://docs.redpanda.com/redpanda-cloud/develop/connect/components/${type}s/about/`;
-}
 
 export const AddConnectorDialog = ({
   isOpen,
@@ -44,30 +28,19 @@ export const AddConnectorDialog = ({
     typeFilter = [connectorType];
   }
 
-  const docsUrl = getDocsUrl(connectorType);
-
   return (
     <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
-      <DialogContent size="xl">
+      <DialogContent height="lg" size="xl">
         <DialogHeader>
           <DialogTitle>{title ?? 'Add a connector'}</DialogTitle>
-          <DialogDescription>
-            Configure your pipeline.{' '}
-            {docsUrl ? (
-              <Link href={docsUrl} rel="noopener noreferrer" target="_blank">
-                Learn more
-              </Link>
-            ) : null}
-          </DialogDescription>
         </DialogHeader>
-        <DialogBody padding="none" scrollShadow={false}>
-          <ConnectCommandPalette
-            allowedTypes={typeFilter}
-            components={components}
-            onSelect={(name, type) => onAddConnector?.(name, type)}
-            searchPlaceholder={searchPlaceholder}
-          />
-        </DialogBody>
+        <ConnectCommandPalette
+          allowedTypes={typeFilter}
+          components={components}
+          onCancel={onCloseAddConnector}
+          onSelect={(name, type) => onAddConnector?.(name, type)}
+          searchPlaceholder={searchPlaceholder}
+        />
       </DialogContent>
     </Dialog>
   );

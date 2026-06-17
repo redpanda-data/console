@@ -168,6 +168,56 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
   ];
 }
 
+// ── Empty container affordances ──────────────────────────────────────────
+// Container components (broker/switch/fallback/sequence) normally expand into a
+// parent group plus a child node per member, and the insert "+" is derived from
+// those children. With an empty array there's no child to derive from, so we emit
+// the group with an explicit slot — otherwise a freshly-added broker would render
+// as a dead-end leaf with no way to add its first member.
+type ContainerSlot =
+  | { insertSlot: NonNullable<PipelineFlowNode['insertSlot']> }
+  | { addChildSlot: NonNullable<PipelineFlowNode['addChildSlot']> };
+
+const EMPTY_OUTPUT_CONTAINERS: Record<string, ContainerSlot> = {
+  broker: { insertSlot: { containerPath: ['output', 'broker', 'outputs'], accepts: 'output' } },
+  fallback: { insertSlot: { containerPath: ['output', 'fallback'], accepts: 'output' } },
+  // A `switch` grows by appending a structural `{ check, output }` case.
+  switch: { addChildSlot: { containerPath: ['output', 'switch', 'cases'], section: 'output' } },
+};
+
+const EMPTY_INPUT_CONTAINERS: Record<string, ContainerSlot> = {
+  broker: { insertSlot: { containerPath: ['input', 'broker', 'inputs'], accepts: 'input' } },
+  sequence: { insertSlot: { containerPath: ['input', 'sequence', 'inputs'], accepts: 'input' } },
+};
+
+// Build the empty-container group for a top-level input/output (broker/switch/…),
+// or null when the component isn't a recognised container.
+function emptySectionContainerGroup(
+  key: string,
+  section: 'input' | 'output',
+  sectionId: string,
+  labelText?: string
+): PipelineFlowNode[] | null {
+  const slot = section === 'output' ? EMPTY_OUTPUT_CONTAINERS[key] : EMPTY_INPUT_CONTAINERS[key];
+  if (!slot) {
+    return null;
+  }
+  return [
+    {
+      id: `${section}-${key}`,
+      kind: 'group',
+      label: key,
+      section,
+      parentId: sectionId,
+      collapsible: true,
+      childFlow: 'parallel',
+      editTarget: section === 'output' ? { kind: 'output' } : { kind: 'input' },
+      ...(labelText ? { labelText } : {}),
+      ...slot,
+    },
+  ];
+}
+
 // Output branches with their routing semantics: switch cases carry a `check`
 // condition (no check ⇒ default), fallback tiers route "on failure" of the prior.
 function parseOutputBranches(outputKey: string, value: unknown): GroupChildSpec[] | undefined {
@@ -263,6 +313,11 @@ function parseInputNodes(
     return groupNodes;
   }
 
+  const emptyContainer = emptySectionContainerGroup(inputKey, 'input', sectionId, extractLabel(inputObj));
+  if (emptyContainer) {
+    return emptyContainer;
+  }
+
   const labelText = extractLabel(inputObj);
   const topics = extractTopics(inputObj[inputKey]);
   const isRedpanda = REDPANDA_COMPONENTS.has(inputKey);
@@ -300,6 +355,15 @@ const BRANCHING_FIELDS = new Set([
 ]);
 
 const MAX_BRANCH_DEPTH = 3;
+
+// Processor containers whose value IS a flat processor array — inserting appends a
+// processor to that array. (`switch`/`group_by` are arrays too but of structural
+// case objects, so they're handled separately / left as leaves when empty.)
+const DIRECT_ARRAY_PROC_CONTAINERS: ReadonlySet<string> = new Set(['try', 'catch', 'for_each']);
+
+// Processor containers that nest their children under a `processors:` field, so an
+// empty one accepts a processor into `<name>.processors`.
+const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 'parallel']);
 
 function extractProcessorArray(value: unknown): Record<string, unknown>[] | undefined {
   if (Array.isArray(value)) {
@@ -547,16 +611,23 @@ function parseDirectArrayBranching(
   const valuePath = [...ctx.path, componentName];
   if (componentName === 'switch') {
     const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
-    if (caseNodes.length > 0) {
-      const group = makeGroup(componentName, ctx);
-      // The switch can grow a new (structural) case appended to its value array.
-      group.addChildSlot = { containerPath: valuePath, section: 'processor' };
-      return [group, ...caseNodes];
-    }
-    return [makeLeaf(componentName, ctx)];
+    const group = makeGroup(componentName, ctx);
+    // The switch can grow a new (structural) case appended to its value array —
+    // offered even when there are no cases yet.
+    group.addChildSlot = { containerPath: valuePath, section: 'processor' };
+    return [group, ...caseNodes];
   }
 
   const procArray = extractProcessorArray(componentValue);
+  // try/catch/for_each hold a flat processor array — keep the group (with an insert
+  // slot) even when empty so the first processor can be added.
+  if (procArray && DIRECT_ARRAY_PROC_CONTAINERS.has(componentName)) {
+    const group = makeGroup(componentName, ctx);
+    group.insertSlot = { containerPath: valuePath, accepts: 'processor' };
+    const nodes: PipelineFlowNode[] = [group];
+    pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix, path: valuePath });
+    return nodes;
+  }
   if (procArray && procArray.length > 0) {
     const nodes: PipelineFlowNode[] = [makeGroup(componentName, ctx)];
     pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix, path: valuePath });
@@ -581,6 +652,13 @@ function parseComponentWithBranching(
   const config = componentValue as Record<string, unknown>;
   const childNodes = parseBranchingKeys(config, ctx, componentName);
   if (childNodes.length === 0) {
+    // An empty branch/while/parallel still accepts a child into its `processors`
+    // array — render it as a fillable group rather than a dead-end leaf.
+    if (NESTED_PROC_CONTAINERS.has(componentName)) {
+      const group = withBranchMeta(makeGroup(componentName, ctx), componentName, config);
+      group.insertSlot = { containerPath: [...ctx.path, componentName, 'processors'], accepts: 'processor' };
+      return [group];
+    }
     return [makeLeaf(componentName, ctx, componentValue)];
   }
 
@@ -708,6 +786,11 @@ function parseOutputNodes(
     );
     groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'output' }, labelText: extractLabel(outputObj) };
     return groupNodes;
+  }
+
+  const emptyContainer = emptySectionContainerGroup(outputKey, 'output', sectionId, extractLabel(outputObj));
+  if (emptyContainer) {
+    return emptyContainer;
   }
 
   const labelText = extractLabel(outputObj);
